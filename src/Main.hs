@@ -6,7 +6,7 @@
   By Jason Stolaruk.
   jasonstolaruk `at` (gmail . com)
   @JasonStolaruk
-  https://github.com/jasonstolaruk/
+  https://github.com/jasonstolaruk/CurryMUD
   kickButt <$> take maxBound names
 -}
 
