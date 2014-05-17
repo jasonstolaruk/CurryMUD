@@ -1,0 +1,14 @@
+ABBREVIATING
+============
+
+The names of commands may be abbreviated down to their least significant characters.
+This means, for example, that the "remove" command may be written "remove", "remov", "remo", or "rem"; "re", however, is an abbreviation of the "ready" command (this is due to the fact that "ready" alphabetically precedes "remove").
+The names of things in the game world may also be abbreviated. Say, for example, you have the following items in your inventory:
+
+[sack]     1 cloth sack`
+[sword]    1 short sword`
+
+"sack" can be abbreviated to "s", and "sword" can be abbreviated to "sw".
+To disambiguate what one or more given abbreviations may refer to, use the "what" command. "what re rem", for example, will explain the different meanings of "re" and "rem".
+
+SEE ALSO:

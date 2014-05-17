@@ -1,0 +1,158 @@
+Profiling hmud:
+
+Running "time cat sampleinput | Mud/mud"...
+
+Strict Maps:
+
+without "-O2"
+
+real 2m48.578s
+user 2m45.910s
+sys  0m2.506s
+
+with "-O2"
+
+real 2m2.974s
+user 2m0.584s
+sys  0m2.273s
+
+-----
+
+Lazy Maps:
+
+without "-O2"
+
+real 2m32.929s
+user 2m30.231s
+sys  0m2.537s
+
+with "-O2"
+
+real 2m2.702s
+user 2m0.325s
+sys  0m2.230s
+
+-----
+
+CONCLUSION:
+
+Use "-O2"!
+
+Lazy maps are marginally faster than strict maps.
+
+=====
+
+Lazy Text (with "-O2"):
+
+real 2m2.976s
+user 2m0.579s
+sys  0m2.250s
+
+-----
+
+CONCLUSION:
+
+Strict text is marginally faster than lazy text.
+
+=====
+
+Comparing performance with and without multi-core compilation:
+
+Compiling with RTS options on:
+ghc -O2 -rtsopts -fforce-recomp Mud/mud.hs
+
+"Mud/mud +RTS -?" for a list of options.
+The documentation for RTS options is here: http://www.haskell.org/ghc/docs/7.4.1/html/users_guide/runtime-control.html
+
+Running "cat sampleinput | Mud/mud +RTS -sstderr"...
+
+   9,221,727,792 bytes allocated in the heap
+   2,390,589,864 bytes copied during GC
+         978,120 bytes maximum residency (1070 sample(s))
+         202,432 bytes maximum slop
+               4 MB total memory in use (0 MB lost due to fragmentation)
+
+                                    Tot time (elapsed)  Avg pause  Max pause
+  Gen  0     16565 colls,     0 par    1.97s    2.00s     0.0001s    0.0006s
+  Gen  1      1070 colls,     0 par    0.63s    0.64s     0.0006s    0.0057s
+
+  INIT    time    0.00s  (  0.00s elapsed)
+  MUT     time   12.77s  ( 14.83s elapsed)
+  GC      time    2.60s  (  2.64s elapsed)
+  EXIT    time    0.00s  (  0.00s elapsed)
+  Total   time   15.38s  ( 17.47s elapsed)
+
+  %GC     time      16.9%  (15.1% elapsed)
+
+  Alloc rate    721,958,407 bytes per MUT second
+
+  Productivity  83.1% of total user, 73.1% of total elapsed
+
+-----
+
+Compiling with options for multi-core:
+ghc -O2 -threaded -rtsopts -with-rtsopts=-N -fforce-recomp Mud/mud.hs
+
+Running "cat sampleinput | Mud/mud +RTS -sstderr"...
+
+   9,253,059,360 bytes allocated in the heap
+   2,379,954,800 bytes copied during GC
+         980,520 bytes maximum residency (1025 sample(s))
+         268,928 bytes maximum slop
+               8 MB total memory in use (0 MB lost due to fragmentation)
+
+                                    Tot time (elapsed)  Avg pause  Max pause
+  Gen  0     16611 colls, 16611 par    9.07s    3.48s     0.0002s    0.0008s
+  Gen  1      1025 colls,  1024 par    2.87s    0.52s     0.0005s    0.0032s
+
+  Parallel GC work balance: 3.21% (serial 0%, perfect 100%)
+
+  TASKS: 10 (1 bound, 9 peak workers (9 total), using -N8)
+
+  SPARKS: 0 (0 converted, 0 overflowed, 0 dud, 0 GC'd, 0 fizzled)
+
+  INIT    time    0.00s  (  0.01s elapsed)
+  MUT     time   16.46s  ( 16.86s elapsed)
+  GC      time   11.94s  (  4.01s elapsed)
+  EXIT    time    0.00s  (  0.00s elapsed)
+  Total   time   28.40s  ( 20.87s elapsed)
+
+  Alloc rate    562,271,682 bytes per MUT second
+
+  Productivity  57.9% of total user, 78.9% of total elapsed
+
+gc_alloc_block_sync: 348121
+whitehole_spin: 0
+gen[0].sync: 22
+gen[1].sync: 7701
+
+-----
+
+CONCLUSION:
+
+It's quite a bit faster WITHOUT the multi-core options.
+
+=====
+
+Time profiling:
+
+To turn profiling on, Template Haskell requires that you compile twice, like so:
+ghc -O2 -rtsopts -fforce-recomp Mud/mud.hs
+ghc -O2 -rtsopts -prof -osuf p_o -auto-all -caf-all -fforce-recomp Mud/mud.hs
+
+Running "cat sampleinput | Mud/mud +RTS -p"... This creates "mud.prof".
+
+The "mud.prof" file pointed out a couple functions that were taking up the majority of execution time.
+By refactoring those two functions, I was able to reduce execution time to about 24% of what was (even with the overhead from profiling)!
+
+=====
+
+Space profiling:
+
+The documentation for "-h" heap options is here: http://www.haskell.org/ghc/docs/7.4.1/html/users_guide/prof-heap.html#rts-options-heap-prof
+
+Running "cat sampleinput | Mud/mud +RTS -p -hc" (cost-centre graph)... This creates "mud.hp".
+Next we run "hp2ps -e8in -c mud.hp" to get "mud.ps" (a PostScript file).
+
+There are a handful of other options available for creating heap graphs.
+

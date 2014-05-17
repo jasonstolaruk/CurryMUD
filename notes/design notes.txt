@@ -1,0 +1,339 @@
+GOALS:
+
+Avoid designing repetitive tasks that can be automated client-side.
+
+Do not launch with insufficient content.
+
+Help PCs foster relationships with each other and build communities. Religions, guilds, clans...
+Communities may have formal structure.
+Shared knowledge, goals, projects, and pressures.
+Shared history and future.
+Communication channels private to communities.
+Economic dependencies.
+Shared property.
+Shared "bank accounts."
+Shared iconography.
+Archives.
+
+Community participation should be entirely voluntary. Some players will prefer to remain independent.
+
+Create dependencies between communities (these usual concern resources).
+
+Do not encourage xenophobia or prejudice (it could undermine community).
+
+Create a safe environment where people have freedom to explore (almost) any desired identity.
+
+Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
+
+Give players choice; give them the freedom to try anything. Let them take their own paths. This promotes immersion.
+
+==========
+
+MISC:
+
+Spell out a code of player conduct. It should be clear to players how they are expected to behave.
+"Yours is just one way of many to play. Evilness is not a winning strategy."
+Age, harassment (with special attention to sexual orientation), RP (IC) vs. OOC, PK/PvP, multi-playing, bug abuse, loss of items.
+IC communication must always be appropriate for the context of the virtual world. References to reality are not allowed.
+
+Differentiate between biological sex and gender. A character's gender is a function of the player's role-playing.
+"Which gender does your character most identify with? Male, or female?"
+
+Allow some degree of player-created content.
+
+Create a history and backstory for the virtual world.
+
+Classless/skill based. Use an attribute and point system based on GURPS.
+
+Defeating mobs and using skills gives you exp. Exp translate to points which can be spent on skills. Players must seek out "trainer" NPCs to learn skills.
+
+There is no hard-coded notion of alignment.
+
+For players who want to try out the game and start playing quickly, offer "character kits."
+Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
+
+(Returning) players should be able to opt out of all tutorials.
+
+Make ASCII art maps available in game. New players should start with a map.
+
+Have an in-game newspaper. There should be a way for players to read old newspapers. The newspaper could be produced automatically (as opposed to being written by players).
+
+Have an in-game calendar.
+
+Have in-game mail and BBS. Have a special BBS dedicated to OOC topics.
+
+Make a library or similar area where players may read, for example, the history and backstory of the virtual world.
+
+Implement a system for auctioning items.
+
+Implement systems for reporting bugs and typos.
+
+Functions register to the master timer, which calls them regularly.
+
+Logs should be sufficient to resolve disputes. Consider logging as much as is reasonably possible.
+
+Recommend that players use an external text editor with spell checking for composing multi-line input. Specifically recommend SublimeText?
+
+Intoxicants affect speech, etc.
+
+Make cigars and pipes.
+
+PCs may have pets. Make pet shop(s) where pets are sold.
+
+Have musical instruments. PCs can sing and dance along with the music.
+
+Implement, in moderation, environmental affects, such as making mobs involuntarily sneeze when in a dusty room.
+
+To sacrifice something (typically a corpse), a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
+
+Corpses that are not sacrificed may become undead.
+
+Avoid teleportation mechanisms, as they tend to have a devastating effect on virtual world economy.
+
+==========
+
+COMMANDS:
+
+Commands that change options and settings should be given a special prefix.
+
+Have an interpreter function associated with each PC. This way, menus and pager prompts may be implemented.
+
+"intro" to formally introduce yourself to another PC. PCs must introduce themselves to each other before "link" can be used.
+"link" to establish a telepathic link. PCs must link with each other before "tell" can be used.
+"intro" and "link" should award exp.
+"block" to block tells from a PC. "unblock"
+
+Encourage players to use emotes to interact with tangible features of a room, within reason (when their actions would have no permanent affects), and when there are no commands available to describe such interaction. For example, to sit in a chair, a player can use emotes.
+
+Warn against using "you" and "your" in emotes. Maybe even reject emotes that contain "you"/"your".
+
+The built-in emotes should avoid making assumptions about a character's intent. "wave" should just wave (as opposed "wave enthusiastically").
+
+"tryemote" to silently see the result of using a (built-in) emote.
+
+Encourage players to create aliases (using their mud clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
+
+"roomdesc" to specify a temporary description that appears next to your character's name in the description of your current room.
+"roomdesc leaning against the signpost" -> You (leaning against the signpost) / Taro (leaning against the signpost)
+Certain commands, such as "sit", will automatically set one's room description.
+
+"chardesc" to specify a supplementary description visible when someone looks at you.
+"chardesc his hair is disheveled and his eyes are bloodshot" -> { His hair is disheveled and his eyes are bloodshot. }
+
+"bonus" to give another player a bonus for good RP.
+
+"nickname" to create your own nickname for another PC.
+
+"whoall", "whointro", "wholink"
+
+"punch", "kick", and "headbutt" to attack a PC without formally entering combat. These commands may not work with NPCs.
+
+Make a command to immediately contact staff.
+
+Make a command to get help on known powers/skills.
+
+Make commands to set screen dimensions (columns and lines).
+
+Make a "razzle dazzle root beer" easter egg.
+
+==========
+
+DBs:
+
+World definition.
+
+World instantiation.
+
+PC data. (Needs a degree of independence from world instantiation.)
+
+Player records.
+
+It should be easy for staff to modify PC records and/or restore from backups.
+
+==========
+
+NETWORK:
+
+Implement MSSP to provide info to MUD crawlers?
+
+MCCP for data compression?
+
+MXP for markup, menus, etc.?
+
+Implement some degree of Telnet option negotiation.
+
+Use CR+LF EOLs for Telnet.
+
+Use ANSI escape sequences for color.
+
+==========
+
+OBJECTS:
+
+Objects have varying degrees of persistence. Some objects, such as starter maps, should disappear after having been left on the ground for some time. Corpses decay...
+Objects with the greatest persistence are stored in the world instantiation DB such that they reappear when the game is restarted.
+
+Objects have wear and tear.
+
+Certain objects (typically those that are a permanent fixture in a room) should not be listed in a room's inventory when a player "look"s.
+
+Have designated places where objects can be destroyed (trash bins).
+
+==========
+
+GEOGRAPHY:
+
+Divide the overall geography into the world, regions (large swath of territory that have distinct, thematic differences), areas/zones (functional partitions imposed for technical reasons; these often coincide with and fit nicely inside regions), and rooms. The world should be partitioned such that it clusters players.
+
+Where the map ends, consider creating unsurmountable physical boundaries. p275
+
+The size of the virtual world should be proportionate to the number of players. A rule of thumb is to aim for 40 rooms per player. 20 rooms per player is crowded, while 60 rooms per player in sparse. The actual number of rooms need not coincide with the perceived size of the virtual world.
+
+Provide both verbose and brief descriptions of rooms.
+
+Have "safe" zones/rooms, where PK/PvP is impossible. Ideally, PK/PvP wouldn't blatantly impossible, but there could be tough guard NPCs to enforce it.
+
+Have special rooms where OOC communication is allowed.
+
+Have an OOC room where players are free to try out commands on a dummy mob (or on other players) with no IC ramifications.
+
+The degree to which movement tires a character should be room specific. In this way, terrain can have an effect on the cost of movement. In addition, the physical distance between two rooms may be arbitrary; however, the distance between rooms should be kept relatively consistent so as to keep players from getting unnecessarily lost.
+
+Believable settlements have access to food and water, nearby building materials, a nonthreatening climate/geology/geography, and a population. Often, settlements are centers of trade and commerce.
+
+Rooms may be either "outside" or "inside".
+Make a distinction between day and night. During the night, outside rooms automatically become dark (a light source is required).
+The sun rises and sets. Moon(s) become visible.
+
+Make weather specific to zones. Weather must be appropriate for the given geography and terrain.
+
+PCs may own property and residences. The construction of a house should take some time, so as to be realistic; however, if it takes too long, players will become impatient.
+
+Provide special venues for storytelling.
+
+Make a sewer and/or catacombs beneath a city.
+
+Make an area with ancient reptilian monuments.
+
+Make underground settlements, perhaps with secret/hidden entrances.
+
+Make settlements built above ground, in trees.
+
+Make an area with hostile cannibals.
+
+==========
+
+ECONOMICS:
+
+Economics is concerned with the allocation of resources.
+
+The more persistent the virtual world is, the greater the need for a formal economy.
+
+Wealth enters the system. This happens when, for example, coin-carrying mobs are generated, and when new characters are created.
+PCs accumulate wealth when, for example, they mine for resources, and then sell them.
+Wealth leaves the system when PCs buy items and services from NPCs.
+
+Most virtual world economies are open. In an open system, what enters the system has no effect on what exits it.
+(This is not the case in a closed system. In a closed system, as more and more PCs accumulate more and more wealth, the amount of money a PC receives for their deeds falls to compensate. Players will become inclined to hold on to their money until they really need it; thus the economy is headed for a grinding halt. Closed economies will always dry up eventually.)
+
+In a fixed-price economy, the cost of commodities never changes. In such a system, inflation hurts everyone who crafts goods for which fixed-prices pertain.
+In a free-market economy, prices fluctuate depending on supply and demand (and inflation, too). Most virtual worlds choose this model for their economy.
+
+The free-market model certainly appears to be more maintainable than the fixed-price model. However, there has yet to be a successful large-scale implementation. It only works if ALL prices are variable. Mob drops should be variable, too, along with the amount of money that new characters start with. Everything must accommodate for supply, demand, and inflation.
+
+The trick is to give goods rather than cash as rewards. Goods get their value from the free market; therefore their value varies in keeping with supply and demand.
+
+The virtual world is not the real world, however. Players may leave your virtual world, never to come back, when they become frustrated over the fluctuations of the free-market economy. Players are bound to get upset when they spend four hours collecting wolf pelts, only to find that wolf pelts are not nearly worth what they used to be. Virtual worlds must take into account the perceived fulfillment of their players, as players are free to quit a virtual world at any time.
+
+Administrators and live teems may manually control and manipulate the economy, assuming that they really know what they're doing. They need to be ready to deal with accusations of bias and favoritism.
+
+Have items wear out (realistically). This creates a money sink, thereby discouraging inflation. It also helps keep rare items rare.
+
+Consider making certain services available for sale. This works especially well when the service is something that PCs can do for themselves, but players don't enjoy doing.
+
+Consider having multiple currencies, and variable exchange rates between them. This is good for limiting the spread of inflation: the more money of one kind there is in circulation, the less money of another kind it is worth.
+
+Coins should be given weight. A single penny weighs 2.5g; 100,000 pennies thus weigh 250kg, or about 550lbs.
+When coins have a weight, the act of transporting them is nontrivial. This encourages the flourishing of local economies.
+
+Consider not having banks, as they are out of place in a pre-Renaissance setting.
+
+Charge for PC advancement.
+
+==========
+
+MOBS (PCs and NPCs):
+
+Every mob has a speed, which indicates how fast they can move from room to room. Groups travel at the speed of the slowest member.
+Naturally, encumbrance affects speed.
+
+Put a Beastly Fido somewhere.
+
+==========
+
+PCs:
+
+Make it clear that player descriptions must be written from an objective viewpoint. They must be passive.
+Emotes must also be objective (though not necessarily passive).
+
+Racial languages. PCs can spend points to (magically?) learn extra languages, though it should be difficult to find NPC "trainers" who teach them.
+
+==========
+
+NPCs:
+
+NPCs act even when there are no PCs around. Make it so that this behavior can be disabled.
+
+Create "lore provider" NPCs designed to dispense knowledge in response to the "ask" command.
+
+==========
+
+COMBAT:
+
+During combat, a PC may manually switch the opponent they attack.
+In a combat where there are multiple opponents, an NPC may automatically switch the opponent they attack.
+
+Attempting to flee gives the opponent a free attack.
+When fighting more than one mob, there is a chance you will be unable to flee. The chance to flee could also be contingent upon the number of exits.
+
+==========
+
+SPELLS/PSI:
+
+There is a cool-down period in which another spell cannot be cast.
+
+Some spells can hit more than one mob.
+
+==========
+
+QUESTIONS:
+
+What is the difference, if any, between a wizard and an administrator?
+
+Can administrators/wizards arbitrarily take control of NPCs? p294
+
+How can the game be tailored to the visually impaired?
+
+To what extent are the actions of PCs allowed to influence the content of the virtual world?
+To what extent is the storyline fixed?
+
+Partition PCs geographically? Racial settlements?
+
+Can PCs higher henchmen NPCs to fight with them, heal them, and carry their items?
+
+Can mobs "run"?
+
+Profiling? Make this the basis for an auto-generated in-game newspaper? p185
+
+Boats?
+
+Tour duty?
+
+In what cases do PCs remain active after the player's connection drops?
+
+==========
+
+Free MUD hosting.
+http://www.mudconnect.com/SMF/index.php?topic=78251
+coindexter22@gmail.com MoeMuds.com
+
