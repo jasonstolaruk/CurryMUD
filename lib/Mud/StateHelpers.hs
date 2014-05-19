@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings #-}
 
 module Mud.StateHelpers ( addToInv
                         , findExit
@@ -104,7 +104,6 @@ makePlurFromBoth (_, p)  = p
 
 -----
 
-
 getEntsInInvByName :: T.Text -> Inv -> MudStack GetEntResult
 getEntsInInvByName searchName is
   | searchName == [allChar]^.packed = (Mult (length is) searchName . Just) <$> getEntsInInv is
@@ -120,9 +119,9 @@ getEntsInInvByName searchName is
       | T.length rest < 2 = return (Sorry searchName)
       | otherwise = let delim = T.head rest
                         rest' = T.tail rest
-                    in case () of _ | delim == amountChar -> getMultEnts   numInt rest' is -- TODO: Change to a multi-way if.
-                                    | delim == indexChar  -> getIndexedEnt numInt rest' is
-                                    | otherwise           -> return (Sorry searchName)
+                    in if | delim == amountChar -> getMultEnts   numInt rest' is
+                          | delim == indexChar  -> getIndexedEnt numInt rest' is
+                          | otherwise           -> return (Sorry searchName)
 
 
 getMultEnts :: Amount -> T.Text -> Inv -> MudStack GetEntResult
