@@ -1,2 +1,3 @@
-CurryMud - A Multi-User Dungeon written in Haskell.
+CurryMud - A Multi-User Dungeon by Jason Stolaruk.
 Version 0.1.0.0 (in development since 2013-10).
+CurryMUD is written entirely in the Haskell programming language. (Both CurryMUD and Haskell are named after logician Haskell Curry.)
