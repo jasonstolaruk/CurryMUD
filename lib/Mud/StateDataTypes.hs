@@ -78,7 +78,13 @@ type Inv = [Id]
 
 -----
 
--- Has an object (and an entity) and an inventory.
+data Coins = Coins { _cp :: !Int
+                   , _sp :: !Int
+                   , _gp :: !Int } deriving (Eq, Show)
+
+-----
+
+-- Has an object (and an entity) and an inventory and coins.
 
 type Cap = Int
 
@@ -136,7 +142,7 @@ data Slot = HeadS
 
 -----
 
--- Has an entity and an inventory and equipment.
+-- Has an entity and an inventory and coins and equipment.
 
 data Mob = Mob { _gender            :: !Gender
                , _st, _dx, _iq, _ht :: !Int
@@ -154,7 +160,7 @@ data Hand = RHand
 
 -----
 
--- Has a mob (and an entity and an inventory and equipment).
+-- Has a mob (and an entity and an inventory and coins and equipment).
 
 data PC = PC { _rmId :: !Id
              , _race :: !Race } deriving (Eq, Show)
@@ -170,7 +176,7 @@ data Race = Human
 
 ----
 
--- Has an inventory.
+-- Has an inventory and coins.
 
 data Rm = Rm { _rmName  :: !T.Text
              , _rmDesc  :: !T.Text
@@ -191,7 +197,7 @@ data Type = ObjType
           | ArmType
           | MobType
           | PCType
-          | RmType  deriving (Eq, Show)
+          | RmType deriving (Eq, Show)
 
 -----
 
@@ -210,6 +216,7 @@ type EntTbl   = IM.IntMap Ent
 type ObjTbl   = IM.IntMap Obj
 type ClothTbl = IM.IntMap Cloth
 type InvTbl   = IM.IntMap Inv
+type CoinsTbl = IM.IntMap Coins
 type ConTbl   = IM.IntMap Con
 type WpnTbl   = IM.IntMap Wpn
 type ArmTbl   = IM.IntMap Arm
@@ -222,6 +229,7 @@ data MudState = MudState { _entTbl     :: EntTbl
                          , _objTbl     :: ObjTbl
                          , _clothTbl   :: ClothTbl
                          , _invTbl     :: InvTbl
+                         , _coinsTbl   :: CoinsTbl
                          , _conTbl     :: ConTbl
                          , _wpnTbl     :: WpnTbl
                          , _armTbl     :: ArmTbl
@@ -242,6 +250,7 @@ type MudStack = StateInIORefT MudState IO
 
 makeLenses ''Ent
 makeLenses ''Obj
+makeLenses ''Coins
 makeLenses ''Wpn
 makeLenses ''Arm
 makeLenses ''Mob

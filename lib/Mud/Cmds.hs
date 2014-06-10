@@ -173,9 +173,6 @@ handleInp :: T.Text -> MudStack ()
 handleInp = maybe game dispatch . splitInp
 
 
-type Input = (CmdName, Rest)
-
-
 splitInp :: T.Text -> Maybe Input
 splitInp = splitUp . T.words
   where

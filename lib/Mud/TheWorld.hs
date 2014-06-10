@@ -47,64 +47,67 @@ allKeys = gets (^.typeTbl.to IM.keys)
 putObj :: Id -> Ent -> Obj -> MudStack ()
 putObj i e o = do
     typeTbl.at i ?= ObjType
-    entTbl.at i  ?= e
-    objTbl.at i  ?= o
+    entTbl.at  i ?= e
+    objTbl.at  i ?= o
 
 
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
 putCloth i e o c = do
-    typeTbl.at i  ?= ClothType
-    entTbl.at i   ?= e
-    objTbl.at i   ?= o
+    typeTbl.at  i ?= ClothType
+    entTbl.at   i ?= e
+    objTbl.at   i ?= o
     clothTbl.at i ?= c
 
 
-putCon :: Id -> Ent -> Obj -> Inv -> Con -> MudStack ()
-putCon i e o is c = do
-    typeTbl.at i ?= ConType
-    entTbl.at i  ?= e
-    objTbl.at i  ?= o
-    invTbl.at i  ?= is
-    conTbl.at i  ?= c
+putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
+putCon i e o is coi con = do
+    typeTbl.at  i ?= ConType
+    entTbl.at   i ?= e
+    objTbl.at   i ?= o
+    invTbl.at   i ?= is
+    coinsTbl.at i ?= coi
+    conTbl.at   i ?= con
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
 putWpn i e o w = do
     typeTbl.at i ?= WpnType
-    entTbl.at i  ?= e
-    objTbl.at i  ?= o
-    wpnTbl.at i  ?= w
+    entTbl.at  i ?= e
+    objTbl.at  i ?= o
+    wpnTbl.at  i ?= w
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
 putArm i e o a = do
     typeTbl.at i ?= ArmType
-    entTbl.at i  ?= e
-    objTbl.at i  ?= o
-    armTbl.at i  ?= a
+    entTbl.at  i ?= e
+    objTbl.at  i ?= o
+    armTbl.at  i ?= a
 
 
-putMob :: Id -> Ent -> Inv -> EqMap -> Mob -> MudStack ()
-putMob i e is em m = do
-    typeTbl.at i ?= MobType
-    entTbl.at i  ?= e
-    invTbl.at i  ?= is
-    eqTbl.at i   ?= em
-    mobTbl.at i  ?= m
+putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
+putMob i e is c em m = do
+    typeTbl.at  i ?= MobType
+    entTbl.at   i ?= e
+    invTbl.at   i ?= is
+    coinsTbl.at i ?= c
+    eqTbl.at    i ?= em
+    mobTbl.at   i ?= m
 
 
-putRm :: Id -> Inv -> Rm -> MudStack ()
-putRm i is r = do
-    typeTbl.at i ?= RmType
-    invTbl.at i  ?= is
-    rmTbl.at i   ?= r
+putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
+putRm i is c r = do
+    typeTbl.at  i ?= RmType
+    invTbl.at   i ?= is
+    coinsTbl.at i ?= c
+    rmTbl.at    i ?= r
 
 
 -----
 
 
 initMudState :: MudState
-initMudState = MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty initHist (LogHandles Nothing Nothing)
+initMudState = MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty initHist (LogHandles Nothing Nothing)
 
 
 initPC :: PC
@@ -121,15 +124,15 @@ createWorld :: MudStack ()
 createWorld = do
     liftIO . logNotice "createWorld" $ "creating the world"
 
-    putMob iPC (Ent iPC "" "" "" "" 0) [iKewpie1, iBag1, iClub] (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand)
+    putMob iPC (Ent iPC "" "" "" "" 0) [iKewpie1, iBag1, iClub] (Coins 30 20 10) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand)
 
-    putRm iHill [iGP1, iLongSword] (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
-    putRm iCliff [iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4] (Rm "The cliff" "You have reached the edge of a cliff. \
+    putRm iHill [iGP1, iLongSword] (Coins 0 0 1) (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
+    putRm iCliff [iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4] (Coins 0 0 0) (Rm "The cliff" "You have reached the edge of a cliff. \
         \There is a sizable hole in the ground. Next to the hole is a small hut." 0 [RmLink "w" iHill, RmLink "d" iHole, RmLink "hut" iHut])
-    putRm iHole [iNeck1, iNeck2, iNeck3, iNeck4, iHelm] (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. \
+    putRm iHole [iNeck1, iNeck2, iNeck3, iNeck4, iHelm] (Coins 50 0 0) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. \
         \It's damp and smells of soil." 0 [RmLink "w" iVoid, RmLink "u" iCliff])
-    putRm iVoid [iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3] (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." 0 [RmLink "e" iHole])
-    putRm iHut [iLongName1, iLongName2] (Rm "The hut" "The tiny hut is dusty and smells of mold." 0 [RmLink "out" iCliff])
+    putRm iVoid [iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3] (Coins 0 0 0) (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." 0 [RmLink "e" iHole])
+    putRm iHut [iLongName1, iLongName2] (Coins 5 0 0) (Rm "The hut" "The tiny hut is dusty and smells of mold." 0 [RmLink "out" iCliff])
     
     putObj iKewpie1 (Ent iKewpie1 "doll" "kewpie doll" "" "The red kewpie doll is disgustingly cute." 0) (Obj 1 1)
     putObj iKewpie2 (Ent iKewpie2 "doll" "kewpie doll" "" "The orange kewpie doll is disgustingly cute." 0) (Obj 1 1)
@@ -140,8 +143,8 @@ createWorld = do
 
     putObj iElephant (Ent iElephant "elephant" "elephant" "" "The elephant is huge and smells terrible." 0) (Obj 1 1)
 
-    putCon iBag1 (Ent iBag1 "sack" "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's red." 0) (Obj 1 1) [iGP2, iGP3] (Con 10)
-    putCon iBag2 (Ent iBag2 "sack" "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's blue." 0) (Obj 1 1) [iKewpie2, iRing1, iRing2, iRing3, iRing4] (Con 10)
+    putCon iBag1 (Ent iBag1 "sack" "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's red." 0) (Obj 1 1) [iGP2, iGP3] (Coins 15 10 5) (Con 10)
+    putCon iBag2 (Ent iBag2 "sack" "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's blue." 0) (Obj 1 1) [iKewpie2, iRing1, iRing2, iRing3, iRing4] (Coins 15 10 5) (Con 10)
 
     putWpn iSword1 (Ent iSword1 "sword" "short sword" "" "It's a sword; short but still sharp! It's silver." 0) (Obj 1 1) (Wpn OneHanded 1 10)
     putWpn iSword2 (Ent iSword2 "sword" "short sword" "" "It's a sword; short but still sharp! It's gold." 0) (Obj 1 1) (Wpn OneHanded 1 10)
@@ -173,7 +176,7 @@ createWorld = do
     putArm iHelm (Ent iHelm "helmet" "leather helmet" "" "Nothing to write home about. But it's better than nothing." 0) (Obj 1 1) (Arm HeadA 1)
 
     putMob iRockCavy (Ent iRockCavy "rock" "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig. \
-        \You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." 0) [] M.empty (Mob Male 10 10 10 10 10 10 25 NoHand)
+        \You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." 0) [] (Coins 0 0 0) M.empty (Mob Male 10 10 10 10 10 10 25 NoHand)
 
     putCloth iNoseRing1 (Ent iNoseRing1 "nose" "nose ring" "" "It's a plain silver stud, intended to be worn on the nose." 0) (Obj 1 1) NoseC
     putCloth iNoseRing2 (Ent iNoseRing2 "nose" "nose ring" "" "It's a plain silver stud, intended to be worn on the nose." 0) (Obj 1 1) NoseC
@@ -218,6 +221,6 @@ mkOkapi = do
                 , _fp     = 10
                 , _xp     = 50
                 , _hand   = NoHand }
-    putMob i e [] M.empty m
+    putMob i e [] (Coins 0 0 1) M.empty m
     addToInv [i] iHill -- Will sort the inv.
     return i

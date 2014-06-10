@@ -11,6 +11,7 @@ module Mud.MiscDataTypes ( Action
                          , GetEntResult(..)
                          , GetOrDrop(..)
                          , Index
+                         , Input
                          , InvType(..)
                          , NameSearchedFor
                          , pp
@@ -103,6 +104,8 @@ type Action = Rest -> MudStack ()
 data Cmd = Cmd { cmdName :: !CmdName
                , action  :: !Action
                , cmdDesc :: !T.Text }
+
+type Input = (CmdName, Rest)
 
 -----
 
