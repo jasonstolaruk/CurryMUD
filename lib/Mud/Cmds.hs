@@ -248,9 +248,9 @@ dispCmdList (r:rs) = dispCmdList [r] >> liftIO newLine >> dispCmdList rs
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
-cmdListText p = sort . T.lines . T.concat . foldl' makeTxtForCmd [] . filter p $ cmdList
+cmdListText p = sort . T.lines . T.concat . foldl' mkTxtForCmd [] . filter p $ cmdList
   where
-    makeTxtForCmd acc c = T.concat [ padOrTrunc 10 . cmdName $ c, cmdDesc c, "\n" ] : acc
+    mkTxtForCmd acc c = T.concat [ padOrTrunc 10 . cmdName $ c, cmdDesc c, "\n" ] : acc
 
 
 plaCmdPred :: Cmd -> Bool
@@ -362,7 +362,7 @@ whatInv it r = do
                              in if len > 1
                                then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
                                         h      = head ebgns
-                                        target = if all (== h) ebgns then makePlurFromBoth h else e^.name.to bracketQuote <> "s"
+                                        target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
                                     in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, locName ]
                                else getEntNamesInInv is >>= \ens ->
                                    outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, locName ]
@@ -419,7 +419,7 @@ dispRmInv is = mkNameCountBothList is >>= mapM_ descEntInRm
   where
     descEntInRm (en, c, (s, _))
       | c == 1 = outputIndent 2 $ aOrAn s <> " " <> bracketQuote en
-    descEntInRm (en, c, b) = outputConIndent 2 [ showText c, " ", makePlurFromBoth b, " ", bracketQuote en ]
+    descEntInRm (en, c, b) = outputConIndent 2 [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
 
 
 mkNameCountBothList :: Inv -> MudStack [(T.Text, Int, BothGramNos)]
@@ -440,9 +440,9 @@ descEnt e = do
     i = e^.entId
 
 
-descEntsInInvForId :: Id -> MudStack () -- TODO: A container may contain coins...
+descEntsInInvForId :: Id -> MudStack ()
 descEntsInInvForId i = getInv i >>= \is ->
-    if null is then none else header >> mkNameCountBothList is >>= mapM_ descEntInInv
+    if null is then none else header >> mkNameCountBothList is >>= mapM_ descEntInInv >> descCoins i
   where
     none
       | i == 0 = dudeYourHandsAreEmpty
@@ -452,13 +452,20 @@ descEntsInInvForId i = getInv i >>= \is ->
       | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " contains:"
     descEntInInv (en, c, (s, _))
       | c == 1 = outputIndent ind $ nameCol en <> "1 " <> s
-    descEntInInv (en, c, b) = outputConIndent ind [ nameCol en, showText c, " ", makePlurFromBoth b ]
+    descEntInInv (en, c, b) = outputConIndent ind [ nameCol en, showText c, " ", mkPlurFromBoth b ]
     nameCol = bracketPad ind
     ind     = 11
 
 
 dudeYourHandsAreEmpty :: MudStack ()
 dudeYourHandsAreEmpty = output "You aren't carrying anything."
+
+
+descCoins :: Id -> MudStack ()
+descCoins i = mkCoinsList i >>= \cs ->
+    mapM_ descIt . zip ["copper", "silver", "gold"] $ cs
+  where
+    descIt (cn, amt) = output $ cn <> showText amt
 
 
 -----
@@ -560,7 +567,7 @@ descGetDrop god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
   where
     descGetDropHelper (_, c, (s, _))
       | c == 1 = outputCon [ "You", verb, "the ", s, "." ]
-    descGetDropHelper (_, c, b) = outputCon [ "You", verb, showText c, " ", makePlurFromBoth b, "." ]
+    descGetDropHelper (_, c, b) = outputCon [ "You", verb, showText c, " ", mkPlurFromBoth b, "." ]
     verb = case god of Get  -> " pick up "
                        Drop -> " drop "
 
@@ -664,7 +671,7 @@ descPutRem por is cn = mkNameCountBothList is >>= mapM_ descPutRemHelper
   where
     descPutRemHelper (_, c, (s, _))
       | c == 1                    = outputCon [ "You", verb, "the ", s, prep, cn, "." ]
-    descPutRemHelper (_, c, b) = outputCon [ "You", verb, showText c, " ", makePlurFromBoth b, prep, cn, "." ]
+    descPutRemHelper (_, c, b) = outputCon [ "You", verb, showText c, " ", mkPlurFromBoth b, prep, cn, "." ]
     verb = case por of Put -> " put "
                        Rem -> " remove "
     prep = case por of Put -> " in the "
@@ -984,7 +991,7 @@ descUnready is = mkIdCountBothList is >>= mapM_ descUnreadyHelper
     descUnreadyHelper (i, c, b@(s, _)) = verb i >>= \v ->
         outputCon $ if c == 1
           then [ "You ", v, "the ", s, "." ]
-          else [ "You ", v, showText c, " ", makePlurFromBoth b, "." ]
+          else [ "You ", v, showText c, " ", mkPlurFromBoth b, "." ]
     verb i = getEnt i >>= getEntType >>= \t ->
         case t of ClothType -> getCloth i >>= \_ -> return unwearGenericVerb -- TODO
                   WpnType   -> return "stop wielding "

@@ -6,6 +6,7 @@ module Mud.StateHelpers ( addToInv
                         , gerToMes
                         , getArm
                         , getCloth
+                        , getCoins
                         , getEnt
                         , getEntBothGramNos
                         , getEntBothGramNosInInv
@@ -32,7 +33,8 @@ module Mud.StateHelpers ( addToInv
                         , getRm
                         , getRmLinks
                         , getWpn
-                        , makePlurFromBoth
+                        , mkPlurFromBoth
+                        , mkCoinsList
                         , moveInv
                         , procGetEntResPCInv
                         , procGetEntResRm
@@ -97,9 +99,9 @@ getEntBothGramNosInInv :: Inv -> MudStack [BothGramNos]
 getEntBothGramNosInInv is = map getEntBothGramNos <$> getEntsInInv is
 
 
-makePlurFromBoth :: BothGramNos -> Plur
-makePlurFromBoth (s, "") = s <> "s"
-makePlurFromBoth (_, p)  = p
+mkPlurFromBoth :: BothGramNos -> Plur
+mkPlurFromBoth (s, "") = s <> "s"
+mkPlurFromBoth (_, p)  = p
 
 
 -----
@@ -143,7 +145,7 @@ getIndexedEnt x n is
     found fullName = filter (\e -> e^.name == fullName) <$> getEntsInInv is >>= \matches ->
         if length matches < x
           then let both = getEntBothGramNos . head $ matches
-               in return (Indexed x n (Left . makePlurFromBoth $ both))
+               in return (Indexed x n (Left . mkPlurFromBoth $ both))
           else return (Indexed x n (Right $ matches !! (x - 1)))
 
 
@@ -194,6 +196,18 @@ getWpn i = gets (^?!wpnTbl.ix i)
 
 getArm :: Id -> MudStack Arm
 getArm i = gets (^?!armTbl.ix i)
+
+
+-----
+
+getCoins :: Id -> MudStack Coins
+getCoins i = gets (^?!coinsTbl.ix i)
+
+
+mkCoinsList :: Id -> MudStack [Int]
+mkCoinsList i = getCoins i >>= \c ->
+    let ls = [cp, sp, gp]
+    in return [ c^.l | l <- ls ]
 
 
 -----
