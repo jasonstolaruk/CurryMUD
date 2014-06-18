@@ -434,22 +434,36 @@ descEnt :: Ent -> MudStack ()
 descEnt e = do
     e^.desc.to output
     t <- getEntType e
-    when (t == ConType) $ descEntsInInvForId i
+    when (t == ConType) $ descInv i
     when (t == MobType) $ descEq i
   where
     i = e^.entId
 
 
-descEntsInInvForId :: Id -> MudStack ()
-descEntsInInvForId i = getInv i >>= \is ->
-    if null is then none else header >> mkNameCountBothList is >>= mapM_ descEntInInv >> descCoins i
+descInv :: Id -> MudStack ()
+descInv i = do
+    hi <- hasInv i
+    hc <- hasCoins i
+    case (hi, hc) of
+        (False, False) -> if i == 0
+                            then dudeYourHandsAreEmpty
+                            else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
+        (True,  False) -> header >> descEntsInInv  i
+        (False, True ) -> header >> descCoinsInInv i
+        (True,  True ) -> header >> descEntsInInv  i >> descCoinsInInv i
   where
-    none
-      | i == 0 = dudeYourHandsAreEmpty
-      | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
     header
       | i == 0 = output "You are carrying:"
       | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " contains:"
+
+
+dudeYourHandsAreEmpty :: MudStack ()
+dudeYourHandsAreEmpty = output "You aren't carrying anything."
+
+
+descEntsInInv :: Id -> MudStack ()
+descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
+  where
     descEntInInv (en, c, (s, _))
       | c == 1 = outputIndent ind $ nameCol en <> "1 " <> s
     descEntInInv (en, c, b) = outputConIndent ind [ nameCol en, showText c, " ", mkPlurFromBoth b ]
@@ -457,19 +471,12 @@ descEntsInInvForId i = getInv i >>= \is ->
     ind     = 11
 
 
-dudeYourHandsAreEmpty :: MudStack ()
-dudeYourHandsAreEmpty = output "You aren't carrying anything."
-
-
-descCoins :: Id -> MudStack ()
-descCoins i = hasCoins i >>= \hc ->
-    if hc
-      then undefined
-      else dudeYou'reBroke
+descCoinsInInv :: Id -> MudStack ()
+descCoinsInInv i = mkCoinsNameAmtList >>= descCoinsNameAmtList
   where
-    dudeYou'reBroke
-      | i == 0    = output "You don't have any coins."
-      | otherwise = return ()
+    mkCoinsNameAmtList       = zip ["copper", "silver", "gold"] <$> mkCoinsAmtList i
+    descCoinsNameAmtList     = output . T.intercalate ", " . map descCoinsNameAmt
+    descCoinsNameAmt (cn, a) = if a == 0 then "" else showText a <> " " <> bracketQuote cn
 
 
 -----
@@ -487,7 +494,7 @@ exits rs = ignore rs >> exits []
 
 
 inv :: Action
-inv []     = descEntsInInvForId 0 -- TODO: Indicate coins carried, and give some indication of encumberance.
+inv []     = descInv 0 -- TODO: Give some indication of encumberance.
 inv [r]    = getPCInv >>= getEntsInInvByName r >>= procGetEntResPCInv >>= traverse_ (mapM_ descEnt)
 inv (r:rs) = inv [r] >> inv rs
 

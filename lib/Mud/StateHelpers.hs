@@ -20,13 +20,13 @@ module Mud.StateHelpers ( addToInv
                         , getEqMap
                         , getInv
                         , getMob
-                        , getMobHand
                         , getMobGender
+                        , getMobHand
                         , getPCEq 
                         , getPCEqMap
                         , getPCInv
-                        , getPCMobHand
                         , getPCMobGender
+                        , getPCMobHand
                         , getPCRm
                         , getPCRmId
                         , getPCRmInv
@@ -34,8 +34,9 @@ module Mud.StateHelpers ( addToInv
                         , getRmLinks
                         , getWpn
                         , hasCoins
+                        , hasInv
+                        , mkCoinsAmtList
                         , mkPlurFromBoth
-                        , mkCoinsNameAmtList
                         , moveInv
                         , procGetEntResPCInv
                         , procGetEntResRm
@@ -217,15 +218,15 @@ hasCoins :: Id -> MudStack Bool
 hasCoins i = not . all (== 0) <$> mkCoinsAmtList i
 
 
-mkCoinsNameAmtList :: Id -> MudStack [CoinNameAmt]
-mkCoinsNameAmtList i = zip ["copper", "silver", "gold"] <$> mkCoinsAmtList i
-
-
 -----
 
 
 getInv :: Id -> MudStack Inv
 getInv i = gets (^?!invTbl.ix i)
+
+
+hasInv :: Id -> MudStack Bool -- TODO: Can this be used in more places?
+hasInv i = not . null <$> getInv i
 
 
 getPCInv :: MudStack Inv
