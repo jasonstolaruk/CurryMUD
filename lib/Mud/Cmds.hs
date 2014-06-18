@@ -462,10 +462,14 @@ dudeYourHandsAreEmpty = output "You aren't carrying anything."
 
 
 descCoins :: Id -> MudStack ()
-descCoins i = mkCoinsList i >>= \cs ->
-    mapM_ descIt . zip ["copper", "silver", "gold"] $ cs
+descCoins i = hasCoins i >>= \hc ->
+    if hc
+      then undefined
+      else dudeYou'reBroke
   where
-    descIt (cn, amt) = output $ cn <> showText amt
+    dudeYou'reBroke
+      | i == 0    = output "You don't have any coins."
+      | otherwise = return ()
 
 
 -----
@@ -508,15 +512,15 @@ descEq i = (mkEqDescList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \ed
                             in getEnt i' >>= \e ->
                                 return (T.concat [ slotName, e^.sing, " ", e^.name.to bracketQuote ])
     none
-      | i == 0    = dudeYoureNaked
+      | i == 0    = dudeYou'reNaked
       | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " doesn't have anything readied."
     header
       | i == 0    = output "You have readied the following equipment:"
       | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " has readied the following equipment:"
 
 
-dudeYoureNaked :: MudStack ()
-dudeYoureNaked = output "You don't have anything readied. You're naked!"
+dudeYou'reNaked :: MudStack ()
+dudeYou'reNaked = output "You don't have anything readied. You're naked!"
 
 
 -----
@@ -964,7 +968,7 @@ unready :: Action
 unready [] = advise ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
 unready rs = getPCEq >>= \is ->
     if null is
-      then dudeYoureNaked
+      then dudeYou'reNaked
       else resolveEntsByName rs is >>= \(gers, misList) ->
           mapM_ procGerMisForUnready $ zip gers misList
 

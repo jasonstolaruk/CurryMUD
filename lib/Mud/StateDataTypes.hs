@@ -82,6 +82,8 @@ data Coins = Coins { _cp :: !Int
                    , _sp :: !Int
                    , _gp :: !Int } deriving (Eq, Show)
 
+type CoinNameAmt = (T.Text, Int) -- TODO: Move this?
+
 -----
 
 -- Has an object (and an entity) and an inventory and coins.

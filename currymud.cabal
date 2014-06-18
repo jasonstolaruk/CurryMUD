@@ -1,5 +1,3 @@
--- http://haskell.org/cabal/users-guide/
-
 name:                  currymud
 version:               0.1.0.0
 synopsis:              A Multi-User Dungeon server.

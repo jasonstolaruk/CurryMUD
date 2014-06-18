@@ -195,6 +195,11 @@ Use "(>>)" and "(>>=)" instead of "do" when your functions can be neatly chained
 Use "(=<<)" instead of "(>>=)" alongside a "pipe" of composed functions: (RWH p.357)
 output . parse =<< (liftIO . readProcess "/usr/bin/uptime" [] $ "")
 
+Prefer...
+f x <$> g y
+...over...
+g y >>= return . f x
+
 Use "join" to "flatten" nested monadic values:
 join :: Monad m => m (m a) -> m a
 λ> join $ Just Nothing

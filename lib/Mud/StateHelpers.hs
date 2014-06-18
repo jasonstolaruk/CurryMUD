@@ -33,8 +33,9 @@ module Mud.StateHelpers ( addToInv
                         , getRm
                         , getRmLinks
                         , getWpn
+                        , hasCoins
                         , mkPlurFromBoth
-                        , mkCoinsList
+                        , mkCoinsNameAmtList
                         , moveInv
                         , procGetEntResPCInv
                         , procGetEntResRm
@@ -194,20 +195,30 @@ getWpn i = gets (^?!wpnTbl.ix i)
 
 -----
 
+
 getArm :: Id -> MudStack Arm
 getArm i = gets (^?!armTbl.ix i)
 
 
 -----
 
+
 getCoins :: Id -> MudStack Coins
 getCoins i = gets (^?!coinsTbl.ix i)
 
 
-mkCoinsList :: Id -> MudStack [Int]
-mkCoinsList i = getCoins i >>= \c ->
+mkCoinsAmtList :: Id -> MudStack [Int]
+mkCoinsAmtList i = getCoins i >>= \c ->
     let ls = [cp, sp, gp]
     in return [ c^.l | l <- ls ]
+
+
+hasCoins :: Id -> MudStack Bool
+hasCoins i = not . all (== 0) <$> mkCoinsAmtList i
+
+
+mkCoinsNameAmtList :: Id -> MudStack [CoinNameAmt]
+mkCoinsNameAmtList i = zip ["copper", "silver", "gold"] <$> mkCoinsAmtList i
 
 
 -----
