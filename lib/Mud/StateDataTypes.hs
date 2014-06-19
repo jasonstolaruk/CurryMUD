@@ -78,11 +78,9 @@ type Inv = [Id]
 
 -----
 
-data Coins = Coins { _cp :: !Int
-                   , _sp :: !Int
-                   , _gp :: !Int } deriving (Eq, Show)
+type Coins = (Int, Int, Int)
 
-type CoinNameAmt = (T.Text, Int) -- TODO: Move this?
+type CoinNameAmt = (T.Text, Int)
 
 -----
 
@@ -91,6 +89,8 @@ type CoinNameAmt = (T.Text, Int) -- TODO: Move this?
 type Cap = Int
 
 newtype Con = Con Cap deriving (Eq, Show)
+
+type ConName = T.Text
 
 -----
 
@@ -209,8 +209,8 @@ data Hist = Hist { _cmds     :: ![T.Text]
 
 -----
 
-data LogHandles = LogHandles { _errorHandle  :: Maybe (GenericHandler Handle)
-                             , _noticeHandle :: Maybe (GenericHandler Handle) }
+data LogHandles = LogHandles { _errorHandle  :: !(Maybe (GenericHandler Handle))
+                             , _noticeHandle :: !(Maybe (GenericHandler Handle)) }
 
 -----
 
@@ -252,7 +252,6 @@ type MudStack = StateInIORefT MudState IO
 
 makeLenses ''Ent
 makeLenses ''Obj
-makeLenses ''Coins
 makeLenses ''Wpn
 makeLenses ''Arm
 makeLenses ''Mob

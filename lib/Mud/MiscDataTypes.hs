@@ -10,6 +10,7 @@ module Mud.MiscDataTypes ( Action
                          , fromRol
                          , GetEntResult(..)
                          , GetOrDrop(..)
+                         , HelpTopic
                          , Index
                          , Input
                          , InvType(..)
@@ -122,14 +123,16 @@ data RightOrLeft = R
 
 -----
 
-type BothGramNos = (Sing, Plur)
-
------
-
 type Amount = Int
 type Index  = Int
 type NameSearchedFor = T.Text
 
-data GetEntResult = Mult    !Amount !NameSearchedFor (Maybe [Ent])
-                  | Indexed !Index  !NameSearchedFor (Either Plur Ent)
+data GetEntResult = Mult    !Amount !NameSearchedFor !(Maybe [Ent])
+                  | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
                   | Sorry           !NameSearchedFor deriving Show
+
+-----
+
+type BothGramNos = (Sing, Plur)
+
+type HelpTopic = T.Text

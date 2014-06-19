@@ -44,6 +44,8 @@ import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds"
@@ -268,9 +270,6 @@ help [r]    = dispHelpTopicByName r
 help (r:rs) = help [r] >> liftIO newLine >> help rs
 
 
-type HelpTopic = T.Text
-
-
 dispHelpTopicByName :: HelpTopic -> MudStack ()
 dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
     let fns' = tail . tail . sort . delete "root" $ fns
@@ -482,7 +481,7 @@ descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
 descCoins :: Id -> MudStack ()
 descCoins i = mkCoinsNameAmtList >>= descCoinsNameAmtList
   where
-    mkCoinsNameAmtList       = zip ["copper", "silver", "gold"] <$> mkCoinsAmtList i
+    mkCoinsNameAmtList       = zip ["cp", "sp", "gp"] <$> mkCoinsAmtList i
     descCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
     descCoinsNameAmt (cn, a) = if a == 0 then "" else showText a <> " " <> bracketQuote cn
 
@@ -543,15 +542,12 @@ dudeYou'reNaked = output "You don't have anything readied. You're naked!"
 
 getAction :: Action
 getAction []   = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction (rs) = do
-    is <- getPCRmInv
-    (gers, misList) <- resolveEntsByName rs is
-    mapM_ procGerMisForGet $ zip gers misList
+getAction (rs) = getPCRmInv >>= resolveEntsByName rs >>= mapM_ procGerMisForGet . uncurry zip
 
 
 resolveEntsByName :: Rest -> Inv -> MudStack ([GetEntResult], [Maybe Inv])
 resolveEntsByName rs is = do
-    gers <- mapM (`getEntsInInvByName` is) rs
+    gers    <- mapM (`getEntsInInvByName` is) rs
     mesList <- mapM gerToMes gers
     let misList = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mesList
     return (gers, misList)
@@ -596,11 +592,10 @@ descGetDrop god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
 
 dropAction :: Action
 dropAction []   = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
-dropAction (rs) = getPCInv >>= \is ->
-    if null is
-      then dudeYourHandsAreEmpty
-      else resolveEntsByName rs is >>= \(gers, misList) ->
-          mapM_ procGerMisForDrop $ zip gers misList
+dropAction (rs) = hasInv 0 >>= \hi ->
+  if hi
+    then getPCInv >>= resolveEntsByName rs >>= mapM_ procGerMisForDrop . uncurry zip
+    else dudeYourHandsAreEmpty
 
 
 procGerMisForDrop :: (GetEntResult, Maybe Inv) -> MudStack ()
@@ -626,8 +621,8 @@ shuffleInvDrop is = getPCRmId >>= \i ->
 putAction :: Action
 putAction []   = advise ["put"] $ "Please specify what you want to put, followed by where you want to put it, as in " <> dblQuote "put doll sack" <> "."
 putAction [r]  = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
-putAction rs   = getPCInv >>= \is ->
-    if null is then dudeYourHandsAreEmpty else putRemDispatcher Put rs
+putAction rs   = hasInv 0 >>= \hi ->
+    if hi then putRemDispatcher Put rs else dudeYourHandsAreEmpty
 
 
 putRemDispatcher :: PutOrRem -> Action
@@ -652,10 +647,7 @@ putRemDispatcher por rs = patternMatchFail "putRemDispatcher" [ showText por, sh
 
 putHelper :: Id -> Rest -> MudStack ()
 putHelper _  []   = return ()
-putHelper ci (rs) = do
-    is <- getPCInv
-    (gers, misList) <- resolveEntsByName rs is
-    mapM_ (procGerMisForPut ci) $ zip gers misList
+putHelper ci (rs) = getPCRmInv >>= resolveEntsByName rs >>= mapM_ (procGerMisForPut ci) . uncurry zip
 
 
 procGerMisForPut :: Id -> (GetEntResult, Maybe Inv) -> MudStack ()
@@ -680,9 +672,6 @@ shuffleInvPut ci is = do
     checkImplosion cn = if ci `elem` is
                           then output ("You can't put the " <> cn <> " inside itself.") >> return (filter (/= ci) is)
                           else return is
-
-
-type ConName = T.Text
 
 
 descPutRem :: PutOrRem -> Inv -> ConName -> MudStack ()
@@ -710,11 +699,10 @@ remHelper :: Id -> Rest -> MudStack ()
 remHelper _  []   = return ()
 remHelper ci (rs) = do
     cn <- (^.sing) <$> getEnt ci
-    is <- getInv ci
-    if null is
-      then output $ "The " <> cn <> " appears to be empty."
-      else resolveEntsByName rs is >>= \(gers, misList) ->
-          mapM_ (procGerMisForRem ci cn) $ zip gers misList
+    hi <- hasInv ci
+    if hi
+      then getInv ci >>= resolveEntsByName rs >>= mapM_ (procGerMisForRem ci cn) . uncurry zip
+      else output $ "The " <> cn <> " appears to be empty."
 
 
 procGerMisForRem :: Id -> ConName -> (GetEntResult, Maybe Inv) -> MudStack ()
@@ -738,14 +726,14 @@ shuffleInvRem ci cn is = moveInv is ci 0 >> descPutRem Rem is cn
 
 ready :: Action
 ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
-ready (rs) = getPCInv >>= \is ->
-    if null is then dudeYourHandsAreEmpty else do
-        res <- mapM (`getEntsToReadyByName` is) rs
-        let gers  = res^..folded._1
-        let mrols = res^..folded._2
-        mesList <- mapM gerToMes gers
-        let misList = pruneDupIds [] $ (fmap . fmap . fmap) (^.entId) mesList
-        mapM_ procGerMisMrolForReady $ zip3 gers misList mrols
+ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
+    is  <- getPCInv
+    res <- mapM (`getEntsToReadyByName` is) rs
+    let gers  = res^..folded._1
+    let mrols = res^..folded._2
+    mesList <- mapM gerToMes gers
+    let misList = pruneDupIds [] $ (fmap . fmap . fmap) (^.entId) mesList
+    mapM_ procGerMisMrolForReady $ zip3 gers misList mrols
 
 
 getEntsToReadyByName :: T.Text -> Inv -> MudStack (GetEntResult, Maybe RightOrLeft)
@@ -984,8 +972,7 @@ unready [] = advise ["unready"] $ "Please specify one or more things to unready,
 unready rs = getPCEq >>= \is ->
     if null is
       then dudeYou'reNaked
-      else resolveEntsByName rs is >>= \(gers, misList) ->
-          mapM_ procGerMisForUnready $ zip gers misList
+      else resolveEntsByName rs is >>= mapM_ procGerMisForUnready . uncurry zip
 
 
 procGerMisForUnready :: (GetEntResult, Maybe Inv) -> MudStack ()

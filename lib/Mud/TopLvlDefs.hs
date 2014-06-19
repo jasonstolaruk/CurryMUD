@@ -3,7 +3,7 @@
 
 module Mud.TopLvlDefs where
 
-import Mud.StateDataTypes (LinkName)
+import Mud.StateDataTypes (Coins, LinkName)
 
 import Control.Lens.Operators ((^.))
 import Data.Text.Strict.Lens (unpacked)
@@ -45,10 +45,6 @@ histChar      = '!'
 indentTagChar = '`'
 
 
-stdLinkNames :: [LinkName]
-stdLinkNames = ["n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d"]
-
-
 cols, minCols, maxCols :: Int -- TODO: Move to "Pla" data type?
 cols    = minCols
 minCols = 30
@@ -57,3 +53,11 @@ maxCols = 200
 
 histSize :: Int
 histSize = 25
+
+
+stdLinkNames :: [LinkName]
+stdLinkNames = ["n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d"]
+
+
+noCoins :: Coins
+noCoins = (0, 0, 0)

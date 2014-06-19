@@ -214,7 +214,7 @@ Monadic functions can be composed with "(>=>)" and "(<=<)":
 (>=>) :: (Monad m) => (a -> m b) -> (b -> m c) -> a -> m c
 (<=<) :: (Monad m) => (b -> m c) -> (a -> m b) -> a -> m c
 
-Prefer "liftIO" over "lift" when lifting the IO monad into a monad transformer stack.
+Prefer "liftIO" over "lift" when lifting to the IO layer of a monad transformer stack.
 
 When defining a type synonym for a monad transformer stack, leave out the type variable.
 type App = ReaderT AppConfig (StateT AppState IO)

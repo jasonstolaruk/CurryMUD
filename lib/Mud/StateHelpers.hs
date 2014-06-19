@@ -209,9 +209,7 @@ getCoins i = gets (^?!coinsTbl.ix i)
 
 
 mkCoinsAmtList :: Id -> MudStack [Int]
-mkCoinsAmtList i = getCoins i >>= \c ->
-    let ls = [cp, sp, gp]
-    in return [ c^.l | l <- ls ]
+mkCoinsAmtList i = getCoins i >>= \(c, g, s) -> return [c, g, s]
 
 
 hasCoins :: Id -> MudStack Bool
@@ -225,7 +223,7 @@ getInv :: Id -> MudStack Inv
 getInv i = gets (^?!invTbl.ix i)
 
 
-hasInv :: Id -> MudStack Bool -- TODO: Can this be used in more places?
+hasInv :: Id -> MudStack Bool
 hasInv i = not . null <$> getInv i
 
 
