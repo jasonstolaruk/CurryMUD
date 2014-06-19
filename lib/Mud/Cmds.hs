@@ -408,8 +408,11 @@ tryMove dir = let dir' = T.toLower dir
 
 
 look :: Action
-look []     = getPCRm >>= \r ->
-    output (r^.name <> "\n" <> r^.desc) >> exits [] >> getPCRmInv >>= dispRmInv
+look [] = getPCRm >>= \r -> do
+    output $ r^.name <> "\n" <> r^.desc
+    exits []
+    getPCRmInv >>= dispRmInv
+    getPCRmId >>= maybeDescCoins
 look [r]    = getPCRmInv >>= getEntsInInvByName r >>= procGetEntResRm >>= traverse_ (mapM_ descEnt)
 look (r:rs) = look [r] >> look rs
 
@@ -430,6 +433,11 @@ mkNameCountBothList is = do
     return (nub . zip3 ens cs $ ebgns)
 
 
+maybeDescCoins :: Id -> MudStack ()
+maybeDescCoins i = hasCoins i >>= \hc ->
+    when hc . descCoins $ i
+
+
 descEnt :: Ent -> MudStack ()
 descEnt e = do
     e^.desc.to output
@@ -448,9 +456,9 @@ descInv i = do
         (False, False) -> if i == 0
                             then dudeYourHandsAreEmpty
                             else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
-        (True,  False) -> header >> descEntsInInv  i
-        (False, True ) -> header >> descCoinsInInv i
-        (True,  True ) -> header >> descEntsInInv  i >> descCoinsInInv i
+        (True,  False) -> header >> descEntsInInv i
+        (False, True ) -> header >> descCoins i
+        (True,  True ) -> header >> descEntsInInv i >> descCoins i
   where
     header
       | i == 0 = output "You are carrying:"
@@ -471,11 +479,11 @@ descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
     ind     = 11
 
 
-descCoinsInInv :: Id -> MudStack ()
-descCoinsInInv i = mkCoinsNameAmtList >>= descCoinsNameAmtList
+descCoins :: Id -> MudStack ()
+descCoins i = mkCoinsNameAmtList >>= descCoinsNameAmtList
   where
     mkCoinsNameAmtList       = zip ["copper", "silver", "gold"] <$> mkCoinsAmtList i
-    descCoinsNameAmtList     = output . T.intercalate ", " . map descCoinsNameAmt
+    descCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
     descCoinsNameAmt (cn, a) = if a == 0 then "" else showText a <> " " <> bracketQuote cn
 
 
