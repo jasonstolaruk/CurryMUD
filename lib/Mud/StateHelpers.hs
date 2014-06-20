@@ -16,12 +16,13 @@ module Mud.StateHelpers ( addToInv
                         , getEq
                         , getEqMap
                         , getInv
+                        , getInvCoins
                         , getMob
                         , getMobGender
                         , getMobHand
                         , getPCRm
                         , getPCRmId
-                        , getPCRmInv
+                        , getPCRmInvCoins
                         , getRm
                         , getRmLinks
                         , getWpn
@@ -53,8 +54,6 @@ import Data.Text.Strict.Lens (packed)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
-
--- TODO: Refactor the functions that return type "Inv". Make them return type "InvCoins".
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.StateHelpers"
@@ -99,7 +98,7 @@ mkPlurFromBoth (_, p)  = p
 -----
 
 
-getEntsCoinsByName :: T.Text -> Inv -> Coins -> MudStack GetEntsCoinsRes -- TODO: Impact of alphabetical case?
+getEntsCoinsByName :: T.Text -> InvCoins -> MudStack GetEntsCoinsRes -- TODO: Impact of alphabetical case?
 getEntsCoinsByName searchName is c
   | searchName == [allChar]^.packed = Mult (length is) searchName . Just <$> getEntsInInv is <*> return (Just c)
   | T.head searchName == allChar = getMultEntsCoins (maxBound :: Int) (T.tail searchName) is c
@@ -119,7 +118,7 @@ getEntsCoinsByName searchName is c
                           | otherwise           -> return (Sorry searchName)
 
 
-getMultEntsCoins :: Amount -> T.Text -> Inv -> Coins -> MudStack GetEntsCoinsRes
+getMultEntsCoins :: Amount -> T.Text -> InvCoins -> MudStack GetEntsCoinsRes
 getMultEntsCoins a n is c
   | a < 1 = return (Sorry n)
   | n `elem` allCoinNames = mkGecrForCoins a n c
@@ -223,6 +222,10 @@ hasInv :: Id -> MudStack Bool
 hasInv i = not . null <$> getInv i
 
 
+getInvCoins :: Id -> MudStack InvCoins
+getInvCoins i = (,) <$> getInv i <*> getCoins i
+
+
 addToInv :: Inv -> Id -> MudStack ()
 addToInv is ti = getInv ti >>= sortInv . (++ is) >>= (invTbl.at ti ?=)
 
@@ -285,9 +288,8 @@ getPCRm :: MudStack Rm
 getPCRm = getPCRmId >>= getRm
 
 
-getPCRmInv :: MudStack Inv
-getPCRmInv = getPCRmId >>= \i ->
-    gets (^?!invTbl.ix i)
+getPCRmInvCoins :: MudStack InvCoins
+getPCRmInvCoins = getPCRmId >>= getInvCoins
 
 
 getRmLinks :: Id -> MudStack [RmLink]
