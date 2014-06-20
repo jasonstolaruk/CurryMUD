@@ -10,10 +10,7 @@ module Mud.StateHelpers ( addToInv
                         , getEnt
                         , getEntBothGramNos
                         , getEntBothGramNosInInv
-                        , getEntIds
                         , getEntNamesInInv
-                        , getEntSingsInInv
-                        , getEntsInInv
                         , getEntsCoinsByName
                         , getEntType
                         , getEq
@@ -22,11 +19,6 @@ module Mud.StateHelpers ( addToInv
                         , getMob
                         , getMobGender
                         , getMobHand
-                        , getPCEq 
-                        , getPCEqMap
-                        , getPCInv
-                        , getPCMobGender
-                        , getPCMobHand
                         , getPCRm
                         , getPCRmId
                         , getPCRmInv
@@ -63,7 +55,6 @@ import qualified Data.Text as T
 
 
 -- TODO: Refactor the functions that return type "Inv". Make them return type "InvCoins".
--- TODO: Get rid of the "PC" functions that reference ID 0.
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.StateHelpers"
@@ -76,10 +67,6 @@ getEnt i = gets (^?!entTbl.ix i)
 getEntType :: Ent -> MudStack Type
 getEntType e = let i = e^.entId
                in gets (^?!typeTbl.ix i)
-
-
-getEntIds :: [Ent] -> Inv
-getEntIds es = [ e^.entId | e <- es ]
 
 
 getEntsInInv :: Inv -> MudStack [Ent]
@@ -236,10 +223,6 @@ hasInv :: Id -> MudStack Bool
 hasInv i = not . null <$> getInv i
 
 
-getPCInv :: MudStack Inv
-getPCInv = getInv 0
-
-
 addToInv :: Inv -> Id -> MudStack ()
 addToInv is ti = getInv ti >>= sortInv . (++ is) >>= (invTbl.at ti ?=)
 
@@ -268,16 +251,8 @@ getEqMap :: Id -> MudStack EqMap
 getEqMap i = gets (^?!eqTbl.ix i)
 
 
-getPCEqMap :: MudStack EqMap
-getPCEqMap = getEqMap 0
-
-
 getEq :: Id -> MudStack Inv
 getEq i = M.elems <$> getEqMap i
-
-
-getPCEq :: MudStack Inv
-getPCEq = getEq 0
 
 
 -----
@@ -291,16 +266,8 @@ getMobGender :: Id -> MudStack Gender
 getMobGender i = (^.gender) <$> getMob i
 
 
-getPCMobGender :: MudStack Gender
-getPCMobGender = getMobGender 0
-
-
 getMobHand :: Id -> MudStack Hand
 getMobHand i = (^.hand) <$> getMob i
-
-
-getPCMobHand :: MudStack Hand
-getPCMobHand = getMobHand 0
 
 
 -----

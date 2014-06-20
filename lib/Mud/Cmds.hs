@@ -368,8 +368,8 @@ whatInv it r = do
       (Indexed x _ (Right e)) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, locName ]
       _                       -> output $ dblQuote r <> " doesn't refer to anything" <> locName
   where
-    getLocInv = case it of PCInv -> getPCInv
-                           PCEq  -> getPCEq
+    getLocInv = case it of PCInv -> getInv 0
+                           PCEq  -> getEq  0
                            RmInv -> getPCRmInv
     acp       = [allChar]^.packed
     locName   = case it of PCInv -> " in your inventory."
@@ -502,7 +502,7 @@ exits rs = ignore rs >> exits []
 
 inv :: Action
 inv []     = descInv 0 -- TODO: Give some indication of encumberance.
-inv [r]    = getPCInv >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
+inv [r]    = getInv 0 >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
 inv (r:rs) = inv [r] >> inv rs
 
 
@@ -511,7 +511,7 @@ inv (r:rs) = inv [r] >> inv rs
 
 equip :: Action
 equip []     = descEq 0
-equip [r]    = getPCEq >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
+equip [r]    = getEq 0 >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
 equip (r:rs) = equip [r] >> equip rs
 
 
@@ -594,7 +594,7 @@ dropAction :: Action
 dropAction []   = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction (rs) = hasInv 0 >>= \hi ->
   if hi
-    then getPCInv >>= resolveEntsByName rs >>= mapM_ procGecrMisForDrop . uncurry zip
+    then getInv 0 >>= resolveEntsByName rs >>= mapM_ procGecrMisForDrop . uncurry zip
     else dudeYourHandsAreEmpty
 
 
@@ -640,7 +640,7 @@ putRemDispatcher por (r:rs) = findCon (last rs) >>= \mes ->
           c  <- getPCRmId >>= getCoins
           getEntsCoinsByName (T.tail cn) is c >>= procGetEntsCoinsResRm
       | otherwise = do
-          is <- getPCInv
+          is <- getInv 0
           c  <- getCoins 0
           getEntsCoinsByName cn is c >>= procGetEntsCoinsResPCInv
     onlyOneMsg         = case por of Put -> "You can only put things into one container at a time."
@@ -733,7 +733,7 @@ shuffleInvRem ci cn is = moveInv is ci 0 >> descPutRem Rem is cn
 ready :: Action
 ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
-    is  <- getPCInv
+    is  <- getInv 0
     res <- mapM (`getEntsToReadyByName` is) rs
     let gecrs  = res^..folded._1
     let mrols = res^..folded._2
@@ -786,7 +786,7 @@ readyDispatcher mrol = mapM_ dispatchByType
   where
     dispatchByType i = do
         e <- getEnt i
-        em <- getPCEqMap
+        em <- getEqMap 0
         t <- getEntType e
         case t of ClothType -> getCloth i >>= \c -> readyCloth i e c em mrol
                   WpnType   -> readyWpn i e em mrol
@@ -902,8 +902,8 @@ getDesigClothSlot e c em rol
 
 getAvailClothSlot :: Cloth -> EqMap -> MudStack (Maybe Slot)
 getAvailClothSlot c em = do
-    s <- getPCMobGender
-    h <- getPCMobHand
+    s <- getMobGender 0
+    h <- getMobHand 0
     case c of EarC    -> procMaybe $ getEarSlotForGender s `mplus` (getEarSlotForGender . otherGender $ s)
               NoseC   -> procMaybe $ findAvailSlot em noseSlots
               NeckC   -> procMaybe $ findAvailSlot em neckSlots
@@ -918,7 +918,7 @@ getAvailClothSlot c em = do
     getWristSlotForHand h = findAvailSlot em $ case h of RHand  -> lWristSlots
                                                          LHand  -> rWristSlots
                                                          _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
-    getRingSlotForHand h  = getPCMobGender >>= \s ->
+    getRingSlotForHand h  = getMobGender 0 >>= \s ->
         return (findAvailSlot em $ case s of Male   -> case h of RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
                                                                  LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
                                                                  _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
@@ -958,7 +958,7 @@ getDesigWpnSlot e em rol
 
 
 getAvailWpnSlot :: EqMap -> MudStack (Maybe Slot)
-getAvailWpnSlot em = getPCMobHand >>= \h ->
+getAvailWpnSlot em = getMobHand 0 >>= \h ->
     maybe sorry (return . Just) (findAvailSlot em . map getSlotForHand $ [ h, otherHand h ])
   where
     getSlotForHand h = case h of RHand -> RHandS
@@ -975,7 +975,7 @@ getAvailWpnSlot em = getPCMobHand >>= \h ->
 
 unready :: Action
 unready [] = advise ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
-unready rs = getPCEq >>= \is ->
+unready rs = getEq 0 >>= \is ->
     if null is
       then dudeYou'reNaked
       else resolveEntsByName rs is >>= mapM_ procGecrMisForUnready . uncurry zip
@@ -994,7 +994,7 @@ procGecrMisForUnready gecrMis = patternMatchFail "procGecrMisForUnready" [ showT
 
 
 shuffleInvUnready :: Inv -> MudStack ()
-shuffleInvUnready is = M.filter (`notElem` is) <$> getPCEqMap >>= (eqTbl.at 0 ?=) >> addToInv is 0 >> descUnready is
+shuffleInvUnready is = M.filter (`notElem` is) <$> getEqMap 0 >>= (eqTbl.at 0 ?=) >> addToInv is 0 >> descUnready is
 
 
 descUnready :: Inv -> MudStack ()
