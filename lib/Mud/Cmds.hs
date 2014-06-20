@@ -351,20 +351,20 @@ advise hs  msg = output msg >> output ("See also the following help topics: " <>
 
 whatInv :: InvType -> T.Text -> MudStack ()
 whatInv it r = do
-    is <- getLocInv
-    ger <- getEntsInInvByName r is
-    case ger of
-      (Mult _ n (Just es)) | n == acp  -> output $ dblQuote acp <> " may refer to everything" <> locName
-                           | otherwise ->
-                             let e   = head es
-                                 len = length es
-                             in if len > 1
-                               then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
-                                        h      = head ebgns
-                                        target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
-                                    in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, locName ]
-                               else getEntNamesInInv is >>= \ens ->
-                                   outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, locName ]
+    is  <- getLocInv
+    gecr <- getEntsCoinsByName r is
+    case gecr of
+      (Mult _ n (Just es) _) | n == acp  -> output $ dblQuote acp <> " may refer to everything" <> locName
+                             | otherwise ->
+                               let e   = head es
+                                   len = length es
+                               in if len > 1
+                                 then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
+                                          h      = head ebgns
+                                          target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
+                                      in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, locName ]
+                                 else getEntNamesInInv is >>= \ens ->
+                                     outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, locName ]
       (Indexed x _ (Right e)) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, locName ]
       _                       -> output $ dblQuote r <> " doesn't refer to anything" <> locName
   where
@@ -412,7 +412,7 @@ look [] = getPCRm >>= \r -> do
     exits []
     getPCRmInv >>= dispRmInv
     getPCRmId >>= maybeDescCoins
-look [r]    = getPCRmInv >>= getEntsInInvByName r >>= procGetEntResRm >>= traverse_ (mapM_ descEnt)
+look [r]    = getPCRmInv >>= getEntsCoinsByName r >>= procGetEntsCoinsResRm >>= traverse_ (mapM_ descEnt)
 look (r:rs) = look [r] >> look rs
 
 
@@ -481,7 +481,7 @@ descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
 descCoins :: Id -> MudStack ()
 descCoins i = mkCoinsNameAmtList >>= descCoinsNameAmtList
   where
-    mkCoinsNameAmtList       = zip ["cp", "sp", "gp"] <$> mkCoinsAmtList i
+    mkCoinsNameAmtList       = zip coinNames <$> mkCoinsAmtList i
     descCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
     descCoinsNameAmt (cn, a) = if a == 0 then "" else showText a <> " " <> bracketQuote cn
 
@@ -502,7 +502,7 @@ exits rs = ignore rs >> exits []
 
 inv :: Action
 inv []     = descInv 0 -- TODO: Give some indication of encumberance.
-inv [r]    = getPCInv >>= getEntsInInvByName r >>= procGetEntResPCInv >>= traverse_ (mapM_ descEnt)
+inv [r]    = getPCInv >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
 inv (r:rs) = inv [r] >> inv rs
 
 
@@ -511,7 +511,7 @@ inv (r:rs) = inv [r] >> inv rs
 
 equip :: Action
 equip []     = descEq 0
-equip [r]    = getPCEq >>= getEntsInInvByName r >>= procGetEntResPCInv >>= traverse_ (mapM_ descEnt)
+equip [r]    = getPCEq >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
 equip (r:rs) = equip [r] >> equip rs
 
 
@@ -542,15 +542,15 @@ dudeYou'reNaked = output "You don't have anything readied. You're naked!"
 
 getAction :: Action
 getAction []   = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction (rs) = getPCRmInv >>= resolveEntsByName rs >>= mapM_ procGerMisForGet . uncurry zip
+getAction (rs) = getPCRmInv >>= resolveEntsByName rs >>= mapM_ procGecrMisForGet . uncurry zip
 
 
-resolveEntsByName :: Rest -> Inv -> MudStack ([GetEntResult], [Maybe Inv])
+resolveEntsByName :: Rest -> Inv -> MudStack ([GetEntsCoinsRes], [Maybe Inv])
 resolveEntsByName rs is = do
-    gers    <- mapM (`getEntsInInvByName` is) rs
-    mesList <- mapM gerToMes gers
-    let misList = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mesList
-    return (gers, misList)
+    gecrs <- mapM (`getEntsCoinsByName` is) rs
+    mes   <- mapM gecrToMes gecrs
+    let misList = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mes
+    return (gecrs, misList)
 
 
 pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
@@ -560,16 +560,16 @@ pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
                                        in Just is' : pruneDupIds (is' ++ uniques) rest
 
 
-procGerMisForGet :: (GetEntResult, Maybe Inv) -> MudStack ()
-procGerMisForGet (_,                     Just []) = return ()
-procGerMisForGet (Sorry n,               Nothing) = output $ "You don't see " <> aOrAn n <> " here."
-procGerMisForGet (Mult 1 n Nothing,      Nothing) = output $ "You don't see " <> aOrAn n <> " here."
-procGerMisForGet (Mult _ n Nothing,      Nothing) = output $ "You don't see any " <> n <> "s here."
-procGerMisForGet (Mult _ _ (Just _),     Just is) = shuffleInvGet is
-procGerMisForGet (Indexed _ n (Left ""), Nothing) = output $ "You don't see any " <> n <> "s here."
-procGerMisForGet (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here." ]
-procGerMisForGet (Indexed _ _ (Right _), Just is) = shuffleInvGet is
-procGerMisForGet gerMis = patternMatchFail "procGerMisForGet" [ showText gerMis ]
+procGecrMisForGet :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisForGet (_,                     Just []) = return ()
+procGecrMisForGet (Sorry n,               Nothing) = output $ "You don't see " <> aOrAn n <> " here."
+procGecrMisForGet (Mult 1 n Nothing  _,   Nothing) = output $ "You don't see " <> aOrAn n <> " here."
+procGecrMisForGet (Mult _ n Nothing  _,   Nothing) = output $ "You don't see any " <> n <> "s here."
+procGecrMisForGet (Mult _ _ (Just _) _,   Just is) = shuffleInvGet is
+procGecrMisForGet (Indexed _ n (Left ""), Nothing) = output $ "You don't see any " <> n <> "s here."
+procGecrMisForGet (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here." ]
+procGecrMisForGet (Indexed _ _ (Right _), Just is) = shuffleInvGet is
+procGecrMisForGet gecrMis = patternMatchFail "procGecrMisForGet" [ showText gecrMis ]
 
 
 shuffleInvGet :: Inv -> MudStack ()
@@ -594,20 +594,20 @@ dropAction :: Action
 dropAction []   = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction (rs) = hasInv 0 >>= \hi ->
   if hi
-    then getPCInv >>= resolveEntsByName rs >>= mapM_ procGerMisForDrop . uncurry zip
+    then getPCInv >>= resolveEntsByName rs >>= mapM_ procGecrMisForDrop . uncurry zip
     else dudeYourHandsAreEmpty
 
 
-procGerMisForDrop :: (GetEntResult, Maybe Inv) -> MudStack ()
-procGerMisForDrop (_,                     Just []) = return ()
-procGerMisForDrop (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGerMisForDrop (Mult 1 n Nothing,      Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGerMisForDrop (Mult _ n Nothing,      Nothing) = output $ "You don't have any " <> n <> "s."
-procGerMisForDrop (Mult _ _ (Just _),     Just is) = shuffleInvDrop is
-procGerMisForDrop (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
-procGerMisForDrop (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGerMisForDrop (Indexed _ _ (Right _), Just is) = shuffleInvDrop is
-procGerMisForDrop gerMis = patternMatchFail "procGerMisForDrop" [ showText gerMis ]
+procGecrMisForDrop :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisForDrop (_,                     Just []) = return ()
+procGecrMisForDrop (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
+procGecrMisForDrop (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
+procGecrMisForDrop (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMisForDrop (Mult _ _ (Just _) _,   Just is) = shuffleInvDrop is
+procGecrMisForDrop (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMisForDrop (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
+procGecrMisForDrop (Indexed _ _ (Right _), Just is) = shuffleInvDrop is
+procGecrMisForDrop gecrMis = patternMatchFail "procGecrMisForDrop" [ showText gecrMis ]
 
 
 shuffleInvDrop :: Inv -> MudStack ()
@@ -635,8 +635,14 @@ putRemDispatcher por (r:rs) = findCon (last rs) >>= \mes ->
                                       _   -> output onlyOneMsg
   where
     findCon cn
-      | T.head cn == rmChar = getPCRmInv >>= getEntsInInvByName (T.tail cn) >>= procGetEntResRm
-      | otherwise = getPCInv >>= getEntsInInvByName cn >>= procGetEntResPCInv
+      | T.head cn == rmChar = do
+          is <- getPCRmInv
+          c  <- getPCRmId >>= getCoins
+          getEntsCoinsByName (T.tail cn) is c >>= procGetEntsCoinsResRm
+      | otherwise = do
+          is <- getPCInv
+          c  <- getCoins 0
+          getEntsCoinsByName cn is c >>= procGetEntsCoinsResPCInv
     onlyOneMsg         = case por of Put -> "You can only put things into one container at a time."
                                      Rem -> "You can only remove things from one container at a time."
     dispatchToHelper i = case por of Put -> putHelper i restWithoutCon 
@@ -647,19 +653,19 @@ putRemDispatcher por rs = patternMatchFail "putRemDispatcher" [ showText por, sh
 
 putHelper :: Id -> Rest -> MudStack ()
 putHelper _  []   = return ()
-putHelper ci (rs) = getPCRmInv >>= resolveEntsByName rs >>= mapM_ (procGerMisForPut ci) . uncurry zip
+putHelper ci (rs) = getPCRmInv >>= resolveEntsByName rs >>= mapM_ (procGecrMisForPut ci) . uncurry zip
 
 
-procGerMisForPut :: Id -> (GetEntResult, Maybe Inv) -> MudStack ()
-procGerMisForPut _  (_,                     Just []) = return ()
-procGerMisForPut _  (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGerMisForPut _  (Mult 1 n Nothing,      Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGerMisForPut _  (Mult _ n Nothing,      Nothing) = output $ "You don't have any " <> n <> "s."
-procGerMisForPut ci (Mult _ _ (Just _),     Just is) = shuffleInvPut ci is
-procGerMisForPut _  (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
-procGerMisForPut _  (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGerMisForPut ci (Indexed _ _ (Right _), Just is) = shuffleInvPut ci is
-procGerMisForPut ci gerMis = patternMatchFail "procGerMisForPut" [ showText ci, showText gerMis ]
+procGecrMisForPut :: Id -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisForPut _  (_,                     Just []) = return ()
+procGecrMisForPut _  (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
+procGecrMisForPut _  (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
+procGecrMisForPut _  (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMisForPut ci (Mult _ _ (Just _) _,   Just is) = shuffleInvPut ci is
+procGecrMisForPut _  (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMisForPut _  (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
+procGecrMisForPut ci (Indexed _ _ (Right _), Just is) = shuffleInvPut ci is
+procGecrMisForPut ci gecrMis = patternMatchFail "procGecrMisForPut" [ showText ci, showText gecrMis ]
 
 
 shuffleInvPut :: Id -> Inv -> MudStack ()
@@ -701,20 +707,20 @@ remHelper ci (rs) = do
     cn <- (^.sing) <$> getEnt ci
     hi <- hasInv ci
     if hi
-      then getInv ci >>= resolveEntsByName rs >>= mapM_ (procGerMisForRem ci cn) . uncurry zip
+      then getInv ci >>= resolveEntsByName rs >>= mapM_ (procGecrMisForRem ci cn) . uncurry zip
       else output $ "The " <> cn <> " appears to be empty."
 
 
-procGerMisForRem :: Id -> ConName -> (GetEntResult, Maybe Inv) -> MudStack ()
-procGerMisForRem _  _  (_,                     Just []) = return ()
-procGerMisForRem _  cn (Sorry n,               Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
-procGerMisForRem _  cn (Mult 1 n Nothing,      Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
-procGerMisForRem _  cn (Mult _ n Nothing,      Nothing) = outputCon [ "The ", cn, " doesn't contain any ", n, "s." ] 
-procGerMisForRem ci cn (Mult _ _ (Just _),     Just is) = shuffleInvRem ci cn is
-procGerMisForRem _  cn (Indexed _ n (Left ""), Nothing) = outputCon [ "The ", cn, " doesn't contain any ", n, "s." ] 
-procGerMisForRem _  cn (Indexed x _ (Left p),  Nothing) = outputCon [ "The ", cn, " doesn't contain ", showText x, " ", p, "." ]
-procGerMisForRem ci cn (Indexed _ _ (Right _), Just is) = shuffleInvRem ci cn is
-procGerMisForRem ci cn gerMis = patternMatchFail "procGerMisForRem" [ showText ci, showText cn, showText gerMis ]
+procGecrMisForRem :: Id -> ConName -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisForRem _  _  (_,                     Just []) = return ()
+procGecrMisForRem _  cn (Sorry n,               Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
+procGecrMisForRem _  cn (Mult 1 n Nothing  _,   Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
+procGecrMisForRem _  cn (Mult _ n Nothing  _,   Nothing) = outputCon [ "The ", cn, " doesn't contain any ", n, "s." ] 
+procGecrMisForRem ci cn (Mult _ _ (Just _) _,   Just is) = shuffleInvRem ci cn is
+procGecrMisForRem _  cn (Indexed _ n (Left ""), Nothing) = outputCon [ "The ", cn, " doesn't contain any ", n, "s." ] 
+procGecrMisForRem _  cn (Indexed x _ (Left p),  Nothing) = outputCon [ "The ", cn, " doesn't contain ", showText x, " ", p, "." ]
+procGecrMisForRem ci cn (Indexed _ _ (Right _), Just is) = shuffleInvRem ci cn is
+procGecrMisForRem ci cn gecrMis = patternMatchFail "procGecrMisForRem" [ showText ci, showText cn, showText gecrMis ]
 
 
 shuffleInvRem :: Id -> ConName -> Inv -> MudStack ()
@@ -729,36 +735,36 @@ ready []   = advise ["ready"] $ "Please specify one or more things to ready, as 
 ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
     is  <- getPCInv
     res <- mapM (`getEntsToReadyByName` is) rs
-    let gers  = res^..folded._1
+    let gecrs  = res^..folded._1
     let mrols = res^..folded._2
-    mesList <- mapM gerToMes gers
-    let misList = pruneDupIds [] $ (fmap . fmap . fmap) (^.entId) mesList
-    mapM_ procGerMisMrolForReady $ zip3 gers misList mrols
+    mes <- mapM gecrToMes gecrs
+    let misList = pruneDupIds [] $ (fmap . fmap . fmap) (^.entId) mes
+    mapM_ procGecrMisMrolForReady $ zip3 gecrs misList mrols
 
 
-getEntsToReadyByName :: T.Text -> Inv -> MudStack (GetEntResult, Maybe RightOrLeft)
+getEntsToReadyByName :: T.Text -> Inv -> MudStack (GetEntsCoinsRes, Maybe RightOrLeft)
 getEntsToReadyByName searchName is
   | slotChar `elem` searchName^.unpacked = let (a, b) = T.break (== slotChar) searchName
                                            in if T.length b == 1 then sorry else do
-                                               ger <- getEntsInInvByName a is
+                                               gecr <- getEntsCoinsByName a is
                                                let parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [(RightOrLeft, String)]
-                                               case parsed of [(rol, _)] -> return (ger, Just rol)
+                                               case parsed of [(rol, _)] -> return (gecr, Just rol)
                                                               _          -> sorry
-  | otherwise = getEntsInInvByName searchName is >>= \ger -> return (ger, Nothing)
+  | otherwise = getEntsCoinsByName searchName is >>= \gecr -> return (gecr, Nothing)
   where
     sorry = return (Sorry searchName, Nothing)
 
 
-procGerMisMrolForReady :: (GetEntResult, Maybe Inv, Maybe RightOrLeft) -> MudStack ()
-procGerMisMrolForReady (_,                     Just [], _)    = return ()
-procGerMisMrolForReady (Sorry n,               Nothing, _)    = sorryCantReady n
-procGerMisMrolForReady (Mult 1 n Nothing,      Nothing, _)    = output $ "You don't have " <> aOrAn n <> "."
-procGerMisMrolForReady (Mult _ n Nothing,      Nothing, _)    = output $ "You don't have any " <> n <> "s."
-procGerMisMrolForReady (Mult _ _ (Just _),     Just is, mrol) = readyDispatcher mrol is
-procGerMisMrolForReady (Indexed _ n (Left ""), Nothing, _)    = output $ "You don't have any " <> n <> "s."
-procGerMisMrolForReady (Indexed x _ (Left p),  Nothing, _)    = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGerMisMrolForReady (Indexed _ _ (Right _), Just is, mrol) = readyDispatcher mrol is
-procGerMisMrolForReady gerMisMrol = patternMatchFail "procGerMisMrolForReady" [ showText gerMisMrol ]
+procGecrMisMrolForReady :: (GetEntsCoinsRes, Maybe Inv, Maybe RightOrLeft) -> MudStack ()
+procGecrMisMrolForReady (_,                     Just [], _)    = return ()
+procGecrMisMrolForReady (Sorry n,               Nothing, _)    = sorryCantReady n
+procGecrMisMrolForReady (Mult 1 n Nothing  _,   Nothing, _)    = output $ "You don't have " <> aOrAn n <> "."
+procGecrMisMrolForReady (Mult _ n Nothing  _,   Nothing, _)    = output $ "You don't have any " <> n <> "s."
+procGecrMisMrolForReady (Mult _ _ (Just _) _,   Just is, mrol) = readyDispatcher mrol is
+procGecrMisMrolForReady (Indexed _ n (Left ""), Nothing, _)    = output $ "You don't have any " <> n <> "s."
+procGecrMisMrolForReady (Indexed x _ (Left p),  Nothing, _)    = outputCon [ "You don't have ", showText x, " ", p, "." ]
+procGecrMisMrolForReady (Indexed _ _ (Right _), Just is, mrol) = readyDispatcher mrol is
+procGecrMisMrolForReady gecrMisMrol = patternMatchFail "procGecrMisMrolForReady" [ showText gecrMisMrol ]
 
 
 sorryCantReady :: T.Text -> MudStack ()
@@ -972,19 +978,19 @@ unready [] = advise ["unready"] $ "Please specify one or more things to unready,
 unready rs = getPCEq >>= \is ->
     if null is
       then dudeYou'reNaked
-      else resolveEntsByName rs is >>= mapM_ procGerMisForUnready . uncurry zip
+      else resolveEntsByName rs is >>= mapM_ procGecrMisForUnready . uncurry zip
 
 
-procGerMisForUnready :: (GetEntResult, Maybe Inv) -> MudStack ()
-procGerMisForUnready (_,                     Just []) = return ()
-procGerMisForUnready (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
-procGerMisForUnready (Mult 1 n Nothing,      Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
-procGerMisForUnready (Mult _ n Nothing,      Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
-procGerMisForUnready (Mult _ _ (Just _),     Just is) = shuffleInvUnready is
-procGerMisForUnready (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
-procGerMisForUnready (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, " readied." ]
-procGerMisForUnready (Indexed _ _ (Right _), Just is) = shuffleInvUnready is
-procGerMisForUnready gerMis = patternMatchFail "procGerMisForUnready" [ showText gerMis ]
+procGecrMisForUnready :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisForUnready (_,                     Just []) = return ()
+procGecrMisForUnready (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
+procGecrMisForUnready (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
+procGecrMisForUnready (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
+procGecrMisForUnready (Mult _ _ (Just _) _,   Just is) = shuffleInvUnready is
+procGecrMisForUnready (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
+procGecrMisForUnready (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, " readied." ]
+procGecrMisForUnready (Indexed _ _ (Right _), Just is) = shuffleInvUnready is
+procGecrMisForUnready gecrMis = patternMatchFail "procGecrMisForUnready" [ showText gecrMis ]
 
 
 shuffleInvUnready :: Inv -> MudStack ()

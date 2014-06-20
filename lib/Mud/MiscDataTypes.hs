@@ -8,11 +8,12 @@ module Mud.MiscDataTypes ( Action
                          , CmdName
                          , ConvRol
                          , fromRol
-                         , GetEntResult(..)
+                         , GetEntsCoinsRes(..)
                          , GetOrDrop(..)
                          , HelpTopic
                          , Index
                          , Input
+                         , InvCoins
                          , InvType(..)
                          , NameSearchedFor
                          , pp
@@ -127,11 +128,13 @@ type Amount = Int
 type Index  = Int
 type NameSearchedFor = T.Text
 
-data GetEntResult = Mult    !Amount !NameSearchedFor !(Maybe [Ent])
-                  | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
-                  | Sorry           !NameSearchedFor deriving Show
+data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe Coins)
+                     | Indexed !Index  !NameSearchedFor !(Either Plur Ent) -- TODO: When appropriate, respond to players indicating that coins cannot be indexed.
+                     | Sorry           !NameSearchedFor deriving Show
 
 -----
+
+type InvCoins = (Inv, Coins)
 
 type BothGramNos = (Sing, Plur)
 

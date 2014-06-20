@@ -61,3 +61,15 @@ stdLinkNames = ["n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d"]
 
 noCoins :: Coins
 noCoins = (0, 0, 0)
+
+
+coinNames :: [T.Text]
+coinNames = ["cp", "sp", "gp"]
+
+
+aggregateCoinNames :: [T.Text]
+aggregateCoinNames = ["coin", "coins"]
+
+
+allCoinNames :: [T.Text]
+allCoinNames = coinNames ++ aggregateCoinNames
