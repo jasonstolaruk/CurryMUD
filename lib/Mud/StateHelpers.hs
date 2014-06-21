@@ -3,7 +3,7 @@
 
 module Mud.StateHelpers ( addToInv
                         , findExit
-                        , gecrToMes
+                        , gecrToMesmc
                         , getArm
                         , getCloth
                         , getCoins
@@ -39,8 +39,8 @@ module Mud.StateHelpers ( addToInv
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
-import Mud.Util hiding (blowUp)
-import qualified Mud.Util as U (blowUp)
+import Mud.Util hiding (blowUp, patternMatchFail)
+import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Lens (_1, at, ix)
@@ -57,6 +57,10 @@ import qualified Data.Text as T
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.StateHelpers"
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 getEnt :: Id -> MudStack Ent
@@ -99,38 +103,51 @@ mkPlurFromBoth (_, p)  = p
 
 
 getEntsCoinsByName :: T.Text -> InvCoins -> MudStack GetEntsCoinsRes -- TODO: Impact of alphabetical case?
-getEntsCoinsByName searchName is c
-  | searchName == [allChar]^.packed = Mult (length is) searchName . Just <$> getEntsInInv is <*> return (Just c)
-  | T.head searchName == allChar = getMultEntsCoins (maxBound :: Int) (T.tail searchName) is c
+getEntsCoinsByName searchName ic@(is, c)
+  | searchName == [allChar]^.packed = getEntsInInv is >>= \es ->
+      return (Mult (length is) searchName (Just es) (Just c))
+  | T.head searchName == allChar = getMultEntsCoins (maxBound :: Int) (T.tail searchName) ic
   | isDigit (T.head searchName) = let numText = T.takeWhile isDigit searchName
                                       numInt  = either (oops numText) (^._1) $ decimal numText
                                       rest    = T.drop (T.length numText) searchName
                                   in parse rest numInt
-  | otherwise = getMultEntsCoins 1 searchName is c
+  | otherwise = getMultEntsCoins 1 searchName ic
   where
     oops numText = blowUp "getEntsCoinsByName" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
       | T.length rest < 2 = return (Sorry searchName)
       | otherwise = let delim = T.head rest
                         rest' = T.tail rest
-                    in if | delim == amountChar -> getMultEntsCoins numInt rest' is c
+                    in if | delim == amountChar -> getMultEntsCoins numInt rest' ic
                           | delim == indexChar  -> getIndexedEnt numInt rest' is
                           | otherwise           -> return (Sorry searchName)
 
 
 getMultEntsCoins :: Amount -> T.Text -> InvCoins -> MudStack GetEntsCoinsRes
-getMultEntsCoins a n is c
+getMultEntsCoins a n (is, c)
   | a < 1 = return (Sorry n)
   | n `elem` allCoinNames = mkGecrForCoins a n c
-  | otherwise = getEntNamesInInv is >>= maybe notFound found . findFullNameForAbbrev n
+  | otherwise = mkGecrForEnts a n is
+
+
+-- TODO: In this function, special care must be taken to handle the case where amount == (maxBoun :: Int).
+mkGecrForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
+mkGecrForCoins _ n _ = case n of
+  "cp"    -> undefined
+  "sp"    -> undefined
+  "gp"    -> undefined
+  "coin"  -> undefined
+  "coins" -> undefined
+  _       -> patternMatchFail "mkGecrForCoins" [n]
+
+
+mkGecrForEnts :: Amount -> T.Text -> Inv -> MudStack GetEntsCoinsRes
+mkGecrForEnts a n is = getEntNamesInInv is >>= maybe notFound found . findFullNameForAbbrev n
   where
     notFound = return (Mult a n Nothing Nothing)
-    found fullName = (Mult a n . Just . takeMatchingEnts fullName) <$> getEntsInInv is <*> return Nothing
+    found fullName = getEntsInInv is >>= \es ->
+        return (Mult a n (Just . takeMatchingEnts fullName $ es) Nothing)
     takeMatchingEnts fn = take a . filter (\e -> e^.name == fn)
-
-
-mkGecrForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
-mkGecrForCoins = undefined
 
 
 getIndexedEnt :: Index -> T.Text -> Inv -> MudStack GetEntsCoinsRes
@@ -146,11 +163,12 @@ getIndexedEnt x n is
           else return (Indexed x n (Right $ matches !! (x - 1)))
 
 
-gecrToMes :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
-gecrToMes gecr = case gecr of
-  (Mult    _ _ (Just es) _) -> return (Just es)
-  (Indexed _ _ (Right e))   -> return (Just [e])
-  _                         -> return Nothing
+gecrToMesmc :: GetEntsCoinsRes -> MudStack (Maybe [Ent], Maybe Coins)
+gecrToMesmc gecr = case gecr of
+  (Mult    _ _ Nothing Nothing) -> return (Nothing,  Nothing)
+  (Mult    _ _ mes mc)          -> return (mes, mc)
+  (Indexed _ _ (Right e))       -> return (Just [e], Nothing)
+  _                             -> return (Nothing,  Nothing)
 
 
 procGetEntsCoinsResRm :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
@@ -203,12 +221,12 @@ getCoins :: Id -> MudStack Coins
 getCoins i = gets (^?!coinsTbl.ix i)
 
 
-mkCoinsAmtList :: Id -> MudStack [Int]
-mkCoinsAmtList i = getCoins i >>= \(c, g, s) -> return [c, g, s]
+mkCoinsAmtList :: Coins -> [Int]
+mkCoinsAmtList (c, g, s) = [c, g, s]
 
 
 hasCoins :: Id -> MudStack Bool
-hasCoins i = not . all (== 0) <$> mkCoinsAmtList i
+hasCoins i = not . all (== 0) . mkCoinsAmtList <$> getCoins i
 
 
 -----

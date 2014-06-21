@@ -351,7 +351,7 @@ advise hs  msg = output msg >> output ("See also the following help topics: " <>
 
 whatInv :: InvType -> T.Text -> MudStack ()
 whatInv it r = do
-    is  <- getLocInv
+    is   <- getLocInv
     gecr <- getEntsCoinsByName r is
     case gecr of
       (Mult _ n (Just es) _) | n == acp  -> output $ dblQuote acp <> " may refer to everything" <> locName
@@ -370,7 +370,7 @@ whatInv it r = do
   where
     getLocInv = case it of PCInv -> getInv 0
                            PCEq  -> getEq  0
-                           RmInv -> getPCRmInv
+                           RmInv -> fst <$> getPCRmInvCoins
     acp       = [allChar]^.packed
     locName   = case it of PCInv -> " in your inventory."
                            PCEq  -> " in your readied equipment."
@@ -407,21 +407,21 @@ tryMove dir = let dir' = T.toLower dir
 
 
 look :: Action
-look [] = getPCRm >>= \r -> do
-    output $ r^.name <> "\n" <> r^.desc
+look [] = do
+    getPCRm >>= \r -> output $ r^.name <> "\n" <> r^.desc
     exits []
-    getPCRmInv >>= dispRmInv
-    getPCRmId >>= maybeDescCoins
-look [r]    = getPCRmInv >>= getEntsCoinsByName r >>= procGetEntsCoinsResRm >>= traverse_ (mapM_ descEnt)
+    getPCRmInvCoins >>= dispRmInvCoins
+look [r]    = getPCRmInvCoins >>= getEntsCoinsByName r >>= procGetEntsCoinsResRm >>= traverse_ (mapM_ descEnt)
 look (r:rs) = look [r] >> look rs
 
 
-dispRmInv :: Inv -> MudStack ()
-dispRmInv is = mkNameCountBothList is >>= mapM_ descEntInRm
+dispRmInvCoins :: InvCoins -> MudStack ()
+dispRmInvCoins (is, c) = mkNameCountBothList is >>= mapM_ descEntInRm >> maybeDescCoins
   where
     descEntInRm (en, c, (s, _))
       | c == 1 = outputIndent 2 $ aOrAn s <> " " <> bracketQuote en
     descEntInRm (en, c, b) = outputConIndent 2 [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
+    maybeDescCoins = when (c /= noCoins) (descCoins c)
 
 
 mkNameCountBothList :: Inv -> MudStack [(T.Text, Int, BothGramNos)]
@@ -430,11 +430,6 @@ mkNameCountBothList is = do
     ebgns <- getEntBothGramNosInInv is
     let cs = mkCountList ebgns
     return (nub . zip3 ens cs $ ebgns)
-
-
-maybeDescCoins :: Id -> MudStack ()
-maybeDescCoins i = hasCoins i >>= \hc ->
-    when hc . descCoins $ i
 
 
 descEnt :: Ent -> MudStack ()
@@ -452,12 +447,12 @@ descInv i = do
     hi <- hasInv i
     hc <- hasCoins i
     case (hi, hc) of
-        (False, False) -> if i == 0
-                            then dudeYourHandsAreEmpty
-                            else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
-        (True,  False) -> header >> descEntsInInv i
-        (False, True ) -> header >> descCoins i
-        (True,  True ) -> header >> descEntsInInv i >> descCoins i
+      (False, False) -> if i == 0
+                          then dudeYourHandsAreEmpty
+                          else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
+      (True,  False) -> header >> descEntsInInv i
+      (False, True ) -> header >> descCoins i
+      (True,  True ) -> header >> descEntsInInv i >> descCoins i
   where
     header
       | i == 0 = output "You are carrying:"
@@ -478,10 +473,10 @@ descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
     ind     = 11
 
 
-descCoins :: Id -> MudStack ()
-descCoins i = mkCoinsNameAmtList >>= descCoinsNameAmtList
+descCoins :: Coins -> MudStack ()
+descCoins c = mkCoinsNameAmtList >>= descCoinsNameAmtList
   where
-    mkCoinsNameAmtList       = zip coinNames <$> mkCoinsAmtList i
+    mkCoinsNameAmtList       = zip coinNames . mkCoinsAmtList $ c
     descCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
     descCoinsNameAmt (cn, a) = if a == 0 then "" else showText a <> " " <> bracketQuote cn
 
@@ -542,14 +537,19 @@ dudeYou'reNaked = output "You don't have anything readied. You're naked!"
 
 getAction :: Action
 getAction []   = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction (rs) = getPCRmInv >>= resolveEntsByName rs >>= mapM_ procGecrMisForGet . uncurry zip
+getAction (rs) = getPCRmInvCoins >>= resolveEntsCoinsByName rs >>= mapM_ procGecrMisForGet . uncurry zip
 
 
-resolveEntsByName :: Rest -> Inv -> MudStack ([GetEntsCoinsRes], [Maybe Inv])
-resolveEntsByName rs is = do
-    gecrs <- mapM (`getEntsCoinsByName` is) rs
-    mes   <- mapM gecrToMes gecrs
-    let misList = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mes
+-- TODO: Somehow we have to account for coins.
+-- For example, assume there are 50 copper in the room. How should we handle the following situations?
+-- get 25/cp 26/cp
+-- get 'cp 1/cp
+-- get 'coin 1/cp
+resolveEntsCoinsByName :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv])
+resolveEntsCoinsByName rs ic = do
+    gecrs  :: [GetEntsCoinsRes]            <- mapM (`getEntsCoinsByName` ic) rs
+    mesmcs :: [(Maybe [Ent], Maybe Coins)] <- mapM gecrToMesmc gecrs
+    let misList = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mesmcs
     return (gecrs, misList)
 
 
@@ -561,7 +561,7 @@ pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
 
 
 procGecrMisForGet :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisForGet (_,                     Just []) = return ()
+procGecrMisForGet (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMisForGet (Sorry n,               Nothing) = output $ "You don't see " <> aOrAn n <> " here."
 procGecrMisForGet (Mult 1 n Nothing  _,   Nothing) = output $ "You don't see " <> aOrAn n <> " here."
 procGecrMisForGet (Mult _ n Nothing  _,   Nothing) = output $ "You don't see any " <> n <> "s here."
@@ -594,7 +594,7 @@ dropAction :: Action
 dropAction []   = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction (rs) = hasInv 0 >>= \hi ->
   if hi
-    then getInv 0 >>= resolveEntsByName rs >>= mapM_ procGecrMisForDrop . uncurry zip
+    then getInv 0 >>= resolveEntsCoinsByName rs >>= mapM_ procGecrMisForDrop . uncurry zip
     else dudeYourHandsAreEmpty
 
 
@@ -636,9 +636,9 @@ putRemDispatcher por (r:rs) = findCon (last rs) >>= \mes ->
   where
     findCon cn
       | T.head cn == rmChar = do
-          is <- getPCRmInv
+          ic <- getPCRmInvCoins
           c  <- getPCRmId >>= getCoins
-          getEntsCoinsByName (T.tail cn) is c >>= procGetEntsCoinsResRm
+          getEntsCoinsByName (T.tail cn) ic >>= procGetEntsCoinsResRm
       | otherwise = do
           is <- getInv 0
           c  <- getCoins 0
@@ -653,7 +653,7 @@ putRemDispatcher por rs = patternMatchFail "putRemDispatcher" [ showText por, sh
 
 putHelper :: Id -> Rest -> MudStack ()
 putHelper _  []   = return ()
-putHelper ci (rs) = getPCRmInv >>= resolveEntsByName rs >>= mapM_ (procGecrMisForPut ci) . uncurry zip
+putHelper ci (rs) = getPCRmInvCoins >>= resolveEntsCoinsByName rs >>= mapM_ (procGecrMisForPut ci) . uncurry zip
 
 
 procGecrMisForPut :: Id -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
@@ -707,7 +707,7 @@ remHelper ci (rs) = do
     cn <- (^.sing) <$> getEnt ci
     hi <- hasInv ci
     if hi
-      then getInv ci >>= resolveEntsByName rs >>= mapM_ (procGecrMisForRem ci cn) . uncurry zip
+      then getInv ci >>= resolveEntsCoinsByName rs >>= mapM_ (procGecrMisForRem ci cn) . uncurry zip
       else output $ "The " <> cn <> " appears to be empty."
 
 
@@ -737,8 +737,8 @@ ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
     res <- mapM (`getEntsToReadyByName` is) rs
     let gecrs  = res^..folded._1
     let mrols = res^..folded._2
-    mes <- mapM gecrToMes gecrs
-    let misList = pruneDupIds [] $ (fmap . fmap . fmap) (^.entId) mes
+    mesmcs <- mapM gecrToMesmc gecrs
+    let misList = pruneDupIds [] $ (fmap . fmap . fmap) (^.entId) mesmcs
     mapM_ procGecrMisMrolForReady $ zip3 gecrs misList mrols
 
 
@@ -978,7 +978,7 @@ unready [] = advise ["unready"] $ "Please specify one or more things to unready,
 unready rs = getEq 0 >>= \is ->
     if null is
       then dudeYou'reNaked
-      else resolveEntsByName rs is >>= mapM_ procGecrMisForUnready . uncurry zip
+      else resolveEntsCoinsByName rs is >>= mapM_ procGecrMisForUnready . uncurry zip
 
 
 procGecrMisForUnready :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
