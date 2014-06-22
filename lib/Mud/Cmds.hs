@@ -19,7 +19,7 @@ import Control.Exception (fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, try)
 import Control.Lens (_1, _2, at, both, dropping, folded, over, to)
 import Control.Lens.Operators ((&), (.=), (?=),(?~), (^.), (^..))
-import Control.Monad ((>=>), forM_, guard, mplus, when)
+import Control.Monad ((>=>), forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.Char (isSpace, toUpper)
@@ -512,15 +512,19 @@ inv rs = do
 -- TODO: Move this to "StateHelpers"?
 procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
-procGecrMisPCInv _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
 procGecrMisPCInv _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
 procGecrMisPCInv _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
 procGecrMisPCInv f (Mult _ _ (Just _) _,   Just is) = f is
 procGecrMisPCInv _ (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
 procGecrMisPCInv _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
 procGecrMisPCInv f (Indexed _ _ (Right _), Just is) = f is
+procGecrMisPCInv _ (SorryIndexedCoins             ) = sorryIndexedCoins
+procGecrMisPCInv _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
 procGecrMisPCInv _ gecrMis = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
+
+sorryIndexedCoins :: MudStack ()
+sorryIndexedCoins = outputCon $ "Sorry, but " <> dblQuote [indexChar]^.packed <> " cannot be used with coins."
 
 -----
 

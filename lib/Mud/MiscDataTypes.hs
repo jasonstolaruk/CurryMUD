@@ -2,12 +2,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.MiscDataTypes ( Action
+                         , ActualCoins
                          , Amount
                          , BothGramNos
                          , Cmd(..)
                          , CmdName
                          , ConvRol
                          , fromRol
+                         , GetCoinsRes
                          , GetEntsCoinsRes(..)
                          , GetOrDrop(..)
                          , HelpTopic
@@ -19,6 +21,7 @@ module Mud.MiscDataTypes ( Action
                          , pp
                          , Pretty
                          , PutOrRem(..)
+                         , RequestedCoins
                          , Rest
                          , RightOrLeft(..) ) where
 
@@ -115,7 +118,7 @@ data InvType = PCInv | PCEq | RmInv deriving Eq
 
 data GetOrDrop = Get | Drop
 
-data PutOrRem = Put | Rem deriving Show
+data PutOrRem = Put | Rem
 
 data RightOrLeft = R
                  | L
@@ -129,8 +132,14 @@ type Index  = Int
 type NameSearchedFor = T.Text
 
 data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe Coins)
-                     | Indexed !Index  !NameSearchedFor !(Either Plur Ent) -- TODO: When appropriate, respond to players indicating that coins cannot be indexed.
-                     | Sorry           !NameSearchedFor deriving Show
+                     | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
+                     | SorryIndexedCoins
+                     | Sorry           !NameSearchedFor
+
+type GetCoinsRes = (Either Int Int, Either Int Int, Either Int Int)
+
+type ActualCoins    = Coins
+type RequestedCoins = Coins
 
 -----
 
