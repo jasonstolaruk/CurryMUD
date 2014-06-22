@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Cmds (gameWrapper) where
 
@@ -89,9 +89,9 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "?", action = dispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD server." }
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-          , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
+          --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-          , Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
+          --, Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
           , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on a topic or command." }
@@ -101,18 +101,18 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
           , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
           , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
-          , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
+          --, Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
-          , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
-          , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
+          --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
+          --, Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
           , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
           , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
           , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
-          , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
+          --, Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
           , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
-          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
-          , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate an abbreviation." } ]
+          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." } ]
+          --, Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate an abbreviation." } ]
 
 
 prefixWizCmd :: T.Text -> T.Text
@@ -329,7 +329,7 @@ ignore rs = let ignored = dblQuote . T.unwords $ rs
 
 -----
 
-
+{-
 what :: Action
 what []      = advise ["what"] $ "Please specify one or more abbreviations to confirm, as in " <> dblQuote "what up" <> "."
 what [r]     = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r
@@ -339,7 +339,7 @@ what [r]     = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r
     notFound = output $ dblQuote r <> " doesn't refer to any commands."
     found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
 what (r:rs)  = what [r] >> liftIO newLine >> what rs
-
+-}
 
 advise :: [HelpTopic] -> T.Text -> MudStack ()
 advise []  msg = output msg
@@ -348,7 +348,7 @@ advise hs  msg = output msg >> output ("See also the following help topics: " <>
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
-
+{-
 whatInv :: InvType -> T.Text -> MudStack ()
 whatInv it r = do
     is   <- getLocInv
@@ -377,7 +377,7 @@ whatInv it r = do
                            RmInv -> " in this room."
     checkFirst e ens = let matches = filter (== e^.name) ens
                        in guard (length matches > 1) >> ("first "^.unpacked)
-
+-}
 
 -----
 
@@ -444,19 +444,20 @@ descEnt e = do
 
 descInv :: Id -> MudStack ()
 descInv i = do
-    hi <- hasInv i
+    hi <- hasInv   i
     hc <- hasCoins i
     case (hi, hc) of
       (False, False) -> if i == 0
                           then dudeYourHandsAreEmpty
                           else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
       (True,  False) -> header >> descEntsInInv i
-      (False, True ) -> header >> descCoins i
-      (True,  True ) -> header >> descEntsInInv i >> descCoins i
+      (False, True ) -> header >> descCoinsInInv
+      (True,  True ) -> header >> descEntsInInv i >> descCoinsInInv
   where
     header
       | i == 0 = output "You are carrying:"
       | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " contains:"
+    descCoinsInInv = getCoins i >>= descCoins
 
 
 dudeYourHandsAreEmpty :: MudStack ()
@@ -474,7 +475,7 @@ descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
 
 
 descCoins :: Coins -> MudStack ()
-descCoins c = mkCoinsNameAmtList >>= descCoinsNameAmtList
+descCoins c = descCoinsNameAmtList mkCoinsNameAmtList
   where
     mkCoinsNameAmtList       = zip coinNames . mkCoinsAmtList $ c
     descCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
@@ -503,12 +504,12 @@ inv (r:rs) = inv [r] >> inv rs
 
 -----
 
-
+{-
 equip :: Action
 equip []     = descEq 0
 equip [r]    = getEq 0 >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
 equip (r:rs) = equip [r] >> equip rs
-
+-}
 
 descEq :: Id -> MudStack ()
 descEq i = (mkEqDescList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \edl ->
@@ -540,26 +541,6 @@ getAction []   = advise ["get"] $ "Please specify one or more items to pick up, 
 getAction (rs) = getPCRmInvCoins >>= resolveEntsCoinsByName rs >>= mapM_ procGecrMisForGet . uncurry zip
 
 
--- TODO: Somehow we have to account for coins.
--- For example, assume there are 50 copper in the room. How should we handle the following situations?
--- get 25/cp 26/cp
--- get 'cp 1/cp
--- get 'coin 1/cp
-resolveEntsCoinsByName :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv])
-resolveEntsCoinsByName rs ic = do
-    gecrs  :: [GetEntsCoinsRes]            <- mapM (`getEntsCoinsByName` ic) rs
-    mesmcs :: [(Maybe [Ent], Maybe Coins)] <- mapM gecrToMesmc gecrs
-    let misList = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mesmcs
-    return (gecrs, misList)
-
-
-pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
-pruneDupIds _       []               = []
-pruneDupIds uniques (Nothing : rest) = Nothing : pruneDupIds uniques rest
-pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
-                                       in Just is' : pruneDupIds (is' ++ uniques) rest
-
-
 procGecrMisForGet :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisForGet (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMisForGet (Sorry n,               Nothing) = output $ "You don't see " <> aOrAn n <> " here."
@@ -589,14 +570,14 @@ descGetDrop god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
 
 -----
 
-
+{-
 dropAction :: Action
 dropAction []   = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction (rs) = hasInv 0 >>= \hi ->
   if hi
     then getInv 0 >>= resolveEntsCoinsByName rs >>= mapM_ procGecrMisForDrop . uncurry zip
     else dudeYourHandsAreEmpty
-
+-}
 
 procGecrMisForDrop :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisForDrop (_,                     Just []) = return ()
@@ -617,14 +598,14 @@ shuffleInvDrop is = getPCRmId >>= \i ->
 
 -----
 
-
+{-
 putAction :: Action
 putAction []   = advise ["put"] $ "Please specify what you want to put, followed by where you want to put it, as in " <> dblQuote "put doll sack" <> "."
 putAction [r]  = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
 putAction rs   = hasInv 0 >>= \hi ->
     if hi then putRemDispatcher Put rs else dudeYourHandsAreEmpty
-
-
+-}
+{-
 putRemDispatcher :: PutOrRem -> Action
 putRemDispatcher por (r:rs) = findCon (last rs) >>= \mes ->
     case mes of Nothing -> return ()
@@ -649,12 +630,12 @@ putRemDispatcher por (r:rs) = findCon (last rs) >>= \mes ->
                                      Rem -> remHelper i restWithoutCon
     restWithoutCon = r : init rs
 putRemDispatcher por rs = patternMatchFail "putRemDispatcher" [ showText por, showText rs ]
-
-
+-}
+{-
 putHelper :: Id -> Rest -> MudStack ()
 putHelper _  []   = return ()
 putHelper ci (rs) = getPCRmInvCoins >>= resolveEntsCoinsByName rs >>= mapM_ (procGecrMisForPut ci) . uncurry zip
-
+-}
 
 procGecrMisForPut :: Id -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisForPut _  (_,                     Just []) = return ()
@@ -694,13 +675,13 @@ descPutRem por is cn = mkNameCountBothList is >>= mapM_ descPutRemHelper
 
 -----
 
-
+{-
 remove :: Action
 remove []  = advise ["remove"] $ "Please specify what you want to remove, followed by the container you want to remove it from, as in " <> dblQuote "remove doll sack" <> "."
 remove [r] = advise ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
 remove rs  = putRemDispatcher Rem rs
-
-
+-}
+{-
 remHelper :: Id -> Rest -> MudStack ()
 remHelper _  []   = return ()
 remHelper ci (rs) = do
@@ -709,7 +690,7 @@ remHelper ci (rs) = do
     if hi
       then getInv ci >>= resolveEntsCoinsByName rs >>= mapM_ (procGecrMisForRem ci cn) . uncurry zip
       else output $ "The " <> cn <> " appears to be empty."
-
+-}
 
 procGecrMisForRem :: Id -> ConName -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisForRem _  _  (_,                     Just []) = return ()
@@ -729,7 +710,7 @@ shuffleInvRem ci cn is = moveInv is ci 0 >> descPutRem Rem is cn
 
 -----
 
-
+{-
 ready :: Action
 ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
@@ -740,8 +721,8 @@ ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
     mesmcs <- mapM gecrToMesmc gecrs
     let misList = pruneDupIds [] $ (fmap . fmap . fmap) (^.entId) mesmcs
     mapM_ procGecrMisMrolForReady $ zip3 gecrs misList mrols
-
-
+-}
+{-
 getEntsToReadyByName :: T.Text -> Inv -> MudStack (GetEntsCoinsRes, Maybe RightOrLeft)
 getEntsToReadyByName searchName is
   | slotChar `elem` searchName^.unpacked = let (a, b) = T.break (== slotChar) searchName
@@ -753,7 +734,7 @@ getEntsToReadyByName searchName is
   | otherwise = getEntsCoinsByName searchName is >>= \gecr -> return (gecr, Nothing)
   where
     sorry = return (Sorry searchName, Nothing)
-
+-}
 
 procGecrMisMrolForReady :: (GetEntsCoinsRes, Maybe Inv, Maybe RightOrLeft) -> MudStack ()
 procGecrMisMrolForReady (_,                     Just [], _)    = return ()
@@ -972,14 +953,14 @@ getAvailWpnSlot em = getMobHand 0 >>= \h ->
 
 -----
 
-
+{-
 unready :: Action
 unready [] = advise ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
 unready rs = getEq 0 >>= \is ->
     if null is
       then dudeYou'reNaked
       else resolveEntsCoinsByName rs is >>= mapM_ procGecrMisForUnready . uncurry zip
-
+-}
 
 procGecrMisForUnready :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisForUnready (_,                     Just []) = return ()

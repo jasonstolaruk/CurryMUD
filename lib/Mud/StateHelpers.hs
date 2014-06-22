@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE MultiWayIf, OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.StateHelpers ( addToInv
                         , findExit
-                        , gecrToMesmc
+                        , gecrToMess
                         , getArm
                         , getCloth
                         , getCoins
@@ -34,6 +34,7 @@ module Mud.StateHelpers ( addToInv
                         , procGetEntsCoinsResPCInv
                         , procGetEntsCoinsResRm
                         , remFromInv
+                        , resolveEntsCoinsByName
                         , sortInv ) where
 
 import Mud.MiscDataTypes
@@ -47,7 +48,7 @@ import Control.Lens (_1, at, ix)
 import Control.Lens.Operators ((?=), (^.), (^?!))
 import Control.Monad.State (gets)
 import Data.Char (isDigit)
-import Data.List (sortBy)
+import Data.List (foldl', sortBy)
 import Data.Monoid ((<>))
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (packed)
@@ -130,15 +131,20 @@ getMultEntsCoins a n (is, c)
   | otherwise = mkGecrForEnts a n is
 
 
--- TODO: In this function, special care must be taken to handle the case where amount == (maxBoun :: Int).
+-- TODO: Consider some sort of fancy refactoring.
 mkGecrForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
-mkGecrForCoins _ n _ = case n of
-  "cp"    -> undefined
-  "sp"    -> undefined
-  "gp"    -> undefined
-  "coin"  -> undefined
-  "coins" -> undefined
+mkGecrForCoins a n c = let (cop, sil, gol) = c in case n of
+  "cp"    -> let a' = if a == (maxBound :: Int) then cop else a in mkGecr (a', 0, 0)
+  "sp"    -> let a' = if a == (maxBound :: Int) then sil else a in mkGecr (0, a', 0)
+  "gp"    -> let a' = if a == (maxBound :: Int) then gol else a in mkGecr (0, 0, a')
+  "coin"  -> aggregate
+  "coins" -> aggregate
   _       -> patternMatchFail "mkGecrForCoins" [n]
+  where
+    mkGecr c' = return (Mult a n Nothing (Just c'))
+    aggregate = if a == (maxBound :: Int)
+                  then mkGecr c
+                  else undefined
 
 
 mkGecrForEnts :: Amount -> T.Text -> Inv -> MudStack GetEntsCoinsRes
@@ -163,14 +169,40 @@ getIndexedEnt x n is
           else return (Indexed x n (Right $ matches !! (x - 1)))
 
 
-gecrToMesmc :: GetEntsCoinsRes -> MudStack (Maybe [Ent], Maybe Coins)
-gecrToMesmc gecr = case gecr of
-  (Mult    _ _ Nothing Nothing) -> return (Nothing,  Nothing)
-  (Mult    _ _ mes mc)          -> return (mes, mc)
-  (Indexed _ _ (Right e))       -> return (Just [e], Nothing)
-  _                             -> return (Nothing,  Nothing)
+resolveEntsCoinsByName :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], Coins)
+resolveEntsCoinsByName rs ic = do
+    gecrs :: [GetEntsCoinsRes] <- mapM (`getEntsCoinsByName` ic) rs
+    let (gecrs', cs) = extractCoinsFromGecrs gecrs
+    mess :: [Maybe [Ent]] <- mapM gecrToMess gecrs'
+    let miss = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
+    return (gecrs', miss, sumCoins noCoins cs)
+  where
+    sumCoins = foldl' (\(cop, sil, gol) (cop', sil', gol') -> (cop + cop', sil + sil', gol + gol')) -- TODO: Is there a nifty way to do this using lenses?
 
 
+extractCoinsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Coins])
+extractCoinsFromGecrs = foldl' helper ([], [])
+  where
+    helper (gecrs, cs) (Mult _ _ _ (Just c)) = (gecrs, c : cs)
+    helper (gecrs, cs) gecr                  = (gecr : gecrs, cs)
+
+
+gecrToMess :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
+gecrToMess gecr = case gecr of
+  (Mult    _ _ Nothing   _) -> return Nothing
+  (Mult    _ _ (Just es) _) -> return (Just es)
+  (Indexed _ _ (Right e))   -> return (Just [e])
+  _                         -> return Nothing
+
+
+pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
+pruneDupIds _       []               = []
+pruneDupIds uniques (Nothing : rest) = Nothing : pruneDupIds uniques rest
+pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
+                                       in Just is' : pruneDupIds (is' ++ uniques) rest
+
+
+-- TODO: Consider moving the other "proc" functions here. This would help to keep the size of the "Cmds" module down.
 procGetEntsCoinsResRm :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
 procGetEntsCoinsResRm gecr = case gecr of
   Sorry n                 -> output ("You don't see " <> aOrAn n <> " here.")             >> return Nothing

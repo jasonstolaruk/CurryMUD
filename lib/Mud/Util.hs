@@ -59,9 +59,9 @@ import qualified Data.Text.IO as T (putStrLn, readFile)
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
 blowUp modName funName msg vals = error $ errorMsg^.unpacked
   where
-    errorMsg = T.concat [ modName, " ", funName, ": ", msg, ". ", valsText ]
-    valsText = "Values: " <> valsList
-    valsList = T.intercalate ", " . map singleQuote $ vals
+    errorMsg   = T.concat [ modName, " ", funName, ": ", msg, ". ", valsText ]
+    valsText   = "Values: " <> listedVals
+    listedVals = T.intercalate ", " . map singleQuote $ vals
 
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a
