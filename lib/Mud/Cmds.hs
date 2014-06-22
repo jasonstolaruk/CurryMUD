@@ -1,5 +1,5 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
+-- {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.Cmds (gameWrapper) where
 
@@ -436,14 +436,14 @@ descEnt :: Ent -> MudStack ()
 descEnt e = do
     e^.desc.to output
     t <- getEntType e
-    when (t == ConType) $ descInv i
+    when (t == ConType) $ descInvCoins i
     when (t == MobType) $ descEq i
   where
     i = e^.entId
 
 
-descInv :: Id -> MudStack ()
-descInv i = do
+descInvCoins :: Id -> MudStack ()
+descInvCoins i = do
     hi <- hasInv   i
     hc <- hasCoins i
     case (hi, hc) of
@@ -497,9 +497,29 @@ exits rs = ignore rs >> exits []
 
 
 inv :: Action
-inv []     = descInv 0 -- TODO: Give some indication of encumberance.
-inv [r]    = getInv 0 >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
-inv (r:rs) = inv [r] >> inv rs
+inv [] = descInvCoins 0 -- TODO: Give some indication of encumberance.
+inv rs = do
+    (gecrs, miss, c) <- getInvCoins 0 >>= resolveEntsCoinsByName rs
+    mapM_ (procGecrMisPCInv descThem) . zip gecrs $ miss
+    output . showText $ c -- TODO: "c" may very well be inconsistent with the actual coins in the inventory.
+  where
+    descThem :: Inv -> MudStack ()
+    descThem []     = return ()
+    descThem [i]    = getEnt i >>= descEnt
+    descThem (i:is) = descThem [i] >> descThem is
+
+
+-- TODO: Move this to "StateHelpers"?
+procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
+procGecrMisPCInv _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
+procGecrMisPCInv _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
+procGecrMisPCInv _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMisPCInv f (Mult _ _ (Just _) _,   Just is) = f is
+procGecrMisPCInv _ (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMisPCInv _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
+procGecrMisPCInv f (Indexed _ _ (Right _), Just is) = f is
+procGecrMisPCInv _ gecrMis = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
 -----
@@ -537,8 +557,10 @@ dudeYou'reNaked = output "You don't have anything readied. You're naked!"
 
 
 getAction :: Action
-getAction []   = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction (rs) = getPCRmInvCoins >>= resolveEntsCoinsByName rs >>= mapM_ procGecrMisForGet . uncurry zip
+getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
+getAction rs = do
+    (gecrs, miss, c) :: ([GetEntsCoinsRes], [Maybe Inv], Coins) <- getPCRmInvCoins >>= resolveEntsCoinsByName rs
+    mapM_ procGecrMisForGet . zip gecrs $ miss
 
 
 procGecrMisForGet :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
@@ -573,7 +595,7 @@ descGetDrop god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
 {-
 dropAction :: Action
 dropAction []   = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
-dropAction (rs) = hasInv 0 >>= \hi ->
+dropAction rs = hasInv 0 >>= \hi ->
   if hi
     then getInv 0 >>= resolveEntsCoinsByName rs >>= mapM_ procGecrMisForDrop . uncurry zip
     else dudeYourHandsAreEmpty

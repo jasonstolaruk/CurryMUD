@@ -12,6 +12,7 @@ module Mud.StateHelpers ( addToInv
                         , getEntBothGramNosInInv
                         , getEntNamesInInv
                         , getEntsCoinsByName
+                        , getEntsInInv
                         , getEntType
                         , getEq
                         , getEqMap
@@ -183,8 +184,9 @@ resolveEntsCoinsByName rs ic = do
 extractCoinsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Coins])
 extractCoinsFromGecrs = foldl' helper ([], [])
   where
-    helper (gecrs, cs) (Mult _ _ _ (Just c)) = (gecrs, c : cs)
-    helper (gecrs, cs) gecr                  = (gecr : gecrs, cs)
+    helper (gecrs, cs) gecr@(Mult _ _ (Just _) (Just c)) = (gecr : gecrs, c : cs)
+    helper (gecrs, cs)      (Mult _ _ _        (Just c)) = (gecrs, c : cs)
+    helper (gecrs, cs) gecr                              = (gecr : gecrs, cs)
 
 
 gecrToMess :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
@@ -202,23 +204,24 @@ pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
                                        in Just is' : pruneDupIds (is' ++ uniques) rest
 
 
--- TODO: Consider moving the other "proc" functions here. This would help to keep the size of the "Cmds" module down.
+-- TODO: Consider writing a new function similar to "procGecrMisPCInv".
 procGetEntsCoinsResRm :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
 procGetEntsCoinsResRm gecr = case gecr of
   Sorry n                 -> output ("You don't see " <> aOrAn n <> " here.")             >> return Nothing
-  (Mult 1 n Nothing _)    -> output ("You don't see " <> aOrAn n <> " here.")             >> return Nothing
-  (Mult _ n Nothing _)    -> output ("You don't see any " <> n <> "s here.")              >> return Nothing
+  (Mult 1 n Nothing   _)  -> output ("You don't see " <> aOrAn n <> " here.")             >> return Nothing
+  (Mult _ n Nothing   _)  -> output ("You don't see any " <> n <> "s here.")              >> return Nothing
   (Mult _ _ (Just es) _)  -> return (Just es)
   (Indexed _ n (Left "")) -> output ("You don't see any " <> n <> "s here.")              >> return Nothing
   (Indexed x _ (Left p))  -> outputCon [ "You don't see ", showText x, " ", p, " here." ] >> return Nothing
   (Indexed _ _ (Right e)) -> return (Just [e])
 
 
+-- TODO: Get rid of this and use "procGecrMisPCInv" instead.
 procGetEntsCoinsResPCInv :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
 procGetEntsCoinsResPCInv gecr = case gecr of
   Sorry n                 -> output ("You don't have " <> aOrAn n <> ".")             >> return Nothing
-  (Mult 1 n Nothing _)    -> output ("You don't have " <> aOrAn n <> ".")             >> return Nothing
-  (Mult _ n Nothing _)    -> output ("You don't have any " <> n <> "s.")              >> return Nothing
+  (Mult 1 n Nothing   _)  -> output ("You don't have " <> aOrAn n <> ".")             >> return Nothing
+  (Mult _ n Nothing   _)  -> output ("You don't have any " <> n <> "s.")              >> return Nothing
   (Mult _ _ (Just es) _)  -> return (Just es)
   (Indexed _ n (Left "")) -> output ("You don't have any " <> n <> "s.")              >> return Nothing
   (Indexed x _ (Left p))  -> outputCon [ "You don't have ", showText x, " ", p, "." ] >> return Nothing
