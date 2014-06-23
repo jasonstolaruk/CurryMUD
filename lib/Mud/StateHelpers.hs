@@ -144,17 +144,23 @@ mkGecrMult a n (is, c) = if n `elem` allCoinNames
 -- TODO: Is there a nifty way to do this using lenses?
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
 mkGecrMultForCoins a n c = let (cop, sil, gol) = c in case n of
-  "cp"    -> let a' = if a == (maxBound :: Int) then cop else a in helper (a', 0, 0)
-  "sp"    -> let a' = if a == (maxBound :: Int) then sil else a in helper (0, a', 0)
-  "gp"    -> let a' = if a == (maxBound :: Int) then gol else a in helper (0, 0, a')
+  "cp"    -> let a' = if a == (maxBound :: Int) then cop else a in helper (a', 0,  0 )
+  "sp"    -> let a' = if a == (maxBound :: Int) then sil else a in helper (0,  a', 0 )
+  "gp"    -> let a' = if a == (maxBound :: Int) then gol else a in helper (0,  0,  a')
   "coin"  -> aggregate
   "coins" -> aggregate
   _       -> patternMatchFail "mkGecrMultForCoins" [n]
   where
-    helper c' = return (Mult a n Nothing (Just c'))
+    helper c' = return $ if c' == noCoins
+                           then (Mult a (expand n) Nothing Nothing  )
+                           else (Mult a n          Nothing (Just c'))
+    expand "cp" = "copper piece"
+    expand "sp" = "silver piece"
+    expand "gp" = "gold piece"
+    expand _    = "coin"
     aggregate = if a == (maxBound :: Int)
                   then helper c
-                  else undefined -- TODO
+                  else undefined
 
 
 mkGecrMultForEnts :: Amount -> T.Text -> Inv -> MudStack GetEntsCoinsRes
@@ -202,7 +208,6 @@ pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
                                        in Just is' : pruneDupIds (is' ++ uniques) rest
 
 
--- TODO: Bug - nothing happens when the user enters "i 'cp".
 mkGcr :: ActualCoins -> RequestedCoins -> GetCoinsRes -- TODO: Is there a nifty way to do this using lenses?
 mkGcr c c' = let (cop,  sil,  gol ) = c
                  (cop', sil', gol') = c'

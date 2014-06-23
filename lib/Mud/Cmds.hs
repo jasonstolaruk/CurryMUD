@@ -186,11 +186,7 @@ splitInp = splitUp . T.words
 
 
 dispatch :: Input -> MudStack ()
-dispatch (cn, rest) = findAction cn >>= maybe (wtf >> next) act
-  where
-    wtf   = output "What?"
-    next  = liftIO newLine >> game
-    act a = a rest >> next
+dispatch (cn, rest) = findAction cn >>= maybe (output "What?") (\act -> act rest) >> game
 
 
 findAction :: CmdName -> MudStack (Maybe Action)
@@ -502,14 +498,15 @@ exits rs = ignore rs >> exits []
 inv :: Action -- TODO: Give some indication of encumberance.
 inv [] = descInvCoins 0
 inv rs = do
-    (gecrs, miss, gcr) <- getInvCoins 0 >>= resolveEntCoinNames rs -- TODO: Put newlines between each description.
-    mapM_ (procGecrMisPCInv descThem) . zip gecrs $ miss
+    (gecrs, miss, gcr) <- getInvCoins 0 >>= resolveEntCoinNames rs
+    mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
     procGcrPCInv descCoins gcr
   where
-    descThem :: Inv -> MudStack ()
-    descThem []     = return ()
-    descThem [i]    = getEnt i >>= descEnt
-    descThem (i:is) = descThem [i] >> descThem is
+    descEnts :: Inv -> MudStack ()
+    descEnts = mapM_ (\i -> getEnt i >>= descEnt >> liftIO newLine)
+    {-descEnts []     = return () -- TODO: I bet there's other code similar to this that can simply be rewritten as a monadic map.
+    descEnts [i]    = getEnt i >>= descEnt >> liftIO newLine
+    descEnts (i:is) = descEnts [i] >> descEnts is-}
 
 
 procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
@@ -544,11 +541,11 @@ procGcrPCInv f (cpRes, spRes, gpRes) = do
 
 
 descCoins :: Coins -> MudStack ()
-descCoins (cop, sil, gol) = descCop cop >> descSil sil >> descGol gol  -- TODO: Is there a nifty way to do this using lenses?
-  where
-    descCop cop' = unless (cop' == 0) . output $ "The copper piece is round and shiny." -- TODO: Come up with a good description.
-    descSil sil' = unless (sil' == 0) . output $ "The silver piece is round and shiny." -- TODO: Come up with a good description.
-    descGol gol' = unless (gol' == 0) . output $ "The gold piece is round and shiny."   -- TODO: Come up with a good description.
+descCoins (cop, sil, gol) = descCop >> descSil >> descGol -- TODO: Is there a nifty way to do this using lenses?
+  where -- TODO: Come up with good descriptions.
+    descCop = unless (cop == 0) (output "The copper piece is round and shiny." >> liftIO newLine)
+    descSil = unless (sil == 0) (output "The silver piece is round and shiny." >> liftIO newLine)
+    descGol = unless (gol == 0) (output "The gold piece is round and shiny."   >> liftIO newLine)
 
 
 -----

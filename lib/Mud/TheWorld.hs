@@ -125,7 +125,7 @@ createWorld :: MudStack ()
 createWorld = do
     liftIO . logNotice "createWorld" $ "creating the world"
 
-    putMob iPC (Ent iPC "" "" "" "" 0) [iKewpie1, iBag1, iClub] (0, 5, 10) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand)
+    putMob iPC (Ent iPC "" "" "" "" 0) [iKewpie1, iBag1, iClub] (10, 0, 20) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand)
 
     putRm iHill [iGP1, iLongSword] (0, 0, 1) (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
     putRm iCliff [iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4] noCoins (Rm "The cliff" "You have reached the edge of a cliff. \

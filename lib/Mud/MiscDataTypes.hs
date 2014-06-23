@@ -136,15 +136,16 @@ data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe C
                      | SorryIndexedCoins
                      | Sorry           !NameSearchedFor deriving Show
 
-type ActualAmount    = Amount
-type RequestedAmount = Amount
-
 type GetCoinsRes = ( Either (ActualAmount, RequestedAmount) RequestedAmount
                    , Either (ActualAmount, RequestedAmount) RequestedAmount
                    , Either (ActualAmount, RequestedAmount) RequestedAmount )
 
-type ActualCoins    = Coins
-type RequestedCoins = Coins
+
+type ActualAmount    = Amount
+type RequestedAmount = Amount
+
+type ActualCoins     = Coins
+type RequestedCoins  = Coins
 
 -----
 
