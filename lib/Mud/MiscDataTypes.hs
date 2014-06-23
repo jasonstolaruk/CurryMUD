@@ -134,9 +134,14 @@ type NameSearchedFor = T.Text
 data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe Coins)
                      | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
                      | SorryIndexedCoins
-                     | Sorry           !NameSearchedFor
+                     | Sorry           !NameSearchedFor deriving Show
 
-type GetCoinsRes = (Either Int Int, Either Int Int, Either Int Int)
+type ActualAmount    = Amount
+type RequestedAmount = Amount
+
+type GetCoinsRes = ( Either (ActualAmount, RequestedAmount) RequestedAmount
+                   , Either (ActualAmount, RequestedAmount) RequestedAmount
+                   , Either (ActualAmount, RequestedAmount) RequestedAmount )
 
 type ActualCoins    = Coins
 type RequestedCoins = Coins

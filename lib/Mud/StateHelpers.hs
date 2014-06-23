@@ -100,6 +100,8 @@ mkPlurFromBoth (_, p)  = p
 -----
 
 
+-- TODO: Move this section to its own module?
+
 resolveEntCoinNames :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], GetCoinsRes)
 resolveEntCoinNames rs ic@(_, c) = do
     gecrs <- mapM (mkGecr ic) rs
@@ -120,7 +122,7 @@ mkGecr ic@(is, c) n
   | isDigit (T.head n)     = let numText = T.takeWhile isDigit n
                                  numInt  = either (oops numText) (^._1) $ decimal numText
                                  rest    = T.drop (T.length numText) n
-                             in parse rest numInt
+                             in if numText /= "0" then parse rest numInt else return (Sorry n)
   | otherwise              = mkGecrMult 1 n ic
   where
     oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
@@ -134,10 +136,9 @@ mkGecr ic@(is, c) n
 
 
 mkGecrMult :: Amount -> T.Text -> InvCoins -> MudStack GetEntsCoinsRes
-mkGecrMult a n (is, c)
-  | a < 1                 = return (Sorry n)
-  | n `elem` allCoinNames = mkGecrMultForCoins a n c
-  | otherwise             = mkGecrMultForEnts  a n is
+mkGecrMult a n (is, c) = if n `elem` allCoinNames
+                           then mkGecrMultForCoins a n c
+                           else mkGecrMultForEnts  a n is
 
 
 -- TODO: Is there a nifty way to do this using lenses?
@@ -153,7 +154,7 @@ mkGecrMultForCoins a n c = let (cop, sil, gol) = c in case n of
     helper c' = return (Mult a n Nothing (Just c'))
     aggregate = if a == (maxBound :: Int)
                   then helper c
-                  else undefined
+                  else undefined -- TODO
 
 
 mkGecrMultForEnts :: Amount -> T.Text -> Inv -> MudStack GetEntsCoinsRes
@@ -166,10 +167,9 @@ mkGecrMultForEnts a n is = getEntNamesInInv is >>= maybe notFound found . findFu
 
 
 mkGecrIndexed :: Index -> T.Text -> Inv -> MudStack GetEntsCoinsRes
-mkGecrIndexed x n is
-  | x < 1                 = return (Sorry n)
-  | n `elem` allCoinNames = return SorryIndexedCoins
-  | otherwise             = getEntNamesInInv is >>= maybe notFound found . findFullNameForAbbrev n
+mkGecrIndexed x n is = if n `elem` allCoinNames
+                         then return SorryIndexedCoins
+                         else getEntNamesInInv is >>= maybe notFound found . findFullNameForAbbrev n
   where
     notFound       = return (Indexed x n (Left ""))
     found fullName = filter (\e -> e^.name == fullName) <$> getEntsInInv is >>= \matches ->
@@ -202,6 +202,7 @@ pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
                                        in Just is' : pruneDupIds (is' ++ uniques) rest
 
 
+-- TODO: Bug - nothing happens when the user enters "i 'cp".
 mkGcr :: ActualCoins -> RequestedCoins -> GetCoinsRes -- TODO: Is there a nifty way to do this using lenses?
 mkGcr c c' = let (cop,  sil,  gol ) = c
                  (cop', sil', gol') = c'
@@ -209,10 +210,11 @@ mkGcr c c' = let (cop,  sil,  gol ) = c
   where
     helper actual requested = if requested <= actual
                                 then Right requested
-                                else Left  actual
+                                else Left  (actual, requested)
 
 
--- TODO: Write a new function similar to "procGecrMisPCInv". Put it in "Cmds".
+-- TODO: Write a new function similar to "procGecrMisPCInv".
+{-
 procGetEntsCoinsResRm :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
 procGetEntsCoinsResRm gecr = case gecr of
   Sorry n                 -> output ("You don't see " <> aOrAn n <> " here.")             >> return Nothing
@@ -222,7 +224,7 @@ procGetEntsCoinsResRm gecr = case gecr of
   (Indexed _ n (Left "")) -> output ("You don't see any " <> n <> "s here.")              >> return Nothing
   (Indexed x _ (Left p))  -> outputCon [ "You don't see ", showText x, " ", p, " here." ] >> return Nothing
   (Indexed _ _ (Right e)) -> return (Just [e])
-
+-}
 
 -----
 

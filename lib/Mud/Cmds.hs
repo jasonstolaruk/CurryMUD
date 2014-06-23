@@ -26,7 +26,7 @@ import Data.Char (isSpace, toUpper)
 import Data.Foldable (traverse_)
 import Data.Functor ((<$>))
 import Data.List (delete, find, foldl', nub, nubBy, sort)
-import Data.Maybe (fromJust, isNothing)
+import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
@@ -46,6 +46,8 @@ import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
+
+-- TODO: "desc" vs. "disp"?
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds"
@@ -96,7 +98,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on a topic or command." }
           , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
-          , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
+          --, Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
           , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
           , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
           , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
@@ -400,12 +402,12 @@ tryMove dir = let dir' = T.toLower dir
     sorry dir' = output $ if dir' `elem` stdLinkNames
                             then "You can't go that way."
                             else dblQuote dir <> " is not a valid direction."
-    movePC i = pc.rmId .= i >> look []
+    movePC i = pc.rmId .= i -- >> look [] -- TODO: Reinstate.
 
 
 -----
 
-
+{-
 look :: Action
 look [] = do
     getPCRm >>= \r -> output $ r^.name <> "\n" <> r^.desc
@@ -413,15 +415,15 @@ look [] = do
     getPCRmInvCoins >>= dispRmInvCoins
 look [r]    = getPCRmInvCoins >>= getEntsCoinsByName r >>= procGetEntsCoinsResRm >>= traverse_ (mapM_ descEnt)
 look (r:rs) = look [r] >> look rs
-
+-}
 
 dispRmInvCoins :: InvCoins -> MudStack ()
-dispRmInvCoins (is, c) = mkNameCountBothList is >>= mapM_ descEntInRm >> maybeDescCoins
+dispRmInvCoins (is, c) = mkNameCountBothList is >>= mapM_ descEntInRm >> maybeSummarizeCoins
   where
     descEntInRm (en, c, (s, _))
       | c == 1 = outputIndent 2 $ aOrAn s <> " " <> bracketQuote en
     descEntInRm (en, c, b) = outputConIndent 2 [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
-    maybeDescCoins = when (c /= noCoins) (descCoins c)
+    maybeSummarizeCoins    = when (c /= noCoins) (summarizeCoins c)
 
 
 mkNameCountBothList :: Inv -> MudStack [(T.Text, Int, BothGramNos)]
@@ -451,13 +453,13 @@ descInvCoins i = do
                           then dudeYourHandsAreEmpty
                           else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
       (True,  False) -> header >> descEntsInInv i
-      (False, True ) -> header >> descCoinsInInv
-      (True,  True ) -> header >> descEntsInInv i >> descCoinsInInv
+      (False, True ) -> header >> summarizeCoinsInInv
+      (True,  True ) -> header >> descEntsInInv i >> summarizeCoinsInInv
   where
     header
       | i == 0 = output "You are carrying:"
       | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " contains:"
-    descCoinsInInv = getCoins i >>= descCoins
+    summarizeCoinsInInv = getCoins i >>= summarizeCoins
 
 
 dudeYourHandsAreEmpty :: MudStack ()
@@ -474,12 +476,13 @@ descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
     ind     = 11
 
 
-descCoins :: Coins -> MudStack ()
-descCoins c = descCoinsNameAmtList mkCoinsNameAmtList
+summarizeCoins :: Coins -> MudStack ()
+summarizeCoins c = dispCoinsNameAmtList mkCoinsNameAmtList
   where
-    mkCoinsNameAmtList       = zip coinNames . mkCoinsAmtList $ c
-    descCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
+    dispCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
     descCoinsNameAmt (cn, a) = if a == 0 then "" else showText a <> " " <> bracketQuote cn
+    mkCoinsNameAmtList       = zip coinNames . mkCoinsAmtList $ c
+    
 
 
 -----
@@ -496,12 +499,12 @@ exits rs = ignore rs >> exits []
 -----
 
 
-inv :: Action
-inv [] = descInvCoins 0 -- TODO: Give some indication of encumberance.
+inv :: Action -- TODO: Give some indication of encumberance.
+inv [] = descInvCoins 0
 inv rs = do
-    (gecrs, miss, c) <- getInvCoins 0 >>= resolveEntsCoinsByName rs
+    (gecrs, miss, gcr) <- getInvCoins 0 >>= resolveEntCoinNames rs -- TODO: Put newlines between each description.
     mapM_ (procGecrMisPCInv descThem) . zip gecrs $ miss
-    output . showText $ c -- TODO: "c" may very well be inconsistent with the actual coins in the inventory.
+    procGcrPCInv descCoins gcr
   where
     descThem :: Inv -> MudStack ()
     descThem []     = return ()
@@ -509,7 +512,6 @@ inv rs = do
     descThem (i:is) = descThem [i] >> descThem is
 
 
--- TODO: Move this to "StateHelpers"?
 procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
 procGecrMisPCInv _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
@@ -518,13 +520,36 @@ procGecrMisPCInv f (Mult _ _ (Just _) _,   Just is) = f is
 procGecrMisPCInv _ (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
 procGecrMisPCInv _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
 procGecrMisPCInv f (Indexed _ _ (Right _), Just is) = f is
-procGecrMisPCInv _ (SorryIndexedCoins             ) = sorryIndexedCoins
+procGecrMisPCInv _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
 procGecrMisPCInv _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
 procGecrMisPCInv _ gecrMis = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
 sorryIndexedCoins :: MudStack ()
-sorryIndexedCoins = outputCon $ "Sorry, but " <> dblQuote [indexChar]^.packed <> " cannot be used with coins."
+sorryIndexedCoins = output $ "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins."
+
+
+procGcrPCInv :: (Coins -> MudStack ()) -> GetCoinsRes -> MudStack ()
+procGcrPCInv f (cpRes, spRes, gpRes) = do
+    mcp <- helper cpRes "copper pieces"
+    msp <- helper spRes "silver pieces"
+    mgp <- helper gpRes "gold pieces"
+    f (fromMaybe 0 mcp, fromMaybe 0 msp, fromMaybe 0 mgp) -- TODO: Is there a nifty way to do this using lenses?
+  where
+    helper res cn = case res of
+      (Left (actual, requested)) -> if actual == 0
+                                      then output ("You don't have any " <> cn <> ".")                       >> return Nothing
+                                      else outputCon [ "You don't have ", showText requested, " ", cn, "." ] >> return Nothing
+      (Right requested)          -> return (Just requested)
+
+
+descCoins :: Coins -> MudStack ()
+descCoins (cop, sil, gol) = descCop cop >> descSil sil >> descGol gol  -- TODO: Is there a nifty way to do this using lenses?
+  where
+    descCop cop' = unless (cop' == 0) . output $ "The copper piece is round and shiny." -- TODO: Come up with a good description.
+    descSil sil' = unless (sil' == 0) . output $ "The silver piece is round and shiny." -- TODO: Come up with a good description.
+    descGol gol' = unless (gol' == 0) . output $ "The gold piece is round and shiny."   -- TODO: Come up with a good description.
+
 
 -----
 
@@ -562,9 +587,9 @@ dudeYou'reNaked = output "You don't have anything readied. You're naked!"
 
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction rs = do
-    (gecrs, miss, c) :: ([GetEntsCoinsRes], [Maybe Inv], Coins) <- getPCRmInvCoins >>= resolveEntsCoinsByName rs
-    mapM_ procGecrMisForGet . zip gecrs $ miss
+getAction rs = undefined --do
+    --(gecrs, miss, c) :: ([GetEntsCoinsRes], [Maybe Inv], Coins) <- getPCRmInvCoins >>= resolveEntsCoinsByName rs
+    --mapM_ procGecrMisForGet . zip gecrs $ miss
 
 
 procGecrMisForGet :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
