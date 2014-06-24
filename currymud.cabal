@@ -14,7 +14,7 @@ cabal-version:         >=1.8
 executable             curry
   main-is:             Main.hs
   -- other-modules:       
-  other-extensions:    OverloadedStrings, TemplateHaskell
+  other-extensions:    OverloadedStrings
   build-depends:       base >=4.6 && <5.0,
                        currymud,
                        directory >=1.2 && <2.0,
@@ -27,6 +27,7 @@ library
                        Mud.Ids,
                        Mud.Logging,
                        Mud.MiscDataTypes,
+                       Mud.NameResolution,
                        Mud.StateDataTypes,
                        Mud.StateHelpers,
                        Mud.StateInIORefT,
@@ -38,7 +39,9 @@ library
                        FlexibleInstances,
                        GeneralizedNewtypeDeriving,
                        MultiParamTypeClasses,
+                       MultiWayIf,
                        OverloadedStrings,
+                       ScopedTypeVariables,
                        TemplateHaskell,
                        TypeFamilies,
                        UndecidableInstances

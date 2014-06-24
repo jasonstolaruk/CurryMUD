@@ -1,11 +1,11 @@
 -- {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Cmds (gameWrapper) where
 
-import Data.Monoid ((<>))
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import Mud.MiscDataTypes
+import Mud.NameResolution
 import Mud.StateDataTypes
 import Mud.StateHelpers
 import Mud.TheWorld
@@ -26,7 +26,8 @@ import Data.Char (isSpace, toUpper)
 import Data.Foldable (traverse_)
 import Data.Functor ((<$>))
 import Data.List (delete, find, foldl', nub, nubBy, sort)
-import Data.Maybe (fromJust, fromMaybe, isNothing)
+import Data.Maybe (fromJust, isNothing)
+import Data.Monoid ((<>))
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
@@ -153,8 +154,8 @@ dispTitle = liftIO newStdGen >>= \g ->
 
 dispTitleExHandler :: IOException -> IO ()
 dispTitleExHandler e
-  | isDoesNotExistError e = logIOEx "dispTitle" e
-  | isPermissionError   e = logIOEx "dispTitle" e
+  | isDoesNotExistError e = logIOEx        "dispTitle" e
+  | isPermissionError   e = logIOEx        "dispTitle" e
   | otherwise             = logIOExRethrow "dispTitle" e
 
 
@@ -508,37 +509,6 @@ inv rs = do
     descEnts (i:is) = descEnts [i] >> descEnts is-}
 
 
-procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
-procGecrMisPCInv _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisPCInv _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMisPCInv f (Mult _ _ (Just _) _,   Just is) = f is
-procGecrMisPCInv _ (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMisPCInv _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGecrMisPCInv f (Indexed _ _ (Right _), Just is) = f is
-procGecrMisPCInv _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
-procGecrMisPCInv _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisPCInv _ gecrMis = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
-
-
-sorryIndexedCoins :: MudStack ()
-sorryIndexedCoins = output $ "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins."
-
-
-procGcrPCInv :: (Coins -> MudStack ()) -> GetCoinsRes -> MudStack ()
-procGcrPCInv f (cpRes, spRes, gpRes) = do
-    mcp <- helper cpRes "copper pieces"
-    msp <- helper spRes "silver pieces"
-    mgp <- helper gpRes "gold pieces"
-    f (fromMaybe 0 mcp, fromMaybe 0 msp, fromMaybe 0 mgp) -- TODO: Is there a nifty way to do this using lenses?
-  where
-    helper res cn = case res of
-      (Left (actual, requested)) -> if actual == 0
-                                      then output ("You don't have any " <> cn <> ".")                       >> return Nothing
-                                      else outputCon [ "You don't have ", showText requested, " ", cn, "." ] >> return Nothing
-      (Right requested)          -> return (Just requested)
-
-
 descCoins :: Coins -> MudStack ()
 descCoins (cop, sil, gol) = descCop >> descSil >> descGol -- TODO: Is there a nifty way to do this using lenses?
   where -- TODO: Come up with good descriptions.
@@ -585,8 +555,8 @@ getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = do
     (gecrs, miss, gcr) <- getPCRmInvCoins >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisPCInv shuffleInvGet) . zip gecrs $ miss -- TODO: Use "procGecrMisPCRm" instead of "procGecrMisPCInv".
-    procGcrPCInv shuffleCoinsGet gcr  -- TODO: Use "procGcrPCRm" instead of "procGcrPCInv".
+    mapM_ (procGecrMisRm shuffleInvGet) . zip gecrs $ miss
+    procGcrRm shuffleCoinsGet gcr
 
 
 shuffleInvGet :: Inv -> MudStack ()
