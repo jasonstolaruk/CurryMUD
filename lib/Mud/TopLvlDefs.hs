@@ -59,7 +59,7 @@ stdLinkNames :: [LinkName]
 stdLinkNames = ["n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d"]
 
 
-noCoins :: Coins
+noCoins :: Coins -- TODO: This is the identity of the coins monoid.
 noCoins = (0, 0, 0)
 
 

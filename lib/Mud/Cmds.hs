@@ -47,7 +47,7 @@ import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
--- TODO: "desc" vs. "disp"?
+-- TODO: "desc" vs. "disp" vs "summarize"?
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds"
@@ -478,7 +478,6 @@ summarizeCoins c = dispCoinsNameAmtList mkCoinsNameAmtList
     dispCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
     descCoinsNameAmt (cn, a) = if a == 0 then "" else showText a <> " " <> bracketQuote cn
     mkCoinsNameAmtList       = zip coinNames . mkCoinsAmtList $ c
-    
 
 
 -----
@@ -584,36 +583,30 @@ dudeYou'reNaked = output "You don't have anything readied. You're naked!"
 
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction rs = undefined --do
-    --(gecrs, miss, c) :: ([GetEntsCoinsRes], [Maybe Inv], Coins) <- getPCRmInvCoins >>= resolveEntsCoinsByName rs
-    --mapM_ procGecrMisForGet . zip gecrs $ miss
-
-
-procGecrMisForGet :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisForGet (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
-procGecrMisForGet (Sorry n,               Nothing) = output $ "You don't see " <> aOrAn n <> " here."
-procGecrMisForGet (Mult 1 n Nothing  _,   Nothing) = output $ "You don't see " <> aOrAn n <> " here."
-procGecrMisForGet (Mult _ n Nothing  _,   Nothing) = output $ "You don't see any " <> n <> "s here."
-procGecrMisForGet (Mult _ _ (Just _) _,   Just is) = shuffleInvGet is
-procGecrMisForGet (Indexed _ n (Left ""), Nothing) = output $ "You don't see any " <> n <> "s here."
-procGecrMisForGet (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here." ]
-procGecrMisForGet (Indexed _ _ (Right _), Just is) = shuffleInvGet is
-procGecrMisForGet gecrMis = patternMatchFail "procGecrMisForGet" [ showText gecrMis ]
+getAction rs = do
+    (gecrs, miss, gcr) <- getPCRmInvCoins >>= resolveEntCoinNames rs
+    mapM_ (procGecrMisPCInv shuffleInvGet) . zip gecrs $ miss -- TODO: Use "procGecrMisPCRm" instead of "procGecrMisPCInv".
+    procGcrPCInv shuffleCoinsGet gcr  -- TODO: Use "procGcrPCRm" instead of "procGcrPCInv".
 
 
 shuffleInvGet :: Inv -> MudStack ()
 shuffleInvGet is = getPCRmId >>= \i ->
-    moveInv is i 0 >> descGetDrop Get is
+    moveInv is i 0 >> descGetDropEnts Get is
 
 
-descGetDrop :: GetOrDrop -> Inv -> MudStack ()
-descGetDrop god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
+descGetDropEnts :: GetOrDrop -> Inv -> MudStack ()
+descGetDropEnts god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
   where
     descGetDropHelper (_, c, (s, _))
       | c == 1 = outputCon [ "You", verb, "the ", s, "." ]
     descGetDropHelper (_, c, b) = outputCon [ "You", verb, showText c, " ", mkPlurFromBoth b, "." ]
     verb = case god of Get  -> " pick up "
                        Drop -> " drop "
+
+
+shuffleCoinsGet :: Coins -> MudStack ()
+shuffleCoinsGet c = getPCRmId >>= \i ->
+    moveCoins c i 0 -- >> descGetDropCoins Get c
 
 
 -----
@@ -641,7 +634,7 @@ procGecrMisForDrop gecrMis = patternMatchFail "procGecrMisForDrop" [ showText ge
 
 shuffleInvDrop :: Inv -> MudStack ()
 shuffleInvDrop is = getPCRmId >>= \i ->
-    moveInv is 0 i >> descGetDrop Drop is
+    moveInv is 0 i >> descGetDropEnts Drop is
 
 
 -----

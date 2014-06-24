@@ -78,6 +78,7 @@ type Inv = [Id]
 
 -----
 
+-- TODO: This is a monoid!
 type Coins = (Int, Int, Int)
 
 type CoinNameAmt = (T.Text, Int)

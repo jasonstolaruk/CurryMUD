@@ -29,6 +29,7 @@ module Mud.StateHelpers ( addToInv
                         , hasInv
                         , mkCoinsAmtList
                         , mkPlurFromBoth
+                        , moveCoins
                         , moveInv
                         , remFromInv
                         , resolveEntCoinNames
@@ -108,11 +109,9 @@ resolveEntCoinNames rs ic@(_, c) = do
     let (gecrs', cs) = extractCoinsFromGecrs gecrs
     mess :: [Maybe [Ent]] <- mapM extractMesFromGecr gecrs'
     let miss :: [Maybe Inv] = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
-    let c'  = sumCoins noCoins cs
+    let c'  = sumCoins cs
     let gcr = mkGcr c c'
     return (gecrs', miss, gcr)
-  where
-    sumCoins = foldl' (\(cop, sil, gol) (cop', sil', gol') -> (cop + cop', sil + sil', gol + gol')) -- TODO: Is there a nifty way to do this using lenses?
 
 
 mkGecr :: InvCoins -> T.Text -> MudStack GetEntsCoinsRes -- TODO: Impact of alphabetical case?
@@ -158,9 +157,9 @@ mkGecrMultForCoins a n c = let (cop, sil, gol) = c in case n of
     expand "sp" = "silver piece"
     expand "gp" = "gold piece"
     expand _    = "coin"
-    aggregate = if a == (maxBound :: Int)
-                  then helper c
-                  else undefined
+    aggregate   = if a == (maxBound :: Int)
+                    then helper c
+                    else undefined
 
 
 mkGecrMultForEnts :: Amount -> T.Text -> Inv -> MudStack GetEntsCoinsRes
@@ -265,6 +264,37 @@ mkCoinsAmtList (c, g, s) = [c, g, s]
 
 hasCoins :: Id -> MudStack Bool
 hasCoins i = not . all (== 0) . mkCoinsAmtList <$> getCoins i
+
+
+moveCoins :: Coins -> Id -> Id -> MudStack ()
+moveCoins c fi ti | c == noCoins = return ()
+                  | otherwise    = subCoins c fi >> addCoins c ti
+
+
+addCoins :: Coins -> Id -> MudStack ()
+addCoins c i = getCoins i >>= \c' ->
+    coinsTbl.at i ?= c' `plusCoins` c
+
+
+subCoins :: Coins -> Id -> MudStack ()
+subCoins c i = getCoins i >>= \c' ->
+    coinsTbl.at i ?= c' `minusCoins` c
+
+
+plusCoins :: Coins -> Coins -> Coins
+plusCoins = opCoins (+)
+
+
+minusCoins :: Coins -> Coins -> Coins
+minusCoins = opCoins (-)
+
+
+opCoins :: (Int -> Int -> Int) -> Coins -> Coins -> Coins
+opCoins op (cop, sil, gol) (cop', sil', gol') = (cop `op` cop', sil `op` sil', gol `op` gol') -- TODO: Is there a nifty way to do this using lenses?
+
+
+sumCoins :: [Coins] -> Coins
+sumCoins = foldl' plusCoins noCoins
 
 
 -----
