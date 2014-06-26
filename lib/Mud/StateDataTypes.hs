@@ -6,6 +6,7 @@ module Mud.StateDataTypes where
 import Mud.StateInIORefT
 
 import Control.Lens (lens, Lens', makeLenses)
+import Data.Monoid (mappend, mempty, Monoid)
 import GHC.IO.Handle (Handle)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
@@ -78,10 +79,15 @@ type Inv = [Id]
 
 -----
 
--- TODO: This is a monoid!
-type Coins = (Int, Int, Int)
+type Cop = Int
+type Sil = Int
+type Gol = Int
 
-type CoinNameAmt = (T.Text, Int)
+newtype Coins = Coins (Cop, Sil, Gol) deriving (Eq, Show)
+
+instance Monoid Coins where
+  mempty = Coins (0, 0, 0)
+  Coins (cop, sil, gol) `mappend` Coins (cop', sil', gol') = Coins (cop + cop', sil + sil', gol + gol')
 
 -----
 

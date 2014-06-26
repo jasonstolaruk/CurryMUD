@@ -8,6 +8,7 @@ module Mud.MiscDataTypes ( Action
                          , Cmd(..)
                          , CmdName
                          , ConvRol
+                         , FromId
                          , fromRol
                          , GetCoinsRes
                          , GetEntsCoinsRes(..)
@@ -23,6 +24,7 @@ module Mud.MiscDataTypes ( Action
                          , PutOrRem(..)
                          , RequestedCoins
                          , Rest
+                         , ToId
                          , RightOrLeft(..) ) where
 
 import Mud.StateDataTypes
@@ -127,8 +129,8 @@ data RightOrLeft = R
 
 -----
 
-type Amount = Int
-type Index  = Int
+type Amount          = Int
+type Index           = Int
 type NameSearchedFor = T.Text
 
 data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe Coins)
@@ -149,8 +151,13 @@ type RequestedCoins  = Coins
 
 -----
 
-type InvCoins = (Inv, Coins)
+type FromId = Id
+type ToId   = Id
+
+-----
+
+type InvCoins    = (Inv, Coins)
 
 type BothGramNos = (Sing, Plur)
 
-type HelpTopic = T.Text
+type HelpTopic   = T.Text

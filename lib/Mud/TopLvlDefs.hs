@@ -3,7 +3,7 @@
 
 module Mud.TopLvlDefs where
 
-import Mud.StateDataTypes (Coins, LinkName)
+import Mud.StateDataTypes
 
 import Control.Lens.Operators ((^.))
 import Data.Text.Strict.Lens (unpacked)
@@ -57,10 +57,6 @@ histSize = 25
 
 stdLinkNames :: [LinkName]
 stdLinkNames = ["n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d"]
-
-
-noCoins :: Coins -- TODO: This is the identity of the coins monoid.
-noCoins = (0, 0, 0)
 
 
 coinNames :: [T.Text]

@@ -15,12 +15,12 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>))
-import Control.Lens (_1)
-import Control.Lens.Operators ((^.))
+import Control.Lens (_1, each)
+import Control.Lens.Operators ((%~), (^.))
 import Data.Char (isDigit)
 import Data.List (foldl')
 import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), mconcat, mempty)
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (packed)
 import qualified Data.Text as T
@@ -40,7 +40,7 @@ resolveEntCoinNames rs ic@(_, c) = do
     let (gecrs', cs) = extractCoinsFromGecrs gecrs
     mess :: [Maybe [Ent]] <- mapM extractMesFromGecr gecrs'
     let miss :: [Maybe Inv] = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
-    let c'  = sumCoins cs
+    let c'  = mconcat cs
     let gcr = mkGcr c c'
     return (gecrs', miss, gcr)
 
@@ -71,9 +71,8 @@ mkGecrMult a n (is, c) = if n `elem` allCoinNames
                            else mkGecrMultForEnts  a n is
 
 
--- TODO: Is there a nifty way to do this using lenses?
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
-mkGecrMultForCoins a n c = let (cop, sil, gol) = c in case n of
+mkGecrMultForCoins a n (Coins c@(cop, sil, gol)) = case n of
   "cp"    -> let a' = if a == (maxBound :: Int) then cop else a in helper (a', 0,  0 )
   "sp"    -> let a' = if a == (maxBound :: Int) then sil else a in helper (0,  a', 0 )
   "gp"    -> let a' = if a == (maxBound :: Int) then gol else a in helper (0,  0,  a')
@@ -81,9 +80,9 @@ mkGecrMultForCoins a n c = let (cop, sil, gol) = c in case n of
   "coins" -> aggregate
   _       -> patternMatchFail "mkGecrMultForCoins" [n]
   where
-    helper c' = return $ if c' == noCoins
-                           then (Mult a (expand n) Nothing Nothing  )
-                           else (Mult a n          Nothing (Just c'))
+    helper c'   = return $ if Coins c' == mempty
+                             then (Mult a (expand n) Nothing Nothing            )
+                             else (Mult a n          Nothing (Just . Coins $ c'))
     expand "cp" = "copper piece"
     expand "sp" = "silver piece"
     expand "gp" = "gold piece"
@@ -138,9 +137,9 @@ pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
                                        in Just is' : pruneDupIds (is' ++ uniques) rest
 
 
-mkGcr :: ActualCoins -> RequestedCoins -> GetCoinsRes -- TODO: Is there a nifty way to do this using lenses?
-mkGcr c c' = let (cop,  sil,  gol ) = c
-                 (cop', sil', gol') = c'
+mkGcr :: ActualCoins -> RequestedCoins -> GetCoinsRes
+mkGcr c c' = let Coins (cop,  sil,  gol ) = c
+                 Coins (cop', sil', gol') = c'
              in (helper cop cop', helper sil sil', helper gol gol')
   where
     helper actual requested = if requested <= actual
@@ -178,13 +177,12 @@ procGecrMisRm _ (Sorry n,               Nothing) = output $ "You don't see " <> 
 procGecrMisRm _ gecrMis = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
-
 procGcrPCInv :: (Coins -> MudStack ()) -> GetCoinsRes -> MudStack ()
 procGcrPCInv f (cpRes, spRes, gpRes) = do
     mcp <- helper cpRes "copper pieces"
     msp <- helper spRes "silver pieces"
     mgp <- helper gpRes "gold pieces"
-    f (fromMaybe 0 mcp, fromMaybe 0 msp, fromMaybe 0 mgp) -- TODO: Is there a nifty way to do this using lenses?
+    f . Coins $ each %~ (fromMaybe 0) $ (mcp, msp, mgp)
   where
     helper res cn = case res of
       (Left (actual, requested)) -> if actual == 0
@@ -198,7 +196,7 @@ procGcrRm f (cpRes, spRes, gpRes) = do
     mcp <- helper cpRes "copper pieces"
     msp <- helper spRes "silver pieces"
     mgp <- helper gpRes "gold pieces"
-    f (fromMaybe 0 mcp, fromMaybe 0 msp, fromMaybe 0 mgp) -- TODO: Is there a nifty way to do this using lenses?
+    f . Coins $ each %~ (fromMaybe 0) $ (mcp, msp, mgp)
   where
     helper res cn = case res of
       (Left (actual, requested)) -> if actual == 0

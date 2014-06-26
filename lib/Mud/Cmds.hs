@@ -27,7 +27,7 @@ import Data.Foldable (traverse_)
 import Data.Functor ((<$>))
 import Data.List (delete, find, foldl', nub, nubBy, sort)
 import Data.Maybe (fromJust, isNothing)
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), mempty)
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
@@ -417,10 +417,10 @@ look (r:rs) = look [r] >> look rs
 dispRmInvCoins :: InvCoins -> MudStack ()
 dispRmInvCoins (is, c) = mkNameCountBothList is >>= mapM_ descEntInRm >> maybeSummarizeCoins
   where
-    descEntInRm (en, c, (s, _))
-      | c == 1 = outputIndent 2 $ aOrAn s <> " " <> bracketQuote en
-    descEntInRm (en, c, b) = outputConIndent 2 [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
-    maybeSummarizeCoins    = when (c /= noCoins) (summarizeCoins c)
+    descEntInRm (en, count, (s, _))
+      | count == 1             = outputIndent 2 $ aOrAn s <> " " <> bracketQuote en
+    descEntInRm (en, count, b) = outputConIndent 2 [ showText count, " ", mkPlurFromBoth b, " ", bracketQuote en ]
+    maybeSummarizeCoins        = when (c /= mempty) (summarizeCoins c)
 
 
 mkNameCountBothList :: Inv -> MudStack [(T.Text, Int, BothGramNos)]
@@ -474,11 +474,11 @@ descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
 
 
 summarizeCoins :: Coins -> MudStack ()
-summarizeCoins c = dispCoinsNameAmtList mkCoinsNameAmtList
+summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
   where
-    dispCoinsNameAmtList     = output . T.intercalate ", " . filter (not . T.null) . map descCoinsNameAmt
-    descCoinsNameAmt (cn, a) = if a == 0 then "" else showText a <> " " <> bracketQuote cn
-    mkCoinsNameAmtList       = zip coinNames . mkCoinsAmtList $ c
+    dispCoinsWithNamesList = output . T.intercalate ", " . filter (not . T.null) . map descNameAmt
+    descNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
+    mkCoinsWithNamesList   = zip coinNames . mkCoinsList $ c
 
 
 -----
@@ -510,7 +510,7 @@ inv rs = do
 
 
 descCoins :: Coins -> MudStack ()
-descCoins (cop, sil, gol) = descCop >> descSil >> descGol -- TODO: Is there a nifty way to do this using lenses?
+descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
   where -- TODO: Come up with good descriptions.
     descCop = unless (cop == 0) (output "The copper piece is round and shiny." >> liftIO newLine)
     descSil = unless (sil == 0) (output "The silver piece is round and shiny." >> liftIO newLine)

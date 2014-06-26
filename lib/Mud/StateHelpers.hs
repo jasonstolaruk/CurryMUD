@@ -27,13 +27,12 @@ module Mud.StateHelpers ( addToInv
                         , getWpn
                         , hasCoins
                         , hasInv
-                        , mkCoinsAmtList
+                        , mkCoinsList
                         , mkPlurFromBoth
                         , moveCoins
                         , moveInv
                         , remFromInv
-                        , sortInv
-                        , sumCoins ) where
+                        , sortInv ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -41,13 +40,17 @@ import Mud.TopLvlDefs
 import Mud.Util
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens (_1, at, ix)
-import Control.Lens.Operators ((?=), (^.), (^?!))
+import Control.Lens (_1, at, each, ix)
+import Control.Lens.Operators ((%~), (?=), (^.), (^?!))
+import Control.Monad (unless)
 import Control.Monad.State (gets)
-import Data.List (foldl', sortBy)
-import Data.Monoid ((<>))
+import Data.List (sortBy)
+import Data.Monoid ((<>), mempty)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
+
+
+-- TODO: Add headers to each section.
 
 
 getEnt :: Id -> MudStack Ent
@@ -114,43 +117,30 @@ getCoins :: Id -> MudStack Coins
 getCoins i = gets (^?!coinsTbl.ix i)
 
 
-mkCoinsAmtList :: Coins -> [Int]
-mkCoinsAmtList (c, g, s) = [c, g, s]
+mkCoinsList :: Coins -> [Int]
+mkCoinsList (Coins (c, g, s)) = [c, g, s]
 
 
 hasCoins :: Id -> MudStack Bool
-hasCoins i = not . all (== 0) . mkCoinsAmtList <$> getCoins i
+hasCoins i = not . all (== 0) . mkCoinsList <$> getCoins i
 
 
-moveCoins :: Coins -> Id -> Id -> MudStack ()
-moveCoins c fi ti | c == noCoins = return ()
-                  | otherwise    = subCoins c fi >> addCoins c ti
+moveCoins :: Coins -> FromId -> ToId -> MudStack ()
+moveCoins c fi ti = unless (c == mempty) $ subCoins c fi >> addCoins c ti
 
 
 addCoins :: Coins -> Id -> MudStack ()
 addCoins c i = getCoins i >>= \c' ->
-    coinsTbl.at i ?= c' `plusCoins` c
+    coinsTbl.at i ?= c' <> c
 
 
 subCoins :: Coins -> Id -> MudStack ()
 subCoins c i = getCoins i >>= \c' ->
-    coinsTbl.at i ?= c' `minusCoins` c
+    coinsTbl.at i ?= c' <> negateCoins c
 
 
-plusCoins :: Coins -> Coins -> Coins
-plusCoins = opCoins (+)
-
-
-minusCoins :: Coins -> Coins -> Coins
-minusCoins = opCoins (-)
-
-
-opCoins :: (Int -> Int -> Int) -> Coins -> Coins -> Coins
-opCoins op (cop, sil, gol) (cop', sil', gol') = (cop `op` cop', sil `op` sil', gol `op` gol') -- TODO: Is there a nifty way to do this using lenses?
-
-
-sumCoins :: [Coins] -> Coins
-sumCoins = foldl' plusCoins noCoins
+negateCoins :: Coins -> Coins
+negateCoins (Coins c) = Coins (each %~ negate $ c)
 
 
 -----
@@ -172,12 +162,12 @@ addToInv :: Inv -> Id -> MudStack ()
 addToInv is ti = getInv ti >>= sortInv . (++ is) >>= (invTbl.at ti ?=)
 
 
-remFromInv :: Inv -> Id -> MudStack ()
+remFromInv :: Inv -> FromId -> MudStack ()
 remFromInv is fi = getInv fi >>= \fis ->
     invTbl.at fi ?= deleteFirstOfEach is fis
 
 
-moveInv :: Inv -> Id -> Id -> MudStack ()
+moveInv :: Inv -> FromId -> ToId -> MudStack ()
 moveInv [] _  _  = return ()
 moveInv is fi ti = remFromInv is fi >> addToInv is ti
 
