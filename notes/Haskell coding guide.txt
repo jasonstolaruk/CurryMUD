@@ -313,14 +313,14 @@ Just 'b'
 When you have a number of computations, each resulting in an instance of "Monoid" wrapped in
 "Maybe", you can use the "Maybe a" instance of "Monoid" to work with those results in a "monoidal"
 fashion, without directly dealing with the "Maybe" wrapper: 
-λ> let map = M.fromList [('a',[1..5]),('b',[6..10])] -- Note that "[a]" is a monoid.
-λ> M.lookup 'c' map `mappend` M.lookup 'd' map `mappend` M.lookup 'a' map
+λ> let myMap = M.fromList [('a',[1..5]),('b',[6..10])] -- Note that "[a]" is a monoid.
+λ> M.lookup 'c' myMap `mappend` M.lookup 'd' myMap `mappend` M.lookup 'a' myMap
 Just [1,2,3,4,5]
 
 Certain nested computations, where the second computation should take place if the first one
 "fails," can be cleanly written using "mplus" from "MonadPlus":
-λ> let map = M.fromList [('a',1),('b',2)]
-λ> M.lookup 'c' map `mplus` M.lookup 'd' map `mplus` M.lookup 'a' map
+λ> let myMap = M.fromList [('a',1),('b',2)]
+λ> M.lookup 'c' myMap `mplus` M.lookup 'd' myMap `mplus` M.lookup 'a' myMap
 Just 1
 λ> let list = ['a'..'z']
 λ> filter isDigit list `mplus` filter isLower list `mplus` filter (< 'd') list

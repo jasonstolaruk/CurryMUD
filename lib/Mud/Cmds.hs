@@ -94,12 +94,12 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
           --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-          --, Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
+          , Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
           , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on a topic or command." }
           , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
-          --, Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
+          , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
           , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
           , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
           , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
@@ -399,20 +399,26 @@ tryMove dir = let dir' = T.toLower dir
     sorry dir' = output $ if dir' `elem` stdLinkNames
                             then "You can't go that way."
                             else dblQuote dir <> " is not a valid direction."
-    movePC i = pc.rmId .= i -- >> look [] -- TODO: Reinstate.
+    movePC i = pc.rmId .= i >> look []
 
 
 -----
 
-{-
+
 look :: Action
 look [] = do
     getPCRm >>= \r -> output $ r^.name <> "\n" <> r^.desc
     exits []
     getPCRmInvCoins >>= dispRmInvCoins
-look [r]    = getPCRmInvCoins >>= getEntsCoinsByName r >>= procGetEntsCoinsResRm >>= traverse_ (mapM_ descEnt)
-look (r:rs) = look [r] >> look rs
--}
+look rs = do
+    (gecrs, miss, gcr) <- getPCRmInvCoins >>= resolveEntCoinNames rs
+    mapM_ (procGecrMisRm descEnts) . zip gecrs $ miss
+    procGcrRm descCoins gcr
+
+
+descEnts :: Inv -> MudStack ()
+descEnts = mapM_ (\i -> getEnt i >>= descEnt >> liftIO newLine) -- TODO: Make newlines consistent in all command output.
+
 
 dispRmInvCoins :: InvCoins -> MudStack ()
 dispRmInvCoins (is, c) = mkNameCountBothList is >>= mapM_ descEntInRm >> maybeSummarizeCoins
@@ -501,12 +507,6 @@ inv rs = do
     (gecrs, miss, gcr) <- getInvCoins 0 >>= resolveEntCoinNames rs
     mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
     procGcrPCInv descCoins gcr
-  where
-    descEnts :: Inv -> MudStack ()
-    descEnts = mapM_ (\i -> getEnt i >>= descEnt >> liftIO newLine)
-    {-descEnts []     = return () -- TODO: I bet there's other code similar to this that can simply be rewritten as a monadic map.
-    descEnts [i]    = getEnt i >>= descEnt >> liftIO newLine
-    descEnts (i:is) = descEnts [i] >> descEnts is-}
 
 
 descCoins :: Coins -> MudStack ()
@@ -519,12 +519,14 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 
 -----
 
-{-
+
 equip :: Action
-equip []     = descEq 0
-equip [r]    = getEq 0 >>= getEntsCoinsByName r >>= procGetEntsCoinsResPCInv >>= traverse_ (mapM_ descEnt)
-equip (r:rs) = equip [r] >> equip rs
--}
+equip [] = descEq 0
+equip rs = do
+    (gecrs, miss, gcr) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
+    mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
+    
+
 
 descEq :: Id -> MudStack ()
 descEq i = (mkEqDescList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \edl ->
@@ -568,7 +570,7 @@ descGetDropEnts :: GetOrDrop -> Inv -> MudStack ()
 descGetDropEnts god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
   where
     descGetDropHelper (_, c, (s, _))
-      | c == 1 = outputCon [ "You", verb, "the ", s, "." ]
+      | c == 1                  = outputCon [ "You", verb, "the ", s, "." ]
     descGetDropHelper (_, c, b) = outputCon [ "You", verb, showText c, " ", mkPlurFromBoth b, "." ]
     verb = case god of Get  -> " pick up "
                        Drop -> " drop "

@@ -73,9 +73,9 @@ mkGecrMult a n (is, c) = if n `elem` allCoinNames
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
 mkGecrMultForCoins a n (Coins c@(cop, sil, gol)) = case n of
-  "cp"    -> let a' = if a == (maxBound :: Int) then cop else a in helper (a', 0,  0 )
-  "sp"    -> let a' = if a == (maxBound :: Int) then sil else a in helper (0,  a', 0 )
-  "gp"    -> let a' = if a == (maxBound :: Int) then gol else a in helper (0,  0,  a')
+  "cp"    -> helper $ let a' = if a == (maxBound :: Int) then cop else a in (a', 0,  0 )
+  "sp"    -> helper $ let a' = if a == (maxBound :: Int) then sil else a in (0,  a', 0 )
+  "gp"    -> helper $ let a' = if a == (maxBound :: Int) then gol else a in (0,  0,  a')
   "coin"  -> aggregate
   "coins" -> aggregate
   _       -> patternMatchFail "mkGecrMultForCoins" [n]
@@ -151,6 +151,7 @@ sorryIndexedCoins :: MudStack ()
 sorryIndexedCoins = output $ "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins."
 
 
+-- TODO: Compare and refactor.
 procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
 procGecrMisPCInv _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
@@ -177,6 +178,7 @@ procGecrMisRm _ (Sorry n,               Nothing) = output $ "You don't see " <> 
 procGecrMisRm _ gecrMis = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
+-- TODO: Compare and refactor.
 procGcrPCInv :: (Coins -> MudStack ()) -> GetCoinsRes -> MudStack ()
 procGcrPCInv f (cpRes, spRes, gpRes) = do
     mcp <- helper cpRes "copper pieces"
