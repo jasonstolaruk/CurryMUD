@@ -92,7 +92,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "?", action = dispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD server." }
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-          --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
+          , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           , Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
           , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
@@ -104,7 +104,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
           , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
           , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
-          --, Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
+          , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
           --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
           --, Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
@@ -411,9 +411,9 @@ look [] = do
     exits []
     getPCRmInvCoins >>= dispRmInvCoins
 look rs = do
-    (gecrs, miss, gcr) <- getPCRmInvCoins >>= resolveEntCoinNames rs
+    (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
     mapM_ (procGecrMisRm descEnts) . zip gecrs $ miss
-    mapM_ (procEnscRm descCoins) gcr
+    mapM_ (procReconciledCoinsRm descCoins) rcs
 
 
 descEnts :: Inv -> MudStack ()
@@ -501,12 +501,12 @@ exits rs = ignore rs >> exits []
 -----
 
 
-inv :: Action -- TODO: Give some indication of encumberance.
+inv :: Action -- TODO: Give some indication of encumbrance.
 inv [] = descInvCoins 0
 inv rs = do
-    (gecrs, miss, gcr) <- getInvCoins 0 >>= resolveEntCoinNames rs
+    (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
     mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
-    mapM_ (procEnscPCInv descCoins) gcr
+    mapM_ (procReconciledCoinsPCInv descCoins) rcs
 
 
 descCoins :: Coins -> MudStack ()
@@ -556,9 +556,9 @@ dudeYou'reNaked = output "You don't have anything readied. You're naked!"
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = do
-    (gecrs, miss, gcr) <- getPCRmInvCoins >>= resolveEntCoinNames rs
+    (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
     mapM_ (procGecrMisRm shuffleInvGet) . zip gecrs $ miss
-    mapM_ (procEnscRm shuffleCoinsGet) gcr
+    mapM_ (procReconciledCoinsRm shuffleCoinsGet) rcs
 
 
 shuffleInvGet :: Inv -> MudStack ()
@@ -570,38 +570,42 @@ descGetDropEnts :: GetOrDrop -> Inv -> MudStack ()
 descGetDropEnts god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
   where
     descGetDropHelper (_, c, (s, _))
-      | c == 1                  = outputCon [ "You", verb, "the ", s, "." ]
-    descGetDropHelper (_, c, b) = outputCon [ "You", verb, showText c, " ", mkPlurFromBoth b, "." ]
-    verb = case god of Get  -> " pick up "
-                       Drop -> " drop "
+      | c == 1                  = outputCon [ "You ", verb, " the ", s, "." ]
+    descGetDropHelper (_, c, b) = outputCon [ "You ", verb, " ", showText c, " ", mkPlurFromBoth b, "." ]
+    verb = case god of Get  -> "pick up"
+                       Drop -> "drop"
 
 
 shuffleCoinsGet :: Coins -> MudStack ()
 shuffleCoinsGet c = getPCRmId >>= \i ->
-    moveCoins c i 0 -- >> descGetDropCoins Get c
+    moveCoins c i 0 >> descGetDropCoins Get c
+
+
+descGetDropCoins :: GetOrDrop -> Coins -> MudStack ()
+descGetDropCoins god (Coins (cop, sil, gol)) = do
+    unless (cop == 0) . descGetDropHelper cop $ "copper piece"
+    unless (sil == 0) . descGetDropHelper sil $ "silver piece"
+    unless (gol == 0) . descGetDropHelper gol $ "gold piece"
+  where
+    descGetDropHelper a cn
+      | a == 1    = outputCon [ "You ", verb, " a ", cn, "." ]
+      | otherwise = outputCon [ "You ", verb, " ", showText a, " ", cn, "s." ]
+    verb = case god of Get  -> "pick up"
+                       Drop -> "drop"
 
 
 -----
 
-{-
-dropAction :: Action
-dropAction []   = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
-dropAction rs = hasInv 0 >>= \hi ->
-  if hi
-    then getInv 0 >>= resolveEntsCoinsByName rs >>= mapM_ procGecrMisForDrop . uncurry zip
-    else dudeYourHandsAreEmpty
--}
 
-procGecrMisForDrop :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisForDrop (_,                     Just []) = return ()
-procGecrMisForDrop (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisForDrop (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisForDrop (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMisForDrop (Mult _ _ (Just _) _,   Just is) = shuffleInvDrop is
-procGecrMisForDrop (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMisForDrop (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGecrMisForDrop (Indexed _ _ (Right _), Just is) = shuffleInvDrop is
-procGecrMisForDrop gecrMis = patternMatchFail "procGecrMisForDrop" [ showText gecrMis ]
+dropAction :: Action
+dropAction [] = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
+dropAction rs = hasInv 0 >>= \hi ->
+  if not hi
+    then dudeYourHandsAreEmpty
+    else do
+        (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
+        mapM_ (procGecrMisPCInv shuffleInvDrop) . zip gecrs $ miss
+        mapM_ (procReconciledCoinsPCInv shuffleCoinsDrop) rcs
 
 
 shuffleInvDrop :: Inv -> MudStack ()
@@ -609,81 +613,90 @@ shuffleInvDrop is = getPCRmId >>= \i ->
     moveInv is 0 i >> descGetDropEnts Drop is
 
 
+shuffleCoinsDrop :: Coins -> MudStack ()
+shuffleCoinsDrop c = getPCRmId >>= \i ->
+    moveCoins c 0 i >> descGetDropCoins Drop c
+
+
 -----
 
-{-
+
 putAction :: Action
 putAction []   = advise ["put"] $ "Please specify what you want to put, followed by where you want to put it, as in " <> dblQuote "put doll sack" <> "."
 putAction [r]  = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
-putAction rs   = hasInv 0 >>= \hi ->
-    if hi then putRemDispatcher Put rs else dudeYourHandsAreEmpty
--}
-{-
+putAction rs   = hasInv 0 >>= \hi -> if hi then putRemDispatcher Put rs else dudeYourHandsAreEmpty
+
+
 putRemDispatcher :: PutOrRem -> Action
-putRemDispatcher por (r:rs) = findCon (last rs) >>= \mes ->
-    case mes of Nothing -> return ()
-                Just es -> case es of [e] -> getEntType e >>= \t ->
-                                                 if t /= ConType
-                                                   then output $ "The " <> e^.sing <> " isn't a container."
-                                                   else e^.entId.to dispatchToHelper
-                                      _   -> output onlyOneMsg
+putRemDispatcher por rs
+  | last rs `elem` allCoinNames = output "Alas, a coin is not a container."
+  | otherwise = findCon (last rs) >>= \mes ->
+      case mes of Nothing -> return ()
+                  Just es -> case es of [e] -> getEntType e >>= \t ->
+                                                   if t /= ConType
+                                                     then output $ "The " <> e^.sing <> " isn't a container."
+                                                     else e^.entId.to dispatchToHelper
+                                        _   -> output onlyOneMsg
   where
     findCon cn
-      | T.head cn == rmChar = do
-          ic <- getPCRmInvCoins
-          c  <- getPCRmId >>= getCoins
-          getEntsCoinsByName (T.tail cn) ic >>= procGetEntsCoinsResRm
-      | otherwise = do
-          is <- getInv 0
-          c  <- getCoins 0
-          getEntsCoinsByName cn is c >>= procGetEntsCoinsResPCInv
+      | T.head cn == rmChar = getPCRmInvCoins >>= resolveEntName (T.tail cn)
+      | otherwise           = getInvCoins 0   >>= resolveEntName cn
     onlyOneMsg         = case por of Put -> "You can only put things into one container at a time."
                                      Rem -> "You can only remove things from one container at a time."
     dispatchToHelper i = case por of Put -> putHelper i restWithoutCon 
-                                     Rem -> remHelper i restWithoutCon
-    restWithoutCon = r : init rs
-putRemDispatcher por rs = patternMatchFail "putRemDispatcher" [ showText por, showText rs ]
--}
-{-
-putHelper :: Id -> Rest -> MudStack ()
-putHelper _  []   = return ()
-putHelper ci (rs) = getPCRmInvCoins >>= resolveEntsCoinsByName rs >>= mapM_ (procGecrMisForPut ci) . uncurry zip
--}
+                                     Rem -> undefined --remHelper i restWithoutCon -- TODO
+    restWithoutCon = init rs
 
-procGecrMisForPut :: Id -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisForPut _  (_,                     Just []) = return ()
-procGecrMisForPut _  (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisForPut _  (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisForPut _  (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMisForPut ci (Mult _ _ (Just _) _,   Just is) = shuffleInvPut ci is
-procGecrMisForPut _  (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMisForPut _  (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGecrMisForPut ci (Indexed _ _ (Right _), Just is) = shuffleInvPut ci is
-procGecrMisForPut ci gecrMis = patternMatchFail "procGecrMisForPut" [ showText ci, showText gecrMis ]
+
+putHelper :: Id -> Rest -> MudStack ()
+putHelper _  [] = return ()
+putHelper ci rs = do
+    (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
+    mapM_ (procGecrMisPCInv . shuffleInvPut $ ci) . zip gecrs $ miss
+    mapM_ (procReconciledCoinsPCInv . shuffleCoinsPut $ ci) rcs
 
 
 shuffleInvPut :: Id -> Inv -> MudStack ()
 shuffleInvPut ci is = do
-    cn <- (^.sing) <$> getEnt ci
+    cn  <- (^.sing) <$> getEnt ci
     is' <- checkImplosion cn
     moveInv is' 0 ci
-    descPutRem Put is' cn
+    descPutRemEnts Put is' cn
   where
     checkImplosion cn = if ci `elem` is
                           then output ("You can't put the " <> cn <> " inside itself.") >> return (filter (/= ci) is)
                           else return is
 
 
-descPutRem :: PutOrRem -> Inv -> ConName -> MudStack ()
-descPutRem por is cn = mkNameCountBothList is >>= mapM_ descPutRemHelper
+descPutRemEnts :: PutOrRem -> Inv -> ConName -> MudStack ()
+descPutRemEnts por is cn = mkNameCountBothList is >>= mapM_ descPutRemHelper
   where
     descPutRemHelper (_, c, (s, _))
-      | c == 1                    = outputCon [ "You", verb, "the ", s, prep, cn, "." ]
-    descPutRemHelper (_, c, b) = outputCon [ "You", verb, showText c, " ", mkPlurFromBoth b, prep, cn, "." ]
-    verb = case por of Put -> " put "
-                       Rem -> " remove "
-    prep = case por of Put -> " in the "
-                       Rem -> " from the "
+      | c == 1                 = outputCon [ "You ", verb, " the ", s, " ", prep, " ", cn, "." ]
+    descPutRemHelper (_, c, b) = outputCon [ "You ", verb, " ", showText c, " ", mkPlurFromBoth b, " ", prep, " ", cn, "." ]
+    verb = case por of Put -> "put"
+                       Rem -> "remove"
+    prep = case por of Put -> "in the"
+                       Rem -> "from the"
+
+
+shuffleCoinsPut :: Id -> Coins -> MudStack ()
+shuffleCoinsPut ci c = moveCoins c 0 ci >> (^.sing) <$> getEnt ci >>= descPutRemCoins Put c
+
+
+descPutRemCoins :: PutOrRem -> Coins -> ConName -> MudStack ()
+descPutRemCoins por (Coins (cop, sil, gol)) cn = do
+    unless (cop == 0) . descGetDropHelper cop $ "copper piece"
+    unless (sil == 0) . descGetDropHelper sil $ "silver piece"
+    unless (gol == 0) . descGetDropHelper gol $ "gold piece"
+  where
+    descGetDropHelper a cn'
+      | a == 1    = outputCon [ "You ", verb, " a ", cn', " ", prep, " ", cn, "." ]
+      | otherwise = outputCon [ "You ", verb, " ", showText a, " ", cn', "s ", prep, " ", cn, "." ]
+    verb = case por of Put -> "put"
+                       Rem -> "remove"
+    prep = case por of Put -> "in the"
+                       Rem -> "from the"
 
 
 -----
@@ -718,7 +731,7 @@ procGecrMisForRem ci cn gecrMis = patternMatchFail "procGecrMisForRem" [ showTex
 
 
 shuffleInvRem :: Id -> ConName -> Inv -> MudStack ()
-shuffleInvRem ci cn is = moveInv is ci 0 >> descPutRem Rem is cn
+shuffleInvRem ci cn is = moveInv is ci 0 >> descPutRemEnts Rem is cn
 
 
 -----

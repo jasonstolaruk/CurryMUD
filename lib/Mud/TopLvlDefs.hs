@@ -46,7 +46,7 @@ indentTagChar = '`'
 
 
 cols, minCols, maxCols :: Int -- TODO: Move to "Pla" data type?
-cols    = minCols
+cols    = 80 --minCols
 minCols = 30
 maxCols = 200
 

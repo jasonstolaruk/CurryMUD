@@ -23,6 +23,7 @@ module Mud.MiscDataTypes ( Action
                          , PutOrRem(..)
                          , Rest
                          , ToId
+                         , ReconciledCoins
                          , RightOrLeft(..) ) where
 
 import Mud.StateDataTypes
@@ -118,7 +119,7 @@ data InvType = PCInv | PCEq | RmInv deriving Eq
 
 data GetOrDrop = Get | Drop
 
-data PutOrRem = Put | Rem
+data PutOrRem = Put | Rem deriving Show
 
 data RightOrLeft = R
                  | L
@@ -130,6 +131,8 @@ data RightOrLeft = R
 data EmptyNoneSome a = Empty
                      | NoneOf a
                      | SomeOf a deriving (Eq, Show)
+
+type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 -----
 
