@@ -1,8 +1,8 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+-- {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-module Mud.NameResolution ( procGcrPCInv
-                          , procGcrRm
+module Mud.NameResolution ( procEnscPCInv
+                          , procEnscRm
                           , procGecrMisPCInv
                           , procGecrMisRm
                           , resolveEntCoinNames ) where
@@ -15,11 +15,10 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>))
-import Control.Lens (_1, each)
-import Control.Lens.Operators ((%~), (^.))
+import Control.Lens (_1)
+import Control.Lens.Operators ((^.))
 import Data.Char (isDigit)
 import Data.List (foldl')
-import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), mconcat, mempty)
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (packed)
@@ -34,20 +33,19 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.NameResolution"
 
 
-resolveEntCoinNames :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], GetCoinsRes)
+resolveEntCoinNames :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)])
 resolveEntCoinNames rs ic@(_, c) = do
-    gecrs <- mapM (mkGecr ic) rs
-    let (gecrs', cs) = extractCoinsFromGecrs gecrs
+    gecrs :: [GetEntsCoinsRes] <- mapM (mkGecr ic) rs
+    let (gecrs', enscs) :: ([GetEntsCoinsRes], [EmptyNoneSome Coins]) = extractEnscsFromGecrs gecrs
     mess :: [Maybe [Ent]] <- mapM extractMesFromGecr gecrs'
     let miss :: [Maybe Inv] = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
-    let c'  = mconcat cs
-    let gcr = mkGcr c c'
-    return (gecrs', miss, gcr)
+    let reconciled :: [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)] = reconcileCoins c . distillEnscs $ enscs
+    return (gecrs', miss, reconciled)
 
 
 mkGecr :: InvCoins -> T.Text -> MudStack GetEntsCoinsRes -- TODO: Impact of alphabetical case?
 mkGecr ic@(is, c) n
-  | n == [allChar]^.packed = getEntsInInv is >>= \es -> return (Mult (length is) n (Just es) (Just c))
+  | n == [allChar]^.packed = getEntsInInv is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
   | T.head n == allChar    = mkGecrMult (maxBound :: Int) (T.tail n) ic
   | isDigit (T.head n)     = let numText = T.takeWhile isDigit n
                                  numInt  = either (oops numText) (^._1) $ decimal numText
@@ -72,24 +70,25 @@ mkGecrMult a n (is, c) = if n `elem` allCoinNames
 
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
-mkGecrMultForCoins a n (Coins c@(cop, sil, gol)) = case n of
-  "cp"    -> helper $ let a' = if a == (maxBound :: Int) then cop else a in (a', 0,  0 )
-  "sp"    -> helper $ let a' = if a == (maxBound :: Int) then sil else a in (0,  a', 0 )
-  "gp"    -> helper $ let a' = if a == (maxBound :: Int) then gol else a in (0,  0,  a')
-  "coin"  -> aggregate
-  "coins" -> aggregate
-  _       -> patternMatchFail "mkGecrMultForCoins" [n]
+mkGecrMultForCoins a n c@(Coins (cop, sil, gol))
+  | c == mempty = return (Mult a n Nothing . Just $ Empty)
+  | otherwise = case n of
+    "cp"    -> helper . Coins $ let a' = if a == (maxBound :: Int) then cop else a in (a', 0,  0 )
+    "sp"    -> helper . Coins $ let a' = if a == (maxBound :: Int) then sil else a in (0,  a', 0 )
+    "gp"    -> helper . Coins $ let a' = if a == (maxBound :: Int) then gol else a in (0,  0,  a')
+    "coin"  -> aggregate
+    "coins" -> aggregate
+    _       -> patternMatchFail "mkGecrMultForCoins" [n]
   where
-    helper c'   = return $ if Coins c' == mempty
-                             then (Mult a (expand n) Nothing Nothing            )
-                             else (Mult a n          Nothing (Just . Coins $ c'))
-    expand "cp" = "copper piece"
-    expand "sp" = "silver piece"
-    expand "gp" = "gold piece"
-    expand _    = "coin"
-    aggregate   = if a == (maxBound :: Int)
-                    then helper c
-                    else undefined
+    helper c' = return $ if c' == mempty
+                           then (Mult a n Nothing (Just . NoneOf . Coins $ case n of
+                                                                             "cp" -> (a, 0, 0)
+                                                                             "sp" -> (0, a, 0)
+                                                                             "gp" -> (0, 0, a)))
+                           else (Mult a n Nothing (Just . SomeOf $ c')) -- TODO: Make a NoneOf is existing amoint is 0.
+    aggregate = if a == (maxBound :: Int)
+                  then helper c
+                  else undefined
 
 
 mkGecrMultForEnts :: Amount -> T.Text -> Inv -> MudStack GetEntsCoinsRes
@@ -114,17 +113,16 @@ mkGecrIndexed x n is = if n `elem` allCoinNames
           else return (Indexed x n (Right $ matches !! (x - 1)))
 
 
-extractCoinsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Coins])
-extractCoinsFromGecrs = foldl' helper ([], [])
+extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
+extractEnscsFromGecrs = foldl' helper ([], [])
   where
-    helper (gecrs, cs) gecr@(Mult _ _ (Just _) (Just c)) = (gecr : gecrs, c : cs)
-    helper (gecrs, cs)      (Mult _ _ _        (Just c)) = (gecrs, c : cs)
-    helper (gecrs, cs) gecr                              = (gecr : gecrs, cs)
+    helper (gecrs, enscs) gecr@(Mult _ _ (Just _) (Just ensc)) = (gecr : gecrs, ensc : enscs)
+    helper (gecrs, enscs) gecr@(Mult _ _ (Just _) Nothing    ) = (gecr : gecrs, enscs)
+    helper (gecrs, enscs)      (Mult _ _ Nothing  (Just ensc)) = (gecrs, ensc : enscs)
 
 
 extractMesFromGecr :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
 extractMesFromGecr gecr = case gecr of
-  (Mult    _ _ Nothing   _) -> return Nothing
   (Mult    _ _ (Just es) _) -> return (Just es)
   (Indexed _ _ (Right e)  ) -> return (Just [e])
   _                         -> return Nothing
@@ -137,14 +135,45 @@ pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
                                        in Just is' : pruneDupIds (is' ++ uniques) rest
 
 
-mkGcr :: ActualCoins -> RequestedCoins -> GetCoinsRes
-mkGcr c c' = let Coins (cop,  sil,  gol ) = c
-                 Coins (cop', sil', gol') = c'
-             in (helper cop cop', helper sil sil', helper gol gol')
+distillEnscs :: [EmptyNoneSome Coins] -> [EmptyNoneSome Coins]
+distillEnscs enscs
+  | Empty `elem` enscs = [Empty]
+  | otherwise          = let someOfs = filter isSomeOf enscs
+                             noneOfs = filter isNoneOf enscs
+                         in distillSomeOfs someOfs ++ distillNoneOfs noneOfs
   where
-    helper actual requested = if requested <= actual
-                                then Right requested
-                                else Left  (actual, requested)
+    isSomeOf (SomeOf _)     = True
+    isSomeOf _              = False
+    isNoneOf (NoneOf _)     = True
+    isNoneOf _              = False
+    distillSomeOfs []       = []
+    distillSomeOfs someOfs  = let cs = map fromEnsCoins someOfs :: [Coins]
+                                  c = foldr (<>) mempty cs :: Coins
+                              in [SomeOf c] :: [EmptyNoneSome Coins]
+    distillNoneOfs []       = []
+    distillNoneOfs noneOfs  = let cs = map fromEnsCoins noneOfs :: [Coins]
+                                  c = foldr (<>) mempty cs :: Coins
+                              in [NoneOf c] :: [EmptyNoneSome Coins]
+    fromEnsCoins (SomeOf c) = c
+    fromEnsCoins (NoneOf c) = c
+
+
+reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
+reconcileCoins _                       []    = []
+reconcileCoins (Coins (cop, sil, gol)) enscs = concat . map helper $ enscs
+  where
+    helper Empty                               = [ Left Empty ]
+    helper (NoneOf c)                          = [ Left . NoneOf $ c ]
+    helper (SomeOf (Coins (cop', sil', gol'))) = concat [ if cop' /= 0 then [mkEitherCop] else []
+                                                        , if sil' /= 0 then [mkEitherSil] else []
+                                                        , if gol' /= 0 then [mkEitherGol] else [] ]
+      where
+        mkEitherCop | cop' <= cop = Right . SomeOf . Coins $ (cop', 0, 0)
+                    | otherwise   = Left  . SomeOf . Coins $ (cop', 0, 0)
+        mkEitherSil | sil' <= sil = Right . SomeOf . Coins $ (0, sil', 0)
+                    | otherwise   = Left  . SomeOf . Coins $ (0, sil', 0)
+        mkEitherGol | gol' <= gol = Right . SomeOf . Coins $ (0, 0, gol')
+                    | otherwise   = Left  . SomeOf . Coins $ (0, 0, gol')
 
 
 sorryIndexedCoins :: MudStack ()
@@ -178,30 +207,16 @@ procGecrMisRm _ (Sorry n,               Nothing) = output $ "You don't see " <> 
 procGecrMisRm _ gecrMis = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
--- TODO: Compare and refactor.
-procGcrPCInv :: (Coins -> MudStack ()) -> GetCoinsRes -> MudStack ()
-procGcrPCInv f (cpRes, spRes, gpRes) = do
-    mcp <- helper cpRes "copper pieces"
-    msp <- helper spRes "silver pieces"
-    mgp <- helper gpRes "gold pieces"
-    f . Coins $ each %~ (fromMaybe 0) $ (mcp, msp, mgp)
-  where
-    helper res cn = case res of
-      (Left (actual, requested)) -> if actual == 0
-                                      then output ("You don't have any " <> cn <> ".")                       >> return Nothing
-                                      else outputCon [ "You don't have ", showText requested, " ", cn, "." ] >> return Nothing
-      (Right requested)          -> return (Just requested)
+-- TODO: Rename. Compare and refactor.
+procEnscPCInv :: (Coins -> MudStack ()) -> Either (EmptyNoneSome Coins) (EmptyNoneSome Coins) -> MudStack ()
+procEnscPCInv _ (Left Empty) = output "You don't have any coins."
+procEnscPCInv _ (Left  (NoneOf (Coins (cop, sil, gol)))) = output "You don't have any coins (of one or more types)."
+procEnscPCInv _ (Right (SomeOf (Coins (cop, sil, gol)))) = output "You have enough coins (of one or more types)."
+procEnscPCInv _ (Left  (SomeOf (Coins (cop, sil, gol)))) = output "You don't have enough coins (of one or more types)."
 
 
-procGcrRm :: (Coins -> MudStack ()) -> GetCoinsRes -> MudStack ()
-procGcrRm f (cpRes, spRes, gpRes) = do
-    mcp <- helper cpRes "copper pieces"
-    msp <- helper spRes "silver pieces"
-    mgp <- helper gpRes "gold pieces"
-    f . Coins $ each %~ (fromMaybe 0) $ (mcp, msp, mgp)
-  where
-    helper res cn = case res of
-      (Left (actual, requested)) -> if actual == 0
-                                      then output ("You don't see any " <> cn <> " here.")                      >> return Nothing
-                                      else outputCon [ "There aren't ", showText requested, " ", cn, " here." ] >> return Nothing
-      (Right requested)          -> return (Just requested)
+procEnscRm :: (Coins -> MudStack ()) -> Either (EmptyNoneSome Coins) (EmptyNoneSome Coins) -> MudStack ()
+procEnscRm _ (Left Empty) = output "You don't see any coins here."
+procEnscRm _ (Left  (NoneOf (Coins (cop, sil, gol)))) = output "You don't see any coins (of one or more types)."
+procEnscRm _ (Right (SomeOf (Coins (cop, sil, gol)))) = output "You see enough coins (of one or more types)."
+procEnscRm _ (Left  (SomeOf (Coins (cop, sil, gol)))) = output "You don't see enough coins (of one or more types)."

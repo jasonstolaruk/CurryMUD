@@ -413,7 +413,7 @@ look [] = do
 look rs = do
     (gecrs, miss, gcr) <- getPCRmInvCoins >>= resolveEntCoinNames rs
     mapM_ (procGecrMisRm descEnts) . zip gecrs $ miss
-    procGcrRm descCoins gcr
+    mapM_ (procEnscRm descCoins) gcr
 
 
 descEnts :: Inv -> MudStack ()
@@ -506,7 +506,7 @@ inv [] = descInvCoins 0
 inv rs = do
     (gecrs, miss, gcr) <- getInvCoins 0 >>= resolveEntCoinNames rs
     mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
-    procGcrPCInv descCoins gcr
+    mapM_ (procEnscPCInv descCoins) gcr
 
 
 descCoins :: Coins -> MudStack ()
@@ -525,7 +525,7 @@ equip [] = descEq 0
 equip rs = do
     (gecrs, miss, gcr) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
     mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
-    
+
 
 
 descEq :: Id -> MudStack ()
@@ -558,7 +558,7 @@ getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as
 getAction rs = do
     (gecrs, miss, gcr) <- getPCRmInvCoins >>= resolveEntCoinNames rs
     mapM_ (procGecrMisRm shuffleInvGet) . zip gecrs $ miss
-    procGcrRm shuffleCoinsGet gcr
+    mapM_ (procEnscRm shuffleCoinsGet) gcr
 
 
 shuffleInvGet :: Inv -> MudStack ()

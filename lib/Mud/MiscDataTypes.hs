@@ -2,15 +2,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.MiscDataTypes ( Action
-                         , ActualCoins
                          , Amount
                          , BothGramNos
                          , Cmd(..)
                          , CmdName
                          , ConvRol
+                         , EmptyNoneSome(..)
                          , FromId
                          , fromRol
-                         , GetCoinsRes
                          , GetEntsCoinsRes(..)
                          , GetOrDrop(..)
                          , HelpTopic
@@ -22,7 +21,6 @@ module Mud.MiscDataTypes ( Action
                          , pp
                          , Pretty
                          , PutOrRem(..)
-                         , RequestedCoins
                          , Rest
                          , ToId
                          , RightOrLeft(..) ) where
@@ -129,25 +127,20 @@ data RightOrLeft = R
 
 -----
 
+data EmptyNoneSome a = Empty
+                     | NoneOf a
+                     | SomeOf a deriving (Eq, Show)
+
+-----
+
 type Amount          = Int
 type Index           = Int
 type NameSearchedFor = T.Text
 
-data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe Coins)
+data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe (EmptyNoneSome Coins))
                      | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
-                     | SorryIndexedCoins
-                     | Sorry           !NameSearchedFor deriving Show
-
-type GetCoinsRes = ( Either (ActualAmount, RequestedAmount) RequestedAmount
-                   , Either (ActualAmount, RequestedAmount) RequestedAmount
-                   , Either (ActualAmount, RequestedAmount) RequestedAmount )
-
-
-type ActualAmount    = Amount
-type RequestedAmount = Amount
-
-type ActualCoins     = Coins
-type RequestedCoins  = Coins
+                     | Sorry           !NameSearchedFor
+                     | SorryIndexedCoins deriving Show
 
 -----
 
