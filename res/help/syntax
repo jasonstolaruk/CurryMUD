@@ -68,7 +68,7 @@ show  Show items (in your readied equipment OR your inventory) to another charac
 
 DEALING WITH COINS
 
-Many commands that manipulate items can be used with coins. As such, coins are treated just like any other item. For example, "give 5/silver gold taro" will give five silver coins and one gold coin to Taro.
+Many commands that manipulate items can be used with coins. As such, coins are treated just like any other item. For example, "give 5/sp gp taro" will give five silver pieces and one gold piece to Taro.
 For convenience, the "coin" keyword refers to all your coins as a whole. "give 'coin taro" will give all your coins to Taro.
 The slash prefix may be used with "coin". In this case, coins are counted by denomination, from small to large. For example, if you have five copper, five silver, and five gold, "give 11/coin taro" will give Taro all your copper, all your silver, and one of your gold.
 The "coin" keyword may not be abbreviated. "coins" is considered to be a synonym for "coin".

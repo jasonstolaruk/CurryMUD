@@ -107,7 +107,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
           --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
-          --, Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
+          , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
           , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
           , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
@@ -629,7 +629,7 @@ putAction rs   = hasInv 0 >>= \hi -> if hi then putRemDispatcher Put rs else dud
 
 putRemDispatcher :: PutOrRem -> Action
 putRemDispatcher por rs
-  | last rs `elem` allCoinNames = output "Alas, a coin is not a container."
+  | last rs `elem` allCoinNames = output "A coin isn't a container."
   | otherwise = findCon (last rs) >>= \mes ->
       case mes of Nothing -> return ()
                   Just es -> case es of [e] -> getEntType e >>= \t ->
@@ -638,14 +638,13 @@ putRemDispatcher por rs
                                                      else e^.entId.to dispatchToHelper
                                         _   -> output onlyOneMsg
   where
-    findCon cn
-      | T.head cn == rmChar = getPCRmInvCoins >>= resolveEntName (T.tail cn)
-      | otherwise           = getInvCoins 0   >>= resolveEntName cn
+    findCon cn | T.head cn == rmChar = getPCRmInvCoins >>= resolveEntName (T.tail cn)
+               | otherwise           = getInvCoins 0   >>= resolveEntName cn
     onlyOneMsg         = case por of Put -> "You can only put things into one container at a time."
                                      Rem -> "You can only remove things from one container at a time."
-    dispatchToHelper i = case por of Put -> putHelper i restWithoutCon 
-                                     Rem -> undefined --remHelper i restWithoutCon -- TODO
-    restWithoutCon = init rs
+    dispatchToHelper i = case por of Put -> putHelper i restWithoutCon
+                                     Rem -> remHelper i restWithoutCon
+    restWithoutCon     = init rs
 
 
 putHelper :: Id -> Rest -> MudStack ()
@@ -686,11 +685,11 @@ shuffleCoinsPut ci c = moveCoins c 0 ci >> (^.sing) <$> getEnt ci >>= descPutRem
 
 descPutRemCoins :: PutOrRem -> Coins -> ConName -> MudStack ()
 descPutRemCoins por (Coins (cop, sil, gol)) cn = do
-    unless (cop == 0) . descGetDropHelper cop $ "copper piece"
-    unless (sil == 0) . descGetDropHelper sil $ "silver piece"
-    unless (gol == 0) . descGetDropHelper gol $ "gold piece"
+    unless (cop == 0) . descPutRemHelper cop $ "copper piece"
+    unless (sil == 0) . descPutRemHelper sil $ "silver piece"
+    unless (gol == 0) . descPutRemHelper gol $ "gold piece"
   where
-    descGetDropHelper a cn'
+    descPutRemHelper a cn'
       | a == 1    = outputCon [ "You ", verb, " a ", cn', " ", prep, " ", cn, "." ]
       | otherwise = outputCon [ "You ", verb, " ", showText a, " ", cn', "s ", prep, " ", cn, "." ]
     verb = case por of Put -> "put"
@@ -701,37 +700,32 @@ descPutRemCoins por (Coins (cop, sil, gol)) cn = do
 
 -----
 
-{-
+
 remove :: Action
 remove []  = advise ["remove"] $ "Please specify what you want to remove, followed by the container you want to remove it from, as in " <> dblQuote "remove doll sack" <> "."
 remove [r] = advise ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
 remove rs  = putRemDispatcher Rem rs
--}
-{-
+
+
 remHelper :: Id -> Rest -> MudStack ()
-remHelper _  []   = return ()
-remHelper ci (rs) = do
+remHelper _  [] = return ()
+remHelper ci rs = do
     cn <- (^.sing) <$> getEnt ci
     hi <- hasInv ci
-    if hi
-      then getInv ci >>= resolveEntsCoinsByName rs >>= mapM_ (procGecrMisForRem ci cn) . uncurry zip
-      else output $ "The " <> cn <> " appears to be empty."
--}
-
-procGecrMisForRem :: Id -> ConName -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisForRem _  _  (_,                     Just []) = return ()
-procGecrMisForRem _  cn (Sorry n,               Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
-procGecrMisForRem _  cn (Mult 1 n Nothing  _,   Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
-procGecrMisForRem _  cn (Mult _ n Nothing  _,   Nothing) = outputCon [ "The ", cn, " doesn't contain any ", n, "s." ] 
-procGecrMisForRem ci cn (Mult _ _ (Just _) _,   Just is) = shuffleInvRem ci cn is
-procGecrMisForRem _  cn (Indexed _ n (Left ""), Nothing) = outputCon [ "The ", cn, " doesn't contain any ", n, "s." ] 
-procGecrMisForRem _  cn (Indexed x _ (Left p),  Nothing) = outputCon [ "The ", cn, " doesn't contain ", showText x, " ", p, "." ]
-procGecrMisForRem ci cn (Indexed _ _ (Right _), Just is) = shuffleInvRem ci cn is
-procGecrMisForRem ci cn gecrMis = patternMatchFail "procGecrMisForRem" [ showText ci, showText cn, showText gecrMis ]
+    if not hi
+      then output $ "The " <> cn <> " appears to be empty."
+      else do
+          (gecrs, miss, rcs) <- getInvCoins ci >>= resolveEntCoinNames rs
+          mapM_ (procGecrMisCon cn . shuffleInvRem ci $ cn) . zip gecrs $ miss
+          mapM_ (procReconciledCoinsCon cn . shuffleCoinsRem $ ci) rcs
 
 
 shuffleInvRem :: Id -> ConName -> Inv -> MudStack ()
 shuffleInvRem ci cn is = moveInv is ci 0 >> descPutRemEnts Rem is cn
+
+
+shuffleCoinsRem :: Id -> Coins -> MudStack ()
+shuffleCoinsRem ci c = moveCoins c ci 0 >> (^.sing) <$> getEnt ci >>= descPutRemCoins Rem c
 
 
 -----

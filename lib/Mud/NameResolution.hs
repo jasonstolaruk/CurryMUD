@@ -2,9 +2,11 @@
 {-# LANGUAGE MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.NameResolution ( procReconciledCoinsPCInv
-                          , procReconciledCoinsRm
+                          , procGecrMisCon
                           , procGecrMisPCInv
                           , procGecrMisRm
+                          , procReconciledCoinsCon
+                          , procReconciledCoinsRm
                           , resolveEntName
                           , resolveEntCoinNames ) where
 
@@ -217,6 +219,19 @@ procGecrMisRm _ (Sorry n,               Nothing) = output $ "You don't see " <> 
 procGecrMisRm _ gecrMis                          = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
+procGecrMisCon :: ConName -> (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisCon _  _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
+procGecrMisCon cn _ (Mult 1 n Nothing  _,   Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
+procGecrMisCon cn _ (Mult _ n Nothing  _,   Nothing) = outputCon [ "The ", cn, " doesn't contain any ", n, "s." ]
+procGecrMisCon _  f (Mult _ _ (Just _) _,   Just is) = f is
+procGecrMisCon cn _ (Indexed _ n (Left ""), Nothing) = outputCon [ "The ", cn, " doesn't contain any ", n, "s." ]
+procGecrMisCon cn _ (Indexed x _ (Left p),  Nothing) = outputCon [ "The ", cn, " doesn't contain ", showText x, " ", p, "." ]
+procGecrMisCon _  f (Indexed _ _ (Right _), Just is) = f is
+procGecrMisCon _  _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
+procGecrMisCon cn _ (Sorry n,               Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
+procGecrMisCon _  _ gecrMis                          = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
+
+
 -- TODO: Compare and refactor.
 procReconciledCoinsPCInv :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsPCInv _ (Left Empty)                             = output "You don't have any coins."
@@ -233,7 +248,7 @@ procReconciledCoinsPCInv _ rc = patternMatchFail "procReconciledCoinsPCInv" [ sh
 
 
 procReconciledCoinsRm :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
-procReconciledCoinsRm _ (Left Empty)                             = output "You don't see any coins here."
+procReconciledCoinsRm _ (Left Empty)                             = output $ "You don't see any coins here."
 procReconciledCoinsRm _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
     unless (cop == 0) . output $ "You don't see any copper pieces here."
     unless (sil == 0) . output $ "You don't see any silver pieces here."
@@ -244,3 +259,17 @@ procReconciledCoinsRm _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (sil == 0) . output $ "You don't see " <> showText sil <> " silver pieces here."
     unless (gol == 0) . output $ "You don't see " <> showText gol <> " gold pieces here."
 procReconciledCoinsRm _ rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
+
+
+procReconciledCoinsCon :: ConName -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
+procReconciledCoinsCon cn _ (Left Empty)                             = output $ "The " <> cn <> " doesn't contain any coins."
+procReconciledCoinsCon cn _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
+    unless (cop == 0) . output $ "The " <> cn <> " doesn't contain any copper pieces."
+    unless (sil == 0) . output $ "The " <> cn <> " doesn't contain any silver pieces."
+    unless (gol == 0) . output $ "The " <> cn <> " doesn't contain any gold pieces."
+procReconciledCoinsCon _  f (Right (SomeOf c                      )) = f c
+procReconciledCoinsCon cn _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
+    unless (cop == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText cop, " copper pieces." ]
+    unless (sil == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ]
+    unless (gol == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces." ]
+procReconciledCoinsCon _  _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]
