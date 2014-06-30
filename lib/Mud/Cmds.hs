@@ -114,7 +114,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
           , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
           , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
-          --, Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
+          , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
           , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
           , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." } ]
           --, Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate an abbreviation." } ]
@@ -525,9 +525,9 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 equip :: Action -- TODO: Equipment descriptions are not given in the order that equipment is listed.
 equip [] = descEq 0
 equip rs = do
-    (gecrs, miss, gcr) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
+    (gecrs, miss, rcs) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
     mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
-
+    unless (null rcs) $ output "You don't have any coins among your readied equipment."
 
 
 descEq :: Id -> MudStack ()
@@ -932,25 +932,14 @@ getAvailWpnSlot em = getMobHand 0 >>= \h ->
 
 -----
 
-{-
+
 unready :: Action
 unready [] = advise ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
-unready rs = getEq 0 >>= \is ->
-    if null is
-      then dudeYou'reNaked
-      else resolveEntsCoinsByName rs is >>= mapM_ procGecrMisForUnready . uncurry zip
--}
-
-procGecrMisForUnready :: (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisForUnready (_,                     Just []) = return ()
-procGecrMisForUnready (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
-procGecrMisForUnready (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
-procGecrMisForUnready (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
-procGecrMisForUnready (Mult _ _ (Just _) _,   Just is) = shuffleInvUnready is
-procGecrMisForUnready (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
-procGecrMisForUnready (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, " readied." ]
-procGecrMisForUnready (Indexed _ _ (Right _), Just is) = shuffleInvUnready is
-procGecrMisForUnready gecrMis = patternMatchFail "procGecrMisForUnready" [ showText gecrMis ]
+unready rs = hasEq 0 >>= \he -> if not he then dudeYou'reNaked else do
+    is <- getEq 0
+    (gecrs, miss, rcs) <- resolveEntCoinNames rs (is, mempty)
+    mapM_ (procGecrMisPCEq shuffleInvUnready) . zip gecrs $ miss
+    unless (null rcs) $ output "You can't unready coins."
 
 
 shuffleInvUnready :: Inv -> MudStack ()

@@ -1,16 +1,17 @@
--- {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.NameResolution ( procReconciledCoinsPCInv
                           , procGecrMisCon
+                          , procGecrMisPCEq
                           , procGecrMisPCInv
                           , procGecrMisRm
                           , procGecrMrolMiss
                           , procReconciledCoinsCon
                           , procReconciledCoinsRm
                           , resolveEntCoinNames
-                          , resolveEntName
                           , resolveEntCoinNamesWithRols
+                          , resolveEntName
                           , ringHelp ) where
 
 import Mud.MiscDataTypes
@@ -219,10 +220,6 @@ mkGecrWithRol ic n = let (a, b) = T.break (== slotChar) n
 -----
 
 
-sorryIndexedCoins :: MudStack ()
-sorryIndexedCoins = output $ "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins."
-
-
 -- TODO: Compare and refactor.
 procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
@@ -235,6 +232,10 @@ procGecrMisPCInv f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisPCInv _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
 procGecrMisPCInv _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
 procGecrMisPCInv _ gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
+
+
+sorryIndexedCoins :: MudStack ()
+sorryIndexedCoins = output $ "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins."
 
 
 procGecrMisRm :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
@@ -261,6 +262,46 @@ procGecrMisCon _  f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisCon _  _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
 procGecrMisCon cn _ (Sorry n,               Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
 procGecrMisCon _  _ gecrMis                          = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
+
+
+procGecrMrolMiss :: (Maybe RightOrLeft -> Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe RightOrLeft, Maybe Inv) -> MudStack ()
+procGecrMrolMiss _ (_,                     _,    Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
+procGecrMrolMiss _ (Mult 1 n Nothing  _,   _,    Nothing) = output $ "You don't have " <> aOrAn n <> "."
+procGecrMrolMiss _ (Mult _ n Nothing  _,   _,    Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMrolMiss f (Mult _ _ (Just _) _,   mrol, Just is) = f mrol is
+procGecrMrolMiss _ (Indexed _ n (Left ""), _,    Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMrolMiss _ (Indexed x _ (Left p),  _,    Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
+procGecrMrolMiss f (Indexed _ _ (Right _), mrol, Just is) = f mrol is
+procGecrMrolMiss _ (SorryIndexedCoins,     _,    Nothing) = sorryIndexedCoins
+procGecrMrolMiss _ (Sorry n,               _,    Nothing) = sorryMrol n
+procGecrMrolMiss _ gecrMisMrol                            = patternMatchFail "procGecrMrolMiss" [ showText gecrMisMrol ]
+
+
+sorryMrol :: T.Text -> MudStack ()
+sorryMrol n
+  | slotChar `elem` n^.unpacked = outputCon [ "Please specify ", dblQuote "r", " or ", dblQuote "l", ".\n", ringHelp ]
+  | otherwise = output $ "You don't have " <> aOrAn n <> "."
+
+
+ringHelp :: T.Text -- TODO: This isn't being wrapped correctly.
+ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l", " immediately followed by:\n"
+                    , dblQuote "i", " for index finger,\n"
+                    , dblQuote "m", " for middle finter,\n"
+                    , dblQuote "r", " for ring finger,\n"
+                    , dblQuote "p", " for pinky finger." ]
+
+
+procGecrMisPCEq :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisPCEq _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
+procGecrMisPCEq _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
+procGecrMisPCEq _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
+procGecrMisPCEq f (Mult _ _ (Just _) _,   Just is) = f is
+procGecrMisPCEq _ (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
+procGecrMisPCEq _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, " among your readied equipment." ]
+procGecrMisPCEq f (Indexed _ _ (Right _), Just is) = f is
+procGecrMisPCEq _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
+procGecrMisPCEq _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
+procGecrMisPCEq _ gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
 
 
 -- TODO: Compare and refactor.
@@ -304,30 +345,3 @@ procReconciledCoinsCon cn _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (sil == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ]
     unless (gol == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces." ]
 procReconciledCoinsCon _  _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]
-
-
-procGecrMrolMiss :: (Maybe RightOrLeft -> Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe RightOrLeft, Maybe Inv) -> MudStack ()
-procGecrMrolMiss _ (_,                     _,    Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
-procGecrMrolMiss _ (Mult 1 n Nothing  _,   _,    Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMrolMiss _ (Mult _ n Nothing  _,   _,    Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMrolMiss f (Mult _ _ (Just _) _,   mrol, Just is) = f mrol is
-procGecrMrolMiss _ (Indexed _ n (Left ""), _,    Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMrolMiss _ (Indexed x _ (Left p),  _,    Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGecrMrolMiss f (Indexed _ _ (Right _), mrol, Just is) = f mrol is
-procGecrMrolMiss _ (SorryIndexedCoins,     _,    Nothing) = sorryIndexedCoins
-procGecrMrolMiss _ (Sorry n,               _,    Nothing) = sorryMrol n
-procGecrMrolMiss _ gecrMisMrol                            = patternMatchFail "procGecrMrolMiss" [ showText gecrMisMrol ]
-
-
-sorryMrol :: T.Text -> MudStack ()
-sorryMrol n
-  | slotChar `elem` n^.unpacked = outputCon [ "Please specify ", dblQuote "r", " or ", dblQuote "l", ".\n", ringHelp ]
-  | otherwise = output $ "You don't have " <> aOrAn n <> "."
-
-
-ringHelp :: T.Text -- TODO: This isn't being wrapped correctly.
-ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l", " immediately followed by:\n"
-                    , dblQuote "i", " for index finger,\n"
-                    , dblQuote "m", " for middle finter,\n"
-                    , dblQuote "r", " for ring finger,\n"
-                    , dblQuote "p", " for pinky finger." ]

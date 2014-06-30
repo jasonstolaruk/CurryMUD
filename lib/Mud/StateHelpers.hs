@@ -26,6 +26,7 @@ module Mud.StateHelpers ( addToInv
                         , getRmLinks
                         , getWpn
                         , hasCoins
+                        , hasEq
                         , hasInv
                         , mkCoinsList
                         , mkPlurFromBoth
@@ -188,6 +189,10 @@ getEqMap i = gets (^?!eqTbl.ix i)
 
 getEq :: Id -> MudStack Inv
 getEq i = M.elems <$> getEqMap i
+
+
+hasEq :: Id -> MudStack Bool
+hasEq i = not . null <$> getEq i
 
 
 -----
