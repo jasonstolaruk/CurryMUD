@@ -1,5 +1,5 @@
 -- {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.Cmds (gameWrapper) where
 
@@ -48,7 +48,9 @@ import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
+-- TODO: A massive refactoring should be undertaken after the game has been made multiplayer.
 -- TODO: "desc" vs. "disp" vs "summarize"?
+
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds"
@@ -106,7 +108,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
           , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
-          --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
+          , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
           , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
           , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
@@ -520,7 +522,7 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 -----
 
 
-equip :: Action
+equip :: Action -- TODO: Equipment descriptions are not given in the order that equipment is listed.
 equip [] = descEq 0
 equip rs = do
     (gecrs, miss, gcr) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
@@ -730,56 +732,13 @@ shuffleCoinsRem ci c = moveCoins c ci 0 >> (^.sing) <$> getEnt ci >>= descPutRem
 
 -----
 
-{-
+
 ready :: Action
 ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
-    is  <- getInv 0
-    res <- mapM (`getEntsToReadyByName` is) rs
-    let gecrs  = res^..folded._1
-    let mrols = res^..folded._2
-    mesmcs <- mapM gecrToMesmc gecrs
-    let misList = pruneDupIds [] $ (fmap . fmap . fmap) (^.entId) mesmcs
-    mapM_ procGecrMisMrolForReady $ zip3 gecrs misList mrols
--}
-{-
-getEntsToReadyByName :: T.Text -> Inv -> MudStack (GetEntsCoinsRes, Maybe RightOrLeft)
-getEntsToReadyByName searchName is
-  | slotChar `elem` searchName^.unpacked = let (a, b) = T.break (== slotChar) searchName
-                                           in if T.length b == 1 then sorry else do
-                                               gecr <- getEntsCoinsByName a is
-                                               let parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [(RightOrLeft, String)]
-                                               case parsed of [(rol, _)] -> return (gecr, Just rol)
-                                                              _          -> sorry
-  | otherwise = getEntsCoinsByName searchName is >>= \gecr -> return (gecr, Nothing)
-  where
-    sorry = return (Sorry searchName, Nothing)
--}
-
-procGecrMisMrolForReady :: (GetEntsCoinsRes, Maybe Inv, Maybe RightOrLeft) -> MudStack ()
-procGecrMisMrolForReady (_,                     Just [], _)    = return ()
-procGecrMisMrolForReady (Sorry n,               Nothing, _)    = sorryCantReady n
-procGecrMisMrolForReady (Mult 1 n Nothing  _,   Nothing, _)    = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisMrolForReady (Mult _ n Nothing  _,   Nothing, _)    = output $ "You don't have any " <> n <> "s."
-procGecrMisMrolForReady (Mult _ _ (Just _) _,   Just is, mrol) = readyDispatcher mrol is
-procGecrMisMrolForReady (Indexed _ n (Left ""), Nothing, _)    = output $ "You don't have any " <> n <> "s."
-procGecrMisMrolForReady (Indexed x _ (Left p),  Nothing, _)    = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGecrMisMrolForReady (Indexed _ _ (Right _), Just is, mrol) = readyDispatcher mrol is
-procGecrMisMrolForReady gecrMisMrol = patternMatchFail "procGecrMisMrolForReady" [ showText gecrMisMrol ]
-
-
-sorryCantReady :: T.Text -> MudStack ()
-sorryCantReady n
-  | slotChar `elem` n^.unpacked = outputCon [ "Please specify ", dblQuote "r", " or ", dblQuote "l", ".\n", ringHelp ]
-  | otherwise = output $ "You don't have " <> aOrAn n <> "."
-
-
-ringHelp :: T.Text
-ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l", " immediately followed by:\n"
-                    , dblQuote "i", " for index finger,\n"
-                    , dblQuote "m", " for middle finter,\n"
-                    , dblQuote "r", " for ring finger,\n"
-                    , dblQuote "p", " for pinky finger." ]
+    (gecrs, mrols, mis, rcs) <- getInvCoins 0 >>= resolveEntCoinNamesWithRols rs    
+    mapM_ (procGecrMrolMiss readyDispatcher) $ zip3 gecrs mrols mis
+    unless (null rcs) $ output "You can't ready coins."
 
 
 readyDispatcher :: Maybe RightOrLeft -> Inv -> MudStack ()

@@ -5,10 +5,13 @@ module Mud.NameResolution ( procReconciledCoinsPCInv
                           , procGecrMisCon
                           , procGecrMisPCInv
                           , procGecrMisRm
+                          , procGecrMrolMiss
                           , procReconciledCoinsCon
                           , procReconciledCoinsRm
+                          , resolveEntCoinNames
                           , resolveEntName
-                          , resolveEntCoinNames ) where
+                          , resolveEntCoinNamesWithRols
+                          , ringHelp ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -18,14 +21,14 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>))
-import Control.Lens (_1)
-import Control.Lens.Operators ((^.))
+import Control.Lens (_1, _2, dropping, folded, to)
+import Control.Lens.Operators ((^.), (^..))
 import Control.Monad (unless)
-import Data.Char (isDigit)
+import Data.Char (isDigit, toUpper)
 import Data.List (foldl')
 import Data.Monoid ((<>), mempty)
 import Data.Text.Read (decimal)
-import Data.Text.Strict.Lens (packed)
+import Data.Text.Strict.Lens (packed, unpacked)
 import qualified Data.Text as T
 
 
@@ -188,6 +191,34 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concat . map helper $ enscs
                     | otherwise   = Left  . SomeOf . Coins $ (0, 0, gol')
 
 
+resolveEntCoinNamesWithRols :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNamesWithRols rs ic@(_, c) = do
+    gecrMrols :: [(GetEntsCoinsRes, Maybe RightOrLeft)] <- mapM (mkGecrWithRol ic) rs
+    let gecrs = gecrMrols^..folded._1
+    let mrols = gecrMrols^..folded._2
+    let (gecrs', enscs) :: ([GetEntsCoinsRes], [EmptyNoneSome Coins]) = extractEnscsFromGecrs gecrs
+    mess :: [Maybe [Ent]] <- mapM extractMesFromGecr gecrs'
+    let miss :: [Maybe Inv] = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
+    let rcs :: [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)] = reconcileCoins c . distillEnscs $ enscs
+    return (gecrs', mrols, miss, rcs)
+
+
+mkGecrWithRol :: InvCoins -> T.Text -> MudStack (GetEntsCoinsRes, Maybe RightOrLeft) -- TODO: Impact of alphabetical case?
+mkGecrWithRol ic n = let (a, b) = T.break (== slotChar) n
+                     in if | T.null b        -> mkGecr ic n >>= \gecr -> return (gecr, Nothing)
+                           | T.length b == 1 -> sorry
+                           | otherwise -> do
+                               gecr <- mkGecr ic a
+                               let parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [(RightOrLeft, String)]
+                               case parsed of [(rol, _)] -> return (gecr, Just rol)
+                                              _          -> sorry
+  where
+    sorry = return (Sorry n, Nothing)
+
+
+-----
+
+
 sorryIndexedCoins :: MudStack ()
 sorryIndexedCoins = output $ "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins."
 
@@ -273,3 +304,30 @@ procReconciledCoinsCon cn _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (sil == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ]
     unless (gol == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces." ]
 procReconciledCoinsCon _  _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]
+
+
+procGecrMrolMiss :: (Maybe RightOrLeft -> Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe RightOrLeft, Maybe Inv) -> MudStack ()
+procGecrMrolMiss _ (_,                     _,    Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
+procGecrMrolMiss _ (Mult 1 n Nothing  _,   _,    Nothing) = output $ "You don't have " <> aOrAn n <> "."
+procGecrMrolMiss _ (Mult _ n Nothing  _,   _,    Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMrolMiss f (Mult _ _ (Just _) _,   mrol, Just is) = f mrol is
+procGecrMrolMiss _ (Indexed _ n (Left ""), _,    Nothing) = output $ "You don't have any " <> n <> "s."
+procGecrMrolMiss _ (Indexed x _ (Left p),  _,    Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
+procGecrMrolMiss f (Indexed _ _ (Right _), mrol, Just is) = f mrol is
+procGecrMrolMiss _ (SorryIndexedCoins,     _,    Nothing) = sorryIndexedCoins
+procGecrMrolMiss _ (Sorry n,               _,    Nothing) = sorryMrol n
+procGecrMrolMiss _ gecrMisMrol                            = patternMatchFail "procGecrMrolMiss" [ showText gecrMisMrol ]
+
+
+sorryMrol :: T.Text -> MudStack ()
+sorryMrol n
+  | slotChar `elem` n^.unpacked = outputCon [ "Please specify ", dblQuote "r", " or ", dblQuote "l", ".\n", ringHelp ]
+  | otherwise = output $ "You don't have " <> aOrAn n <> "."
+
+
+ringHelp :: T.Text -- TODO: This isn't being wrapped correctly.
+ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l", " immediately followed by:\n"
+                    , dblQuote "i", " for index finger,\n"
+                    , dblQuote "m", " for middle finter,\n"
+                    , dblQuote "r", " for ring finger,\n"
+                    , dblQuote "p", " for pinky finger." ]
