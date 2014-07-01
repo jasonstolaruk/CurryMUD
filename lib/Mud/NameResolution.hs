@@ -94,12 +94,20 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol))
     "gp"    | gol == 0               -> Mult a n Nothing . Just . NoneOf . Coins $ (0,   0,   a  )
             | a == (maxBound :: Int) -> Mult a n Nothing . Just . SomeOf . Coins $ (0,   0,   gol)
             | otherwise              -> Mult a n Nothing . Just . SomeOf . Coins $ (0,   0,   a  )
-    "coin"  -> aggregate
-    "coins" -> aggregate
-    _       -> patternMatchFail "mkGecrMultForCoins" [n]
+    "coin"                           -> aggregate
+    "coins"                          -> aggregate
+    _                                -> patternMatchFail "mkGecrMultForCoins" [n]
   where
-    aggregate | a == (maxBound :: Int) = Mult a n Nothing . Just . SomeOf $ c
-              | otherwise              = undefined
+    aggregate = Mult a n Nothing . Just . SomeOf $ if a == (maxBound :: Int) then c else c'
+    c'        = mkCoinsFromList . distributeAmt a . mkCoinsList $ c
+
+
+distributeAmt :: Int -> [Int] -> [Int]
+distributeAmt _   []     = []
+distributeAmt amt (c:cs) = let diff = amt - c
+                           in if diff >= 0
+                                then c   : distributeAmt diff cs
+                                else amt : distributeAmt 0    cs
 
 
 mkGecrMultForEnts :: Amount -> T.Text -> Inv -> MudStack GetEntsCoinsRes

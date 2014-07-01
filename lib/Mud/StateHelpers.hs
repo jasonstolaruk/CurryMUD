@@ -28,6 +28,7 @@ module Mud.StateHelpers ( addToInv
                         , hasCoins
                         , hasEq
                         , hasInv
+                        , mkCoinsFromList
                         , mkCoinsList
                         , mkPlurFromBoth
                         , moveCoins
@@ -38,7 +39,8 @@ module Mud.StateHelpers ( addToInv
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
-import Mud.Util
+import Mud.Util hiding (patternMatchFail)
+import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Lens (_1, at, each, ix)
@@ -52,6 +54,10 @@ import qualified Data.Text as T
 
 
 -- TODO: Add headers to each section.
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 getEnt :: Id -> MudStack Ent
@@ -120,6 +126,11 @@ getCoins i = gets (^?!coinsTbl.ix i)
 
 mkCoinsList :: Coins -> [Int]
 mkCoinsList (Coins (c, g, s)) = [c, g, s]
+
+
+mkCoinsFromList :: [Int] -> Coins
+mkCoinsFromList [cop, sil, gol] = Coins (cop, sil, gol)
+mkCoinsFromList xs              = patternMatchFail "mkGecrMultForCoins" [ showText xs ]
 
 
 hasCoins :: Id -> MudStack Bool
