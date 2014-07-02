@@ -179,7 +179,7 @@ distillEnscs enscs
                               in [NoneOf c] :: [EmptyNoneSome Coins]
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
-    fromEnsCoins ensc       = patternMatchFail "distillEnscs" [ showText ensc ]
+    fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
 
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
@@ -287,11 +287,11 @@ procGecrMrolMiss _ gecrMisMrol                            = patternMatchFail "pr
 
 sorryMrol :: T.Text -> MudStack ()
 sorryMrol n
-  | slotChar `elem` n^.unpacked = outputCon [ "Please specify ", dblQuote "r", " or ", dblQuote "l", ".\n", ringHelp ]
+  | slotChar `elem` n^.unpacked = mapM_ output . T.lines . T.concat $ [ "Please specify ", dblQuote "r", " or ", dblQuote "l", ".\n", ringHelp ]
   | otherwise = output $ "You don't have " <> aOrAn n <> "."
 
 
-ringHelp :: T.Text -- TODO: This isn't being wrapped correctly.
+ringHelp :: T.Text
 ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l", " immediately followed by:\n"
                     , dblQuote "i", " for index finger,\n"
                     , dblQuote "m", " for middle finter,\n"

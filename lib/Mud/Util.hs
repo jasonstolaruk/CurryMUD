@@ -56,7 +56,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
 
--- TODO: Calls to "blowUp" and "patternMatchFail" should indicate subfunction names.
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
 blowUp modName funName msg vals = error $ errorMsg^.unpacked
   where
@@ -172,7 +171,7 @@ wrapLineWithIndentTag cols t = wordWrapIndent cols n' t'
     readsRes       = reads $ numText^.unpacked :: [(Int, String)]
     n              = case readsRes of []       -> 0
                                       [(x, _)] -> x
-                                      xs       -> patternMatchFail "Mud.Util" "wordWrapLines" [ showText xs ]
+                                      xs       -> patternMatchFail "Mud.Util" "wrapLineWithIndentTag n" [ showText xs ]
     n'             = if n == 0 then calcIndent t' else adjustIndent n cols
 
 

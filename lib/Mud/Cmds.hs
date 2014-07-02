@@ -894,7 +894,7 @@ getDesigClothSlot e c em rol
                           _       -> undefined -- TODO
   where
     sorryCantWearThere     = outputCon [ "You can't wear a ", e^.sing, " on your ", pp rol, "." ] >> return Nothing
-    sorryNeedRingRol       = output ringHelp >> return Nothing
+    sorryNeedRingRol       = (mapM_ output . T.lines $ ringHelp) >> return Nothing
     findSlotFromList rs ls = findAvailSlot em $ case rol of R -> rs
                                                             L -> ls
                                                             _ -> patternMatchFail "getDesigClothSlot findSlotFromList" [ showText rol ]
