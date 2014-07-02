@@ -139,9 +139,9 @@ extractEnscsFromGecrs = foldl' helper ([], [])
     helper (gecrs, enscs) gecr@(Mult    _ _ (Just _) Nothing    ) = (gecr : gecrs, enscs)
     helper (gecrs, enscs)      (Mult    _ _ Nothing  (Just ensc)) = (gecrs, ensc : enscs)
     helper (gecrs, enscs) gecr@(Mult    _ _ Nothing  Nothing    ) = (gecr : gecrs, enscs)
-    helper (gecrs, enscs) gecr@(Indexed _ _ _                   ) = (gecr : gecrs, enscs)
+    helper (gecrs, enscs) gecr@Indexed {}                         = (gecr : gecrs, enscs)
     helper (gecrs, enscs) gecr@(Sorry   _                       ) = (gecr : gecrs, enscs)
-    helper (gecrs, enscs) gecr@(SorryIndexedCoins               ) = (gecr : gecrs, enscs)
+    helper (gecrs, enscs) gecr@SorryIndexedCoins                  = (gecr : gecrs, enscs)
 
 
 extractMesFromGecr :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
@@ -184,13 +184,13 @@ distillEnscs enscs
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
 reconcileCoins _                       []    = []
-reconcileCoins (Coins (cop, sil, gol)) enscs = concat . map helper $ enscs
+reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
   where
     helper Empty                               = [ Left Empty ]
     helper (NoneOf c)                          = [ Left . NoneOf $ c ]
-    helper (SomeOf (Coins (cop', sil', gol'))) = concat [ if cop' /= 0 then [mkEitherCop] else []
-                                                        , if sil' /= 0 then [mkEitherSil] else []
-                                                        , if gol' /= 0 then [mkEitherGol] else [] ]
+    helper (SomeOf (Coins (cop', sil', gol'))) = concat [ [ mkEitherCop | cop' /= 0 ]
+                                                        , [ mkEitherSil | sil' /= 0 ]
+                                                        , [ mkEitherGol | gol' /= 0 ] ]
       where
         mkEitherCop | cop' <= cop = Right . SomeOf . Coins $ (cop', 0, 0)
                     | otherwise   = Left  . SomeOf . Coins $ (cop', 0, 0)
@@ -328,7 +328,7 @@ procReconciledCoinsPCInv _ rc = patternMatchFail "procReconciledCoinsPCInv" [ sh
 
 
 procReconciledCoinsRm :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
-procReconciledCoinsRm _ (Left Empty)                             = output $ "You don't see any coins here."
+procReconciledCoinsRm _ (Left Empty)                             = output "You don't see any coins here."
 procReconciledCoinsRm _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
     unless (cop == 0) . output $ "You don't see any copper pieces here."
     unless (sil == 0) . output $ "You don't see any silver pieces here."

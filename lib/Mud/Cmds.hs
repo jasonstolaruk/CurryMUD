@@ -1,4 +1,4 @@
--- {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.Cmds (gameWrapper) where
@@ -17,13 +17,12 @@ import qualified Mud.Util as U (patternMatchFail)
 import Control.Arrow (first)
 import Control.Exception (fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, try)
-import Control.Lens (_1, _2, at, both, dropping, folded, over, to)
+import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (.=), (?=),(?~), (^.), (^..))
 import Control.Monad ((>=>), forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.Char (isSpace, toUpper)
-import Data.Foldable (traverse_)
 import Data.Functor ((<$>))
 import Data.List (delete, find, foldl', nub, nubBy, sort)
 import Data.Maybe (fromJust, isNothing)
@@ -116,8 +115,8 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
           , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
           , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
-          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." } ]
-          --, Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate an abbreviation." } ]
+          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
+          , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate an abbreviation." } ]
 
 
 prefixWizCmd :: T.Text -> T.Text
@@ -330,55 +329,82 @@ ignore rs = let ignored = dblQuote . T.unwords $ rs
 
 -----
 
-{-
+
 what :: Action
-what []      = advise ["what"] $ "Please specify one or more abbreviations to confirm, as in " <> dblQuote "what up" <> "."
-what [r]     = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r
+what [] = advise ["what"] $ "Please specify one or more abbreviations to confirm, as in " <> dblQuote "what up" <> "."
+what rs = mapM_ helper rs
   where
-    whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
-    cs       = filter ((/=) wizChar . T.head) <$> map cmdName <$> (getPCRmId >>= mkCmdListWithRmLinks)
-    notFound = output $ dblQuote r <> " doesn't refer to any commands."
-    found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
-what (r:rs)  = what [r] >> liftIO newLine >> what rs
--}
+    helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r
+      where
+        whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
+        cs       = filter ((/=) wizChar . T.head) <$> map cmdName <$> (getPCRmId >>= mkCmdListWithRmLinks)
+        notFound = output $ dblQuote r <> " doesn't refer to any commands."
+        found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
+
 
 advise :: [HelpTopic] -> T.Text -> MudStack ()
 advise []  msg = output msg
-advise [h] msg = output msg >> output ("Type " <> dblQuote ("help " <> h) <> " for more information.")
+advise [h] msg = output msg >> output ("For more information, type " <> dblQuote ("help " <> h) <> ".")
 advise hs  msg = output msg >> output ("See also the following help topics: " <> helpTopics <> ".")
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
-{-
+
+-- TODO: Add coins.
 whatInv :: InvType -> T.Text -> MudStack ()
 whatInv it r = do
-    is   <- getLocInv
-    gecr <- getEntsCoinsByName r is
-    case gecr of
-      (Mult _ n (Just es) _) | n == acp  -> output $ dblQuote acp <> " may refer to everything" <> locName
-                             | otherwise ->
-                               let e   = head es
-                                   len = length es
-                               in if len > 1
-                                 then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
-                                          h      = head ebgns
-                                          target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
-                                      in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, locName ]
-                                 else getEntNamesInInv is >>= \ens ->
-                                     outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, locName ]
-      (Indexed x _ (Right e)) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, locName ]
-      _                       -> output $ dblQuote r <> " doesn't refer to anything" <> locName
+    ic@(is, _)      <- getLocInvCoins
+    (gecrs, _, rcs) <- resolveEntCoinNames [r] ic
+    if not . null $ gecrs then whatInvEnts it r (head gecrs) is else whatInvCoins it r . head $ rcs -- TODO: Don't we have to iterate over the list of reconciled coins as opposed to just taking the head?
   where
-    getLocInv = case it of PCInv -> getInv 0
-                           PCEq  -> getEq  0
-                           RmInv -> fst <$> getPCRmInvCoins
-    acp       = [allChar]^.packed
-    locName   = case it of PCInv -> " in your inventory."
-                           PCEq  -> " in your readied equipment."
-                           RmInv -> " in this room."
+    getLocInvCoins = case it of PCInv -> getInvCoins 0
+                                PCEq  -> getEq 0 >>= \is -> return (is, mempty)
+                                RmInv -> getPCRmInvCoins
+
+
+whatInvEnts :: InvType -> T.Text -> GetEntsCoinsRes -> Inv -> MudStack ()
+whatInvEnts it r gecr is =
+    case gecr of
+      Mult _ n (Just es) _ | n == acp  -> outputCon [ dblQuote acp, " may refer to everything ", locName it, supplement, "." ]
+                           | otherwise -> let e   = head es
+                                              len = length es
+                                          in if len > 1
+                                            then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
+                                                     h      = head ebgns
+                                                     target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
+                                                 in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, " ", locName it, "." ]
+                                            else getEntNamesInInv is >>= \ens ->
+                                                outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, " ", locName it, "." ]
+      Indexed x _ (Right e) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", locName it, "." ]
+      _                     -> outputCon [ dblQuote r, " doesn't refer to anything ", locName it, "." ]
+  where
+    acp                                   = [allChar]^.packed
+    supplement | it `elem` [PCInv, RmInv] = " (including any coins)"
+               | otherwise                = ""
     checkFirst e ens = let matches = filter (== e^.name) ens
                        in guard (length matches > 1) >> ("first "^.unpacked)
--}
+
+
+locName :: InvType -> T.Text -- TODO: Change function name.
+locName it = case it of PCInv -> "in your inventory"
+                        PCEq  -> "in your readied equipment"
+                        RmInv -> "in this room"
+
+
+whatInvCoins :: InvType -> T.Text -> ReconciledCoins -> MudStack ()
+whatInvCoins it r rc
+  | it == PCEq = return ()
+  | otherwise  = case rc of
+    Left  Empty                            -> outputCon [ dblQuote r, " doesn't refer to any coins ", locName it, " ", supplement, "." ]
+    Left  (NoneOf (Coins (_, _, _))) -> output . showText $ rc
+    Left  (SomeOf (Coins (_, _, _))) -> output . showText $ rc
+    Right (NoneOf (Coins (_, _, _))) -> output . showText $ rc
+    Right (SomeOf (Coins (_, _, _))) -> output . showText $ rc
+    _                                      -> patternMatchFail "whatInvCoins" [ showText rc ]
+  where
+    supplement = case it of PCInv -> "(you don't have any coins)"
+                            _     -> "(there aren't any coins here)"
+
 
 -----
 
