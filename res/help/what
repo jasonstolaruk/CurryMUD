@@ -2,12 +2,12 @@ WHAT
 ====
 
 USAGE:
-what abbrev...
+what abbrev
 
 DESCRIPTION:
-Disambiguate one or more abbreviations.
+Disambiguate an abbreviation.
 
 EXAMPLES:
-"what re rem" to explain the different meanings of "re" and "rem".
+"what re" to explain the different meanings of "re".
 
 SEE ALSO:

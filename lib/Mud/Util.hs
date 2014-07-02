@@ -56,6 +56,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
 
+-- TODO: Calls to "blowUp" and "patternMatchFail" should indicate subfunction names.
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
 blowUp modName funName msg vals = error $ errorMsg^.unpacked
   where
