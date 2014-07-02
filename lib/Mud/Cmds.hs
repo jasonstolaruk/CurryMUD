@@ -19,7 +19,7 @@ import Control.Exception (fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, try)
 import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (.=), (?=),(?~), (^.), (^..))
-import Control.Monad ((>=>), forM_, guard, mplus, unless, when)
+import Control.Monad ((>=>), forever, forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.Char (isSpace, toUpper)
@@ -136,7 +136,7 @@ gameWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
         initWorld >> liftIO newLine
         dispTitle >> liftIO newLine
         motd []   >> liftIO newLine
-        game
+        forever game
 
 
 topLvlExHandler :: SomeException -> MudStack ()
@@ -168,9 +168,7 @@ game :: MudStack ()
 game = do
     ms <- liftIO . readline $ "> "
     let t = ms^.to fromJust.packed.to T.strip
-    when (T.null t) game
-    saveToHist t
-    handleInp t
+    unless (T.null t) $ saveToHist t >> handleInp t
   where
     saveToHist t = do
         cs <- gets (^.hist.cmds)
@@ -180,7 +178,7 @@ game = do
 
 
 handleInp :: T.Text -> MudStack ()
-handleInp = maybe game dispatch . splitInp
+handleInp = maybe (return ()) dispatch . splitInp
 
 
 splitInp :: T.Text -> Maybe Input
@@ -192,7 +190,7 @@ splitInp = splitUp . T.words
 
 
 dispatch :: Input -> MudStack ()
-dispatch (cn, rest) = findAction cn >>= maybe (output "What?") (\act -> act rest) >> game
+dispatch (cn, rest) = findAction cn >>= maybe (output "What?") (\act -> act rest)
 
 
 findAction :: CmdName -> MudStack (Maybe Action)
@@ -306,14 +304,18 @@ histAction [r]  = do
     cs <- gets (^.hist.cmds)
     o  <- gets (^.hist.overflow)
     let cs' = (if isMaxHist cs then o else "") : reverse cs
-    case decimal r of Right (x, "") | isValidIndex x cs -> let c = cs' !! if isMaxHist cs then x - 1 else x
+    case decimal r of Right (x, "") | x == length cs    -> output "He don't." >> remFromHist cs o
+                                    | isValidIndex x cs -> let c = cs' !! if isMaxHist cs then x - 1 else x
                                                            in hist.cmds .= c : tail cs >> output (dblQuote c) >> handleInp c
-                                    | otherwise         -> sorry . showText $ x
-                      _                                 -> sorry r
+                                    | otherwise         -> (sorry . showText $ x) >> remFromHist cs o
+                      _                                 -> sorry r                >> remFromHist cs o
   where
-    isMaxHist cs = length cs == histSize
+    isMaxHist cs      = length cs == histSize
     isValidIndex x cs = x > 0 && x <= length cs && x <= histSize
-    sorry x = output $ dblQuote x <> " is not a valid index of your command history."
+    sorry x           = output $ dblQuote x <> " is not a valid index of your command history."
+    remFromHist cs o  = if length cs == histSize
+                          then hist.cmds .= tail cs ++ [o] >> hist.overflow .= ""
+                          else hist.cmds .= tail cs
 histAction (r:rs) = ignore rs >> histAction [r]
 
 
