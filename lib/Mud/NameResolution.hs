@@ -48,7 +48,7 @@ resolveEntName n ic = let n' = T.toLower n
 
 resolveEntCoinNames :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNames rs ic@(_, c) = do
-    gecrs <- mapM (mkGecr ic) $ map T.toLower rs
+    gecrs <- mapM (mkGecr ic . T.toLower) rs
     let (gecrs', enscs) = extractEnscsFromGecrs gecrs
     mess <- mapM extractMesFromGecr gecrs'
     let miss = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
@@ -203,7 +203,7 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
 
 resolveEntCoinNamesWithRols :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNamesWithRols rs ic@(_, c) = do
-    gecrMrols <- mapM (mkGecrWithRol ic) $ map T.toLower rs
+    gecrMrols <- mapM (mkGecrWithRol ic . T.toLower) rs
     let gecrs = gecrMrols^..folded._1
     let mrols = gecrMrols^..folded._2
     let (gecrs', enscs) = extractEnscsFromGecrs gecrs

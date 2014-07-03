@@ -53,7 +53,7 @@ import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
 
--- TODO: Add headers to each section.
+-- TODO: Add comment headers to each section.
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a

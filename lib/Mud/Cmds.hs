@@ -95,7 +95,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           , Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
-          , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
+          , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on a topic or command." }
           , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
@@ -206,7 +206,7 @@ mkCmdListWithRmLinks i = getRmLinks i >>= \rls ->
 
 
 about :: Action
-about [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "about") return
+about [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "about") return >> liftIO newLine
   where
     takeADump = dumpFile . (++) miscDir $ "about"
 about rs = ignore rs >> about []
@@ -240,9 +240,9 @@ motd rs = ignore rs >> motd []
 
 
 dispCmdList :: Action
-dispCmdList []     = mapM_ (outputIndent 10) . cmdListText $ plaCmdPred
-dispCmdList [r]    = mapM_ (outputIndent 10) . grepTextList r . cmdListText $ plaCmdPred
-dispCmdList (r:rs) = dispCmdList [r] >> liftIO newLine >> dispCmdList rs
+dispCmdList [] = mapM_ (outputIndent 10) (cmdListText plaCmdPred) >> liftIO newLine
+dispCmdList rs = forM_ rs $ \r ->
+    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ plaCmdPred) >> liftIO newLine
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
@@ -294,9 +294,9 @@ what rs = mapM_ helper rs
 
 
 advise :: [HelpTopic] -> T.Text -> MudStack ()
-advise []  msg = output msg
-advise [h] msg = output msg >> output ("For more information, type " <> dblQuote ("help " <> h) <> ".")
-advise hs  msg = output msg >> output ("See also the following help topics: " <> helpTopics <> ".")
+advise []  msg = output msg >> liftIO newLine
+advise [h] msg = output msg >> output ("For more information, type " <> dblQuote ("help " <> h) <> ".") >> liftIO newLine
+advise hs  msg = output msg >> output ("See also the following help topics: " <> helpTopics <> ".")     >> liftIO newLine
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
@@ -385,28 +385,31 @@ go dir rs = goDispatcher $ dir : rs
 
 goDispatcher :: Action
 goDispatcher []     = return ()
-goDispatcher [r]    = tryMove r
-goDispatcher (r:rs) = tryMove r >> liftIO newLine >> goDispatcher rs
+goDispatcher rs     = mapM_ tryMove rs
 
 
 tryMove :: T.Text -> MudStack ()
 tryMove dir = let dir' = T.toLower dir
               in getPCRmId >>= findExit dir' >>= maybe (sorry dir') movePC
   where
-    sorry dir' = output $ if dir' `elem` stdLinkNames
-                            then "You can't go that way."
-                            else dblQuote dir <> " is not a valid direction."
+    sorry dir' = do
+        output $ if dir' `elem` stdLinkNames
+                   then "You can't go that way."
+                   else dblQuote dir <> " is not a valid direction."
+        liftIO newLine
     movePC i = pc.rmId .= i >> look []
 
 
 -----
 
 
+-- TODO: "l '", "i '", and "eq '" do nothing when there is nothing in the inventory.
 look :: Action
 look [] = do
     getPCRm >>= \r -> output $ r^.name <> "\n" <> r^.desc
-    exits []
+    exits False []
     getPCRmInvCoins >>= dispRmInvCoins
+    liftIO newLine
 look rs = do
     (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
     mapM_ (procGecrMisRm descEnts) . zip gecrs $ miss
@@ -414,7 +417,8 @@ look rs = do
 
 
 descEnts :: Inv -> MudStack ()
-descEnts = mapM_ (\i -> getEnt i >>= descEnt >> liftIO newLine) -- TODO: Make newlines consistent in all command output.
+descEnts is = forM_ is $ \i ->
+    getEnt i >>= descEnt >> liftIO newLine
 
 
 dispRmInvCoins :: InvCoins -> MudStack ()
@@ -487,19 +491,21 @@ summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
 -----
 
 
-exits :: Action
-exits [] = map (^.linkName) <$> (getPCRmId >>= getRmLinks) >>= \rlns ->
+exits :: Bool -> Action -- TODO: Make a "type" for this "Bool"? "exitsNoNewLine" and "exitsNewLine"?
+exits nl [] = do
+    rlns <- map (^.linkName) <$> (getPCRmId >>= getRmLinks)
     let stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
-        customNames = filter (`notElem` stdLinkNames) rlns
-    in output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
-exits rs = ignore rs >> exits []
+    let customNames = filter (`notElem` stdLinkNames) rlns
+    output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
+    when nl $ liftIO newLine
+exits nl rs = ignore rs >> exits nl []
 
 
 -----
 
 
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv [] = descInvCoins 0
+inv [] = descInvCoins 0 >> liftIO newLine
 inv rs = do
     (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
     mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
@@ -517,17 +523,17 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 -----
 
 
-equip :: Action -- TODO: Equipment descriptions are not given in the order that equipment is listed.
+equip :: Action -- TODO: Equipment descriptions are not given in the order that equipment is listed. Something similar is happening with the "look" and "inv" commands.
 equip [] = descEq 0
 equip rs = do
     (gecrs, miss, rcs) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
     mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
-    unless (null rcs) $ output "You don't have any coins among your readied equipment."
+    unless (null rcs) $ output "You don't have any coins among your readied equipment." >> liftIO newLine
 
 
 descEq :: Id -> MudStack ()
 descEq i = (mkEqDescList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \edl ->
-    if null edl then none else header >> forM_ edl (outputIndent 15)
+    if null edl then none else header >> forM_ edl (outputIndent 15) >> liftIO newLine
   where
     mkSlotNameToIdList    = map (first pp)
     mkEqDescList          = mapM descEqHelper
@@ -544,7 +550,7 @@ descEq i = (mkEqDescList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \ed
 
 
 dudeYou'reNaked :: MudStack ()
-dudeYou'reNaked = output "You don't have anything readied. You're naked!"
+dudeYou'reNaked = output "You don't have anything readied. You're naked!" >> liftIO newLine
 
 
 -----
@@ -556,6 +562,7 @@ getAction rs = do
     (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
     mapM_ (procGecrMisRm shuffleInvGet) . zip gecrs $ miss
     mapM_ (procReconciledCoinsRm shuffleCoinsGet) rcs
+    liftIO newLine
 
 
 shuffleInvGet :: Inv -> MudStack ()
@@ -596,13 +603,14 @@ descGetDropCoins god (Coins (cop, sil, gol)) = do
 
 dropAction :: Action
 dropAction [] = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
-dropAction rs = hasInv 0 >>= \hi ->
-  if not hi
-    then dudeYourHandsAreEmpty
-    else do
-        (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
-        mapM_ (procGecrMisPCInv shuffleInvDrop) . zip gecrs $ miss
-        mapM_ (procReconciledCoinsPCInv shuffleCoinsDrop) rcs
+dropAction rs = do
+    hi <- hasInv   0
+    hc <- hasCoins 0
+    unless (hi || hc) dudeYourHandsAreEmpty
+    (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
+    mapM_ (procGecrMisPCInv shuffleInvDrop) . zip gecrs $ miss
+    mapM_ (procReconciledCoinsPCInv shuffleCoinsDrop) rcs
+    liftIO newLine
 
 
 shuffleInvDrop :: Inv -> MudStack ()
@@ -618,6 +626,7 @@ shuffleCoinsDrop c = getPCRmId >>= \i ->
 -----
 
 
+-- TODO: Continue refactoring for correct newline behavior from here.
 putAction :: Action
 putAction []   = advise ["put"] $ "Please specify what you want to put, followed by where you want to put it, as in " <> dblQuote "put doll sack" <> "."
 putAction [r]  = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
