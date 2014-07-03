@@ -208,11 +208,6 @@ data Type = ObjType
           | PCType
           | RmType deriving (Eq, Show)
 
------
-
--- TODO: Move into a "Pla" data type.
-data Hist = Hist { _cmds     :: ![T.Text]
-                 , _overflow :: !T.Text } deriving (Eq, Show)
 
 -----
 
@@ -247,7 +242,6 @@ data MudState = MudState { _entTbl     :: EntTbl
                          , _pc         :: PC
                          , _rmTbl      :: RmTbl
                          , _typeTbl    :: TypeTbl
-                         , _hist       :: Hist
                          , _logHandles :: LogHandles }
 
 
@@ -265,6 +259,5 @@ makeLenses ''Mob
 makeLenses ''PC
 makeLenses ''Rm
 makeLenses ''RmLink
-makeLenses ''Hist
 makeLenses ''LogHandles
 makeLenses ''MudState

@@ -21,13 +21,11 @@ import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (.=), (?=),(?~), (^.), (^..))
 import Control.Monad ((>=>), forever, forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (gets)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.List (delete, find, foldl', nub, nubBy, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
-import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
@@ -90,9 +88,6 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = prefixWizCmd "okapi", action = wizMkOkapi, cmdDesc = "Make an okapi." }
           , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the game server." }
           , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
-
-          , Cmd { cmdName = [histChar]^.packed, action = histAction, cmdDesc = "Command history." }
-          , Cmd { cmdName = [repChar]^.packed, action = rep, cmdDesc = "Repeat the last command." }
 
           , Cmd { cmdName = "?", action = dispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD server." }
@@ -168,13 +163,7 @@ game :: MudStack ()
 game = do
     ms <- liftIO . readline $ "> "
     let t = ms^.to fromJust.packed.to T.strip
-    unless (T.null t) $ saveToHist t >> handleInp t
-  where
-    saveToHist t = do
-        cs <- gets (^.hist.cmds)
-        if length cs == histSize
-          then hist.overflow .= last cs >> hist.cmds .= t : init cs
-          else hist.cmds .= t : cs
+    unless (T.null t) $ handleInp t
 
 
 handleInp :: T.Text -> MudStack ()
@@ -232,6 +221,11 @@ dumpExHandler fn e = liftIO handleThat >> dispGenericErrorMsg
       | otherwise             = logIOExRethrow fn e
 
 
+ignore :: Rest -> MudStack ()
+ignore rs = let ignored = dblQuote . T.unwords $ rs
+            in output ("(Ignoring " <> ignored <> "...)")
+
+
 -----
 
 
@@ -287,64 +281,16 @@ dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
 -----
 
 
-rep :: Action
-rep [] = gets (^.hist.cmds) >>= \cs ->
-    case cs of [_] -> output "Your command history is empty." >> game
-               _   -> let lastCmd = head . tail $ cs
-                      in hist.cmds .= lastCmd : tail cs >> handleInp lastCmd
-rep rs = ignore rs >> rep []
-
-
------
-
-
-histAction :: Action
-histAction []   = dispHist
-histAction [r]  = do
-    cs <- gets (^.hist.cmds)
-    o  <- gets (^.hist.overflow)
-    let cs' = (if isMaxHist cs then o else "") : reverse cs
-    case decimal r of Right (x, "") | x == length cs    -> output "He don't." >> remFromHist cs o
-                                    | isValidIndex x cs -> let c = cs' !! if isMaxHist cs then x - 1 else x
-                                                           in hist.cmds .= c : tail cs >> output (dblQuote c) >> handleInp c
-                                    | otherwise         -> (sorry . showText $ x) >> remFromHist cs o
-                      _                                 -> sorry r                >> remFromHist cs o
-  where
-    isMaxHist cs      = length cs == histSize
-    isValidIndex x cs = x > 0 && x <= length cs && x <= histSize
-    sorry x           = output $ dblQuote x <> " is not a valid index of your command history."
-    remFromHist cs o  = if length cs == histSize
-                          then hist.cmds .= tail cs ++ [o] >> hist.overflow .= ""
-                          else hist.cmds .= tail cs
-histAction (r:rs) = ignore rs >> histAction [r]
-
-
-dispHist :: MudStack ()
-dispHist = gets (^.hist.cmds) >>= \cs ->
-    mapM_ disp (zip [1..] . reverse $ cs)
-  where
-    disp :: (Int, T.Text) -> MudStack ()
-    disp (n, t) = let paddedNumText = padOrTrunc 4 . showText $ n
-                  in outputIndent 4 $ paddedNumText <> t
-
-
-ignore :: Rest -> MudStack ()
-ignore rs = let ignored = dblQuote . T.unwords $ rs
-            in output ("(Ignoring " <> ignored <> "...)")
-
-
------
-
-
 what :: Action
-what []  = advise ["what"] $ "Please specify an abbreviation to confirm, as in " <> dblQuote "what up" <> "."
-what [r] = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r
+what [] = advise ["what"] $ "Please specify an abbreviation to confirm, as in " <> dblQuote "what up" <> "."
+what rs = mapM_ helper rs
   where
-    whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
-    cs       = filter ((/=) wizChar . T.head) <$> map cmdName <$> (getPCRmId >>= mkCmdListWithRmLinks)
-    notFound = output $ dblQuote r <> " doesn't refer to any commands."
-    found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
-what (r:rs) = ignore rs >> what [r]
+    helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r
+      where
+        whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
+        cs       = filter ((/=) wizChar . T.head) <$> map cmdName <$> (getPCRmId >>= mkCmdListWithRmLinks)
+        notFound = output $ dblQuote r <> " doesn't refer to any commands."
+        found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
 
 
 advise :: [HelpTopic] -> T.Text -> MudStack ()

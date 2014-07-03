@@ -130,7 +130,7 @@ mkCoinsList (Coins (c, g, s)) = [c, g, s]
 
 mkCoinsFromList :: [Int] -> Coins
 mkCoinsFromList [cop, sil, gol] = Coins (cop, sil, gol)
-mkCoinsFromList xs              = patternMatchFail "mkGecrMultForCoins" [ showText xs ]
+mkCoinsFromList xs              = patternMatchFail "mkCoinsFromList" [ showText xs ]
 
 
 hasCoins :: Id -> MudStack Bool

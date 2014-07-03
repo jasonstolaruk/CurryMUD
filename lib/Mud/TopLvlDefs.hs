@@ -30,29 +30,24 @@ miscDir  = resDir ++ "misc/"
 
 
 noOfTitles :: Int
-noOfTitles = 37
+noOfTitles = 35
 
 
-wizChar, allChar, amountChar, indexChar, slotChar, rmChar, repChar, histChar, indentTagChar :: Char
-wizChar       = ':'
+allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizChar :: Char
 allChar       = '\''
 amountChar    = '/'
-indexChar     = '.'
-slotChar      = ':'
-rmChar        = '-'
-repChar       = ','
-histChar      = '!'
 indentTagChar = '`'
+indexChar     = '.'
+rmChar        = '-'
+slotChar      = ':'
+wizChar       = ':'
+
 
 
 cols, minCols, maxCols :: Int -- TODO: Move to "Pla" data type?
 cols    = minCols
 minCols = 30
 maxCols = 200
-
-
-histSize :: Int
-histSize = 25
 
 
 stdLinkNames :: [LinkName]

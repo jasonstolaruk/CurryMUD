@@ -108,17 +108,12 @@ putRm i is c r = do
 
 
 initMudState :: MudState
-initMudState = MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty initHist (LogHandles Nothing Nothing)
+initMudState = MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty (LogHandles Nothing Nothing)
 
 
 initPC :: PC
 initPC = PC { _rmId = iHill
             , _race = Human }
-
-
-initHist :: Hist
-initHist = Hist { _cmds     = []
-                , _overflow = "" }
 
 
 createWorld :: MudStack ()
