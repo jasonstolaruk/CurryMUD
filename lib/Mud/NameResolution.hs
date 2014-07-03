@@ -42,20 +42,21 @@ patternMatchFail = U.patternMatchFail "Mud.NameResolution"
 
 
 resolveEntName :: T.Text -> InvCoins -> MudStack (Maybe [Ent])
-resolveEntName n ic = mkGecr ic n >>= extractMesFromGecr
+resolveEntName n ic = let n' = T.toLower n
+                      in mkGecr ic n' >>= extractMesFromGecr
 
 
 resolveEntCoinNames :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNames rs ic@(_, c) = do
-    gecrs :: [GetEntsCoinsRes] <- mapM (mkGecr ic) rs
-    let (gecrs', enscs) :: ([GetEntsCoinsRes], [EmptyNoneSome Coins]) = extractEnscsFromGecrs gecrs
-    mess :: [Maybe [Ent]] <- mapM extractMesFromGecr gecrs'
-    let miss :: [Maybe Inv] = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
-    let rcs :: [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)] = reconcileCoins c . distillEnscs $ enscs
+    gecrs <- mapM (mkGecr ic) $ map T.toLower rs
+    let (gecrs', enscs) = extractEnscsFromGecrs gecrs
+    mess <- mapM extractMesFromGecr gecrs'
+    let miss = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
+    let rcs  = reconcileCoins c . distillEnscs $ enscs
     return (gecrs', miss, rcs)
 
 
-mkGecr :: InvCoins -> T.Text -> MudStack GetEntsCoinsRes -- TODO: Impact of alphabetical case?
+mkGecr :: InvCoins -> T.Text -> MudStack GetEntsCoinsRes
 mkGecr ic@(is, c) n
   | n == [allChar]^.packed = getEntsInInv is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
   | T.head n == allChar    = mkGecrMult (maxBound :: Int) (T.tail n) ic
@@ -170,13 +171,13 @@ distillEnscs enscs
     isNoneOf (NoneOf _)     = True
     isNoneOf _              = False
     distillSomeOfs []       = []
-    distillSomeOfs someOfs  = let cs = map fromEnsCoins someOfs :: [Coins]
-                                  c = foldr (<>) mempty cs :: Coins
-                              in [SomeOf c] :: [EmptyNoneSome Coins]
+    distillSomeOfs someOfs  = let cs = map fromEnsCoins someOfs
+                                  c = foldr (<>) mempty cs
+                              in [SomeOf c]
     distillNoneOfs []       = []
-    distillNoneOfs noneOfs  = let cs = map fromEnsCoins noneOfs :: [Coins]
-                                  c = foldr (<>) mempty cs :: Coins
-                              in [NoneOf c] :: [EmptyNoneSome Coins]
+    distillNoneOfs noneOfs  = let cs = map fromEnsCoins noneOfs
+                                  c = foldr (<>) mempty cs
+                              in [NoneOf c]
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
@@ -202,17 +203,17 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
 
 resolveEntCoinNamesWithRols :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNamesWithRols rs ic@(_, c) = do
-    gecrMrols :: [(GetEntsCoinsRes, Maybe RightOrLeft)] <- mapM (mkGecrWithRol ic) rs
+    gecrMrols <- mapM (mkGecrWithRol ic) $ map T.toLower rs
     let gecrs = gecrMrols^..folded._1
     let mrols = gecrMrols^..folded._2
-    let (gecrs', enscs) :: ([GetEntsCoinsRes], [EmptyNoneSome Coins]) = extractEnscsFromGecrs gecrs
-    mess :: [Maybe [Ent]] <- mapM extractMesFromGecr gecrs'
-    let miss :: [Maybe Inv] = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
-    let rcs :: [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)] = reconcileCoins c . distillEnscs $ enscs
+    let (gecrs', enscs) = extractEnscsFromGecrs gecrs
+    mess <- mapM extractMesFromGecr gecrs'
+    let miss = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
+    let rcs  = reconcileCoins c . distillEnscs $ enscs
     return (gecrs', mrols, miss, rcs)
 
 
-mkGecrWithRol :: InvCoins -> T.Text -> MudStack (GetEntsCoinsRes, Maybe RightOrLeft) -- TODO: Impact of alphabetical case?
+mkGecrWithRol :: InvCoins -> T.Text -> MudStack (GetEntsCoinsRes, Maybe RightOrLeft)
 mkGecrWithRol ic n = let (a, b) = T.break (== slotChar) n
                      in if | T.null b        -> mkGecr ic n >>= \gecr -> return (gecr, Nothing)
                            | T.length b == 1 -> sorry
@@ -228,9 +229,8 @@ mkGecrWithRol ic n = let (a, b) = T.break (== slotChar) n
 -----
 
 
--- TODO: Compare and refactor.
 procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
+procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMisPCInv _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
 procGecrMisPCInv _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
 procGecrMisPCInv f (Mult _ _ (Just _) _,   Just is) = f is
@@ -273,7 +273,7 @@ procGecrMisCon _  _ gecrMis                          = patternMatchFail "procGec
 
 
 procGecrMrolMiss :: (Maybe RightOrLeft -> Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe RightOrLeft, Maybe Inv) -> MudStack ()
-procGecrMrolMiss _ (_,                     _,    Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
+procGecrMrolMiss _ (_,                     _,    Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMrolMiss _ (Mult 1 n Nothing  _,   _,    Nothing) = output $ "You don't have " <> aOrAn n <> "."
 procGecrMrolMiss _ (Mult _ n Nothing  _,   _,    Nothing) = output $ "You don't have any " <> n <> "s."
 procGecrMrolMiss f (Mult _ _ (Just _) _,   mrol, Just is) = f mrol is
@@ -300,7 +300,7 @@ ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l",
 
 
 procGecrMisPCEq :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisPCEq _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs. -- TODO: Put this comment wherever appropriate.
+procGecrMisPCEq _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMisPCEq _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
 procGecrMisPCEq _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
 procGecrMisPCEq f (Mult _ _ (Just _) _,   Just is) = f is
@@ -312,7 +312,6 @@ procGecrMisPCEq _ (Sorry n,               Nothing) = output $ "You don't have " 
 procGecrMisPCEq _ gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
 
 
--- TODO: Compare and refactor.
 procReconciledCoinsPCInv :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsPCInv _ (Left Empty)                             = output "You don't have any coins."
 procReconciledCoinsPCInv _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
