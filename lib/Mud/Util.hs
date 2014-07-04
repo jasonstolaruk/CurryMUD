@@ -13,6 +13,7 @@ module Mud.Util ( adjustIndent
                 , deleteFirstOfEach
                 , dispAssocList
                 , dispGenericErrorMsg
+                , divider
                 , dumpFile
                 , dumpFileNoWrapping
                 , dumpFileWithDividers
@@ -77,7 +78,7 @@ newLine = putChar '\n'
 
 
 output :: T.Text -> MudStack ()
-output = liftIO . mapM_ (T.putStrLn . T.strip) . wordWrap T.cols
+output = liftIO . mapM_ T.putStrLn . wordWrap T.cols
 
 
 outputIndent :: Int -> T.Text -> MudStack ()

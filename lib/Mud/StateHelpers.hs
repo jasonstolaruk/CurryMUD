@@ -28,6 +28,7 @@ module Mud.StateHelpers ( addToInv
                         , hasCoins
                         , hasEq
                         , hasInv
+                        , hasInvOrCoins
                         , mkCoinsFromList
                         , mkCoinsList
                         , mkPlurFromBoth
@@ -164,6 +165,13 @@ getInv i = gets (^?!invTbl.ix i)
 
 hasInv :: Id -> MudStack Bool
 hasInv i = not . null <$> getInv i
+
+
+hasInvOrCoins :: Id -> MudStack Bool
+hasInvOrCoins i = do
+    hi <- hasInv   i
+    hc <- hasCoins i
+    return (hi || hc)
 
 
 getInvCoins :: Id -> MudStack InvCoins

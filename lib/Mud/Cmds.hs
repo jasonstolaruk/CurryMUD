@@ -23,7 +23,7 @@ import Control.Monad ((>=>), forever, forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
-import Data.List (delete, find, foldl', nub, nubBy, sort)
+import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
@@ -95,7 +95,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           , Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
-          , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
+          , Cmd { cmdName = "exits", action = exitsNewLine, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on a topic or command." }
           , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
@@ -128,9 +128,7 @@ gameWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
     initAndStart = do
         initLogging
         liftIO . logNotice "gameWrapper" $ "server started"
-        initWorld >> liftIO newLine
-        dispTitle >> liftIO newLine
-        motd []   >> liftIO newLine
+        sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
         forever game
 
 
@@ -230,7 +228,7 @@ ignore rs = let ignored = dblQuote . T.unwords $ rs
 
 
 motd :: Action
-motd [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "motd") return
+motd [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "motd") return >> liftIO newLine
   where
     takeADump = dumpFileWithDividers . (++) miscDir $ "motd"
 motd rs = ignore rs >> motd []
@@ -259,11 +257,10 @@ plaCmdPred = (/=) wizChar . T.head . cmdName
 
 
 help :: Action
-help []     = (try . liftIO $ takeADump) >>= either (dumpExHandler "help") return
+help [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "help") return
   where
     takeADump = dumpFile . (++) helpDir $ "root"
-help [r]    = dispHelpTopicByName r
-help (r:rs) = help [r] >> liftIO newLine >> help rs
+help rs = sequence_ . intercalate [liftIO $ divider >> newLine] $ [ [dispHelpTopicByName r] | r <- rs ]
 
 
 dispHelpTopicByName :: HelpTopic -> MudStack ()
@@ -271,10 +268,13 @@ dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
     let fns' = tail . tail . sort . delete "root" $ fns
         tns  = fns'^..folded.packed
     in maybe (liftIO sorry)
-             ((try . liftIO . takeADump) >=> either (dumpExHandler "dispHelpTopicByName") return)
+             helper
              (findFullNameForAbbrev r tns)
   where
-    sorry     = mapM_ T.putStrLn . wordWrap cols $ "No help is available on that topic/command."
+    sorry     = mapM_ T.putStrLn . wordWrap cols $ "No help is available on that topic/command." <> nlt
+    helper tn = do
+      (try . liftIO . takeADump $ tn) >>= either (dumpExHandler "dispHelpTopicByName") return
+      liftIO newLine
     takeADump = dumpFile . (++) helpDir . T.unpack
 
 
@@ -294,9 +294,9 @@ what rs = mapM_ helper rs
 
 
 advise :: [HelpTopic] -> T.Text -> MudStack ()
-advise []  msg = output msg >> liftIO newLine
-advise [h] msg = output msg >> output ("For more information, type " <> dblQuote ("help " <> h) <> ".") >> liftIO newLine
-advise hs  msg = output msg >> output ("See also the following help topics: " <> helpTopics <> ".")     >> liftIO newLine
+advise []  msg = output . (<>) msg $ nlt
+advise [h] msg = output msg >> outputCon [ "For more information, type ", dblQuote . (<>) "help " $ h, ".", nlt ]
+advise hs  msg = output msg >> outputCon [ "See also the following help topics: ", helpTopics,         ".", nlt ]
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
@@ -392,11 +392,9 @@ tryMove :: T.Text -> MudStack ()
 tryMove dir = let dir' = T.toLower dir
               in getPCRmId >>= findExit dir' >>= maybe (sorry dir') movePC
   where
-    sorry dir' = do
-        output $ if dir' `elem` stdLinkNames
-                   then "You can't go that way."
-                   else dblQuote dir <> " is not a valid direction."
-        liftIO newLine
+    sorry dir' = output $ if dir' `elem` stdLinkNames
+                            then "You can't go that way." <> nlt
+                            else dblQuote dir <> " is not a valid direction." <> nlt
     movePC i = pc.rmId .= i >> look []
 
 
@@ -407,7 +405,7 @@ tryMove dir = let dir' = T.toLower dir
 look :: Action
 look [] = do
     getPCRm >>= \r -> output $ r^.name <> "\n" <> r^.desc
-    exits False []
+    exitsNoNewLine []
     getPCRmInvCoins >>= dispRmInvCoins
     liftIO newLine
 look rs = do
@@ -491,7 +489,15 @@ summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
 -----
 
 
-exits :: Bool -> Action -- TODO: Make a "type" for this "Bool"? "exitsNoNewLine" and "exitsNewLine"?
+exitsNewLine :: Action
+exitsNewLine = exits True
+
+
+exitsNoNewLine :: Action
+exitsNoNewLine = exits False
+
+
+exits :: Bool -> Action
 exits nl [] = do
     rlns <- map (^.linkName) <$> (getPCRmId >>= getRmLinks)
     let stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
@@ -515,9 +521,9 @@ inv rs = do
 descCoins :: Coins -> MudStack ()
 descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
   where -- TODO: Come up with good descriptions.
-    descCop = unless (cop == 0) (output "The copper piece is round and shiny." >> liftIO newLine)
-    descSil = unless (sil == 0) (output "The silver piece is round and shiny." >> liftIO newLine)
-    descGol = unless (gol == 0) (output "The gold piece is round and shiny."   >> liftIO newLine)
+    descCop = unless (cop == 0) $ output ("The copper piece is round and shiny." <> nlt)
+    descSil = unless (sil == 0) $ output ("The silver piece is round and shiny." <> nlt)
+    descGol = unless (gol == 0) $ output ("The gold piece is round and shiny."   <> nlt)
 
 
 -----
@@ -528,7 +534,7 @@ equip [] = descEq 0
 equip rs = do
     (gecrs, miss, rcs) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
     mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
-    unless (null rcs) $ output "You don't have any coins among your readied equipment." >> liftIO newLine
+    unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt)
 
 
 descEq :: Id -> MudStack ()
@@ -550,7 +556,7 @@ descEq i = (mkEqDescList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \ed
 
 
 dudeYou'reNaked :: MudStack ()
-dudeYou'reNaked = output "You don't have anything readied. You're naked!" >> liftIO newLine
+dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> nlt
 
 
 -----
@@ -604,12 +610,13 @@ descGetDropCoins god (Coins (cop, sil, gol)) = do
 dropAction :: Action
 dropAction [] = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction rs = do
-    hi <- hasInv   0
-    hc <- hasCoins 0
-    unless (hi || hc) dudeYourHandsAreEmpty
-    (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisPCInv shuffleInvDrop) . zip gecrs $ miss
-    mapM_ (procReconciledCoinsPCInv shuffleCoinsDrop) rcs
+    hic <- hasInvOrCoins 0
+    if hic
+      then do 
+          (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
+          mapM_ (procGecrMisPCInv shuffleInvDrop) . zip gecrs $ miss
+          mapM_ (procReconciledCoinsPCInv shuffleCoinsDrop) rcs
+      else dudeYourHandsAreEmpty
     liftIO newLine
 
 
@@ -626,11 +633,15 @@ shuffleCoinsDrop c = getPCRmId >>= \i ->
 -----
 
 
--- TODO: Continue refactoring for correct newline behavior from here.
 putAction :: Action
 putAction []   = advise ["put"] $ "Please specify what you want to put, followed by where you want to put it, as in " <> dblQuote "put doll sack" <> "."
 putAction [r]  = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
-putAction rs   = hasInv 0 >>= \hi -> if hi then putRemDispatcher Put rs else dudeYourHandsAreEmpty
+putAction rs   = do
+    hic <- hasInvOrCoins 0
+    if hic
+      then putRemDispatcher Put rs
+      else dudeYourHandsAreEmpty
+    liftIO newLine
 
 
 putRemDispatcher :: PutOrRem -> Action
@@ -716,14 +727,15 @@ remove rs  = putRemDispatcher Rem rs
 remHelper :: Id -> Rest -> MudStack ()
 remHelper _  [] = return ()
 remHelper ci rs = do
-    cn <- (^.sing) <$> getEnt ci
-    hi <- hasInv ci
-    if not hi
+    cn  <- (^.sing) <$> getEnt ci
+    hic <- hasInvOrCoins ci
+    if not hic
       then output $ "The " <> cn <> " appears to be empty."
       else do
           (gecrs, miss, rcs) <- getInvCoins ci >>= resolveEntCoinNames rs
           mapM_ (procGecrMisCon cn . shuffleInvRem ci $ cn) . zip gecrs $ miss
           mapM_ (procReconciledCoinsCon cn . shuffleCoinsRem $ ci) rcs
+    liftIO newLine
 
 
 shuffleInvRem :: Id -> ConName -> Inv -> MudStack ()
@@ -743,6 +755,7 @@ ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
     (gecrs, mrols, mis, rcs) <- getInvCoins 0 >>= resolveEntCoinNamesWithRols rs    
     mapM_ (procGecrMrolMiss readyDispatcher) $ zip3 gecrs mrols mis
     unless (null rcs) $ output "You can't ready coins."
+    liftIO newLine
 
 
 readyDispatcher :: Maybe RightOrLeft -> Inv -> MudStack ()
@@ -867,7 +880,7 @@ getDesigClothSlot e c em rol
 getAvailClothSlot :: Cloth -> EqMap -> MudStack (Maybe Slot)
 getAvailClothSlot c em = do
     s <- getMobGender 0
-    h <- getMobHand 0
+    h <- getMobHand   0
     case c of EarC    -> procMaybe $ getEarSlotForGender s `mplus` (getEarSlotForGender . otherGender $ s)
               NoseC   -> procMaybe $ findAvailSlot em noseSlots
               NeckC   -> procMaybe $ findAvailSlot em neckSlots
@@ -876,20 +889,20 @@ getAvailClothSlot c em = do
               _       -> undefined -- TODO
   where
     procMaybe             = maybe (sorryFullClothSlots c >> return Nothing) (return . Just)
-    getEarSlotForGender s    = findAvailSlot em $ case s of Male   -> lEarSlots
-                                                            Female -> rEarSlots
-                                                            _      -> patternMatchFail "getAvailClothSlot getEarSlotForGender" [ showText s ]
+    getEarSlotForGender s = findAvailSlot em $ case s of Male   -> lEarSlots
+                                                         Female -> rEarSlots
+                                                         _      -> patternMatchFail "getAvailClothSlot getEarSlotForGender" [ showText s ]
     getWristSlotForHand h = findAvailSlot em $ case h of RHand  -> lWristSlots
                                                          LHand  -> rWristSlots
                                                          _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
     getRingSlotForHand h  = getMobGender 0 >>= \s ->
-        return (findAvailSlot em $ case s of Male   -> case h of RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
-                                                                 LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
-                                                                 _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
-                                             Female -> case h of RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
-                                                                 LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
-                                                                 _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
-                                             _      -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText s ])
+        return $ findAvailSlot em $ case s of Male   -> case h of RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
+                                                                  LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
+                                                                  _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
+                                              Female -> case h of RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
+                                                                  LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
+                                                                  _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
+                                              _      -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText s ]
 
 
 -- Ready weapons:
@@ -944,6 +957,7 @@ unready rs = hasEq 0 >>= \he -> if not he then dudeYou'reNaked else do
     (gecrs, miss, rcs) <- resolveEntCoinNames rs (is, mempty)
     mapM_ (procGecrMisPCEq shuffleInvUnready) . zip gecrs $ miss
     unless (null rcs) $ output "You can't unready coins."
+    liftIO newLine
 
 
 shuffleInvUnready :: Inv -> MudStack ()
@@ -976,7 +990,7 @@ mkIdCountBothList is = getEntBothGramNosInInv is >>= \ebgns ->
 
 
 uptime :: Action
-uptime [] = (try . output . parse =<< runUptime) >>= either uptimeExHandler return
+uptime [] = (try . output . parse =<< runUptime) >>= either uptimeExHandler return >> liftIO newLine
   where
     runUptime = liftIO . readProcess "uptime" [] $ ""
     parse ut  = let (a, b) = span (/= ',') ut
@@ -995,8 +1009,8 @@ uptimeExHandler e = (liftIO . logIOEx "uptime" $ e) >> dispGenericErrorMsg
 
 
 quit :: Action
-quit [] = output "Thanks for playing! See you next time." >> liftIO exitSuccess
-quit _  = output $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
+quit [] = output ("Thanks for playing! See you next time." <> nlt) >> liftIO exitSuccess
+quit _  = outputCon [ "Type ", dblQuote "quit", " with no arguments to quit the game.", nlt ]
 
 
 -- ==================================================
@@ -1004,9 +1018,9 @@ quit _  = output $ "Type " <> dblQuote "quit" <> " with no arguments to quit the
 
 
 wizDispCmdList :: Action
-wizDispCmdList []     = mapM_ (outputIndent 10) . cmdListText $ wizCmdPred
-wizDispCmdList [r]    = mapM_ (outputIndent 10) . grepTextList r . cmdListText $ wizCmdPred
-wizDispCmdList (r:rs) = wizDispCmdList [r] >> liftIO newLine >> wizDispCmdList rs
+wizDispCmdList []     = mapM_ (outputIndent 10) (cmdListText wizCmdPred) >> liftIO newLine
+wizDispCmdList rs     = forM_ rs $ \r ->
+    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ wizCmdPred)  >> liftIO newLine
 
 
 wizCmdPred :: Cmd -> Bool
@@ -1018,7 +1032,7 @@ wizCmdPred = (==) wizChar . T.head . cmdName
 
 wizMkOkapi :: Action
 wizMkOkapi [] = mkOkapi >>= \i ->
-    output $ "Made okapi with id " <> showText i <> "."
+    outputCon [ "Made okapi with id ", showText i, ".", nlt ]
 wizMkOkapi rs = ignore rs >> wizMkOkapi []
 
 
@@ -1029,10 +1043,10 @@ wizBuffCheck :: Action
 wizBuffCheck [] = (try . liftIO $ buffCheckHelper) >>= either (logAndDispIOEx "wizBuffCheck") return
   where
     buffCheckHelper = do
-        td <- getTemporaryDirectory
+        td      <- getTemporaryDirectory
         (fn, h) <- openTempFile td "temp"
-        bm <- hGetBuffering h
-        mapM_ T.putStrLn . wordWrapIndent cols 2 . T.concat $ [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, "." ]
+        bm      <- hGetBuffering h
+        mapM_ T.putStrLn . wordWrapIndent cols 2 . T.concat $ [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, ".", nlt ]
         hClose h
         removeFile fn
 wizBuffCheck rs = ignore rs >> wizBuffCheck []
@@ -1042,12 +1056,13 @@ wizBuffCheck rs = ignore rs >> wizBuffCheck []
 
 
 wizDispEnv :: Action
-wizDispEnv []  = liftIO $ getEnvironment >>= dispAssocList
-wizDispEnv [r] = liftIO $ dispAssocList . filter grepPair =<< getEnvironment
+wizDispEnv [] = liftIO $ getEnvironment >>= dispAssocList >> newLine
+wizDispEnv rs = mapM_ helper rs
   where
-    grepPair = uncurry (||) . over both (^.packed.to grep)
-    grep     = (r `T.isInfixOf`)
-wizDispEnv (r:rs) = wizDispEnv [r] >> liftIO newLine >> wizDispEnv rs
+    helper r = liftIO $ (dispAssocList . filter grepPair =<< getEnvironment) >> newLine
+      where
+        grepPair = uncurry (||) . over both (^.packed.to grep)
+        grep     = (r `T.isInfixOf`)
 
 
 -----
@@ -1055,7 +1070,7 @@ wizDispEnv (r:rs) = wizDispEnv [r] >> liftIO newLine >> wizDispEnv rs
 
 wizShutdown :: Action
 wizShutdown [] = liftIO $ logNotice "wizShutdown" "shutting down" >> exitSuccess
-wizShutdown _  = output $ "Type " <> (dblQuote . prefixWizCmd $ "shutdown") <> " with no arguments to shut down the game server."
+wizShutdown _  = output $ "Type " <> (dblQuote . prefixWizCmd $ "shutdown") <> " with no arguments to shut down the game server.\n"
 
 
 -----
@@ -1068,6 +1083,7 @@ wizTime [] = do
     zt <- liftIO getZonedTime
     output . formatThat . showText $ ct
     output . formatThat . showText $ zt
+    liftIO newLine
   where
     formatThat t = let wordy = T.words t
                        zone  = last wordy
@@ -1082,5 +1098,5 @@ wizTime rs = ignore rs >> wizTime []
 
 wizDay :: Action
 wizDay [] = liftIO getZonedTime >>= \zt ->
-    output $ formatTime defaultTimeLocale "%A %B %d" zt ^.packed
+    output $ formatTime defaultTimeLocale "%A %B %d" zt ^.packed <> "\n"
 wizDay rs = ignore rs >> wizDay []

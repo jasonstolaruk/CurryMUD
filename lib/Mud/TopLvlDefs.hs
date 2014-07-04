@@ -33,6 +33,10 @@ noOfTitles :: Int
 noOfTitles = 35
 
 
+nlt :: T.Text
+nlt = "\n"
+
+
 allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizChar :: Char
 allChar       = '\''
 amountChar    = '/'
