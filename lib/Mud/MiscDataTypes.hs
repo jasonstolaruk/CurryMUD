@@ -24,7 +24,8 @@ module Mud.MiscDataTypes ( Action
                          , Rest
                          , ToId
                          , ReconciledCoins
-                         , RightOrLeft(..) ) where
+                         , RightOrLeft(..)
+                         , ShouldNewLine ) where
 
 import Mud.StateDataTypes
 import Mud.Util hiding (patternMatchFail)
@@ -152,8 +153,10 @@ type ToId   = Id
 
 -----
 
-type InvCoins    = (Inv, Coins)
+type InvCoins      = (Inv, Coins)
 
-type BothGramNos = (Sing, Plur)
+type BothGramNos   = (Sing, Plur)
 
-type HelpTopic   = T.Text
+type HelpTopic     = T.Text
+
+type ShouldNewLine = Bool

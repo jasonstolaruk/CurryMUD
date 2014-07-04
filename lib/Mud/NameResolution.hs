@@ -22,7 +22,7 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>))
-import Control.Lens (_1, _2, dropping, folded, to)
+import Control.Lens (_1, _2, dropping, folded, over, to)
 import Control.Lens.Operators ((^.), (^..))
 import Control.Monad (unless)
 import Data.Char (isDigit, toUpper)
@@ -58,7 +58,9 @@ resolveEntCoinNames rs ic@(_, c) = do
 
 mkGecr :: InvCoins -> T.Text -> MudStack GetEntsCoinsRes
 mkGecr ic@(is, c) n
-  | n == [allChar]^.packed = getEntsInInv is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
+  | n == [allChar]^.packed = if null is && c == mempty
+                               then undefined -- TODO
+                               else getEntsInInv is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
   | T.head n == allChar    = mkGecrMult (maxBound :: Int) (T.tail n) ic
   | isDigit (T.head n)     = let numText = T.takeWhile isDigit n
                                  numInt  = either (oops numText) (^._1) $ decimal numText
@@ -134,7 +136,7 @@ mkGecrIndexed x n is = if n `elem` allCoinNames
 
 
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
-extractEnscsFromGecrs = foldl' helper ([], [])
+extractEnscsFromGecrs = over _1 reverse . foldl' helper ([], [])
   where
     helper (gecrs, enscs) gecr@(Mult    _ _ (Just _) (Just ensc)) = (gecr : gecrs, ensc : enscs)
     helper (gecrs, enscs) gecr@(Mult    _ _ (Just _) Nothing    ) = (gecr : gecrs, enscs)
@@ -229,34 +231,34 @@ mkGecrWithRol ic n = let (a, b) = T.break (== slotChar) n
 -----
 
 
-procGecrMisPCInv :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisPCInv _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCInv _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisPCInv _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMisPCInv f (Mult _ _ (Just _) _,   Just is) = f is
-procGecrMisPCInv _ (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s."
-procGecrMisPCInv _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ]
-procGecrMisPCInv f (Indexed _ _ (Right _), Just is) = f is
-procGecrMisPCInv _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
-procGecrMisPCInv _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> "."
-procGecrMisPCInv _ gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
+procGecrMisPCInv :: ShouldNewLine -> (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisPCInv _   _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
+procGecrMisPCInv snl _ (Mult 1 n Nothing  _,   Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> maybeNewLine snl
+procGecrMisPCInv snl _ (Mult _ n Nothing  _,   Nothing) = output ("You don't have any " <> n <> "s." )             >> maybeNewLine snl
+procGecrMisPCInv _   f (Mult _ _ (Just _) _,   Just is) = f is
+procGecrMisPCInv snl _ (Indexed _ n (Left ""), Nothing) = output ("You don't have any " <> n <> "s." )             >> maybeNewLine snl
+procGecrMisPCInv snl _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ] >> maybeNewLine snl
+procGecrMisPCInv _   f (Indexed _ _ (Right _), Just is) = f is
+procGecrMisPCInv snl _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                        >> maybeNewLine snl
+procGecrMisPCInv snl _ (Sorry n,               Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> maybeNewLine snl
+procGecrMisPCInv _   _ gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
 sorryIndexedCoins :: MudStack ()
 sorryIndexedCoins = output $ "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins."
 
 
-procGecrMisRm :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisRm _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
-procGecrMisRm _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't see " <> aOrAn n <> " here."
-procGecrMisRm _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't see any " <> n <> "s here."
-procGecrMisRm f (Mult _ _ (Just _) _,   Just is) = f is
-procGecrMisRm _ (Indexed _ n (Left ""), Nothing) = output $ "You don't see any " <> n <> "s here."
-procGecrMisRm _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here." ]
-procGecrMisRm f (Indexed _ _ (Right _), Just is) = f is
-procGecrMisRm _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
-procGecrMisRm _ (Sorry n,               Nothing) = output $ "You don't see " <> aOrAn n <> " here."
-procGecrMisRm _ gecrMis                          = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
+procGecrMisRm :: ShouldNewLine -> (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisRm _   _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
+procGecrMisRm snl _ (Mult 1 n Nothing  _,   Nothing) = output ("You don't see " <> aOrAn n <> " here.")             >> maybeNewLine snl
+procGecrMisRm snl _ (Mult _ n Nothing  _,   Nothing) = output ("You don't see any " <> n <> "s here.")              >> maybeNewLine snl
+procGecrMisRm _   f (Mult _ _ (Just _) _,   Just is) = f is
+procGecrMisRm snl _ (Indexed _ n (Left ""), Nothing) = output ("You don't see any " <> n <> "s here.")              >> maybeNewLine snl
+procGecrMisRm snl _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here." ] >> maybeNewLine snl
+procGecrMisRm _   f (Indexed _ _ (Right _), Just is) = f is
+procGecrMisRm snl _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                            >> maybeNewLine snl
+procGecrMisRm snl _ (Sorry n,               Nothing) = output ("You don't see " <> aOrAn n <> " here.")             >> maybeNewLine snl
+procGecrMisRm _   _ gecrMis                          = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
 procGecrMisCon :: ConName -> (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()

@@ -95,7 +95,7 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           , Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
-          , Cmd { cmdName = "exits", action = exitsNewLine, cmdDesc = "Display obvious exits." }
+          , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on a topic or command." }
           , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
@@ -177,7 +177,7 @@ splitInp = splitUp . T.words
 
 
 dispatch :: Input -> MudStack ()
-dispatch (cn, rest) = findAction cn >>= maybe (output "What?") (\act -> act rest)
+dispatch (cn, rest) = findAction cn >>= maybe (output $ "What?" <> nlt) (\act -> act rest)
 
 
 findAction :: CmdName -> MudStack (Maybe Action)
@@ -401,16 +401,15 @@ tryMove dir = let dir' = T.toLower dir
 -----
 
 
--- TODO: "l '", "i '", and "eq '" do nothing when there is nothing in the inventory.
 look :: Action
 look [] = do
     getPCRm >>= \r -> output $ r^.name <> "\n" <> r^.desc
-    exitsNoNewLine []
+    exits False []
     getPCRmInvCoins >>= dispRmInvCoins
     liftIO newLine
 look rs = do
     (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisRm descEnts) . zip gecrs $ miss
+    mapM_ (procGecrMisRm True descEnts) . zip gecrs $ miss
     mapM_ (procReconciledCoinsRm descCoins) rcs
 
 
@@ -489,21 +488,13 @@ summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
 -----
 
 
-exitsNewLine :: Action
-exitsNewLine = exits True
-
-
-exitsNoNewLine :: Action
-exitsNoNewLine = exits False
-
-
-exits :: Bool -> Action
-exits nl [] = do
+exits :: ShouldNewLine -> Action
+exits snl [] = do
     rlns <- map (^.linkName) <$> (getPCRmId >>= getRmLinks)
     let stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
     let customNames = filter (`notElem` stdLinkNames) rlns
     output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
-    when nl $ liftIO newLine
+    maybeNewLine snl
 exits nl rs = ignore rs >> exits nl []
 
 
@@ -514,7 +505,7 @@ inv :: Action -- TODO: Give some indication of encumbrance.
 inv [] = descInvCoins 0 >> liftIO newLine
 inv rs = do
     (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
+    mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
     mapM_ (procReconciledCoinsPCInv descCoins) rcs
 
 
@@ -529,11 +520,11 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 -----
 
 
-equip :: Action -- TODO: Equipment descriptions are not given in the order that equipment is listed. Something similar is happening with the "look" and "inv" commands.
+equip :: Action
 equip [] = descEq 0
 equip rs = do
     (gecrs, miss, rcs) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
-    mapM_ (procGecrMisPCInv descEnts) . zip gecrs $ miss
+    mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
     unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt)
 
 
@@ -566,7 +557,7 @@ getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = do
     (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisRm shuffleInvGet) . zip gecrs $ miss
+    mapM_ (procGecrMisRm False shuffleInvGet) . zip gecrs $ miss
     mapM_ (procReconciledCoinsRm shuffleCoinsGet) rcs
     liftIO newLine
 
@@ -614,7 +605,7 @@ dropAction rs = do
     if hic
       then do 
           (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
-          mapM_ (procGecrMisPCInv shuffleInvDrop) . zip gecrs $ miss
+          mapM_ (procGecrMisPCInv False shuffleInvDrop) . zip gecrs $ miss
           mapM_ (procReconciledCoinsPCInv shuffleCoinsDrop) rcs
       else dudeYourHandsAreEmpty
     liftIO newLine
@@ -668,7 +659,7 @@ putHelper :: Id -> Rest -> MudStack ()
 putHelper _  [] = return ()
 putHelper ci rs = do
     (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisPCInv . shuffleInvPut $ ci) . zip gecrs $ miss
+    mapM_ (procGecrMisPCInv False . shuffleInvPut $ ci) . zip gecrs $ miss
     mapM_ (procReconciledCoinsPCInv . shuffleCoinsPut $ ci) rcs
 
 

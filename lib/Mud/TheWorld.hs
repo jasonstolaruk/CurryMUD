@@ -124,7 +124,7 @@ createWorld = do
 
     putRm iHill [iGP1, iLongSword] (Coins (0, 0, 1)) (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
     putRm iCliff [iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4] mempty (Rm "The cliff" "You have reached the edge of a cliff. \
-        \There is a sizable hole in the ground. Next to the hole is a small hut." 0 [RmLink "w" iHill, RmLink "d" iHole, RmLink "hut" iHut])
+        \There is a sizeable hole in the ground. Next to the hole is a small hut." 0 [RmLink "w" iHill, RmLink "d" iHole, RmLink "hut" iHut])
     putRm iHole [iNeck1, iNeck2, iNeck3, iNeck4, iHelm] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. \
         \It's damp and smells of soil." 0 [RmLink "w" iVoid, RmLink "u" iCliff])
     putRm iVoid [iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." 0 [RmLink "e" iHole])
@@ -149,8 +149,8 @@ createWorld = do
 
     putWpn iLongSword (Ent iLongSword "sword" "two-handed long sword" "" "What a big sword! With the right technique it could do a great deal of damage." 0) (Obj 1 1) (Wpn TwoHanded 5 20)
 
-    putCloth iBracelet1 (Ent iBracelet1 "bracelet" "silver bracelet" "" "It's a simple bronze bracelet." 0) (Obj 1 1) WristC
-    putCloth iBracelet2 (Ent iBracelet2 "bracelet" "bronze bracelet" "" "It's a simple silver bracelet." 0) (Obj 1 1) WristC
+    putCloth iBracelet1 (Ent iBracelet1 "bracelet" "bronze bracelet" "" "It's a simple bronze bracelet." 0) (Obj 1 1) WristC
+    putCloth iBracelet2 (Ent iBracelet2 "bracelet" "silver bracelet" "" "It's a simple silver bracelet." 0) (Obj 1 1) WristC
     putCloth iBracelet3 (Ent iBracelet3 "bracelet" "gold bracelet" "" "It's a simple gold bracelet." 0) (Obj 1 1) WristC
     putCloth iBracelet4 (Ent iBracelet4 "bracelet" "platinum bracelet" "" "It's a simple platinum bracelet." 0) (Obj 1 1) WristC
 

@@ -20,6 +20,7 @@ module Mud.Util ( adjustIndent
                 , findFullNameForAbbrev
                 , grepTextList
                 , isVowel
+                , maybeNewLine
                 , mkCountList
                 , mkOrdinal
                 , newLine
@@ -47,7 +48,7 @@ import qualified Mud.TopLvlDefs as T (cols)
 
 import Control.Lens (_1, _2, both, folded, over, to)
 import Control.Lens.Operators ((^.), (^..))
-import Control.Monad (guard)
+import Control.Monad (guard, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isSpace)
 import Data.List (delete, foldl', sort)
@@ -75,6 +76,10 @@ dispGenericErrorMsg = output "Unfortunately, an error occured while executing yo
 
 newLine :: IO ()
 newLine = putChar '\n'
+
+
+maybeNewLine :: Bool -> MudStack ()
+maybeNewLine b = when b . liftIO $ newLine
 
 
 output :: T.Text -> MudStack ()
