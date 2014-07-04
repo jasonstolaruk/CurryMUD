@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.StateHelpers ( addToInv
+                        , BothGramNos
                         , findExit
                         , getArm
                         , getCloth
@@ -29,6 +30,7 @@ module Mud.StateHelpers ( addToInv
                         , hasEq
                         , hasInv
                         , hasInvOrCoins
+                        , InvCoins
                         , mkCoinsFromList
                         , mkCoinsList
                         , mkPlurFromBoth
@@ -37,7 +39,6 @@ module Mud.StateHelpers ( addToInv
                         , remFromInv
                         , sortInv ) where
 
-import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
@@ -82,6 +83,9 @@ getEntNamesInInv is = getEntsInInv is >>= \es ->
 getEntSingsInInv :: Inv -> MudStack [T.Text]
 getEntSingsInInv is = getEntsInInv is >>= \es ->
     return [ e^.sing | e <- es ]
+
+
+type BothGramNos = (Sing, Plur)
 
 
 getEntBothGramNos :: Ent -> BothGramNos
@@ -138,6 +142,10 @@ hasCoins :: Id -> MudStack Bool
 hasCoins i = not . all (== 0) . mkCoinsList <$> getCoins i
 
 
+type FromId = Id
+type ToId   = Id
+
+
 moveCoins :: Coins -> FromId -> ToId -> MudStack ()
 moveCoins c fi ti = unless (c == mempty) $ subCoins c fi >> addCoins c ti
 
@@ -172,6 +180,9 @@ hasInvOrCoins i = do
     hi <- hasInv   i
     hc <- hasCoins i
     return (hi || hc)
+
+
+type InvCoins = (Inv, Coins)
 
 
 getInvCoins :: Id -> MudStack InvCoins

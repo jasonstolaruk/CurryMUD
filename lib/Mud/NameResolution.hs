@@ -9,6 +9,7 @@ module Mud.NameResolution ( procReconciledCoinsPCInv
                           , procGecrMrolMiss
                           , procReconciledCoinsCon
                           , procReconciledCoinsRm
+                          , ReconciledCoins
                           , resolveEntCoinNames
                           , resolveEntCoinNamesWithRols
                           , resolveEntName
@@ -46,6 +47,9 @@ resolveEntName n ic = let n' = T.toLower n
                       in mkGecr ic n' >>= extractMesFromGecr
 
 
+type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
+
+
 resolveEntCoinNames :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNames rs ic@(_, c) = do
     gecrs <- mapM (mkGecr ic . T.toLower) rs
@@ -58,9 +62,7 @@ resolveEntCoinNames rs ic@(_, c) = do
 
 mkGecr :: InvCoins -> T.Text -> MudStack GetEntsCoinsRes
 mkGecr ic@(is, c) n
-  | n == [allChar]^.packed = if null is && c == mempty
-                               then undefined -- TODO
-                               else getEntsInInv is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
+  | n == [allChar]^.packed = getEntsInInv is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
   | T.head n == allChar    = mkGecrMult (maxBound :: Int) (T.tail n) ic
   | isDigit (T.head n)     = let numText = T.takeWhile isDigit n
                                  numInt  = either (oops numText) (^._1) $ decimal numText
@@ -314,32 +316,32 @@ procGecrMisPCEq _ (Sorry n,               Nothing) = output $ "You don't have " 
 procGecrMisPCEq _ gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
 
 
-procReconciledCoinsPCInv :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
-procReconciledCoinsPCInv _ (Left Empty)                             = output "You don't have any coins."
-procReconciledCoinsPCInv _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) . output $ "You don't have any copper pieces."
-    unless (sil == 0) . output $ "You don't have any silver pieces."
-    unless (gol == 0) . output $ "You don't have any gold pieces."
-procReconciledCoinsPCInv f (Right (SomeOf c                      )) = f c
-procReconciledCoinsPCInv _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) . output $ "You don't have " <> showText cop <> " copper pieces."
-    unless (sil == 0) . output $ "You don't have " <> showText sil <> " silver pieces."
-    unless (gol == 0) . output $ "You don't have " <> showText gol <> " gold pieces."
-procReconciledCoinsPCInv _ rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
+procReconciledCoinsPCInv :: ShouldNewLine -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
+procReconciledCoinsPCInv snl _ (Left Empty)                             = output "You don't have any coins." >> maybeNewLine snl
+procReconciledCoinsPCInv snl _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
+    unless (cop == 0) $ output "You don't have any copper pieces." >> maybeNewLine snl
+    unless (sil == 0) $ output "You don't have any silver pieces." >> maybeNewLine snl
+    unless (gol == 0) $ output "You don't have any gold pieces."   >> maybeNewLine snl
+procReconciledCoinsPCInv _   f (Right (SomeOf c                      )) = f c
+procReconciledCoinsPCInv snl _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
+    unless (cop == 0) $ output ("You don't have " <> showText cop <> " copper pieces.") >> maybeNewLine snl
+    unless (sil == 0) $ output ("You don't have " <> showText sil <> " silver pieces.") >> maybeNewLine snl
+    unless (gol == 0) $ output ("You don't have " <> showText gol <> " gold pieces."  ) >> maybeNewLine snl
+procReconciledCoinsPCInv _   _ rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
 
 
-procReconciledCoinsRm :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
-procReconciledCoinsRm _ (Left Empty)                             = output "You don't see any coins here."
-procReconciledCoinsRm _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) . output $ "You don't see any copper pieces here."
-    unless (sil == 0) . output $ "You don't see any silver pieces here."
-    unless (gol == 0) . output $ "You don't see any gold pieces here."
-procReconciledCoinsRm f (Right (SomeOf c                      )) = f c
-procReconciledCoinsRm _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) . output $ "You don't see " <> showText cop <> " copper pieces here."
-    unless (sil == 0) . output $ "You don't see " <> showText sil <> " silver pieces here."
-    unless (gol == 0) . output $ "You don't see " <> showText gol <> " gold pieces here."
-procReconciledCoinsRm _ rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
+procReconciledCoinsRm :: ShouldNewLine -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
+procReconciledCoinsRm snl _ (Left Empty)                             = output "You don't see any coins here." >> maybeNewLine snl
+procReconciledCoinsRm snl _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
+    unless (cop == 0) $ output "You don't see any copper pieces here." >> maybeNewLine snl
+    unless (sil == 0) $ output "You don't see any silver pieces here." >> maybeNewLine snl
+    unless (gol == 0) $ output "You don't see any gold pieces here."   >> maybeNewLine snl
+procReconciledCoinsRm _   f (Right (SomeOf c                      )) = f c
+procReconciledCoinsRm snl _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
+    unless (cop == 0) $ output ("You don't see " <> showText cop <> " copper pieces here.") >> maybeNewLine snl
+    unless (sil == 0) $ output ("You don't see " <> showText sil <> " silver pieces here.") >> maybeNewLine snl
+    unless (gol == 0) $ output ("You don't see " <> showText gol <> " gold pieces here."  ) >> maybeNewLine snl
+procReconciledCoinsRm _   _ rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
 
 
 procReconciledCoinsCon :: ConName -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()

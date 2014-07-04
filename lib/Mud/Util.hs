@@ -33,6 +33,7 @@ module Mud.Util ( adjustIndent
                 , parensQuote
                 , patternMatchFail
                 , quoteWithAndPad
+                , ShouldNewLine
                 , showText
                 , singleQuote
                 , unquote
@@ -78,8 +79,11 @@ newLine :: IO ()
 newLine = putChar '\n'
 
 
-maybeNewLine :: Bool -> MudStack ()
-maybeNewLine b = when b . liftIO $ newLine
+type ShouldNewLine = Bool
+
+
+maybeNewLine :: ShouldNewLine -> MudStack ()
+maybeNewLine snl = when snl . liftIO $ newLine
 
 
 output :: T.Text -> MudStack ()

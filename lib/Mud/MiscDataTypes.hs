@@ -3,29 +3,21 @@
 
 module Mud.MiscDataTypes ( Action
                          , Amount
-                         , BothGramNos
                          , Cmd(..)
                          , CmdName
                          , ConvRol
                          , EmptyNoneSome(..)
-                         , FromId
                          , fromRol
                          , GetEntsCoinsRes(..)
                          , GetOrDrop(..)
-                         , HelpTopic
                          , Index
-                         , Input
-                         , InvCoins
                          , InvType(..)
                          , NameSearchedFor
                          , pp
                          , Pretty
                          , PutOrRem(..)
                          , Rest
-                         , ToId
-                         , ReconciledCoins
-                         , RightOrLeft(..)
-                         , ShouldNewLine ) where
+                         , RightOrLeft(..) ) where
 
 import Mud.StateDataTypes
 import Mud.Util hiding (patternMatchFail)
@@ -105,14 +97,11 @@ instance ConvRol Slot where
 
 type CmdName = T.Text
 type Rest    = [T.Text]
-
-type Action = Rest -> MudStack ()
+type Action  = Rest -> MudStack ()
 
 data Cmd = Cmd { cmdName :: !CmdName
                , action  :: !Action
                , cmdDesc :: !T.Text }
-
-type Input = (CmdName, Rest)
 
 -----
 
@@ -133,8 +122,6 @@ data EmptyNoneSome a = Empty
                      | NoneOf a
                      | SomeOf a deriving (Eq, Show)
 
-type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
-
 -----
 
 type Amount          = Int
@@ -145,18 +132,3 @@ data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe (
                      | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
                      | Sorry           !NameSearchedFor
                      | SorryIndexedCoins deriving Show
-
------
-
-type FromId = Id
-type ToId   = Id
-
------
-
-type InvCoins      = (Inv, Coins)
-
-type BothGramNos   = (Sing, Plur)
-
-type HelpTopic     = T.Text
-
-type ShouldNewLine = Bool

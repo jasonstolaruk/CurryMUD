@@ -168,6 +168,9 @@ handleInp :: T.Text -> MudStack ()
 handleInp = maybe (return ()) dispatch . splitInp
 
 
+type Input = (CmdName, Rest)
+
+
 splitInp :: T.Text -> Maybe Input
 splitInp = splitUp . T.words
   where
@@ -261,6 +264,9 @@ help [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "help") return
   where
     takeADump = dumpFile . (++) helpDir $ "root"
 help rs = sequence_ . intercalate [liftIO $ divider >> newLine] $ [ [dispHelpTopicByName r] | r <- rs ]
+
+
+type HelpTopic = T.Text
 
 
 dispHelpTopicByName :: HelpTopic -> MudStack ()
@@ -408,9 +414,13 @@ look [] = do
     getPCRmInvCoins >>= dispRmInvCoins
     liftIO newLine
 look rs = do
-    (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisRm True descEnts) . zip gecrs $ miss
-    mapM_ (procReconciledCoinsRm descCoins) rcs
+    hic <- getPCRmId >>= hasInvOrCoins
+    if hic
+      then do
+          (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
+          mapM_ (procGecrMisRm True descEnts) . zip gecrs $ miss
+          mapM_ (procReconciledCoinsRm True descCoins) rcs
+      else dudeThere'sNothingHere
 
 
 descEnts :: Inv -> MudStack ()
@@ -485,6 +495,10 @@ summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
     mkCoinsWithNamesList   = zip coinNames . mkCoinsList $ c
 
 
+dudeThere'sNothingHere :: MudStack ()
+dudeThere'sNothingHere = output $ "You don't see anything here to look at." <> nlt
+
+
 -----
 
 
@@ -504,9 +518,13 @@ exits nl rs = ignore rs >> exits nl []
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv [] = descInvCoins 0 >> liftIO newLine
 inv rs = do
-    (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
-    mapM_ (procReconciledCoinsPCInv descCoins) rcs
+    hic <- hasInvOrCoins 0
+    if hic
+      then do
+          (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
+          mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
+          mapM_ (procReconciledCoinsPCInv True descCoins) rcs
+      else dudeYourHandsAreEmpty >> liftIO newLine
 
 
 descCoins :: Coins -> MudStack ()
@@ -523,9 +541,13 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 equip :: Action
 equip [] = descEq 0
 equip rs = do
-    (gecrs, miss, rcs) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
-    mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
-    unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt)
+    he <- hasEq 0
+    if he
+      then do
+          (gecrs, miss, rcs) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
+          mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
+          unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt)
+      else dudeYou'reNaked
 
 
 descEq :: Id -> MudStack ()
@@ -558,7 +580,7 @@ getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as
 getAction rs = do
     (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
     mapM_ (procGecrMisRm False shuffleInvGet) . zip gecrs $ miss
-    mapM_ (procReconciledCoinsRm shuffleCoinsGet) rcs
+    mapM_ (procReconciledCoinsRm False shuffleCoinsGet) rcs
     liftIO newLine
 
 
@@ -606,7 +628,7 @@ dropAction rs = do
       then do 
           (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
           mapM_ (procGecrMisPCInv False shuffleInvDrop) . zip gecrs $ miss
-          mapM_ (procReconciledCoinsPCInv shuffleCoinsDrop) rcs
+          mapM_ (procReconciledCoinsPCInv False shuffleCoinsDrop) rcs
       else dudeYourHandsAreEmpty
     liftIO newLine
 
@@ -660,7 +682,7 @@ putHelper _  [] = return ()
 putHelper ci rs = do
     (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
     mapM_ (procGecrMisPCInv False . shuffleInvPut $ ci) . zip gecrs $ miss
-    mapM_ (procReconciledCoinsPCInv . shuffleCoinsPut $ ci) rcs
+    mapM_ (procReconciledCoinsPCInv False . shuffleCoinsPut $ ci) rcs
 
 
 shuffleInvPut :: Id -> Inv -> MudStack ()
