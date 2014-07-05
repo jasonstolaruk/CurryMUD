@@ -45,9 +45,6 @@ import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
--- TODO: "desc" vs. "disp" vs "summarize"?
-
-
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.Cmds"
 
@@ -408,10 +405,13 @@ tryMove dir = let dir' = T.toLower dir
 
 look :: Action
 look [] = do
-    getPCRm >>= \r -> output $ r^.name <> "\n" <> r^.desc
-    exits False []
+    descRm
+    summarizeExits
     getPCRmInvCoins >>= dispRmInvCoins
     liftIO newLine
+  where
+    descRm = getPCRm >>= \r -> output $ r^.name <> nlt <> r^.desc
+    summarizeExits = exits False []
 look rs = do
     hic <- getPCRmId >>= hasInvOrCoins
     if hic
@@ -422,17 +422,12 @@ look rs = do
       else output $ "You don't see anything here to look at." <> nlt
 
 
-descEnts :: Inv -> MudStack ()
-descEnts is = forM_ is $ \i ->
-    getEnt i >>= descEnt >> liftIO newLine
-
-
 dispRmInvCoins :: InvCoins -> MudStack ()
-dispRmInvCoins (is, c) = mkNameCountBothList is >>= mapM_ descEntInRm >> maybeSummarizeCoins
+dispRmInvCoins (is, c) = mkNameCountBothList is >>= mapM_ dispEntInRm >> maybeSummarizeCoins
   where
-    descEntInRm (en, count, (s, _))
+    dispEntInRm (en, count, (s, _))
       | count == 1             = outputIndent 2 $ aOrAn s <> " " <> bracketQuote en
-    descEntInRm (en, count, b) = outputConIndent 2 [ showText count, " ", mkPlurFromBoth b, " ", bracketQuote en ]
+    dispEntInRm (en, count, b) = outputConIndent 2 [ showText count, " ", mkPlurFromBoth b, " ", bracketQuote en ]
     maybeSummarizeCoins        = when (c /= mempty) (summarizeCoins c)
 
 
@@ -444,27 +439,32 @@ mkNameCountBothList is = do
     return (nub . zip3 ens cs $ ebgns)
 
 
+descEnts :: Inv -> MudStack ()
+descEnts is = forM_ is $ \i ->
+    getEnt i >>= descEnt >> liftIO newLine
+
+
 descEnt :: Ent -> MudStack ()
 descEnt e = do
     e^.desc.to output
     t <- getEntType e
-    when (t == ConType) $ descInvCoins i
-    when (t == MobType) $ descEq i
+    when (t == ConType) $ dispInvCoins i
+    when (t == MobType) $ dispEq i
   where
     i = e^.entId
 
 
-descInvCoins :: Id -> MudStack ()
-descInvCoins i = do
+dispInvCoins :: Id -> MudStack ()
+dispInvCoins i = do
     hi <- hasInv   i
     hc <- hasCoins i
     case (hi, hc) of
       (False, False) -> if i == 0
                           then dudeYourHandsAreEmpty
                           else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
-      (True,  False) -> header >> descEntsInInv i
+      (True,  False) -> header >> dispEntsInInv i
       (False, True ) -> header >> summarizeCoinsInInv
-      (True,  True ) -> header >> descEntsInInv i >> summarizeCoinsInInv
+      (True,  True ) -> header >> dispEntsInInv i >> summarizeCoinsInInv
   where
     header
       | i == 0 = output "You are carrying:"
@@ -476,12 +476,12 @@ dudeYourHandsAreEmpty :: MudStack ()
 dudeYourHandsAreEmpty = output "You aren't carrying anything."
 
 
-descEntsInInv :: Id -> MudStack ()
-descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
+dispEntsInInv :: Id -> MudStack ()
+dispEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ dispEntInInv
   where
-    descEntInInv (en, c, (s, _))
+    dispEntInInv (en, c, (s, _))
       | c == 1 = outputIndent ind $ nameCol en <> "1 " <> s
-    descEntInInv (en, c, b) = outputConIndent ind [ nameCol en, showText c, " ", mkPlurFromBoth b ]
+    dispEntInInv (en, c, b) = outputConIndent ind [ nameCol en, showText c, " ", mkPlurFromBoth b ]
     nameCol = bracketPad ind
     ind     = 11
 
@@ -489,9 +489,17 @@ descEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ descEntInInv
 summarizeCoins :: Coins -> MudStack ()
 summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
   where
-    dispCoinsWithNamesList = output . T.intercalate ", " . filter (not . T.null) . map descNameAmt
-    descNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
+    dispCoinsWithNamesList = output . T.intercalate ", " . filter (not . T.null) . map dispNameAmt
+    dispNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
     mkCoinsWithNamesList   = zip coinNames . mkCoinsList $ c
+
+
+descCoins :: Coins -> MudStack ()
+descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
+  where -- TODO: Come up with good descriptions.
+    descCop = unless (cop == 0) $ output ("The copper piece is round and shiny." <> nlt)
+    descSil = unless (sil == 0) $ output ("The silver piece is round and shiny." <> nlt)
+    descGol = unless (gol == 0) $ output ("The gold piece is round and shiny."   <> nlt)
 
 
 -----
@@ -511,7 +519,7 @@ exits nl rs = ignore rs >> exits nl []
 
 
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv [] = descInvCoins 0 >> liftIO newLine
+inv [] = dispInvCoins 0 >> liftIO newLine
 inv rs = do
     hic <- hasInvOrCoins 0
     if hic
@@ -522,19 +530,11 @@ inv rs = do
       else dudeYourHandsAreEmpty >> liftIO newLine
 
 
-descCoins :: Coins -> MudStack ()
-descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
-  where -- TODO: Come up with good descriptions.
-    descCop = unless (cop == 0) $ output ("The copper piece is round and shiny." <> nlt)
-    descSil = unless (sil == 0) $ output ("The silver piece is round and shiny." <> nlt)
-    descGol = unless (gol == 0) $ output ("The gold piece is round and shiny."   <> nlt)
-
-
 -----
 
 
 equip :: Action
-equip [] = descEq 0
+equip [] = dispEq 0
 equip rs = do
     he <- hasEq 0
     if he
@@ -545,13 +545,13 @@ equip rs = do
       else dudeYou'reNaked
 
 
-descEq :: Id -> MudStack ()
-descEq i = (mkEqDescList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \edl ->
+dispEq :: Id -> MudStack ()
+dispEq i = (mkEqList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \edl ->
     if null edl then none else header >> forM_ edl (outputIndent 15) >> liftIO newLine
   where
     mkSlotNameToIdList    = map (first pp)
-    mkEqDescList          = mapM descEqHelper
-    descEqHelper (sn, i') = let slotName = parensPad 15 noFinger
+    mkEqList              = mapM dispEqHelper
+    dispEqHelper (sn, i') = let slotName = parensPad 15 noFinger
                                 noFinger = T.breakOn " finger" sn ^._1
                             in getEnt i' >>= \e ->
                                 return (T.concat [ slotName, e^.sing, " ", e^.name.to bracketQuote ])
