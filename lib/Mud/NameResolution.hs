@@ -82,22 +82,20 @@ mkGecrMult a n (is, c) = if n `elem` allCoinNames
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
 mkGecrMultForCoins a n c@(Coins (cop, sil, gol))
-  | c == mempty = return (Mult a n Nothing . Just $ Empty)
-  | otherwise = return $ case n of
-    "cp"    | cop == 0               -> Mult a n Nothing . Just . NoneOf . Coins $ (a,   0,   0  )
-            | a == (maxBound :: Int) -> Mult a n Nothing . Just . SomeOf . Coins $ (cop, 0,   0  )
-            | otherwise              -> Mult a n Nothing . Just . SomeOf . Coins $ (a,   0,   0  )
-    "sp"    | sil == 0               -> Mult a n Nothing . Just . NoneOf . Coins $ (0,   a,   0  )
-            | a == (maxBound :: Int) -> Mult a n Nothing . Just . SomeOf . Coins $ (0,   sil, 0  )
-            | otherwise              -> Mult a n Nothing . Just . SomeOf . Coins $ (0,   a,   0  )
-    "gp"    | gol == 0               -> Mult a n Nothing . Just . NoneOf . Coins $ (0,   0,   a  )
-            | a == (maxBound :: Int) -> Mult a n Nothing . Just . SomeOf . Coins $ (0,   0,   gol)
-            | otherwise              -> Mult a n Nothing . Just . SomeOf . Coins $ (0,   0,   a  )
-    "coin"                           -> aggregate
-    "coins"                          -> aggregate
+  | c == mempty                 = return  (Mult a n Nothing . Just $ Empty)
+  | n `elem` aggregateCoinNames = return  (Mult a n Nothing . Just . SomeOf $ if a == (maxBound :: Int) then c else c')
+  | otherwise                   = return . Mult a n Nothing . Just $ case n of
+    "cp"    | cop == 0               -> NoneOf . Coins $ (a,   0,   0  )
+            | a == (maxBound :: Int) -> SomeOf . Coins $ (cop, 0,   0  )
+            | otherwise              -> SomeOf . Coins $ (a,   0,   0  )
+    "sp"    | sil == 0               -> NoneOf . Coins $ (0,   a,   0  )
+            | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   sil, 0  )
+            | otherwise              -> SomeOf . Coins $ (0,   a,   0  )
+    "gp"    | gol == 0               -> NoneOf . Coins $ (0,   0,   a  )
+            | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   0,   gol)
+            | otherwise              -> SomeOf . Coins $ (0,   0,   a  )
     _                                -> patternMatchFail "mkGecrMultForCoins" [n]
   where
-    aggregate = Mult a n Nothing . Just . SomeOf $ if a == (maxBound :: Int) then c else c'
     c'        = mkCoinsFromList . distributeAmt a . mkCoinsList $ c
 
 
@@ -153,10 +151,10 @@ extractEnscsFromGecrs = over _1 reverse . foldl' helper ([], [])
 
 
 extractMesFromGecr :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
-extractMesFromGecr gecr = case gecr of
-  (Mult    _ _ (Just es) _) -> return (Just es)
-  (Indexed _ _ (Right e)  ) -> return (Just [e])
-  _                         -> return Nothing
+extractMesFromGecr gecr = return $ case gecr of
+  (Mult    _ _ (Just es) _) -> Just es
+  (Indexed _ _ (Right e)  ) -> Just [e]
+  _                         -> Nothing
 
 
 pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
@@ -171,20 +169,13 @@ distillEnscs enscs
   | Empty `elem` enscs = [Empty]
   | otherwise          = let someOfs = filter isSomeOf enscs
                              noneOfs = filter isNoneOf enscs
-                         in distillSomeOfs someOfs ++ distillNoneOfs noneOfs
+                         in [ distill SomeOf someOfs ] ++ [ distill NoneOf noneOfs ]
   where
     isSomeOf (SomeOf _)     = True
     isSomeOf _              = False
     isNoneOf (NoneOf _)     = True
     isNoneOf _              = False
-    distillSomeOfs []       = []
-    distillSomeOfs someOfs  = let cs = map fromEnsCoins someOfs
-                                  c  = foldr (<>) mempty cs
-                              in [SomeOf c]
-    distillNoneOfs []       = []
-    distillNoneOfs noneOfs  = let cs = map fromEnsCoins noneOfs
-                                  c  = foldr (<>) mempty cs
-                              in [NoneOf c]
+    distill f               = f . foldr (<>) mempty . map fromEnsCoins
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
@@ -194,18 +185,18 @@ reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins
 reconcileCoins _                       []    = []
 reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
   where
-    helper Empty                               = [ Left Empty ]
+    helper Empty                               = [ Left Empty        ]
     helper (NoneOf c)                          = [ Left . NoneOf $ c ]
     helper (SomeOf (Coins (cop', sil', gol'))) = concat [ [ mkEitherCop | cop' /= 0 ]
                                                         , [ mkEitherSil | sil' /= 0 ]
                                                         , [ mkEitherGol | gol' /= 0 ] ]
       where
-        mkEitherCop | cop' <= cop = Right . SomeOf . Coins $ (cop', 0, 0)
-                    | otherwise   = Left  . SomeOf . Coins $ (cop', 0, 0)
-        mkEitherSil | sil' <= sil = Right . SomeOf . Coins $ (0, sil', 0)
-                    | otherwise   = Left  . SomeOf . Coins $ (0, sil', 0)
-        mkEitherGol | gol' <= gol = Right . SomeOf . Coins $ (0, 0, gol')
-                    | otherwise   = Left  . SomeOf . Coins $ (0, 0, gol')
+        mkEitherCop | cop' <= cop = Right . SomeOf . Coins $ (cop', 0,    0   )
+                    | otherwise   = Left  . SomeOf . Coins $ (cop', 0,    0   )
+        mkEitherSil | sil' <= sil = Right . SomeOf . Coins $ (0,    sil', 0   )
+                    | otherwise   = Left  . SomeOf . Coins $ (0,    sil', 0   )
+        mkEitherGol | gol' <= gol = Right . SomeOf . Coins $ (0,    0,    gol')
+                    | otherwise   = Left  . SomeOf . Coins $ (0,    0,    gol')
 
 
 -- ============================================================
@@ -320,7 +311,7 @@ procGecrMrolMiss _ gecrMisMrol                            = patternMatchFail "pr
 sorryMrol :: T.Text -> MudStack ()
 sorryMrol n
   | slotChar `elem` n^.unpacked = mapM_ output . T.lines . T.concat $ [ "Please specify ", dblQuote "r", " or ", dblQuote "l", ".\n", ringHelp ]
-  | otherwise = output $ "You don't have " <> aOrAn n <> "."
+  | otherwise                   = output $ "You don't have " <> aOrAn n <> "."
 
 
 ringHelp :: T.Text
@@ -351,9 +342,9 @@ procGecrMisPCEq _ gecrMis                          = patternMatchFail "procGecrM
 procReconciledCoinsPCInv :: ShouldNewLine -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsPCInv snl _ (Left Empty)                             = output "You don't have any coins." >> maybeNewLine snl
 procReconciledCoinsPCInv snl _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) $ output "You don't have any copper pieces." >> maybeNewLine snl
-    unless (sil == 0) $ output "You don't have any silver pieces." >> maybeNewLine snl
-    unless (gol == 0) $ output "You don't have any gold pieces."   >> maybeNewLine snl
+    unless (cop == 0) $ output "You don't have any copper pieces."                      >> maybeNewLine snl
+    unless (sil == 0) $ output "You don't have any silver pieces."                      >> maybeNewLine snl
+    unless (gol == 0) $ output "You don't have any gold pieces."                        >> maybeNewLine snl
 procReconciledCoinsPCInv _   f (Right (SomeOf c                      )) = f c
 procReconciledCoinsPCInv snl _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (cop == 0) $ output ("You don't have " <> showText cop <> " copper pieces.") >> maybeNewLine snl
@@ -365,9 +356,9 @@ procReconciledCoinsPCInv _   _ rc = patternMatchFail "procReconciledCoinsPCInv" 
 procReconciledCoinsRm :: ShouldNewLine -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsRm snl _ (Left Empty)                             = output "You don't see any coins here." >> maybeNewLine snl
 procReconciledCoinsRm snl _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) $ output "You don't see any copper pieces here." >> maybeNewLine snl
-    unless (sil == 0) $ output "You don't see any silver pieces here." >> maybeNewLine snl
-    unless (gol == 0) $ output "You don't see any gold pieces here."   >> maybeNewLine snl
+    unless (cop == 0) $ output "You don't see any copper pieces here."                      >> maybeNewLine snl
+    unless (sil == 0) $ output "You don't see any silver pieces here."                      >> maybeNewLine snl
+    unless (gol == 0) $ output "You don't see any gold pieces here."                        >> maybeNewLine snl
 procReconciledCoinsRm _   f (Right (SomeOf c                      )) = f c
 procReconciledCoinsRm snl _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (cop == 0) $ output ("You don't see " <> showText cop <> " copper pieces here.") >> maybeNewLine snl

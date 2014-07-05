@@ -45,7 +45,6 @@ import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
--- TODO: A massive refactoring should be undertaken after the game has been made multiplayer.
 -- TODO: "desc" vs. "disp" vs "summarize"?
 
 
