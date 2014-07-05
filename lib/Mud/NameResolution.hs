@@ -169,13 +169,13 @@ distillEnscs enscs
   | Empty `elem` enscs = [Empty]
   | otherwise          = let someOfs = filter isSomeOf enscs
                              noneOfs = filter isNoneOf enscs
-                         in [ distill SomeOf someOfs ] ++ [ distill NoneOf noneOfs ]
+                         in distill SomeOf someOfs : [ distill NoneOf noneOfs ]
   where
     isSomeOf (SomeOf _)     = True
     isSomeOf _              = False
     isNoneOf (NoneOf _)     = True
     isNoneOf _              = False
-    distill f               = f . foldr (<>) mempty . map fromEnsCoins
+    distill f               = f . foldr ((<>) . fromEnsCoins) mempty
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
