@@ -59,6 +59,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
 
+-- ==================================================
+-- Error handling:
+
+
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
 blowUp modName funName msg vals = error $ errorMsg^.unpacked
   where
@@ -73,6 +77,10 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 
 dispGenericErrorMsg :: MudStack ()
 dispGenericErrorMsg = output "Unfortunately, an error occured while executing your command."
+
+
+-- ==================================================
+-- Output:
 
 
 newLine :: IO ()
@@ -100,6 +108,36 @@ outputCon = output . T.concat
 
 outputConIndent :: Int -> [T.Text] -> MudStack ()
 outputConIndent n = outputIndent n . T.concat
+
+
+divider :: IO ()
+divider = T.putStrLn . T.replicate T.cols $ "="
+
+
+dumpFile :: FilePath -> IO () -- TODO: Implement paging.
+dumpFile fn = takeADump =<< T.readFile fn
+  where
+    takeADump = mapM_ T.putStrLn . concat . wordWrapLines T.cols . T.lines
+
+
+dumpFileWithDividers :: FilePath -> IO ()
+dumpFileWithDividers fn = divider >> dumpFile fn >> divider
+
+
+dumpFileNoWrapping :: FilePath -> IO ()
+dumpFileNoWrapping fn = takeADump =<< T.readFile fn
+  where
+    takeADump = T.putStrLn
+
+
+dispAssocList :: (Show a, Show b) => [(a, b)] -> IO ()
+dispAssocList = mapM_ takeADump
+  where
+    takeADump (a, b) = mapM_ T.putStrLn . wordWrapIndent T.cols 2 $ (unquote . showText $ a) <> ": " <> showText b
+
+
+-- ==================================================
+-- Word wrapping and indenting:
 
 
 wordWrap :: Int -> T.Text -> [T.Text]
@@ -195,20 +233,8 @@ calcIndent t
     numOfFollowingSpcs = numOfLeadingSpcs b
 
 
-showText :: (Show a) => a -> T.Text
-showText t = t^.to show.packed
-
-
-aOrAn :: T.Text -> T.Text
-aOrAn t | T.null t' = ""
-        | isVowel . T.head $ t' = "an " <> t'
-        | otherwise = "a " <> t'
-  where
-    t' = T.strip t
-
-
-isVowel :: Char -> Bool
-isVowel c = c `elem` "aeiou"^.unpacked
+-- ==================================================
+-- Quoting:
 
 
 quoteWith :: (T.Text, T.Text) -> T.Text -> T.Text
@@ -239,6 +265,10 @@ unquote :: T.Text -> T.Text
 unquote = T.init . T.tail
 
 
+-- ==================================================
+-- Padding:
+
+
 quoteWithAndPad :: (T.Text, T.Text) -> Int -> T.Text -> T.Text
 quoteWithAndPad q x t = quoteWith q t' <> T.replicate p " "
   where
@@ -264,8 +294,24 @@ padOrTrunc x t
                                          GT -> T.take x t
 
 
-grepTextList :: T.Text -> [T.Text] -> [T.Text]
-grepTextList needle = filter (needle `T.isInfixOf`)
+-- ==================================================
+-- Misc.:
+
+
+showText :: (Show a) => a -> T.Text
+showText t = t^.to show.packed
+
+
+aOrAn :: T.Text -> T.Text
+aOrAn t | T.null t' = ""
+        | isVowel . T.head $ t' = "an " <> t'
+        | otherwise = "a " <> t'
+  where
+    t' = T.strip t
+
+
+isVowel :: Char -> Bool
+isVowel c = c `elem` "aeiou"^.unpacked
 
 
 findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
@@ -282,32 +328,6 @@ deleteFirstOfEach :: (Eq a) => [a] -> [a] -> [a]
 deleteFirstOfEach delThese fromThis = foldl' (flip delete) fromThis delThese
 
 
-dumpFile :: FilePath -> IO () -- TODO: Implement paging.
-dumpFile fn = takeADump =<< T.readFile fn
-  where
-    takeADump = mapM_ T.putStrLn . concat . wordWrapLines T.cols . T.lines
-
-
-dumpFileWithDividers :: FilePath -> IO ()
-dumpFileWithDividers fn = divider >> dumpFile fn >> divider
-
-
-divider :: IO ()
-divider = T.putStrLn . T.replicate T.cols $ "="
-
-
-dumpFileNoWrapping :: FilePath -> IO ()
-dumpFileNoWrapping fn = takeADump =<< T.readFile fn
-  where
-    takeADump = T.putStrLn
-
-
-dispAssocList :: (Show a, Show b) => [(a, b)] -> IO ()
-dispAssocList = mapM_ takeADump
-  where
-    takeADump (a, b) = mapM_ T.putStrLn . wordWrapIndent T.cols 2 $ (unquote . showText $ a) <> ": " <> showText b
-
-
 mkOrdinal :: Int -> T.Text
 mkOrdinal 11 = "11th"
 mkOrdinal 12 = "12th"
@@ -321,3 +341,7 @@ mkOrdinal x  = let t = showText x
 
 mkCountList :: (Eq a) => [a] -> [Int]
 mkCountList xs = map (`countOcc` xs) xs
+
+
+grepTextList :: T.Text -> [T.Text] -> [T.Text]
+grepTextList needle = filter (needle `T.isInfixOf`)

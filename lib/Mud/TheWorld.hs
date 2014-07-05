@@ -26,6 +26,10 @@ import qualified Data.IntMap.Lazy as IM (empty, keys)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
 
+-- ==================================================
+-- Misc. helper functions:
+
+
 logNotice :: String -> String -> IO ()
 logNotice = L.logNotice "Mud.TheWorld"
 
@@ -42,7 +46,8 @@ allKeys :: MudStack Inv
 allKeys = gets (^.typeTbl.to IM.keys)
 
 
------
+-- ==================================================
+-- Helper functions for registering world elements:
 
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
@@ -104,7 +109,8 @@ putRm i is c r = do
     rmTbl.at    i ?= r
 
 
------
+-- ==================================================
+-- Initializing and creating the world:
 
 
 initMudState :: MudState
@@ -182,9 +188,6 @@ createWorld = do
     putObj iLongName2 (Ent iLongName2 "long" "item with a very long name, gosh this truly is a long name, it just goes on and on, no one knows when it might stop" "" "It's long." 0) (Obj 1 1)
 
 
------
-
-
 initWorld :: MudStack ()
 initWorld = createWorld >> sortAllInvs
 
@@ -207,7 +210,7 @@ mkOkapi = do
                 , _entName  = "okapi"
                 , _sing     = "okapi"
                 , _plur     = ""
-                , _entDesc  = "It looks like a cross between a horse and a zebra."
+                , _entDesc  = "This odd creature looks like a cross between a horse and a zebra."
                 , _entFlags = 0 }
     let m = Mob { _gender = Male
                 , _st     = 10

@@ -55,11 +55,12 @@ import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
 
--- TODO: Add comment headers to each section.
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
+
+
+-- ==================================================
+-- Entities:
 
 
 getEnt :: Id -> MudStack Ent
@@ -101,70 +102,16 @@ mkPlurFromBoth (s, "") = s <> "s"
 mkPlurFromBoth (_, p)  = p
 
 
------
+-- ==================================================
+-- Clothing:
 
 
 getCloth :: Id -> MudStack Cloth
 getCloth i = gets (^?!clothTbl.ix i)
 
 
------
-
-
-getWpn :: Id -> MudStack Wpn
-getWpn i = gets (^?!wpnTbl.ix i)
-
-
------
-
-
-getArm :: Id -> MudStack Arm
-getArm i = gets (^?!armTbl.ix i)
-
-
------
-
-
-getCoins :: Id -> MudStack Coins
-getCoins i = gets (^?!coinsTbl.ix i)
-
-
-mkCoinsList :: Coins -> [Int]
-mkCoinsList (Coins (c, g, s)) = [c, g, s]
-
-
-mkCoinsFromList :: [Int] -> Coins
-mkCoinsFromList [cop, sil, gol] = Coins (cop, sil, gol)
-mkCoinsFromList xs              = patternMatchFail "mkCoinsFromList" [ showText xs ]
-
-
-hasCoins :: Id -> MudStack Bool
-hasCoins i = not . all (== 0) . mkCoinsList <$> getCoins i
-
-
-type FromId = Id
-type ToId   = Id
-
-
-moveCoins :: Coins -> FromId -> ToId -> MudStack ()
-moveCoins c fi ti = unless (c == mempty) $ subCoins c fi >> addCoins c ti
-
-
-addCoins :: Coins -> Id -> MudStack ()
-addCoins c i = getCoins i >>= \c' ->
-    coinsTbl.at i ?= c' <> c
-
-
-subCoins :: Coins -> Id -> MudStack ()
-subCoins c i = getCoins i >>= \c' ->
-    coinsTbl.at i ?= c' <> negateCoins c
-
-
-negateCoins :: Coins -> Coins
-negateCoins (Coins c) = Coins (each %~ negate $ c)
-
-
------
+-- ==================================================
+-- Inventories:
 
 
 getInv :: Id -> MudStack Inv
@@ -210,7 +157,67 @@ sortInv is = (map (^._1) . sortBy nameThenSing) <$> zipped
     zipped = zip3 is <$> getEntNamesInInv is <*> getEntSingsInInv is
 
 
------
+-- ==================================================
+-- Coins:
+
+
+getCoins :: Id -> MudStack Coins
+getCoins i = gets (^?!coinsTbl.ix i)
+
+
+mkCoinsList :: Coins -> [Int]
+mkCoinsList (Coins (c, g, s)) = [c, g, s]
+
+
+mkCoinsFromList :: [Int] -> Coins
+mkCoinsFromList [cop, sil, gol] = Coins (cop, sil, gol)
+mkCoinsFromList xs              = patternMatchFail "mkCoinsFromList" [ showText xs ]
+
+
+hasCoins :: Id -> MudStack Bool
+hasCoins i = not . all (== 0) . mkCoinsList <$> getCoins i
+
+
+type FromId = Id
+type ToId   = Id
+
+
+moveCoins :: Coins -> FromId -> ToId -> MudStack ()
+moveCoins c fi ti = unless (c == mempty) $ subCoins c fi >> addCoins c ti
+
+
+addCoins :: Coins -> Id -> MudStack ()
+addCoins c i = getCoins i >>= \c' ->
+    coinsTbl.at i ?= c' <> c
+
+
+subCoins :: Coins -> Id -> MudStack ()
+subCoins c i = getCoins i >>= \c' ->
+    coinsTbl.at i ?= c' <> negateCoins c
+
+
+negateCoins :: Coins -> Coins
+negateCoins (Coins c) = Coins (each %~ negate $ c)
+
+
+-- ==================================================
+-- Weapons:
+
+
+getWpn :: Id -> MudStack Wpn
+getWpn i = gets (^?!wpnTbl.ix i)
+
+
+-- ==================================================
+-- Armor:
+
+
+getArm :: Id -> MudStack Arm
+getArm i = gets (^?!armTbl.ix i)
+
+
+-- ==================================================
+-- Equipment:
 
 
 getEqMap :: Id -> MudStack EqMap
@@ -225,7 +232,8 @@ hasEq :: Id -> MudStack Bool
 hasEq i = not . null <$> getEq i
 
 
------
+-- ==================================================
+-- Mobiles:
 
 
 getMob :: Id -> MudStack Mob
@@ -240,7 +248,8 @@ getMobHand :: Id -> MudStack Hand
 getMobHand i = (^.hand) <$> getMob i
 
 
------
+-- ==================================================
+-- Rooms:
 
 
 getRm :: Id -> MudStack Rm

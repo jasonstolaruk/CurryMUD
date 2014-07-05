@@ -291,7 +291,7 @@ what :: Action
 what [] = advise ["what"] $ "Please specify an abbreviation to confirm, as in " <> dblQuote "what up" <> "."
 what rs = mapM_ helper rs
   where
-    helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r
+    helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r >> liftIO newLine
       where
         whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
         cs       = filter ((/=) wizChar . T.head) <$> map cmdName <$> (getPCRmId >>= mkCmdListWithRmLinks)
@@ -420,7 +420,7 @@ look rs = do
           (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
           mapM_ (procGecrMisRm True descEnts) . zip gecrs $ miss
           mapM_ (procReconciledCoinsRm True descCoins) rcs
-      else dudeThere'sNothingHere
+      else output $ "You don't see anything here to look at." <> nlt
 
 
 descEnts :: Inv -> MudStack ()
@@ -493,10 +493,6 @@ summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
     dispCoinsWithNamesList = output . T.intercalate ", " . filter (not . T.null) . map descNameAmt
     descNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
     mkCoinsWithNamesList   = zip coinNames . mkCoinsList $ c
-
-
-dudeThere'sNothingHere :: MudStack ()
-dudeThere'sNothingHere = output $ "You don't see anything here to look at." <> nlt
 
 
 -----
@@ -578,10 +574,14 @@ dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> n
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = do
-    (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
-    mapM_ (procGecrMisRm False shuffleInvGet) . zip gecrs $ miss
-    mapM_ (procReconciledCoinsRm False shuffleCoinsGet) rcs
-    liftIO newLine
+    hic <- getPCRmId >>= hasInvOrCoins
+    if hic
+      then do
+        (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
+        mapM_ (procGecrMisRm False shuffleInvGet) . zip gecrs $ miss
+        mapM_ (procReconciledCoinsRm False shuffleCoinsGet) rcs
+        liftIO newLine
+      else output $ "You don't see anything here to pick up." <> nlt
 
 
 shuffleInvGet :: Inv -> MudStack ()
@@ -659,22 +659,36 @@ putAction rs   = do
 
 putRemDispatcher :: PutOrRem -> Action
 putRemDispatcher por rs
-  | last rs `elem` allCoinNames = output "A coin isn't a container."
-  | otherwise = findCon (last rs) >>= \mes ->
-      case mes of Nothing -> return ()
-                  Just es -> case es of [e] -> getEntType e >>= \t ->
-                                                   if t /= ConType
-                                                     then output $ "The " <> e^.sing <> " isn't a container."
-                                                     else e^.entId.to dispatchToHelper
-                                        _   -> output onlyOneMsg
+  | T.head cn == rmChar = getPCRmId >>= hasInv >>= \hi ->
+      if hi
+        then putRemDispatcherHelper por (T.tail cn) getPCRmInvCoins procGecrMisRmForInv restWithoutCon
+        else output "You don't see any containers here."
+  | otherwise = putRemDispatcherHelper por cn (getInvCoins 0) procGecrMisPCInvForInv restWithoutCon
   where
-    findCon cn | T.head cn == rmChar = getPCRmInvCoins >>= resolveEntName (T.tail cn)
-               | otherwise           = getInvCoins 0   >>= resolveEntName cn
-    onlyOneMsg         = case por of Put -> "You can only put things into one container at a time."
-                                     Rem -> "You can only remove things from one container at a time."
-    dispatchToHelper i = case por of Put -> putHelper i restWithoutCon
-                                     Rem -> remHelper i restWithoutCon
-    restWithoutCon     = init rs
+    cn             = last rs
+    restWithoutCon = init rs
+
+
+putRemDispatcherHelper :: PutOrRem -> ConName -> MudStack InvCoins -> ((GetEntsCoinsRes, Maybe Inv) -> MudStack Inv) -> Action
+putRemDispatcherHelper por cn f g rs = f >>= resolveEntCoinNames [cn] >>= \(gecrs, miss, rcs) ->
+    if null miss && (not . null $ rcs)
+      then sorryCoins
+      else (g . head . zip gecrs $ miss) >>= \is ->
+          case is of []  -> return ()
+                     [i] -> do
+                         e <- getEnt i
+                         t <- getEntType e
+                         if t /= ConType
+                           then output $ "The " <> e^.sing <> " isn't a container."
+                           else dispatchPutRem i
+                     _   -> sorryOnlyOne
+  where
+    sorryCoins       = output $ case por of Put -> "You can't put something inside a coin."
+                                            Rem -> "You can't remove something from a coin."        
+    sorryOnlyOne     = output $ case por of Put -> "You can only put things into one container at a time."
+                                            Rem -> "You can only remove things from one container at a time."
+    dispatchPutRem i =          case por of Put -> putHelper i rs
+                                            Rem -> remHelper i rs
 
 
 putHelper :: Id -> Rest -> MudStack ()
@@ -734,7 +748,7 @@ descPutRemCoins por (Coins (cop, sil, gol)) cn = do
 remove :: Action
 remove []  = advise ["remove"] $ "Please specify what you want to remove, followed by the container you want to remove it from, as in " <> dblQuote "remove doll sack" <> "."
 remove [r] = advise ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
-remove rs  = putRemDispatcher Rem rs
+remove rs  = putRemDispatcher Rem rs >> liftIO newLine
 
 
 remHelper :: Id -> Rest -> MudStack ()
@@ -748,7 +762,6 @@ remHelper ci rs = do
           (gecrs, miss, rcs) <- getInvCoins ci >>= resolveEntCoinNames rs
           mapM_ (procGecrMisCon cn . shuffleInvRem ci $ cn) . zip gecrs $ miss
           mapM_ (procReconciledCoinsCon cn . shuffleCoinsRem $ ci) rcs
-    liftIO newLine
 
 
 shuffleInvRem :: Id -> ConName -> Inv -> MudStack ()

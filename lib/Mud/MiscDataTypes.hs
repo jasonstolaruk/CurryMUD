@@ -29,7 +29,10 @@ import qualified Data.Text as T
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.MiscDataTypes"
 
------
+
+-- ==================================================
+-- Typeclasses and instances:
+
 
 class Pretty a where
   -- Pretty print.
@@ -77,7 +80,9 @@ instance Pretty RightOrLeft where
   pp L   = "left"
   pp rol = pp (fromRol rol :: Slot)
 
+
 -----
+
 
 class ConvRol a where
   fromRol :: RightOrLeft -> a
@@ -93,7 +98,10 @@ instance ConvRol Slot where
   fromRol LP = LPinkyFS
   fromRol s  = patternMatchFail "fromRol" [ showText s ]
 
------
+
+-- ==================================================
+-- Data types:
+
 
 type CmdName = T.Text
 type Rest    = [T.Text]
@@ -103,26 +111,9 @@ data Cmd = Cmd { cmdName :: !CmdName
                , action  :: !Action
                , cmdDesc :: !T.Text }
 
------
-
-data InvType = PCInv | PCEq | RmInv deriving Eq
-
-data GetOrDrop = Get | Drop
-
-data PutOrRem = Put | Rem deriving Show
-
-data RightOrLeft = R
-                 | L
-                 | RI | RM | RR | RP
-                 | LI | LM | LR | LP deriving (Show, Read)
 
 -----
 
-data EmptyNoneSome a = Empty
-                     | NoneOf a
-                     | SomeOf a deriving (Eq, Show)
-
------
 
 type Amount          = Int
 type Index           = Int
@@ -132,3 +123,22 @@ data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe (
                      | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
                      | Sorry           !NameSearchedFor
                      | SorryIndexedCoins deriving Show
+
+data EmptyNoneSome a = Empty
+                     | NoneOf a
+                     | SomeOf a deriving (Eq, Show)
+
+
+-----
+
+
+data GetOrDrop   = Get | Drop
+
+data PutOrRem    = Put | Rem deriving Show
+
+data RightOrLeft = R
+                 | L
+                 | RI | RM | RR | RP
+                 | LI | LM | LR | LP deriving (Show, Read)
+
+data InvType     = PCInv | PCEq | RmInv deriving Eq
