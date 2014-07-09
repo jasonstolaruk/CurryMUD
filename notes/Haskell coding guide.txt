@@ -466,40 +466,52 @@ In pure code, use "Maybe", or "Either" with a custom data type (representing the
 possible error types with auxiliary info) as the "Left" type.
 
 When in the IO monad, use "throwIO" and "catch" ("catch" is normally used infix). Prefer "throwIO" over "throw", as the former guarantees ordering with respect to other IO operations, whereas the latter does not. (PaCP p.149-50)
-
-To catch any exception, write an exception handler that catches the "SomeException" type. (PaCP p.149)
-
-The "catch" function is not the only way to catch exceptions. You may also consider using "try" and "handle". Prefer "handle" to "try" when the exception handler is short, but the action to perform is long. (PaCP p.149)
-
-Use "onException" when you want to perform some special operation if and when an exception is raised, and then simply re-throw the exception. (PaCP p.149)
-
-When you want to acquire a resource, do some work with it, and then release the resource,
-consider using "bracket", "bracketOnError", or "finally". (LYAH p.184, PaCP p.150)
+Use "throwTo" to throw an asynchronous exception (to throw an exception from one thread to another). (PaCP p.156)
 
 You may also use "MonadError" ("Error" and "ErrorT"). As "throwIO" and "catch" are preferable
 when in the IO monad, use "ErrorT" when the base monad in your transformer stack is not IO.
+
+To catch any exception, write an exception handler that catches the "SomeException" type. (PaCP p.149)
+
+The "catch" function is not the only way to catch exceptions. You may also consider using "try", "handle", and "handleJust". Prefer "handle" to "try" when the exception handler is short, but the action to perform is long. (PaCP p.149)
+
+Use "onException" when you want to perform some special operation if and when an exception is raised, and then simply re-throw the exception. (PaCP p.149)
+
+When you want to acquire a resource (a thread, for example), do some work with it, and then release the resource, consider using "bracket", "bracketOnError", or "finally". (LYAH p.184, PaCP p.150)
 
 
 CONCURRENT PROGRAMMING
 ==================================================
 
-Use "threadDelay" to pause a thread: (PaCP p.127)
-threadDelay (10^6 * secs)
+Use "forkFinally" when you need to perform some action after a thread has completed.
+As a rule of thumb, any exception-handling function called as the first thing in a "forkIO" is better written using "forkFinally". (PaCP p.169)
 
 Consider wrapping the "MVar" that contains your state in a "newtype". (PaCP p.133)
 
 Use a "MVar" with a dummy value such as "()" to act as a lock on external state. (PaCP p.130)
 
-When there are multiple threads accessing the same "MVar", the chance that said threads become blocked increases, as a "MVar" is only a one-place channel. As a possible solution, consider using an unbounded channel (a buffered mechanism for holding more than one message at a time). (PaCP p.135)
+When there are multiple threads accessing the same "MVar", the chance that some threads become blocked increases, as a "MVar" is only a one-place channel. As a possible solution, consider using an unbounded channel. (PaCP p.135, 162)
 
 To avoid space leaks, consider using "$!" with "putMVar": (PaCP p.135)
 putMvar m $! Map.insert key val myMap
-Consider using "seq" so as to get both brief locking and no space leaks.
+Use "seq" so as to get both brief locking and no space leaks.
 
-When performing in action asynchronously, and later waiting for its results, consider using an abstraction that encapsulates "forkIO" and a "MVar". (PaCP p.144, 151)
+When performing an action asynchronously (and later waiting for its results), consider using an abstraction that encapsulates both the "forkIO" operation and a "MVar" (see the "async" library on Hackage). (PaCP p.144, 151, 168)
 
-To avoid deadlocking on a parent thread after a child thread has thrown in exception and died, the child thread may propagate any exceptions up to the parent thread. (PaCP p.151)
+To avoid deadlocking on a parent thread after a child thread has thrown an exception and died, the child thread may propagate any exceptions up to the parent thread. (PaCP p.151)
 
+To cancel one thread from another, use "throwTo" and throw the "ThreadKilled" exception to the thread you wish to cancel. (PaCP p.157)
+"throwTo" will block as long as the target thread is masking asynchronous exceptions. (PaCP p.166)
+
+An asynchronous exception may interrupt a thread when you are in the middle of updating some shared state. To guard against this, consider using one of the following functions: (PaCP p.158)
+mask, mask_, modifyMVar, modifyMVar_, withMVar
+
+The "bracket" family of abstractions have asynchronous exception safety built in. (PaCP p.170)
+The "acquire resource" code block of a "bracket" should perform at most just one blocking operation. Any blocking operation in the "cleanup" block is interruptible by an asynchronous exception. (PaCP p.162)
+
+The exception handlers defined in a "catch" or a "handle" have masking built-in. This means that the exception handlers themselves cannot be interrupted by asynchronous exceptions. Note that if you tail-call out of an exception handler, you will still remain inside its implicit mask. (PaCP p.167)
+
+When taking two or more "MVar"s, always take them in the same order. Otherwise, your program is likely to deadlock. (PaCP p.162)
 
 
 MISC
