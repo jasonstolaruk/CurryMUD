@@ -161,7 +161,7 @@ game = do
 
 
 handleInp :: T.Text -> MudStack ()
-handleInp = maybe (return ()) dispatch . splitInp
+handleInp = maybe' dispatch . splitInp
 
 
 type Input = (CmdName, Rest)
@@ -863,9 +863,7 @@ sorryFullClothSlotsOneSide s = output $ "You can't wear any more on your " <> pp
 
 readyCloth :: Int -> Ent -> Cloth -> EqMap -> Maybe RightOrLeft -> MudStack ()
 readyCloth i e c em mrol = maybe (getAvailClothSlot c em) (getDesigClothSlot e c em) mrol >>= \ms ->
-    maybe (return ())
-          (\s -> moveReadiedItem i em s >> readiedMsg s)
-          ms
+    maybe' (\s -> moveReadiedItem i em s >> readiedMsg s) ms
   where
     readiedMsg s = case c of NoseC   -> putOnMsg
                              NeckC   -> putOnMsg
@@ -937,9 +935,7 @@ readyWpn :: Id -> Ent -> EqMap -> Maybe RightOrLeft -> MudStack ()
 readyWpn i e em mrol
   | not . isSlotAvail em $ BothHandsS = output "You're already wielding a two-handed weapon."
   | otherwise = maybe (getAvailWpnSlot em) (getDesigWpnSlot e em) mrol >>= \ms ->
-                    maybe (return ())
-                          (\s -> getWpn i >>= readyHelper s)
-                          ms
+                    maybe' (\s -> getWpn i >>= readyHelper s) ms
   where
     readyHelper s w = case w^.wpnSub of OneHanded -> moveReadiedItem i em s >> outputCon [ "You wield the ", e^.sing, " with your ", pp s, "." ]
                                         TwoHanded -> if all (isSlotAvail em) [RHandS, LHandS]

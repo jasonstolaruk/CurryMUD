@@ -20,6 +20,7 @@ module Mud.Util ( adjustIndent
                 , findFullNameForAbbrev
                 , grepTextList
                 , isVowel
+                , maybe'
                 , maybeNewLine
                 , mkCountList
                 , mkOrdinal
@@ -345,3 +346,7 @@ mkCountList xs = map (`countOcc` xs) xs
 
 grepTextList :: T.Text -> [T.Text] -> [T.Text]
 grepTextList needle = filter (needle `T.isInfixOf`)
+
+
+maybe' :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
+maybe' = maybe (return ())

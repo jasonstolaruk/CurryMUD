@@ -40,7 +40,7 @@ closeLogs = do
     meh <- gets (^.logHandles.errorHandle)
     mapM_ closeThem [mnh, meh]
   where
-    closeThem = maybe (return ()) (liftIO . close)
+    closeThem = maybe' (liftIO . close)
 
 
 logNotice :: String -> String -> String -> IO ()
