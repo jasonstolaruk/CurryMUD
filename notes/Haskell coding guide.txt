@@ -480,8 +480,8 @@ Use "onException" when you want to perform some special operation if and when an
 When you want to acquire a resource (a thread, for example), do some work with it, and then release the resource, consider using "bracket", "bracketOnError", or "finally". (LYAH p.184, PaCP p.150)
 
 
-CONCURRENT PROGRAMMING
-==================================================
+CONCURRENT PROGRAMMING: "MVar"s and asynchronous exceptions
+============================================================
 
 Use "forkFinally" when you need to perform some action after a thread has completed.
 As a rule of thumb, any exception-handling function called as the first thing in a "forkIO" is better written using "forkFinally". (PaCP p.169)
@@ -506,10 +506,10 @@ To cancel one thread from another, use "throwTo" and throw the "ThreadKilled" ex
 An asynchronous exception may interrupt a thread when you are in the middle of updating some shared state. To guard against this, consider using one of the following functions: (PaCP p.158)
 mask, mask_, modifyMVar, modifyMVar_, withMVar
 
-The "bracket" family of abstractions have asynchronous exception safety built in. (PaCP p.170)
+The "bracket" family of abstractions have masking built in. (PaCP p.170)
 The "acquire resource" code block of a "bracket" should perform at most just one blocking operation. Any blocking operation in the "cleanup" block is interruptible by an asynchronous exception. (PaCP p.162)
 
-The exception handlers defined in a "catch" or a "handle" have masking built-in. This means that the exception handlers themselves cannot be interrupted by asynchronous exceptions. Note that if you tail-call out of an exception handler, you will still remain inside its implicit mask. (PaCP p.167)
+The exception handler defined in a "catch" or a "handle" has masking built-in. Note that if you tail-call out of an exception handler, you will still remain inside its implicit mask. (PaCP p.167)
 
 When taking two or more "MVar"s, always take them in the same order. Otherwise, your program is likely to deadlock. (PaCP p.162)
 
@@ -525,4 +525,3 @@ a = 'a'
 ...instead of...
 a = "a"
 (When using "Text", just pack your "Char" as necessary.)
-
