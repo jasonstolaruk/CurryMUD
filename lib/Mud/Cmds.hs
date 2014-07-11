@@ -624,7 +624,7 @@ dropAction [] = advise ["drop"] $ "Please specify one or more items to drop, as 
 dropAction rs = do
     hic <- hasInvOrCoins 0
     if hic
-      then do 
+      then do
           (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
           mapM_ (procGecrMisPCInv False shuffleInvDrop) . zip gecrs $ miss
           mapM_ (procReconciledCoinsPCInv False shuffleCoinsDrop) rcs
@@ -683,7 +683,7 @@ putRemDispatcherHelper por cn f g rs = f >>= resolveEntCoinNames [cn] >>= \(gecr
                      _   -> sorryOnlyOne
   where
     sorryCoins       = output $ case por of Put -> "You can't put something inside a coin."
-                                            Rem -> "You can't remove something from a coin."        
+                                            Rem -> "You can't remove something from a coin."
     sorryOnlyOne     = output $ case por of Put -> "You can only put things into one container at a time."
                                             Rem -> "You can only remove things from one container at a time."
     dispatchPutRem i =          case por of Put -> putHelper i rs
@@ -777,7 +777,7 @@ shuffleCoinsRem ci c = moveCoins c ci 0 >> (^.sing) <$> getEnt ci >>= descPutRem
 ready :: Action
 ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
-    (gecrs, mrols, mis, rcs) <- getInvCoins 0 >>= resolveEntCoinNamesWithRols rs    
+    (gecrs, mrols, mis, rcs) <- getInvCoins 0 >>= resolveEntCoinNamesWithRols rs
     mapM_ (procGecrMrolMiss readyDispatcher) $ zip3 gecrs mrols mis
     unless (null rcs) $ output "You can't ready coins."
     liftIO newLine

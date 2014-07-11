@@ -208,7 +208,7 @@ resolveEntCoinNamesWithRols rs ic@(_, c) = do
     gecrMrols <- mapM (mkGecrWithRol ic . T.toLower) rs
     let gecrs = gecrMrols^..folded._1
     let mrols = gecrMrols^..folded._2
-    (gecrs', miss, rcs) <- expandGecrs c gecrs    
+    (gecrs', miss, rcs) <- expandGecrs c gecrs
     return (gecrs', mrols, miss, rcs)
 
 

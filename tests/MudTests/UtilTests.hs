@@ -43,7 +43,7 @@ prop_wordWrapIndent_indents :: Property
 prop_wordWrapIndent_indents = forAll genCols                    $ \c ->
                               forAll (genTextLongerThan c)      $ \t ->
                               forAll (choose (0, maxCols + 10)) $ \n ->
-    let res = wordWrapIndent c n t 
+    let res = wordWrapIndent c n t
     in resIsIndented (adjustIndent n c) res
 
 
