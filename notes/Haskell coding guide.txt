@@ -490,13 +490,14 @@ Consider wrapping the "MVar" that contains your state in a "newtype". (PaCP p.13
 
 Use a "MVar" with a dummy value such as "()" to act as a lock on external state. (PaCP p.130)
 
-When there are multiple threads accessing the same "MVar", the chance that some threads become blocked increases, as a "MVar" is only a one-place channel. As a possible solution, consider using an unbounded channel. (PaCP p.135, 162)
+When there are multiple threads accessing the same "MVar", the chance that some threads become blocked increases, as a "MVar" is only a one-place channel. As a possible solution, consider using an unbounded channel ("Chan"). (PaCP p.135, 162)
+"TChan" is the STM version of "Chan". (PaCP p.184)
 
 To avoid space leaks, consider using "$!" with "putMVar": (PaCP p.135)
 putMvar m $! Map.insert key val myMap
 Use "seq" so as to get both brief locking and no space leaks.
 
-When performing an action asynchronously (and later waiting for its results), consider using an abstraction that encapsulates both the "forkIO" operation and a "MVar" (see the "async" library on Hackage). (PaCP p.144, 151, 168)
+When performing an action asynchronously (and later waiting for its results), consider using an abstraction that encapsulates both the "forkIO" operation and a "MVar" (see the "async" library on Hackage). (PaCP p.144, 151, 168, 182)
 
 To avoid deadlocking on a parent thread after a child thread has thrown an exception and died, the child thread may propagate any exceptions up to the parent thread. (PaCP p.151)
 
@@ -512,6 +513,25 @@ The "acquire resource" code block of a "bracket" should perform at most just one
 The exception handler defined in a "catch" or a "handle" has masking built-in. Note that if you tail-call out of an exception handler, you will still remain inside its implicit mask. (PaCP p.167)
 
 When taking two or more "MVar"s, always take them in the same order. Otherwise, your program is likely to deadlock. (PaCP p.162)
+
+
+CONCURRENT PROGRAMMING: STM
+==================================================
+
+Functions in the STM monad should be given names appended with "STM".
+
+Consider using "TMVar" as an alternative to "MVar". (PaCP p.178)
+
+Use "newEmptyTMVarIO" to make a new empty "TMVar" when in the IO monad. (PaCP p.182)
+
+Be aware that the left biased nature of "orElse" can have implications for fairness in some situations. (PaCP p.182)
+
+"STM" is an instance of "MonadPlus". Using "msum", you can sequence a list of transactions such that they are chained by "orElse"s: (RWH p.642)
+atomically . msum . map helper $ myTVars
+
+"throwSTM" and "catchSTM" concern exceptions in the "STM" monad. When an exception is thrown in STM, all the effects of the transaction are discarded (this is true for both synchronous and asynchronous exceptions). (PaCP p.186)
+
+Code in the STM monad is automatically safe with respect to asynchronous exceptions. To this end, it can be useful even for state that is not shared between threads. (PaCP p.186)
 
 
 MISC
