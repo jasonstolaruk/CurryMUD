@@ -13,15 +13,17 @@ module Mud.TheWorld ( allKeys
 import Mud.Ids
 import Mud.StateDataTypes
 import Mud.StateHelpers
+import Mud.TopLvlDefs
 import qualified Mud.Logging as L (logNotice)
 
+import Control.Concurrent.STM.TBQueue (newTBQueueIO)
 import Control.Lens (at, ix, to)
 import Control.Lens.Operators ((?=), (^.), (^?!))
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.Functor ((<$>))
 import Data.List ((\\))
 import Data.Monoid (mempty)
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.IntMap.Lazy as IM (empty, keys)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
@@ -30,7 +32,7 @@ import qualified Data.Map.Lazy as M (empty, fromList)
 -- Misc. helper functions:
 
 
-logNotice :: String -> String -> IO ()
+logNotice :: String -> String -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld"
 
 
@@ -114,7 +116,10 @@ putRm i is c r = do
 
 
 initMudState :: MudState
-initMudState = MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty (LogHandles Nothing Nothing)
+initMudState = unsafePerformIO $ do
+    nq <- newTBQueueIO logQueueMax
+    eq <- newTBQueueIO logQueueMax
+    return (MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty (LogQueues nq eq))
 
 
 initPC :: PC
@@ -124,7 +129,7 @@ initPC = PC { _rmId = iHill
 
 createWorld :: MudStack ()
 createWorld = do
-    liftIO . logNotice "createWorld" $ "creating the world"
+    logNotice "createWorld" "creating the world"
 
     putMob iPC (Ent iPC "" "" "" "" 0) [iKewpie1, iBag1, iClub] (Coins (10, 0, 20)) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand)
 
@@ -194,7 +199,7 @@ initWorld = createWorld >> sortAllInvs
 
 sortAllInvs :: MudStack ()
 sortAllInvs = do
-    liftIO . logNotice "sortAllInvs" $ "sorting all inventories"
+    logNotice "sortAllInvs" "sorting all inventories"
     gets (^.invTbl.to IM.keys) >>= mapM_ sortEach
   where
     sortEach k = gets (^?!invTbl.ix k) >>= sortInv >>= (invTbl.at k ?=)

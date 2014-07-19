@@ -5,13 +5,12 @@ module Mud.StateDataTypes where
 
 import Mud.StateInIORefT
 
+import Control.Concurrent.STM.TBQueue (TBQueue)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
-import GHC.IO.Handle (Handle)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
-import System.Log.Handler.Simple (GenericHandler)
 
 
 -- ==================================================
@@ -71,7 +70,7 @@ data MudState = MudState { _entTbl     :: EntTbl
                          , _pc         :: PC
                          , _rmTbl      :: RmTbl
                          , _typeTbl    :: TypeTbl
-                         , _logHandles :: LogHandles }
+                         , _logQueues  :: LogQueues }
 
 
 -- ==================================================
@@ -284,11 +283,15 @@ data Type = ObjType
 
 
 -- ==================================================
--- Log handles:
+-- Log queues:
 
 
-data LogHandles = LogHandles { _errorHandle  :: !(Maybe (GenericHandler Handle))
-                             , _noticeHandle :: !(Maybe (GenericHandler Handle)) }
+data LogCmd    = Stop | Msg String
+
+type LogQueue  = TBQueue LogCmd
+
+data LogQueues = LogQueues { _noticeQueue :: LogQueue
+                           , _errorQueue  :: LogQueue }
 
 
 -- ==================================================
@@ -303,5 +306,5 @@ makeLenses ''Mob
 makeLenses ''PC
 makeLenses ''Rm
 makeLenses ''RmLink
-makeLenses ''LogHandles
+makeLenses ''LogQueues
 makeLenses ''MudState

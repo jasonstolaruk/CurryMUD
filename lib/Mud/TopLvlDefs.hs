@@ -37,6 +37,10 @@ nlt :: T.Text
 nlt = "\n"
 
 
+logQueueMax :: Int
+logQueueMax = 10
+
+
 allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizChar :: Char
 allChar       = '\''
 amountChar    = '/'

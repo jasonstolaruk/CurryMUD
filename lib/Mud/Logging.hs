@@ -7,63 +7,89 @@ import Mud.StateDataTypes
 import Mud.TopLvlDefs
 import Mud.Util
 
+import Control.Concurrent (forkIO)
+import Control.Concurrent.STM.TBQueue (readTBQueue, writeTBQueue)
 import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (throwIO)
-import Control.Lens.Operators ((.=), (^.))
+import Control.Lens.Operators ((^.))
+import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
 import Data.Text.Strict.Lens (packed)
+import GHC.IO.Handle (Handle)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
-import System.Log.Handler.Simple (fileHandler)
+import System.Log.Handler.Simple (GenericHandler, fileHandler)
 import System.Log.Logger (errorM, noticeM, setHandlers, setLevel, updateGlobalLogger)
-
-
-initLogging :: MudStack ()
-initLogging = do
-    initLog "notice.log" NOTICE "currymud.notice" >>= \gh -> logHandles.noticeHandle .= Just gh
-    initLog "error.log"  ERROR  "currymud.error"  >>= \gh -> logHandles.errorHandle  .= Just gh
-  where
-    initLog fn p ln = do
-        gh <- liftIO . fileHandler (logDir ++ fn) $ p
-        let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
-        liftIO . updateGlobalLogger ln . setHandlers $ [h]
-        liftIO . updateGlobalLogger ln . setLevel $ p
-        return gh
 
 
 closeLogs :: MudStack ()
 closeLogs = do
-    liftIO . logNotice "Mud.Logging" "closeLogs" $ "closing the logs"
-    mnh <- gets (^.logHandles.noticeHandle)
-    meh <- gets (^.logHandles.errorHandle)
-    mapM_ closeThem [mnh, meh]
+    logNotice "Mud.Logging" "closeLogs" "closing the logs"
+    nq <- gets (^.logQueues.noticeQueue)
+    eq <- gets (^.logQueues.errorQueue)
+    forM_ [nq, eq] closeIt
   where
-    closeThem = maybe' (liftIO . close)
+    closeIt q = liftIO . atomically . writeTBQueue q $ Stop
 
 
-logNotice :: String -> String -> String -> IO ()
-logNotice modName funName msg = noticeM "currymud.notice" $ concat [ modName, " ", funName, ": ", msg, "." ]
+initLogging :: MudStack ()
+initLogging = do
+    gets (^.logQueues.noticeQueue) >>= spawnLogger "notice.log" NOTICE "currymud.notice" noticeM
+    gets (^.logQueues.errorQueue)  >>= spawnLogger "error.log"  ERROR "currymud.error"   errorM
 
 
-logIOEx :: String -> String -> IOException -> IO ()
-logIOEx modName funName e = errorM "currymud.error" $ concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
+type LogName    = String
+type LoggingFun = String -> String -> IO ()
+
+
+spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> MudStack ()
+spawnLogger fn p ln f q = do
+    gh <- liftIO . initLog fn p $ ln
+    void . liftIO . forkIO . loop $ gh
+  where
+    loop gh = do
+        cmd <- atomically . readTBQueue $ q
+        case cmd of Stop  -> close gh
+                    Msg m -> f ln m >> loop gh
+
+
+initLog :: FilePath -> Priority -> LogName -> IO (GenericHandler Handle)
+initLog fn p ln = do
+    gh <- fileHandler (logDir ++ fn) p
+    let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
+    updateGlobalLogger ln . setHandlers $ [h]
+    updateGlobalLogger ln . setLevel    $ p
+    return gh
+
+
+logNotice :: String -> String -> String -> MudStack ()
+logNotice modName funName msg = gets (^.logQueues.noticeQueue) >>= \q ->
+    liftIO . atomically . writeTBQueue q . Msg . concat $ [ modName, " ", funName, ": ", msg, "." ]
+
+
+logError :: String -> MudStack ()
+logError msg = gets (^.logQueues.errorQueue) >>= \q ->
+    liftIO . atomically . writeTBQueue q . Msg $ msg
+
+
+logIOEx :: String -> String -> IOException -> MudStack ()
+logIOEx modName funName e = logError . concat $ [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
 
 
 logAndDispIOEx :: String -> String -> IOException -> MudStack ()
-logAndDispIOEx modName funName e = do
-    liftIO . errorM "currymud.error" $ msg
-    output $ msg^.packed
+logAndDispIOEx modName funName e = logError msg >> (output $ msg^.packed)
   where
     msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
 
 
-logIOExRethrow :: String -> String -> IOException -> IO ()
+logIOExRethrow :: String -> String -> IOException -> MudStack ()
 logIOExRethrow modName funName e = do
-    errorM "currymud.error" $ concat [ modName, " ", funName, ": unexpected exception; rethrowing." ]
-    throwIO e
+    logError . concat $ [ modName, " ", funName, ": unexpected exception; rethrowing." ]
+    liftIO . throwIO $ e
 
 
-logExMsg :: String -> String -> String -> SomeException -> IO ()
-logExMsg modName funName msg e = errorM "currymud.error" $ concat [ modName, " ", funName, ": ", msg, ". ", dblQuoteStr . show $ e ]
+logExMsg :: String -> String -> String -> SomeException -> MudStack ()
+logExMsg modName funName msg e = logError . concat $ [ modName, " ", funName, ": ", msg, ". ", dblQuoteStr . show $ e ]

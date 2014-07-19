@@ -53,11 +53,11 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds"
 
 
-logNotice :: String -> String -> IO ()
+logNotice :: String -> String -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds"
 
 
-logIOEx :: String -> IOException -> IO ()
+logIOEx :: String -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds"
 
 
@@ -65,11 +65,11 @@ logAndDispIOEx :: String -> IOException -> MudStack ()
 logAndDispIOEx = L.logAndDispIOEx "Mud.Cmds"
 
 
-logIOExRethrow :: String -> IOException -> IO ()
+logIOExRethrow :: String -> IOException -> MudStack ()
 logIOExRethrow = L.logIOExRethrow "Mud.Cmds"
 
 
-logExMsg :: String -> String -> SomeException -> IO ()
+logExMsg :: String -> String -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Cmds"
 
 
@@ -123,15 +123,15 @@ gameWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
   where
     initAndStart = do
         initLogging
-        liftIO . logNotice "gameWrapper" $ "server started"
+        logNotice "gameWrapper" "server started"
         sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
         forever game
 
 
 topLvlExHandler :: SomeException -> MudStack ()
-topLvlExHandler e = let oops msg = liftIO $ logExMsg "topLvlExHandler" msg e >> exitFailure
+topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO exitFailure
                     in case fromException e of
-                      Just ExitSuccess -> liftIO . logNotice "topLvlExHandler" $ "exiting normally"
+                      Just ExitSuccess -> logNotice "topLvlExHandler" "exiting normally"
                       Just _           -> oops $ dblQuoteStr "ExitFailure" ++ " caught by the top level handler; rethrowing"
                       Nothing          -> oops "exception caught by the top level handler; exiting gracefully"
 
@@ -141,12 +141,12 @@ dispTitle = liftIO newStdGen >>= \g ->
     let range = (1, noOfTitles)
         n     = randomR range g^._1
         fn    = "title"^.unpacked ++ show n
-    in (try . liftIO . takeADump $ fn) >>= either (liftIO . dispTitleExHandler) return
+    in (try . liftIO . takeADump $ fn) >>= either dispTitleExHandler return
   where
     takeADump = dumpFileNoWrapping . (++) titleDir
 
 
-dispTitleExHandler :: IOException -> IO ()
+dispTitleExHandler :: IOException -> MudStack ()
 dispTitleExHandler e
   | isDoesNotExistError e = logIOEx        "dispTitle" e
   | isPermissionError   e = logIOEx        "dispTitle" e
@@ -210,7 +210,7 @@ about rs = ignore rs >> about []
 
 
 dumpExHandler :: String -> IOException -> MudStack ()
-dumpExHandler fn e = liftIO handleThat >> dispGenericErrorMsg
+dumpExHandler fn e = handleThat >> dispGenericErrorMsg
   where
     handleThat
       | isDoesNotExistError e = logIOEx fn e
@@ -1023,7 +1023,7 @@ uptime rs = ignore rs >> uptime []
 
 
 uptimeExHandler :: IOException -> MudStack ()
-uptimeExHandler e = (liftIO . logIOEx "uptime" $ e) >> dispGenericErrorMsg
+uptimeExHandler e = logIOEx "uptime" e >> dispGenericErrorMsg
 
 
 -----
@@ -1090,7 +1090,7 @@ wizDispEnv rs = mapM_ helper rs
 
 
 wizShutdown :: Action
-wizShutdown [] = liftIO $ logNotice "wizShutdown" "shutting down" >> exitSuccess
+wizShutdown [] = logNotice "wizShutdown" "shutting down" >> liftIO exitSuccess
 wizShutdown _  = output $ "Type " <> (dblQuote . prefixWizCmd $ "shutdown") <> " with no arguments to shut down the game server.\n"
 
 
