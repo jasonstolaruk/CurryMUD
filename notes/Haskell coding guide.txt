@@ -492,16 +492,19 @@ Use a "MVar" with a dummy value such as "()" to act as a lock on external state.
 
 When there are multiple threads accessing the same "MVar", the chance that some threads become blocked increases, as a "MVar" is only a one-place channel. As a possible solution, consider using an unbounded channel ("Chan"). (PaCP p.135, 162)
 "TChan" is the STM version of "Chan". (PaCP p.184)
+"TQueue" is faster than "TChan". (PaCP p.188)
+If running out of memory is a concern, consider using a bounded channel instead of a unbounded channel. (PaCP p.189)
 
 To avoid space leaks, consider using "$!" with "putMVar": (PaCP p.135)
 putMvar m $! Map.insert key val myMap
 Use "seq" so as to get both brief locking and no space leaks.
 
-When performing an action asynchronously (and later waiting for its results), consider using an abstraction that encapsulates both the "forkIO" operation and a "MVar" (see the "async" library on Hackage). (PaCP p.144, 151, 168, 182)
+When performing an action asynchronously (and later waiting for its results), consider using an abstraction that encapsulates both the "forkIO" operation and a "MVar" (see the "async" library on Hackage). (PaCP p.144, 151, 168, 182, 197)
 
 To avoid deadlocking on a parent thread after a child thread has thrown an exception and died, the child thread may propagate any exceptions up to the parent thread. (PaCP p.151)
 
-To cancel one thread from another, use "throwTo" and throw the "ThreadKilled" exception to the thread you wish to cancel. (PaCP p.157)
+To cancel one thread from another, use "throwTo" and throw the "ThreadKilled" exception to the thread you wish to cancel (or use the "killThread convenience function). Note that if the target thread does nothing to catch the exception, it will simply die silently. (PaCP p.157)
+
 "throwTo" will block as long as the target thread is masking asynchronous exceptions. (PaCP p.166)
 
 An asynchronous exception may interrupt a thread when you are in the middle of updating some shared state. To guard against this, consider using one of the following functions: (PaCP p.158)
@@ -526,12 +529,20 @@ Use "newEmptyTMVarIO" to make a new empty "TMVar" when in the IO monad. (PaCP p.
 
 Be aware that the left biased nature of "orElse" can have implications for fairness in some situations. (PaCP p.182)
 
-"STM" is an instance of "MonadPlus". Using "msum", you can sequence a list of transactions such that they are chained by "orElse"s: (RWH p.642)
+"STM" is an instance of "MonadPlus":
+mzero = retry
+mplus = orElse
+Using "msum", you can sequence a list of transactions such that they are chained together by "orElse"s: (RWH p.642)
 atomically . msum . map helper $ myTVars
 
 "throwSTM" and "catchSTM" concern exceptions in the "STM" monad. When an exception is thrown in STM, all the effects of the transaction are discarded (this is true for both synchronous and asynchronous exceptions). (PaCP p.186)
 
 Code in the STM monad is automatically safe with respect to asynchronous exceptions. To this end, it can be useful even for state that is not shared between threads. (PaCP p.186)
+
+Concerning performance: (PaCP p.194)
+Never read an unbounded number of "TVars" in a single transaction.
+Avoid expensive evaluation inside a transaction.
+Avoid composing too many blocking operations together.
 
 
 MISC
