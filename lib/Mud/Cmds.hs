@@ -7,6 +7,7 @@ import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, lo
 import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
+import Mud.StateInIORefT
 import Mud.StateHelpers
 import Mud.TheWorld
 import Mud.TopLvlDefs
@@ -15,12 +16,14 @@ import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRet
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
-import Control.Exception (fromException, IOException, SomeException)
+import Control.Concurrent (forkIO, myThreadId)
+import Control.Exception (ArithException(..), fromException, IOException, throwIO, SomeException)
 import Control.Exception.Lifted (catch, finally, try)
 import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (.=), (?=),(?~), (^.), (^..))
-import Control.Monad ((>=>), forever, forM_, guard, mplus, unless, when)
+import Control.Monad ((>=>), forever, forM_, guard, mplus, replicateM_, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
@@ -29,9 +32,6 @@ import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
-import qualified Data.Map.Lazy as M (filter, toList)
-import qualified Data.Text as T
-import qualified Data.Text.IO as T (putStrLn)
 import System.Console.Readline (readline)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
@@ -41,6 +41,9 @@ import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
+import qualified Data.Map.Lazy as M (filter, toList)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T (putStrLn)
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -77,15 +80,21 @@ logExMsg = L.logExMsg "Mud.Cmds"
 
 
 cmdList :: [Cmd]
-cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
-          , Cmd { cmdName = prefixWizCmd "buffer", action = wizBuffCheck, cmdDesc = "Confirm the default buffering mode." }
+cmdList = -- Wizard commands:
+          [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = prefixWizCmd "day", action = wizDay, cmdDesc = "Display the current day of week." }
-          , Cmd { cmdName = prefixWizCmd "env", action = wizDispEnv, cmdDesc = "Display system environment variables." }
-          , Cmd { cmdName = prefixWizCmd "okapi", action = wizMkOkapi, cmdDesc = "Make an okapi." }
           , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the game server." }
           , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
 
-          , Cmd { cmdName = "?", action = dispCmdList, cmdDesc = "Display this command list." }
+          -- Debug commands:
+          , Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
+          , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
+          , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
+          , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
+          , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
+
+          -- Player commands:
+          , Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD server." }
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
           , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
@@ -114,8 +123,16 @@ cmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc =
           , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate an abbreviation." } ]
 
 
-prefixWizCmd :: T.Text -> T.Text
-prefixWizCmd = ([wizChar]^.packed <>)
+prefixCmd :: Char -> CmdName -> T.Text
+prefixCmd c cn = [c]^.packed <> cn
+
+
+prefixWizCmd :: CmdName -> T.Text
+prefixWizCmd = prefixCmd wizCmdChar
+
+
+prefixDebugCmd :: CmdName -> T.Text
+prefixDebugCmd = prefixCmd debugCmdChar
 
 
 gameWrapper :: MudStack ()
@@ -141,7 +158,7 @@ dispTitle = liftIO newStdGen >>= \g ->
     let range = (1, noOfTitles)
         n     = randomR range g^._1
         fn    = "title"^.unpacked ++ show n
-    in (try . liftIO . takeADump $ fn) >>= either dispTitleExHandler return
+    in (try . liftIO . takeADump $ fn) >>= either' dispTitleExHandler
   where
     takeADump = dumpFileNoWrapping . (++) titleDir
 
@@ -203,7 +220,7 @@ mkCmdListWithRmLinks i = getRmLinks i >>= \rls ->
 
 
 about :: Action
-about [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "about") return >> liftIO newLine
+about [] = (try . liftIO $ takeADump) >>= either' (dumpExHandler "about") >> liftIO newLine
   where
     takeADump = dumpFile . (++) miscDir $ "about"
 about rs = ignore rs >> about []
@@ -227,7 +244,7 @@ ignore rs = let ignored = dblQuote . T.unwords $ rs
 
 
 motd :: Action
-motd [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "motd") return >> liftIO newLine
+motd [] = (try . liftIO $ takeADump) >>= either' (dumpExHandler "motd") >> liftIO newLine
   where
     takeADump = dumpFileWithDividers . (++) miscDir $ "motd"
 motd rs = ignore rs >> motd []
@@ -236,10 +253,14 @@ motd rs = ignore rs >> motd []
 -----
 
 
-dispCmdList :: Action
-dispCmdList [] = mapM_ (outputIndent 10) (cmdListText plaCmdPred) >> liftIO newLine
-dispCmdList rs = forM_ rs $ \r ->
-    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ plaCmdPred) >> liftIO newLine
+plaDispCmdList :: Action
+plaDispCmdList = dispCmdList (cmdPred Nothing)
+
+
+dispCmdList :: (Cmd -> Bool) -> Action
+dispCmdList p [] = mapM_ (outputIndent 10) (cmdListText p) >> liftIO newLine
+dispCmdList p rs = forM_ rs $ \r ->
+    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ p)  >> liftIO newLine
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
@@ -248,15 +269,16 @@ cmdListText p = sort . T.lines . T.concat . foldl' mkTxtForCmd [] . filter p $ c
     mkTxtForCmd acc c = T.concat [ padOrTrunc 10 . cmdName $ c, cmdDesc c, "\n" ] : acc
 
 
-plaCmdPred :: Cmd -> Bool
-plaCmdPred = (/=) wizChar . T.head . cmdName
+cmdPred :: Maybe Char -> Cmd -> Bool
+cmdPred (Just c) cmd = c == (T.head . cmdName $ cmd)
+cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdChar]
 
 
 -----
 
 
 help :: Action
-help [] = (try . liftIO $ takeADump) >>= either (dumpExHandler "help") return
+help [] = (try . liftIO $ takeADump) >>= either' (dumpExHandler "help")
   where
     takeADump = dumpFile . (++) helpDir $ "root"
 help rs = sequence_ . intercalate [liftIO $ divider >> newLine] $ [ [dispHelpTopicByName r] | r <- rs ]
@@ -275,7 +297,7 @@ dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
   where
     sorry     = mapM_ T.putStrLn . wordWrap cols $ "No help is available on that topic/command." <> nlt
     helper tn = do
-      (try . liftIO . takeADump $ tn) >>= either (dumpExHandler "dispHelpTopicByName") return
+      (try . liftIO . takeADump $ tn) >>= either' (dumpExHandler "dispHelpTopicByName")
       liftIO newLine
     takeADump = dumpFile . (++) helpDir . T.unpack
 
@@ -290,7 +312,7 @@ what rs = mapM_ helper rs
     helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r >> liftIO newLine
       where
         whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
-        cs       = filter ((/=) wizChar . T.head) <$> map cmdName <$> (getPCRmId >>= mkCmdListWithRmLinks)
+        cs       = filter ((/=) wizCmdChar . T.head) <$> map cmdName <$> (getPCRmId >>= mkCmdListWithRmLinks)
         notFound = output $ dblQuote r <> " doesn't refer to any commands."
         found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
 
@@ -1011,7 +1033,7 @@ mkIdCountBothList is = getEntBothGramNosInInv is >>= \ebgns ->
 
 
 uptime :: Action
-uptime [] = (try . output . parse =<< runUptime) >>= either uptimeExHandler return >> liftIO newLine
+uptime [] = (try . output . parse =<< runUptime) >>= either' uptimeExHandler >> liftIO newLine
   where
     runUptime = liftIO . readProcess "uptime" [] $ ""
     parse ut  = let (a, b) = span (/= ',') ut
@@ -1039,51 +1061,7 @@ quit _  = outputCon [ "Type ", dblQuote "quit", " with no arguments to quit the 
 
 
 wizDispCmdList :: Action
-wizDispCmdList []     = mapM_ (outputIndent 10) (cmdListText wizCmdPred) >> liftIO newLine
-wizDispCmdList rs     = forM_ rs $ \r ->
-    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ wizCmdPred)  >> liftIO newLine
-
-
-wizCmdPred :: Cmd -> Bool
-wizCmdPred = (==) wizChar . T.head . cmdName
-
-
------
-
-
-wizMkOkapi :: Action
-wizMkOkapi [] = mkOkapi >>= \i ->
-    outputCon [ "Made okapi with id ", showText i, ".", nlt ]
-wizMkOkapi rs = ignore rs >> wizMkOkapi []
-
-
------
-
-
-wizBuffCheck :: Action
-wizBuffCheck [] = (try . liftIO $ buffCheckHelper) >>= either (logAndDispIOEx "wizBuffCheck") return
-  where
-    buffCheckHelper = do
-        td      <- getTemporaryDirectory
-        (fn, h) <- openTempFile td "temp"
-        bm      <- hGetBuffering h
-        mapM_ T.putStrLn . wordWrapIndent cols 2 . T.concat $ [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, ".", nlt ]
-        hClose h
-        removeFile fn
-wizBuffCheck rs = ignore rs >> wizBuffCheck []
-
-
------
-
-
-wizDispEnv :: Action
-wizDispEnv [] = liftIO $ getEnvironment >>= dispAssocList >> newLine
-wizDispEnv rs = mapM_ helper rs
-  where
-    helper r = liftIO $ (dispAssocList . filter grepPair =<< getEnvironment) >> newLine
-      where
-        grepPair = uncurry (||) . over both (^.packed.to grep)
-        grep     = (r `T.isInfixOf`)
+wizDispCmdList = dispCmdList (cmdPred . Just $ wizCmdChar)
 
 
 -----
@@ -1121,3 +1099,61 @@ wizDay :: Action
 wizDay [] = liftIO getZonedTime >>= \zt ->
     output $ formatTime defaultTimeLocale "%A %B %d" zt ^.packed <> "\n"
 wizDay rs = ignore rs >> wizDay []
+
+
+-- ==================================================
+-- Debug commands:
+
+
+debugDispCmdList :: Action
+debugDispCmdList = dispCmdList (cmdPred . Just $ debugCmdChar)
+
+
+-----
+
+
+debugBuffCheck :: Action
+debugBuffCheck [] = (try . liftIO $ buffCheckHelper) >>= either' (logAndDispIOEx "wizBuffCheck")
+  where
+    buffCheckHelper = do
+        td      <- getTemporaryDirectory
+        (fn, h) <- openTempFile td "temp"
+        bm      <- hGetBuffering h
+        mapM_ T.putStrLn . wordWrapIndent cols 2 . T.concat $ [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, ".", nlt ]
+        hClose h
+        removeFile fn
+debugBuffCheck rs = ignore rs >> debugBuffCheck []
+
+
+-----
+
+
+debugDispEnv :: Action
+debugDispEnv [] = liftIO $ getEnvironment >>= dispAssocList >> newLine
+debugDispEnv rs = mapM_ helper rs
+  where
+    helper r = liftIO $ (dispAssocList . filter grepPair =<< getEnvironment) >> newLine
+      where
+        grepPair = uncurry (||) . over both (^.packed.to grep)
+        grep     = (r `T.isInfixOf`)
+
+
+-----
+
+
+debugLog :: Action
+debugLog [] = get >>= replicateM_ 2 . void . liftIO . forkIO . void . runStateInIORefT heavyLogging
+  where
+    heavyLogging = do
+        i <- liftIO myThreadId
+        replicateM_ 10000 . logNotice "debugLog" $ "Logging from " ++ show i
+        output $ showText i <> " DONE!"
+debugLog rs = ignore rs >> debugLog []
+
+
+------
+
+
+debugThrow :: Action
+debugThrow [] = liftIO . throwIO $ DivideByZero
+debugThrow rs = ignore rs >> debugThrow []

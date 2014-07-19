@@ -17,6 +17,7 @@ module Mud.Util ( adjustIndent
                 , dumpFile
                 , dumpFileNoWrapping
                 , dumpFileWithDividers
+                , either'
                 , findFullNameForAbbrev
                 , grepTextList
                 , isVowel
@@ -350,3 +351,7 @@ grepTextList needle = filter (needle `T.isInfixOf`)
 
 maybe' :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
 maybe' = maybe (return ())
+
+
+either' :: (Monad m) => (a -> m b) -> Either a b -> m b
+either' = flip either return

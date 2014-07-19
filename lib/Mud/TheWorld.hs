@@ -7,7 +7,6 @@ module Mud.TheWorld ( allKeys
                     , getUnusedId
                     , initMudState
                     , initWorld
-                    , mkOkapi
                     , sortAllInvs ) where
 
 import Mud.Ids
@@ -203,29 +202,3 @@ sortAllInvs = do
     gets (^.invTbl.to IM.keys) >>= mapM_ sortEach
   where
     sortEach k = gets (^?!invTbl.ix k) >>= sortInv >>= (invTbl.at k ?=)
-
-
------
-
-
-mkOkapi :: MudStack Id
-mkOkapi = do
-    i <- getUnusedId
-    let e = Ent { _entId    = i
-                , _entName  = "okapi"
-                , _sing     = "okapi"
-                , _plur     = ""
-                , _entDesc  = "This odd creature looks like a cross between a horse and a zebra."
-                , _entFlags = 0 }
-    let m = Mob { _gender = Male
-                , _st     = 10
-                , _dx     = 10
-                , _iq     = 10
-                , _ht     = 10
-                , _hp     = 10
-                , _fp     = 10
-                , _xp     = 50
-                , _hand   = NoHand }
-    putMob i e [] (Coins (0, 0, 1)) M.empty m
-    addToInv [i] iHill -- Will sort the inv.
-    return i

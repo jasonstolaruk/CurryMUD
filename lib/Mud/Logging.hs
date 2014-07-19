@@ -17,11 +17,10 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
 import Data.Text.Strict.Lens (packed)
-import GHC.IO.Handle (Handle)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
-import System.Log.Handler.Simple (GenericHandler, fileHandler)
+import System.Log.Handler.Simple (fileHandler)
 import System.Log.Logger (errorM, noticeM, setHandlers, setLevel, updateGlobalLogger)
 
 
@@ -38,7 +37,7 @@ closeLogs = do
 initLogging :: MudStack ()
 initLogging = do
     gets (^.logQueues.noticeQueue) >>= spawnLogger "notice.log" NOTICE "currymud.notice" noticeM
-    gets (^.logQueues.errorQueue)  >>= spawnLogger "error.log"  ERROR "currymud.error"   errorM
+    gets (^.logQueues.errorQueue)  >>= spawnLogger "error.log"  ERROR  "currymud.error"  errorM
 
 
 type LogName    = String
@@ -46,23 +45,17 @@ type LoggingFun = String -> String -> IO ()
 
 
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> MudStack ()
-spawnLogger fn p ln f q = do
-    gh <- liftIO . initLog fn p $ ln
-    void . liftIO . forkIO . loop $ gh
+spawnLogger fn p ln f q = liftIO initLog >>= void . liftIO . forkIO . loop
   where
+    initLog = do
+        gh <- fileHandler (logDir ++ fn) p
+        let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
+        updateGlobalLogger ln (setHandlers [h] . setLevel p)
+        return gh
     loop gh = do
-        cmd <- atomically . readTBQueue $ q
-        case cmd of Stop  -> close gh
-                    Msg m -> f ln m >> loop gh
-
-
-initLog :: FilePath -> Priority -> LogName -> IO (GenericHandler Handle)
-initLog fn p ln = do
-    gh <- fileHandler (logDir ++ fn) p
-    let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
-    updateGlobalLogger ln . setHandlers $ [h]
-    updateGlobalLogger ln . setLevel    $ p
-    return gh
+          cmd <- atomically . readTBQueue $ q
+          case cmd of Stop  -> close gh
+                      Msg m -> f ln m >> loop gh
 
 
 logNotice :: String -> String -> String -> MudStack ()
@@ -80,7 +73,7 @@ logIOEx modName funName e = logError . concat $ [ modName, " ", funName, ": ", d
 
 
 logAndDispIOEx :: String -> String -> IOException -> MudStack ()
-logAndDispIOEx modName funName e = logError msg >> (output $ msg^.packed)
+logAndDispIOEx modName funName e = logError msg >> output (msg^.packed)
   where
     msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
 
