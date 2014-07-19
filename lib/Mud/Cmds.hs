@@ -158,7 +158,7 @@ dispTitle = liftIO newStdGen >>= \g ->
     let range = (1, noOfTitles)
         n     = randomR range g^._1
         fn    = "title"^.unpacked ++ show n
-    in (try . liftIO . takeADump $ fn) >>= either' dispTitleExHandler
+    in (try . liftIO . takeADump $ fn) >>= eitherRet dispTitleExHandler
   where
     takeADump = dumpFileNoWrapping . (++) titleDir
 
@@ -178,7 +178,7 @@ game = do
 
 
 handleInp :: T.Text -> MudStack ()
-handleInp = maybe' dispatch . splitInp
+handleInp = maybeRet dispatch . splitInp
 
 
 type Input = (CmdName, Rest)
@@ -220,7 +220,7 @@ mkCmdListWithRmLinks i = getRmLinks i >>= \rls ->
 
 
 about :: Action
-about [] = (try . liftIO $ takeADump) >>= either' (dumpExHandler "about") >> liftIO newLine
+about [] = (try . liftIO $ takeADump) >>= eitherRet (dumpExHandler "about") >> liftIO newLine
   where
     takeADump = dumpFile . (++) miscDir $ "about"
 about rs = ignore rs >> about []
@@ -244,7 +244,7 @@ ignore rs = let ignored = dblQuote . T.unwords $ rs
 
 
 motd :: Action
-motd [] = (try . liftIO $ takeADump) >>= either' (dumpExHandler "motd") >> liftIO newLine
+motd [] = (try . liftIO $ takeADump) >>= eitherRet (dumpExHandler "motd") >> liftIO newLine
   where
     takeADump = dumpFileWithDividers . (++) miscDir $ "motd"
 motd rs = ignore rs >> motd []
@@ -278,7 +278,7 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 
 
 help :: Action
-help [] = (try . liftIO $ takeADump) >>= either' (dumpExHandler "help")
+help [] = (try . liftIO $ takeADump) >>= eitherRet (dumpExHandler "help")
   where
     takeADump = dumpFile . (++) helpDir $ "root"
 help rs = sequence_ . intercalate [liftIO $ divider >> newLine] $ [ [dispHelpTopicByName r] | r <- rs ]
@@ -297,7 +297,7 @@ dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
   where
     sorry     = mapM_ T.putStrLn . wordWrap cols $ "No help is available on that topic/command." <> nlt
     helper tn = do
-      (try . liftIO . takeADump $ tn) >>= either' (dumpExHandler "dispHelpTopicByName")
+      (try . liftIO . takeADump $ tn) >>= eitherRet (dumpExHandler "dispHelpTopicByName")
       liftIO newLine
     takeADump = dumpFile . (++) helpDir . T.unpack
 
@@ -885,7 +885,7 @@ sorryFullClothSlotsOneSide s = output $ "You can't wear any more on your " <> pp
 
 readyCloth :: Int -> Ent -> Cloth -> EqMap -> Maybe RightOrLeft -> MudStack ()
 readyCloth i e c em mrol = maybe (getAvailClothSlot c em) (getDesigClothSlot e c em) mrol >>= \ms ->
-    maybe' (\s -> moveReadiedItem i em s >> readiedMsg s) ms
+    maybeRet (\s -> moveReadiedItem i em s >> readiedMsg s) ms
   where
     readiedMsg s = case c of NoseC   -> putOnMsg
                              NeckC   -> putOnMsg
@@ -957,7 +957,7 @@ readyWpn :: Id -> Ent -> EqMap -> Maybe RightOrLeft -> MudStack ()
 readyWpn i e em mrol
   | not . isSlotAvail em $ BothHandsS = output "You're already wielding a two-handed weapon."
   | otherwise = maybe (getAvailWpnSlot em) (getDesigWpnSlot e em) mrol >>= \ms ->
-                    maybe' (\s -> getWpn i >>= readyHelper s) ms
+                    maybeRet (\s -> getWpn i >>= readyHelper s) ms
   where
     readyHelper s w = case w^.wpnSub of OneHanded -> moveReadiedItem i em s >> outputCon [ "You wield the ", e^.sing, " with your ", pp s, "." ]
                                         TwoHanded -> if all (isSlotAvail em) [RHandS, LHandS]
@@ -1033,7 +1033,7 @@ mkIdCountBothList is = getEntBothGramNosInInv is >>= \ebgns ->
 
 
 uptime :: Action
-uptime [] = (try . output . parse =<< runUptime) >>= either' uptimeExHandler >> liftIO newLine
+uptime [] = (try . output . parse =<< runUptime) >>= eitherRet uptimeExHandler >> liftIO newLine
   where
     runUptime = liftIO . readProcess "uptime" [] $ ""
     parse ut  = let (a, b) = span (/= ',') ut
@@ -1113,7 +1113,7 @@ debugDispCmdList = dispCmdList (cmdPred . Just $ debugCmdChar)
 
 
 debugBuffCheck :: Action
-debugBuffCheck [] = (try . liftIO $ buffCheckHelper) >>= either' (logAndDispIOEx "wizBuffCheck")
+debugBuffCheck [] = (try . liftIO $ buffCheckHelper) >>= eitherRet (logAndDispIOEx "wizBuffCheck")
   where
     buffCheckHelper = do
         td      <- getTemporaryDirectory

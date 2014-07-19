@@ -17,11 +17,11 @@ module Mud.Util ( adjustIndent
                 , dumpFile
                 , dumpFileNoWrapping
                 , dumpFileWithDividers
-                , either'
+                , eitherRet
                 , findFullNameForAbbrev
                 , grepTextList
                 , isVowel
-                , maybe'
+                , maybeRet
                 , maybeNewLine
                 , mkCountList
                 , mkOrdinal
@@ -349,9 +349,9 @@ grepTextList :: T.Text -> [T.Text] -> [T.Text]
 grepTextList needle = filter (needle `T.isInfixOf`)
 
 
-maybe' :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
-maybe' = maybe (return ())
+maybeRet :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
+maybeRet = maybe (return ())
 
 
-either' :: (Monad m) => (a -> m b) -> Either a b -> m b
-either' = flip either return
+eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
+eitherRet = flip either return
