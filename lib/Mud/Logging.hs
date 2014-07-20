@@ -52,20 +52,21 @@ spawnLogger fn p ln f q = liftIO initLog >>= void . liftIO . forkIO . loop
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
         updateGlobalLogger ln (setHandlers [h] . setLevel p)
         return gh
-    loop gh = do
-          cmd <- atomically . readTBQueue $ q
-          case cmd of Stop  -> close gh
-                      Msg m -> f ln m >> loop gh
+    loop gh = (atomically . readTBQueue $ q) >>= \cmd ->
+        case cmd of Stop  -> close gh
+                    Msg m -> f ln m >> loop gh
+
+
+registerMsg :: String -> LogQueue -> MudStack ()
+registerMsg msg q = liftIO . atomically . writeTBQueue q . Msg $ msg
 
 
 logNotice :: String -> String -> String -> MudStack ()
-logNotice modName funName msg = gets (^.logQueues.noticeQueue) >>= \q ->
-    liftIO . atomically . writeTBQueue q . Msg . concat $ [ modName, " ", funName, ": ", msg, "." ]
+logNotice modName funName msg = gets (^.logQueues.noticeQueue) >>= registerMsg (concat [ modName, " ", funName, ": ", msg, "." ])
 
 
 logError :: String -> MudStack ()
-logError msg = gets (^.logQueues.errorQueue) >>= \q ->
-    liftIO . atomically . writeTBQueue q . Msg $ msg
+logError msg = gets (^.logQueues.errorQueue) >>= registerMsg msg
 
 
 logIOEx :: String -> String -> IOException -> MudStack ()
@@ -73,9 +74,8 @@ logIOEx modName funName e = logError . concat $ [ modName, " ", funName, ": ", d
 
 
 logAndDispIOEx :: String -> String -> IOException -> MudStack ()
-logAndDispIOEx modName funName e = logError msg >> output (msg^.packed)
-  where
-    msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
+logAndDispIOEx modName funName e = let msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
+                                   in logError msg >> output (msg^.packed)
 
 
 logIOExRethrow :: String -> String -> IOException -> MudStack ()
