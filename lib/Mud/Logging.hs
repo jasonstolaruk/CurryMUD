@@ -44,6 +44,7 @@ type LogName    = String
 type LoggingFun = String -> String -> IO ()
 
 
+-- TODO: Use async to keep the main thread from finishing before the logger threads finish.
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> MudStack ()
 spawnLogger fn p ln f q = liftIO initLog >>= void . liftIO . forkIO . loop
   where

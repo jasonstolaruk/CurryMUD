@@ -12,8 +12,8 @@ build-type:            Simple
 cabal-version:         >=1.8
 
 executable             curry
+  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N
   main-is:             Main.hs
-  -- other-modules:       
   other-extensions:    OverloadedStrings
   build-depends:       base >=4.6 && <5.0,
                        currymud,
@@ -23,6 +23,7 @@ executable             curry
   hs-source-dirs:      src
 
 library
+  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N
   exposed-modules:     Mud.Cmds,
                        Mud.Ids,
                        Mud.Logging,
@@ -34,7 +35,6 @@ library
                        Mud.TheWorld,
                        Mud.TopLvlDefs,
                        Mud.Util
-  -- other-modules:       
   other-extensions:    FlexibleContexts,
                        FlexibleInstances,
                        GeneralizedNewtypeDeriving,
@@ -64,7 +64,7 @@ library
                        transformers-base >=0.4 && <0.5
   hs-source-dirs:      lib
 
-test-suite test
+test-suite             test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
