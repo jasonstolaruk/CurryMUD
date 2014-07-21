@@ -5,6 +5,7 @@ module Mud.StateDataTypes where
 
 import Mud.StateInIORefT
 
+import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TBQueue (TBQueue)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
@@ -57,20 +58,20 @@ type MobTbl   = IM.IntMap Mob
 type RmTbl    = IM.IntMap Rm
 type TypeTbl  = IM.IntMap Type
 
-data MudState = MudState { _entTbl     :: EntTbl
-                         , _objTbl     :: ObjTbl
-                         , _clothTbl   :: ClothTbl
-                         , _invTbl     :: InvTbl
-                         , _coinsTbl   :: CoinsTbl
-                         , _conTbl     :: ConTbl
-                         , _wpnTbl     :: WpnTbl
-                         , _armTbl     :: ArmTbl
-                         , _eqTbl      :: EqTable
-                         , _mobTbl     :: MobTbl
-                         , _pc         :: PC
-                         , _rmTbl      :: RmTbl
-                         , _typeTbl    :: TypeTbl
-                         , _logQueues  :: LogQueues }
+data MudState = MudState { _entTbl      :: EntTbl
+                         , _objTbl      :: ObjTbl
+                         , _clothTbl    :: ClothTbl
+                         , _invTbl      :: InvTbl
+                         , _coinsTbl    :: CoinsTbl
+                         , _conTbl      :: ConTbl
+                         , _wpnTbl      :: WpnTbl
+                         , _armTbl      :: ArmTbl
+                         , _eqTbl       :: EqTable
+                         , _mobTbl      :: MobTbl
+                         , _pc          :: PC
+                         , _rmTbl       :: RmTbl
+                         , _typeTbl     :: TypeTbl
+                         , _logServices :: LogServices }
 
 
 -- ==================================================
@@ -286,12 +287,16 @@ data Type = ObjType
 -- Log queues:
 
 
-data LogCmd    = Stop | Msg String
+data LogCmd      = Stop | Msg String
 
-type LogQueue  = TBQueue LogCmd
+type LogAsync    = Async ()
 
-data LogQueues = LogQueues { _noticeQueue :: LogQueue
-                           , _errorQueue  :: LogQueue }
+type LogQueue    = TBQueue LogCmd
+
+type LogService  = (LogAsync, LogQueue)
+
+data LogServices = LogServices { _noticeLog :: Maybe LogService
+                               , _errorLog  :: Maybe LogService }
 
 
 -- ==================================================
@@ -306,5 +311,5 @@ makeLenses ''Mob
 makeLenses ''PC
 makeLenses ''Rm
 makeLenses ''RmLink
-makeLenses ''LogQueues
+makeLenses ''LogServices
 makeLenses ''MudState

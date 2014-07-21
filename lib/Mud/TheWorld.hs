@@ -12,17 +12,14 @@ module Mud.TheWorld ( allKeys
 import Mud.Ids
 import Mud.StateDataTypes
 import Mud.StateHelpers
-import Mud.TopLvlDefs
 import qualified Mud.Logging as L (logNotice)
 
-import Control.Concurrent.STM.TBQueue (newTBQueueIO)
 import Control.Lens (at, ix, to)
 import Control.Lens.Operators ((?=), (^.), (^?!))
 import Control.Monad.State (gets)
 import Data.Functor ((<$>))
 import Data.List ((\\))
 import Data.Monoid (mempty)
-import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.IntMap.Lazy as IM (empty, keys)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
@@ -115,10 +112,7 @@ putRm i is c r = do
 
 
 initMudState :: MudState
-initMudState = unsafePerformIO $ do
-    nq <- newTBQueueIO logQueueMax
-    eq <- newTBQueueIO logQueueMax
-    return (MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty (LogQueues nq eq))
+initMudState = MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty (LogServices Nothing Nothing)
 
 
 initPC :: PC

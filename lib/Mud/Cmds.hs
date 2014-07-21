@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.Cmds (gameWrapper) where
 
@@ -48,6 +48,10 @@ import qualified Data.Text.IO as T (putStrLn)
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
+-- TODO: Write functions at the lowest level of the transformer stack as possible, then lift them?
+-- TODO: Can the logging part of the mud state be moved to a different monad?
+
+
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.Cmds"
 
@@ -80,12 +84,14 @@ logExMsg = L.logExMsg "Mud.Cmds"
 
 
 cmdList :: [Cmd]
-cmdList = -- Wizard commands:
+cmdList = -- ==================================================
+          -- Wizard commands:
           [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = prefixWizCmd "day", action = wizDay, cmdDesc = "Display the current day of week." }
           , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the game server." }
           , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
 
+          -- ==================================================
           -- Debug commands:
           , Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
@@ -93,16 +99,17 @@ cmdList = -- Wizard commands:
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
           , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
 
+          -- ==================================================
           -- Player commands:
           , Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
-          , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD server." }
+          , Cmd { cmdName = "about", action = about, cmdDesc = "About this game." }
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
           , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-          , Cmd { cmdName = "equip", action = equip, cmdDesc = "Readied equipment." }
+          , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
           , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
-          , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on a topic or command." }
+          , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
           , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
           , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
           , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
@@ -120,7 +127,7 @@ cmdList = -- Wizard commands:
           , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
           , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
           , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
-          , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate an abbreviation." } ]
+          , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 
 
 prefixCmd :: Char -> CmdName -> T.Text
@@ -164,10 +171,11 @@ dispTitle = liftIO newStdGen >>= \g ->
 
 
 dispTitleExHandler :: IOException -> MudStack ()
-dispTitleExHandler e
-  | isDoesNotExistError e = logIOEx        "dispTitle" e
-  | isPermissionError   e = logIOEx        "dispTitle" e
-  | otherwise             = logIOExRethrow "dispTitle" e
+dispTitleExHandler e = f "dispTitle" e
+  where
+    f = if | isDoesNotExistError e -> logIOEx
+           | isPermissionError   e -> logIOEx
+           | otherwise             -> logIOExRethrow
 
 
 game :: MudStack ()
