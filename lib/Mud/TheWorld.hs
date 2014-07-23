@@ -14,13 +14,10 @@ import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
-import Control.Lens (at, ix, to)
-import Control.Lens.Operators ((?=), (^.), (^?!))
-import Control.Monad.State (gets)
 import Data.Functor ((<$>))
 import Data.List ((\\))
 import Data.Monoid (mempty)
-import qualified Data.IntMap.Lazy as IM (empty, keys)
+import qualified Data.IntMap.Lazy as IM (empty)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
 
@@ -41,7 +38,7 @@ findAvailKey = head . (\\) [0..]
 
 
 allKeys :: MudStack Inv
-allKeys = gets (^.typeTbl.to IM.keys)
+allKeys = keysWS typeTbl
 
 
 -- ==================================================
@@ -50,61 +47,61 @@ allKeys = gets (^.typeTbl.to IM.keys)
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
 putObj i e o = do
-    typeTbl.at i ?= ObjType
-    entTbl.at  i ?= e
-    objTbl.at  i ?= o
+    updateWS i typeTbl ObjType -- TODO: "sequence_"
+    updateWS i entTbl  e
+    updateWS i objTbl  o
 
 
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
 putCloth i e o c = do
-    typeTbl.at  i ?= ClothType
-    entTbl.at   i ?= e
-    objTbl.at   i ?= o
-    clothTbl.at i ?= c
+    updateWS i typeTbl  ClothType
+    updateWS i entTbl   e
+    updateWS i objTbl   o
+    updateWS i clothTbl c
 
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
 putCon i e o is coi con = do
-    typeTbl.at  i ?= ConType
-    entTbl.at   i ?= e
-    objTbl.at   i ?= o
-    invTbl.at   i ?= is
-    coinsTbl.at i ?= coi
-    conTbl.at   i ?= con
+    updateWS i typeTbl  ConType
+    updateWS i entTbl   e
+    updateWS i objTbl   o
+    updateWS i invTbl   is
+    updateWS i coinsTbl coi
+    updateWS i conTbl   con
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
 putWpn i e o w = do
-    typeTbl.at i ?= WpnType
-    entTbl.at  i ?= e
-    objTbl.at  i ?= o
-    wpnTbl.at  i ?= w
+    updateWS i typeTbl WpnType
+    updateWS i entTbl  e
+    updateWS i objTbl  o
+    updateWS i wpnTbl  w
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
 putArm i e o a = do
-    typeTbl.at i ?= ArmType
-    entTbl.at  i ?= e
-    objTbl.at  i ?= o
-    armTbl.at  i ?= a
+    updateWS i typeTbl ArmType
+    updateWS i entTbl  e
+    updateWS i objTbl  o
+    updateWS i armTbl  a
 
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
 putMob i e is c em m = do
-    typeTbl.at  i ?= MobType
-    entTbl.at   i ?= e
-    invTbl.at   i ?= is
-    coinsTbl.at i ?= c
-    eqTbl.at    i ?= em
-    mobTbl.at   i ?= m
+    updateWS i typeTbl  MobType
+    updateWS i entTbl   e
+    updateWS i invTbl   is
+    updateWS i coinsTbl c
+    updateWS i eqTbl    em
+    updateWS i mobTbl   m
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
 putRm i is c r = do
-    typeTbl.at  i ?= RmType
-    invTbl.at   i ?= is
-    coinsTbl.at i ?= c
-    rmTbl.at    i ?= r
+    updateWS i typeTbl  RmType
+    updateWS i invTbl   is
+    updateWS i coinsTbl c
+    updateWS i rmTbl    r
 
 
 -- ==================================================
@@ -112,7 +109,7 @@ putRm i is c r = do
 
 
 initMudState :: MudState
-initMudState = MudState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty (LogServices Nothing Nothing)
+initMudState = MudState (WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty) (LogServices Nothing Nothing)
 
 
 initPC :: PC
@@ -193,6 +190,6 @@ initWorld = createWorld >> sortAllInvs
 sortAllInvs :: MudStack ()
 sortAllInvs = do
     logNotice "sortAllInvs" "sorting all inventories"
-    gets (^.invTbl.to IM.keys) >>= mapM_ sortEach
+    keysWS invTbl >>= mapM_ sortEach
   where
-    sortEach k = gets (^?!invTbl.ix k) >>= sortInv >>= (invTbl.at k ?=)
+    sortEach k = k `lookupWS` invTbl >>= sortInv >>= updateWS k invTbl

@@ -45,6 +45,25 @@ instance HasFlags Rm where
 -- The MUD state wrapper:
 
 
+-- TODO: Put elements of the state in STM.
+
+data MudState = MudState { _worldState  :: WorldState
+                         , _logServices :: LogServices }
+
+data WorldState = WorldState { _entTbl      :: EntTbl
+                             , _objTbl      :: ObjTbl
+                             , _clothTbl    :: ClothTbl
+                             , _invTbl      :: InvTbl
+                             , _coinsTbl    :: CoinsTbl
+                             , _conTbl      :: ConTbl
+                             , _wpnTbl      :: WpnTbl
+                             , _armTbl      :: ArmTbl
+                             , _eqTbl       :: EqTable
+                             , _mobTbl      :: MobTbl
+                             , _pc          :: PC
+                             , _rmTbl       :: RmTbl
+                             , _typeTbl     :: TypeTbl }
+
 type EntTbl   = IM.IntMap Ent
 type ObjTbl   = IM.IntMap Obj
 type ClothTbl = IM.IntMap Cloth
@@ -57,21 +76,6 @@ type EqTable  = IM.IntMap EqMap
 type MobTbl   = IM.IntMap Mob
 type RmTbl    = IM.IntMap Rm
 type TypeTbl  = IM.IntMap Type
-
-data MudState = MudState { _entTbl      :: EntTbl
-                         , _objTbl      :: ObjTbl
-                         , _clothTbl    :: ClothTbl
-                         , _invTbl      :: InvTbl
-                         , _coinsTbl    :: CoinsTbl
-                         , _conTbl      :: ConTbl
-                         , _wpnTbl      :: WpnTbl
-                         , _armTbl      :: ArmTbl
-                         , _eqTbl       :: EqTable
-                         , _mobTbl      :: MobTbl
-                         , _pc          :: PC
-                         , _rmTbl       :: RmTbl
-                         , _typeTbl     :: TypeTbl
-                         , _logServices :: LogServices }
 
 
 -- ==================================================
@@ -303,6 +307,9 @@ data LogServices = LogServices { _noticeLog :: Maybe LogService
 -- Template Haskell for creating lenses:
 
 
+makeLenses ''MudState
+
+makeLenses ''WorldState
 makeLenses ''Ent
 makeLenses ''Obj
 makeLenses ''Wpn
@@ -311,5 +318,5 @@ makeLenses ''Mob
 makeLenses ''PC
 makeLenses ''Rm
 makeLenses ''RmLink
+
 makeLenses ''LogServices
-makeLenses ''MudState

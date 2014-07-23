@@ -1,6 +1,6 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
-
+-- TODO: -Werror
 module Mud.StateHelpers ( addToInv
                         , BothGramNos
                         , findExit
@@ -26,18 +26,21 @@ module Mud.StateHelpers ( addToInv
                         , getRm
                         , getRmLinks
                         , getWpn
+                        , InvCoins
                         , hasCoins
                         , hasEq
                         , hasInv
                         , hasInvOrCoins
-                        , InvCoins
+                        , keysWS
+                        , lookupWS
                         , mkCoinsFromList
                         , mkCoinsList
                         , mkPlurFromBoth
                         , moveCoins
                         , moveInv
                         , remFromInv
-                        , sortInv ) where
+                        , sortInv
+                        , updateWS ) where
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
@@ -45,12 +48,14 @@ import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens (_1, at, each, ix)
-import Control.Lens.Operators ((%~), (?=), (^.), (^?!))
+import Control.Lens (_1, at, each, to)
+import Control.Lens.Operators ((%~), (?=), (^.))
 import Control.Monad (unless)
 import Control.Monad.State (gets)
 import Data.List (sortBy)
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>), mempty)
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
@@ -59,17 +64,23 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
+-- TODO: Throw an exception rather than use "fromJust". Consider doing the same in other places where you use "fromJust".
+i `lookupWS` tbl = gets (^.worldState.tbl.at i.to fromJust)
+updateWS i tbl a = worldState.tbl.at i ?= a
+keysWS tbl = gets (^.worldState.tbl.to IM.keys)
+
+
 -- ==================================================
 -- Entities:
 
 
 getEnt :: Id -> MudStack Ent
-getEnt i = gets (^?!entTbl.ix i)
+getEnt i = i `lookupWS` entTbl
 
 
 getEntType :: Ent -> MudStack Type
 getEntType e = let i = e^.entId
-               in gets (^?!typeTbl.ix i)
+               in i `lookupWS` typeTbl
 
 
 getEntsInInv :: Inv -> MudStack [Ent]
@@ -107,7 +118,7 @@ mkPlurFromBoth (_, p)  = p
 
 
 getCloth :: Id -> MudStack Cloth
-getCloth i = gets (^?!clothTbl.ix i)
+getCloth i = i `lookupWS` clothTbl
 
 
 -- ==================================================
@@ -115,7 +126,7 @@ getCloth i = gets (^?!clothTbl.ix i)
 
 
 getInv :: Id -> MudStack Inv
-getInv i = gets (^?!invTbl.ix i)
+getInv i = i `lookupWS` invTbl
 
 
 hasInv :: Id -> MudStack Bool
@@ -137,12 +148,16 @@ getInvCoins i = (,) <$> getInv i <*> getCoins i
 
 
 addToInv :: Inv -> Id -> MudStack ()
-addToInv is ti = getInv ti >>= sortInv . (++ is) >>= (invTbl.at ti ?=)
+addToInv is ti = getInv ti >>= sortInv . (++ is) >>= updateWS ti invTbl
+
+
+type FromId = Id
+type ToId   = Id
 
 
 remFromInv :: Inv -> FromId -> MudStack ()
 remFromInv is fi = getInv fi >>= \fis ->
-    invTbl.at fi ?= deleteFirstOfEach is fis
+    updateWS fi invTbl . deleteFirstOfEach is $ fis
 
 
 moveInv :: Inv -> FromId -> ToId -> MudStack ()
@@ -162,7 +177,7 @@ sortInv is = (map (^._1) . sortBy nameThenSing) <$> zipped
 
 
 getCoins :: Id -> MudStack Coins
-getCoins i = gets (^?!coinsTbl.ix i)
+getCoins i = i `lookupWS` coinsTbl
 
 
 mkCoinsList :: Coins -> [Int]
@@ -178,22 +193,18 @@ hasCoins :: Id -> MudStack Bool
 hasCoins i = not . all (== 0) . mkCoinsList <$> getCoins i
 
 
-type FromId = Id
-type ToId   = Id
-
-
 moveCoins :: Coins -> FromId -> ToId -> MudStack ()
 moveCoins c fi ti = unless (c == mempty) $ subCoins c fi >> addCoins c ti
 
 
 addCoins :: Coins -> Id -> MudStack ()
 addCoins c i = getCoins i >>= \c' ->
-    coinsTbl.at i ?= c' <> c
+    updateWS i coinsTbl $ c' <> c
 
 
 subCoins :: Coins -> Id -> MudStack ()
 subCoins c i = getCoins i >>= \c' ->
-    coinsTbl.at i ?= c' <> negateCoins c
+    updateWS i coinsTbl $ c' <> negateCoins c
 
 
 negateCoins :: Coins -> Coins
@@ -205,7 +216,7 @@ negateCoins (Coins c) = Coins (each %~ negate $ c)
 
 
 getWpn :: Id -> MudStack Wpn
-getWpn i = gets (^?!wpnTbl.ix i)
+getWpn i = i `lookupWS` wpnTbl
 
 
 -- ==================================================
@@ -213,7 +224,7 @@ getWpn i = gets (^?!wpnTbl.ix i)
 
 
 getArm :: Id -> MudStack Arm
-getArm i = gets (^?!armTbl.ix i)
+getArm i = i `lookupWS` armTbl
 
 
 -- ==================================================
@@ -221,7 +232,7 @@ getArm i = gets (^?!armTbl.ix i)
 
 
 getEqMap :: Id -> MudStack EqMap
-getEqMap i = gets (^?!eqTbl.ix i)
+getEqMap i = i `lookupWS` eqTbl
 
 
 getEq :: Id -> MudStack Inv
@@ -237,7 +248,7 @@ hasEq i = not . null <$> getEq i
 
 
 getMob :: Id -> MudStack Mob
-getMob i = gets (^?!mobTbl.ix i)
+getMob i = i `lookupWS` mobTbl
 
 
 getMobGender :: Id -> MudStack Gender
@@ -253,11 +264,11 @@ getMobHand i = (^.hand) <$> getMob i
 
 
 getRm :: Id -> MudStack Rm
-getRm i = gets (^?!rmTbl.ix i)
+getRm i = i `lookupWS` rmTbl
 
 
 getPCRmId :: MudStack Id
-getPCRmId = gets (^.pc.rmId)
+getPCRmId = gets (^.worldState.pc.rmId)
 
 
 getPCRm :: MudStack Rm

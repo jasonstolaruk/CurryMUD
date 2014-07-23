@@ -20,7 +20,7 @@ import Control.Concurrent (forkIO, myThreadId)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
 import Control.Lens (_1, at, both, folded, over, to)
-import Control.Lens.Operators ((&), (.=), (?=),(?~), (^.), (^..))
+import Control.Lens.Operators ((&), (.=), (?~), (^.), (^..))
 import Control.Monad ((>=>), forever, forM_, guard, mplus, replicateM_, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
@@ -49,7 +49,6 @@ import qualified Data.Text.IO as T (putStrLn)
 
 
 -- TODO: Write functions at the lowest level of the transformer stack as possible, then lift them?
--- TODO: Can the logging part of the mud state be moved to a different monad?
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -427,7 +426,7 @@ tryMove dir = let dir' = T.toLower dir
     sorry dir' = output $ if dir' `elem` stdLinkNames
                             then "You can't go that way." <> nlt
                             else dblQuote dir <> " is not a valid direction." <> nlt
-    movePC i = pc.rmId .= i >> look []
+    movePC i = worldState.pc.rmId .= i >> look []
 
 
 -----
@@ -829,7 +828,7 @@ readyDispatcher mrol = mapM_ dispatchByType
 
 
 moveReadiedItem :: Id -> EqMap -> Slot -> MudStack ()
-moveReadiedItem i em s = eqTbl.at 0 ?= (em & at s ?~ i) >> remFromInv [i] 0
+moveReadiedItem i em s = updateWS 0 eqTbl (em & at s ?~ i) >> remFromInv [i] 0
 
 
 otherGender :: Gender -> Gender
@@ -1012,7 +1011,7 @@ unready rs = hasEq 0 >>= \he -> if not he then dudeYou'reNaked else do
 
 
 shuffleInvUnready :: Inv -> MudStack ()
-shuffleInvUnready is = M.filter (`notElem` is) <$> getEqMap 0 >>= (eqTbl.at 0 ?=) >> addToInv is 0 >> descUnready is
+shuffleInvUnready is = M.filter (`notElem` is) <$> getEqMap 0 >>= updateWS 0 eqTbl >> addToInv is 0 >> descUnready is
 
 
 descUnready :: Inv -> MudStack ()
