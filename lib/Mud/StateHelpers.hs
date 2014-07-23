@@ -64,7 +64,6 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
--- TODO: Throw an exception rather than use "fromJust". Consider doing the same in other places where you use "fromJust".
 i `lookupWS` tbl = gets (^.worldState.tbl.at i.to fromJust)
 updateWS i tbl a = worldState.tbl.at i ?= a
 keysWS tbl = gets (^.worldState.tbl.to IM.keys)

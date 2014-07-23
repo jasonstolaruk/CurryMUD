@@ -1,7 +1,14 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Logging where
+module Mud.Logging ( closeLogs
+                   , initLogging
+                   , logAndDispIOEx
+                   , logError
+                   , logExMsg
+                   , logIOEx
+                   , logIOExRethrow
+                   , logNotice) where
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
@@ -13,7 +20,7 @@ import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (throwIO)
 import Control.Lens (_2, to)
 import Control.Lens.Operators ((.=), (^.))
-import Control.Monad (forM_, void)
+import Control.Monad (forM_, replicateM, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
@@ -26,19 +33,29 @@ import System.Log.Handler.Simple (fileHandler)
 import System.Log.Logger (errorM, noticeM, setHandlers, setLevel, updateGlobalLogger)
 
 
+getNoticeLog :: MudStack LogService
+getNoticeLog = gets (^.logServices.noticeLog.to fromJust)
+
+
+getErrorLog :: MudStack LogService
+getErrorLog = gets (^.logServices.errorLog.to fromJust)
+
+
+getLogQueue :: MudStack LogService -> MudStack LogQueue
+getLogQueue = fmap (^._2)
+
+
 closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs"
-    (na, nq) <- gets (^.logServices.noticeLog.to fromJust) -- TODO: Helper functions?
-    (ea, eq) <- gets (^.logServices.errorLog.to fromJust)
+    [(na, nq), (ea, eq)] <- sequence [getNoticeLog, getErrorLog]
     forM_ [nq, eq] $ liftIO . atomically . flip writeTBQueue Stop
     liftIO . void . waitBoth na $ ea
 
 
 initLogging :: MudStack ()
 initLogging = do
-    nq <- liftIO . newTBQueueIO $ logQueueMax
-    eq <- liftIO . newTBQueueIO $ logQueueMax
+    [nq, eq] <- replicateM 2 . liftIO . newTBQueueIO $ logQueueMax
     na <- spawnLogger "notice.log" NOTICE "currymud.notice" noticeM nq
     ea <- spawnLogger "error.log"  ERROR  "currymud.error"  errorM eq
     logServices.noticeLog .= Just (na, nq)
@@ -67,11 +84,11 @@ registerMsg msg q = liftIO . atomically . writeTBQueue q . Msg $ msg
 
 
 logNotice :: String -> String -> String -> MudStack ()
-logNotice modName funName msg = gets (^.logServices.noticeLog.to fromJust._2) >>= registerMsg (concat [ modName, " ", funName, ": ", msg, "." ])
+logNotice modName funName msg = getLogQueue getNoticeLog >>= registerMsg (concat [ modName, " ", funName, ": ", msg, "." ])
 
 
 logError :: String -> MudStack ()
-logError msg = gets (^.logServices.errorLog.to fromJust._2) >>= registerMsg msg
+logError msg = getLogQueue getErrorLog >>= registerMsg msg
 
 
 logExMsg :: String -> String -> String -> SomeException -> MudStack ()

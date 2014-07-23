@@ -47,7 +47,7 @@ allKeys = keysWS typeTbl
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
 putObj i e o = do
-    updateWS i typeTbl ObjType -- TODO: "sequence_"
+    updateWS i typeTbl ObjType
     updateWS i entTbl  e
     updateWS i objTbl  o
 
