@@ -7,6 +7,7 @@ import Mud.StateInIORefT
 
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TQueue (TQueue)
+import Control.Concurrent.STM.TVar (TVar)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
 import qualified Data.IntMap.Lazy as IM (IntMap)
@@ -48,40 +49,29 @@ instance HasFlags Rm where
 -- TODO: Put elements of the state in STM.
 -- Use "($!)" or "seq". PaCP p.135.
 
-data MudState   = MudState   { _worldState  :: WorldState
-                             , _logServices :: LogServices }
+data MudState = MudState { _worldState  :: WorldState
+                         , _logServices :: LogServices }
 
 
 -- ==================================================
 -- The world state wrapper:
 
 
-data WorldState = WorldState { _entTbl      :: EntTbl
-                             , _objTbl      :: ObjTbl
-                             , _clothTbl    :: ClothTbl
-                             , _invTbl      :: InvTbl
-                             , _coinsTbl    :: CoinsTbl
-                             , _conTbl      :: ConTbl
-                             , _wpnTbl      :: WpnTbl
-                             , _armTbl      :: ArmTbl
-                             , _eqTbl       :: EqTable
-                             , _mobTbl      :: MobTbl
-                             , _pc          :: PC
-                             , _rmTbl       :: RmTbl
-                             , _typeTbl     :: TypeTbl }
+data WorldState = WorldState { _entTbl      :: WorldStateTbl Ent
+                             , _objTbl      :: WorldStateTbl Obj
+                             , _clothTbl    :: WorldStateTbl Cloth
+                             , _invTbl      :: WorldStateTbl Inv
+                             , _coinsTbl    :: WorldStateTbl Coins
+                             , _conTbl      :: WorldStateTbl Con
+                             , _wpnTbl      :: WorldStateTbl Wpn
+                             , _armTbl      :: WorldStateTbl Arm
+                             , _eqTbl       :: WorldStateTbl EqMap
+                             , _mobTbl      :: WorldStateTbl Mob
+                             , _pc          :: TVar PC
+                             , _rmTbl       :: WorldStateTbl Rm
+                             , _typeTbl     :: WorldStateTbl Type }
 
-type EntTbl   = IM.IntMap Ent
-type ObjTbl   = IM.IntMap Obj
-type ClothTbl = IM.IntMap Cloth
-type InvTbl   = IM.IntMap Inv
-type CoinsTbl = IM.IntMap Coins
-type ConTbl   = IM.IntMap Con
-type WpnTbl   = IM.IntMap Wpn
-type ArmTbl   = IM.IntMap Arm
-type EqTable  = IM.IntMap EqMap
-type MobTbl   = IM.IntMap Mob
-type RmTbl    = IM.IntMap Rm
-type TypeTbl  = IM.IntMap Type
+type WorldStateTbl a = TVar (IM.IntMap a) -- TODO: Change the name to reflect the fact that it's a map inside a "TVar"?
 
 
 -- ==================================================
@@ -294,7 +284,7 @@ data Type = ObjType
 
 
 -- ==================================================
--- Log services:
+-- The log services wrapper:
 
 
 data LogCmd      = Stop | Msg String

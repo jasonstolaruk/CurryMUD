@@ -48,14 +48,17 @@ import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TVar (readTVarIO, writeTVar)
 import Control.Lens (_1, at, each, to)
 import Control.Lens.Operators ((%~), (?=), (^.))
 import Control.Monad (unless)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.List (sortBy)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), mempty)
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (insert, keys, lookup)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
@@ -64,11 +67,18 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
-i `lookupWS` tbl = gets (^.worldState.tbl.at i.to fromJust)
+-- ==================================================
+-- Helpers for working with world state tables:
 
-updateWS i tbl a = worldState.tbl.at i ?= a
 
-keysWS tbl = gets (^.worldState.tbl.to IM.keys)
+i `lookupWS` tbl = (fromJust . IM.lookup i) <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
+
+
+updateWS i tbl a = gets (^.worldState.tbl) >>= \t ->
+    liftIO $ readTVarIO t >>= atomically . writeTVar t . IM.insert i a
+
+
+keysWS tbl = IM.keys <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
 
 
 -- ==================================================
@@ -269,7 +279,7 @@ getRm i = i `lookupWS` rmTbl
 
 
 getPCRmId :: MudStack Id
-getPCRmId = gets (^.worldState.pc.rmId)
+getPCRmId = (^.rmId) <$> (gets (^.worldState.pc) >>= liftIO . readTVarIO)
 
 
 getPCRm :: MudStack Rm

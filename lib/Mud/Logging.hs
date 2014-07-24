@@ -33,9 +33,6 @@ import System.Log.Handler.Simple (fileHandler)
 import System.Log.Logger (errorM, noticeM, setHandlers, setLevel, updateGlobalLogger)
 
 
--- TODO: Continue reviewing your concurrency notes from: "To avoid deadlocking on a parent thread after a child thread has thrown an exception and died, the child thread may propagate any exceptions up to the parent thread. (PaCP p.151)".
-
-
 getNoticeLog :: MudStack LogService
 getNoticeLog = gets (^.logServices.noticeLog.to fromJust)
 
