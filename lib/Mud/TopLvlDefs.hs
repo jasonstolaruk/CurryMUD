@@ -37,10 +37,6 @@ nlt :: T.Text
 nlt = "\n"
 
 
-logQueueMax :: Int
-logQueueMax = 1 -- TODO: Change when you are confident. PaCP p.191.
-
-
 allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizCmdChar, debugCmdChar :: Char
 allChar       = '\''
 amountChar    = '/'

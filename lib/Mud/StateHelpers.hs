@@ -65,7 +65,9 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 i `lookupWS` tbl = gets (^.worldState.tbl.at i.to fromJust)
+
 updateWS i tbl a = worldState.tbl.at i ?= a
+
 keysWS tbl = gets (^.worldState.tbl.to IM.keys)
 
 

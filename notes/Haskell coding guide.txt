@@ -493,13 +493,13 @@ Use a "MVar" with a dummy value such as "()" to act as a lock on external state.
 When there are multiple threads accessing the same "MVar", the chance that some threads become blocked increases, as a "MVar" is only a one-place channel. As a possible solution, consider using an unbounded channel ("Chan"). (PaCP p.135, 162)
 "TChan" is the STM version of "Chan". (PaCP p.184)
 "TQueue" is faster than "TChan". (PaCP p.188)
-If running out of memory is a concern, consider using a bounded channel instead of a unbounded channel. (PaCP p.189)
+If running out of memory is a concern, consider using a bounded channel instead of an unbounded channel. (PaCP p.189)
 
 To avoid space leaks, consider using "$!" with "putMVar": (PaCP p.135)
 putMvar m $! Map.insert key val myMap
 Use "seq" so as to get both brief locking and no space leaks.
 
-When performing an action asynchronously (and later waiting for its results), consider using an abstraction that encapsulates both the "forkIO" operation and a "MVar" (see the "async" library on Hackage). (PaCP p.144, 151, 168, 182, 197)
+When performing an action asynchronously (and later waiting for its results), consider using an abstraction that encapsulates both the "forkIO" operation and a "MVar" (see the "async" library). (PaCP p.144, 151, 168, 182, 197)
 
 To avoid deadlocking on a parent thread after a child thread has thrown an exception and died, the child thread may propagate any exceptions up to the parent thread. (PaCP p.151)
 

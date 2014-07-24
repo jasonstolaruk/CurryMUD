@@ -6,7 +6,7 @@ module Mud.StateDataTypes where
 import Mud.StateInIORefT
 
 import Control.Concurrent.Async (Async)
-import Control.Concurrent.STM.TBQueue (TBQueue)
+import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
 import qualified Data.IntMap.Lazy as IM (IntMap)
@@ -46,9 +46,15 @@ instance HasFlags Rm where
 
 
 -- TODO: Put elements of the state in STM.
+-- Use "($!)" or "seq". PaCP p.135.
 
-data MudState = MudState { _worldState  :: WorldState
-                         , _logServices :: LogServices }
+data MudState   = MudState   { _worldState  :: WorldState
+                             , _logServices :: LogServices }
+
+
+-- ==================================================
+-- The world state wrapper:
+
 
 data WorldState = WorldState { _entTbl      :: EntTbl
                              , _objTbl      :: ObjTbl
@@ -288,14 +294,14 @@ data Type = ObjType
 
 
 -- ==================================================
--- Log queues:
+-- Log services:
 
 
 data LogCmd      = Stop | Msg String
 
 type LogAsync    = Async ()
 
-type LogQueue    = TBQueue LogCmd
+type LogQueue    = TQueue LogCmd
 
 type LogService  = (LogAsync, LogQueue)
 

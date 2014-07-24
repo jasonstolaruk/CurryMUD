@@ -15,12 +15,12 @@ import Mud.TopLvlDefs
 import Mud.Util
 
 import Control.Concurrent.Async (async, waitBoth)
-import Control.Concurrent.STM.TBQueue (newTBQueueIO, readTBQueue, writeTBQueue)
+import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (throwIO)
 import Control.Lens (_2, to)
 import Control.Lens.Operators ((.=), (^.))
-import Control.Monad (forM_, replicateM, void)
+import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
@@ -31,6 +31,9 @@ import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
 import System.Log.Handler.Simple (fileHandler)
 import System.Log.Logger (errorM, noticeM, setHandlers, setLevel, updateGlobalLogger)
+
+
+-- TODO: Continue reviewing your concurrency notes from: "To avoid deadlocking on a parent thread after a child thread has thrown an exception and died, the child thread may propagate any exceptions up to the parent thread. (PaCP p.151)".
 
 
 getNoticeLog :: MudStack LogService
@@ -49,15 +52,16 @@ closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs"
     [(na, nq), (ea, eq)] <- sequence [getNoticeLog, getErrorLog]
-    forM_ [nq, eq] $ liftIO . atomically . flip writeTBQueue Stop
+    forM_ [nq, eq] $ liftIO . atomically . flip writeTQueue Stop
     liftIO . void . waitBoth na $ ea
 
 
 initLogging :: MudStack ()
 initLogging = do
-    [nq, eq] <- replicateM 2 . liftIO . newTBQueueIO $ logQueueMax
+    nq <- liftIO newTQueueIO
+    eq <- liftIO newTQueueIO
     na <- spawnLogger "notice.log" NOTICE "currymud.notice" noticeM nq
-    ea <- spawnLogger "error.log"  ERROR  "currymud.error"  errorM eq
+    ea <- spawnLogger "error.log"  ERROR  "currymud.error"  errorM  eq
     logServices.noticeLog .= Just (na, nq)
     logServices.errorLog  .= Just (ea, eq)
 
@@ -74,13 +78,13 @@ spawnLogger fn p ln f q = liftIO initLog >>= liftIO . async . loop
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
         updateGlobalLogger ln (setHandlers [h] . setLevel p)
         return gh
-    loop gh = (atomically . readTBQueue $ q) >>= \cmd ->
+    loop gh = (atomically . readTQueue $ q) >>= \cmd ->
         case cmd of Stop  -> close gh
                     Msg m -> f ln m >> loop gh
 
 
 registerMsg :: String -> LogQueue -> MudStack ()
-registerMsg msg q = liftIO . atomically . writeTBQueue q . Msg $ msg
+registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
 
 
 logNotice :: String -> String -> String -> MudStack ()
