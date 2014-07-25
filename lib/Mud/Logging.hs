@@ -11,6 +11,7 @@ module Mud.Logging ( closeLogs
                    , logNotice) where
 
 import Mud.StateDataTypes
+import Mud.StateHelpers
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp)
 import qualified Mud.Util as U (blowUp)
@@ -51,7 +52,7 @@ getErrorLog = getLog errorLog "error"
 
 
 getLog :: forall (m :: * -> *) . MonadState MudState m => ((Maybe LogService -> Const LogService (Maybe LogService)) -> LogServices -> Const LogService LogServices) -> T.Text -> m LogService
-getLog l n = gets (^.logServices.l.to (fromMaybeLogService n))
+getLog l n = gets (^.nonWorldState.logServices.l.to (fromMaybeLogService n))
 
 
 fromMaybeLogService :: T.Text -> Maybe LogService -> LogService
@@ -76,8 +77,8 @@ initLogging = do
     eq <- liftIO newTQueueIO
     na <- spawnLogger "notice.log" NOTICE "currymud.notice" noticeM nq
     ea <- spawnLogger "error.log"  ERROR  "currymud.error"  errorM  eq
-    logServices.noticeLog .= Just (na, nq)
-    logServices.errorLog  .= Just (ea, eq)
+    nonWorldState.logServices.noticeLog .= Just (na, nq)
+    nonWorldState.logServices.errorLog  .= Just (ea, eq)
 
 
 type LogName    = String

@@ -43,39 +43,39 @@ instance HasFlags Rm where
 
 
 -- ==================================================
--- The MUD state wrapper:
-
-
-data MudState = MudState { _worldState  :: WorldState
-                         , _logServices :: LogServices }
-
-
--- ==================================================
--- The world state wrapper:
-
-
-data WorldState = WorldState { _entTbl      :: WorldStateTbl Ent
-                             , _objTbl      :: WorldStateTbl Obj
-                             , _clothTbl    :: WorldStateTbl Cloth
-                             , _invTbl      :: WorldStateTbl Inv
-                             , _coinsTbl    :: WorldStateTbl Coins
-                             , _conTbl      :: WorldStateTbl Con
-                             , _wpnTbl      :: WorldStateTbl Wpn
-                             , _armTbl      :: WorldStateTbl Arm
-                             , _eqTbl       :: WorldStateTbl EqMap
-                             , _mobTbl      :: WorldStateTbl Mob
-                             , _pcTbl       :: WorldStateTbl PC
-                             , _rmTbl       :: WorldStateTbl Rm
-                             , _typeTbl     :: WorldStateTbl Type }
-
-type WorldStateTbl a = TVar (IM.IntMap a)
-
-
--- ==================================================
 -- The monad transformer stack:
 
 
 type MudStack = StateInIORefT MudState IO
+
+
+-- ==================================================
+-- MUD state:
+
+
+data MudState = MudState { _worldState    :: WorldState
+                         , _nonWorldState :: NonWorldState }
+
+
+-- ==================================================
+-- World state:
+
+
+data WorldState = WorldState { _entTbl      :: StateTbl Ent
+                             , _objTbl      :: StateTbl Obj
+                             , _clothTbl    :: StateTbl Cloth
+                             , _invTbl      :: StateTbl Inv
+                             , _coinsTbl    :: StateTbl Coins
+                             , _conTbl      :: StateTbl Con
+                             , _wpnTbl      :: StateTbl Wpn
+                             , _armTbl      :: StateTbl Arm
+                             , _eqTbl       :: StateTbl EqMap
+                             , _mobTbl      :: StateTbl Mob
+                             , _pcTbl       :: StateTbl PC
+                             , _rmTbl       :: StateTbl Rm
+                             , _typeTbl     :: StateTbl Type }
+
+type StateTbl a = TVar (IM.IntMap a)
 
 
 -- ==================================================
@@ -281,7 +281,15 @@ data Type = ObjType
 
 
 -- ==================================================
--- The log services wrapper:
+-- Non-world state:
+
+
+data NonWorldState = NonWorldState { _logServices :: LogServices
+                                   , _plaTbl      :: StateTbl Pla }
+
+
+-- ==================================================
+-- Log services:
 
 
 data LogCmd      = Stop | Msg String
@@ -294,6 +302,13 @@ type LogService  = (LogAsync, LogQueue)
 
 data LogServices = LogServices { _noticeLog :: Maybe LogService
                                , _errorLog  :: Maybe LogService }
+
+
+-- ==================================================
+-- Player:
+
+
+data Pla = Pla { _columns :: Int }
 
 
 -- ==================================================
@@ -312,4 +327,6 @@ makeLenses ''PC
 makeLenses ''Rm
 makeLenses ''RmLink
 
+makeLenses ''NonWorldState
 makeLenses ''LogServices
+makeLenses ''Pla

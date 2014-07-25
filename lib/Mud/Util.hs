@@ -11,12 +11,7 @@ module Mud.Util ( adjustIndent
                 , dblQuote
                 , dblQuoteStr
                 , deleteFirstOfEach
-                , dispAssocList
-                , dispGenericErrorMsg
-                , divider
-                , dumpFile
                 , dumpFileNoWrapping
-                , dumpFileWithDividers
                 , eitherRet
                 , findFullNameForAbbrev
                 , grepTextList
@@ -26,10 +21,6 @@ module Mud.Util ( adjustIndent
                 , mkCountList
                 , mkOrdinal
                 , newLine
-                , output
-                , outputCon
-                , outputConIndent
-                , outputIndent
                 , padOrTrunc
                 , parensPad
                 , parensQuote
@@ -45,9 +36,8 @@ module Mud.Util ( adjustIndent
                 , wrapLineWithIndentTag
                 , xformLeading ) where
 
+import Mud.TopLvlDefs
 import Mud.StateDataTypes
-import Mud.TopLvlDefs hiding (cols)
-import qualified Mud.TopLvlDefs as T (cols)
 
 import Control.Lens (_1, _2, both, folded, over, to)
 import Control.Lens.Operators ((^.), (^..))
@@ -76,10 +66,6 @@ patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a
 patternMatchFail modName funName = blowUp modName funName "pattern match failure"
 
 
-dispGenericErrorMsg :: MudStack ()
-dispGenericErrorMsg = output "Unfortunately, an error occured while executing your command."
-
-
 -- ==================================================
 -- Output:
 
@@ -95,46 +81,10 @@ maybeNewLine :: ShouldNewLine -> MudStack ()
 maybeNewLine snl = when snl . liftIO $ newLine
 
 
-output :: T.Text -> MudStack ()
-output = liftIO . mapM_ T.putStrLn . wordWrap T.cols
-
-
-outputIndent :: Int -> T.Text -> MudStack ()
-outputIndent n = liftIO . mapM_ T.putStrLn . wordWrapIndent T.cols n
-
-
-outputCon :: [T.Text] -> MudStack () -- Prefer over "output" when there would be more than two "<>"s.
-outputCon = output . T.concat
-
-
-outputConIndent :: Int -> [T.Text] -> MudStack ()
-outputConIndent n = outputIndent n . T.concat
-
-
-divider :: IO ()
-divider = T.putStrLn . T.replicate T.cols $ "="
-
-
-dumpFile :: FilePath -> IO () -- TODO: Implement paging.
-dumpFile fn = takeADump =<< T.readFile fn
-  where
-    takeADump = mapM_ T.putStrLn . concat . wordWrapLines T.cols . T.lines
-
-
-dumpFileWithDividers :: FilePath -> IO ()
-dumpFileWithDividers fn = divider >> dumpFile fn >> divider
-
-
 dumpFileNoWrapping :: FilePath -> IO ()
 dumpFileNoWrapping fn = takeADump =<< T.readFile fn
   where
     takeADump = T.putStrLn
-
-
-dispAssocList :: (Show a, Show b) => [(a, b)] -> IO ()
-dispAssocList = mapM_ takeADump
-  where
-    takeADump (a, b) = mapM_ T.putStrLn . wordWrapIndent T.cols 2 $ (unquote . showText $ a) <> ": " <> showText b
 
 
 -- ==================================================
@@ -157,12 +107,12 @@ breakEnd t = over both T.reverse (before, after)
 
 
 wordWrapIndent :: Int -> Int -> T.Text -> [T.Text]
-wordWrapIndent cols n = map leadingNullsToSpcs . wrapIt . leadingSpcsToNulls
+wordWrapIndent n cols = map leadingNullsToSpcs . wrapIt . leadingSpcsToNulls
   where
     wrapIt t
       | T.null afterMax         = [t]
-      | T.any isSpace beforeMax = beforeSpace : wordWrapIndent cols n (leadingIndent <> afterSpace <> afterMax)
-      | otherwise               = beforeMax   : wordWrapIndent cols n (leadingIndent <> afterMax)
+      | T.any isSpace beforeMax = beforeSpace : wordWrapIndent n cols (leadingIndent <> afterSpace <> afterMax)
+      | otherwise               = beforeMax   : wordWrapIndent n cols (leadingIndent <> afterMax)
       where
         leadingIndent             = T.replicate (adjustIndent n cols) "\NUL"
         (beforeMax, afterMax)     = T.splitAt cols t
@@ -192,7 +142,7 @@ adjustIndent n cols = if n >= cols then cols - 1 else n
 wordWrapLines :: Int -> [T.Text] -> [[T.Text]]
 wordWrapLines _    []  = []
 wordWrapLines cols [t] = let nolst = numOfLeadingSpcs t
-                         in [ wordWrapIndent cols nolst t ]
+                         in [ wordWrapIndent nolst cols t ]
 wordWrapLines cols (a:b:rest) = if T.null a
   then [""] : wrapNext
   else f a  : wrapNext
@@ -200,8 +150,8 @@ wordWrapLines cols (a:b:rest) = if T.null a
       wrapNext = wordWrapLines cols $ b : rest
       f
         | hasIndentTag = wrapLineWithIndentTag cols
-        | nolsa > 0    = wordWrapIndent cols nolsa
-        | nolsb > 0    = wordWrapIndent cols nolsb
+        | nolsa > 0    = wordWrapIndent nolsa cols
+        | nolsb > 0    = wordWrapIndent nolsb cols
         | otherwise    = wordWrap cols
       hasIndentTag = T.last a == indentTagChar
       nolsa        = numOfLeadingSpcs a
@@ -213,7 +163,7 @@ numOfLeadingSpcs = T.length . T.takeWhile isSpace
 
 
 wrapLineWithIndentTag :: Int -> T.Text -> [T.Text]
-wrapLineWithIndentTag cols t = wordWrapIndent cols n' t'
+wrapLineWithIndentTag cols t = wordWrapIndent n' cols t'
   where
     parseIndentTag = T.break (not . isDigit) . T.reverse . T.init $ t
     (numText, t')  = over both T.reverse parseIndentTag

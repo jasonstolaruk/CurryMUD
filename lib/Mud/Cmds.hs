@@ -43,7 +43,6 @@ import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import qualified Data.Map.Lazy as M (filter, toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (putStrLn)
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -227,7 +226,7 @@ mkCmdListWithRmLinks i = getRmLinks i >>= \rls ->
 
 
 about :: Action
-about [] = (try . liftIO $ takeADump) >>= eitherRet (dumpExHandler "about") >> liftIO newLine
+about [] = try takeADump >>= eitherRet (dumpExHandler "about") >> liftIO newLine
   where
     takeADump = dumpFile . (++) miscDir $ "about"
 about rs = ignore rs >> about []
@@ -251,7 +250,7 @@ ignore rs = let ignored = dblQuote . T.unwords $ rs
 
 
 motd :: Action
-motd [] = (try . liftIO $ takeADump) >>= eitherRet (dumpExHandler "motd") >> liftIO newLine
+motd [] = try takeADump >>= eitherRet (dumpExHandler "motd") >> liftIO newLine
   where
     takeADump = dumpFileWithDividers . (++) miscDir $ "motd"
 motd rs = ignore rs >> motd []
@@ -285,10 +284,10 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 
 
 help :: Action
-help [] = (try . liftIO $ takeADump) >>= eitherRet (dumpExHandler "help")
+help [] = try takeADump >>= eitherRet (dumpExHandler "help")
   where
     takeADump = dumpFile . (++) helpDir $ "root"
-help rs = sequence_ . intercalate [liftIO $ divider >> newLine] $ [ [dispHelpTopicByName r] | r <- rs ]
+help rs = sequence_ . intercalate [divider >> liftIO newLine] $ [ [dispHelpTopicByName r] | r <- rs ]
 
 
 type HelpTopic = T.Text
@@ -298,14 +297,12 @@ dispHelpTopicByName :: HelpTopic -> MudStack ()
 dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
     let fns' = tail . tail . sort . delete "root" $ fns
         tns  = fns'^..folded.packed
-    in maybe (liftIO sorry)
+    in maybe sorry
              helper
              (findFullNameForAbbrev r tns)
   where
-    sorry     = mapM_ T.putStrLn . wordWrap cols $ "No help is available on that topic/command." <> nlt
-    helper tn = do
-      (try . liftIO . takeADump $ tn) >>= eitherRet (dumpExHandler "dispHelpTopicByName")
-      liftIO newLine
+    sorry     = output "No help is available on that topic/command."
+    helper tn = (try . takeADump $ tn) >>= eitherRet (dumpExHandler "dispHelpTopicByName") >> liftIO newLine
     takeADump = dumpFile . (++) helpDir . T.unpack
 
 
@@ -803,6 +800,12 @@ shuffleCoinsRem ci c = moveCoins c ci 0 >> (^.sing) <$> getEnt ci >>= descPutRem
 -----
 
 
+-- TODO: "ready" and "unready" and talking smack about coins.
+-- > re sw
+-- You wield the short sword with your right hand.
+-- You can't ready coins.
+
+
 ready :: Action
 ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
@@ -1120,15 +1123,14 @@ debugDispCmdList = dispCmdList (cmdPred . Just $ debugCmdChar)
 
 
 debugBuffCheck :: Action
-debugBuffCheck [] = (try . liftIO $ buffCheckHelper) >>= eitherRet (logAndDispIOEx "wizBuffCheck")
+debugBuffCheck [] = try buffCheckHelper >>= eitherRet (logAndDispIOEx "wizBuffCheck")
   where
     buffCheckHelper = do
-        td      <- getTemporaryDirectory
-        (fn, h) <- openTempFile td "temp"
-        bm      <- hGetBuffering h
-        mapM_ T.putStrLn . wordWrapIndent cols 2 . T.concat $ [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, ".", nlt ]
-        hClose h
-        removeFile fn
+        td      <- liftIO getTemporaryDirectory
+        (fn, h) <- liftIO . openTempFile td $ "temp"
+        bm      <- liftIO . hGetBuffering $ h
+        outputConIndent 2 [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, ".", nlt ]
+        liftIO $ hClose  h >> removeFile fn
 debugBuffCheck rs = ignore rs >> debugBuffCheck []
 
 
@@ -1136,10 +1138,10 @@ debugBuffCheck rs = ignore rs >> debugBuffCheck []
 
 
 debugDispEnv :: Action
-debugDispEnv [] = liftIO $ getEnvironment >>= dispAssocList >> newLine
+debugDispEnv [] = liftIO getEnvironment >>= dispAssocList >> liftIO newLine
 debugDispEnv rs = mapM_ helper rs
   where
-    helper r = liftIO $ (dispAssocList . filter grepPair =<< getEnvironment) >> newLine
+    helper r = (dispAssocList . filter grepPair =<< liftIO getEnvironment) >> liftIO newLine
       where
         grepPair = uncurry (||) . over both (^.packed.to grep)
         grep     = (r `T.isInfixOf`)

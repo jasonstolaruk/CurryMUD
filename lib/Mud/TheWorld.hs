@@ -5,7 +5,6 @@ module Mud.TheWorld ( allKeys
                     , createWorld
                     , findAvailKey
                     , getUnusedId
-                    , initMudState
                     , initWorld
                     , sortAllInvs ) where
 
@@ -14,11 +13,9 @@ import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
-import Control.Concurrent.STM.TVar (newTVarIO)
 import Data.Functor ((<$>))
 import Data.List ((\\))
 import Data.Monoid (mempty)
-import qualified Data.IntMap.Lazy as IM (empty)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
@@ -122,27 +119,11 @@ putRm i is c r = do
 -- Initializing and creating the world:
 
 
-initMudState :: IO MudState
-initMudState = do
-    a <- newTVarIO IM.empty
-    b <- newTVarIO IM.empty
-    c <- newTVarIO IM.empty
-    d <- newTVarIO IM.empty
-    e <- newTVarIO IM.empty
-    f <- newTVarIO IM.empty
-    g <- newTVarIO IM.empty
-    h <- newTVarIO IM.empty
-    i <- newTVarIO IM.empty
-    j <- newTVarIO IM.empty
-    k <- newTVarIO IM.empty
-    l <- newTVarIO IM.empty
-    m <- newTVarIO IM.empty
-    return (MudState (WorldState a b c d e f g h i j k l m)  (LogServices Nothing Nothing))
-
-
 createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world"
+
+    updatePla 0 (Pla 80)
 
     putPC 0 (Ent 0 "" "" "" "" 0) [iKewpie1, iBag1, iClub] (Coins (10, 0, 20)) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand) (PC iHill Human)
 

@@ -3,6 +3,12 @@
 
 module Mud.StateHelpers ( addToInv
                         , BothGramNos
+                        , InvCoins
+                        , dispAssocList
+                        , dispGenericErrorMsg
+                        , divider
+                        , dumpFile
+                        , dumpFileWithDividers
                         , findExit
                         , getArm
                         , getCloth
@@ -11,8 +17,8 @@ module Mud.StateHelpers ( addToInv
                         , getEntBothGramNos
                         , getEntBothGramNosInInv
                         , getEntNamesInInv
-                        , getEntsInInv
                         , getEntType
+                        , getEntsInInv
                         , getEq
                         , getEqMap
                         , getInv
@@ -24,23 +30,29 @@ module Mud.StateHelpers ( addToInv
                         , getPCRm
                         , getPCRmId
                         , getPCRmInvCoins
+                        , getPlaColumns
                         , getRm
                         , getRmLinks
                         , getWpn
-                        , InvCoins
                         , hasCoins
                         , hasEq
                         , hasInv
                         , hasInvOrCoins
                         , keysWS
+                        , lookupPla
                         , lookupWS
                         , mkCoinsFromList
                         , mkCoinsList
                         , mkPlurFromBoth
                         , moveCoins
                         , moveInv
+                        , output
+                        , outputCon
+                        , outputConIndent
+                        , outputIndent
                         , remFromInv
                         , sortInv
+                        , updatePla
                         , updateWS ) where
 
 import Mud.StateDataTypes
@@ -63,6 +75,7 @@ import Data.Monoid ((<>), mempty)
 import qualified Data.IntMap.Lazy as IM (insert, keys, lookup)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T (putStrLn, readFile)
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -74,13 +87,87 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 -- ==================================================
+-- Helpers for working with non-world state:
+
+
+lookupPla :: Id -> MudStack Pla
+lookupPla i = do
+    mp <- IM.lookup i <$> (gets (^.nonWorldState.plaTbl) >>= liftIO . readTVarIO)
+    case mp of Just p  -> return p
+               Nothing -> blowUp "lookupWS" "player not found in non-world state table for given key" [ showText i ]
+
+
+updatePla :: Id -> Pla -> MudStack ()
+updatePla i p = gets (^.nonWorldState.plaTbl) >>= \t ->
+    liftIO . atomically . modifyTVar' t . IM.insert i $ p
+
+
+getPlaColumns :: Id -> MudStack Int
+getPlaColumns i = (^.columns) <$> lookupPla i
+
+
+-- TODO: Move log state helpers here, too?
+
+
+-- ==================================================
+-- "output" and related helpers:
+
+
+-- TODO: Can these be moved to a better place?
+
+
+output :: T.Text -> MudStack ()
+output t = getPlaColumns 0 >>= \cols ->
+    mapM_ (liftIO . T.putStrLn) $ wordWrap cols t
+
+
+outputIndent :: Int -> T.Text -> MudStack ()
+outputIndent n t = getPlaColumns 0 >>= \cols ->
+    liftIO . mapM_ T.putStrLn . wordWrapIndent n cols $ t
+
+
+outputCon :: [T.Text] -> MudStack () -- Prefer over "output" when there would be more than two "<>"s.
+outputCon = output . T.concat
+
+
+outputConIndent :: Int -> [T.Text] -> MudStack ()
+outputConIndent n = outputIndent n . T.concat
+
+
+dumpFile :: FilePath -> MudStack () -- TODO: Implement paging.
+dumpFile fn = takeADump =<< (liftIO . T.readFile $ fn)
+  where
+    takeADump contents = getPlaColumns 0 >>= \cols ->
+        mapM_ (liftIO . T.putStrLn) (concat . wordWrapLines cols . T.lines $ contents)
+
+
+dumpFileWithDividers :: FilePath -> MudStack ()
+dumpFileWithDividers fn = divider >> dumpFile fn >> divider
+
+
+divider :: MudStack ()
+divider = getPlaColumns 0 >>= \cols ->
+    liftIO . T.putStrLn . T.replicate cols $ "="
+
+
+dispAssocList :: (Show a, Show b) => [(a, b)] -> MudStack ()
+dispAssocList = mapM_ takeADump
+  where
+    takeADump (a, b) = outputIndent 2 $ (unquote . showText $ a) <> ": " <> showText b
+
+
+dispGenericErrorMsg :: MudStack ()
+dispGenericErrorMsg = output "Unfortunately, an error occured while executing your command."
+
+
+-- ==================================================
 -- Helpers for working with world state tables:
 
 
 type WSTblLens a = ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> WorldState -> Const (TVar (IntMap a)) WorldState)
 
 
-lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Key -> WSTblLens b -> m b
+lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Key -> WSTblLens a -> m a
 i `lookupWS` tbl = do
       ma <- IM.lookup i <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
       case ma of Just a  -> return a
@@ -89,7 +176,7 @@ i `lookupWS` tbl = do
 
 updateWS :: forall (m :: * -> *) a . (MonadState MudState m, MonadIO m) => Key -> WSTblLens a -> a -> m ()
 updateWS i tbl a = gets (^.worldState.tbl) >>= \t ->
-    liftIO . atomically . modifyTVar' t $ IM.insert i a
+    liftIO . atomically . modifyTVar' t . IM.insert i $ a
 
 
 keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => WSTblLens a -> f [Key]
