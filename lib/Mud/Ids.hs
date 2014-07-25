@@ -3,10 +3,6 @@
 module Mud.Ids where
 
 
-iPC = 0 :: Int
-
------
-
 iHill = 1 :: Int
 
 iCliff = 2 :: Int

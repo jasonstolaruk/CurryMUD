@@ -20,7 +20,7 @@ import Control.Concurrent (forkIO, myThreadId)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
 import Control.Lens (_1, at, both, folded, over, to)
-import Control.Lens.Operators ((&), (.=), (?~), (^.), (^..))
+import Control.Lens.Operators ((&), (.~), (?~), (^.), (^..))
 import Control.Monad ((>=>), forever, forM_, guard, mplus, replicateM_, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
@@ -205,7 +205,7 @@ dispatch (cn, rest) = findAction cn >>= maybe (output $ "What?" <> nlt) (\act ->
 
 findAction :: CmdName -> MudStack (Maybe Action)
 findAction cn = do
-    cmdList' <- getPCRmId >>= mkCmdListWithRmLinks
+    cmdList' <- getPCRmId 0 >>= mkCmdListWithRmLinks
     let cns = map cmdName cmdList'
     maybe (return Nothing)
           (\fn -> return . Just . findActionForFullName fn $ cmdList')
@@ -319,7 +319,7 @@ what rs = mapM_ helper rs
     helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r >> liftIO newLine
       where
         whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
-        cs       = filter ((/=) wizCmdChar . T.head) <$> map cmdName <$> (getPCRmId >>= mkCmdListWithRmLinks)
+        cs       = filter ((/=) wizCmdChar . T.head) <$> map cmdName <$> (getPCRmId 0 >>= mkCmdListWithRmLinks)
         notFound = output $ dblQuote r <> " doesn't refer to any commands."
         found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
 
@@ -342,7 +342,7 @@ whatInv it r = do
   where
     getLocInvCoins = case it of PCInv -> getInvCoins 0
                                 PCEq  -> getEq 0 >>= \is -> return (is, mempty)
-                                RmInv -> getPCRmInvCoins
+                                RmInv -> getPCRmInvCoins 0
 
 
 whatInvEnts :: InvType -> T.Text -> GetEntsCoinsRes -> Inv -> MudStack ()
@@ -421,12 +421,12 @@ goDispatcher rs     = mapM_ tryMove rs
 
 tryMove :: T.Text -> MudStack ()
 tryMove dir = let dir' = T.toLower dir
-              in getPCRmId >>= findExit dir' >>= maybe (sorry dir') movePC
+              in getPCRmId 0 >>= findExit dir' >>= maybe (sorry dir') (movePC 0)
   where
     sorry dir' = output $ if dir' `elem` stdLinkNames
                             then "You can't go that way." <> nlt
                             else dblQuote dir <> " is not a valid direction." <> nlt
-    movePC i = worldState.pc.rmId .= i >> look []
+    movePC pci ri = getPC pci >>= \p -> updateWS pci pcTbl (p & rmId .~ ri) >> look []
 
 
 -----
@@ -436,16 +436,16 @@ look :: Action
 look [] = do
     descRm
     summarizeExits
-    getPCRmInvCoins >>= dispRmInvCoins
+    getPCRmInvCoins 0 >>= dispRmInvCoins
     liftIO newLine
   where
-    descRm = getPCRm >>= \r -> output $ r^.name <> nlt <> r^.desc
+    descRm = getPCRm 0 >>= \r -> output $ r^.name <> nlt <> r^.desc
     summarizeExits = exits False []
 look rs = do
-    hic <- getPCRmId >>= hasInvOrCoins
+    hic <- getPCRmId 0 >>= hasInvOrCoins
     if hic
       then do
-          (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
+          (gecrs, miss, rcs) <- getPCRmInvCoins 0 >>= resolveEntCoinNames rs
           mapM_ (procGecrMisRm True descEnts) . zip gecrs $ miss
           mapM_ (procReconciledCoinsRm True descCoins) rcs
       else output $ "You don't see anything here to look at." <> nlt
@@ -536,7 +536,7 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 
 exits :: ShouldNewLine -> Action
 exits snl [] = do
-    rlns <- map (^.linkName) <$> (getPCRmId >>= getRmLinks)
+    rlns <- map (^.linkName) <$> (getPCRmId 0 >>= getRmLinks)
     let stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
     let customNames = filter (`notElem` stdLinkNames) rlns
     output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
@@ -602,10 +602,10 @@ dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> n
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = do
-    hic <- getPCRmId >>= hasInvOrCoins
+    hic <- getPCRmId 0 >>= hasInvOrCoins
     if hic
       then do
-        (gecrs, miss, rcs) <- getPCRmInvCoins >>= resolveEntCoinNames rs
+        (gecrs, miss, rcs) <- getPCRmInvCoins 0 >>= resolveEntCoinNames rs
         mapM_ (procGecrMisRm False shuffleInvGet) . zip gecrs $ miss
         mapM_ (procReconciledCoinsRm False shuffleCoinsGet) rcs
         liftIO newLine
@@ -613,7 +613,7 @@ getAction rs = do
 
 
 shuffleInvGet :: Inv -> MudStack ()
-shuffleInvGet is = getPCRmId >>= \i ->
+shuffleInvGet is = getPCRmId 0 >>= \i ->
     moveInv is i 0 >> descGetDropEnts Get is
 
 
@@ -628,7 +628,7 @@ descGetDropEnts god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
 
 
 shuffleCoinsGet :: Coins -> MudStack ()
-shuffleCoinsGet c = getPCRmId >>= \i ->
+shuffleCoinsGet c = getPCRmId 0 >>= \i ->
     moveCoins c i 0 >> descGetDropCoins Get c
 
 
@@ -662,12 +662,12 @@ dropAction rs = do
 
 
 shuffleInvDrop :: Inv -> MudStack ()
-shuffleInvDrop is = getPCRmId >>= \i ->
+shuffleInvDrop is = getPCRmId 0 >>= \i ->
     moveInv is 0 i >> descGetDropEnts Drop is
 
 
 shuffleCoinsDrop :: Coins -> MudStack ()
-shuffleCoinsDrop c = getPCRmId >>= \i ->
+shuffleCoinsDrop c = getPCRmId 0 >>= \i ->
     moveCoins c 0 i >> descGetDropCoins Drop c
 
 
@@ -687,9 +687,9 @@ putAction rs   = do
 
 putRemDispatcher :: PutOrRem -> Action
 putRemDispatcher por rs
-  | T.head cn == rmChar = getPCRmId >>= hasInv >>= \hi ->
+  | T.head cn == rmChar = getPCRmId 0 >>= hasInv >>= \hi ->
       if hi
-        then putRemDispatcherHelper por (T.tail cn) getPCRmInvCoins procGecrMisRmForInv restWithoutCon
+        then putRemDispatcherHelper por (T.tail cn) (getPCRmInvCoins 0) procGecrMisRmForInv restWithoutCon
         else output "You don't see any containers here."
   | otherwise = putRemDispatcherHelper por cn (getInvCoins 0) procGecrMisPCInvForInv restWithoutCon
   where

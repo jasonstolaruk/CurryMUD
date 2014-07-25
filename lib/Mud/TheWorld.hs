@@ -14,11 +14,14 @@ import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
+import Control.Concurrent.STM.TVar (newTVarIO)
 import Data.Functor ((<$>))
 import Data.List ((\\))
 import Data.Monoid (mempty)
 import qualified Data.IntMap.Lazy as IM (empty)
 import qualified Data.Map.Lazy as M (empty, fromList)
+
+{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
 
 
 -- ==================================================
@@ -96,6 +99,17 @@ putMob i e is c em m = do
     updateWS i mobTbl   m
 
 
+putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
+putPC i e is c em m p = do
+    updateWS i typeTbl  PCType
+    updateWS i entTbl   e
+    updateWS i invTbl   is
+    updateWS i coinsTbl c
+    updateWS i eqTbl    em
+    updateWS i mobTbl   m
+    updateWS i pcTbl    p
+
+
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
 putRm i is c r = do
     updateWS i typeTbl  RmType
@@ -108,20 +122,29 @@ putRm i is c r = do
 -- Initializing and creating the world:
 
 
-initMudState :: MudState
-initMudState = MudState (WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty initPC IM.empty IM.empty) (LogServices Nothing Nothing)
-
-
-initPC :: PC
-initPC = PC { _rmId = iHill
-            , _race = Human }
+initMudState :: IO MudState
+initMudState = do
+    a <- newTVarIO IM.empty
+    b <- newTVarIO IM.empty
+    c <- newTVarIO IM.empty
+    d <- newTVarIO IM.empty
+    e <- newTVarIO IM.empty
+    f <- newTVarIO IM.empty
+    g <- newTVarIO IM.empty
+    h <- newTVarIO IM.empty
+    i <- newTVarIO IM.empty
+    j <- newTVarIO IM.empty
+    k <- newTVarIO IM.empty
+    l <- newTVarIO IM.empty
+    m <- newTVarIO IM.empty
+    return (MudState (WorldState a b c d e f g h i j k l m)  (LogServices Nothing Nothing))
 
 
 createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world"
 
-    putMob iPC (Ent iPC "" "" "" "" 0) [iKewpie1, iBag1, iClub] (Coins (10, 0, 20)) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand)
+    putPC 0 (Ent 0 "" "" "" "" 0) [iKewpie1, iBag1, iClub] (Coins (10, 0, 20)) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand) (PC iHill Human)
 
     putRm iHill [iGP1, iLongSword] (Coins (0, 0, 1)) (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
     putRm iCliff [iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4] mempty (Rm "The cliff" "You have reached the edge of a cliff. \

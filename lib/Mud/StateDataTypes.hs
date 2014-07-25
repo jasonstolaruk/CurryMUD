@@ -46,9 +46,6 @@ instance HasFlags Rm where
 -- The MUD state wrapper:
 
 
--- TODO: Put elements of the state in STM.
--- Use "($!)" or "seq". PaCP p.135.
-
 data MudState = MudState { _worldState  :: WorldState
                          , _logServices :: LogServices }
 
@@ -67,11 +64,11 @@ data WorldState = WorldState { _entTbl      :: WorldStateTbl Ent
                              , _armTbl      :: WorldStateTbl Arm
                              , _eqTbl       :: WorldStateTbl EqMap
                              , _mobTbl      :: WorldStateTbl Mob
-                             , _pc          :: TVar PC
+                             , _pcTbl       :: WorldStateTbl PC
                              , _rmTbl       :: WorldStateTbl Rm
                              , _typeTbl     :: WorldStateTbl Type }
 
-type WorldStateTbl a = TVar (IM.IntMap a) -- TODO: Change the name to reflect the fact that it's a map inside a "TVar"?
+type WorldStateTbl a = TVar (IM.IntMap a)
 
 
 -- ==================================================

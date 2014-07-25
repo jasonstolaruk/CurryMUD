@@ -1,6 +1,6 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
--- TODO: -Werror
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
+
 module Mud.StateHelpers ( addToInv
                         , BothGramNos
                         , findExit
@@ -20,6 +20,7 @@ module Mud.StateHelpers ( addToInv
                         , getMob
                         , getMobGender
                         , getMobHand
+                        , getPC
                         , getPCRm
                         , getPCRmId
                         , getPCRmInvCoins
@@ -44,23 +45,28 @@ module Mud.StateHelpers ( addToInv
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
-import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Util as U (patternMatchFail)
+import Mud.Util hiding (blowUp, patternMatchFail)
+import qualified Mud.Util as U (blowUp, patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), Const)
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TVar (readTVarIO, writeTVar)
-import Control.Lens (_1, at, each, to)
-import Control.Lens.Operators ((%~), (?=), (^.))
+import Control.Concurrent.STM.TVar (modifyTVar', readTVarIO, TVar)
+import Control.Lens (_1, each)
+import Control.Lens.Operators ((%~), (^.))
 import Control.Monad (unless)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
+import Control.Monad.State.Class (MonadState)
+import Data.IntMap (IntMap, Key)
 import Data.List (sortBy)
-import Data.Maybe (fromJust)
 import Data.Monoid ((<>), mempty)
 import qualified Data.IntMap.Lazy as IM (insert, keys, lookup)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
+
+
+blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp = U.blowUp "Mud.StateHelpers"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -71,13 +77,22 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 -- Helpers for working with world state tables:
 
 
-i `lookupWS` tbl = (fromJust . IM.lookup i) <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
+type WSTblLens a = ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> WorldState -> Const (TVar (IntMap a)) WorldState)
 
 
+lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Key -> WSTblLens b -> m b
+i `lookupWS` tbl = do
+      ma <- IM.lookup i <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
+      case ma of Just a  -> return a
+                 Nothing -> blowUp "lookupWS" "value not found in world state table for given key" [ showText i ]
+
+
+updateWS :: forall (m :: * -> *) a . (MonadState MudState m, MonadIO m) => Key -> WSTblLens a -> a -> m ()
 updateWS i tbl a = gets (^.worldState.tbl) >>= \t ->
-    liftIO $ readTVarIO t >>= atomically . writeTVar t . IM.insert i a
+    liftIO . atomically . modifyTVar' t $ IM.insert i a
 
 
+keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => WSTblLens a -> f [Key]
 keysWS tbl = IM.keys <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
 
 
@@ -271,6 +286,14 @@ getMobHand i = (^.hand) <$> getMob i
 
 
 -- ==================================================
+-- PCs:
+
+
+getPC :: Id -> MudStack PC
+getPC i = i `lookupWS` pcTbl
+
+
+-- ==================================================
 -- Rooms:
 
 
@@ -278,16 +301,16 @@ getRm :: Id -> MudStack Rm
 getRm i = i `lookupWS` rmTbl
 
 
-getPCRmId :: MudStack Id
-getPCRmId = (^.rmId) <$> (gets (^.worldState.pc) >>= liftIO . readTVarIO)
+getPCRmId :: Id -> MudStack Id
+getPCRmId i = (^.rmId) <$> getPC i
 
 
-getPCRm :: MudStack Rm
-getPCRm = getPCRmId >>= getRm
+getPCRm :: Id -> MudStack Rm
+getPCRm i = getPCRmId i >>= getRm
 
 
-getPCRmInvCoins :: MudStack InvCoins
-getPCRmInvCoins = getPCRmId >>= getInvCoins
+getPCRmInvCoins :: Id -> MudStack InvCoins
+getPCRmInvCoins i = getPCRmId i >>= getInvCoins
 
 
 getRmLinks :: Id -> MudStack [RmLink]

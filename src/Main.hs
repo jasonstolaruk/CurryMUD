@@ -31,7 +31,7 @@ main :: IO ()
 main = do
     setCurrentDirectory mudDir
     welcome
-    void . runStateInIORefT gameWrapper $ initMudState
+    initMudState >>= void . runStateInIORefT gameWrapper
 
 
 welcome :: IO ()

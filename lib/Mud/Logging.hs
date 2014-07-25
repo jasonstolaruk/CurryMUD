@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
 module Mud.Logging ( closeLogs
                    , initLogging
@@ -12,8 +12,10 @@ module Mud.Logging ( closeLogs
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
-import Mud.Util
+import Mud.Util hiding (blowUp)
+import qualified Mud.Util as U (blowUp)
 
+import Control.Applicative (Const)
 import Control.Concurrent.Async (async, waitBoth)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
@@ -23,22 +25,37 @@ import Control.Lens.Operators ((.=), (^.))
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
+import Control.Monad.State.Class (MonadState)
 import Control.Monad.State (gets)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromMaybe)
+import Data.Monoid ((<>))
 import Data.Text.Strict.Lens (packed)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
 import System.Log.Handler.Simple (fileHandler)
 import System.Log.Logger (errorM, noticeM, setHandlers, setLevel, updateGlobalLogger)
+import qualified Data.Text as T
+
+
+blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp = U.blowUp "Mud.Logging"
 
 
 getNoticeLog :: MudStack LogService
-getNoticeLog = gets (^.logServices.noticeLog.to fromJust)
+getNoticeLog = getLog noticeLog "notice"
 
 
 getErrorLog :: MudStack LogService
-getErrorLog = gets (^.logServices.errorLog.to fromJust)
+getErrorLog = getLog errorLog "error"
+
+
+getLog :: forall (m :: * -> *) . MonadState MudState m => ((Maybe LogService -> Const LogService (Maybe LogService)) -> LogServices -> Const LogService LogServices) -> T.Text -> m LogService
+getLog l n = gets (^.logServices.l.to (fromMaybeLogService n))
+
+
+fromMaybeLogService :: T.Text -> Maybe LogService -> LogService
+fromMaybeLogService n = fromMaybe (blowUp "fromMaybeLogService" (n <> " log service not initialized") [])
 
 
 getLogQueue :: MudStack LogService -> MudStack LogQueue
