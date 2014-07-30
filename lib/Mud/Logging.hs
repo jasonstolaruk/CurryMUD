@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, KindSignatures, LambdaCase, OverloadedStrings, RankNTypes #-}
 
 module Mud.Logging ( closeLogs
                    , initLogging
@@ -93,9 +93,9 @@ spawnLogger fn p ln f q = liftIO initLog >>= liftIO . async . loop
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
         updateGlobalLogger ln (setHandlers [h] . setLevel p)
         return gh
-    loop gh = (atomically . readTQueue $ q) >>= \cmd ->
-        case cmd of Stop  -> close gh
-                    Msg m -> f ln m >> loop gh
+    loop gh = (atomically . readTQueue $ q) >>= \case
+      Stop  -> close gh
+      Msg m -> f ln m >> loop gh
 
 
 registerMsg :: String -> LogQueue -> MudStack ()

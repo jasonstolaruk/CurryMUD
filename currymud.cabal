@@ -39,6 +39,7 @@ library
                        FlexibleInstances,
                        GeneralizedNewtypeDeriving,
                        KindSignatures,
+                       LambdaCase,
                        MultiParamTypeClasses,
                        MultiWayIf,
                        OverloadedStrings,

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 module Mud.Util ( adjustIndent
                 , aOrAn
@@ -168,10 +168,10 @@ wrapLineWithIndentTag cols t = wordWrapIndent n' cols t'
     parseIndentTag = T.break (not . isDigit) . T.reverse . T.init $ t
     (numText, t')  = over both T.reverse parseIndentTag
     readsRes       = reads $ numText^.unpacked :: [(Int, String)]
-    n              = case readsRes of []       -> 0
-                                      [(x, _)] -> x
-                                      xs       -> patternMatchFail "Mud.Util" "wrapLineWithIndentTag n" [ showText xs ]
-    n'             = if n == 0 then calcIndent t' else adjustIndent n cols
+    n              = \case []       -> 0
+                           [(x, _)] -> x
+                           xs       -> patternMatchFail "Mud.Util" "wrapLineWithIndentTag n" [ showText xs ]
+    n'             = if n readsRes == 0 then calcIndent t' else adjustIndent (n readsRes) cols
 
 
 calcIndent :: T.Text -> Int
@@ -239,7 +239,7 @@ parensPad = quoteWithAndPad ("(", ")")
 padOrTrunc :: Int -> T.Text -> T.Text
 padOrTrunc x t
   | x < 0 = ""
-  | otherwise = let l  = T.length t
+  | otherwise = let l = T.length t
                 in case l `compare` x of EQ -> t
                                          LT -> let diff = x - l in t <> T.replicate diff " "
                                          GT -> T.take x t

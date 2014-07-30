@@ -71,7 +71,7 @@ mkGecr ic@(is, c) n
                         rest' = T.tail rest
                     in if | delim == amountChar -> mkGecrMult    numInt rest' ic
                           | delim == indexChar  -> mkGecrIndexed numInt rest' is
-                          | otherwise           -> return (Sorry n)
+                          | otherwise          -> return (Sorry n)
 
 
 mkGecrMult :: Amount -> T.Text -> InvCoins -> MudStack GetEntsCoinsRes
@@ -82,21 +82,21 @@ mkGecrMult a n (is, c) = if n `elem` allCoinNames
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
 mkGecrMultForCoins a n c@(Coins (cop, sil, gol))
-  | c == mempty                 = return  (Mult a n Nothing . Just $ Empty)
+  | c == mempty             = return  (Mult a n Nothing . Just $ Empty)
   | n `elem` aggregateCoinNames = return  (Mult a n Nothing . Just . SomeOf $ if a == (maxBound :: Int) then c else c')
-  | otherwise                   = return . Mult a n Nothing . Just $ case n of
-    "cp"    | cop == 0               -> NoneOf . Coins $ (a,   0,   0  )
-            | a == (maxBound :: Int) -> SomeOf . Coins $ (cop, 0,   0  )
-            | otherwise              -> SomeOf . Coins $ (a,   0,   0  )
-    "sp"    | sil == 0               -> NoneOf . Coins $ (0,   a,   0  )
-            | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   sil, 0  )
-            | otherwise              -> SomeOf . Coins $ (0,   a,   0  )
-    "gp"    | gol == 0               -> NoneOf . Coins $ (0,   0,   a  )
-            | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   0,   gol)
-            | otherwise              -> SomeOf . Coins $ (0,   0,   a  )
-    _                                -> patternMatchFail "mkGecrMultForCoins" [n]
+  | otherwise              = return . Mult a n Nothing . Just $ case n of
+    "cp" | cop == 0               -> NoneOf . Coins $ (a,   0,   0  )
+         | a == (maxBound :: Int) -> SomeOf . Coins $ (cop, 0,   0  )
+         | otherwise             -> SomeOf . Coins $ (a,   0,   0  )
+    "sp" | sil == 0               -> NoneOf . Coins $ (0,   a,   0  )
+         | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   sil, 0  )
+         | otherwise             -> SomeOf . Coins $ (0,   a,   0  )
+    "gp" | gol == 0               -> NoneOf . Coins $ (0,   0,   a  )
+         | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   0,   gol)
+         | otherwise             -> SomeOf . Coins $ (0,   0,   a  )
+    _                            -> patternMatchFail "mkGecrMultForCoins" [n]
   where
-    c'        = mkCoinsFromList . distributeAmt a . mkCoinsList $ c
+    c' = mkCoinsFromList . distributeAmt a . mkCoinsList $ c
 
 
 distributeAmt :: Int -> [Int] -> [Int]
@@ -192,11 +192,11 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
                                                         , [ mkEitherGol | gol' /= 0 ] ]
       where
         mkEitherCop | cop' <= cop = Right . SomeOf . Coins $ (cop', 0,    0   )
-                    | otherwise   = Left  . SomeOf . Coins $ (cop', 0,    0   )
+                    | otherwise  = Left  . SomeOf . Coins $ (cop', 0,    0   )
         mkEitherSil | sil' <= sil = Right . SomeOf . Coins $ (0,    sil', 0   )
-                    | otherwise   = Left  . SomeOf . Coins $ (0,    sil', 0   )
+                    | otherwise  = Left  . SomeOf . Coins $ (0,    sil', 0   )
         mkEitherGol | gol' <= gol = Right . SomeOf . Coins $ (0,    0,    gol')
-                    | otherwise   = Left  . SomeOf . Coins $ (0,    0,    gol')
+                    | otherwise  = Left  . SomeOf . Coins $ (0,    0,    gol')
 
 
 -- ============================================================
@@ -230,14 +230,14 @@ mkGecrWithRol ic n = let (a, b) = T.break (== slotChar) n
 
 procGecrMisPCInv :: ShouldNewLine -> (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisPCInv _   _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCInv snl _ (Mult 1 n Nothing  _,   Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> maybeNewLine snl
-procGecrMisPCInv snl _ (Mult _ n Nothing  _,   Nothing) = output ("You don't have any " <> n <> "s." )             >> maybeNewLine snl
+procGecrMisPCInv snl _ (Mult 1 n Nothing  _,   Nothing) = output ("You don't have " <> aOrAn n <> ".")               >> maybeNewLine snl
+procGecrMisPCInv snl _ (Mult _ n Nothing  _,   Nothing) = output ("You don't have any " <> n <> "s." )               >> maybeNewLine snl
 procGecrMisPCInv _   f (Mult _ _ (Just _) _,   Just is) = f is
-procGecrMisPCInv snl _ (Indexed _ n (Left ""), Nothing) = output ("You don't have any " <> n <> "s." )             >> maybeNewLine snl
+procGecrMisPCInv snl _ (Indexed _ n (Left ""), Nothing) = output ("You don't have any " <> n <> "s." )               >> maybeNewLine snl
 procGecrMisPCInv snl _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ] >> maybeNewLine snl
 procGecrMisPCInv _   f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisPCInv snl _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                        >> maybeNewLine snl
-procGecrMisPCInv snl _ (Sorry n,               Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> maybeNewLine snl
+procGecrMisPCInv snl _ (Sorry n,               Nothing) = output ("You don't have " <> aOrAn n <> ".")               >> maybeNewLine snl
 procGecrMisPCInv _   _ gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
@@ -246,39 +246,39 @@ sorryIndexedCoins = output $ "Sorry, but " <> dblQuote ([indexChar]^.packed) <> 
 
 
 procGecrMisPCInvForInv :: (GetEntsCoinsRes, Maybe Inv) -> MudStack Inv
-procGecrMisPCInvForInv (Mult 1 n Nothing  _,   Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> return []
-procGecrMisPCInvForInv (Mult _ n Nothing  _,   Nothing) = output ("You don't have any " <> n <> "s." )             >> return []
+procGecrMisPCInvForInv (Mult 1 n Nothing  _,   Nothing) = output ("You don't have " <> aOrAn n <> ".")               >> return []
+procGecrMisPCInvForInv (Mult _ n Nothing  _,   Nothing) = output ("You don't have any " <> n <> "s." )               >> return []
 procGecrMisPCInvForInv (Mult _ _ (Just _) _,   Just is) = return is
-procGecrMisPCInvForInv (Indexed _ n (Left ""), Nothing) = output ("You don't have any " <> n <> "s." )             >> return []
+procGecrMisPCInvForInv (Indexed _ n (Left ""), Nothing) = output ("You don't have any " <> n <> "s." )               >> return []
 procGecrMisPCInvForInv (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ] >> return []
 procGecrMisPCInvForInv (Indexed _ _ (Right _), Just is) = return is
 procGecrMisPCInvForInv (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                        >> return []
-procGecrMisPCInvForInv (Sorry n,               Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> return []
+procGecrMisPCInvForInv (Sorry n,               Nothing) = output ("You don't have " <> aOrAn n <> ".")               >> return []
 procGecrMisPCInvForInv gecrMis                          = patternMatchFail "procGecrMisPCInvForInv" [ showText gecrMis ]
 
 
 procGecrMisRm :: ShouldNewLine -> (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisRm _   _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
-procGecrMisRm snl _ (Mult 1 n Nothing  _,   Nothing) = output ("You don't see " <> aOrAn n <> " here.")             >> maybeNewLine snl
-procGecrMisRm snl _ (Mult _ n Nothing  _,   Nothing) = output ("You don't see any " <> n <> "s here.")              >> maybeNewLine snl
+procGecrMisRm snl _ (Mult 1 n Nothing  _,   Nothing) = output ("You don't see " <> aOrAn n <> " here.")               >> maybeNewLine snl
+procGecrMisRm snl _ (Mult _ n Nothing  _,   Nothing) = output ("You don't see any " <> n <> "s here.")                >> maybeNewLine snl
 procGecrMisRm _   f (Mult _ _ (Just _) _,   Just is) = f is
-procGecrMisRm snl _ (Indexed _ n (Left ""), Nothing) = output ("You don't see any " <> n <> "s here.")              >> maybeNewLine snl
+procGecrMisRm snl _ (Indexed _ n (Left ""), Nothing) = output ("You don't see any " <> n <> "s here.")                >> maybeNewLine snl
 procGecrMisRm snl _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here." ] >> maybeNewLine snl
 procGecrMisRm _   f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisRm snl _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                            >> maybeNewLine snl
-procGecrMisRm snl _ (Sorry n,               Nothing) = output ("You don't see " <> aOrAn n <> " here.")             >> maybeNewLine snl
+procGecrMisRm snl _ (Sorry n,               Nothing) = output ("You don't see " <> aOrAn n <> " here.")               >> maybeNewLine snl
 procGecrMisRm _   _ gecrMis                          = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
 procGecrMisRmForInv :: (GetEntsCoinsRes, Maybe Inv) -> MudStack Inv
-procGecrMisRmForInv (Mult 1 n Nothing  _,   Nothing) = output ("You don't see " <> aOrAn n <> " here.")             >> return []
-procGecrMisRmForInv (Mult _ n Nothing  _,   Nothing) = output ("You don't see any " <> n <> "s here.")              >> return []
+procGecrMisRmForInv (Mult 1 n Nothing  _,   Nothing) = output ("You don't see " <> aOrAn n <> " here.")               >> return []
+procGecrMisRmForInv (Mult _ n Nothing  _,   Nothing) = output ("You don't see any " <> n <> "s here.")                >> return []
 procGecrMisRmForInv (Mult _ _ (Just _) _,   Just is) = return is
-procGecrMisRmForInv (Indexed _ n (Left ""), Nothing) = output ("You don't see any " <> n <> "s here.")              >> return []
+procGecrMisRmForInv (Indexed _ n (Left ""), Nothing) = output ("You don't see any " <> n <> "s here.")                >> return []
 procGecrMisRmForInv (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here." ] >> return []
 procGecrMisRmForInv (Indexed _ _ (Right _), Just is) = return is
 procGecrMisRmForInv (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                            >> return []
-procGecrMisRmForInv (Sorry n,               Nothing) = output ("You don't see " <> aOrAn n <> " here.")             >> return []
+procGecrMisRmForInv (Sorry n,               Nothing) = output ("You don't see " <> aOrAn n <> " here.")               >> return []
 procGecrMisRmForInv gecrMis                          = patternMatchFail "procGecrMisRmForInv" [ showText gecrMis ]
 
 
@@ -342,9 +342,9 @@ procGecrMisPCEq _ gecrMis                          = patternMatchFail "procGecrM
 procReconciledCoinsPCInv :: ShouldNewLine -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsPCInv snl _ (Left Empty)                             = output "You don't have any coins." >> maybeNewLine snl
 procReconciledCoinsPCInv snl _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) $ output "You don't have any copper pieces."                      >> maybeNewLine snl
-    unless (sil == 0) $ output "You don't have any silver pieces."                      >> maybeNewLine snl
-    unless (gol == 0) $ output "You don't have any gold pieces."                        >> maybeNewLine snl
+    unless (cop == 0) $ output "You don't have any copper pieces." >> maybeNewLine snl
+    unless (sil == 0) $ output "You don't have any silver pieces." >> maybeNewLine snl
+    unless (gol == 0) $ output "You don't have any gold pieces."   >> maybeNewLine snl
 procReconciledCoinsPCInv _   f (Right (SomeOf c                      )) = f c
 procReconciledCoinsPCInv snl _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (cop == 0) $ output ("You don't have " <> showText cop <> " copper pieces.") >> maybeNewLine snl
@@ -356,9 +356,9 @@ procReconciledCoinsPCInv _   _ rc = patternMatchFail "procReconciledCoinsPCInv" 
 procReconciledCoinsRm :: ShouldNewLine -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsRm snl _ (Left Empty)                             = output "You don't see any coins here." >> maybeNewLine snl
 procReconciledCoinsRm snl _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) $ output "You don't see any copper pieces here."                      >> maybeNewLine snl
-    unless (sil == 0) $ output "You don't see any silver pieces here."                      >> maybeNewLine snl
-    unless (gol == 0) $ output "You don't see any gold pieces here."                        >> maybeNewLine snl
+    unless (cop == 0) $ output "You don't see any copper pieces here." >> maybeNewLine snl
+    unless (sil == 0) $ output "You don't see any silver pieces here." >> maybeNewLine snl
+    unless (gol == 0) $ output "You don't see any gold pieces here."   >> maybeNewLine snl
 procReconciledCoinsRm _   f (Right (SomeOf c                      )) = f c
 procReconciledCoinsRm snl _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (cop == 0) $ output ("You don't see " <> showText cop <> " copper pieces here.") >> maybeNewLine snl

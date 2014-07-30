@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, KindSignatures, LambdaCase, OverloadedStrings, RankNTypes #-}
 
 module Mud.StateHelpers ( addToInv
                         , BothGramNos
@@ -92,9 +92,9 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 lookupPla :: Id -> MudStack Pla
 lookupPla i = do
-    mp <- IM.lookup i <$> (gets (^.nonWorldState.plaTbl) >>= liftIO . readTVarIO)
-    case mp of Just p  -> return p
-               Nothing -> blowUp "lookupWS" "player not found in non-world state table for given key" [ showText i ]
+    IM.lookup i <$> (gets (^.nonWorldState.plaTbl) >>= liftIO . readTVarIO) >>= \case
+      Just p  -> return p
+      Nothing -> blowUp "lookupWS" "player not found in non-world state table for given key" [ showText i ]
 
 
 updatePla :: Id -> Pla -> MudStack ()
@@ -169,9 +169,9 @@ type WSTblLens a = ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a)
 
 lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Key -> WSTblLens a -> m a
 i `lookupWS` tbl = do
-      ma <- IM.lookup i <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
-      case ma of Just a  -> return a
-                 Nothing -> blowUp "lookupWS" "value not found in world state table for given key" [ showText i ]
+      IM.lookup i <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO) >>= \case
+        Just a  -> return a
+        Nothing -> blowUp "lookupWS" "value not found in world state table for given key" [ showText i ]
 
 
 updateWS :: forall (m :: * -> *) a . (MonadState MudState m, MonadIO m) => Key -> WSTblLens a -> a -> m ()
@@ -406,8 +406,8 @@ getRmLinks i = (^.rmLinks) <$> getRm i
 
 findExit :: LinkName -> Id -> MudStack (Maybe Id)
 findExit ln i = getRmLinks i >>= \rls ->
-    case [ rl^.destId | rl <- rls, isValid rl ] of
-      [] -> return Nothing
-      is -> return (Just . head $ is)
+    return $ case [ rl^.destId | rl <- rls, isValid rl ] of
+      [] -> Nothing
+      is -> Just . head $ is
   where
     isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)

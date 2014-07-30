@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.Cmds (gameWrapper) where
 
@@ -331,32 +331,31 @@ advise hs  msg = output msg >> outputCon [ "See also the following help topics: 
 
 whatInv :: InvType -> T.Text -> MudStack ()
 whatInv it r = do
-    ic@(is, _)      <- getLocInvCoins
+    ic@(is, _)      <- getLocInvCoins it
     (gecrs, _, rcs) <- resolveEntCoinNames [r] ic
     if not . null $ gecrs
       then whatInvEnts it r (head gecrs) is
       else mapM_ (whatInvCoins it r) rcs
   where
-    getLocInvCoins = case it of PCInv -> getInvCoins 0
-                                PCEq  -> getEq 0 >>= \is -> return (is, mempty)
-                                RmInv -> getPCRmInvCoins 0
+    getLocInvCoins = \case PCInv -> getInvCoins 0
+                           PCEq  -> getEq 0 >>= \is -> return (is, mempty)
+                           RmInv -> getPCRmInvCoins 0
 
 
 whatInvEnts :: InvType -> T.Text -> GetEntsCoinsRes -> Inv -> MudStack ()
-whatInvEnts it r gecr is =
-    case gecr of
-      Mult _ n (Just es) _ | n == acp  -> outputCon [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]
-                           | otherwise -> let e   = head es
-                                              len = length es
-                                          in if len > 1
-                                            then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
-                                                     h      = head ebgns
-                                                     target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
-                                                 in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, " ", getLocTxtForInvType it, "." ]
-                                            else getEntNamesInInv is >>= \ens ->
-                                                outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, " ", getLocTxtForInvType it, "." ]
-      Indexed x _ (Right e) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
-      _                     -> outputCon [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
+whatInvEnts it r gecr is = case gecr of
+  Mult _ n (Just es) _ | n == acp  -> outputCon [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]
+                       | otherwise -> let e   = head es
+                                          len = length es
+                                      in if len > 1
+                                        then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
+                                                 h      = head ebgns
+                                                 target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
+                                             in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, " ", getLocTxtForInvType it, "." ]
+                                        else getEntNamesInInv is >>= \ens ->
+                                            outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, " ", getLocTxtForInvType it, "." ]
+  Indexed x _ (Right e) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
+  _                     -> outputCon [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
   where
     acp                                   = [allChar]^.packed
     supplement | it `elem` [PCInv, RmInv] = " (including any coins)"
@@ -366,27 +365,27 @@ whatInvEnts it r gecr is =
 
 
 getLocTxtForInvType :: InvType -> T.Text
-getLocTxtForInvType it = case it of PCInv -> "in your inventory"
-                                    PCEq  -> "in your readied equipment"
-                                    RmInv -> "in this room"
+getLocTxtForInvType = \case PCInv -> "in your inventory"
+                            PCEq  -> "in your readied equipment"
+                            RmInv -> "in this room"
 
 
 whatInvCoins :: InvType -> T.Text -> ReconciledCoins -> MudStack ()
 whatInvCoins it r rc
   | it == PCEq = return ()
-  | otherwise  = case rc of
-    Left  Empty      -> outputCon [ dblQuote r, " doesn't refer to any coins ", getLocTxtForInvType it, " ", supplementNone "coins", "." ]
-    Left  (NoneOf c) -> let cn = mkTxtForCoins c in outputCon [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNone cn,      "." ]
-    Left  (SomeOf c) -> let cn = mkTxtForCoins c in outputCon [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNotEnough cn, "." ]
+  | otherwise = case rc of
+    Left  Empty      -> outputCon [ dblQuote r, " doesn't refer to any coins ", getLocTxtForInvType it, " ", supplementNone "coins" it, "." ]
+    Left  (NoneOf c) -> let cn = mkTxtForCoins c in outputCon [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNone cn it, "." ]
+    Left  (SomeOf c) -> let cn = mkTxtForCoins c in outputCon [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNotEnough cn it, "." ]
     Right (SomeOf c) -> outputCon [ dblQuote r, " refers to ", mkTxtForCoinsWithAmt c, " ", getLocTxtForInvType it, "." ]
     _                -> patternMatchFail "whatInvCoins" [ showText rc ]
   where
-    supplementNone cn      = case it of PCInv -> "(you don't have any " <> cn <> ")"
-                                        RmInv -> "(there aren't any "   <> cn <> " here)"
-                                        PCEq  -> oops "supplementNone"
-    supplementNotEnough cn = case it of PCInv -> "(you don't have that many " <> cn <> ")"
-                                        RmInv -> "(there aren't that many "   <> cn <> " here)"
-                                        PCEq  -> oops "supplementNotEnough"
+    supplementNone cn      = \case PCInv -> "(you don't have any " <> cn <> ")"
+                                   RmInv -> "(there aren't any "   <> cn <> " here)"
+                                   PCEq  -> oops "supplementNone"
+    supplementNotEnough cn = \case PCInv -> "(you don't have that many " <> cn <> ")"
+                                   RmInv -> "(there aren't that many "   <> cn <> " here)"
+                                   PCEq  -> oops "supplementNotEnough"
     oops fn                = blowUp ("whatInvCoins " <> fn) "called for InvType of PCEq" []
     mkTxtForCoins c@(Coins (cop, sil, gol))
       | cop /= 0  = "copper pieces"
@@ -486,8 +485,8 @@ dispInvCoins i = do
     hc <- hasCoins i
     case (hi, hc) of
       (False, False) -> if i == 0
-                          then dudeYourHandsAreEmpty
-                          else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
+                         then dudeYourHandsAreEmpty
+                         else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
       (True,  False) -> header >> dispEntsInInv i
       (False, True ) -> header >> summarizeCoinsInInv
       (True,  True ) -> header >> dispEntsInInv i >> summarizeCoinsInInv
@@ -618,10 +617,10 @@ descGetDropEnts :: GetOrDrop -> Inv -> MudStack ()
 descGetDropEnts god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
   where
     descGetDropHelper (_, c, (s, _))
-      | c == 1                  = outputCon [ "You ", verb, " the ", s, "." ]
-    descGetDropHelper (_, c, b) = outputCon [ "You ", verb, " ", showText c, " ", mkPlurFromBoth b, "." ]
-    verb = case god of Get  -> "pick up"
-                       Drop -> "drop"
+      | c == 1                   = outputCon [ "You ", verb god, " the ", s, "." ]
+    descGetDropHelper (_, c, b) = outputCon [ "You ", verb god, " ", showText c, " ", mkPlurFromBoth b, "." ]
+    verb = \case Get  -> "pick up"
+                 Drop -> "drop"
 
 
 shuffleCoinsGet :: Coins -> MudStack ()
@@ -636,10 +635,10 @@ descGetDropCoins god (Coins (cop, sil, gol)) = do
     unless (gol == 0) . descGetDropHelper gol $ "gold piece"
   where
     descGetDropHelper a cn
-      | a == 1    = outputCon [ "You ", verb, " a ", cn, "." ]
-      | otherwise = outputCon [ "You ", verb, " ", showText a, " ", cn, "s." ]
-    verb = case god of Get  -> "pick up"
-                       Drop -> "drop"
+      | a == 1     = outputCon [ "You ", verb god, " a ", cn, "." ]
+      | otherwise = outputCon [ "You ", verb god, " ", showText a, " ", cn, "s." ]
+    verb = \case Get  -> "pick up"
+                 Drop -> "drop"
 
 
 -----
@@ -697,23 +696,23 @@ putRemDispatcher por rs
 putRemDispatcherHelper :: PutOrRem -> ConName -> MudStack InvCoins -> ((GetEntsCoinsRes, Maybe Inv) -> MudStack Inv) -> Action
 putRemDispatcherHelper por cn f g rs = f >>= resolveEntCoinNames [cn] >>= \(gecrs, miss, rcs) ->
     if null miss && (not . null $ rcs)
-      then sorryCoins
-      else (g . head . zip gecrs $ miss) >>= \is ->
-          case is of []  -> return ()
-                     [i] -> do
-                         e <- getEnt i
-                         t <- getEntType e
-                         if t /= ConType
-                           then output $ "The " <> e^.sing <> " isn't a container."
-                           else dispatchPutRem i
-                     _   -> sorryOnlyOne
+      then sorryCoins por
+      else (g . head . zip gecrs $ miss) >>= \case
+        []  -> return ()
+        [i] -> do
+            e <- getEnt i
+            t <- getEntType e
+            if t /= ConType
+              then output $ "The " <> e^.sing <> " isn't a container."
+              else dispatchPutRem i por
+        _   -> sorryOnlyOne por
   where
-    sorryCoins       = output $ case por of Put -> "You can't put something inside a coin."
-                                            Rem -> "You can't remove something from a coin."
-    sorryOnlyOne     = output $ case por of Put -> "You can only put things into one container at a time."
-                                            Rem -> "You can only remove things from one container at a time."
-    dispatchPutRem i =          case por of Put -> putHelper i rs
-                                            Rem -> remHelper i rs
+    sorryCoins       = \case Put -> output "You can't put something inside a coin."
+                             Rem -> output "You can't remove something from a coin."
+    sorryOnlyOne     = \case Put -> output "You can only put things into one container at a time."
+                             Rem -> output "You can only remove things from one container at a time."
+    dispatchPutRem i = \case Put -> putHelper i rs
+                             Rem -> remHelper i rs
 
 
 putHelper :: Id -> Rest -> MudStack ()
@@ -740,12 +739,12 @@ descPutRemEnts :: PutOrRem -> Inv -> ConName -> MudStack ()
 descPutRemEnts por is cn = mkNameCountBothList is >>= mapM_ descPutRemHelper
   where
     descPutRemHelper (_, c, (s, _))
-      | c == 1                 = outputCon [ "You ", verb, " the ", s, " ", prep, " ", cn, "." ]
-    descPutRemHelper (_, c, b) = outputCon [ "You ", verb, " ", showText c, " ", mkPlurFromBoth b, " ", prep, " ", cn, "." ]
-    verb = case por of Put -> "put"
-                       Rem -> "remove"
-    prep = case por of Put -> "in the"
-                       Rem -> "from the"
+      | c == 1                  = outputCon [ "You ", verb por, " the ", s, " ", prep por, " ", cn, "." ]
+    descPutRemHelper (_, c, b) = outputCon [ "You ", verb por, " ", showText c, " ", mkPlurFromBoth b, " ", prep por, " ", cn, "." ]
+    verb = \case Put -> "put"
+                 Rem -> "remove"
+    prep = \case Put -> "in the"
+                 Rem -> "from the"
 
 
 shuffleCoinsPut :: Id -> Coins -> MudStack ()
@@ -759,12 +758,12 @@ descPutRemCoins por (Coins (cop, sil, gol)) cn = do
     unless (gol == 0) . descPutRemHelper gol $ "gold piece"
   where
     descPutRemHelper a cn'
-      | a == 1    = outputCon [ "You ", verb, " a ", cn', " ", prep, " ", cn, "." ]
-      | otherwise = outputCon [ "You ", verb, " ", showText a, " ", cn', "s ", prep, " ", cn, "." ]
-    verb = case por of Put -> "put"
-                       Rem -> "remove"
-    prep = case por of Put -> "in the"
-                       Rem -> "from the"
+      | a == 1     = outputCon [ "You ", verb por, " a ", cn', " ", prep por, " ", cn, "." ]
+      | otherwise = outputCon [ "You ", verb por, " ", showText a, " ", cn', "s ", prep por, " ", cn, "." ]
+    verb = \case Put -> "put"
+                 Rem -> "remove"
+    prep = \case Put -> "in the"
+                 Rem -> "from the"
 
 
 -----
@@ -821,10 +820,10 @@ readyDispatcher mrol = mapM_ dispatchByType
     dispatchByType i = do
         e <- getEnt i
         em <- getEqMap 0
-        t <- getEntType e
-        case t of ClothType -> getCloth i >>= \c -> readyCloth i e c em mrol
-                  WpnType   -> readyWpn i e em mrol
-                  _         -> output $ "You can't ready a " <> e^.sing <> "."
+        getEntType e >>= \case
+          ClothType -> getCloth i >>= \c -> readyCloth i e c em mrol
+          WpnType   -> readyWpn i e em mrol
+          _         -> output $ "You can't ready a " <> e^.sing <> "."
 
 
 -- Helpers for the entity type-specific ready functions:
@@ -847,9 +846,9 @@ otherHand NoHand = NoHand
 
 
 isRingRol :: RightOrLeft -> Bool
-isRingRol rol = case rol of R -> False
-                            L -> False
-                            _ -> True
+isRingRol = \case R -> False
+                  L -> False
+                  _ -> True
 
 
 rEarSlots, lEarSlots, noseSlots, neckSlots, rWristSlots, lWristSlots :: [Slot]
@@ -870,18 +869,19 @@ findAvailSlot em = find (isSlotAvail em)
 
 
 sorryFullClothSlots :: Cloth -> MudStack ()
-sorryFullClothSlots c = output $ "You can't wear any more " <> whatWhere
+sorryFullClothSlots = output . (<>) "You can't wear any more " . whatWhere
   where
-    whatWhere = flip (<>) "." $ case c of EarC      -> aoy <> "ears"
-                                          NoseC     -> "rings on your nose"
-                                          NeckC     -> aoy <> "neck"
-                                          WristC    -> aoy <> "wrists"
-                                          FingerC   -> aoy <> "fingers"
-                                          UpBodyC   -> coy <> "torso"
-                                          LowBodyC  -> coy <> "legs"
-                                          FullBodyC -> "clothing about your body"
-                                          BackC     -> "on your back"
-                                          FeetC     -> "footwear on your feet"
+    whatWhere = \case
+      EarC      -> aoy <> "ears."
+      NoseC     -> "rings on your nose."
+      NeckC     -> aoy <> "neck."
+      WristC    -> aoy <> "wrists."
+      FingerC   -> aoy <> "fingers."
+      UpBodyC   -> coy <> "torso."
+      LowBodyC  -> coy <> "legs."
+      FullBodyC -> "clothing about your body."
+      BackC     -> "on your back."
+      FeetC     -> "footwear on your feet."
     aoy = "accessories on your "
     coy = "clothing on your "
 
@@ -895,27 +895,27 @@ sorryFullClothSlotsOneSide s = output $ "You can't wear any more on your " <> pp
 
 readyCloth :: Int -> Ent -> Cloth -> EqMap -> Maybe RightOrLeft -> MudStack ()
 readyCloth i e c em mrol = maybe (getAvailClothSlot c em) (getDesigClothSlot e c em) mrol >>= \ms ->
-    maybeRet (\s -> moveReadiedItem i em s >> readiedMsg s) ms
+    maybeRet (\s -> moveReadiedItem i em s >> readiedMsg s c) ms
   where
-    readiedMsg s = case c of NoseC   -> putOnMsg
-                             NeckC   -> putOnMsg
-                             FingerC -> outputCon [ "You slide the ", e^.sing, " on your ", pp s, "." ]
-                             _       -> wearMsg
+    readiedMsg s = \case NoseC   -> putOnMsg
+                         NeckC   -> putOnMsg
+                         FingerC -> outputCon [ "You slide the ", e^.sing, " on your ", pp s, "." ]
+                         _       -> wearMsg
       where
         putOnMsg = output $ "You put on the " <> e^.sing <> "."
-        wearMsg  = outputCon [ "You wear the ",  e^.sing, " on your ", pp s, "." ]
+        wearMsg  = outputCon [ "You wear the ", e^.sing, " on your ", pp s, "." ]
 
 
 getDesigClothSlot :: Ent -> Cloth -> EqMap -> RightOrLeft -> MudStack (Maybe Slot)
 getDesigClothSlot e c em rol
   | c `elem` [NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC] = sorryCantWearThere
-  | isRingRol rol && c /= FingerC           = sorryCantWearThere
+  | isRingRol rol && c /= FingerC         = sorryCantWearThere
   | c == FingerC && (not . isRingRol $ rol) = sorryNeedRingRol
   | otherwise = case c of EarC    -> maybe sorryFullEar   (return . Just) (findSlotFromList rEarSlots   lEarSlots)
                           WristC  -> maybe sorryFullWrist (return . Just) (findSlotFromList rWristSlots lWristSlots)
                           FingerC -> maybe (return (Just slotFromRol))
-                                           (getEnt >=> sorry slotFromRol)
-                                           (em^.at slotFromRol)
+                                          (getEnt >=> sorry slotFromRol)
+                                          (em^.at slotFromRol)
                           _       -> undefined -- TODO
   where
     sorryCantWearThere     = outputCon [ "You can't wear a ", e^.sing, " on your ", pp rol, "." ] >> return Nothing
@@ -951,13 +951,15 @@ getAvailClothSlot c em = do
                                                          LHand  -> rWristSlots
                                                          _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
     getRingSlotForHand h  = getMobGender 0 >>= \s ->
-        return $ findAvailSlot em $ case s of Male   -> case h of RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
-                                                                  LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
-                                                                  _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
-                                              Female -> case h of RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
-                                                                  LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
-                                                                  _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
-                                              _      -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText s ]
+        return (findAvailSlot em $ case s of Male   -> case h of
+                                                        RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
+                                                        LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
+                                                        _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
+                                             Female -> case h of
+                                                        RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
+                                                        LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
+                                                        _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
+                                             _      -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText s ])
 
 
 -- Ready weapons:
@@ -978,13 +980,13 @@ readyWpn i e em mrol
 getDesigWpnSlot :: Ent -> EqMap -> RightOrLeft -> MudStack (Maybe Slot)
 getDesigWpnSlot e em rol
   | isRingRol rol = sorryNotRing
-  | otherwise     = maybe (return (Just desigSlot)) (getEnt >=> sorry) $ em^.at desigSlot
+  | otherwise     = maybe (return (Just . desigSlot $ rol)) (getEnt >=> sorry) $ em^.at (desigSlot rol)
   where
     sorryNotRing = output ("You can't wield a " <> e^.sing <> " with your finger!") >> return Nothing
-    sorry e'     = outputCon [ "You're already wielding a ", e'^.sing, " with your ", pp desigSlot, "." ] >> return Nothing
-    desigSlot    = case rol of R -> RHandS
-                               L -> LHandS
-                               _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
+    sorry e'     = outputCon [ "You're already wielding a ", e'^.sing, " with your ", pp . desigSlot $ rol, "." ] >> return Nothing
+    desigSlot    = \case R -> RHandS
+                         L -> LHandS
+                         _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
 
 
 getAvailWpnSlot :: EqMap -> MudStack (Maybe Slot)
@@ -1024,10 +1026,10 @@ descUnready is = mkIdCountBothList is >>= mapM_ descUnreadyHelper
         outputCon $ if c == 1
           then [ "You ", v, "the ", s, "." ]
           else [ "You ", v, showText c, " ", mkPlurFromBoth b, "." ]
-    verb i = getEnt i >>= getEntType >>= \t ->
-        case t of ClothType -> getCloth i >>= \_ -> return unwearGenericVerb -- TODO
-                  WpnType   -> return "stop wielding "
-                  _         -> undefined -- TODO
+    verb i = getEnt i >>= getEntType >>= \case
+      ClothType -> getCloth i >>= \_ -> return unwearGenericVerb -- TODO
+      WpnType   -> return "stop wielding "
+      _         -> undefined -- TODO
     unwearGenericVerb = "take off "
 
 
