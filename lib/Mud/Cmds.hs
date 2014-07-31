@@ -286,7 +286,7 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 help :: Action
 help [] = try takeADump >>= eitherRet (dumpExHandler "help")
   where
-    takeADump = dumpFile . (++) helpDir $ "root"
+    takeADump = (dumpFile . (++) helpDir $ "root") >> liftIO newLine
 help rs = sequence_ . intercalate [divider >> liftIO newLine] $ [ [dispHelpTopicByName r] | r <- rs ]
 
 
@@ -301,7 +301,7 @@ dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
              helper
              (findFullNameForAbbrev r tns)
   where
-    sorry     = output "No help is available on that topic/command."
+    sorry     = output "No help is available on that topic/command." >> liftIO newLine
     helper tn = (try . takeADump $ tn) >>= eitherRet (dumpExHandler "dispHelpTopicByName") >> liftIO newLine
     takeADump = dumpFile . (++) helpDir . T.unpack
 
