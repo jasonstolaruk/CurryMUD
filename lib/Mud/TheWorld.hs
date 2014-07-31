@@ -13,6 +13,7 @@ import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
+import Control.Lens.Operators ((^.))
 import Data.Functor ((<$>))
 import Data.List ((\\))
 import Data.Monoid (mempty)
@@ -46,73 +47,73 @@ allKeys = keysWS typeTbl
 
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
-putObj i e o = do
-    updateWS i typeTbl ObjType
-    updateWS i entTbl  e
-    updateWS i objTbl  o
+putObj i e o = onWorldState $ \ws -> do
+    updateWSSTM (ws^.typeTbl) i ObjType
+    updateWSSTM (ws^.entTbl)  i e
+    updateWSSTM (ws^.objTbl)  i o
 
 
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
-putCloth i e o c = do
-    updateWS i typeTbl  ClothType
-    updateWS i entTbl   e
-    updateWS i objTbl   o
-    updateWS i clothTbl c
+putCloth i e o c = onWorldState $ \ws -> do
+    updateWSSTM (ws^.typeTbl)  i ClothType
+    updateWSSTM (ws^.entTbl)   i e
+    updateWSSTM (ws^.objTbl)   i o
+    updateWSSTM (ws^.clothTbl) i c
 
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
-putCon i e o is coi con = do
-    updateWS i typeTbl  ConType
-    updateWS i entTbl   e
-    updateWS i objTbl   o
-    updateWS i invTbl   is
-    updateWS i coinsTbl coi
-    updateWS i conTbl   con
+putCon i e o is coi con = onWorldState $ \ws -> do
+    updateWSSTM (ws^.typeTbl)  i ConType
+    updateWSSTM (ws^.entTbl)   i e
+    updateWSSTM (ws^.objTbl)   i o
+    updateWSSTM (ws^.invTbl)   i is
+    updateWSSTM (ws^.coinsTbl) i coi
+    updateWSSTM (ws^.conTbl)   i con
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
-putWpn i e o w = do
-    updateWS i typeTbl WpnType
-    updateWS i entTbl  e
-    updateWS i objTbl  o
-    updateWS i wpnTbl  w
+putWpn i e o w = onWorldState $ \ws -> do
+    updateWSSTM (ws^.typeTbl) i WpnType
+    updateWSSTM (ws^.entTbl)  i e
+    updateWSSTM (ws^.objTbl)  i o
+    updateWSSTM (ws^.wpnTbl)  i w
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
-putArm i e o a = do
-    updateWS i typeTbl ArmType
-    updateWS i entTbl  e
-    updateWS i objTbl  o
-    updateWS i armTbl  a
+putArm i e o a = onWorldState $ \ws -> do
+    updateWSSTM (ws^.typeTbl) i ArmType
+    updateWSSTM (ws^.entTbl)  i e
+    updateWSSTM (ws^.objTbl)  i o
+    updateWSSTM (ws^.armTbl)  i a
 
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
-putMob i e is c em m = do
-    updateWS i typeTbl  MobType
-    updateWS i entTbl   e
-    updateWS i invTbl   is
-    updateWS i coinsTbl c
-    updateWS i eqTbl    em
-    updateWS i mobTbl   m
+putMob i e is c em m = onWorldState $ \ws -> do
+    updateWSSTM (ws^.typeTbl)  i MobType
+    updateWSSTM (ws^.entTbl)   i e
+    updateWSSTM (ws^.invTbl)   i is
+    updateWSSTM (ws^.coinsTbl) i c
+    updateWSSTM (ws^.eqTbl)    i em
+    updateWSSTM (ws^.mobTbl)   i m
 
 
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
-putPC i e is c em m p = do
-    updateWS i typeTbl  PCType
-    updateWS i entTbl   e
-    updateWS i invTbl   is
-    updateWS i coinsTbl c
-    updateWS i eqTbl    em
-    updateWS i mobTbl   m
-    updateWS i pcTbl    p
+putPC i e is c em m p = onWorldState $ \ws -> do
+    updateWSSTM (ws^.typeTbl)  i PCType
+    updateWSSTM (ws^.entTbl)   i e
+    updateWSSTM (ws^.invTbl)   i is
+    updateWSSTM (ws^.coinsTbl) i c
+    updateWSSTM (ws^.eqTbl)    i em
+    updateWSSTM (ws^.mobTbl)   i m
+    updateWSSTM (ws^.pcTbl)    i p
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
-putRm i is c r = do
-    updateWS i typeTbl  RmType
-    updateWS i invTbl   is
-    updateWS i coinsTbl c
-    updateWS i rmTbl    r
+putRm i is c r = onWorldState $ \ws -> do
+    updateWSSTM (ws^.typeTbl)  i RmType
+    updateWSSTM (ws^.invTbl)   i is
+    updateWSSTM (ws^.coinsTbl) i c
+    updateWSSTM (ws^.rmTbl)    i r
 
 
 -- ==================================================

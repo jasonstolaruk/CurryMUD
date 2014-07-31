@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, KindSignatures, LambdaCase, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
 module Mud.StateHelpers ( addToInv
                         , BothGramNos
@@ -46,6 +46,7 @@ module Mud.StateHelpers ( addToInv
                         , mkPlurFromBoth
                         , moveCoins
                         , moveInv
+                        , onWorldState
                         , output
                         , outputCon
                         , outputConIndent
@@ -53,7 +54,8 @@ module Mud.StateHelpers ( addToInv
                         , remFromInv
                         , sortInv
                         , updatePla
-                        , updateWS ) where
+                        , updateWS
+                        , updateWSSTM ) where
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
@@ -61,9 +63,10 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), Const)
-import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TVar (modifyTVar', readTVarIO, TVar)
 import Control.Lens (_1, each)
+import Control.Lens.Getter (Getting)
 import Control.Lens.Operators ((%~), (^.))
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -91,10 +94,9 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 lookupPla :: Id -> MudStack Pla
-lookupPla i = do
-    IM.lookup i <$> (gets (^.nonWorldState.plaTbl) >>= liftIO . readTVarIO) >>= \case
-      Just p  -> return p
-      Nothing -> blowUp "lookupWS" "player not found in non-world state table for given key" [ showText i ]
+lookupPla i = IM.lookup i <$> (gets (^.nonWorldState.plaTbl) >>= liftIO . readTVarIO) >>= maybeRet oops
+  where
+    oops = blowUp "lookupWS" "player not found in non-world state table for given key" [ showText i ]
 
 
 updatePla :: Id -> Pla -> MudStack ()
@@ -168,15 +170,22 @@ type WSTblLens a = ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a)
 
 
 lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Key -> WSTblLens a -> m a
-i `lookupWS` tbl = do
-      IM.lookup i <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO) >>= \case
-        Just a  -> return a
-        Nothing -> blowUp "lookupWS" "value not found in world state table for given key" [ showText i ]
+i `lookupWS` tbl = IM.lookup i <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO) >>= maybeRet oops
+  where
+    oops = blowUp "lookupWS" "value not found in world state table for given key" [ showText i ]
 
 
-updateWS :: forall (m :: * -> *) a . (MonadState MudState m, MonadIO m) => Key -> WSTblLens a -> a -> m ()
-updateWS i tbl a = gets (^.worldState.tbl) >>= \t ->
-    liftIO . atomically . modifyTVar' t . IM.insert i $ a
+updateWS :: forall a . Key -> Getting (TVar (IntMap a)) WorldState (TVar (IntMap a)) -> a -> MudStack ()
+updateWS i tbl a = onWorldState $ \ws ->
+    updateWSSTM (ws^.tbl) i a
+
+
+onWorldState :: (WorldState -> STM ()) -> MudStack ()
+onWorldState f = gets (^.worldState) >>= liftIO . atomically . f
+
+
+updateWSSTM :: forall a . TVar (IntMap a) -> Key -> a -> STM ()
+updateWSSTM t i a = modifyTVar' t . IM.insert i $ a
 
 
 keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => WSTblLens a -> f [Key]

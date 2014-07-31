@@ -184,7 +184,7 @@ game = do
 
 
 handleInp :: T.Text -> MudStack ()
-handleInp = maybeRet dispatch . splitInp
+handleInp = maybeVoid dispatch . splitInp
 
 
 type Input = (CmdName, Rest)
@@ -419,10 +419,10 @@ tryMove :: T.Text -> MudStack ()
 tryMove dir = let dir' = T.toLower dir
               in getPCRmId 0 >>= findExit dir' >>= maybe (sorry dir') (movePC 0)
   where
-    sorry dir' = output $ if dir' `elem` stdLinkNames
-                            then "You can't go that way." <> nlt
-                            else dblQuote dir <> " is not a valid direction." <> nlt
-    movePC pci ri = getPC pci >>= \p -> updateWS pci pcTbl (p & rmId .~ ri) >> look []
+    sorry dir'    = output $ if dir' `elem` stdLinkNames
+                               then "You can't go that way." <> nlt
+                               else dblQuote dir <> " is not a valid direction." <> nlt
+    movePC pci ri = getPC pci >>= \p -> updateWS pci pcTbl (p & rmId .~ ri) >> look [] -- TODO: Should the get and update be inside a single transaction?
 
 
 -----
@@ -485,8 +485,8 @@ dispInvCoins i = do
     hc <- hasCoins i
     case (hi, hc) of
       (False, False) -> if i == 0
-                         then dudeYourHandsAreEmpty
-                         else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
+                          then dudeYourHandsAreEmpty
+                          else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
       (True,  False) -> header >> dispEntsInInv i
       (False, True ) -> header >> summarizeCoinsInInv
       (True,  True ) -> header >> dispEntsInInv i >> summarizeCoinsInInv
@@ -635,7 +635,7 @@ descGetDropCoins god (Coins (cop, sil, gol)) = do
     unless (gol == 0) . descGetDropHelper gol $ "gold piece"
   where
     descGetDropHelper a cn
-      | a == 1     = outputCon [ "You ", verb god, " a ", cn, "." ]
+      | a == 1    = outputCon [ "You ", verb god, " a ", cn, "." ]
       | otherwise = outputCon [ "You ", verb god, " ", showText a, " ", cn, "s." ]
     verb = \case Get  -> "pick up"
                  Drop -> "drop"
@@ -739,7 +739,7 @@ descPutRemEnts :: PutOrRem -> Inv -> ConName -> MudStack ()
 descPutRemEnts por is cn = mkNameCountBothList is >>= mapM_ descPutRemHelper
   where
     descPutRemHelper (_, c, (s, _))
-      | c == 1                  = outputCon [ "You ", verb por, " the ", s, " ", prep por, " ", cn, "." ]
+      | c == 1                 = outputCon [ "You ", verb por, " the ", s, " ", prep por, " ", cn, "." ]
     descPutRemHelper (_, c, b) = outputCon [ "You ", verb por, " ", showText c, " ", mkPlurFromBoth b, " ", prep por, " ", cn, "." ]
     verb = \case Put -> "put"
                  Rem -> "remove"
@@ -758,7 +758,7 @@ descPutRemCoins por (Coins (cop, sil, gol)) cn = do
     unless (gol == 0) . descPutRemHelper gol $ "gold piece"
   where
     descPutRemHelper a cn'
-      | a == 1     = outputCon [ "You ", verb por, " a ", cn', " ", prep por, " ", cn, "." ]
+      | a == 1    = outputCon [ "You ", verb por, " a ", cn', " ", prep por, " ", cn, "." ]
       | otherwise = outputCon [ "You ", verb por, " ", showText a, " ", cn', "s ", prep por, " ", cn, "." ]
     verb = \case Put -> "put"
                  Rem -> "remove"
@@ -895,7 +895,7 @@ sorryFullClothSlotsOneSide s = output $ "You can't wear any more on your " <> pp
 
 readyCloth :: Int -> Ent -> Cloth -> EqMap -> Maybe RightOrLeft -> MudStack ()
 readyCloth i e c em mrol = maybe (getAvailClothSlot c em) (getDesigClothSlot e c em) mrol >>= \ms ->
-    maybeRet (\s -> moveReadiedItem i em s >> readiedMsg s c) ms
+    maybeVoid (\s -> moveReadiedItem i em s >> readiedMsg s c) ms
   where
     readiedMsg s = \case NoseC   -> putOnMsg
                          NeckC   -> putOnMsg
@@ -909,13 +909,13 @@ readyCloth i e c em mrol = maybe (getAvailClothSlot c em) (getDesigClothSlot e c
 getDesigClothSlot :: Ent -> Cloth -> EqMap -> RightOrLeft -> MudStack (Maybe Slot)
 getDesigClothSlot e c em rol
   | c `elem` [NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC] = sorryCantWearThere
-  | isRingRol rol && c /= FingerC         = sorryCantWearThere
+  | isRingRol rol && c /= FingerC           = sorryCantWearThere
   | c == FingerC && (not . isRingRol $ rol) = sorryNeedRingRol
   | otherwise = case c of EarC    -> maybe sorryFullEar   (return . Just) (findSlotFromList rEarSlots   lEarSlots)
                           WristC  -> maybe sorryFullWrist (return . Just) (findSlotFromList rWristSlots lWristSlots)
                           FingerC -> maybe (return (Just slotFromRol))
-                                          (getEnt >=> sorry slotFromRol)
-                                          (em^.at slotFromRol)
+                                           (getEnt >=> sorry slotFromRol)
+                                           (em^.at slotFromRol)
                           _       -> undefined -- TODO
   where
     sorryCantWearThere     = outputCon [ "You can't wear a ", e^.sing, " on your ", pp rol, "." ] >> return Nothing
@@ -952,13 +952,13 @@ getAvailClothSlot c em = do
                                                          _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
     getRingSlotForHand h  = getMobGender 0 >>= \s ->
         return (findAvailSlot em $ case s of Male   -> case h of
-                                                        RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
-                                                        LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
-                                                        _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
+                                                         RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
+                                                         LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
+                                                         _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
                                              Female -> case h of
-                                                        RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
-                                                        LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
-                                                        _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
+                                                         RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
+                                                         LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
+                                                         _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
                                              _      -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText s ])
 
 
@@ -968,8 +968,7 @@ getAvailClothSlot c em = do
 readyWpn :: Id -> Ent -> EqMap -> Maybe RightOrLeft -> MudStack ()
 readyWpn i e em mrol
   | not . isSlotAvail em $ BothHandsS = output "You're already wielding a two-handed weapon."
-  | otherwise = maybe (getAvailWpnSlot em) (getDesigWpnSlot e em) mrol >>= \ms ->
-                    maybeRet (\s -> getWpn i >>= readyHelper s) ms
+  | otherwise = maybe (getAvailWpnSlot em) (getDesigWpnSlot e em) mrol >>= maybeVoid (\s -> getWpn i >>= readyHelper s)
   where
     readyHelper s w = case w^.wpnSub of OneHanded -> moveReadiedItem i em s >> outputCon [ "You wield the ", e^.sing, " with your ", pp s, "." ]
                                         TwoHanded -> if all (isSlotAvail em) [RHandS, LHandS]

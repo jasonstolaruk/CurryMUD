@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE KindSignatures, LambdaCase, OverloadedStrings, RankNTypes #-}
 
 module Mud.Util ( adjustIndent
                 , aOrAn
@@ -17,6 +17,7 @@ module Mud.Util ( adjustIndent
                 , grepTextList
                 , isVowel
                 , maybeRet
+                , maybeVoid
                 , maybeNewLine
                 , mkCountList
                 , mkOrdinal
@@ -298,8 +299,12 @@ grepTextList :: T.Text -> [T.Text] -> [T.Text]
 grepTextList needle = filter (needle `T.isInfixOf`)
 
 
-maybeRet :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
-maybeRet = maybe (return ())
+maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
+maybeVoid = maybe (return ())
+
+
+maybeRet :: forall a (m :: * -> *) . Monad m => m a -> Maybe a -> m a
+maybeRet dflt = maybe dflt return
 
 
 eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
