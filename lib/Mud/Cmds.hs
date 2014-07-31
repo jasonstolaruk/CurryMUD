@@ -20,7 +20,7 @@ import Control.Concurrent (forkIO, myThreadId)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
 import Control.Lens (_1, at, both, folded, over, to)
-import Control.Lens.Operators ((&), (.~), (?~), (^.), (^..))
+import Control.Lens.Operators ((^.), (^..))
 import Control.Monad ((>=>), forever, forM_, guard, mplus, replicateM_, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
@@ -41,7 +41,7 @@ import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
-import qualified Data.Map.Lazy as M (filter, toList)
+import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -417,12 +417,11 @@ goDispatcher rs     = mapM_ tryMove rs
 
 tryMove :: T.Text -> MudStack ()
 tryMove dir = let dir' = T.toLower dir
-              in getPCRmId 0 >>= findExit dir' >>= maybe (sorry dir') (movePC 0)
+              in getPCRmId 0 >>= findExit dir' >>= maybe (sorry dir') (\ri -> movePC 0 ri >> look [])
   where
     sorry dir'    = output $ if dir' `elem` stdLinkNames
                                then "You can't go that way." <> nlt
                                else dblQuote dir <> " is not a valid direction." <> nlt
-    movePC pci ri = getPC pci >>= \p -> updateWS pci pcTbl (p & rmId .~ ri) >> look [] -- TODO: Should the get and update be inside a single transaction?
 
 
 -----
@@ -829,10 +828,6 @@ readyDispatcher mrol = mapM_ dispatchByType
 -- Helpers for the entity type-specific ready functions:
 
 
-moveReadiedItem :: Id -> EqMap -> Slot -> MudStack ()
-moveReadiedItem i em s = updateWS 0 eqTbl (em & at s ?~ i) >> remFromInv [i] 0
-
-
 otherGender :: Gender -> Gender
 otherGender Male     = Female
 otherGender Female   = Male
@@ -1009,13 +1004,9 @@ unready [] = advise ["unready"] $ "Please specify one or more things to unready,
 unready rs = hasEq 0 >>= \he -> if not he then dudeYou'reNaked else do
     is <- getEq 0
     (gecrs, miss, rcs) <- resolveEntCoinNames rs (is, mempty)
-    mapM_ (procGecrMisPCEq shuffleInvUnready) . zip gecrs $ miss
+    mapM_ (procGecrMisPCEq $ \is' -> sequence_ [shuffleInvUnready is', descUnready is']) . zip gecrs $ miss
     unless (null rcs) $ output "You can't unready coins."
     liftIO newLine
-
-
-shuffleInvUnready :: Inv -> MudStack ()
-shuffleInvUnready is = M.filter (`notElem` is) <$> getEqMap 0 >>= updateWS 0 eqTbl >> addToInv is 0 >> descUnready is
 
 
 descUnready :: Inv -> MudStack ()

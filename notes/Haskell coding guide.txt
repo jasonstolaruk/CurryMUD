@@ -506,7 +506,7 @@ When performing an action asynchronously (and later waiting for its results), co
 
 To avoid deadlocking on a parent thread after a child thread has thrown an exception and died, the child thread may propagate any exceptions up to the parent thread. (PaCP p.151)
 
-To cancel one thread from another, use "throwTo" and throw the "ThreadKilled" exception to the thread you wish to cancel (or use the "killThread convenience function). (PaCP p.157)
+To cancel one thread from another, use "throwTo" and throw the "ThreadKilled" exception to the thread you wish to cancel (or use the "killThread" convenience function). (PaCP p.157)
 Note that if the target thread does nothing to catch the exception, it will simply die silently.
 
 "throwTo" will block as long as the target thread is masking asynchronous exceptions. (PaCP p.166)

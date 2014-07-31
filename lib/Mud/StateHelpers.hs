@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
 module Mud.StateHelpers ( addToInv
+                        , adjustWS
                         , BothGramNos
                         , InvCoins
                         , dispAssocList
@@ -46,16 +47,19 @@ module Mud.StateHelpers ( addToInv
                         , mkPlurFromBoth
                         , moveCoins
                         , moveInv
+                        , movePC
+                        , moveReadiedItem
                         , onWorldState
                         , output
                         , outputCon
                         , outputConIndent
                         , outputIndent
                         , remFromInv
+                        , shuffleInvUnready
                         , sortInv
                         , updatePla
-                        , updateWS
-                        , updateWSSTM ) where
+                        , insertWS
+                        , insertWS_STM ) where
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
@@ -65,20 +69,24 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 import Control.Applicative ((<$>), (<*>), Const)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TVar (modifyTVar', readTVarIO, TVar)
-import Control.Lens (_1, each)
+import Control.Lens (_1, at, each)
 import Control.Lens.Getter (Getting)
-import Control.Lens.Operators ((%~), (^.))
+import Control.Lens.Operators ((&), (?~), (.~), (%~), (^.))
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
 import Control.Monad.State.Class (MonadState)
-import Data.IntMap (IntMap, Key)
+import Data.IntMap (IntMap)
 import Data.List (sortBy)
 import Data.Monoid ((<>), mempty)
-import qualified Data.IntMap.Lazy as IM (insert, keys, lookup)
-import qualified Data.Map.Lazy as M (elems)
+import qualified Data.IntMap.Lazy as IM (adjust, insert, keys, lookup)
+import qualified Data.Map.Lazy as M (elems, filter)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+-- TODO: Merge "get" and "put" operations into atomic transactions.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -89,14 +97,14 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
--- ==================================================
--- Helpers for working with non-world state:
+-- ============================================================
+-- Helpers for working with players (non-world state):
 
 
 lookupPla :: Id -> MudStack Pla
 lookupPla i = IM.lookup i <$> (gets (^.nonWorldState.plaTbl) >>= liftIO . readTVarIO) >>= maybeRet oops
   where
-    oops = blowUp "lookupWS" "player not found in non-world state table for given key" [ showText i ]
+    oops = blowUp "lookupPla" "player not found in non-world state table for given key" [ showText i ]
 
 
 updatePla :: Id -> Pla -> MudStack ()
@@ -106,9 +114,6 @@ updatePla i p = gets (^.nonWorldState.plaTbl) >>= \t ->
 
 getPlaColumns :: Id -> MudStack Int
 getPlaColumns i = (^.columns) <$> lookupPla i
-
-
--- TODO: Move log state helpers here, too?
 
 
 -- ==================================================
@@ -166,29 +171,35 @@ dispGenericErrorMsg = output "Unfortunately, an error occured while executing yo
 -- Helpers for working with world state tables:
 
 
-type WSTblLens a = ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> WorldState -> Const (TVar (IntMap a)) WorldState)
+type WSTblLens a    = ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> WorldState -> Const (TVar (IntMap a)) WorldState)
+type WSTblGetting a = Getting (TVar (IntMap a)) WorldState (TVar (IntMap a))
 
 
-lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Key -> WSTblLens a -> m a
+lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Id -> WSTblLens a -> m a
 i `lookupWS` tbl = IM.lookup i <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO) >>= maybeRet oops
   where
     oops = blowUp "lookupWS" "value not found in world state table for given key" [ showText i ]
-
-
-updateWS :: forall a . Key -> Getting (TVar (IntMap a)) WorldState (TVar (IntMap a)) -> a -> MudStack ()
-updateWS i tbl a = onWorldState $ \ws ->
-    updateWSSTM (ws^.tbl) i a
 
 
 onWorldState :: (WorldState -> STM ()) -> MudStack ()
 onWorldState f = gets (^.worldState) >>= liftIO . atomically . f
 
 
-updateWSSTM :: forall a . TVar (IntMap a) -> Key -> a -> STM ()
-updateWSSTM t i a = modifyTVar' t . IM.insert i $ a
+insertWS :: forall a . Id -> WSTblGetting a -> a -> MudStack ()
+insertWS i tbl a = onWorldState $ \ws ->
+    insertWS_STM (ws^.tbl) i a
 
 
-keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => WSTblLens a -> f [Key]
+insertWS_STM :: forall a . TVar (IntMap a) -> Id -> a -> STM ()
+insertWS_STM t i a = modifyTVar' t . IM.insert i $ a
+
+
+adjustWS :: forall a . Id -> WSTblGetting a -> (a -> a) -> MudStack ()
+adjustWS i tbl f = onWorldState $ \ws ->
+    modifyTVar' (ws^.tbl) . IM.adjust f $ i
+
+
+keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => WSTblLens a -> f Inv
 keysWS tbl = IM.keys <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
 
 
@@ -270,7 +281,7 @@ getInvCoins i = (,) <$> getInv i <*> getCoins i
 
 
 addToInv :: Inv -> Id -> MudStack ()
-addToInv is ti = getInv ti >>= sortInv . (++ is) >>= updateWS ti invTbl
+addToInv is ti = getInv ti >>= sortInv . (++ is) >>= insertWS ti invTbl
 
 
 type FromId = Id
@@ -279,7 +290,7 @@ type ToId   = Id
 
 remFromInv :: Inv -> FromId -> MudStack ()
 remFromInv is fi = getInv fi >>= \fis ->
-    updateWS fi invTbl . deleteFirstOfEach is $ fis
+    insertWS fi invTbl . deleteFirstOfEach is $ fis
 
 
 moveInv :: Inv -> FromId -> ToId -> MudStack ()
@@ -321,12 +332,12 @@ moveCoins c fi ti = unless (c == mempty) $ subCoins c fi >> addCoins c ti
 
 addCoins :: Coins -> Id -> MudStack ()
 addCoins c i = getCoins i >>= \c' ->
-    updateWS i coinsTbl $ c' <> c
+    insertWS i coinsTbl $ c' <> c
 
 
 subCoins :: Coins -> Id -> MudStack ()
 subCoins c i = getCoins i >>= \c' ->
-    updateWS i coinsTbl $ c' <> negateCoins c
+    insertWS i coinsTbl $ c' <> negateCoins c
 
 
 negateCoins :: Coins -> Coins
@@ -365,6 +376,14 @@ hasEq :: Id -> MudStack Bool
 hasEq i = not . null <$> getEq i
 
 
+moveReadiedItem :: Id -> EqMap -> Slot -> MudStack ()
+moveReadiedItem i em s = insertWS 0 eqTbl (em & at s ?~ i) >> remFromInv [i] 0
+
+
+shuffleInvUnready :: Inv -> MudStack ()
+shuffleInvUnready is = M.filter (`notElem` is) <$> getEqMap 0 >>= insertWS 0 eqTbl >> addToInv is 0
+
+
 -- ==================================================
 -- Mobiles:
 
@@ -387,6 +406,10 @@ getMobHand i = (^.hand) <$> getMob i
 
 getPC :: Id -> MudStack PC
 getPC i = i `lookupWS` pcTbl
+
+
+movePC :: Id -> Id -> MudStack ()
+movePC pci ri = adjustWS pci pcTbl (\p -> p & rmId .~ ri)
 
 
 -- ==================================================

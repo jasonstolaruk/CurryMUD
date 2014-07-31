@@ -48,72 +48,72 @@ allKeys = keysWS typeTbl
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
 putObj i e o = onWorldState $ \ws -> do
-    updateWSSTM (ws^.typeTbl) i ObjType
-    updateWSSTM (ws^.entTbl)  i e
-    updateWSSTM (ws^.objTbl)  i o
+    insertWS_STM (ws^.typeTbl) i ObjType
+    insertWS_STM (ws^.entTbl)  i e
+    insertWS_STM (ws^.objTbl)  i o
 
 
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
 putCloth i e o c = onWorldState $ \ws -> do
-    updateWSSTM (ws^.typeTbl)  i ClothType
-    updateWSSTM (ws^.entTbl)   i e
-    updateWSSTM (ws^.objTbl)   i o
-    updateWSSTM (ws^.clothTbl) i c
+    insertWS_STM (ws^.typeTbl)  i ClothType
+    insertWS_STM (ws^.entTbl)   i e
+    insertWS_STM (ws^.objTbl)   i o
+    insertWS_STM (ws^.clothTbl) i c
 
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
 putCon i e o is coi con = onWorldState $ \ws -> do
-    updateWSSTM (ws^.typeTbl)  i ConType
-    updateWSSTM (ws^.entTbl)   i e
-    updateWSSTM (ws^.objTbl)   i o
-    updateWSSTM (ws^.invTbl)   i is
-    updateWSSTM (ws^.coinsTbl) i coi
-    updateWSSTM (ws^.conTbl)   i con
+    insertWS_STM (ws^.typeTbl)  i ConType
+    insertWS_STM (ws^.entTbl)   i e
+    insertWS_STM (ws^.objTbl)   i o
+    insertWS_STM (ws^.invTbl)   i is
+    insertWS_STM (ws^.coinsTbl) i coi
+    insertWS_STM (ws^.conTbl)   i con
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
 putWpn i e o w = onWorldState $ \ws -> do
-    updateWSSTM (ws^.typeTbl) i WpnType
-    updateWSSTM (ws^.entTbl)  i e
-    updateWSSTM (ws^.objTbl)  i o
-    updateWSSTM (ws^.wpnTbl)  i w
+    insertWS_STM (ws^.typeTbl) i WpnType
+    insertWS_STM (ws^.entTbl)  i e
+    insertWS_STM (ws^.objTbl)  i o
+    insertWS_STM (ws^.wpnTbl)  i w
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
 putArm i e o a = onWorldState $ \ws -> do
-    updateWSSTM (ws^.typeTbl) i ArmType
-    updateWSSTM (ws^.entTbl)  i e
-    updateWSSTM (ws^.objTbl)  i o
-    updateWSSTM (ws^.armTbl)  i a
+    insertWS_STM (ws^.typeTbl) i ArmType
+    insertWS_STM (ws^.entTbl)  i e
+    insertWS_STM (ws^.objTbl)  i o
+    insertWS_STM (ws^.armTbl)  i a
 
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
 putMob i e is c em m = onWorldState $ \ws -> do
-    updateWSSTM (ws^.typeTbl)  i MobType
-    updateWSSTM (ws^.entTbl)   i e
-    updateWSSTM (ws^.invTbl)   i is
-    updateWSSTM (ws^.coinsTbl) i c
-    updateWSSTM (ws^.eqTbl)    i em
-    updateWSSTM (ws^.mobTbl)   i m
+    insertWS_STM (ws^.typeTbl)  i MobType
+    insertWS_STM (ws^.entTbl)   i e
+    insertWS_STM (ws^.invTbl)   i is
+    insertWS_STM (ws^.coinsTbl) i c
+    insertWS_STM (ws^.eqTbl)    i em
+    insertWS_STM (ws^.mobTbl)   i m
 
 
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
 putPC i e is c em m p = onWorldState $ \ws -> do
-    updateWSSTM (ws^.typeTbl)  i PCType
-    updateWSSTM (ws^.entTbl)   i e
-    updateWSSTM (ws^.invTbl)   i is
-    updateWSSTM (ws^.coinsTbl) i c
-    updateWSSTM (ws^.eqTbl)    i em
-    updateWSSTM (ws^.mobTbl)   i m
-    updateWSSTM (ws^.pcTbl)    i p
+    insertWS_STM (ws^.typeTbl)  i PCType
+    insertWS_STM (ws^.entTbl)   i e
+    insertWS_STM (ws^.invTbl)   i is
+    insertWS_STM (ws^.coinsTbl) i c
+    insertWS_STM (ws^.eqTbl)    i em
+    insertWS_STM (ws^.mobTbl)   i m
+    insertWS_STM (ws^.pcTbl)    i p
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
 putRm i is c r = onWorldState $ \ws -> do
-    updateWSSTM (ws^.typeTbl)  i RmType
-    updateWSSTM (ws^.invTbl)   i is
-    updateWSSTM (ws^.coinsTbl) i c
-    updateWSSTM (ws^.rmTbl)    i r
+    insertWS_STM (ws^.typeTbl)  i RmType
+    insertWS_STM (ws^.invTbl)   i is
+    insertWS_STM (ws^.coinsTbl) i c
+    insertWS_STM (ws^.rmTbl)    i r
 
 
 -- ==================================================
@@ -197,4 +197,4 @@ sortAllInvs = do
     logNotice "sortAllInvs" "sorting all inventories"
     keysWS invTbl >>= mapM_ sortEach
   where
-    sortEach k = k `lookupWS` invTbl >>= sortInv >>= updateWS k invTbl
+    sortEach k = k `lookupWS` invTbl >>= sortInv >>= insertWS k invTbl
