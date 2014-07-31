@@ -86,7 +86,7 @@ type LoggingFun = String -> String -> IO ()
 
 
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> MudStack LogAsync
-spawnLogger fn p ln f q = liftIO initLog >>= liftIO . async . loop
+spawnLogger fn p ln f q = liftIO (async . loop =<< initLog)
   where
     initLog = do
         gh <- fileHandler (logDir ++ fn) p
@@ -103,11 +103,11 @@ registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
 
 
 logNotice :: String -> String -> String -> MudStack ()
-logNotice modName funName msg = getLogQueue getNoticeLog >>= registerMsg (concat [ modName, " ", funName, ": ", msg, "." ])
+logNotice modName funName msg = registerMsg (concat [ modName, " ", funName, ": ", msg, "." ]) =<< getLogQueue getNoticeLog
 
 
 logError :: String -> MudStack ()
-logError msg = getLogQueue getErrorLog >>= registerMsg msg
+logError msg = registerMsg msg =<< getLogQueue getErrorLog
 
 
 logExMsg :: String -> String -> String -> SomeException -> MudStack ()

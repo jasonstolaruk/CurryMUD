@@ -195,6 +195,6 @@ initWorld = createWorld >> sortAllInvs
 sortAllInvs :: MudStack ()
 sortAllInvs = do
     logNotice "sortAllInvs" "sorting all inventories"
-    keysWS invTbl >>= mapM_ sortEach
+    mapM_ sortEach =<< keysWS invTbl
   where
     sortEach k = k `lookupWS` invTbl >>= sortInv >>= insertWS k invTbl

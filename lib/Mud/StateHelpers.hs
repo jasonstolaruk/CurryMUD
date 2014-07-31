@@ -102,7 +102,7 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 lookupPla :: Id -> MudStack Pla
-lookupPla i = IM.lookup i <$> (gets (^.nonWorldState.plaTbl) >>= liftIO . readTVarIO) >>= maybeRet oops
+lookupPla i = IM.lookup i <$> (liftIO . readTVarIO =<< gets (^.nonWorldState.plaTbl)) >>= maybeRet oops
   where
     oops = blowUp "lookupPla" "player not found in non-world state table for given key" [ showText i ]
 
@@ -176,13 +176,13 @@ type WSTblGetting a = Getting (TVar (IntMap a)) WorldState (TVar (IntMap a))
 
 
 lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Id -> WSTblLens a -> m a
-i `lookupWS` tbl = IM.lookup i <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO) >>= maybeRet oops
+i `lookupWS` tbl = IM.lookup i <$> (liftIO . readTVarIO =<< gets (^.worldState.tbl)) >>= maybeRet oops
   where
     oops = blowUp "lookupWS" "value not found in world state table for given key" [ showText i ]
 
 
 onWorldState :: (WorldState -> STM ()) -> MudStack ()
-onWorldState f = gets (^.worldState) >>= liftIO . atomically . f
+onWorldState f = liftIO . atomically . f =<< gets (^.worldState)
 
 
 insertWS :: forall a . Id -> WSTblGetting a -> a -> MudStack ()
@@ -191,7 +191,7 @@ insertWS i tbl a = onWorldState $ \ws ->
 
 
 insertWS_STM :: forall a . TVar (IntMap a) -> Id -> a -> STM ()
-insertWS_STM t i a = modifyTVar' t . IM.insert i $ a
+insertWS_STM t i = modifyTVar' t . IM.insert i
 
 
 adjustWS :: forall a . Id -> WSTblGetting a -> (a -> a) -> MudStack ()
@@ -200,7 +200,7 @@ adjustWS i tbl f = onWorldState $ \ws ->
 
 
 keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => WSTblLens a -> f Inv
-keysWS tbl = IM.keys <$> (gets (^.worldState.tbl) >>= liftIO . readTVarIO)
+keysWS tbl = IM.keys <$> (liftIO . readTVarIO =<< gets (^.worldState.tbl))
 
 
 -- ==================================================
@@ -425,11 +425,11 @@ getPCRmId i = (^.rmId) <$> getPC i
 
 
 getPCRm :: Id -> MudStack Rm
-getPCRm i = getPCRmId i >>= getRm
+getPCRm i = getRm =<< getPCRmId i
 
 
 getPCRmInvCoins :: Id -> MudStack InvCoins
-getPCRmInvCoins i = getPCRmId i >>= getInvCoins
+getPCRmInvCoins i = getInvCoins =<< getPCRmId i
 
 
 getRmLinks :: Id -> MudStack [RmLink]

@@ -204,7 +204,7 @@ dispatch (cn, rest) = findAction cn >>= maybe (output $ "What?" <> nlt) (\act ->
 
 findAction :: CmdName -> MudStack (Maybe Action)
 findAction cn = do
-    cmdList' <- getPCRmId 0 >>= mkCmdListWithRmLinks
+    cmdList' <- mkCmdListWithRmLinks =<< getPCRmId 0
     let cns = map cmdName cmdList'
     maybe (return Nothing)
           (\fn -> return . Just . findActionForFullName fn $ cmdList')
@@ -316,7 +316,7 @@ what rs = mapM_ helper rs
     helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r >> liftIO newLine
       where
         whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
-        cs       = filter ((/=) wizCmdChar . T.head) <$> map cmdName <$> (getPCRmId 0 >>= mkCmdListWithRmLinks)
+        cs       = filter ((/=) wizCmdChar . T.head) <$> map cmdName <$> (mkCmdListWithRmLinks =<< getPCRmId 0)
         notFound = output $ dblQuote r <> " doesn't refer to any commands."
         found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
 
@@ -431,16 +431,16 @@ look :: Action
 look [] = do
     descRm
     summarizeExits
-    getPCRmInvCoins 0 >>= dispRmInvCoins
+    dispRmInvCoins =<< getPCRmInvCoins 0
     liftIO newLine
   where
     descRm = getPCRm 0 >>= \r -> output $ r^.name <> nlt <> r^.desc
     summarizeExits = exits False []
 look rs = do
-    hic <- getPCRmId 0 >>= hasInvOrCoins
+    hic <- hasInvOrCoins =<< getPCRmId 0
     if hic
       then do
-          (gecrs, miss, rcs) <- getPCRmInvCoins 0 >>= resolveEntCoinNames rs
+          (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getPCRmInvCoins 0
           mapM_ (procGecrMisRm True descEnts) . zip gecrs $ miss
           mapM_ (procReconciledCoinsRm True descCoins) rcs
       else output $ "You don't see anything here to look at." <> nlt
@@ -493,7 +493,7 @@ dispInvCoins i = do
     header
       | i == 0 = output "You are carrying:"
       | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " contains:"
-    summarizeCoinsInInv = getCoins i >>= summarizeCoins
+    summarizeCoinsInInv = summarizeCoins =<< getCoins i
 
 
 dudeYourHandsAreEmpty :: MudStack ()
@@ -531,7 +531,7 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 
 exits :: ShouldNewLine -> Action
 exits snl [] = do
-    rlns <- map (^.linkName) <$> (getPCRmId 0 >>= getRmLinks)
+    rlns <- map (^.linkName) <$> (getRmLinks =<< getPCRmId 0)
     let stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
     let customNames = filter (`notElem` stdLinkNames) rlns
     output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
@@ -548,7 +548,7 @@ inv rs = do
     hic <- hasInvOrCoins 0
     if hic
       then do
-          (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
+          (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getInvCoins 0
           mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
           mapM_ (procReconciledCoinsPCInv True descCoins) rcs
       else dudeYourHandsAreEmpty >> liftIO newLine
@@ -597,10 +597,10 @@ dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> n
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = do
-    hic <- getPCRmId 0 >>= hasInvOrCoins
+    hic <- hasInvOrCoins =<< getPCRmId 0
     if hic
       then do
-        (gecrs, miss, rcs) <- getPCRmInvCoins 0 >>= resolveEntCoinNames rs
+        (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getPCRmInvCoins 0
         mapM_ (procGecrMisRm False shuffleInvGet) . zip gecrs $ miss
         mapM_ (procReconciledCoinsRm False shuffleCoinsGet) rcs
         liftIO newLine
@@ -613,7 +613,7 @@ shuffleInvGet is = getPCRmId 0 >>= \i ->
 
 
 descGetDropEnts :: GetOrDrop -> Inv -> MudStack ()
-descGetDropEnts god is = mkNameCountBothList is >>= mapM_ descGetDropHelper
+descGetDropEnts god is = mapM_ descGetDropHelper =<< mkNameCountBothList is
   where
     descGetDropHelper (_, c, (s, _))
       | c == 1                   = outputCon [ "You ", verb god, " the ", s, "." ]
@@ -649,7 +649,7 @@ dropAction rs = do
     hic <- hasInvOrCoins 0
     if hic
       then do
-          (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
+          (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getInvCoins 0
           mapM_ (procGecrMisPCInv False shuffleInvDrop) . zip gecrs $ miss
           mapM_ (procReconciledCoinsPCInv False shuffleCoinsDrop) rcs
       else dudeYourHandsAreEmpty
@@ -717,7 +717,7 @@ putRemDispatcherHelper por cn f g rs = f >>= resolveEntCoinNames [cn] >>= \(gecr
 putHelper :: Id -> Rest -> MudStack ()
 putHelper _  [] = return ()
 putHelper ci rs = do
-    (gecrs, miss, rcs) <- getInvCoins 0 >>= resolveEntCoinNames rs
+    (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getInvCoins 0
     mapM_ (procGecrMisPCInv False . shuffleInvPut $ ci) . zip gecrs $ miss
     mapM_ (procReconciledCoinsPCInv False . shuffleCoinsPut $ ci) rcs
 
@@ -735,7 +735,7 @@ shuffleInvPut ci is = do
 
 
 descPutRemEnts :: PutOrRem -> Inv -> ConName -> MudStack ()
-descPutRemEnts por is cn = mkNameCountBothList is >>= mapM_ descPutRemHelper
+descPutRemEnts por is cn = mapM_ descPutRemHelper =<< mkNameCountBothList is
   where
     descPutRemHelper (_, c, (s, _))
       | c == 1                 = outputCon [ "You ", verb por, " the ", s, " ", prep por, " ", cn, "." ]
@@ -782,7 +782,7 @@ remHelper ci rs = do
     if not hic
       then output $ "The " <> cn <> " appears to be empty."
       else do
-          (gecrs, miss, rcs) <- getInvCoins ci >>= resolveEntCoinNames rs
+          (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getInvCoins ci
           mapM_ (procGecrMisCon cn . shuffleInvRem ci $ cn) . zip gecrs $ miss
           mapM_ (procReconciledCoinsCon cn . shuffleCoinsRem $ ci) rcs
 
@@ -807,7 +807,7 @@ shuffleCoinsRem ci c = moveCoins c ci 0 >> (^.sing) <$> getEnt ci >>= descPutRem
 ready :: Action
 ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
-    (gecrs, mrols, mis, rcs) <- getInvCoins 0 >>= resolveEntCoinNamesWithRols rs
+    (gecrs, mrols, mis, rcs) <- resolveEntCoinNamesWithRols rs =<< getInvCoins 0
     mapM_ (procGecrMrolMiss readyDispatcher) $ zip3 gecrs mrols mis
     unless (null rcs) $ output "You can't ready coins."
     liftIO newLine
@@ -963,7 +963,7 @@ getAvailClothSlot c em = do
 readyWpn :: Id -> Ent -> EqMap -> Maybe RightOrLeft -> MudStack ()
 readyWpn i e em mrol
   | not . isSlotAvail em $ BothHandsS = output "You're already wielding a two-handed weapon."
-  | otherwise = maybe (getAvailWpnSlot em) (getDesigWpnSlot e em) mrol >>= maybeVoid (\s -> getWpn i >>= readyHelper s)
+  | otherwise = maybe (getAvailWpnSlot em) (getDesigWpnSlot e em) mrol >>= maybeVoid (\s -> readyHelper s =<< getWpn i)
   where
     readyHelper s w = case w^.wpnSub of OneHanded -> moveReadiedItem i em s >> outputCon [ "You wield the ", e^.sing, " with your ", pp s, "." ]
                                         TwoHanded -> if all (isSlotAvail em) [RHandS, LHandS]
@@ -1010,7 +1010,7 @@ unready rs = hasEq 0 >>= \he -> if not he then dudeYou'reNaked else do
 
 
 descUnready :: Inv -> MudStack ()
-descUnready is = mkIdCountBothList is >>= mapM_ descUnreadyHelper
+descUnready is = mapM_ descUnreadyHelper =<< mkIdCountBothList is
   where
     descUnreadyHelper (i, c, b@(s, _)) = verb i >>= \v ->
         outputCon $ if c == 1

@@ -51,7 +51,7 @@ type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 
 resolveEntCoinNames :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNames rs ic@(_, c) = mapM (mkGecr ic . T.toLower) rs >>= expandGecrs c
+resolveEntCoinNames rs ic@(_, c) = expandGecrs c =<< mapM (mkGecr ic . T.toLower) rs
 
 
 mkGecr :: InvCoins -> T.Text -> MudStack GetEntsCoinsRes
