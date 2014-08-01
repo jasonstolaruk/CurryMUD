@@ -1134,10 +1134,10 @@ debugDispEnv rs = mapM_ helper rs
 
 
 debugLog :: Action
-debugLog [] = get >>= replicateM_ 2 . void . liftIO . forkIO . void . runStateInIORefT heavyLogging
+debugLog [] = (replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get) >> output "OK!"
   where
     heavyLogging = liftIO myThreadId >>= \i ->
-        replicateM_ 10000 . logNotice "debugLog" $ "Logging from " ++ show i
+        replicateM_ 100 . logNotice "debugLog" $ "Logging from " ++ show i
 debugLog rs = ignore rs >> debugLog []
 
 

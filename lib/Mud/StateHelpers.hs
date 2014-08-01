@@ -43,7 +43,7 @@ module Mud.StateHelpers ( addToInv
                         , lookupPla
                         , lookupWS
                         , mkCoinsFromList
-                        , mkCoinsList
+                        , mkListFromCoins
                         , mkPlurFromBoth
                         , moveCoins
                         , moveInv
@@ -68,7 +68,7 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), Const)
 import Control.Concurrent.STM (atomically, STM)
-import Control.Concurrent.STM.TVar (modifyTVar', readTVarIO, TVar)
+import Control.Concurrent.STM.TVar (modifyTVar', readTVar, readTVarIO, TVar)
 import Control.Lens (_1, at, each, folded)
 import Control.Lens.Getter (Getting)
 import Control.Lens.Operators ((&), (?~), (.~), (%~), (^.), (^..))
@@ -87,7 +87,9 @@ import qualified Data.Text.IO as T (putStrLn, readFile)
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
--- TODO: Merge "get" and "put" operations into atomic transactions.
+-- TODO: Finish merging "get" and "put" operations into atomic transactions.
+-- TODO: Delete unused methods.
+-- TODO: Consider implementing the non-STM methods in terms of their STM counterparts (using "atomically").
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -172,18 +174,22 @@ dispGenericErrorMsg = output "Unfortunately, an error occured while executing yo
 -- Helpers for working with world state tables:
 
 
-type WSTblLens a    = ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> WorldState -> Const (TVar (IntMap a)) WorldState)
 type WSTblGetting a = Getting (TVar (IntMap a)) WorldState (TVar (IntMap a))
 
 
-lookupWS :: (Functor m, MonadState MudState m, MonadIO m) => Id -> WSTblLens a -> m a
-i `lookupWS` tbl = IM.lookup i <$> (liftIO . readTVarIO =<< gets (^.worldState.tbl)) >>= maybeRet oops
-  where
-    oops = blowUp "lookupWS" "value not found in world state table for given key" [ showText i ]
-
-
-onWorldState :: (WorldState -> STM ()) -> MudStack ()
+onWorldState :: (WorldState -> STM a) -> MudStack a
 onWorldState f = liftIO . atomically . f =<< gets (^.worldState)
+
+
+lookupWS :: forall a . Id -> WSTblGetting a -> MudStack a
+i `lookupWS` tbl = onWorldState $ \ws ->
+    i `lookupWS_STM` (ws^.tbl)
+
+
+lookupWS_STM :: forall a . Id -> TVar (IntMap a) -> STM a
+i `lookupWS_STM` t = maybeRet oops . IM.lookup i =<< readTVar t
+  where
+    oops = blowUp "lookupWS_STM" "value not found in world state table for given key" [ showText i ]
 
 
 insertWS :: forall a . Id -> a -> WSTblGetting a -> MudStack ()
@@ -204,7 +210,7 @@ adjustWS_STM :: forall a . (a -> a) -> Id -> TVar (IntMap a) -> STM ()
 adjustWS_STM f i t = modifyTVar' t . IM.adjust f $ i
 
 
-keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => WSTblLens a -> f Inv
+keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> WorldState -> Const (TVar (IntMap a)) WorldState) -> f Inv
 keysWS tbl = IM.keys <$> (liftIO . readTVarIO =<< gets (^.worldState.tbl))
 
 
@@ -216,13 +222,26 @@ getEnt :: Id -> MudStack Ent
 getEnt i = i `lookupWS` entTbl
 
 
+getEnt_STM :: WorldState -> Id -> STM Ent
+getEnt_STM ws i = i `lookupWS_STM` (ws^.entTbl)
+
+
 getEntType :: Ent -> MudStack Type
 getEntType e = let i = e^.entId
                in i `lookupWS` typeTbl
 
 
+getEntType_STM :: WorldState -> Ent -> STM Type
+getEntType_STM ws e = let i = e^.entId
+                      in i `lookupWS_STM` (ws^.typeTbl)
+
+
 getEntsInInv :: Inv -> MudStack [Ent]
 getEntsInInv = mapM getEnt
+
+
+getEntsInInv_STM :: WorldState -> Inv -> STM [Ent]
+getEntsInInv_STM ws = mapM (getEnt_STM ws)
 
 
 getEntNamesInInv :: Inv -> MudStack [T.Text]
@@ -230,8 +249,18 @@ getEntNamesInInv is = getEntsInInv is >>= \es ->
     return [ e^.name | e <- es ]
 
 
+getEntNamesInInv_STM :: WorldState -> Inv -> STM [T.Text]
+getEntNamesInInv_STM ws is = getEntsInInv_STM ws is >>= \es ->
+    return [ e^.name | e <- es ]
+
+
 getEntSingsInInv :: Inv -> MudStack [T.Text]
 getEntSingsInInv is = getEntsInInv is >>= \es ->
+    return [ e^.sing | e <- es ]
+
+
+getEntSingsInInv_STM :: WorldState -> Inv -> STM [T.Text]
+getEntSingsInInv_STM ws is = getEntsInInv_STM ws is >>= \es ->
     return [ e^.sing | e <- es ]
 
 
@@ -244,6 +273,10 @@ getEntBothGramNos e = (e^.sing, e^.plur)
 
 getEntBothGramNosInInv :: Inv -> MudStack [BothGramNos]
 getEntBothGramNosInInv is = map getEntBothGramNos <$> getEntsInInv is
+
+
+getEntBothGramNosInInv_STM :: WorldState -> Inv -> STM [BothGramNos]
+getEntBothGramNosInInv_STM ws is = map getEntBothGramNos <$> getEntsInInv_STM ws is
 
 
 mkPlurFromBoth :: BothGramNos -> Plur
@@ -259,6 +292,10 @@ getCloth :: Id -> MudStack Cloth
 getCloth i = i `lookupWS` clothTbl
 
 
+getCloth_STM :: WorldState -> Id -> STM Cloth
+getCloth_STM ws i = i `lookupWS_STM` (ws^.clothTbl)
+
+
 -- ==================================================
 -- Inventories:
 
@@ -267,12 +304,24 @@ getInv :: Id -> MudStack Inv
 getInv i = i `lookupWS` invTbl
 
 
+getInv_STM :: WorldState -> Id -> STM Inv
+getInv_STM ws i = i `lookupWS_STM` (ws^.invTbl)
+
+
 hasInv :: Id -> MudStack Bool
 hasInv i = not . null <$> getInv i
 
 
+hasInv_STM :: WorldState -> Id -> STM Bool
+hasInv_STM ws i = not . null <$> getInv_STM ws i
+
+
 hasInvOrCoins :: Id -> MudStack Bool
 hasInvOrCoins i = (||) <$> hasInv i <*> hasCoins i
+
+
+hasInvOrCoins_STM :: WorldState -> Id -> STM Bool
+hasInvOrCoins_STM ws i = (||) <$> hasInv_STM ws i <*> hasCoins_STM ws i
 
 
 type InvCoins = (Inv, Coins)
@@ -282,22 +331,8 @@ getInvCoins :: Id -> MudStack InvCoins
 getInvCoins i = (,) <$> getInv i <*> getCoins i
 
 
-addToInv :: Inv -> Id -> MudStack ()
-addToInv is ti = getInv ti >>= sortInv . (++ is) >>= \is' ->
-    insertWS ti is' invTbl
-
-
-type FromId = Id
-type ToId   = Id
-
-
-remFromInv :: Inv -> FromId -> MudStack ()
-remFromInv is fi = adjustWS (deleteFirstOfEach is) fi invTbl
-
-
-moveInv :: Inv -> FromId -> ToId -> MudStack ()
-moveInv [] _  _  = return ()
-moveInv is fi ti = remFromInv is fi >> addToInv is ti
+getInvCoins_STM :: WorldState -> Id -> STM InvCoins
+getInvCoins_STM ws i = (,) <$> getInv_STM ws i <*> getCoins_STM ws i
 
 
 sortInv :: Inv -> MudStack Inv
@@ -305,6 +340,45 @@ sortInv is = ((^..folded._1) . sortBy nameThenSing) <$> zipped
   where
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped = zip3 is <$> getEntNamesInInv is <*> getEntSingsInInv is
+
+
+sortInv_STM :: WorldState -> Inv -> STM Inv
+sortInv_STM ws is = ((^..folded._1) . sortBy nameThenSing) <$> zipped
+  where
+    nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
+    zipped = zip3 is <$> getEntNamesInInv_STM ws is <*> getEntSingsInInv_STM ws is
+
+
+type FromId = Id
+type ToId   = Id
+
+
+addToInv :: Inv -> ToId -> MudStack ()
+addToInv is ti = getInv ti >>= sortInv . (++ is) >>= \is' ->
+    insertWS ti is' invTbl
+
+
+addToInv_STM :: WorldState -> Inv -> ToId -> STM ()
+addToInv_STM ws is ti = getInv_STM ws ti >>= sortInv_STM ws . (++ is) >>= \is' ->
+    insertWS_STM ti is' (ws^.invTbl)
+
+
+remFromInv :: Inv -> FromId -> MudStack ()
+remFromInv is fi = adjustWS (deleteFirstOfEach is) fi invTbl
+
+
+remFromInv_STM :: WorldState -> Inv -> FromId -> STM ()
+remFromInv_STM ws is fi = adjustWS_STM (deleteFirstOfEach is) fi (ws^.invTbl)
+
+
+moveInv :: Inv -> FromId -> ToId -> MudStack ()
+moveInv [] _  _  = return ()
+moveInv is fi ti = remFromInv is fi >> addToInv is ti
+
+
+moveInv_STM :: WorldState -> Inv -> FromId -> ToId -> STM ()
+moveInv_STM _  [] _  _  = return ()
+moveInv_STM ws is fi ti = remFromInv_STM ws is fi >> addToInv_STM ws is ti
 
 
 -- ==================================================
@@ -315,8 +389,12 @@ getCoins :: Id -> MudStack Coins
 getCoins i = i `lookupWS` coinsTbl
 
 
-mkCoinsList :: Coins -> [Int]
-mkCoinsList (Coins (c, g, s)) = [c, g, s]
+getCoins_STM :: WorldState -> Id -> STM Coins
+getCoins_STM ws i = i `lookupWS_STM` (ws^.coinsTbl)
+
+
+mkListFromCoins :: Coins -> [Int]
+mkListFromCoins (Coins (c, g, s)) = [c, g, s]
 
 
 mkCoinsFromList :: [Int] -> Coins
@@ -325,21 +403,35 @@ mkCoinsFromList xs              = patternMatchFail "mkCoinsFromList" [ showText 
 
 
 hasCoins :: Id -> MudStack Bool
-hasCoins i = not . all (== 0) . mkCoinsList <$> getCoins i
+hasCoins i = not . all (== 0) . mkListFromCoins <$> getCoins i
+
+
+hasCoins_STM :: WorldState -> Id -> STM Bool
+hasCoins_STM ws i = not . all (== 0) . mkListFromCoins <$> getCoins_STM ws i
 
 
 moveCoins :: Coins -> FromId -> ToId -> MudStack ()
 moveCoins c fi ti = unless (c == mempty) $ subCoins c fi >> addCoins c ti
 
 
+moveCoins_STM :: WorldState -> Coins -> FromId -> ToId -> STM ()
+moveCoins_STM ws c fi ti = unless (c == mempty) $ subCoins_STM ws c fi >> addCoins_STM ws c ti
+
+
 addCoins :: Coins -> Id -> MudStack ()
-addCoins c i = getCoins i >>= \c' ->
-    insertWS i (c' <> c) coinsTbl
+addCoins c i = adjustWS (<> c) i coinsTbl
+
+
+addCoins_STM :: WorldState -> Coins -> Id -> STM ()
+addCoins_STM ws c i = adjustWS_STM (<> c) i $ ws^.coinsTbl
 
 
 subCoins :: Coins -> Id -> MudStack ()
-subCoins c i = getCoins i >>= \c' ->
-    insertWS i (c' <> negateCoins c) coinsTbl
+subCoins c i = adjustWS (<> negateCoins c) i coinsTbl
+
+
+subCoins_STM :: WorldState -> Coins -> Id -> STM ()
+subCoins_STM ws c i = adjustWS_STM (<> negateCoins c) i $ ws^.coinsTbl
 
 
 negateCoins :: Coins -> Coins
@@ -354,12 +446,20 @@ getWpn :: Id -> MudStack Wpn
 getWpn i = i `lookupWS` wpnTbl
 
 
+getWpn_STM :: WorldState -> Id -> STM Coins
+getWpn_STM ws i = i `lookupWS_STM` (ws^.coinsTbl)
+
+
 -- ==================================================
 -- Armor:
 
 
 getArm :: Id -> MudStack Arm
 getArm i = i `lookupWS` armTbl
+
+
+getArm_STM :: WorldState -> Id -> STM Arm
+getArm_STM ws i = i `lookupWS_STM` (ws^.armTbl)
 
 
 -- ==================================================
@@ -370,14 +470,27 @@ getEqMap :: Id -> MudStack EqMap
 getEqMap i = i `lookupWS` eqTbl
 
 
+getEqMap_STM :: WorldState -> Id -> STM EqMap
+getEqMap_STM ws i = i `lookupWS_STM` (ws^.eqTbl)
+
+
 getEq :: Id -> MudStack Inv
 getEq i = M.elems <$> getEqMap i
+
+
+getEq_STM :: WorldState -> Id -> STM Inv
+getEq_STM ws i = M.elems <$> getEqMap_STM ws i
 
 
 hasEq :: Id -> MudStack Bool
 hasEq i = not . null <$> getEq i
 
 
+hasEq_STM :: WorldState -> Id -> STM Bool
+hasEq_STM ws i = not . null <$> getEq_STM ws i
+
+
+-- TODO: Left off here...
 moveReadiedItem :: Id -> EqMap -> Slot -> MudStack ()
 moveReadiedItem i em s = insertWS 0 (em & at s ?~ i) eqTbl >> remFromInv [i] 0
 
