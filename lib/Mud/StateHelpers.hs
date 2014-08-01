@@ -86,6 +86,7 @@ import qualified Data.Text.IO as T (putStrLn, readFile)
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
+
 -- TODO: Merge "get" and "put" operations into atomic transactions.
 
 
@@ -185,18 +186,22 @@ onWorldState :: (WorldState -> STM ()) -> MudStack ()
 onWorldState f = liftIO . atomically . f =<< gets (^.worldState)
 
 
-insertWS :: forall a . Id -> WSTblGetting a -> a -> MudStack ()
-insertWS i tbl a = onWorldState $ \ws ->
-    insertWS_STM (ws^.tbl) i a
+insertWS :: forall a . Id -> a -> WSTblGetting a -> MudStack ()
+insertWS i a tbl = onWorldState $ \ws ->
+    insertWS_STM i a (ws^.tbl)
 
 
-insertWS_STM :: forall a . TVar (IntMap a) -> Id -> a -> STM ()
-insertWS_STM t i = modifyTVar' t . IM.insert i
+insertWS_STM :: forall a . Id -> a -> TVar (IntMap a) -> STM ()
+insertWS_STM i a t = modifyTVar' t . IM.insert i $ a
 
 
-adjustWS :: forall a . Id -> WSTblGetting a -> (a -> a) -> MudStack ()
-adjustWS i tbl f = onWorldState $ \ws ->
-    modifyTVar' (ws^.tbl) . IM.adjust f $ i
+adjustWS :: forall a . (a -> a) -> Id -> WSTblGetting a -> MudStack ()
+adjustWS f i tbl = onWorldState $ \ws ->
+    adjustWS_STM f i (ws^.tbl)
+
+
+adjustWS_STM :: forall a . (a -> a) -> Id -> TVar (IntMap a) -> STM ()
+adjustWS_STM f i t = modifyTVar' t . IM.adjust f $ i
 
 
 keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => WSTblLens a -> f Inv
@@ -267,10 +272,7 @@ hasInv i = not . null <$> getInv i
 
 
 hasInvOrCoins :: Id -> MudStack Bool
-hasInvOrCoins i = do
-    hi <- hasInv   i
-    hc <- hasCoins i
-    return (hi || hc)
+hasInvOrCoins i = (||) <$> hasInv i <*> hasCoins i
 
 
 type InvCoins = (Inv, Coins)
@@ -281,7 +283,8 @@ getInvCoins i = (,) <$> getInv i <*> getCoins i
 
 
 addToInv :: Inv -> Id -> MudStack ()
-addToInv is ti = getInv ti >>= sortInv . (++ is) >>= insertWS ti invTbl
+addToInv is ti = getInv ti >>= sortInv . (++ is) >>= \is' ->
+    insertWS ti is' invTbl
 
 
 type FromId = Id
@@ -289,8 +292,7 @@ type ToId   = Id
 
 
 remFromInv :: Inv -> FromId -> MudStack ()
-remFromInv is fi = getInv fi >>= \fis ->
-    insertWS fi invTbl . deleteFirstOfEach is $ fis
+remFromInv is fi = adjustWS (deleteFirstOfEach is) fi invTbl
 
 
 moveInv :: Inv -> FromId -> ToId -> MudStack ()
@@ -332,12 +334,12 @@ moveCoins c fi ti = unless (c == mempty) $ subCoins c fi >> addCoins c ti
 
 addCoins :: Coins -> Id -> MudStack ()
 addCoins c i = getCoins i >>= \c' ->
-    insertWS i coinsTbl $ c' <> c
+    insertWS i (c' <> c) coinsTbl
 
 
 subCoins :: Coins -> Id -> MudStack ()
 subCoins c i = getCoins i >>= \c' ->
-    insertWS i coinsTbl $ c' <> negateCoins c
+    insertWS i (c' <> negateCoins c) coinsTbl
 
 
 negateCoins :: Coins -> Coins
@@ -377,11 +379,12 @@ hasEq i = not . null <$> getEq i
 
 
 moveReadiedItem :: Id -> EqMap -> Slot -> MudStack ()
-moveReadiedItem i em s = insertWS 0 eqTbl (em & at s ?~ i) >> remFromInv [i] 0
+moveReadiedItem i em s = insertWS 0 (em & at s ?~ i) eqTbl >> remFromInv [i] 0
 
 
 shuffleInvUnready :: Inv -> MudStack ()
-shuffleInvUnready is = M.filter (`notElem` is) <$> getEqMap 0 >>= insertWS 0 eqTbl >> addToInv is 0
+shuffleInvUnready is = M.filter (`notElem` is) <$> getEqMap 0 >>= \is' ->
+    insertWS 0 is' eqTbl >> addToInv is 0
 
 
 -- ==================================================
@@ -409,7 +412,7 @@ getPC i = i `lookupWS` pcTbl
 
 
 movePC :: Id -> Id -> MudStack ()
-movePC pci ri = adjustWS pci pcTbl (\p -> p & rmId .~ ri)
+movePC pci ri = adjustWS (\p -> p & rmId .~ ri) pci pcTbl
 
 
 -- ==================================================

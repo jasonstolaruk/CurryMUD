@@ -47,9 +47,6 @@ import qualified Data.Text as T
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
--- TODO: Write functions at the lowest level of the transformer stack as possible, then lift them?
-
-
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.Cmds"
 

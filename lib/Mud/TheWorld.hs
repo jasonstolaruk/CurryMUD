@@ -48,72 +48,71 @@ allKeys = keysWS typeTbl
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
 putObj i e o = onWorldState $ \ws -> do
-    insertWS_STM (ws^.typeTbl) i ObjType
-    insertWS_STM (ws^.entTbl)  i e
-    insertWS_STM (ws^.objTbl)  i o
+    insertWS_STM i ObjType (ws^.typeTbl)
+    insertWS_STM i e       (ws^.entTbl)
+    insertWS_STM i o       (ws^.objTbl)
 
 
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
 putCloth i e o c = onWorldState $ \ws -> do
-    insertWS_STM (ws^.typeTbl)  i ClothType
-    insertWS_STM (ws^.entTbl)   i e
-    insertWS_STM (ws^.objTbl)   i o
-    insertWS_STM (ws^.clothTbl) i c
+    insertWS_STM i ClothType (ws^.typeTbl)
+    insertWS_STM i e         (ws^.entTbl)
+    insertWS_STM i o         (ws^.objTbl)
+    insertWS_STM i c         (ws^.clothTbl)
 
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
 putCon i e o is coi con = onWorldState $ \ws -> do
-    insertWS_STM (ws^.typeTbl)  i ConType
-    insertWS_STM (ws^.entTbl)   i e
-    insertWS_STM (ws^.objTbl)   i o
-    insertWS_STM (ws^.invTbl)   i is
-    insertWS_STM (ws^.coinsTbl) i coi
-    insertWS_STM (ws^.conTbl)   i con
+    insertWS_STM i ConType (ws^.typeTbl)
+    insertWS_STM i e       (ws^.entTbl)
+    insertWS_STM i o       (ws^.objTbl)
+    insertWS_STM i is      (ws^.invTbl)
+    insertWS_STM i coi     (ws^.coinsTbl)
+    insertWS_STM i con     (ws^.conTbl)
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
 putWpn i e o w = onWorldState $ \ws -> do
-    insertWS_STM (ws^.typeTbl) i WpnType
-    insertWS_STM (ws^.entTbl)  i e
-    insertWS_STM (ws^.objTbl)  i o
-    insertWS_STM (ws^.wpnTbl)  i w
+    insertWS_STM i WpnType (ws^.typeTbl)
+    insertWS_STM i e       (ws^.entTbl)
+    insertWS_STM i o       (ws^.objTbl)
+    insertWS_STM i w       (ws^.wpnTbl)
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
 putArm i e o a = onWorldState $ \ws -> do
-    insertWS_STM (ws^.typeTbl) i ArmType
-    insertWS_STM (ws^.entTbl)  i e
-    insertWS_STM (ws^.objTbl)  i o
-    insertWS_STM (ws^.armTbl)  i a
+    insertWS_STM i ArmType (ws^.typeTbl)
+    insertWS_STM i e       (ws^.entTbl)
+    insertWS_STM i o       (ws^.objTbl)
+    insertWS_STM i a       (ws^.armTbl)
 
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
 putMob i e is c em m = onWorldState $ \ws -> do
-    insertWS_STM (ws^.typeTbl)  i MobType
-    insertWS_STM (ws^.entTbl)   i e
-    insertWS_STM (ws^.invTbl)   i is
-    insertWS_STM (ws^.coinsTbl) i c
-    insertWS_STM (ws^.eqTbl)    i em
-    insertWS_STM (ws^.mobTbl)   i m
-
+    insertWS_STM i MobType (ws^.typeTbl)
+    insertWS_STM i e       (ws^.entTbl)
+    insertWS_STM i is      (ws^.invTbl)
+    insertWS_STM i c       (ws^.coinsTbl)
+    insertWS_STM i em      (ws^.eqTbl)
+    insertWS_STM i m       (ws^.mobTbl)
 
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
 putPC i e is c em m p = onWorldState $ \ws -> do
-    insertWS_STM (ws^.typeTbl)  i PCType
-    insertWS_STM (ws^.entTbl)   i e
-    insertWS_STM (ws^.invTbl)   i is
-    insertWS_STM (ws^.coinsTbl) i c
-    insertWS_STM (ws^.eqTbl)    i em
-    insertWS_STM (ws^.mobTbl)   i m
-    insertWS_STM (ws^.pcTbl)    i p
+    insertWS_STM i PCType (ws^.typeTbl)
+    insertWS_STM i e      (ws^.entTbl)
+    insertWS_STM i is     (ws^.invTbl)
+    insertWS_STM i c      (ws^.coinsTbl)
+    insertWS_STM i em     (ws^.eqTbl)
+    insertWS_STM i m      (ws^.mobTbl)
+    insertWS_STM i p      (ws^.pcTbl)
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
 putRm i is c r = onWorldState $ \ws -> do
-    insertWS_STM (ws^.typeTbl)  i RmType
-    insertWS_STM (ws^.invTbl)   i is
-    insertWS_STM (ws^.coinsTbl) i c
-    insertWS_STM (ws^.rmTbl)    i r
+    insertWS_STM i RmType (ws^.typeTbl)
+    insertWS_STM i is     (ws^.invTbl)
+    insertWS_STM i c      (ws^.coinsTbl)
+    insertWS_STM i r      (ws^.rmTbl)
 
 
 -- ==================================================
@@ -197,4 +196,5 @@ sortAllInvs = do
     logNotice "sortAllInvs" "sorting all inventories"
     mapM_ sortEach =<< keysWS invTbl
   where
-    sortEach k = k `lookupWS` invTbl >>= sortInv >>= insertWS k invTbl
+    sortEach i = i `lookupWS` invTbl >>= sortInv >>= \is ->
+        insertWS i is invTbl
