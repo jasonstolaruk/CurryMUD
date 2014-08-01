@@ -69,9 +69,9 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 import Control.Applicative ((<$>), (<*>), Const)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TVar (modifyTVar', readTVarIO, TVar)
-import Control.Lens (_1, at, each)
+import Control.Lens (_1, at, each, folded)
 import Control.Lens.Getter (Getting)
-import Control.Lens.Operators ((&), (?~), (.~), (%~), (^.))
+import Control.Lens.Operators ((&), (?~), (.~), (%~), (^.), (^..))
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
@@ -299,7 +299,7 @@ moveInv is fi ti = remFromInv is fi >> addToInv is ti
 
 
 sortInv :: Inv -> MudStack Inv
-sortInv is = (map (^._1) . sortBy nameThenSing) <$> zipped
+sortInv is = ((^..folded._1) . sortBy nameThenSing) <$> zipped
   where
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped = zip3 is <$> getEntNamesInInv is <*> getEntSingsInInv is

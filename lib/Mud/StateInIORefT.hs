@@ -1,10 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses, TypeFamilies, UndecidableInstances #-}
 
 module Mud.StateInIORefT where
 
@@ -17,7 +12,7 @@ import Control.Monad.Trans.Control
 import Data.IORef.Lifted
 
 
--- Beware of gnarly ogres!
+-- Here be dragons!
 
 
 data MudEnv s = MudEnv { envState :: !(IORef s) }
@@ -31,8 +26,8 @@ newtype StateInIORefT s m a = StateInIORefT (ReaderT (MudEnv s) m a) deriving ( 
 
 
 instance (MonadBase IO m) => MonadState s (StateInIORefT s m) where
-    get   = StateInIORefT $ ask >>= readIORef . envState
-    put s = StateInIORefT $ ask >>= flip writeIORef s . envState
+  get   = StateInIORefT $ ask >>= readIORef . envState
+  put s = StateInIORefT $ ask >>= flip writeIORef s . envState
 
 
 runStateInIORefT :: (MonadBase IO m) => StateInIORefT s m a -> s -> m (a, s)
@@ -48,12 +43,12 @@ instance (MonadBase b m) => MonadBase b (StateInIORefT s m) where
 
 
 instance MonadTransControl (StateInIORefT s) where
-    newtype StT (StateInIORefT s) a = StMyStack { unStMyStack :: a }
-    liftWith f = StateInIORefT . ReaderT $ \r -> f $ \(StateInIORefT t) -> liftM StMyStack . runReaderT t $ r
-    restoreT   = StateInIORefT . ReaderT . const . liftM unStMyStack
+  newtype StT (StateInIORefT s) a = StMyStack { unStMyStack :: a }
+  liftWith f = StateInIORefT . ReaderT $ \r -> f $ \(StateInIORefT t) -> liftM StMyStack . runReaderT t $ r
+  restoreT   = StateInIORefT . ReaderT . const . liftM unStMyStack
 
 
 instance (MonadBaseControl b m) => MonadBaseControl b (StateInIORefT s m) where
-    newtype StM (StateInIORefT s m) a = ST { unST :: ComposeSt (StateInIORefT s) m a }
-    liftBaseWith = defaultLiftBaseWith ST
-    restoreM     = defaultRestoreM unST
+  newtype StM (StateInIORefT s m) a = ST { unST :: ComposeSt (StateInIORefT s) m a }
+  liftBaseWith = defaultLiftBaseWith ST
+  restoreM     = defaultRestoreM unST

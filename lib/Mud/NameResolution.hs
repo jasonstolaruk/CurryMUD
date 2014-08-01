@@ -169,13 +169,14 @@ distillEnscs enscs
   | Empty `elem` enscs = [Empty]
   | otherwise          = let someOfs = filter isSomeOf enscs
                              noneOfs = filter isNoneOf enscs
-                         in distill SomeOf someOfs : [ distill NoneOf noneOfs ]
+                         in distill SomeOf someOfs ++ distill NoneOf noneOfs
   where
     isSomeOf (SomeOf _)     = True
     isSomeOf _              = False
     isNoneOf (NoneOf _)     = True
     isNoneOf _              = False
-    distill f               = f . foldr ((<>) . fromEnsCoins) mempty
+    distill _ []            = []
+    distill f enscs'        = [ f . foldr ((<>) . fromEnsCoins) mempty $ enscs' ]
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
@@ -206,8 +207,7 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
 resolveEntCoinNamesWithRols :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNamesWithRols rs ic@(_, c) = do
     gecrMrols <- mapM (mkGecrWithRol ic . T.toLower) rs
-    let gecrs = gecrMrols^..folded._1
-    let mrols = gecrMrols^..folded._2
+    let (gecrs, mrols) = (,) (gecrMrols^..folded._1) (gecrMrols^..folded._2)
     (gecrs', miss, rcs) <- expandGecrs c gecrs
     return (gecrs', mrols, miss, rcs)
 

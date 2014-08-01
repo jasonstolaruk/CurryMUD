@@ -497,7 +497,7 @@ dispInvCoins i = do
 
 
 dudeYourHandsAreEmpty :: MudStack ()
-dudeYourHandsAreEmpty = output "You aren't carrying anything."
+dudeYourHandsAreEmpty = output "You aren't carrying anything." >> liftIO newLine
 
 
 dispEntsInInv :: Id -> MudStack ()
@@ -551,7 +551,7 @@ inv rs = do
           (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getInvCoins 0
           mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
           mapM_ (procReconciledCoinsPCInv True descCoins) rcs
-      else dudeYourHandsAreEmpty >> liftIO newLine
+      else dudeYourHandsAreEmpty
 
 
 -----
@@ -796,12 +796,6 @@ shuffleCoinsRem ci c = moveCoins c ci 0 >> (^.sing) <$> getEnt ci >>= descPutRem
 
 
 -----
-
-
--- TODO: "ready" and "unready" and talking smack about coins.
--- > re sw
--- You wield the short sword with your right hand.
--- You can't ready coins.
 
 
 ready :: Action
