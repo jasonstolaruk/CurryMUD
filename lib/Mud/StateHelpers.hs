@@ -1,4 +1,5 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
+-- TODO: -Werror
 {-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
 module Mud.StateHelpers ( addToInv
@@ -40,7 +41,7 @@ module Mud.StateHelpers ( addToInv
                         , hasInv
                         , hasInvOrCoins
                         , keysWS
-                        , lookupPla
+                        , getPla
                         , lookupWS
                         , mkCoinsFromList
                         , mkListFromCoins
@@ -49,6 +50,7 @@ module Mud.StateHelpers ( addToInv
                         , moveInv
                         , movePC
                         , moveReadiedItem
+                        , onNonWorldState
                         , onWorldState
                         , output
                         , outputCon
@@ -57,9 +59,8 @@ module Mud.StateHelpers ( addToInv
                         , remFromInv
                         , shuffleInvUnready
                         , sortInv
-                        , updatePla
                         , insertWS
-                        , insertWS_STM ) where
+                        , insert_STM ) where
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
@@ -87,9 +88,7 @@ import qualified Data.Text.IO as T (putStrLn, readFile)
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
--- TODO: Finish merging "get" and "put" operations into atomic transactions.
 -- TODO: Delete unused methods.
--- TODO: Consider implementing the non-STM methods in terms of their STM counterparts (using "atomically").
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -101,73 +100,21 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 -- ============================================================
--- Helpers for working with players (non-world state):
+-- Helpers for working with both world and non-world state:
 
 
-lookupPla :: Id -> MudStack Pla
-lookupPla i = IM.lookup i <$> (liftIO . readTVarIO =<< gets (^.nonWorldState.plaTbl)) >>= maybeRet oops
+lookup_STM :: forall a . Id -> TVar (IntMap a) -> STM a
+i `lookup_STM` t = maybeRet oops . IM.lookup i =<< readTVar t
   where
-    oops = blowUp "lookupPla" "player not found in non-world state table for given key" [ showText i ]
+    oops = blowUp "lookup_STM" "value not found in state table for given key" [ showText i ]
 
 
-updatePla :: Id -> Pla -> MudStack ()
-updatePla i p = gets (^.nonWorldState.plaTbl) >>= \t ->
-    liftIO . atomically . modifyTVar' t . IM.insert i $ p
+insert_STM :: forall a . Id -> a -> TVar (IntMap a) -> STM ()
+insert_STM i a t = modifyTVar' t . IM.insert i $ a
 
 
-getPlaColumns :: Id -> MudStack Int
-getPlaColumns i = (^.columns) <$> lookupPla i
-
-
--- ==================================================
--- "output" and related helpers:
-
-
--- TODO: Can these be moved to a better place?
-
-
-output :: T.Text -> MudStack ()
-output t = getPlaColumns 0 >>= \cols ->
-    mapM_ (liftIO . T.putStrLn) $ wordWrap cols t
-
-
-outputIndent :: Int -> T.Text -> MudStack ()
-outputIndent n t = getPlaColumns 0 >>= \cols ->
-    liftIO . mapM_ T.putStrLn . wordWrapIndent n cols $ t
-
-
-outputCon :: [T.Text] -> MudStack () -- Prefer over "output" when there would be more than two "<>"s.
-outputCon = output . T.concat
-
-
-outputConIndent :: Int -> [T.Text] -> MudStack ()
-outputConIndent n = outputIndent n . T.concat
-
-
-dumpFile :: FilePath -> MudStack () -- TODO: Implement paging.
-dumpFile fn = takeADump =<< (liftIO . T.readFile $ fn)
-  where
-    takeADump contents = getPlaColumns 0 >>= \cols ->
-        mapM_ (liftIO . T.putStrLn) (concat . wordWrapLines cols . T.lines $ contents)
-
-
-dumpFileWithDividers :: FilePath -> MudStack ()
-dumpFileWithDividers fn = divider >> dumpFile fn >> divider
-
-
-divider :: MudStack ()
-divider = getPlaColumns 0 >>= \cols ->
-    liftIO . T.putStrLn . T.replicate cols $ "="
-
-
-dispAssocList :: (Show a, Show b) => [(a, b)] -> MudStack ()
-dispAssocList = mapM_ takeADump
-  where
-    takeADump (a, b) = outputIndent 2 $ (unquote . showText $ a) <> ": " <> showText b
-
-
-dispGenericErrorMsg :: MudStack ()
-dispGenericErrorMsg = output "Unfortunately, an error occured while executing your command."
+adjust_STM :: forall a . (a -> a) -> Id -> TVar (IntMap a) -> STM ()
+adjust_STM f i t = modifyTVar' t . IM.adjust f $ i
 
 
 -- ==================================================
@@ -183,31 +130,17 @@ onWorldState f = liftIO . atomically . f =<< gets (^.worldState)
 
 lookupWS :: forall a . Id -> WSTblGetting a -> MudStack a
 i `lookupWS` tbl = onWorldState $ \ws ->
-    i `lookupWS_STM` (ws^.tbl)
-
-
-lookupWS_STM :: forall a . Id -> TVar (IntMap a) -> STM a
-i `lookupWS_STM` t = maybeRet oops . IM.lookup i =<< readTVar t
-  where
-    oops = blowUp "lookupWS_STM" "value not found in world state table for given key" [ showText i ]
+    i `lookup_STM` (ws^.tbl)
 
 
 insertWS :: forall a . Id -> a -> WSTblGetting a -> MudStack ()
 insertWS i a tbl = onWorldState $ \ws ->
-    insertWS_STM i a (ws^.tbl)
-
-
-insertWS_STM :: forall a . Id -> a -> TVar (IntMap a) -> STM ()
-insertWS_STM i a t = modifyTVar' t . IM.insert i $ a
+    insert_STM i a (ws^.tbl)
 
 
 adjustWS :: forall a . (a -> a) -> Id -> WSTblGetting a -> MudStack ()
 adjustWS f i tbl = onWorldState $ \ws ->
-    adjustWS_STM f i (ws^.tbl)
-
-
-adjustWS_STM :: forall a . (a -> a) -> Id -> TVar (IntMap a) -> STM ()
-adjustWS_STM f i t = modifyTVar' t . IM.adjust f $ i
+    adjust_STM f i (ws^.tbl)
 
 
 keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> WorldState -> Const (TVar (IntMap a)) WorldState) -> f Inv
@@ -223,7 +156,7 @@ getEnt i = i `lookupWS` entTbl
 
 
 getEnt_STM :: WorldState -> Id -> STM Ent
-getEnt_STM ws i = i `lookupWS_STM` (ws^.entTbl)
+getEnt_STM ws i = i `lookup_STM` (ws^.entTbl)
 
 
 getEntType :: Ent -> MudStack Type
@@ -233,7 +166,7 @@ getEntType e = let i = e^.entId
 
 getEntType_STM :: WorldState -> Ent -> STM Type
 getEntType_STM ws e = let i = e^.entId
-                      in i `lookupWS_STM` (ws^.typeTbl)
+                      in i `lookup_STM` (ws^.typeTbl)
 
 
 getEntsInInv :: Inv -> MudStack [Ent]
@@ -293,7 +226,7 @@ getCloth i = i `lookupWS` clothTbl
 
 
 getCloth_STM :: WorldState -> Id -> STM Cloth
-getCloth_STM ws i = i `lookupWS_STM` (ws^.clothTbl)
+getCloth_STM ws i = i `lookup_STM` (ws^.clothTbl)
 
 
 -- ==================================================
@@ -305,7 +238,7 @@ getInv i = i `lookupWS` invTbl
 
 
 getInv_STM :: WorldState -> Id -> STM Inv
-getInv_STM ws i = i `lookupWS_STM` (ws^.invTbl)
+getInv_STM ws i = i `lookup_STM` (ws^.invTbl)
 
 
 hasInv :: Id -> MudStack Bool
@@ -360,7 +293,7 @@ addToInv is ti = getInv ti >>= sortInv . (++ is) >>= \is' ->
 
 addToInv_STM :: WorldState -> Inv -> ToId -> STM ()
 addToInv_STM ws is ti = getInv_STM ws ti >>= sortInv_STM ws . (++ is) >>= \is' ->
-    insertWS_STM ti is' (ws^.invTbl)
+    insert_STM ti is' (ws^.invTbl)
 
 
 remFromInv :: Inv -> FromId -> MudStack ()
@@ -368,7 +301,7 @@ remFromInv is fi = adjustWS (deleteFirstOfEach is) fi invTbl
 
 
 remFromInv_STM :: WorldState -> Inv -> FromId -> STM ()
-remFromInv_STM ws is fi = adjustWS_STM (deleteFirstOfEach is) fi (ws^.invTbl)
+remFromInv_STM ws is fi = adjust_STM (deleteFirstOfEach is) fi (ws^.invTbl)
 
 
 moveInv :: Inv -> FromId -> ToId -> MudStack ()
@@ -390,7 +323,7 @@ getCoins i = i `lookupWS` coinsTbl
 
 
 getCoins_STM :: WorldState -> Id -> STM Coins
-getCoins_STM ws i = i `lookupWS_STM` (ws^.coinsTbl)
+getCoins_STM ws i = i `lookup_STM` (ws^.coinsTbl)
 
 
 mkListFromCoins :: Coins -> [Int]
@@ -423,7 +356,7 @@ addCoins c i = adjustWS (<> c) i coinsTbl
 
 
 addCoins_STM :: WorldState -> Coins -> Id -> STM ()
-addCoins_STM ws c i = adjustWS_STM (<> c) i $ ws^.coinsTbl
+addCoins_STM ws c i = adjust_STM (<> c) i $ ws^.coinsTbl
 
 
 subCoins :: Coins -> Id -> MudStack ()
@@ -431,7 +364,7 @@ subCoins c i = adjustWS (<> negateCoins c) i coinsTbl
 
 
 subCoins_STM :: WorldState -> Coins -> Id -> STM ()
-subCoins_STM ws c i = adjustWS_STM (<> negateCoins c) i $ ws^.coinsTbl
+subCoins_STM ws c i = adjust_STM (<> negateCoins c) i $ ws^.coinsTbl
 
 
 negateCoins :: Coins -> Coins
@@ -447,7 +380,7 @@ getWpn i = i `lookupWS` wpnTbl
 
 
 getWpn_STM :: WorldState -> Id -> STM Coins
-getWpn_STM ws i = i `lookupWS_STM` (ws^.coinsTbl)
+getWpn_STM ws i = i `lookup_STM` (ws^.coinsTbl)
 
 
 -- ==================================================
@@ -459,7 +392,7 @@ getArm i = i `lookupWS` armTbl
 
 
 getArm_STM :: WorldState -> Id -> STM Arm
-getArm_STM ws i = i `lookupWS_STM` (ws^.armTbl)
+getArm_STM ws i = i `lookup_STM` (ws^.armTbl)
 
 
 -- ==================================================
@@ -471,7 +404,7 @@ getEqMap i = i `lookupWS` eqTbl
 
 
 getEqMap_STM :: WorldState -> Id -> STM EqMap
-getEqMap_STM ws i = i `lookupWS_STM` (ws^.eqTbl)
+getEqMap_STM ws i = i `lookup_STM` (ws^.eqTbl)
 
 
 getEq :: Id -> MudStack Inv
@@ -490,14 +423,22 @@ hasEq_STM :: WorldState -> Id -> STM Bool
 hasEq_STM ws i = not . null <$> getEq_STM ws i
 
 
--- TODO: Left off here...
 moveReadiedItem :: Id -> EqMap -> Slot -> MudStack ()
 moveReadiedItem i em s = insertWS 0 (em & at s ?~ i) eqTbl >> remFromInv [i] 0
+
+
+moveReadiedItem_STM :: WorldState -> Id -> EqMap -> Slot -> STM ()
+moveReadiedItem_STM ws i em s = insert_STM 0 (em & at s ?~ i) (ws^.eqTbl) >> remFromInv_STM ws [i] 0
 
 
 shuffleInvUnready :: Inv -> MudStack ()
 shuffleInvUnready is = M.filter (`notElem` is) <$> getEqMap 0 >>= \is' ->
     insertWS 0 is' eqTbl >> addToInv is 0
+
+
+shuffleInvUnready_STM :: WorldState -> Inv -> STM ()
+shuffleInvUnready_STM ws is = M.filter (`notElem` is) <$> getEqMap_STM ws 0 >>= \is' ->
+    insert_STM 0 is' (ws^.eqTbl) >> addToInv_STM ws is 0
 
 
 -- ==================================================
@@ -508,12 +449,24 @@ getMob :: Id -> MudStack Mob
 getMob i = i `lookupWS` mobTbl
 
 
+getMob_STM :: WorldState -> Id -> STM Mob
+getMob_STM ws i = i `lookup_STM` (ws^.mobTbl)
+
+
 getMobGender :: Id -> MudStack Gender
 getMobGender i = (^.gender) <$> getMob i
 
 
+getMobGender_STM :: WorldState -> Id -> STM Gender
+getMobGender_STM ws i = (^.gender) <$> getMob_STM ws i
+
+
 getMobHand :: Id -> MudStack Hand
 getMobHand i = (^.hand) <$> getMob i
+
+
+getMobHand_STM :: WorldState -> Id -> STM Hand
+getMobHand_STM ws i = (^.hand) <$> getMob_STM ws i
 
 
 -- ==================================================
@@ -524,8 +477,16 @@ getPC :: Id -> MudStack PC
 getPC i = i `lookupWS` pcTbl
 
 
+getPC_STM :: WorldState -> Id -> STM PC
+getPC_STM ws i = i `lookup_STM` (ws^.pcTbl)
+
+
 movePC :: Id -> Id -> MudStack ()
 movePC pci ri = adjustWS (\p -> p & rmId .~ ri) pci pcTbl
+
+
+movePC_STM :: WorldState -> Id -> Id -> STM ()
+movePC_STM ws pci ri = adjust_STM (\p -> p & rmId .~ ri) pci (ws^.pcTbl)
 
 
 -- ==================================================
@@ -536,20 +497,40 @@ getRm :: Id -> MudStack Rm
 getRm i = i `lookupWS` rmTbl
 
 
+getRm_STM :: WorldState -> Id -> STM Rm
+getRm_STM ws i = i `lookup_STM` (ws^.rmTbl)
+
+
 getPCRmId :: Id -> MudStack Id
 getPCRmId i = (^.rmId) <$> getPC i
+
+
+getPCRmId_STM :: WorldState -> Id -> STM Id
+getPCRmId_STM ws i = (^.rmId) <$> getPC_STM ws i
 
 
 getPCRm :: Id -> MudStack Rm
 getPCRm i = getRm =<< getPCRmId i
 
 
+getPCRm_STM :: WorldState -> Id -> STM Rm
+getPCRm_STM ws i = getRm_STM ws =<< getPCRmId_STM ws i
+
+
 getPCRmInvCoins :: Id -> MudStack InvCoins
 getPCRmInvCoins i = getInvCoins =<< getPCRmId i
 
 
+getPCRmInvCoins_STM :: WorldState -> Id -> STM InvCoins
+getPCRmInvCoins_STM ws i = getInvCoins_STM ws =<< getPCRmId_STM ws i
+
+
 getRmLinks :: Id -> MudStack [RmLink]
 getRmLinks i = (^.rmLinks) <$> getRm i
+
+
+getRmLinks_STM :: WorldState -> Id -> STM [RmLink]
+getRmLinks_STM ws i = (^.rmLinks) <$> getRm_STM ws i
 
 
 findExit :: LinkName -> Id -> MudStack (Maybe Id)
@@ -559,3 +540,110 @@ findExit ln i = getRmLinks i >>= \rls ->
       is -> Just . head $ is
   where
     isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)
+
+
+findExit_STM :: WorldState -> LinkName -> Id -> STM (Maybe Id)
+findExit_STM ws ln i = getRmLinks_STM ws i >>= \rls ->
+    return $ case [ rl^.destId | rl <- rls, isValid rl ] of
+      [] -> Nothing
+      is -> Just . head $ is
+  where
+    isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)
+
+
+-- ==================================================
+-- Helpers for working with non-world state tables:
+
+
+type NWSTblGetting a = Getting (TVar (IntMap a)) NonWorldState (TVar (IntMap a))
+
+
+onNonWorldState :: (NonWorldState -> STM a) -> MudStack a
+onNonWorldState f = liftIO . atomically . f =<< gets (^.nonWorldState)
+
+
+lookupNWS :: forall a . Id -> NWSTblGetting a -> MudStack a
+i `lookupNWS` tbl = onNonWorldState $ \nws ->
+    i `lookup_STM` (nws^.tbl)
+
+
+insertNWS :: forall a . Id -> a -> NWSTblGetting a -> MudStack ()
+insertNWS i a tbl = onNonWorldState $ \nws ->
+    insert_STM i a (nws^.tbl)
+
+
+adjustNWS :: forall a . (a -> a) -> Id -> NWSTblGetting a -> MudStack ()
+adjustNWS f i tbl = onNonWorldState $ \nws ->
+    adjust_STM f i (nws^.tbl)
+
+
+keysNWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> NonWorldState -> Const (TVar (IntMap a)) NonWorldState) -> f Inv
+keysNWS tbl = IM.keys <$> (liftIO . readTVarIO =<< gets (^.nonWorldState.tbl))
+
+
+-- ==================================================
+-- Helpers for working with players:
+
+
+getPla :: Id -> MudStack Pla
+getPla i = i `lookupNWS` plaTbl
+
+
+getPla_STM :: NonWorldState -> Id -> STM Pla
+getPla_STM nws i = i `lookup_STM` (nws^.plaTbl)
+
+
+getPlaColumns :: Id -> MudStack Int
+getPlaColumns i = (^.columns) <$> getPla i
+
+
+getPlaColumns_STM :: NonWorldState -> Id -> STM Int
+getPlaColumns_STM nws i = (^.columns) <$> getPla_STM nws i
+
+
+-- ==================================================
+-- "output" and related helpers:
+
+
+output :: T.Text -> MudStack ()
+output t = getPlaColumns 0 >>= \cols ->
+    mapM_ (liftIO . T.putStrLn) $ wordWrap cols t
+
+
+outputIndent :: Int -> T.Text -> MudStack ()
+outputIndent n t = getPlaColumns 0 >>= \cols ->
+    liftIO . mapM_ T.putStrLn . wordWrapIndent n cols $ t
+
+
+outputCon :: [T.Text] -> MudStack () -- Prefer over "output" when there would be more than two "<>"s.
+outputCon = output . T.concat
+
+
+outputConIndent :: Int -> [T.Text] -> MudStack ()
+outputConIndent n = outputIndent n . T.concat
+
+
+dumpFile :: FilePath -> MudStack () -- TODO: Implement paging.
+dumpFile fn = takeADump =<< (liftIO . T.readFile $ fn)
+  where
+    takeADump contents = getPlaColumns 0 >>= \cols ->
+        mapM_ (liftIO . T.putStrLn) (concat . wordWrapLines cols . T.lines $ contents)
+
+
+dumpFileWithDividers :: FilePath -> MudStack ()
+dumpFileWithDividers fn = divider >> dumpFile fn >> divider
+
+
+divider :: MudStack ()
+divider = getPlaColumns 0 >>= \cols ->
+    liftIO . T.putStrLn . T.replicate cols $ "="
+
+
+dispAssocList :: (Show a, Show b) => [(a, b)] -> MudStack ()
+dispAssocList = mapM_ takeADump
+  where
+    takeADump (a, b) = outputIndent 2 $ (unquote . showText $ a) <> ": " <> showText b
+
+
+dispGenericErrorMsg :: MudStack ()
+dispGenericErrorMsg = output "Unfortunately, an error occured while executing your command."

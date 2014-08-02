@@ -96,7 +96,7 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol))
          | otherwise              -> SomeOf . Coins $ (0,   0,   a  )
     _                             -> patternMatchFail "mkGecrMultForCoins" [n]
   where
-    c' = mkCoinsFromList . distributeAmt a . mkCoinsList $ c
+    c' = mkCoinsFromList . distributeAmt a . mkListFromCoins $ c
 
 
 distributeAmt :: Int -> [Int] -> [Int]

@@ -512,7 +512,7 @@ summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
   where
     dispCoinsWithNamesList = output . T.intercalate ", " . filter (not . T.null) . map dispNameAmt
     dispNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
-    mkCoinsWithNamesList   = zip coinNames . mkCoinsList $ c
+    mkCoinsWithNamesList   = zip coinNames . mkListFromCoins $ c
 
 
 descCoins :: Coins -> MudStack ()

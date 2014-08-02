@@ -48,71 +48,76 @@ allKeys = keysWS typeTbl
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
 putObj i e o = onWorldState $ \ws -> do
-    insertWS_STM i ObjType (ws^.typeTbl)
-    insertWS_STM i e       (ws^.entTbl)
-    insertWS_STM i o       (ws^.objTbl)
+    insert_STM i ObjType (ws^.typeTbl)
+    insert_STM i e       (ws^.entTbl)
+    insert_STM i o       (ws^.objTbl)
 
 
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
 putCloth i e o c = onWorldState $ \ws -> do
-    insertWS_STM i ClothType (ws^.typeTbl)
-    insertWS_STM i e         (ws^.entTbl)
-    insertWS_STM i o         (ws^.objTbl)
-    insertWS_STM i c         (ws^.clothTbl)
+    insert_STM i ClothType (ws^.typeTbl)
+    insert_STM i e         (ws^.entTbl)
+    insert_STM i o         (ws^.objTbl)
+    insert_STM i c         (ws^.clothTbl)
 
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
 putCon i e o is coi con = onWorldState $ \ws -> do
-    insertWS_STM i ConType (ws^.typeTbl)
-    insertWS_STM i e       (ws^.entTbl)
-    insertWS_STM i o       (ws^.objTbl)
-    insertWS_STM i is      (ws^.invTbl)
-    insertWS_STM i coi     (ws^.coinsTbl)
-    insertWS_STM i con     (ws^.conTbl)
+    insert_STM i ConType (ws^.typeTbl)
+    insert_STM i e       (ws^.entTbl)
+    insert_STM i o       (ws^.objTbl)
+    insert_STM i is      (ws^.invTbl)
+    insert_STM i coi     (ws^.coinsTbl)
+    insert_STM i con     (ws^.conTbl)
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
 putWpn i e o w = onWorldState $ \ws -> do
-    insertWS_STM i WpnType (ws^.typeTbl)
-    insertWS_STM i e       (ws^.entTbl)
-    insertWS_STM i o       (ws^.objTbl)
-    insertWS_STM i w       (ws^.wpnTbl)
+    insert_STM i WpnType (ws^.typeTbl)
+    insert_STM i e       (ws^.entTbl)
+    insert_STM i o       (ws^.objTbl)
+    insert_STM i w       (ws^.wpnTbl)
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
 putArm i e o a = onWorldState $ \ws -> do
-    insertWS_STM i ArmType (ws^.typeTbl)
-    insertWS_STM i e       (ws^.entTbl)
-    insertWS_STM i o       (ws^.objTbl)
-    insertWS_STM i a       (ws^.armTbl)
+    insert_STM i ArmType (ws^.typeTbl)
+    insert_STM i e       (ws^.entTbl)
+    insert_STM i o       (ws^.objTbl)
+    insert_STM i a       (ws^.armTbl)
 
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
 putMob i e is c em m = onWorldState $ \ws -> do
-    insertWS_STM i MobType (ws^.typeTbl)
-    insertWS_STM i e       (ws^.entTbl)
-    insertWS_STM i is      (ws^.invTbl)
-    insertWS_STM i c       (ws^.coinsTbl)
-    insertWS_STM i em      (ws^.eqTbl)
-    insertWS_STM i m       (ws^.mobTbl)
+    insert_STM i MobType (ws^.typeTbl)
+    insert_STM i e       (ws^.entTbl)
+    insert_STM i is      (ws^.invTbl)
+    insert_STM i c       (ws^.coinsTbl)
+    insert_STM i em      (ws^.eqTbl)
+    insert_STM i m       (ws^.mobTbl)
 
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
 putPC i e is c em m p = onWorldState $ \ws -> do
-    insertWS_STM i PCType (ws^.typeTbl)
-    insertWS_STM i e      (ws^.entTbl)
-    insertWS_STM i is     (ws^.invTbl)
-    insertWS_STM i c      (ws^.coinsTbl)
-    insertWS_STM i em     (ws^.eqTbl)
-    insertWS_STM i m      (ws^.mobTbl)
-    insertWS_STM i p      (ws^.pcTbl)
+    insert_STM i PCType (ws^.typeTbl)
+    insert_STM i e      (ws^.entTbl)
+    insert_STM i is     (ws^.invTbl)
+    insert_STM i c      (ws^.coinsTbl)
+    insert_STM i em     (ws^.eqTbl)
+    insert_STM i m      (ws^.mobTbl)
+    insert_STM i p      (ws^.pcTbl)
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
 putRm i is c r = onWorldState $ \ws -> do
-    insertWS_STM i RmType (ws^.typeTbl)
-    insertWS_STM i is     (ws^.invTbl)
-    insertWS_STM i c      (ws^.coinsTbl)
-    insertWS_STM i r      (ws^.rmTbl)
+    insert_STM i RmType (ws^.typeTbl)
+    insert_STM i is     (ws^.invTbl)
+    insert_STM i c      (ws^.coinsTbl)
+    insert_STM i r      (ws^.rmTbl)
+
+
+putPla :: Id -> Pla -> MudStack ()
+putPla i p = onNonWorldState $ \nws ->
+    insert_STM i p (nws^.plaTbl)
 
 
 -- ==================================================
@@ -123,7 +128,7 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world"
 
-    updatePla 0 (Pla 80)
+    putPla 0 (Pla 80)
 
     putPC 0 (Ent 0 "" "" "" "" 0) [iKewpie1, iBag1, iClub] (Coins (10, 0, 20)) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand) (PC iHill Human)
 
