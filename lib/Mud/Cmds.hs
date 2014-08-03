@@ -8,7 +8,7 @@ import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
 import Mud.StateInIORefT
-import Mud.StateHelpers
+import Mud.StateHelpers hiding (blowUp, patternMatchFail) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
 import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
@@ -17,6 +17,7 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
 import Control.Concurrent (forkIO, myThreadId)
+import Control.Concurrent.STM (STM)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
 import Control.Lens (_1, at, both, folded, over, to)
@@ -200,18 +201,17 @@ dispatch (cn, rest) = findAction cn >>= maybe (output $ "What?" <> nlt) (\act ->
 
 
 findAction :: CmdName -> MudStack (Maybe Action)
-findAction cn = do
-    cmdList' <- mkCmdListWithRmLinks =<< getPCRmId 0
+findAction cn = (onWorldState $ \ws -> mkCmdListWithRmLinks_STM ws =<< getPCRmId_STM ws 0) >>= \cmdList' ->
     let cns = map cmdName cmdList'
-    maybe (return Nothing)
-          (\fn -> return . Just . findActionForFullName fn $ cmdList')
-          (findFullNameForAbbrev (T.toLower cn) cns)
+    in maybe (return Nothing)
+             (\fn -> return . Just . findActionForFullName fn $ cmdList')
+             (findFullNameForAbbrev (T.toLower cn) cns)
   where
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)
 
 
-mkCmdListWithRmLinks :: Id -> MudStack [Cmd]
-mkCmdListWithRmLinks i = getRmLinks i >>= \rls ->
+mkCmdListWithRmLinks_STM :: WorldState -> Id -> STM [Cmd]
+mkCmdListWithRmLinks_STM ws i = getRmLinks_STM ws i >>= \rls ->
     return (cmdList ++ [ mkCmdForRmLink rl | rl <- rls, rl^.linkName `notElem` stdLinkNames ])
   where
     mkCmdForRmLink rl = let ln = rl^.linkName.to T.toLower
@@ -306,119 +306,36 @@ dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
 -----
 
 
-what :: Action
-what [] = advise ["what"] $ "Please specify an abbreviation to confirm, as in " <> dblQuote "what up" <> "."
-what rs = mapM_ helper rs
-  where
-    helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r >> liftIO newLine
-      where
-        whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
-        cs       = filter ((/=) wizCmdChar . T.head) <$> map cmdName <$> (mkCmdListWithRmLinks =<< getPCRmId 0)
-        notFound = output $ dblQuote r <> " doesn't refer to any commands."
-        found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
-
-
-advise :: [HelpTopic] -> T.Text -> MudStack ()
-advise []  msg = output . (<>) msg $ nlt
-advise [h] msg = output msg >> outputCon [ "For more information, type ", dblQuote . (<>) "help " $ h, ".", nlt ]
-advise hs  msg = output msg >> outputCon [ "See also the following help topics: ", helpTopics,         ".", nlt ]
-  where
-    helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
-
-
-whatInv :: InvType -> T.Text -> MudStack ()
-whatInv it r = do
-    ic@(is, _)      <- getLocInvCoins it
-    (gecrs, _, rcs) <- resolveEntCoinNames [r] ic
-    if not . null $ gecrs
-      then whatInvEnts it r (head gecrs) is
-      else mapM_ (whatInvCoins it r) rcs
-  where
-    getLocInvCoins = \case PCInv -> getInvCoins 0
-                           PCEq  -> getEq 0 >>= \is -> return (is, mempty)
-                           RmInv -> getPCRmInvCoins 0
-
-
-whatInvEnts :: InvType -> T.Text -> GetEntsCoinsRes -> Inv -> MudStack ()
-whatInvEnts it r gecr is = case gecr of
-  Mult _ n (Just es) _ | n == acp  -> outputCon [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]
-                       | otherwise -> let e   = head es
-                                          len = length es
-                                      in if len > 1
-                                        then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
-                                                 h      = head ebgns
-                                                 target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
-                                             in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, " ", getLocTxtForInvType it, "." ]
-                                        else getEntNamesInInv is >>= \ens ->
-                                            outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, " ", getLocTxtForInvType it, "." ]
-  Indexed x _ (Right e) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
-  _                     -> outputCon [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
-  where
-    acp                                   = [allChar]^.packed
-    supplement | it `elem` [PCInv, RmInv] = " (including any coins)"
-               | otherwise                = ""
-    checkFirst e ens                      = let matches = filter (== e^.name) ens
-                                            in guard (length matches > 1) >> ("first "^.unpacked)
-
-
-getLocTxtForInvType :: InvType -> T.Text
-getLocTxtForInvType = \case PCInv -> "in your inventory"
-                            PCEq  -> "in your readied equipment"
-                            RmInv -> "in this room"
-
-
-whatInvCoins :: InvType -> T.Text -> ReconciledCoins -> MudStack ()
-whatInvCoins it r rc
-  | it == PCEq = return ()
-  | otherwise = case rc of
-    Left  Empty      -> outputCon [ dblQuote r, " doesn't refer to any coins ", getLocTxtForInvType it, " ", supplementNone "coins" it, "." ]
-    Left  (NoneOf c) -> let cn = mkTxtForCoins c in outputCon [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNone cn it, "." ]
-    Left  (SomeOf c) -> let cn = mkTxtForCoins c in outputCon [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNotEnough cn it, "." ]
-    Right (SomeOf c) -> outputCon [ dblQuote r, " refers to ", mkTxtForCoinsWithAmt c, " ", getLocTxtForInvType it, "." ]
-    _                -> patternMatchFail "whatInvCoins" [ showText rc ]
-  where
-    supplementNone cn      = \case PCInv -> "(you don't have any " <> cn <> ")"
-                                   RmInv -> "(there aren't any "   <> cn <> " here)"
-                                   PCEq  -> oops "supplementNone"
-    supplementNotEnough cn = \case PCInv -> "(you don't have that many " <> cn <> ")"
-                                   RmInv -> "(there aren't that many "   <> cn <> " here)"
-                                   PCEq  -> oops "supplementNotEnough"
-    oops fn                = blowUp ("whatInvCoins " <> fn) "called for InvType of PCEq" []
-    mkTxtForCoins c@(Coins (cop, sil, gol))
-      | cop /= 0  = "copper pieces"
-      | sil /= 0  = "silver pieces"
-      | gol /= 0  = "gold pieces"
-      | otherwise = blowUp "whatInvCoins mkTxtForCoins" "attempted to make text for empty coins" [ showText c ]
-    mkTxtForCoinsWithAmt c@(Coins (cop, sil, gol))
-      | cop == 1  = "1 copper piece"
-      | cop /= 0  = showText cop <> " copper pieces"
-      | sil == 1  = "1 silver piece"
-      | sil /= 0  = showText sil <> " silver pieces"
-      | gol == 1  = "1 gold piece"
-      | gol /= 0  = showText gol <> " gold pieces"
-      | otherwise = blowUp "whatInvCoins mkTxtForCoinsWithAmt" "attempted to make text for empty coins" [ showText c ]
-
-
------
-
-
 go :: T.Text -> Action
 go dir [] = goDispatcher [dir]
 go dir rs = goDispatcher $ dir : rs
 
 
 goDispatcher :: Action
-goDispatcher []     = return ()
-goDispatcher rs     = mapM_ tryMove rs
+goDispatcher [] = return ()
+goDispatcher rs = mapM_ tryMove rs
+
+
+-- TODO: Move?
+data Blunder = Blunder
+
+
+-- TODO: Move?
+blunder :: (Monad m) => m Blunder
+blunder = return Blunder
 
 
 tryMove :: T.Text -> MudStack ()
 tryMove dir = let dir' = T.toLower dir
-              in getPCRmId 0 >>= findExit dir' >>= maybe (sorry dir') (\ri -> movePC 0 ri >> look [])
+              in helper dir' >>= \case
+                  ()      -> look []
+                  Blunder -> sorry dir'
   where
-    sorry dir'    = output $ if dir' `elem` stdLinkNames
-                               then "You can't go that way." <> nlt
-                               else dblQuote dir <> " is not a valid direction." <> nlt
+    helper dir' = onWorldState $ \ws ->
+                      getPCRmId_STM ws 0 >>= findExit_STM ws dir' >>= maybe blunder (\ri -> movePC_STM ws 0 ri)
+    sorry dir'  = output $ if dir' `elem` stdLinkNames
+                             then "You can't go that way." <> nlt
+                             else dblQuote dir <> " is not a valid direction." <> nlt
 
 
 -----
@@ -602,6 +519,14 @@ getAction rs = do
         mapM_ (procReconciledCoinsRm False shuffleCoinsGet) rcs
         liftIO newLine
       else output $ "You don't see anything here to pick up." <> nlt
+
+
+advise :: [HelpTopic] -> T.Text -> MudStack ()
+advise []  msg = output . (<>) msg $ nlt
+advise [h] msg = output msg >> outputCon [ "For more information, type ", dblQuote . (<>) "help " $ h, ".", nlt ]
+advise hs  msg = output msg >> outputCon [ "See also the following help topics: ", helpTopics,         ".", nlt ]
+  where
+    helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
 
 shuffleInvGet :: Inv -> MudStack ()
@@ -1020,6 +945,98 @@ mkIdCountBothList is = getEntBothGramNosInInv is >>= \ebgns ->
     in return (nubBy equalCountsAndBoths . zip3 is cs $ ebgns)
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
+
+
+-----
+
+
+what :: Action
+what [] = advise ["what"] $ "Please specify one or more abbreviations to disambiguate, as in " <> dblQuote "what up" <> "."
+what rs = mapM_ helper rs
+  where
+    helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r >> liftIO newLine
+      where
+        whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
+        cs       = filter isPlaCmd <$> map cmdName <$> onWorldState $ \ws ->
+                       mkCmdListWithRmLinks_STM ws =<< getPCRmId_STM ws 0
+        isPlaCmd = (`notElem` [wizCmdChar, debugCmdChar]) . T.head
+        notFound = output $ dblQuote r <> " doesn't refer to any commands."
+        found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
+
+
+whatInv :: InvType -> T.Text -> MudStack ()
+whatInv it r = resolveName >>= \(is, gecrs, rcs) ->
+    if not . null $ gecrs
+      then whatInvEnts it r (head gecrs) is
+      else mapM_ (whatInvCoins it r) rcs
+  where
+    resolveName = onWorldState $ \ws -> do
+        ic@(is, _)      <- getLocInvCoins_STM ws it
+        (gecrs, _, rcs) <- resolveEntCoinNames_STM ws [r] ic
+        return (is, gecrs, rcs)
+    getLocInvCoins_STM ws = \case PCInv -> getInvCoins_STM     ws 0
+                                  PCEq  -> getEq_STM           ws 0 >>= \is -> return (is, mempty)
+                                  RmInv -> getPCRmInvCoins_STM ws 0
+
+
+whatInvEnts :: InvType -> T.Text -> GetEntsCoinsRes -> Inv -> MudStack ()
+whatInvEnts it r gecr is = case gecr of
+  Mult _ n (Just es) _ | n == acp  -> outputCon [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]
+                       | otherwise -> let e   = head es
+                                          len = length es
+                                      in if len > 1
+                                        then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
+                                                 h      = head ebgns
+                                                 target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
+                                             in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, " ", getLocTxtForInvType it, "." ]
+                                        else getEntNamesInInv is >>= \ens ->
+                                            outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, " ", getLocTxtForInvType it, "." ]
+  Indexed x _ (Right e) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
+  _                     -> outputCon [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
+  where
+    acp                                   = [allChar]^.packed
+    supplement | it `elem` [PCInv, RmInv] = " (including any coins)"
+               | otherwise                = ""
+    checkFirst e ens                      = let matches = filter (== e^.name) ens
+                                            in guard (length matches > 1) >> ("first "^.unpacked)
+
+
+getLocTxtForInvType :: InvType -> T.Text
+getLocTxtForInvType = \case PCInv -> "in your inventory"
+                            PCEq  -> "in your readied equipment"
+                            RmInv -> "in this room"
+
+
+whatInvCoins :: InvType -> T.Text -> ReconciledCoins -> MudStack ()
+whatInvCoins it r rc
+  | it == PCEq = return ()
+  | otherwise = case rc of
+    Left  Empty      -> outputCon [ dblQuote r, " doesn't refer to any coins ", getLocTxtForInvType it, " ", supplementNone "coins" it, "." ]
+    Left  (NoneOf c) -> let cn = mkTxtForCoins c in outputCon [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNone cn it, "." ]
+    Left  (SomeOf c) -> let cn = mkTxtForCoins c in outputCon [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNotEnough cn it, "." ]
+    Right (SomeOf c) -> outputCon [ dblQuote r, " refers to ", mkTxtForCoinsWithAmt c, " ", getLocTxtForInvType it, "." ]
+    _                -> patternMatchFail "whatInvCoins" [ showText rc ]
+  where
+    supplementNone cn      = \case PCInv -> "(you don't have any " <> cn <> ")"
+                                   RmInv -> "(there aren't any "   <> cn <> " here)"
+                                   PCEq  -> oops "supplementNone"
+    supplementNotEnough cn = \case PCInv -> "(you don't have that many " <> cn <> ")"
+                                   RmInv -> "(there aren't that many "   <> cn <> " here)"
+                                   PCEq  -> oops "supplementNotEnough"
+    oops fn                = blowUp ("whatInvCoins " <> fn) "called for InvType of PCEq" []
+    mkTxtForCoins c@(Coins (cop, sil, gol))
+      | cop /= 0  = "copper pieces"
+      | sil /= 0  = "silver pieces"
+      | gol /= 0  = "gold pieces"
+      | otherwise = blowUp "whatInvCoins mkTxtForCoins" "attempted to make text for empty coins" [ showText c ]
+    mkTxtForCoinsWithAmt c@(Coins (cop, sil, gol))
+      | cop == 1  = "1 copper piece"
+      | cop /= 0  = showText cop <> " copper pieces"
+      | sil == 1  = "1 silver piece"
+      | sil /= 0  = showText sil <> " silver pieces"
+      | gol == 1  = "1 gold piece"
+      | gol /= 0  = showText gol <> " gold pieces"
+      | otherwise = blowUp "whatInvCoins mkTxtForCoinsWithAmt" "attempted to make text for empty coins" [ showText c ]
 
 
 -----

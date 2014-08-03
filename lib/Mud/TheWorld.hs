@@ -1,10 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld ( allKeys
-                    , createWorld
-                    , findAvailKey
-                    , getUnusedId
+module Mud.TheWorld ( createWorld
                     , initWorld
                     , sortAllInvs ) where
 
@@ -14,32 +11,14 @@ import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
 import Control.Lens.Operators ((^.))
-import Data.Functor ((<$>))
-import Data.List ((\\))
 import Data.Monoid (mempty)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
 
 
--- ==================================================
--- Misc. helper functions:
-
-
 logNotice :: String -> String -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld"
-
-
-getUnusedId :: MudStack Id
-getUnusedId = findAvailKey <$> allKeys
-
-
-findAvailKey :: Inv -> Id
-findAvailKey = head . (\\) [0..]
-
-
-allKeys :: MudStack Inv
-allKeys = keysWS typeTbl
 
 
 -- ==================================================
@@ -199,7 +178,7 @@ initWorld = createWorld >> sortAllInvs
 sortAllInvs :: MudStack ()
 sortAllInvs = do
     logNotice "sortAllInvs" "sorting all inventories"
-    mapM_ sortEach =<< keysWS invTbl
+    onWorldState $ \ws -> mapM_ (sortEach_STM ws) =<< keys_STM (ws^.invTbl)
   where
-    sortEach i = i `lookupWS` invTbl >>= sortInv >>= \is ->
-        insertWS i is invTbl
+    sortEach_STM ws i = getInv_STM ws i >>= sortInv_STM ws >>= \is ->
+        insert_STM i is $ ws^.invTbl

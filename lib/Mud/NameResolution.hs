@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.NameResolution ( procReconciledCoinsPCInv
                           , procGecrMisCon
@@ -12,18 +12,19 @@ module Mud.NameResolution ( procReconciledCoinsPCInv
                           , procReconciledCoinsCon
                           , procReconciledCoinsRm
                           , ReconciledCoins
-                          , resolveEntCoinNames
-                          , resolveEntCoinNamesWithRols
+                          , resolveEntCoinNames_STM
+                          , resolveEntCoinNamesWithRols_STM
                           , ringHelp ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
-import Mud.StateHelpers
+import Mud.StateHelpers hiding (blowUp, patternMatchFail) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>))
+import Control.Concurrent.STM (STM)
 import Control.Lens (_1, _2, dropping, folded, over, to)
 import Control.Lens.Operators ((^.), (^..))
 import Control.Monad (unless)
@@ -50,41 +51,41 @@ patternMatchFail = U.patternMatchFail "Mud.NameResolution"
 type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 
-resolveEntCoinNames :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNames rs ic@(_, c) = expandGecrs c =<< mapM (mkGecr ic . T.toLower) rs
+resolveEntCoinNames_STM :: WorldState -> Rest -> InvCoins -> STM ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNames_STM ws rs ic@(_, c) = expandGecrs c <$> mapM (mkGecr_STM ws ic . T.toLower) rs
 
 
-mkGecr :: InvCoins -> T.Text -> MudStack GetEntsCoinsRes
-mkGecr ic@(is, c) n
-  | n == [allChar]^.packed = getEntsInInv is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
-  | T.head n == allChar    = mkGecrMult (maxBound :: Int) (T.tail n) ic
+mkGecr_STM :: WorldState -> InvCoins -> T.Text -> STM GetEntsCoinsRes
+mkGecr_STM ws ic@(is, c) n
+  | n == [allChar]^.packed = getEntsInInv_STM ws is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
+  | T.head n == allChar    = mkGecrMult_STM ws (maxBound :: Int) (T.tail n) ic
   | isDigit (T.head n)     = let numText = T.takeWhile isDigit n
                                  numInt  = either (oops numText) (^._1) $ decimal numText
                                  rest    = T.drop (T.length numText) n
                              in if numText /= "0" then parse rest numInt else return (Sorry n)
-  | otherwise              = mkGecrMult 1 n ic
+  | otherwise              = mkGecrMult_STM ws 1 n ic
   where
-    oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
+    oops numText = blowUp "mkGecr_STM" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
       | T.length rest < 2 = return (Sorry n)
       | otherwise = let delim = T.head rest
                         rest' = T.tail rest
-                    in if | delim == amountChar -> mkGecrMult    numInt rest' ic
-                          | delim == indexChar  -> mkGecrIndexed numInt rest' is
+                    in if | delim == amountChar -> mkGecrMult_STM    ws numInt rest' ic
+                          | delim == indexChar  -> mkGecrIndexed_STM ws numInt rest' is
                           | otherwise           -> return (Sorry n)
 
 
-mkGecrMult :: Amount -> T.Text -> InvCoins -> MudStack GetEntsCoinsRes
-mkGecrMult a n (is, c) = if n `elem` allCoinNames
-                           then mkGecrMultForCoins a n c
-                           else mkGecrMultForEnts  a n is
+mkGecrMult_STM :: WorldState -> Amount -> T.Text -> InvCoins -> STM GetEntsCoinsRes
+mkGecrMult_STM ws a n (is, c) = if n `elem` allCoinNames
+                                  then return (mkGecrMultForCoins a n c)
+                                  else mkGecrMultForEnts_STM ws a n is
 
 
-mkGecrMultForCoins :: Amount -> T.Text -> Coins -> MudStack GetEntsCoinsRes
+mkGecrMultForCoins :: Amount -> T.Text -> Coins -> GetEntsCoinsRes
 mkGecrMultForCoins a n c@(Coins (cop, sil, gol))
-  | c == mempty                 = return  (Mult a n Nothing . Just $ Empty)
-  | n `elem` aggregateCoinNames = return  (Mult a n Nothing . Just . SomeOf $ if a == (maxBound :: Int) then c else c')
-  | otherwise                   = return . Mult a n Nothing . Just $ case n of
+  | c == mempty                 = Mult a n Nothing . Just $ Empty
+  | n `elem` aggregateCoinNames = Mult a n Nothing . Just . SomeOf $ if a == (maxBound :: Int) then c else c'
+  | otherwise                   = Mult a n Nothing . Just $ case n of
     "cp" | cop == 0               -> NoneOf . Coins $ (a,   0,   0  )
          | a == (maxBound :: Int) -> SomeOf . Coins $ (cop, 0,   0  )
          | otherwise              -> SomeOf . Coins $ (a,   0,   0  )
@@ -107,35 +108,34 @@ distributeAmt amt (c:cs) = let diff = amt - c
                                 else amt : distributeAmt 0    cs
 
 
-mkGecrMultForEnts :: Amount -> T.Text -> Inv -> MudStack GetEntsCoinsRes
-mkGecrMultForEnts a n is = getEntNamesInInv is >>= maybe notFound found . findFullNameForAbbrev n
+mkGecrMultForEnts_STM :: WorldState -> Amount -> T.Text -> Inv -> STM GetEntsCoinsRes
+mkGecrMultForEnts_STM ws a n is = getEntNamesInInv_STM ws is >>= maybe notFound found . findFullNameForAbbrev n
   where
     notFound       = return (Mult a n Nothing Nothing)
-    found fullName = getEntsInInv is >>= \es ->
+    found fullName = getEntsInInv_STM ws is >>= \es ->
         return (Mult a n (Just . takeMatchingEnts fullName $ es) Nothing)
     takeMatchingEnts fn = take a . filter (\e -> e^.name == fn)
 
 
-mkGecrIndexed :: Index -> T.Text -> Inv -> MudStack GetEntsCoinsRes
-mkGecrIndexed x n is = if n `elem` allCoinNames
-                         then return SorryIndexedCoins
-                         else getEntNamesInInv is >>= maybe notFound found . findFullNameForAbbrev n
+mkGecrIndexed_STM :: WorldState -> Index -> T.Text -> Inv -> STM GetEntsCoinsRes
+mkGecrIndexed_STM ws x n is = if n `elem` allCoinNames
+                                then return SorryIndexedCoins
+                                else getEntNamesInInv_STM ws is >>= maybe notFound found . findFullNameForAbbrev n
   where
     notFound       = return (Indexed x n (Left ""))
-    found fullName = filter (\e -> e^.name == fullName) <$> getEntsInInv is >>= \matches ->
+    found fullName = filter (\e -> e^.name == fullName) <$> getEntsInInv_STM ws is >>= \matches ->
         if length matches < x
           then let both = getEntBothGramNos . head $ matches
                in return (Indexed x n (Left . mkPlurFromBoth $ both))
           else return (Indexed x n (Right $ matches !! (x - 1)))
 
 
-expandGecrs :: Coins -> [GetEntsCoinsRes] -> MudStack ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-expandGecrs c gecrs = do
-    let (gecrs', enscs) = extractEnscsFromGecrs gecrs
-    mess <- mapM extractMesFromGecr gecrs'
-    let miss = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
-    let rcs  = reconcileCoins c . distillEnscs $ enscs
-    return (gecrs', miss, rcs)
+expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
+expandGecrs c gecrs = let (gecrs', enscs) = extractEnscsFromGecrs gecrs
+                          mess            = map extractMesFromGecr gecrs'
+                          miss            = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
+                          rcs             = reconcileCoins c . distillEnscs $ enscs
+                      in (gecrs', miss, rcs)
 
 
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
@@ -150,11 +150,10 @@ extractEnscsFromGecrs = over _1 reverse . foldl' helper ([], [])
     helper (gecrs, enscs) gecr@SorryIndexedCoins                  = (gecr : gecrs, enscs)
 
 
-extractMesFromGecr :: GetEntsCoinsRes -> MudStack (Maybe [Ent])
-extractMesFromGecr gecr = return $ case gecr of
-  (Mult    _ _ (Just es) _) -> Just es
-  (Indexed _ _ (Right e)  ) -> Just [e]
-  _                         -> Nothing
+extractMesFromGecr :: GetEntsCoinsRes -> Maybe [Ent]
+extractMesFromGecr = \case (Mult    _ _ (Just es) _) -> Just es
+                           (Indexed _ _ (Right e)  ) -> Just [e]
+                           _                         -> Nothing
 
 
 pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
@@ -204,22 +203,22 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
 -- Resolving entity and coin names with right/left indicators:
 
 
-resolveEntCoinNamesWithRols :: Rest -> InvCoins -> MudStack ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNamesWithRols rs ic@(_, c) = do
-    gecrMrols <- mapM (mkGecrWithRol ic . T.toLower) rs
-    let (gecrs, mrols) = (,) (gecrMrols^..folded._1) (gecrMrols^..folded._2)
-    (gecrs', miss, rcs) <- expandGecrs c gecrs
+resolveEntCoinNamesWithRols_STM :: WorldState -> Rest -> InvCoins -> STM ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNamesWithRols_STM ws rs ic@(_, c) = do
+    gecrMrols <- mapM (mkGecrWithRol_STM ws ic . T.toLower) rs
+    let (gecrs, mrols)      = (,) (gecrMrols^..folded._1) (gecrMrols^..folded._2)
+    let (gecrs', miss, rcs) = expandGecrs c gecrs
     return (gecrs', mrols, miss, rcs)
 
 
-mkGecrWithRol :: InvCoins -> T.Text -> MudStack (GetEntsCoinsRes, Maybe RightOrLeft)
-mkGecrWithRol ic n = let (a, b) = T.break (== slotChar) n
-                     in if | T.null b        -> mkGecr ic n >>= \gecr -> return (gecr, Nothing)
-                           | T.length b == 1 -> sorry
-                           | otherwise -> mkGecr ic a >>= \gecr ->
-                               let parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [(RightOrLeft, String)]
-                               in case parsed of [(rol, _)] -> return (gecr, Just rol)
-                                                 _          -> sorry
+mkGecrWithRol_STM :: WorldState -> InvCoins -> T.Text -> STM (GetEntsCoinsRes, Maybe RightOrLeft)
+mkGecrWithRol_STM ws ic n = let (a, b) = T.break (== slotChar) n
+                            in if | T.null b        -> mkGecr_STM ws ic n >>= \gecr -> return (gecr, Nothing)
+                                  | T.length b == 1 -> sorry
+                                  | otherwise       -> mkGecr_STM ws ic a >>= \gecr ->
+                                      let parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [(RightOrLeft, String)]
+                                      in case parsed of [(rol, _)] -> return (gecr, Just rol)
+                                                        _          -> sorry
   where
     sorry = return (Sorry n, Nothing)
 

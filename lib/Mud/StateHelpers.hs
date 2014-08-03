@@ -1,84 +1,24 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
--- TODO: -Werror
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
-module Mud.StateHelpers ( addToInv
-                        , adjustWS
-                        , BothGramNos
-                        , InvCoins
-                        , dispAssocList
-                        , dispGenericErrorMsg
-                        , divider
-                        , dumpFile
-                        , dumpFileWithDividers
-                        , findExit
-                        , getArm
-                        , getCloth
-                        , getCoins
-                        , getEnt
-                        , getEntBothGramNos
-                        , getEntBothGramNosInInv
-                        , getEntNamesInInv
-                        , getEntType
-                        , getEntsInInv
-                        , getEq
-                        , getEqMap
-                        , getInv
-                        , getInvCoins
-                        , getMob
-                        , getMobGender
-                        , getMobHand
-                        , getPC
-                        , getPCRm
-                        , getPCRmId
-                        , getPCRmInvCoins
-                        , getPlaColumns
-                        , getRm
-                        , getRmLinks
-                        , getWpn
-                        , hasCoins
-                        , hasEq
-                        , hasInv
-                        , hasInvOrCoins
-                        , keysWS
-                        , getPla
-                        , lookupWS
-                        , mkCoinsFromList
-                        , mkListFromCoins
-                        , mkPlurFromBoth
-                        , moveCoins
-                        , moveInv
-                        , movePC
-                        , moveReadiedItem
-                        , onNonWorldState
-                        , onWorldState
-                        , output
-                        , outputCon
-                        , outputConIndent
-                        , outputIndent
-                        , remFromInv
-                        , shuffleInvUnready
-                        , sortInv
-                        , insertWS
-                        , insert_STM ) where
+module Mud.StateHelpers where -- TODO: Provide an export list.
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>), Const)
+import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM (atomically, STM)
-import Control.Concurrent.STM.TVar (modifyTVar', readTVar, readTVarIO, TVar)
+import Control.Concurrent.STM.TVar (modifyTVar', readTVar, TVar)
 import Control.Lens (_1, at, each, folded)
 import Control.Lens.Getter (Getting)
 import Control.Lens.Operators ((&), (?~), (.~), (%~), (^.), (^..))
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
-import Control.Monad.State.Class (MonadState)
 import Data.IntMap (IntMap)
-import Data.List (sortBy)
+import Data.List ((\\), sortBy)
 import Data.Monoid ((<>), mempty)
 import qualified Data.IntMap.Lazy as IM (adjust, insert, keys, lookup)
 import qualified Data.Map.Lazy as M (elems, filter)
@@ -88,7 +28,7 @@ import qualified Data.Text.IO as T (putStrLn, readFile)
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
--- TODO: Delete unused methods.
+-- TODO: Determine which functions are not needed, and delete them.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -117,6 +57,10 @@ adjust_STM :: forall a . (a -> a) -> Id -> TVar (IntMap a) -> STM ()
 adjust_STM f i t = modifyTVar' t . IM.adjust f $ i
 
 
+keys_STM :: TVar (IntMap a) -> STM Inv
+keys_STM t = IM.keys <$> readTVar t
+
+
 -- ==================================================
 -- Helpers for working with world state tables:
 
@@ -143,8 +87,8 @@ adjustWS f i tbl = onWorldState $ \ws ->
     adjust_STM f i (ws^.tbl)
 
 
-keysWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> WorldState -> Const (TVar (IntMap a)) WorldState) -> f Inv
-keysWS tbl = IM.keys <$> (liftIO . readTVarIO =<< gets (^.worldState.tbl))
+findUnusedId_STM :: WorldState -> STM Id
+findUnusedId_STM ws = head . (\\) [0..] <$> keys_STM (ws^.typeTbl)
 
 
 -- ==================================================
@@ -575,10 +519,6 @@ insertNWS i a tbl = onNonWorldState $ \nws ->
 adjustNWS :: forall a . (a -> a) -> Id -> NWSTblGetting a -> MudStack ()
 adjustNWS f i tbl = onNonWorldState $ \nws ->
     adjust_STM f i (nws^.tbl)
-
-
-keysNWS :: forall (f :: * -> *) a . (Functor f, MonadState MudState f, MonadIO f) => ((TVar (IntMap a) -> Const (TVar (IntMap a)) (TVar (IntMap a))) -> NonWorldState -> Const (TVar (IntMap a)) NonWorldState) -> f Inv
-keysNWS tbl = IM.keys <$> (liftIO . readTVarIO =<< gets (^.nonWorldState.tbl))
 
 
 -- ==================================================

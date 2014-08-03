@@ -3,6 +3,7 @@
 
 module Mud.Util ( adjustIndent
                 , aOrAn
+                , appendNewline
                 , blowUp
                 , bracketPad
                 , bracketQuote
@@ -248,6 +249,11 @@ padOrTrunc x t
 
 -- ==================================================
 -- Misc.:
+
+
+-- TODO: Am I going to use this?
+appendNewline :: T.Text -> T.Text
+appendNewline = (<>) nlt
 
 
 showText :: (Show a) => a -> T.Text
