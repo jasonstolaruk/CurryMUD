@@ -278,6 +278,10 @@ findFullNameForAbbrev needle hay = guard (not . null $ res) >> (Just . head $ re
     res = sort . filter (needle `T.isPrefixOf`) $ hay
 
 
+mkCountList :: (Eq a) => [a] -> [Int]
+mkCountList xs = map (`countOcc` xs) xs
+
+
 countOcc :: (Eq a) => a -> [a] -> Int
 countOcc needle = foldl' (\acc x -> if x == needle then succ acc else acc) 0
 
@@ -295,10 +299,6 @@ mkOrdinal x  = let t = showText x
                                         '2' -> "nd"
                                         '3' -> "rd"
                                         _   -> "th"
-
-
-mkCountList :: (Eq a) => [a] -> [Int]
-mkCountList xs = map (`countOcc` xs) xs
 
 
 grepTextList :: T.Text -> [T.Text] -> [T.Text]
