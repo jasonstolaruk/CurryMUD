@@ -53,7 +53,7 @@ type MudStack = StateInIORefT MudState IO
 -- MUD state:
 
 
-data MudState = MudState { _worldState    :: WorldState
+data MudState = MudState { _worldState    :: TVar WorldState -- TODO: Consider renaming so as to indicate that this is a TVar.
                          , _nonWorldState :: NonWorldState }
 
 
@@ -61,21 +61,19 @@ data MudState = MudState { _worldState    :: WorldState
 -- World state:
 
 
-data WorldState = WorldState { _entTbl      :: StateTbl Ent
-                             , _objTbl      :: StateTbl Obj
-                             , _clothTbl    :: StateTbl Cloth
-                             , _invTbl      :: StateTbl Inv
-                             , _coinsTbl    :: StateTbl Coins
-                             , _conTbl      :: StateTbl Con
-                             , _wpnTbl      :: StateTbl Wpn
-                             , _armTbl      :: StateTbl Arm
-                             , _eqTbl       :: StateTbl EqMap
-                             , _mobTbl      :: StateTbl Mob
-                             , _pcTbl       :: StateTbl PC
-                             , _rmTbl       :: StateTbl Rm
-                             , _typeTbl     :: StateTbl Type }
-
-type StateTbl a = TVar (IM.IntMap a)
+data WorldState = WorldState { _entTbl      :: IM.IntMap Ent
+                             , _objTbl      :: IM.IntMap Obj
+                             , _clothTbl    :: IM.IntMap Cloth
+                             , _invTbl      :: IM.IntMap Inv
+                             , _coinsTbl    :: IM.IntMap Coins
+                             , _conTbl      :: IM.IntMap Con
+                             , _wpnTbl      :: IM.IntMap Wpn
+                             , _armTbl      :: IM.IntMap Arm
+                             , _eqTbl       :: IM.IntMap EqMap
+                             , _mobTbl      :: IM.IntMap Mob
+                             , _pcTbl       :: IM.IntMap PC
+                             , _rmTbl       :: IM.IntMap Rm
+                             , _typeTbl     :: IM.IntMap Type }
 
 
 -- ==================================================
@@ -148,9 +146,9 @@ instance Monoid Coins where
 -- Has an object (and an entity) and an inventory and coins.
 
 
-type Cap = Int
+type Cap     = Int
 
-newtype Con = Con Cap deriving (Eq, Show)
+newtype Con  = Con Cap deriving (Eq, Show)
 
 type ConName = T.Text
 
@@ -285,7 +283,7 @@ data Type = ObjType
 
 
 data NonWorldState = NonWorldState { _logServices :: LogServices
-                                   , _plaTbl      :: StateTbl Pla }
+                                   , _plaTbl      :: IM.IntMap Pla } -- TODO: Put in a TVar.
 
 
 -- ==================================================

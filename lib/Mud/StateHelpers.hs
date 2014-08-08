@@ -1,4 +1,5 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
+-- TODO: -Werror
 {-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
 module Mud.StateHelpers where -- TODO: Provide an export list.
@@ -18,6 +19,7 @@ import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
 import Data.IntMap (IntMap)
+import Data.IntMap.Lazy ((!))
 import Data.List ((\\), sortBy)
 import Data.Monoid ((<>), mempty)
 import qualified Data.IntMap.Lazy as IM (adjust, insert, keys, lookup)
@@ -39,6 +41,22 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
+-- ============================================================
+
+
+getWS :: MudStack WorldState
+getWS = liftIO . atomically . readTVar =<< gets (^.worldState)
+
+
+onWS :: (TVar WorldState -> STM a) -> MudStack a
+onWS f = liftIO . atomically . f =<< gets (^.worldState)
+
+
+modifyWS :: (WorldState -> WorldState) -> MudStack ()
+modifyWS f = liftIO . atomically . flip modifyTVar' f =<< gets (^.worldState)
+
+
+{-
 -- ============================================================
 -- Helpers for working with both world and non-world state:
 
@@ -89,8 +107,10 @@ adjustWS f i tbl = onWorldState $ \ws ->
 
 findUnusedId_STM :: WorldState -> STM Id
 findUnusedId_STM ws = head . (\\) [0..] <$> keys_STM (ws^.typeTbl)
+-}
 
 
+{-
 -- ==================================================
 -- Entities:
 
@@ -493,8 +513,10 @@ findExit_STM ws ln i = getRmLinks_STM ws i >>= \rls ->
       is -> Just . head $ is
   where
     isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)
+-}
 
 
+{-
 -- ==================================================
 -- Helpers for working with non-world state tables:
 
@@ -519,6 +541,7 @@ insertNWS i a tbl = onNonWorldState $ \nws ->
 adjustNWS :: forall a . (a -> a) -> Id -> NWSTblGetting a -> MudStack ()
 adjustNWS f i tbl = onNonWorldState $ \nws ->
     adjust_STM f i (nws^.tbl)
+-}
 
 
 -- ==================================================
@@ -526,19 +549,19 @@ adjustNWS f i tbl = onNonWorldState $ \nws ->
 
 
 getPla :: Id -> MudStack Pla
-getPla i = i `lookupNWS` plaTbl
+getPla i = gets (^.nonWorldState.plaTbl) >>= \pt -> return (pt ! i)
 
 
-getPla_STM :: NonWorldState -> Id -> STM Pla
-getPla_STM nws i = i `lookup_STM` (nws^.plaTbl)
+--getPla_STM :: NonWorldState -> Id -> STM Pla
+--getPla_STM nws i = i `lookup_STM` (nws^.plaTbl)
 
 
 getPlaColumns :: Id -> MudStack Int
 getPlaColumns i = (^.columns) <$> getPla i
 
 
-getPlaColumns_STM :: NonWorldState -> Id -> STM Int
-getPlaColumns_STM nws i = (^.columns) <$> getPla_STM nws i
+--getPlaColumns_STM :: NonWorldState -> Id -> STM Int
+--getPlaColumns_STM nws i = (^.columns) <$> getPla_STM nws i
 
 
 -- ==================================================

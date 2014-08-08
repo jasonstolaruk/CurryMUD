@@ -1,7 +1,8 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
+-- TODO: -Werror
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-module Mud.NameResolution ( procReconciledCoinsPCInv
+module Mud.NameResolution {-( procReconciledCoinsPCInv
                           , procGecrMisCon
                           , procGecrMisPCEq
                           , procGecrMisPCInv
@@ -14,7 +15,7 @@ module Mud.NameResolution ( procReconciledCoinsPCInv
                           , ReconciledCoins
                           , resolveEntCoinNames_STM
                           , resolveEntCoinNamesWithRols_STM
-                          , ringHelp ) where
+                          , ringHelp )-} where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -48,6 +49,7 @@ patternMatchFail = U.patternMatchFail "Mud.NameResolution"
 -- Resolving entity and coin names:
 
 
+{-
 type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 
@@ -378,3 +380,4 @@ procReconciledCoinsCon cn _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (sil == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ]
     unless (gol == 0) . outputCon $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces." ]
 procReconciledCoinsCon _  _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]
+-}

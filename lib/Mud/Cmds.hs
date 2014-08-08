@@ -15,18 +15,20 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
+import Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import Control.Arrow (first)
 import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.STM (STM)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
 import Control.Lens (_1, at, both, folded, over, to)
-import Control.Lens.Operators ((^.), (^..))
+import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad ((>=>), forever, forM_, guard, mplus, replicateM_, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
+import Data.IntMap.Lazy ((!))
 import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
@@ -175,10 +177,9 @@ dispTitleExHandler e = f "dispTitle" e
 
 
 game :: MudStack ()
-game = do
-    ms <- liftIO . readline $ "> "
+game = (liftIO . readline $ "> ") >>= \ms ->
     let t = ms^.to fromJust.packed.to T.strip
-    unless (T.null t) $ handleInp t
+    in unless (T.null t) . handleInp $ t
 
 
 handleInp :: T.Text -> MudStack ()
@@ -201,8 +202,11 @@ dispatch (cn, rest) = findAction cn >>= maybe (output $ "What?" <> nlt) (\act ->
 
 
 findAction :: CmdName -> MudStack (Maybe Action)
-findAction cn = (onWorldState $ \ws -> mkCmdListWithRmLinks_STM ws =<< getPCRmId_STM ws 0) >>= \cmdList' ->
-    let cns = map cmdName cmdList'
+findAction cn = getWS >>= \ws ->
+    let p        = (ws^.pcTbl) ! 0
+        r        = (ws^.rmTbl) ! (p^.rmId)
+        cmdList' = mkCmdListWithRmLinks r
+        cns      = map cmdName cmdList'
     in maybe (return Nothing)
              (\fn -> return . Just . findActionForFullName fn $ cmdList')
              (findFullNameForAbbrev (T.toLower cn) cns)
@@ -210,9 +214,8 @@ findAction cn = (onWorldState $ \ws -> mkCmdListWithRmLinks_STM ws =<< getPCRmId
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)
 
 
-mkCmdListWithRmLinks_STM :: WorldState -> Id -> STM [Cmd]
-mkCmdListWithRmLinks_STM ws i = getRmLinks_STM ws i >>= \rls ->
-    return (cmdList ++ [ mkCmdForRmLink rl | rl <- rls, rl^.linkName `notElem` stdLinkNames ])
+mkCmdListWithRmLinks :: Rm -> [Cmd]
+mkCmdListWithRmLinks r = cmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, rl^.linkName `notElem` stdLinkNames ]
   where
     mkCmdForRmLink rl = let ln = rl^.linkName.to T.toLower
                         in Cmd { cmdName = ln, action = go ln, cmdDesc = "" }
@@ -263,7 +266,7 @@ plaDispCmdList = dispCmdList (cmdPred Nothing)
 dispCmdList :: (Cmd -> Bool) -> Action
 dispCmdList p [] = mapM_ (outputIndent 10) (cmdListText p) >> liftIO newLine
 dispCmdList p rs = forM_ rs $ \r ->
-    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ p)  >> liftIO newLine
+    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ p) >> liftIO newLine
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
@@ -316,26 +319,31 @@ goDispatcher [] = return ()
 goDispatcher rs = mapM_ tryMove rs
 
 
--- TODO: Move?
-data Blunder = Blunder
-
-
--- TODO: Move?
-blunder :: (Monad m) => m Blunder
-blunder = return Blunder
-
-
 tryMove :: T.Text -> MudStack ()
 tryMove dir = let dir' = T.toLower dir
               in helper dir' >>= \case
-                  ()      -> look []
-                  Blunder -> sorry dir'
+                Nothing -> sorry dir'
+                Just () -> look []
   where
-    helper dir' = onWorldState $ \ws ->
-                      getPCRmId_STM ws 0 >>= findExit_STM ws dir' >>= maybe blunder (\ri -> movePC_STM ws 0 ri)
+    helper dir' = onWS >>= \t -> do
+                      ws <- readTVar t
+                      let p = (ws^.pcTbl) ! 0
+                      let r = (ws^.rmTbl) ! (p^.rmId)
+                      case findExit r dir' of
+                        Nothing -> return Nothing
+                        Just i  -> let p' = p & rmId .~ i
+                                   in (writeTVar t $ ws & pcTbl.at 0 ?~ p') >> return (Just ())
     sorry dir'  = output $ if dir' `elem` stdLinkNames
                              then "You can't go that way." <> nlt
                              else dblQuote dir <> " is not a valid direction." <> nlt
+
+
+findExit :: Rm -> LinkName -> Id -> Maybe Id
+findExit r ln i = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
+                    [] -> Nothing
+                    is -> Just . head $ is
+  where
+    isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)
 
 
 -----
@@ -1047,9 +1055,9 @@ uptime [] = (try . output . parse =<< runUptime) >>= eitherRet uptimeExHandler >
   where
     runUptime = liftIO . readProcess "uptime" [] $ ""
     parse ut  = let (a, b) = span (/= ',') ut
-                    a' = unwords . tail . words $ a
-                    b' = dropWhile isSpace . takeWhile (/= ',') . tail $ b
-                    c  = (toUpper . head $ a') : tail a'
+                    a'     = unwords . tail . words $ a
+                    b'     = dropWhile isSpace . takeWhile (/= ',') . tail $ b
+                    c      = (toUpper . head $ a') : tail a'
                 in T.concat [ c^.packed, " ", b'^.packed, "." ]
 uptime rs = ignore rs >> uptime []
 

@@ -1,20 +1,22 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld ( createWorld
-                    , initWorld
-                    , sortAllInvs ) where
+module Mud.TheWorld (initWorld) where
 
 import Mud.Ids
 import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
-import Control.Lens.Operators ((^.))
-import Data.Monoid (mempty)
+import Control.Lens (_1, at, folded)
+import Control.Lens.Operators ((&), (?~), (?=), (.~), (^.), (^..))
+import Data.IntMap.Lazy ((!))
+import Data.List (sortBy)
+import Data.Monoid ((<>), mempty)
+import qualified Data.IntMap.Lazy as IM (map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
-{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
+{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-} -- TODO: Needed?
 
 
 logNotice :: String -> String -> MudStack ()
@@ -26,81 +28,55 @@ logNotice = L.logNotice "Mud.TheWorld"
 
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
-putObj i e o = onWorldState $ \ws -> do
-    insert_STM i ObjType (ws^.typeTbl)
-    insert_STM i e       (ws^.entTbl)
-    insert_STM i o       (ws^.objTbl)
+putObj i e o = modifyWS $ \ws ->
+    ws & typeTbl.at i ?~ ObjType & entTbl.at i ?~ e & objTbl.at i ?~ o
 
 
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
-putCloth i e o c = onWorldState $ \ws -> do
-    insert_STM i ClothType (ws^.typeTbl)
-    insert_STM i e         (ws^.entTbl)
-    insert_STM i o         (ws^.objTbl)
-    insert_STM i c         (ws^.clothTbl)
+putCloth i e o c = modifyWS $ \ws ->
+    ws & typeTbl.at i ?~ ClothType & entTbl.at i ?~ e & objTbl.at i ?~ o & clothTbl.at i ?~ c
 
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
-putCon i e o is coi con = onWorldState $ \ws -> do
-    insert_STM i ConType (ws^.typeTbl)
-    insert_STM i e       (ws^.entTbl)
-    insert_STM i o       (ws^.objTbl)
-    insert_STM i is      (ws^.invTbl)
-    insert_STM i coi     (ws^.coinsTbl)
-    insert_STM i con     (ws^.conTbl)
+putCon i e o is coi con = modifyWS $ \ws ->
+    ws & typeTbl.at i ?~ ConType & entTbl.at i ?~ e & objTbl.at i ?~ o & invTbl.at i ?~ is & coinsTbl.at i ?~ coi & conTbl.at i ?~ con
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
-putWpn i e o w = onWorldState $ \ws -> do
-    insert_STM i WpnType (ws^.typeTbl)
-    insert_STM i e       (ws^.entTbl)
-    insert_STM i o       (ws^.objTbl)
-    insert_STM i w       (ws^.wpnTbl)
+putWpn i e o w = modifyWS $ \ws ->
+    ws & typeTbl.at i ?~ WpnType & entTbl.at i ?~ e & objTbl.at i ?~ o & wpnTbl.at i ?~ w
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
-putArm i e o a = onWorldState $ \ws -> do
-    insert_STM i ArmType (ws^.typeTbl)
-    insert_STM i e       (ws^.entTbl)
-    insert_STM i o       (ws^.objTbl)
-    insert_STM i a       (ws^.armTbl)
+putArm i e o a = modifyWS $ \ws ->
+    ws & typeTbl.at i ?~ ArmType & entTbl.at i ?~ e & objTbl.at i ?~ o & armTbl.at i ?~ a
 
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
-putMob i e is c em m = onWorldState $ \ws -> do
-    insert_STM i MobType (ws^.typeTbl)
-    insert_STM i e       (ws^.entTbl)
-    insert_STM i is      (ws^.invTbl)
-    insert_STM i c       (ws^.coinsTbl)
-    insert_STM i em      (ws^.eqTbl)
-    insert_STM i m       (ws^.mobTbl)
+putMob i e is c em m = modifyWS $ \ws ->
+    ws & typeTbl.at i ?~ MobType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ c & eqTbl.at i ?~ em & mobTbl.at i ?~ m
+
 
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
-putPC i e is c em m p = onWorldState $ \ws -> do
-    insert_STM i PCType (ws^.typeTbl)
-    insert_STM i e      (ws^.entTbl)
-    insert_STM i is     (ws^.invTbl)
-    insert_STM i c      (ws^.coinsTbl)
-    insert_STM i em     (ws^.eqTbl)
-    insert_STM i m      (ws^.mobTbl)
-    insert_STM i p      (ws^.pcTbl)
+putPC i e is c em m p = modifyWS $ \ws ->
+    ws & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ c & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ p
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
-putRm i is c r = onWorldState $ \ws -> do
-    insert_STM i RmType (ws^.typeTbl)
-    insert_STM i is     (ws^.invTbl)
-    insert_STM i c      (ws^.coinsTbl)
-    insert_STM i r      (ws^.rmTbl)
+putRm i is c r = modifyWS $ \ws ->
+    ws & typeTbl.at i ?~ RmType & invTbl.at i ?~ is & coinsTbl.at i ?~ c & rmTbl.at i ?~ r
 
 
-putPla :: Id -> Pla -> MudStack ()
-putPla i p = onNonWorldState $ \nws ->
-    insert_STM i p (nws^.plaTbl)
+putPla :: Id -> Pla -> MudStack () -- TODO
+putPla i p = nonWorldState.plaTbl.at i ?= p
 
 
 -- ==================================================
 -- Initializing and creating the world:
+
+
+initWorld :: MudStack ()
+initWorld = createWorld >> sortAllInvs
 
 
 createWorld :: MudStack ()
@@ -171,14 +147,17 @@ createWorld = do
     putObj iLongName2 (Ent iLongName2 "long" "item with a very long name, gosh this truly is a long name, it just goes on and on, no one knows when it might stop" "" "It's long." 0) (Obj 1 1)
 
 
-initWorld :: MudStack ()
-initWorld = createWorld >> sortAllInvs
-
-
 sortAllInvs :: MudStack ()
 sortAllInvs = do
     logNotice "sortAllInvs" "sorting all inventories"
-    onWorldState $ \ws -> mapM_ (sortEach_STM ws) =<< keys_STM (ws^.invTbl)
+    modifyWS $ \ws ->
+        ws & invTbl .~ IM.map (sortInv ws) (ws^.invTbl)
+
+
+sortInv :: WorldState -> Inv -> Inv
+sortInv ws is = ((^..folded._1) . sortBy nameThenSing) zipped
   where
-    sortEach_STM ws i = getInv_STM ws i >>= sortInv_STM ws >>= \is ->
-        insert_STM i is $ ws^.invTbl
+    nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
+    zipped = zip3 is names sings
+    names  = [ let e = (ws^.entTbl) ! i in e^.name | i <- is ]
+    sings  = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is ]
