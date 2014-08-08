@@ -106,7 +106,7 @@ cmdList = -- ==================================================
           --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           --, Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
-          --, Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
+          , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
           --, Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
           --, Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
@@ -375,13 +375,6 @@ look rs = getWS >>= \ws ->
       else output $ "You don't see anything here to look at." <> nlt
 
 
-summarizeExits :: Rm -> MudStack ()
-summarizeExits r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
-                       stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
-                       customNames = filter (`notElem` stdLinkNames) rlns
-                   in output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
-
-
 dispRmInvCoins :: WorldState -> Id -> MudStack ()
 dispRmInvCoins ws i = let is = (ws^.invTbl)   ! i
                           c  = (ws^.coinsTbl) ! i
@@ -411,7 +404,7 @@ descEnt ws (i, e) = let t = (ws^.typeTbl) ! i
                     in do
                         e^.desc.to output
                         when (t == ConType) $ dispInvCoins ws i e
-                        --when (t == MobType) $ dispEq       ws i -- TODO
+                        when (t == MobType) $ dispEq       ws i e
 
 
 dispInvCoins :: WorldState -> Id -> Ent -> MudStack ()
@@ -464,20 +457,25 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 -----
 
 
-{-
-exits :: ShouldNewLine -> Action -- TODO: See "summarizeExits".
-exits snl [] = do
-    rlns <- map (^.linkName) <$> (getRmLinks =<< getPCRmId 0)
-    let stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
-    let customNames = filter (`notElem` stdLinkNames) rlns
-    output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
-    maybeNewLine snl
-exits nl rs = ignore rs >> exits nl []
+exits :: ShouldNewLine -> Action
+exits snl [] = getWS >>= \ws ->
+    let p = (ws^.pcTbl) ! 0
+        r = (ws^.rmTbl) ! (p^.rmId)
+    in summarizeExits r >> maybeNewLine snl
+exits snl rs = ignore rs >> exits snl []
+
+
+summarizeExits :: Rm -> MudStack ()
+summarizeExits r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
+                       stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
+                       customNames = filter (`notElem` stdLinkNames) rlns
+                   in output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
 
 
 -----
 
 
+{-
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv [] = dispInvCoins 0 >> liftIO newLine
 inv rs = do
@@ -503,24 +501,25 @@ equip rs = do
           mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
           unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt)
       else dudeYou'reNaked
+-}
 
 
-dispEq :: Id -> MudStack ()
-dispEq i = (mkEqList . mkSlotNameToIdList . M.toList =<< getEqMap i) >>= \edl ->
-    if null edl then none else header >> forM_ edl (outputIndent 15) >> liftIO newLine
+dispEq :: WorldState -> Id -> Ent -> MudStack ()
+dispEq ws i e = let em   = (ws^.eqTbl) ! i
+                    desc = map mkDesc . mkSlotNameIdList . M.toList $ em
+                in if null desc then none else header >> forM_ desc (outputIndent 15) >> liftIO newLine
   where
-    mkSlotNameToIdList    = map (first pp)
-    mkEqList              = mapM dispEqHelper
-    dispEqHelper (sn, i') = let slotName = parensPad 15 noFinger
-                                noFinger = T.breakOn " finger" sn ^._1
-                            in getEnt i' >>= \e ->
-                                return (T.concat [ slotName, e^.sing, " ", e^.name.to bracketQuote ])
+    mkSlotNameIdList = map (first pp)
+    mkDesc (sn, i')  = let sn'      = parensPad 15 noFinger
+                           noFinger = T.breakOn " finger" sn ^._1
+                           e'       = (ws^.entTbl) ! i'
+                       in T.concat [ sn', e'^.sing, " ", e'^.name.to bracketQuote ]
     none
       | i == 0    = dudeYou'reNaked
-      | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " doesn't have anything readied."
+      | otherwise = output $ "The " <> e^.sing <> " doesn't have anything readied." -- TODO: What if it's another player?
     header
       | i == 0    = output "You have readied the following equipment:"
-      | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " has readied the following equipment:"
+      | otherwise = output $ "The " <> e^.sing <> " has readied the following equipment:" -- TODO: What if it's another player?
 
 
 dudeYou'reNaked :: MudStack ()
@@ -530,6 +529,7 @@ dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> n
 -----
 
 
+{-
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = do

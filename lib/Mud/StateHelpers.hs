@@ -65,7 +65,7 @@ getEntBothGramNos e = (e^.sing, e^.plur)
 
 mkPlurFromBoth :: BothGramNos -> Plur
 mkPlurFromBoth (s, "") = s <> "s"
-mkPlurFromBoth (_, p)  = p
+mkPlurFromBoth (_, p ) = p
 
 
 mkListFromCoins :: Coins -> [Int]

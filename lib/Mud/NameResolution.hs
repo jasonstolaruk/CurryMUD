@@ -2,7 +2,7 @@
 -- TODO: -Werror
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-module Mud.NameResolution {-( procReconciledCoinsPCInv
+module Mud.NameResolution {-( procReconciledCoinsPCInv -- TODO: Restore this export list.
                           , procGecrMisCon
                           , procGecrMisPCEq
                           , procGecrMisPCInv
