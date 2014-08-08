@@ -1,4 +1,5 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
+-- TODO: -Werror
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.Cmds (gameWrapper) where
@@ -102,30 +103,30 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = "about", action = about, cmdDesc = "About this game." }
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-          , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
+          --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-          , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
-          , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
-          , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
+          --, Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
+          --, Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
+          --, Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
-          , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
+          --, Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
           , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
           , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
           , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
           , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
           , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
-          , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
+          --, Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
-          , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
-          , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
+          --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
+          --, Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
           , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
           , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
           , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
-          , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
+          --, Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
           , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
-          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
-          , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
+          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." } ]
+          --, Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 
 
 prefixCmd :: Char -> CmdName -> T.Text
@@ -325,7 +326,7 @@ tryMove dir = let dir' = T.toLower dir
                 Nothing -> sorry dir'
                 Just () -> look []
   where
-    helper dir' = onWS >>= \t -> do
+    helper dir' = onWS $ \t -> do
                       ws <- readTVar t
                       let p = (ws^.pcTbl) ! 0
                       let r = (ws^.rmTbl) ! (p^.rmId)
@@ -338,10 +339,10 @@ tryMove dir = let dir' = T.toLower dir
                              else dblQuote dir <> " is not a valid direction." <> nlt
 
 
-findExit :: Rm -> LinkName -> Id -> Maybe Id
-findExit r ln i = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
-                    [] -> Nothing
-                    is -> Just . head $ is
+findExit :: Rm -> LinkName -> Maybe Id
+findExit r ln = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
+                  [] -> Nothing
+                  is -> Just . head $ is
   where
     isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)
 
@@ -350,86 +351,98 @@ findExit r ln i = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
 
 
 look :: Action
-look [] = do
-    descRm
-    summarizeExits
-    dispRmInvCoins =<< getPCRmInvCoins 0
-    liftIO newLine
+look [] = getWS >>= \ws ->
+    let p  = (ws^.pcTbl) ! 0
+        i  = p^.rmId
+        r  = (ws^.rmTbl) ! i
+    in do
+        descRm r
+        summarizeExits r
+        dispRmInvCoins ws i
+        liftIO newLine
   where
-    descRm = getPCRm 0 >>= \r -> output $ r^.name <> nlt <> r^.desc
-    summarizeExits = exits False []
-look rs = do
-    hic <- hasInvOrCoins =<< getPCRmId 0
-    if hic
-      then do
-          (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getPCRmInvCoins 0
-          mapM_ (procGecrMisRm True descEnts) . zip gecrs $ miss
-          mapM_ (procReconciledCoinsRm True descCoins) rcs
+    descRm r = output $ r^.name <> nlt <> r^.desc
+look rs = getWS >>= \ws ->
+    let p  = (ws^.pcTbl)    ! 0
+        i  = p^.rmId
+        is = (ws^.invTbl)   ! i
+        c  = (ws^.coinsTbl) ! i
+    in if (not . null $ is) || (c /= mempty)
+      then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs is c
+           in do
+               mapM_ (procGecrMisRm True (descEnts ws)) . zip gecrs $ miss
+               mapM_ (procReconciledCoinsRm True descCoins) rcs
       else output $ "You don't see anything here to look at." <> nlt
 
 
-dispRmInvCoins :: InvCoins -> MudStack ()
-dispRmInvCoins (is, c) = mkNameCountBothList is >>= mapM_ dispEntInRm >> maybeSummarizeCoins
+summarizeExits :: Rm -> MudStack ()
+summarizeExits r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
+                       stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
+                       customNames = filter (`notElem` stdLinkNames) rlns
+                   in output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
+
+
+dispRmInvCoins :: WorldState -> Id -> MudStack ()
+dispRmInvCoins ws i = let is = (ws^.invTbl)   ! i
+                          c  = (ws^.coinsTbl) ! i
+                      in (mapM_ dispEntInRm . mkNameCountBothList ws $ is) >> maybeSummarizeCoins c
   where
     dispEntInRm (en, count, (s, _))
-      | count == 1             = outputIndent 2 $ aOrAn s <> " " <> bracketQuote en
+      | count == 1             = outputIndent    2 $ aOrAn s <> " " <> bracketQuote en
     dispEntInRm (en, count, b) = outputConIndent 2 [ showText count, " ", mkPlurFromBoth b, " ", bracketQuote en ]
-    maybeSummarizeCoins        = when (c /= mempty) (summarizeCoins c)
+    maybeSummarizeCoins c      = when (c /= mempty) (summarizeCoins c)
 
 
-mkNameCountBothList :: Inv -> MudStack [(T.Text, Int, BothGramNos)]
-mkNameCountBothList is = do
-    ens <- getEntNamesInInv is
-    ebgns <- getEntBothGramNosInInv is
-    let cs = mkCountList ebgns
-    return (nub . zip3 ens cs $ ebgns)
+mkNameCountBothList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
+                                ens   = [ e^.name             | e <- es ]
+                                ebgns = [ getEntBothGramNos e | e <- es ]
+                                cs    = mkCountList ebgns
+                            in nub . zip3 ens cs $ ebgns
 
 
-descEnts :: Inv -> MudStack ()
-descEnts is = forM_ is $ \i ->
-    getEnt i >>= descEnt >> liftIO newLine
+descEnts :: WorldState -> Inv -> MudStack ()
+descEnts ws is = let boths = [ (i, (ws^.entTbl) ! i) | i <- is ]
+                 in mapM_ (\both -> descEnt ws both >> liftIO newLine) boths
 
 
-descEnt :: Ent -> MudStack ()
-descEnt e = do
-    e^.desc.to output
-    t <- getEntType e
-    when (t == ConType) $ dispInvCoins i
-    when (t == MobType) $ dispEq i
-  where
-    i = e^.entId
+descEnt :: WorldState -> (Id, Ent) -> MudStack ()
+descEnt ws (i, e) = let t = (ws^.typeTbl) ! i
+                    in do
+                        e^.desc.to output
+                        when (t == ConType) $ dispInvCoins ws i e
+                        --when (t == MobType) $ dispEq       ws i -- TODO
 
 
-dispInvCoins :: Id -> MudStack ()
-dispInvCoins i = do
-    hi <- hasInv   i
-    hc <- hasCoins i
-    case (hi, hc) of
-      (False, False) -> if i == 0
-                          then dudeYourHandsAreEmpty
-                          else getEnt i >>= \e -> output $ "The " <> e^.sing <> " is empty."
-      (True,  False) -> header >> dispEntsInInv i
-      (False, True ) -> header >> summarizeCoinsInInv
-      (True,  True ) -> header >> dispEntsInInv i >> summarizeCoinsInInv
+dispInvCoins :: WorldState -> Id -> Ent -> MudStack ()
+dispInvCoins ws i e = let is       = (ws^.invTbl)   ! i
+                          c        = (ws^.coinsTbl) ! i
+                          hasInv   = not . null $ is
+                          hasCoins = c /= mempty
+                      in case (hasInv, hasCoins) of
+                        (False, False) -> if i == 0
+                                            then dudeYourHandsAreEmpty
+                                            else output $ "The " <> e^.sing <> " is empty."
+                        (True,  False) -> header >> dispEntsInInv ws is
+                        (False, True ) -> header >> summarizeCoins c
+                        (True,  True ) -> header >> dispEntsInInv ws is >> summarizeCoins c
   where
     header
-      | i == 0 = output "You are carrying:"
-      | otherwise = getEnt i >>= \e -> output $ "The " <> e^.sing <> " contains:"
-    summarizeCoinsInInv = summarizeCoins =<< getCoins i
+      | i == 0    = output "You are carrying:"
+      | otherwise = output $ "The " <> e^.sing <> " contains:"
 
 
 dudeYourHandsAreEmpty :: MudStack ()
 dudeYourHandsAreEmpty = output "You aren't carrying anything." >> liftIO newLine
 
 
-dispEntsInInv :: Id -> MudStack ()
-dispEntsInInv i = getInv i >>= mkNameCountBothList >>= mapM_ dispEntInInv
+dispEntsInInv :: WorldState -> Inv -> MudStack ()
+dispEntsInInv ws = mapM_ dispEntInInv . mkNameCountBothList ws
   where
-    dispEntInInv (en, c, (s, _))
-      | c == 1 = outputIndent ind $ nameCol en <> "1 " <> s
-    dispEntInInv (en, c, b) = outputConIndent ind [ nameCol en, showText c, " ", mkPlurFromBoth b ]
-    nameCol = bracketPad ind
+    dispEntInInv (en, c, (s, _)) | c == 1 = outputIndent    ind $ nameCol en <> "1 " <> s
+    dispEntInInv (en, c, b     )          = outputConIndent ind [ nameCol en, showText c, " ", mkPlurFromBoth b ]
     ind     = 11
+    nameCol = bracketPad ind
 
 
 summarizeCoins :: Coins -> MudStack ()
@@ -451,7 +464,8 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 -----
 
 
-exits :: ShouldNewLine -> Action
+{-
+exits :: ShouldNewLine -> Action -- TODO: See "summarizeExits".
 exits snl [] = do
     rlns <- map (^.linkName) <$> (getRmLinks =<< getPCRmId 0)
     let stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
@@ -1045,6 +1059,7 @@ whatInvCoins it r rc
       | gol == 1  = "1 gold piece"
       | gol /= 0  = showText gol <> " gold pieces"
       | otherwise = blowUp "whatInvCoins mkTxtForCoinsWithAmt" "attempted to make text for empty coins" [ showText c ]
+-}
 
 
 -----

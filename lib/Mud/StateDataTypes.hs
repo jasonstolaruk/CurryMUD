@@ -53,8 +53,8 @@ type MudStack = StateInIORefT MudState IO
 -- MUD state:
 
 
-data MudState = MudState { _worldState    :: TVar WorldState -- TODO: Consider renaming so as to indicate that this is a TVar.
-                         , _nonWorldState :: NonWorldState }
+data MudState = MudState { _worldStateTVar :: TVar WorldState
+                         , _nonWorldState  :: NonWorldState }
 
 
 -- ==================================================

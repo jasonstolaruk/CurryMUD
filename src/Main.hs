@@ -47,19 +47,7 @@ welcome = do
 
 
 initMudState :: IO MudState
-initMudState = do
-    a <- newTVarIO IM.empty
-    b <- newTVarIO IM.empty
-    c <- newTVarIO IM.empty
-    d <- newTVarIO IM.empty
-    e <- newTVarIO IM.empty
-    f <- newTVarIO IM.empty
-    g <- newTVarIO IM.empty
-    h <- newTVarIO IM.empty
-    i <- newTVarIO IM.empty
-    j <- newTVarIO IM.empty
-    k <- newTVarIO IM.empty
-    l <- newTVarIO IM.empty
-    m <- newTVarIO IM.empty
-    n <- newTVarIO IM.empty
-    return (MudState (WorldState a b c d e f g h i j k l m)  (NonWorldState (LogServices Nothing Nothing) n))
+initMudState = newTVarIO ws >>= \wsTVar -> return (MudState wsTVar nws)
+  where
+    ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
+    nws = NonWorldState (LogServices Nothing Nothing) IM.empty

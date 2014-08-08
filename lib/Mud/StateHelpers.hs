@@ -45,15 +45,36 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 getWS :: MudStack WorldState
-getWS = liftIO . atomically . readTVar =<< gets (^.worldState)
+getWS = liftIO . atomically . readTVar =<< gets (^.worldStateTVar)
 
 
 onWS :: (TVar WorldState -> STM a) -> MudStack a
-onWS f = liftIO . atomically . f =<< gets (^.worldState)
+onWS f = liftIO . atomically . f =<< gets (^.worldStateTVar)
 
 
 modifyWS :: (WorldState -> WorldState) -> MudStack ()
-modifyWS f = liftIO . atomically . flip modifyTVar' f =<< gets (^.worldState)
+modifyWS f = liftIO . atomically . flip modifyTVar' f =<< gets (^.worldStateTVar)
+
+
+type BothGramNos = (Sing, Plur)
+
+
+getEntBothGramNos :: Ent -> BothGramNos
+getEntBothGramNos e = (e^.sing, e^.plur)
+
+
+mkPlurFromBoth :: BothGramNos -> Plur
+mkPlurFromBoth (s, "") = s <> "s"
+mkPlurFromBoth (_, p)  = p
+
+
+mkListFromCoins :: Coins -> [Int]
+mkListFromCoins (Coins (c, g, s)) = [c, g, s]
+
+
+mkCoinsFromList :: [Int] -> Coins
+mkCoinsFromList [cop, sil, gol] = Coins (cop, sil, gol)
+mkCoinsFromList xs              = patternMatchFail "mkCoinsFromList" [ showText xs ]
 
 
 {-
@@ -288,15 +309,6 @@ getCoins i = i `lookupWS` coinsTbl
 
 getCoins_STM :: WorldState -> Id -> STM Coins
 getCoins_STM ws i = i `lookup_STM` (ws^.coinsTbl)
-
-
-mkListFromCoins :: Coins -> [Int]
-mkListFromCoins (Coins (c, g, s)) = [c, g, s]
-
-
-mkCoinsFromList :: [Int] -> Coins
-mkCoinsFromList [cop, sil, gol] = Coins (cop, sil, gol)
-mkCoinsFromList xs              = patternMatchFail "mkCoinsFromList" [ showText xs ]
 
 
 hasCoins :: Id -> MudStack Bool
