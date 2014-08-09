@@ -107,7 +107,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           --, Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
           , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
-          --, Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
+          , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
           --, Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
           , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
@@ -326,11 +326,10 @@ tryMove dir = let dir' = T.toLower dir
                 Nothing -> sorry dir'
                 Just () -> look []
   where
-    helper dir' = onWS $ \t -> do
-                      ws <- readTVar t
+    helper dir' = onWS $ \t -> readTVar t >>= \ws ->
                       let p = (ws^.pcTbl) ! 0
-                      let r = (ws^.rmTbl) ! (p^.rmId)
-                      case findExit r dir' of
+                          r = (ws^.rmTbl) ! (p^.rmId)
+                      in case findExit r dir' of
                         Nothing -> return Nothing
                         Just i  -> let p' = p & rmId .~ i
                                    in (writeTVar t $ ws & pcTbl.at 0 ?~ p') >> return (Just ())
@@ -370,8 +369,8 @@ look rs = getWS >>= \ws ->
     in if (not . null $ is) || (c /= mempty)
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs is c
            in do
-               mapM_ (procGecrMisRm True (descEnts ws)) . zip gecrs $ miss
-               mapM_ (procReconciledCoinsRm True descCoins) rcs
+               mapM_ (procGecrMisRm_ (descEnts ws)) . zip gecrs $ miss
+               mapM_ (procReconciledCoinsRm descCoins) rcs
       else output $ "You don't see anything here to look at." <> nlt
 
 
@@ -475,6 +474,7 @@ summarizeExits r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
 -----
 
 
+-- TODO: Continue from here. I want to make sure that "get" is correctly moving items to the PC's inventory.
 {-
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv [] = dispInvCoins 0 >> liftIO newLine
@@ -529,18 +529,27 @@ dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> n
 -----
 
 
-{-
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction rs = do
-    hic <- hasInvOrCoins =<< getPCRmId 0
-    if hic
-      then do
-        (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getPCRmInvCoins 0
-        mapM_ (procGecrMisRm False shuffleInvGet) . zip gecrs $ miss
-        mapM_ (procReconciledCoinsRm False shuffleCoinsGet) rcs
-        liftIO newLine
-      else output $ "You don't see anything here to pick up." <> nlt
+getAction rs = helper >>= \case
+  Nothing   -> output $ "You don't see anything here to pick up." <> nlt
+  Just msgs -> (mapM_ output . T.lines $ msgs) >> liftIO newLine
+  where
+    helper = onWS $ \t -> readTVar t >>= \ws ->
+        let p   = (ws^.pcTbl)    ! 0
+            pis = (ws^.invTbl)   ! 0
+            pc  = (ws^.coinsTbl) ! 0
+            i   = p^.rmId
+            ris = (ws^.invTbl)   ! i
+            rc  = (ws^.coinsTbl) ! i
+        in if (not . null $ ris) || (rc /= mempty)
+          then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs ris rc
+                   eiss               = map procGecrMisRm . zip gecrs $ miss
+                   ecs                = map procReconciledCoinsRm_ rcs
+                   (ws', msgs)        = foldl' (helperEitherInv i ris pis) (ws, "") eiss
+                   -- TODO: Shuffle coins.
+               in writeTVar t ws' >> return (Just msgs)
+          else return Nothing
 
 
 advise :: [HelpTopic] -> T.Text -> MudStack ()
@@ -551,21 +560,32 @@ advise hs  msg = output msg >> outputCon [ "See also the following help topics: 
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
 
+helperEitherInv :: Id -> Inv -> Inv -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
+helperEitherInv i ris pis (ws, msgs) eis = case eis of
+  Left  msg -> (ws, msgs <> msg)
+  Right is  -> let ws' = ws & invTbl.at i ?~ (deleteFirstOfEach is ris)
+                            & invTbl.at 0 ?~ (sortInv ws . (++) pis $ is)
+                   msg = mkGetDropDesc ws Get is
+               in (ws', msgs <> msg)
+
+
+{-
 shuffleInvGet :: Inv -> MudStack ()
 shuffleInvGet is = getPCRmId 0 >>= \i ->
-    moveInv is i 0 >> descGetDropEnts Get is
+    moveInv is i 0 >> mkGetDropDesc Get is
+-}
 
 
-descGetDropEnts :: GetOrDrop -> Inv -> MudStack ()
-descGetDropEnts god is = mapM_ descGetDropHelper =<< mkNameCountBothList is
+mkGetDropDesc :: WorldState -> GetOrDrop -> Inv -> T.Text
+mkGetDropDesc ws god is = T.concat . map helper . mkNameCountBothList ws $ is
   where
-    descGetDropHelper (_, c, (s, _))
-      | c == 1                   = outputCon [ "You ", verb god, " the ", s, "." ]
-    descGetDropHelper (_, c, b) = outputCon [ "You ", verb god, " ", showText c, " ", mkPlurFromBoth b, "." ]
+    helper (_, c, (s, _)) | c == 1 = T.concat [ "You ", verb god, " the ", s, ".", nlt ]
+    helper (_, c, b)               = T.concat [ "You ", verb god, " ", showText c, " ", mkPlurFromBoth b, ".", nlt ]
     verb = \case Get  -> "pick up"
                  Drop -> "drop"
 
 
+{-
 shuffleCoinsGet :: Coins -> MudStack ()
 shuffleCoinsGet c = getPCRmId 0 >>= \i ->
     moveCoins c i 0 >> descGetDropCoins Get c
@@ -582,11 +602,13 @@ descGetDropCoins god (Coins (cop, sil, gol)) = do
       | otherwise = outputCon [ "You ", verb god, " ", showText a, " ", cn, "s." ]
     verb = \case Get  -> "pick up"
                  Drop -> "drop"
+-}
 
 
 -----
 
 
+{-
 dropAction :: Action
 dropAction [] = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction rs = do
@@ -602,7 +624,7 @@ dropAction rs = do
 
 shuffleInvDrop :: Inv -> MudStack ()
 shuffleInvDrop is = getPCRmId 0 >>= \i ->
-    moveInv is 0 i >> descGetDropEnts Drop is
+    moveInv is 0 i >> mkGetDropDesc Drop is
 
 
 shuffleCoinsDrop :: Coins -> MudStack ()

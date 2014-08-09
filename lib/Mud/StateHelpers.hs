@@ -56,6 +56,15 @@ modifyWS :: (WorldState -> WorldState) -> MudStack ()
 modifyWS f = liftIO . atomically . flip modifyTVar' f =<< gets (^.worldStateTVar)
 
 
+sortInv :: WorldState -> Inv -> Inv
+sortInv ws is = ((^..folded._1) . sortBy nameThenSing) zipped
+  where
+    nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
+    zipped = zip3 is names sings
+    names  = [ let e = (ws^.entTbl) ! i in e^.name | i <- is ]
+    sings  = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is ]
+
+
 type BothGramNos = (Sing, Plur)
 
 

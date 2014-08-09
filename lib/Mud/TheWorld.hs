@@ -8,11 +8,9 @@ import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
-import Control.Lens (_1, at, folded)
-import Control.Lens.Operators ((&), (?~), (?=), (.~), (^.), (^..))
-import Data.IntMap.Lazy ((!))
-import Data.List (sortBy)
-import Data.Monoid ((<>), mempty)
+import Control.Lens (at)
+import Control.Lens.Operators ((&), (?~), (?=), (.~), (^.))
+import Data.Monoid (mempty)
 import qualified Data.IntMap.Lazy as IM (map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
@@ -152,12 +150,3 @@ sortAllInvs = do
     logNotice "sortAllInvs" "sorting all inventories"
     modifyWS $ \ws ->
         ws & invTbl .~ IM.map (sortInv ws) (ws^.invTbl)
-
-
-sortInv :: WorldState -> Inv -> Inv
-sortInv ws is = ((^..folded._1) . sortBy nameThenSing) zipped
-  where
-    nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
-    zipped = zip3 is names sings
-    names  = [ let e = (ws^.entTbl) ! i in e^.name | i <- is ]
-    sings  = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is ]

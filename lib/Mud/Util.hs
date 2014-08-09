@@ -79,6 +79,7 @@ newLine = putChar '\n'
 type ShouldNewLine = Bool
 
 
+-- TODO: Needed?
 maybeNewLine :: ShouldNewLine -> MudStack ()
 maybeNewLine snl = when snl . liftIO $ newLine
 
