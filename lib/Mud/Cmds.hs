@@ -109,7 +109,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
-          --, Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
+          , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
           , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
           , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
           , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
@@ -362,19 +362,20 @@ look [] = getWS >>= \ws ->
         liftIO newLine
   where
     descRm r = output $ r^.name <> nlt <> r^.desc
-look rs = getWS >>= \ws ->
+look rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
     let p  = (ws^.pcTbl)    ! 0
         i  = p^.rmId
         is = (ws^.invTbl)   ! i
         c  = (ws^.coinsTbl) ! i
     in if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs is c
+      then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
            in do
                mapM_ (procGecrMisRm_ (descEnts ws)) . zip gecrs $ miss
                mapM_ (procReconciledCoinsRm_ descCoins) rcs
       else output $ "You don't see anything here to look at." <> nlt
 
 
+-- TODO: Consider implementing a color scheme for lists such as these such that the least significant characters of each name are highlighted or bolded somehow.
 dispRmInvCoins :: WorldState -> Id -> MudStack ()
 dispRmInvCoins ws i = let is = (ws^.invTbl)   ! i
                           c  = (ws^.coinsTbl) ! i
@@ -475,23 +476,26 @@ summarizeExits r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
 -----
 
 
--- TODO: Continue from here. I want to make sure that "get" is correctly moving items to the PC's inventory.
-{-
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv [] = dispInvCoins 0 >> liftIO newLine
-inv rs = do
-    hic <- hasInvOrCoins 0
-    if hic
-      then do
-          (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getInvCoins 0
-          mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
-          mapM_ (procReconciledCoinsPCInv True descCoins) rcs
+inv [] = getWS >>= \ws ->
+    let e  = (ws^.entTbl) ! 0
+    in dispInvCoins ws 0 e >> liftIO newLine
+inv rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
+    let is = (ws^.invTbl)   ! 0
+        c  = (ws^.coinsTbl) ! 0
+    in if (not . null $ is) || (c /= mempty)
+      then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
+           in do
+               mapM_ (procGecrMisPCInv_ (descEnts ws)) . zip gecrs $ miss
+               mapM_ (procReconciledCoinsPCInv_ descCoins) rcs
       else dudeYourHandsAreEmpty
 
 
 -----
 
 
+-- TODO: Remember to nub!
+{-
 equip :: Action
 equip [] = dispEq 0
 equip rs = do
@@ -548,9 +552,9 @@ getAction rs = helper >>= \case
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs ris rc
                    eiss               = map procGecrMisRm . zip gecrs $ miss
                    ecs                = map procReconciledCoinsRm rcs
-                   (ws', msgs)        = foldl' (helperEitherInv i ris pis) (ws, "") eiss
-                   -- TODO: Shuffle coins.
-               in putTMVar t ws' >> return (Just msgs)
+                   (ws',  msgs)       = foldl' (helperEitherInv   i ris pis) (ws, "")    eiss
+                   (ws'', msgs')      = foldl' (helperEitherCoins i rc  pc)  (ws', msgs) ecs
+               in putTMVar t ws'' >> return (Just msgs')
           else putTMVar t ws >> return Nothing
 
 
@@ -567,15 +571,8 @@ helperEitherInv i ris pis (ws, msgs) eis = case eis of
   Left  msg -> (ws, msgs <> msg)
   Right is  -> let ws' = ws & invTbl.at i ?~ (deleteFirstOfEach is ris)
                             & invTbl.at 0 ?~ (sortInv ws . (++) pis $ is)
-                   msg = mkGetDropDesc ws Get is
+                   msg = mkGetDropDesc ws' Get is
                in (ws', msgs <> msg)
-
-
-{-
-shuffleInvGet :: Inv -> MudStack ()
-shuffleInvGet is = getPCRmId 0 >>= \i ->
-    moveInv is i 0 >> mkGetDropDesc Get is
--}
 
 
 mkGetDropDesc :: WorldState -> GetOrDrop -> Inv -> T.Text
@@ -587,24 +584,25 @@ mkGetDropDesc ws god is = T.concat . map helper . mkNameCountBothList ws $ is
                  Drop -> "drop"
 
 
-{-
-shuffleCoinsGet :: Coins -> MudStack ()
-shuffleCoinsGet c = getPCRmId 0 >>= \i ->
-    moveCoins c i 0 >> descGetDropCoins Get c
+helperEitherCoins :: Id -> Coins -> Coins -> (WorldState, T.Text) -> Either T.Text Coins -> (WorldState, T.Text)
+helperEitherCoins i rc pc (ws, msgs) ec = case ec of
+  Left  msg -> (ws, msgs <> msg)
+  Right c   -> let ws' = ws & coinsTbl.at i ?~ rc <> negateCoins c
+                            & coinsTbl.at 0 ?~ pc <> c
+                   msg = mkGetDropCoinsDesc Get c
+               in (ws', msgs <> msg)
 
 
-descGetDropCoins :: GetOrDrop -> Coins -> MudStack ()
-descGetDropCoins god (Coins (cop, sil, gol)) = do
-    unless (cop == 0) . descGetDropHelper cop $ "copper piece"
-    unless (sil == 0) . descGetDropHelper sil $ "silver piece"
-    unless (gol == 0) . descGetDropHelper gol $ "gold piece"
+mkGetDropCoinsDesc :: GetOrDrop -> Coins -> T.Text
+mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [c, s, g]
   where
-    descGetDropHelper a cn
-      | a == 1    = outputCon [ "You ", verb god, " a ", cn, "." ]
-      | otherwise = outputCon [ "You ", verb god, " ", showText a, " ", cn, "s." ]
+    c = if cop /= 0 then helper cop "copper piece" else ""
+    s = if sil /= 0 then helper sil "silver piece" else ""
+    g = if gol /= 0 then helper gol "gold piece"   else ""
+    helper a cn | a == 1 = "You " <> verb god <> " a " <> cn <> "."
+    helper a cn          = "You " <> verb god <> " " <> showText a <> " " <> cn <> "s."
     verb = \case Get  -> "pick up"
                  Drop -> "drop"
--}
 
 
 -----
@@ -1208,6 +1206,7 @@ debugLog rs = ignore rs >> debugLog []
 ------
 
 
+-- TODO: Also write a command that throws an exception from a child thread.
 debugThrow :: Action
 debugThrow [] = liftIO . throwIO $ DivideByZero
 debugThrow rs = ignore rs >> debugThrow []

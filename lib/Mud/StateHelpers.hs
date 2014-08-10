@@ -93,6 +93,10 @@ mkCoinsFromList [cop, sil, gol] = Coins (cop, sil, gol)
 mkCoinsFromList xs              = patternMatchFail "mkCoinsFromList" [ showText xs ]
 
 
+negateCoins :: Coins -> Coins
+negateCoins (Coins c) = Coins (each %~ negate $ c)
+
+
 {-
 -- ============================================================
 -- Helpers for working with both world and non-world state:
@@ -359,10 +363,6 @@ subCoins_STM :: WorldState -> Coins -> Id -> STM ()
 subCoins_STM ws c i = adjust_STM (<> negateCoins c) i $ ws^.coinsTbl
 
 
-negateCoins :: Coins -> Coins
-negateCoins (Coins c) = Coins (each %~ negate $ c)
-
-
 -- ==================================================
 -- Weapons:
 
@@ -596,6 +596,8 @@ getPlaColumns i = (^.columns) <$> getPla i
 -- "output" and related helpers:
 
 
+-- TODO: We should probably make the output functions call T.lines on the input, then map over that the output operation.
+-- There is existing code where we already call T.lines before calling out to an output helper...
 output :: T.Text -> MudStack ()
 output t = getPlaColumns 0 >>= \cols ->
     mapM_ (liftIO . T.putStrLn) $ wordWrap cols t

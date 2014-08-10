@@ -38,6 +38,9 @@ import Data.Text.Strict.Lens (packed, unpacked)
 import qualified Data.Text as T
 
 
+-- TODO: Confirm that you have the correct function names in your calls to the logging helpers.
+
+
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.NameResolution"
 
@@ -297,19 +300,17 @@ mkGecrWithRol_STM ws ic n = let (a, b) = T.break (== slotChar) n
 -- Processing "GetEntsCoinsRes":
 
 
-{-
-procGecrMisPCInv :: ShouldNewLine -> (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisPCInv _   _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCInv snl _ (Mult 1 n Nothing  _,   Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> maybeNewLine snl
-procGecrMisPCInv snl _ (Mult _ n Nothing  _,   Nothing) = output ("You don't have any " <> n <> "s." )             >> maybeNewLine snl
-procGecrMisPCInv _   f (Mult _ _ (Just _) _,   Just is) = f is
-procGecrMisPCInv snl _ (Indexed _ n (Left ""), Nothing) = output ("You don't have any " <> n <> "s." )             >> maybeNewLine snl
-procGecrMisPCInv snl _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ] >> maybeNewLine snl
-procGecrMisPCInv _   f (Indexed _ _ (Right _), Just is) = f is
-procGecrMisPCInv snl _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                        >> maybeNewLine snl
-procGecrMisPCInv snl _ (Sorry n,               Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> maybeNewLine snl
-procGecrMisPCInv _   _ gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
--}
+procGecrMisPCInv_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisPCInv_ _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
+procGecrMisPCInv_ _ (Mult 1 n Nothing  _,   Nothing) = outputCon [ "You don't have ", aOrAn n, ".", nlt ]
+procGecrMisPCInv_ _ (Mult _ n Nothing  _,   Nothing) = outputCon [ "You don't have any ", n, "s.",  nlt ]
+procGecrMisPCInv_ f (Mult _ _ (Just _) _,   Just is) = f is
+procGecrMisPCInv_ _ (Indexed _ n (Left ""), Nothing) = outputCon [ "You don't have any ", n, "s.",  nlt ]
+procGecrMisPCInv_ _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, ".", nlt ]
+procGecrMisPCInv_ f (Indexed _ _ (Right _), Just is) = f is
+procGecrMisPCInv_ _ (SorryIndexedCoins,     Nothing) = output sorryIndexedCoins
+procGecrMisPCInv_ _ (Sorry n,               Nothing) = outputCon [ "You don't have ", aOrAn n, ".", nlt ]
+procGecrMisPCInv_ _ gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
 sorryIndexedCoins :: T.Text
@@ -332,14 +333,14 @@ procGecrMisPCInvForInv gecrMis                          = patternMatchFail "proc
 
 procGecrMisRm_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisRm_ _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
-procGecrMisRm_ _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't see " <> aOrAn n <> " here." <> nlt
-procGecrMisRm_ _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't see any " <> n <> "s here."  <> nlt
+procGecrMisRm_ _ (Mult 1 n Nothing  _,   Nothing) = outputCon [ "You don't see ", aOrAn n, " here.", nlt ]
+procGecrMisRm_ _ (Mult _ n Nothing  _,   Nothing) = outputCon [ "You don't see any ", n, "s here.",  nlt ]
 procGecrMisRm_ f (Mult _ _ (Just _) _,   Just is) = f is
-procGecrMisRm_ _ (Indexed _ n (Left ""), Nothing) = output $ "You don't see any " <> n <> "s here."  <> nlt
+procGecrMisRm_ _ (Indexed _ n (Left ""), Nothing) = outputCon [ "You don't see any ", n, "s here.",  nlt ]
 procGecrMisRm_ _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here.", nlt ]
 procGecrMisRm_ f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisRm_ _ (SorryIndexedCoins,     Nothing) = output sorryIndexedCoins
-procGecrMisRm_ _ (Sorry n,               Nothing) = output $ "You don't see " <> aOrAn n <> " here." <> nlt
+procGecrMisRm_ _ (Sorry n,               Nothing) = outputCon [ "You don't see ", aOrAn n, " here.", nlt ]
 procGecrMisRm_ _ gecrMis                          = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
@@ -349,7 +350,7 @@ procGecrMisRm (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't see " <> aOrA
 procGecrMisRm (Mult _ n Nothing  _,   Nothing) = Left $ "You don't see any " <> n <> "s here."  <> nlt
 procGecrMisRm (Mult _ _ (Just _) _,   Just is) = Right is
 procGecrMisRm (Indexed _ n (Left ""), Nothing) = Left $ "You don't see any " <> n <> "s here."  <> nlt
-procGecrMisRm (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "You don't see ", showText x, " ", p, " here.", nlt ]
+procGecrMisRm (Indexed x _ (Left p),  Nothing) = Left $ "You don't see " <> showText x <> " " <> p <> " here." <> nlt
 procGecrMisRm (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisRm (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
 procGecrMisRm (Sorry n,               Nothing) = Left $ "You don't see " <> aOrAn n <> " here." <> nlt
@@ -420,25 +421,25 @@ procGecrMisPCEq f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisPCEq _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
 procGecrMisPCEq _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
 procGecrMisPCEq _ gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
+-}
 
 
 -- ==================================================
 -- Processing "ReconciledCoins":
 
 
-procReconciledCoinsPCInv :: ShouldNewLine -> (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
-procReconciledCoinsPCInv snl _ (Left Empty)                             = output "You don't have any coins." >> maybeNewLine snl
-procReconciledCoinsPCInv snl _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) $ output "You don't have any copper pieces." >> maybeNewLine snl
-    unless (sil == 0) $ output "You don't have any silver pieces." >> maybeNewLine snl
-    unless (gol == 0) $ output "You don't have any gold pieces."   >> maybeNewLine snl
-procReconciledCoinsPCInv _   f (Right (SomeOf c                      )) = f c
-procReconciledCoinsPCInv snl _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) $ output ("You don't have " <> showText cop <> " copper pieces.") >> maybeNewLine snl
-    unless (sil == 0) $ output ("You don't have " <> showText sil <> " silver pieces.") >> maybeNewLine snl
-    unless (gol == 0) $ output ("You don't have " <> showText gol <> " gold pieces."  ) >> maybeNewLine snl
-procReconciledCoinsPCInv _   _ rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
--}
+procReconciledCoinsPCInv_ :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
+procReconciledCoinsPCInv_ _ (Left Empty)                             = output $ "You don't have any coins." <> nlt
+procReconciledCoinsPCInv_ _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
+    unless (cop == 0) $ output ("You don't have any copper pieces." <> nlt)
+    unless (sil == 0) $ output ("You don't have any silver pieces." <> nlt)
+    unless (gol == 0) $ output ("You don't have any gold pieces."   <> nlt)
+procReconciledCoinsPCInv_ f (Right (SomeOf c                      )) = f c
+procReconciledCoinsPCInv_ _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
+    unless (cop == 0) $ outputCon [ "You don't have ", showText cop, " copper pieces.", nlt ]
+    unless (sil == 0) $ outputCon [ "You don't have ", showText sil, " silver pieces.", nlt ]
+    unless (gol == 0) $ outputCon [ "You don't have ", showText gol, " gold pieces.",   nlt ]
+procReconciledCoinsPCInv_ _ rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
 
 
 procReconciledCoinsRm_ :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
@@ -449,9 +450,9 @@ procReconciledCoinsRm_ _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
     unless (gol == 0) $ output ("You don't see any gold pieces here."   <> nlt)
 procReconciledCoinsRm_ f (Right (SomeOf c                      )) = f c
 procReconciledCoinsRm_ _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
-    unless (cop == 0) $ output ("You don't see " <> showText cop <> " copper pieces here." <> nlt)
-    unless (sil == 0) $ output ("You don't see " <> showText sil <> " silver pieces here." <> nlt)
-    unless (gol == 0) $ output ("You don't see " <> showText gol <> " gold pieces here."   <> nlt)
+    unless (cop == 0) $ outputCon [ "You don't see ", showText cop, " copper pieces here.", nlt ]
+    unless (sil == 0) $ outputCon [ "You don't see ", showText sil, " silver pieces here.", nlt ]
+    unless (gol == 0) $ outputCon [ "You don't see ", showText gol, " gold pieces here.",   nlt ]
 procReconciledCoinsRm_ _ rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
 
 
@@ -459,15 +460,15 @@ procReconciledCoinsRm :: ReconciledCoins -> Either T.Text Coins
 procReconciledCoinsRm (Left Empty)                             = Left "You don't see any coins here."
 procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
-    c = if cop == 0 then "You don't see any copper pieces here." <> nlt else ""
-    s = if sil == 0 then "You don't see any silver pieces here." <> nlt else ""
-    g = if gol == 0 then "You don't see any gold pieces here."   <> nlt else ""
+    c = if cop /= 0 then "You don't see any copper pieces here." <> nlt else ""
+    s = if sil /= 0 then "You don't see any silver pieces here." <> nlt else ""
+    g = if gol /= 0 then "You don't see any gold pieces here."   <> nlt else ""
 procReconciledCoinsRm (Right (SomeOf c                      )) = Right c
 procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
-    c = if cop == 0 then "You don't see " <> showText cop <> " copper pieces here." <> nlt else ""
-    s = if sil == 0 then "You don't see " <> showText sil <> " silver pieces here." <> nlt else ""
-    g = if gol == 0 then "You don't see " <> showText gol <> " gold pieces here."   <> nlt else ""
+    c = if cop /= 0 then "You don't see " <> showText cop <> " copper pieces here." <> nlt else ""
+    s = if sil /= 0 then "You don't see " <> showText sil <> " silver pieces here." <> nlt else ""
+    g = if gol /= 0 then "You don't see " <> showText gol <> " gold pieces here."   <> nlt else ""
 procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm_" [ showText rc ]
 
 
