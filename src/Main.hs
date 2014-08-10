@@ -18,7 +18,7 @@ import Mud.StateInIORefT
 import Mud.TopLvlDefs
 import Mud.Util
 
-import Control.Concurrent.STM.TVar (newTVarIO)
+import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((^.))
 import Control.Monad (void)
 import Data.Text.Strict.Lens (packed)
@@ -47,7 +47,7 @@ welcome = do
 
 
 initMudState :: IO MudState
-initMudState = newTVarIO ws >>= \wsTVar -> return (MudState wsTVar nws)
+initMudState = newTMVarIO ws >>= \wsTMVar -> return (MudState wsTMVar nws)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
     nws = NonWorldState (LogServices Nothing Nothing) IM.empty

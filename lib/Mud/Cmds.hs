@@ -16,7 +16,7 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
-import Control.Concurrent.STM.TVar (readTVar, writeTVar)
+import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Arrow (first)
 import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.STM (STM)
@@ -177,6 +177,7 @@ dispTitleExHandler e = f "dispTitle" e
            | otherwise             -> logIOExRethrow
 
 
+-- TODO: When you get rid of readline, edit your .cabal file and delete install-readline.sh.
 game :: MudStack ()
 game = (liftIO . readline $ "> ") >>= \ms ->
     let t = ms^.to fromJust.packed.to T.strip
@@ -326,13 +327,13 @@ tryMove dir = let dir' = T.toLower dir
                 Nothing -> sorry dir'
                 Just () -> look []
   where
-    helper dir' = onWS $ \t -> readTVar t >>= \ws ->
+    helper dir' = onWS $ \(t, ws) ->
                       let p = (ws^.pcTbl) ! 0
                           r = (ws^.rmTbl) ! (p^.rmId)
                       in case findExit r dir' of
-                        Nothing -> return Nothing
+                        Nothing -> putTMVar t ws >> return Nothing
                         Just i  -> let p' = p & rmId .~ i
-                                   in (writeTVar t $ ws & pcTbl.at 0 ?~ p') >> return (Just ())
+                                   in (putTMVar t $ ws & pcTbl.at 0 ?~ p') >> return (Just ())
     sorry dir'  = output $ if dir' `elem` stdLinkNames
                              then "You can't go that way." <> nlt
                              else dblQuote dir <> " is not a valid direction." <> nlt
@@ -370,7 +371,7 @@ look rs = getWS >>= \ws ->
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs is c
            in do
                mapM_ (procGecrMisRm_ (descEnts ws)) . zip gecrs $ miss
-               mapM_ (procReconciledCoinsRm descCoins) rcs
+               mapM_ (procReconciledCoinsRm_ descCoins) rcs
       else output $ "You don't see anything here to look at." <> nlt
 
 
@@ -504,6 +505,7 @@ equip rs = do
 -}
 
 
+-- TODO: Test to make sure that mob eq looks good.
 dispEq :: WorldState -> Id -> Ent -> MudStack ()
 dispEq ws i e = let em   = (ws^.eqTbl) ! i
                     desc = map mkDesc . mkSlotNameIdList . M.toList $ em
@@ -535,7 +537,7 @@ getAction rs = helper >>= \case
   Nothing   -> output $ "You don't see anything here to pick up." <> nlt
   Just msgs -> (mapM_ output . T.lines $ msgs) >> liftIO newLine
   where
-    helper = onWS $ \t -> readTVar t >>= \ws ->
+    helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl)    ! 0
             pis = (ws^.invTbl)   ! 0
             pc  = (ws^.coinsTbl) ! 0
@@ -545,11 +547,11 @@ getAction rs = helper >>= \case
         in if (not . null $ ris) || (rc /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs ris rc
                    eiss               = map procGecrMisRm . zip gecrs $ miss
-                   ecs                = map procReconciledCoinsRm_ rcs
+                   ecs                = map procReconciledCoinsRm rcs
                    (ws', msgs)        = foldl' (helperEitherInv i ris pis) (ws, "") eiss
                    -- TODO: Shuffle coins.
-               in writeTVar t ws' >> return (Just msgs)
-          else return Nothing
+               in putTMVar t ws' >> return (Just msgs)
+          else putTMVar t ws >> return Nothing
 
 
 advise :: [HelpTopic] -> T.Text -> MudStack ()

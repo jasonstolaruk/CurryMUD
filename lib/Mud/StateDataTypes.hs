@@ -7,7 +7,7 @@ import Mud.StateInIORefT
 
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TQueue (TQueue)
-import Control.Concurrent.STM.TVar (TVar)
+import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
 import qualified Data.IntMap.Lazy as IM (IntMap)
@@ -53,8 +53,8 @@ type MudStack = StateInIORefT MudState IO
 -- MUD state:
 
 
-data MudState = MudState { _worldStateTVar :: TVar WorldState
-                         , _nonWorldState  :: NonWorldState }
+data MudState = MudState { _worldStateTMVar :: TMVar WorldState
+                         , _nonWorldState   :: NonWorldState }
 
 
 -- ==================================================
@@ -283,7 +283,7 @@ data Type = ObjType
 
 
 data NonWorldState = NonWorldState { _logServices :: LogServices
-                                   , _plaTbl      :: IM.IntMap Pla } -- TODO: Put in a TVar.
+                                   , _plaTbl      :: IM.IntMap Pla } -- TODO: Put in STM.
 
 
 -- ==================================================

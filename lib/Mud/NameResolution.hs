@@ -441,34 +441,34 @@ procReconciledCoinsPCInv _   _ rc = patternMatchFail "procReconciledCoinsPCInv" 
 -}
 
 
-procReconciledCoinsRm :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
-procReconciledCoinsRm _ (Left Empty)                             = output $ "You don't see any coins here." <> nlt
-procReconciledCoinsRm _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
+procReconciledCoinsRm_ :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
+procReconciledCoinsRm_ _ (Left Empty)                             = output $ "You don't see any coins here." <> nlt
+procReconciledCoinsRm_ _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
     unless (cop == 0) $ output ("You don't see any copper pieces here." <> nlt)
     unless (sil == 0) $ output ("You don't see any silver pieces here." <> nlt)
     unless (gol == 0) $ output ("You don't see any gold pieces here."   <> nlt)
-procReconciledCoinsRm f (Right (SomeOf c                      )) = f c
-procReconciledCoinsRm _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
+procReconciledCoinsRm_ f (Right (SomeOf c                      )) = f c
+procReconciledCoinsRm_ _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (cop == 0) $ output ("You don't see " <> showText cop <> " copper pieces here." <> nlt)
     unless (sil == 0) $ output ("You don't see " <> showText sil <> " silver pieces here." <> nlt)
     unless (gol == 0) $ output ("You don't see " <> showText gol <> " gold pieces here."   <> nlt)
-procReconciledCoinsRm _ rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
+procReconciledCoinsRm_ _ rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
 
 
-procReconciledCoinsRm_ :: ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsRm_ (Left Empty)                             = Left "You don't see any coins here."
-procReconciledCoinsRm_ (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
+procReconciledCoinsRm :: ReconciledCoins -> Either T.Text Coins
+procReconciledCoinsRm (Left Empty)                             = Left "You don't see any coins here."
+procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
     c = if cop == 0 then "You don't see any copper pieces here." <> nlt else ""
     s = if sil == 0 then "You don't see any silver pieces here." <> nlt else ""
     g = if gol == 0 then "You don't see any gold pieces here."   <> nlt else ""
-procReconciledCoinsRm_ (Right (SomeOf c                      )) = Right c
-procReconciledCoinsRm_ (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
+procReconciledCoinsRm (Right (SomeOf c                      )) = Right c
+procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
     c = if cop == 0 then "You don't see " <> showText cop <> " copper pieces here." <> nlt else ""
     s = if sil == 0 then "You don't see " <> showText sil <> " silver pieces here." <> nlt else ""
     g = if gol == 0 then "You don't see " <> showText gol <> " gold pieces here."   <> nlt else ""
-procReconciledCoinsRm_ rc = patternMatchFail "procReconciledCoinsRm_" [ showText rc ]
+procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm_" [ showText rc ]
 
 
 {-

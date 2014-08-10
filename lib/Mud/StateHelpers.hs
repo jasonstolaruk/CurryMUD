@@ -11,7 +11,7 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM (atomically, STM)
-import Control.Concurrent.STM.TVar (modifyTVar', readTVar, TVar)
+import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Lens (_1, at, each, folded)
 import Control.Lens.Getter (Getting)
 import Control.Lens.Operators ((&), (?~), (.~), (%~), (^.), (^..))
@@ -45,15 +45,22 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 getWS :: MudStack WorldState
-getWS = liftIO . atomically . readTVar =<< gets (^.worldStateTVar)
+getWS = liftIO . atomically . readTMVar =<< gets (^.worldStateTMVar)
 
 
-onWS :: (TVar WorldState -> STM a) -> MudStack a
-onWS f = liftIO . atomically . f =<< gets (^.worldStateTVar)
+onWS :: ((TMVar WorldState, WorldState) -> STM a) -> MudStack a
+onWS f = liftIO . atomically . transaction =<< gets (^.worldStateTMVar)
+  where
+    transaction t = takeTMVar t >>= \ws ->
+        f (t, ws)
 
 
 modifyWS :: (WorldState -> WorldState) -> MudStack ()
-modifyWS f = liftIO . atomically . flip modifyTVar' f =<< gets (^.worldStateTVar)
+modifyWS f = liftIO . atomically . transaction =<< gets (^.worldStateTMVar)
+  where
+    transaction t = takeTMVar t >>= \ws ->
+        let ws' = f ws
+        in putTMVar t ws'
 
 
 sortInv :: WorldState -> Inv -> Inv

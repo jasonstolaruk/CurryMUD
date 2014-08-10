@@ -84,7 +84,7 @@ look   Examine your current room.
        "look dog" to get a description of the dog in your current room.
 inv    Examine your inventory.
        "inv" to get a list of the items in your inventory.
-       "inv sack", to get a description of the sack you're holding.
+       "inv sack" to get a description of the sack you're holding.
 equip  Examine your readied equipment.
        "equip" to get a list of your readied equipment.
        "equip sword" to get a descriptions of the sword you're wielding.
