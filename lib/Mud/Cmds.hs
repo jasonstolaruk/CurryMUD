@@ -103,7 +103,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = "about", action = about, cmdDesc = "About this game." }
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-          --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
+          , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
           , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
@@ -579,8 +579,8 @@ helperEitherInv i ris pis (ws, msgs) eis = case eis of
 mkGetDropDesc :: WorldState -> GetOrDrop -> Inv -> T.Text
 mkGetDropDesc ws god is = T.concat . map helper . mkNameCountBothList ws $ is
   where
-    helper (_, c, (s, _)) | c == 1 = T.concat [ "You ", verb god, " the ", s, ".", nlt ]
-    helper (_, c, b)               = T.concat [ "You ", verb god, " ", showText c, " ", mkPlurFromBoth b, ".", nlt ]
+    helper (_, c, (s, _)) | c == 1 = "You " <> verb god <> " the " <> s <> "." <> nlt
+    helper (_, c, b)               = "You " <> verb god <> " " <> showText c <> " " <> mkPlurFromBoth b <> "." <> nlt
     verb = \case Get  -> "pick up"
                  Drop -> "drop"
 
@@ -609,33 +609,37 @@ mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [c, s, g]
 -----
 
 
-{-
 dropAction :: Action
 dropAction [] = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
-dropAction rs = do
-    hic <- hasInvOrCoins 0
-    if hic
-      then do
-          (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getInvCoins 0
-          mapM_ (procGecrMisPCInv False shuffleInvDrop) . zip gecrs $ miss
-          mapM_ (procReconciledCoinsPCInv False shuffleCoinsDrop) rcs
-      else dudeYourHandsAreEmpty
-    liftIO newLine
+dropAction rs = helper >>= \case
+  Nothing   -> dudeYourHandsAreEmpty
+  Just msgs -> output $ msgs <> nlt <> nlt
+  where
+    helper = onWS $ \(t, ws) ->
+        let p   = (ws^.pcTbl)    ! 0
+            pis = (ws^.invTbl)   ! 0
+            pc  = (ws^.coinsTbl) ! 0
+            i   = p^.rmId
+            ris = (ws^.invTbl)   ! i
+            rc  = (ws^.coinsTbl) ! i
+        in if (not . null $ ris) || (rc /= mempty)
+          then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs pis pc
+                   eiss               = map procGecrMisPCInv . zip gecrs $ miss
+                   ecs                = map procReconciledCoinsPCInv rcs
+                   -- TODO: Make the helperEither* functions work with both get and drop.
+                   --(ws',  msgs)       = foldl' (helperEitherInv   i ris pis) (ws, "")    eiss
+                   --(ws'', msgs')      = foldl' (helperEitherCoins i rc  pc)  (ws', msgs) ecs
+               in putTMVar t ws'' >> return (Just msgs')
+          else putTMVar t ws >> return Nothing
 
-
-shuffleInvDrop :: Inv -> MudStack ()
-shuffleInvDrop is = getPCRmId 0 >>= \i ->
-    moveInv is 0 i >> mkGetDropDesc Drop is
-
-
-shuffleCoinsDrop :: Coins -> MudStack ()
-shuffleCoinsDrop c = getPCRmId 0 >>= \i ->
-    moveCoins c 0 i >> descGetDropCoins Drop c
+          --mapM_ (procGecrMisPCInv False shuffleInvDrop) . zip gecrs $ miss
+          --mapM_ (procReconciledCoinsPCInv False shuffleCoinsDrop) rcs
 
 
 -----
 
 
+{-
 putAction :: Action
 putAction []   = advise ["put"] $ "Please specify what you want to put, followed by where you want to put it, as in " <> dblQuote "put doll sack" <> "."
 putAction [r]  = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."

@@ -60,12 +60,6 @@ resolveEntCoinNames :: WorldState -> Rest -> Inv -> Coins -> ([GetEntsCoinsRes],
 resolveEntCoinNames ws rs is c = expandGecrs c . map (mkGecr ws is c . T.toLower) $ rs
 
 
-{-
-resolveEntCoinNames_STM :: WorldState -> Rest -> InvCoins -> STM ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNames_STM ws rs ic@(_, c) = expandGecrs c <$> mapM (mkGecr_STM ws ic . T.toLower) rs
--}
-
-
 mkGecr :: WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
 mkGecr ws is c n
   | n == [allChar]^.packed = let es = [ (ws^.entTbl) ! i | i <- is ]
@@ -87,40 +81,10 @@ mkGecr ws is c n
                           | otherwise           -> Sorry n
 
 
-{-
-mkGecr_STM :: WorldState -> InvCoins -> T.Text -> STM GetEntsCoinsRes
-mkGecr_STM ws ic@(is, c) n
-  | n == [allChar]^.packed = getEntsInInv_STM ws is >>= \es -> return (Mult (length is) n (Just es) (Just . SomeOf $ c))
-  | T.head n == allChar    = mkGecrMult_STM ws (maxBound :: Int) (T.tail n) ic
-  | isDigit (T.head n)     = let numText = T.takeWhile isDigit n
-                                 numInt  = either (oops numText) (^._1) $ decimal numText
-                                 rest    = T.drop (T.length numText) n
-                             in if numText /= "0" then parse rest numInt else return (Sorry n)
-  | otherwise              = mkGecrMult_STM ws 1 n ic
-  where
-    oops numText = blowUp "mkGecr_STM" "unable to convert Text to Int" [ showText numText ]
-    parse rest numInt
-      | T.length rest < 2 = return (Sorry n)
-      | otherwise = let delim = T.head rest
-                        rest' = T.tail rest
-                    in if | delim == amountChar -> mkGecrMult_STM    ws numInt rest' ic
-                          | delim == indexChar  -> mkGecrIndexed_STM ws numInt rest' is
-                          | otherwise           -> return (Sorry n)
--}
-
-
 mkGecrMult :: WorldState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
 mkGecrMult ws a n is c = if n `elem` allCoinNames
                            then mkGecrMultForCoins   a n c
                            else mkGecrMultForEnts ws a n is
-
-
-{-
-mkGecrMult_STM :: WorldState -> Amount -> T.Text -> InvCoins -> STM GetEntsCoinsRes
-mkGecrMult_STM ws a n (is, c) = if n `elem` allCoinNames
-                                  then return (mkGecrMultForCoins a n c)
-                                  else mkGecrMultForEnts_STM ws a n is
--}
 
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> GetEntsCoinsRes
@@ -160,17 +124,6 @@ mkGecrMultForEnts ws a n is = let es  = [ (ws^.entTbl) ! i | i <- is ]
     takeMatchingEnts fn = take a . filter (\e -> e^.name == fn)
 
 
-{-
-mkGecrMultForEnts_STM :: WorldState -> Amount -> T.Text -> Inv -> STM GetEntsCoinsRes
-mkGecrMultForEnts_STM ws a n is = getEntNamesInInv_STM ws is >>= maybe notFound found . findFullNameForAbbrev n
-  where
-    notFound       = return (Mult a n Nothing Nothing)
-    found fullName = getEntsInInv_STM ws is >>= \es ->
-        return (Mult a n (Just . takeMatchingEnts fullName $ es) Nothing)
-    takeMatchingEnts fn = take a . filter (\e -> e^.name == fn)
--}
-
-
 mkGecrIndexed :: WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrIndexed ws x n is = if n `elem` allCoinNames
                             then SorryIndexedCoins
@@ -184,21 +137,6 @@ mkGecrIndexed ws x n is = if n `elem` allCoinNames
                        then let both = getEntBothGramNos . head $ matches
                             in Indexed x n (Left . mkPlurFromBoth $ both)
                      else Indexed x n (Right $ matches !! (x - 1))
-
-
-{-
-mkGecrIndexed_STM :: WorldState -> Index -> T.Text -> Inv -> STM GetEntsCoinsRes
-mkGecrIndexed_STM ws x n is = if n `elem` allCoinNames
-                                then return SorryIndexedCoins
-                                else getEntNamesInInv_STM ws is >>= maybe notFound found . findFullNameForAbbrev n
-  where
-    notFound       = return (Indexed x n (Left ""))
-    found fullName = filter (\e -> e^.name == fullName) <$> getEntsInInv_STM ws is >>= \matches ->
-        if length matches < x
-          then let both = getEntBothGramNos . head $ matches
-               in return (Indexed x n (Left . mkPlurFromBoth $ both))
-          else return (Indexed x n (Right $ matches !! (x - 1)))
--}
 
 
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
@@ -317,18 +255,17 @@ sorryIndexedCoins :: T.Text
 sorryIndexedCoins = "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins." <> nlt <> nlt
 
 
-{-
-procGecrMisPCInvForInv :: (GetEntsCoinsRes, Maybe Inv) -> MudStack Inv
-procGecrMisPCInvForInv (Mult 1 n Nothing  _,   Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> return []
-procGecrMisPCInvForInv (Mult _ n Nothing  _,   Nothing) = output ("You don't have any " <> n <> "s." )             >> return []
-procGecrMisPCInvForInv (Mult _ _ (Just _) _,   Just is) = return is
-procGecrMisPCInvForInv (Indexed _ n (Left ""), Nothing) = output ("You don't have any " <> n <> "s." )             >> return []
-procGecrMisPCInvForInv (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, "." ] >> return []
-procGecrMisPCInvForInv (Indexed _ _ (Right _), Just is) = return is
-procGecrMisPCInvForInv (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                        >> return []
-procGecrMisPCInvForInv (Sorry n,               Nothing) = output ("You don't have " <> aOrAn n <> ".")             >> return []
-procGecrMisPCInvForInv gecrMis                          = patternMatchFail "procGecrMisPCInvForInv" [ showText gecrMis ]
--}
+procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisPCInv (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
+procGecrMisPCInv (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't have " <> aOrAn n <> "." <> nlt
+procGecrMisPCInv (Mult _ n Nothing  _,   Nothing) = Left $ "You don't have any " <> n <> "s."  <> nlt
+procGecrMisPCInv (Mult _ _ (Just _) _,   Just is) = Right is
+procGecrMisPCInv (Indexed _ n (Left ""), Nothing) = Left $ "You don't have any " <> n <> "s."  <> nlt
+procGecrMisPCInv (Indexed x _ (Left p),  Nothing) = Left $ "You don't have " <> showText x <> " " <> p <> "." <> nlt
+procGecrMisPCInv (Indexed _ _ (Right _), Just is) = Right is
+procGecrMisPCInv (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
+procGecrMisPCInv (Sorry n,               Nothing) = Left $ "You don't have " <> aOrAn n <> "." <> nlt
+procGecrMisPCInv gecrMis                          = patternMatchFail "procGecrMisPCInv_" [ showText gecrMis ]
 
 
 procGecrMisRm_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
@@ -358,18 +295,6 @@ procGecrMisRm gecrMis                          = patternMatchFail "procGecrMisRm
 
 
 {-
-procGecrMisRmForInv :: (GetEntsCoinsRes, Maybe Inv) -> MudStack Inv
-procGecrMisRmForInv (Mult 1 n Nothing  _,   Nothing) = output ("You don't see " <> aOrAn n <> " here.")             >> return []
-procGecrMisRmForInv (Mult _ n Nothing  _,   Nothing) = output ("You don't see any " <> n <> "s here.")              >> return []
-procGecrMisRmForInv (Mult _ _ (Just _) _,   Just is) = return is
-procGecrMisRmForInv (Indexed _ n (Left ""), Nothing) = output ("You don't see any " <> n <> "s here.")              >> return []
-procGecrMisRmForInv (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see ", showText x, " ", p, " here." ] >> return []
-procGecrMisRmForInv (Indexed _ _ (Right _), Just is) = return is
-procGecrMisRmForInv (SorryIndexedCoins,     Nothing) = sorryIndexedCoins                                            >> return []
-procGecrMisRmForInv (Sorry n,               Nothing) = output ("You don't see " <> aOrAn n <> " here.")             >> return []
-procGecrMisRmForInv gecrMis                          = patternMatchFail "procGecrMisRmForInv" [ showText gecrMis ]
-
-
 procGecrMisCon :: ConName -> (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisCon _  _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMisCon cn _ (Mult 1 n Nothing  _,   Nothing) = outputCon [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
@@ -442,6 +367,22 @@ procReconciledCoinsPCInv_ _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
 procReconciledCoinsPCInv_ _ rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
 
 
+procReconciledCoinsPCInv :: ReconciledCoins -> Either T.Text Coins
+procReconciledCoinsPCInv (Left Empty)                             = Left $ "You don't have any coins." <> nlt
+procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
+  where
+    c = if cop /= 0 then "You don't have any copper pieces." <> nlt else ""
+    s = if sil /= 0 then "You don't have any silver pieces." <> nlt else ""
+    g = if gol /= 0 then "You don't have any gold pieces."   <> nlt else ""
+procReconciledCoinsPCInv (Right (SomeOf c                      )) = Right c
+procReconciledCoinsPCInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
+  where
+    c = if cop /= 0 then "You don't have " <> showText cop <> " copper pieces." <> nlt else ""
+    s = if sil /= 0 then "You don't have " <> showText sil <> " silver pieces." <> nlt else ""
+    g = if gol /= 0 then "You don't have " <> showText gol <> " gold pieces."   <> nlt else ""
+procReconciledCoinsPCInv rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
+
+
 procReconciledCoinsRm_ :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsRm_ _ (Left Empty)                             = output $ "You don't see any coins here." <> nlt <> nlt
 procReconciledCoinsRm_ _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
@@ -457,7 +398,7 @@ procReconciledCoinsRm_ _ rc = patternMatchFail "procReconciledCoinsRm" [ showTex
 
 
 procReconciledCoinsRm :: ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsRm (Left Empty)                             = Left "You don't see any coins here."
+procReconciledCoinsRm (Left Empty)                             = Left $ "You don't see any coins here." <> nlt
 procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
     c = if cop /= 0 then "You don't see any copper pieces here." <> nlt else ""
