@@ -287,10 +287,6 @@ sortInv_STM ws is = ((^..folded._1) . sortBy nameThenSing) <$> zipped
     zipped = zip3 is <$> getEntNamesInInv_STM ws is <*> getEntSingsInInv_STM ws is
 
 
-type FromId = Id
-type ToId   = Id
-
-
 addToInv :: Inv -> ToId -> MudStack ()
 addToInv is ti = getInv ti >>= sortInv . (++ is) >>= \is' ->
     insertWS ti is' invTbl

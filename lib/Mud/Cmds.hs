@@ -540,12 +540,10 @@ getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = helper >>= \case
   Nothing   -> output $ "You don't see anything here to pick up." <> nlt <> nlt
-  Just msgs -> output msgs >> liftIO newLine
+  Just msgs -> output $ msgs <> nlt
   where
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl)    ! 0
-            pis = (ws^.invTbl)   ! 0
-            pc  = (ws^.coinsTbl) ! 0
             i   = p^.rmId
             ris = (ws^.invTbl)   ! i
             rc  = (ws^.coinsTbl) ! i
@@ -553,8 +551,8 @@ getAction rs = helper >>= \case
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs ris rc
                    eiss               = map procGecrMisRm . zip gecrs $ miss
                    ecs                = map procReconciledCoinsRm rcs
-                   (ws',  msgs)       = foldl' (helperEitherInv   i ris pis) (ws, "")    eiss
-                   (ws'', msgs')      = foldl' (helperEitherCoins i rc  pc)  (ws', msgs) ecs
+                   (ws',  msgs)       = foldl' (helperEitherInv   Get i 0) (ws, "")    eiss
+                   (ws'', msgs')      = foldl' (helperEitherCoins Get i 0) (ws', msgs) ecs
                in putTMVar t ws'' >> return (Just msgs')
           else putTMVar t ws >> return Nothing
 
@@ -567,12 +565,18 @@ advise hs  msg = output msg >> outputCon [ "See also the following help topics: 
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
 
-helperEitherInv :: Id -> Inv -> Inv -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
-helperEitherInv i ris pis (ws, msgs) eis = case eis of
+type FromId    = Id
+type ToId      = Id
+
+
+helperEitherInv :: GetOrDrop -> FromId -> ToId -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
+helperEitherInv god fi ti (ws, msgs) eis = case eis of
   Left  msg -> (ws, msgs <> msg)
-  Right is  -> let ws' = ws & invTbl.at i ?~ (deleteFirstOfEach is ris)
-                            & invTbl.at 0 ?~ (sortInv ws . (++) pis $ is)
-                   msg = mkGetDropDesc ws' Get is
+  Right is  -> let fis = (ws^.invTbl) ! fi
+                   tis = (ws^.invTbl) ! ti
+                   ws' = ws & invTbl.at fi ?~ (deleteFirstOfEach is fis)
+                            & invTbl.at ti ?~ (sortInv ws . (++) tis $ is)
+                   msg = mkGetDropDesc ws' god is
                in (ws', msgs <> msg)
 
 
@@ -585,12 +589,14 @@ mkGetDropDesc ws god is = T.concat . map helper . mkNameCountBothList ws $ is
                  Drop -> "drop"
 
 
-helperEitherCoins :: Id -> Coins -> Coins -> (WorldState, T.Text) -> Either T.Text Coins -> (WorldState, T.Text)
-helperEitherCoins i rc pc (ws, msgs) ec = case ec of
+helperEitherCoins :: GetOrDrop -> FromId -> ToId -> (WorldState, T.Text) -> Either T.Text Coins -> (WorldState, T.Text)
+helperEitherCoins god fi ti (ws, msgs) ec = case ec of
   Left  msg -> (ws, msgs <> msg)
-  Right c   -> let ws' = ws & coinsTbl.at i ?~ rc <> negateCoins c
-                            & coinsTbl.at 0 ?~ pc <> c
-                   msg = mkGetDropCoinsDesc Get c
+  Right c   -> let fc  = (ws^.coinsTbl) ! fi
+                   tc  = (ws^.coinsTbl) ! ti
+                   ws' = ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                            & coinsTbl.at ti ?~ tc <> c
+                   msg = mkGetDropCoinsDesc god c
                in (ws', msgs <> msg)
 
 
@@ -600,8 +606,8 @@ mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [c, s, g]
     c = if cop /= 0 then helper cop "copper piece" else ""
     s = if sil /= 0 then helper sil "silver piece" else ""
     g = if gol /= 0 then helper gol "gold piece"   else ""
-    helper a cn | a == 1 = "You " <> verb god <> " a " <> cn <> "."
-    helper a cn          = "You " <> verb god <> " " <> showText a <> " " <> cn <> "s."
+    helper a cn | a == 1 = "You " <> verb god <> " a " <> cn <> "." <> nlt
+    helper a cn          = "You " <> verb god <> " " <> showText a <> " " <> cn <> "s." <> nlt
     verb = \case Get  -> "pick up"
                  Drop -> "drop"
 
@@ -613,27 +619,21 @@ dropAction :: Action
 dropAction [] = advise ["drop"] $ "Please specify one or more items to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction rs = helper >>= \case
   Nothing   -> dudeYourHandsAreEmpty
-  Just msgs -> output $ msgs <> nlt <> nlt
+  Just msgs -> output $ msgs <> nlt
   where
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl)    ! 0
             pis = (ws^.invTbl)   ! 0
             pc  = (ws^.coinsTbl) ! 0
             i   = p^.rmId
-            ris = (ws^.invTbl)   ! i
-            rc  = (ws^.coinsTbl) ! i
-        in if (not . null $ ris) || (rc /= mempty)
+        in if (not . null $ pis) || (pc /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs pis pc
                    eiss               = map procGecrMisPCInv . zip gecrs $ miss
                    ecs                = map procReconciledCoinsPCInv rcs
-                   -- TODO: Make the helperEither* functions work with both get and drop.
-                   --(ws',  msgs)       = foldl' (helperEitherInv   i ris pis) (ws, "")    eiss
-                   --(ws'', msgs')      = foldl' (helperEitherCoins i rc  pc)  (ws', msgs) ecs
+                   (ws',  msgs)       = foldl' (helperEitherInv   Drop 0 i) (ws, "")    eiss
+                   (ws'', msgs')      = foldl' (helperEitherCoins Drop 0 i) (ws', msgs) ecs
                in putTMVar t ws'' >> return (Just msgs')
           else putTMVar t ws >> return Nothing
-
-          --mapM_ (procGecrMisPCInv False shuffleInvDrop) . zip gecrs $ miss
-          --mapM_ (procReconciledCoinsPCInv False shuffleCoinsDrop) rcs
 
 
 -----
