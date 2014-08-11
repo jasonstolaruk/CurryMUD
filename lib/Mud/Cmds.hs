@@ -200,7 +200,7 @@ splitInp = splitUp . T.words
 
 
 dispatch :: Input -> MudStack ()
-dispatch (cn, rest) = findAction cn >>= maybe (output $ "What?" <> nlt) (\act -> act rest)
+dispatch (cn, rest) = findAction cn >>= maybe (output $ "What?" <> nlt <> nlt) (\act -> act rest)
 
 
 findAction :: CmdName -> MudStack (Maybe Action)
@@ -303,7 +303,7 @@ dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
              helper
              (findFullNameForAbbrev r tns)
   where
-    sorry     = output "No help is available on that topic/command." >> liftIO newLine
+    sorry     = outputCon [ "No help is available on ", dblQuote r, ".", nlt ]
     helper tn = (try . takeADump $ tn) >>= eitherRet (dumpExHandler "dispHelpTopicByName") >> liftIO newLine
     takeADump = dumpFile . (++) helpDir . T.unpack
 
@@ -334,9 +334,9 @@ tryMove dir = let dir' = T.toLower dir
                         Nothing -> putTMVar t ws >> return Nothing
                         Just i  -> let p' = p & rmId .~ i
                                    in (putTMVar t $ ws & pcTbl.at 0 ?~ p') >> return (Just ())
-    sorry dir'  = output $ if dir' `elem` stdLinkNames
-                             then "You can't go that way." <> nlt
-                             else dblQuote dir <> " is not a valid direction." <> nlt
+    sorry dir'  = outputCon $ if dir' `elem` stdLinkNames
+                                then [ "You can't go that way.", nlt ]
+                                else [ dblQuote dir, " is not a valid direction.", nlt ]
 
 
 findExit :: Rm -> LinkName -> Maybe Id
@@ -372,7 +372,7 @@ look rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
            in do
                mapM_ (procGecrMisRm_ (descEnts ws)) . zip gecrs $ miss
                mapM_ (procReconciledCoinsRm_ descCoins) rcs
-      else output $ "You don't see anything here to look at." <> nlt
+      else output $ "You don't see anything here to look at." <> nlt <> nlt
 
 
 -- TODO: Consider implementing a color scheme for lists such as these such that the least significant characters of each name are highlighted or bolded somehow.
@@ -416,7 +416,7 @@ dispInvCoins ws i e = let is       = (ws^.invTbl)   ! i
                       in case (hasInv, hasCoins) of
                         (False, False) -> if i == 0
                                             then dudeYourHandsAreEmpty
-                                            else output $ "The " <> e^.sing <> " is empty."
+                                            else outputCon [ "The ", e^.sing, " is empty.", nlt ] -- TODO: How do the linebreaks look?
                         (True,  False) -> header >> dispEntsInInv ws is
                         (False, True ) -> header >> summarizeCoins c
                         (True,  True ) -> header >> dispEntsInInv ws is >> summarizeCoins c
@@ -427,7 +427,7 @@ dispInvCoins ws i e = let is       = (ws^.invTbl)   ! i
 
 
 dudeYourHandsAreEmpty :: MudStack ()
-dudeYourHandsAreEmpty = output "You aren't carrying anything." >> liftIO newLine
+dudeYourHandsAreEmpty = output $ "You aren't carrying anything." <> nlt <> nlt
 
 
 dispEntsInInv :: WorldState -> Inv -> MudStack ()
@@ -450,9 +450,9 @@ summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
 descCoins :: Coins -> MudStack ()
 descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
   where -- TODO: Come up with good descriptions.
-    descCop = unless (cop == 0) $ output ("The copper piece is round and shiny." <> nlt)
-    descSil = unless (sil == 0) $ output ("The silver piece is round and shiny." <> nlt)
-    descGol = unless (gol == 0) $ output ("The gold piece is round and shiny."   <> nlt)
+    descCop = unless (cop == 0) $ output ("The copper piece is round and shiny." <> nlt <> nlt)
+    descSil = unless (sil == 0) $ output ("The silver piece is round and shiny." <> nlt <> nlt)
+    descGol = unless (gol == 0) $ output ("The gold piece is round and shiny."   <> nlt <> nlt)
 
 
 -----
@@ -529,7 +529,7 @@ dispEq ws i e = let em   = (ws^.eqTbl) ! i
 
 
 dudeYou'reNaked :: MudStack ()
-dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> nlt
+dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> nlt <> nlt
 
 
 -----
@@ -538,8 +538,8 @@ dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> n
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = helper >>= \case
-  Nothing   -> output $ "You don't see anything here to pick up." <> nlt
-  Just msgs -> (mapM_ output . T.lines $ msgs) >> liftIO newLine
+  Nothing   -> output $ "You don't see anything here to pick up." <> nlt <> nlt
+  Just msgs -> output msgs >> liftIO newLine
   where
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl)    ! 0
@@ -559,7 +559,7 @@ getAction rs = helper >>= \case
 
 
 advise :: [HelpTopic] -> T.Text -> MudStack ()
-advise []  msg = output . (<>) msg $ nlt
+advise []  msg = output $ msg <> nlt
 advise [h] msg = output msg >> outputCon [ "For more information, type ", dblQuote . (<>) "help " $ h, ".", nlt ]
 advise hs  msg = output msg >> outputCon [ "See also the following help topics: ", helpTopics,         ".", nlt ]
   where
@@ -874,7 +874,7 @@ getDesigClothSlot e c em rol
                           _       -> undefined -- TODO
   where
     sorryCantWearThere     = outputCon [ "You can't wear a ", e^.sing, " on your ", pp rol, "." ] >> return Nothing
-    sorryNeedRingRol       = (mapM_ output . T.lines $ ringHelp) >> return Nothing
+    sorryNeedRingRol       = (mapM_ output . T.lines $ ringHelp) >> return Nothing -- TODO No need for T.lines.
     findSlotFromList rs ls = findAvailSlot em $ case rol of R -> rs
                                                             L -> ls
                                                             _ -> patternMatchFail "getDesigClothSlot findSlotFromList" [ showText rol ]
@@ -1107,7 +1107,7 @@ uptimeExHandler e = logIOEx "uptime" e >> dispGenericErrorMsg
 
 
 quit :: Action
-quit [] = output ("Thanks for playing! See you next time." <> nlt) >> liftIO exitSuccess
+quit [] = output ("Thanks for playing! See you next time." <> nlt <> nlt) >> liftIO exitSuccess
 quit _  = outputCon [ "Type ", dblQuote "quit", " with no arguments to quit the game.", nlt ]
 
 
@@ -1124,7 +1124,7 @@ wizDispCmdList = dispCmdList (cmdPred . Just $ wizCmdChar)
 
 wizShutdown :: Action
 wizShutdown [] = logNotice "wizShutdown" "shutting down" >> liftIO exitSuccess
-wizShutdown _  = output $ "Type " <> (dblQuote . prefixWizCmd $ "shutdown") <> " with no arguments to shut down the game server.\n"
+wizShutdown _  = outputCon [ "Type ", dblQuote . prefixWizCmd $ "shutdown", " with no arguments to shut down the game server.", nlt ]
 
 
 -----
@@ -1152,7 +1152,7 @@ wizTime rs = ignore rs >> wizTime []
 
 wizDay :: Action
 wizDay [] = liftIO getZonedTime >>= \zt ->
-    output $ formatTime defaultTimeLocale "%A %B %d" zt ^.packed <> "\n"
+    output $ formatTime defaultTimeLocale "%A %B %d" zt ^.packed <> nlt <> nlt
 wizDay rs = ignore rs >> wizDay []
 
 
@@ -1196,7 +1196,7 @@ debugDispEnv rs = mapM_ helper rs
 
 
 debugLog :: Action
-debugLog [] = (replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get) >> output "OK!"
+debugLog [] = (replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get) >> output ("OK!" <> nlt <> nlt)
   where
     heavyLogging = liftIO myThreadId >>= \i ->
         replicateM_ 100 . logNotice "debugLog" $ "Logging from " ++ show i

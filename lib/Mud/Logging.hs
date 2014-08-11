@@ -120,7 +120,7 @@ logIOEx modName funName e = logError . concat $ [ modName, " ", funName, ": ", d
 
 logAndDispIOEx :: String -> String -> IOException -> MudStack ()
 logAndDispIOEx modName funName e = let msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
-                                   in logError msg >> output (msg^.packed)
+                                   in logError msg >> output (msg^.packed <> nlt <> nlt)
 
 
 logIOExRethrow :: String -> String -> IOException -> MudStack ()

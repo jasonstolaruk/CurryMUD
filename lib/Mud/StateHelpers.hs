@@ -25,7 +25,7 @@ import Data.Monoid ((<>), mempty)
 import qualified Data.IntMap.Lazy as IM (adjust, insert, keys, lookup)
 import qualified Data.Map.Lazy as M (elems, filter)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (putStrLn, readFile)
+import qualified Data.Text.IO as T (putStr, putStrLn, readFile)
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -596,31 +596,31 @@ getPlaColumns i = (^.columns) <$> getPla i
 -- "output" and related helpers:
 
 
--- TODO: We should probably make the output functions call T.lines on the input, then map over that the output operation.
--- There is existing code where we already call T.lines before calling out to an output helper...
 output :: T.Text -> MudStack ()
 output t = getPlaColumns 0 >>= \cols ->
-    mapM_ (liftIO . T.putStrLn) $ wordWrap cols t
+    liftIO . T.putStr . T.unlines . concat . map (wordWrap cols) . T.lines $ t
 
 
 outputIndent :: Int -> T.Text -> MudStack ()
 outputIndent n t = getPlaColumns 0 >>= \cols ->
-    liftIO . mapM_ T.putStrLn . wordWrapIndent n cols $ t
+    liftIO . T.putStr . T.unlines . concat . map (wordWrapIndent n cols) . T.lines $ t
 
 
 outputCon :: [T.Text] -> MudStack () -- Prefer over "output" when there would be more than two "<>"s.
-outputCon = output . T.concat
+outputCon ts = getPlaColumns 0 >>= \cols ->
+    liftIO . T.putStrLn . T.concat . wordWrap cols . T.concat $ ts
 
 
 outputConIndent :: Int -> [T.Text] -> MudStack ()
-outputConIndent n = outputIndent n . T.concat
+outputConIndent n ts = getPlaColumns 0 >>= \cols ->
+    liftIO . T.putStrLn . T.concat . wordWrapIndent n cols . T.concat $ ts
 
 
 dumpFile :: FilePath -> MudStack () -- TODO: Implement paging.
 dumpFile fn = takeADump =<< (liftIO . T.readFile $ fn)
   where
     takeADump contents = getPlaColumns 0 >>= \cols ->
-        mapM_ (liftIO . T.putStrLn) (concat . wordWrapLines cols . T.lines $ contents)
+        liftIO . T.putStr . T.unlines . concat . wordWrapLines cols . T.lines $ contents
 
 
 dumpFileWithDividers :: FilePath -> MudStack ()
