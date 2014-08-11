@@ -45,7 +45,7 @@ import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
-import qualified Data.Map.Lazy as M (toList)
+import qualified Data.Map.Lazy as M (elems, null, toList)
 import qualified Data.Text as T
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -105,7 +105,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
           --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-          --, Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
+          , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
           , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
@@ -141,6 +141,7 @@ prefixDebugCmd :: CmdName -> T.Text
 prefixDebugCmd = prefixCmd debugCmdChar
 
 
+-- TODO: Rename?
 gameWrapper :: MudStack ()
 gameWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
   where
@@ -177,6 +178,7 @@ dispTitleExHandler e = f "dispTitle" e
            | otherwise             -> logIOExRethrow
 
 
+-- TODO: Rename?
 -- TODO: When you get rid of readline, edit your .cabal file and delete install-readline.sh.
 game :: MudStack ()
 game = (liftIO . readline $ "> ") >>= \ms ->
@@ -381,10 +383,9 @@ dispRmInvCoins ws i = let is = (ws^.invTbl)   ! i
                           c  = (ws^.coinsTbl) ! i
                       in (mapM_ dispEntInRm . mkNameCountBothList ws $ is) >> maybeSummarizeCoins c
   where
-    dispEntInRm (en, count, (s, _))
-      | count == 1             = outputIndent    2 $ aOrAn s <> " " <> bracketQuote en
-    dispEntInRm (en, count, b) = outputConIndent 2 [ showText count, " ", mkPlurFromBoth b, " ", bracketQuote en ]
-    maybeSummarizeCoins c      = when (c /= mempty) (summarizeCoins c)
+    dispEntInRm (en, count, (s, _)) | count == 1 = outputIndent    2 $ aOrAn s <> " " <> bracketQuote en
+    dispEntInRm (en, count, b)                   = outputConIndent 2 [ showText count, " ", mkPlurFromBoth b, " ", bracketQuote en ]
+    maybeSummarizeCoins c                        = when (c /= mempty) (summarizeCoins c)
 
 
 mkNameCountBothList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
@@ -494,19 +495,19 @@ inv rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
 -----
 
 
--- TODO: Remember to nub!
-{-
 equip :: Action
-equip [] = dispEq 0
-equip rs = do
-    he <- hasEq 0
-    if he
-      then do
-          (gecrs, miss, rcs) <- getEq 0 >>= \is -> resolveEntCoinNames rs (is, mempty)
-          mapM_ (procGecrMisPCInv True descEnts) . zip gecrs $ miss
-          unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt)
+equip [] = getWS >>= \ws ->
+    let e = (ws^.entTbl) ! 0
+    in dispEq ws 0 e
+equip rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
+    let em = (ws^.eqTbl) ! 0
+        is = M.elems em
+    in if not . M.null $ em
+      then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is mempty
+           in do
+               mapM_ (procGecrMisPCEq_ (descEnts ws)) . zip gecrs $ miss
+               unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt <> nlt)
       else dudeYou'reNaked
--}
 
 
 -- TODO: Test to make sure that mob eq looks good.

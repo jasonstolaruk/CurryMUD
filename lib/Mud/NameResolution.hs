@@ -408,20 +408,20 @@ ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l",
                     , dblQuote "m", " for middle finter,\n"
                     , dblQuote "r", " for ring finger,\n"
                     , dblQuote "p", " for pinky finger." ]
-
-
-procGecrMisPCEq :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
-procGecrMisPCEq _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCEq _ (Mult 1 n Nothing  _,   Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
-procGecrMisPCEq _ (Mult _ n Nothing  _,   Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
-procGecrMisPCEq f (Mult _ _ (Just _) _,   Just is) = f is
-procGecrMisPCEq _ (Indexed _ n (Left ""), Nothing) = output $ "You don't have any " <> n <> "s among your readied equipment."
-procGecrMisPCEq _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, " among your readied equipment." ]
-procGecrMisPCEq f (Indexed _ _ (Right _), Just is) = f is
-procGecrMisPCEq _ (SorryIndexedCoins,     Nothing) = sorryIndexedCoins
-procGecrMisPCEq _ (Sorry n,               Nothing) = output $ "You don't have " <> aOrAn n <> " among your readied equipment."
-procGecrMisPCEq _ gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
 -}
+
+
+procGecrMisPCEq_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
+procGecrMisPCEq_ _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
+procGecrMisPCEq_ _ (Mult 1 n Nothing  _,   Nothing) = outputCon [ "You don't have ", aOrAn n, " among your readied equipment.", nlt ]
+procGecrMisPCEq_ _ (Mult _ n Nothing  _,   Nothing) = outputCon [ "You don't have any ", n, "s among your readied equipment.",  nlt ]
+procGecrMisPCEq_ f (Mult _ _ (Just _) _,   Just is) = f is
+procGecrMisPCEq_ _ (Indexed _ n (Left ""), Nothing) = outputCon [ "You don't have any ", n, "s among your readied equipment.",  nlt ]
+procGecrMisPCEq_ _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't have ", showText x, " ", p, " among your readied equipment.", nlt ]
+procGecrMisPCEq_ f (Indexed _ _ (Right _), Just is) = f is
+procGecrMisPCEq_ _ (SorryIndexedCoins,     Nothing) = output sorryIndexedCoins
+procGecrMisPCEq_ _ (Sorry n,               Nothing) = outputCon [ "You don't have ", aOrAn n, " among your readied equipment.", nlt ]
+procGecrMisPCEq_ _ gecrMis                          = patternMatchFail "procGecrMisPCEq_" [ showText gecrMis ]
 
 
 -- ==================================================
