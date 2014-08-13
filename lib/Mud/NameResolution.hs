@@ -265,7 +265,7 @@ procGecrMisPCInv (Indexed x _ (Left p),  Nothing) = Left $ "You don't have " <> 
 procGecrMisPCInv (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisPCInv (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
 procGecrMisPCInv (Sorry n,               Nothing) = Left $ "You don't have " <> aOrAn n <> "." <> nlt
-procGecrMisPCInv gecrMis                          = patternMatchFail "procGecrMisPCInv_" [ showText gecrMis ]
+procGecrMisPCInv gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
 procGecrMisRm_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
@@ -278,7 +278,7 @@ procGecrMisRm_ _ (Indexed x _ (Left p),  Nothing) = outputCon [ "You don't see "
 procGecrMisRm_ f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisRm_ _ (SorryIndexedCoins,     Nothing) = output sorryIndexedCoins
 procGecrMisRm_ _ (Sorry n,               Nothing) = outputCon [ "You don't see ", aOrAn n, " here.", nlt ]
-procGecrMisRm_ _ gecrMis                          = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
+procGecrMisRm_ _ gecrMis                          = patternMatchFail "procGecrMisRm_" [ showText gecrMis ]
 
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
