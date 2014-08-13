@@ -16,7 +16,7 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
+import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Arrow (first)
 import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.STM (STM)
@@ -416,7 +416,7 @@ dispInvCoins ws i e = let is       = (ws^.invTbl)   ! i
                           hasCoins = c /= mempty
                       in case (hasInv, hasCoins) of
                         (False, False) -> if i == 0
-                                            then output $ dudeYourHandsAreEmpty <> nlt
+                                            then output dudeYourHandsAreEmpty
                                             else outputCon [ "The ", e^.sing, " is empty.", nlt ] -- TODO: How do the linebreaks look?
                         (True,  False) -> header >> dispEntsInInv ws is
                         (False, True ) -> header >> summarizeCoins c
@@ -649,29 +649,32 @@ putAction rs   = helper >>= output . (<> nlt)
           rc  = (ws^.coinsTbl) ! ri
           cn  = last rs
           restWithoutCon = init rs
-      in if (not . null $ pis) || (pc /= mempty)
+      in if (not . null $ pis) || (pc /= mempty) -- TODO: Consider moving more of this to shufflePut.
         then if T.head cn == rmChar
           then if not . null $ ris
-            then let cn' = T.tail cn
-                 in undefined
+            then shufflePut (t, ws) (T.tail cn) restWithoutCon ris rc pis pc procGecrMisRm
             else putTMVar t ws >> return ("You don't see any containers here." <> nlt)
-          else let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] pis pc
-               in if null miss && (not . null $ rcs)
-                 then putTMVar t ws >> return ("You can't put something inside a coin." <> nlt)
-                 else case procGecrMisPCInv . head . zip gecrs $ miss of
-                   Left  msg -> putTMVar t ws >> return msg
-                   Right [i] -> let e  = (ws^.entTbl)  ! i
-                                    t' = (ws^.typeTbl) ! i
-                                in if t' /= ConType
-                                  then putTMVar t ws >> return ("The " <> e^.sing <> " isn't a container." <> nlt)
-                                  else let (gecrs', miss', rcs') = resolveEntCoinNames ws restWithoutCon pis pc
-                                           eiss                  = map procGecrMisPCInv . zip gecrs' $ miss'
-                                           ecs                   = map procReconciledCoinsPCInv rcs'
-                                           (ws',  msgs)          = foldl' (helperPutRemEitherInv   Put 0 i e) (ws, "")    eiss
-                                           (ws'', msgs')         = foldl' (helperPutRemEitherCoins Put 0 i e) (ws', msgs) ecs
-                                       in putTMVar t ws'' >> return msgs'
-                   Right _   -> putTMVar t ws >> return ("You can only put things into one container at a time." <> nlt)
-        else putTMVar t ws >> return dudeYourHandsAreEmpty
+          else shufflePut (t, ws) cn restWithoutCon pis pc pis pc procGecrMisPCInv
+      else putTMVar t ws >> return dudeYourHandsAreEmpty
+
+
+shufflePut:: (TMVar WorldState, WorldState) -> ConName -> Rest -> Inv -> Coins -> Inv -> Coins -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
+shufflePut (t, ws) cn rs is c pis pc f = let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
+                                           in if null miss && (not . null $ rcs)
+                                             then putTMVar t ws >> return ("You can't put something inside a coin." <> nlt)
+                                             else case f . head . zip gecrs $ miss of
+                                               Left  msg -> putTMVar t ws >> return msg
+                                               Right [i] -> let e  = (ws^.entTbl)  ! i
+                                                                t' = (ws^.typeTbl) ! i
+                                                            in if t' /= ConType
+                                                              then putTMVar t ws >> return ("The " <> e^.sing <> " isn't a container." <> nlt)
+                                                              else let (gecrs', miss', rcs') = resolveEntCoinNames ws rs pis pc
+                                                                       eiss                  = map procGecrMisPCInv . zip gecrs' $ miss'
+                                                                       ecs                   = map procReconciledCoinsPCInv rcs'
+                                                                       (ws',  msgs)          = foldl' (helperPutRemEitherInv   Put 0 i e) (ws, "")    eiss
+                                                                       (ws'', msgs')         = foldl' (helperPutRemEitherCoins Put 0 i e) (ws', msgs) ecs
+                                                                   in putTMVar t ws'' >> return msgs'
+                                               Right _   -> putTMVar t ws >> return ("You can only put things into one container at a time." <> nlt)
 
 
 type ToEnt = Ent
