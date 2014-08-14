@@ -117,7 +117,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
           , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
-          --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
+          , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
           , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
           , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
@@ -326,19 +326,19 @@ goDispatcher rs = mapM_ tryMove rs
 tryMove :: T.Text -> MudStack ()
 tryMove dir = let dir' = T.toLower dir
               in helper dir' >>= \case
-                Nothing -> sorry dir'
-                Just () -> look []
+                Left msg -> output $ msg <> nlt <> nlt
+                Right _  -> look []
   where
     helper dir' = onWS $ \(t, ws) ->
                       let p = (ws^.pcTbl) ! 0
                           r = (ws^.rmTbl) ! (p^.rmId)
                       in case findExit r dir' of
-                        Nothing -> putTMVar t ws >> return Nothing -- TODO: Return one of the two possible sorry messages.
+                        Nothing -> putTMVar t ws >> return (Left . sorry $ dir')
                         Just i  -> let p' = p & rmId .~ i
-                                   in (putTMVar t $ ws & pcTbl.at 0 ?~ p') >> return (Just ())
-    sorry dir'  = outputCon $ if dir' `elem` stdLinkNames
-                                then [ "You can't go that way.", nlt ]
-                                else [ dblQuote dir, " is not a valid direction.", nlt ]
+                                   in (putTMVar t $ ws & pcTbl.at 0 ?~ p') >> return (Right ())
+    sorry dir'  = if dir' `elem` stdLinkNames
+                    then "You can't go that way."
+                    else dblQuote dir <> " is not a valid direction."
 
 
 findExit :: Rm -> LinkName -> Maybe Id
@@ -784,16 +784,29 @@ shuffleRem (t, ws) cn rs is c f = let (gecrs, miss, rcs) = resolveEntCoinNames w
 -----
 
 
-{-
 ready :: Action
-ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
-ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
-    (gecrs, mrols, mis, rcs) <- resolveEntCoinNamesWithRols rs =<< getInvCoins 0
-    mapM_ (procGecrMrolMiss readyDispatcher) $ zip3 gecrs mrols mis
-    unless (null rcs) $ output "You can't ready coins."
-    liftIO newLine
+ready [] = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
+ready rs = helper >>= output . (<> nlt)
+  where
+    helper = onWS $ \(t, ws) ->
+        let pis = (ws^.invTbl)   ! 0
+            pc  = (ws^.coinsTbl) ! 0
+        in if (not . null $ pis)
+          then let (gecrs, mrols, miss, rcs) = undefined --resolveEntCoinNamesWithRols ws rs pis pc
+               in undefined
+                   --eiss               = map procGecrMisPCInv . zip gecrs $ miss
+                   --ecs                = map procReconciledCoinsPCInv rcs
+                   --(ws',  msgs)       = foldl' (helperGetDropEitherInv   Drop 0 i) (ws, "")    eiss
+                   --(ws'', msgs')      = foldl' (helperGetDropEitherCoins Drop 0 i) (ws', msgs) ecs
+               --in putTMVar t ws'' >> return msgs'
+          else putTMVar t ws >> return dudeYourHandsAreEmpty
+
+    --(gecrs, mrols, mis, rcs) <- resolveEntCoinNamesWithRols rs =<< getInvCoins 0
+    --mapM_ (procGecrMrolMiss readyDispatcher) $ zip3 gecrs mrols mis
+    --unless (null rcs) $ output "You can't ready coins."
 
 
+{-
 readyDispatcher :: Maybe RightOrLeft -> Inv -> MudStack ()
 readyDispatcher mrol = mapM_ dispatchByType
   where
@@ -975,11 +988,13 @@ getAvailWpnSlot em = getMobHand 0 >>= \h ->
 
 
 -- Ready armor:
+-}
 
 
 -----
 
 
+{-
 unready :: Action
 unready [] = advise ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
 unready rs = hasEq 0 >>= \he -> if not he then dudeYou'reNaked else do
