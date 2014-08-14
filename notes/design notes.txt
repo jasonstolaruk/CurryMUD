@@ -54,7 +54,7 @@ Character kits need not correspond to traditional classes. Consider defining kit
 
 (Returning) players should be able to opt out of all tutorials.
 
-Make ASCII art maps available in game. New players should start with a map.
+Make ASCII art maps available in game. New players should start with a map, along with a short welcome letter (obtainable in the tutorial).
 
 Have an in-game newspaper. There should be a way for players to read old newspapers. The newspaper could be produced automatically (as opposed to being written by players).
 

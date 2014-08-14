@@ -118,7 +118,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
           --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
-          --, Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
+          , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
           , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
           , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
@@ -636,9 +636,9 @@ dropAction rs = helper >>= output . (<> nlt)
 
 
 putAction :: Action
-putAction []   = advise ["put"] $ "Please specify one or more things you want to put, followed by where you want to put them, as in " <> dblQuote "put doll sack" <> "."
-putAction [r]  = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
-putAction rs   = helper >>= output . (<> nlt)
+putAction []  = advise ["put"] $ "Please specify one or more things you want to put, followed by where you want to put them, as in " <> dblQuote "put doll sack" <> "."
+putAction [r] = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
+putAction rs  = helper >>= output . (<> nlt)
   where
     helper = onWS $ \(t, ws) ->
       let p   = (ws^.pcTbl)    ! 0
@@ -649,7 +649,7 @@ putAction rs   = helper >>= output . (<> nlt)
           rc  = (ws^.coinsTbl) ! ri
           cn  = last rs
           restWithoutCon = init rs
-      in if (not . null $ pis) || (pc /= mempty) -- TODO: Consider moving more of this to shufflePut.
+      in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar
           then if not . null $ ris
             then shufflePut (t, ws) (T.tail cn) restWithoutCon ris rc pis pc procGecrMisRm
@@ -658,7 +658,13 @@ putAction rs   = helper >>= output . (<> nlt)
       else putTMVar t ws >> return dudeYourHandsAreEmpty
 
 
-shufflePut:: (TMVar WorldState, WorldState) -> ConName -> Rest -> Inv -> Coins -> Inv -> Coins -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
+type InvWithCont   = Inv
+type CoinsWithCont = Coins
+type InvToPut      = Inv
+type CoinsToPut    = Coins
+
+
+shufflePut :: (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCont -> CoinsWithCont -> InvToPut -> CoinsToPut -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
 shufflePut (t, ws) cn rs is c pis pc f = let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
                                            in if null miss && (not . null $ rcs)
                                              then putTMVar t ws >> return ("You can't put something inside a coin." <> nlt)
@@ -733,37 +739,52 @@ mkPutRemCoinsDesc por (Coins (cop, sil, gol)) te = T.concat [c, s, g]
 -----
 
 
-{-
 remove :: Action
 remove []  = advise ["remove"] $ "Please specify one or more things to remove, followed by the container you want to remove them from, as in " <> dblQuote "remove doll sack" <> "."
 remove [r] = advise ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
-remove rs  = putRemDispatcher Rem rs >> liftIO newLine
+remove rs  = helper >>= output . (<> nlt)
+  where
+    helper = onWS $ \(t, ws) ->
+      let p   = (ws^.pcTbl)    ! 0
+          pis = (ws^.invTbl)   ! 0
+          pc  = (ws^.coinsTbl) ! 0
+          ri  = p^.rmId
+          ris = (ws^.invTbl)   ! ri
+          rc  = (ws^.coinsTbl) ! ri
+          cn  = last rs
+          restWithoutCon = init rs
+      in if T.head cn == rmChar
+          then if not . null $ ris
+            then shuffleRem (t, ws) (T.tail cn) restWithoutCon ris rc procGecrMisRm
+            else putTMVar t ws >> return ("You don't see any containers here." <> nlt)
+          else shuffleRem (t, ws) cn restWithoutCon pis pc procGecrMisPCInv
 
 
-remHelper :: Id -> Rest -> MudStack ()
-remHelper _  [] = return ()
-remHelper ci rs = do
-    cn  <- (^.sing) <$> getEnt ci
-    hic <- hasInvOrCoins ci
-    if not hic
-      then output $ "The " <> cn <> " appears to be empty."
-      else do
-          (gecrs, miss, rcs) <- resolveEntCoinNames rs =<< getInvCoins ci
-          mapM_ (procGecrMisCon cn . shuffleInvRem ci $ cn) . zip gecrs $ miss
-          mapM_ (procReconciledCoinsCon cn . shuffleCoinsRem $ ci) rcs
-
-
-shuffleInvRem :: Id -> ConName -> Inv -> MudStack ()
-shuffleInvRem ci cn is = moveInv is ci 0 >> descPutRemEnts Rem is cn
-
-
-shuffleCoinsRem :: Id -> Coins -> MudStack ()
-shuffleCoinsRem ci c = moveCoins c ci 0 >> (^.sing) <$> getEnt ci >>= descPutRemCoins Rem c
+shuffleRem :: (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCont -> CoinsWithCont -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
+shuffleRem (t, ws) cn rs is c f = let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
+                                  in if null miss && (not . null $ rcs)
+                                    then putTMVar t ws >> return ("You can't remove something from a coin." <> nlt)
+                                    else case f . head . zip gecrs $ miss of
+                                      Left  msg -> putTMVar t ws >> return msg
+                                      Right [i] -> let e  = (ws^.entTbl)  ! i
+                                                       t' = (ws^.typeTbl) ! i
+                                                   in if t' /= ConType
+                                                     then putTMVar t ws >> return ("The " <> e^.sing <> " isn't a container." <> nlt)
+                                                     else let cis                   = (ws^.invTbl)   ! i
+                                                              cc                    = (ws^.coinsTbl) ! i
+                                                              (gecrs', miss', rcs') = resolveEntCoinNames ws rs cis cc
+                                                              eiss                  = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
+                                                              ecs                   = map (procReconciledCoinsCon (e^.sing)) rcs'
+                                                              (ws',  msgs)          = foldl' (helperPutRemEitherInv   Rem i 0 e) (ws, "")    eiss
+                                                              (ws'', msgs')         = foldl' (helperPutRemEitherCoins Rem i 0 e) (ws', msgs) ecs
+                                                          in putTMVar t ws'' >> return msgs'
+                                      Right _   -> putTMVar t ws >> return ("You can only remove things from one container at a time." <> nlt)
 
 
 -----
 
 
+{-
 ready :: Action
 ready []   = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready (rs) = hasInv 0 >>= \hi -> if not hi then dudeYourHandsAreEmpty else do
