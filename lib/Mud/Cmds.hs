@@ -792,7 +792,7 @@ ready rs = helper >>= output . (<> nlt)
         let pis = (ws^.invTbl)   ! 0
             pc  = (ws^.coinsTbl) ! 0
         in if (not . null $ pis)
-          then let (gecrs, mrols, miss, rcs) = undefined --resolveEntCoinNamesWithRols ws rs pis pc
+          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws rs pis pc
                in undefined
                    --eiss               = map procGecrMisPCInv . zip gecrs $ miss
                    --ecs                = map procReconciledCoinsPCInv rcs

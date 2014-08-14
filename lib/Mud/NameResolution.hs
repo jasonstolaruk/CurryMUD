@@ -212,26 +212,22 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
 -- Resolving entity and coin names with right/left indicators:
 
 
-{-
-resolveEntCoinNamesWithRols_STM :: WorldState -> Rest -> InvCoins -> STM ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNamesWithRols_STM ws rs ic@(_, c) = do
-    gecrMrols <- mapM (mkGecrWithRol_STM ws ic . T.toLower) rs
-    let (gecrs, mrols)      = (,) (gecrMrols^..folded._1) (gecrMrols^..folded._2)
-    let (gecrs', miss, rcs) = expandGecrs c gecrs
-    return (gecrs', mrols, miss, rcs)
+resolveEntCoinNamesWithRols :: WorldState -> Rest -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNamesWithRols ws rs is c = let gecrMrols           = map (mkGecrWithRol ws is c . T.toLower) rs
+                                             (gecrs, mrols)      = (,) (gecrMrols^..folded._1) (gecrMrols^..folded._2)
+                                             (gecrs', miss, rcs) = expandGecrs c gecrs
+                                         in (gecrs', mrols, miss, rcs)
 
 
-mkGecrWithRol_STM :: WorldState -> InvCoins -> T.Text -> STM (GetEntsCoinsRes, Maybe RightOrLeft)
-mkGecrWithRol_STM ws ic n = let (a, b) = T.break (== slotChar) n
-                            in if | T.null b        -> mkGecr_STM ws ic n >>= \gecr -> return (gecr, Nothing)
-                                  | T.length b == 1 -> sorry
-                                  | otherwise       -> mkGecr_STM ws ic a >>= \gecr ->
-                                      let parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [(RightOrLeft, String)]
-                                      in case parsed of [(rol, _)] -> return (gecr, Just rol)
-                                                        _          -> sorry
+mkGecrWithRol :: WorldState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
+mkGecrWithRol ws is c n = let (a, b) = T.break (== slotChar) n
+                              parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [(RightOrLeft, String)]
+                          in if | T.null b        -> (mkGecr ws is c n, Nothing)
+                                | T.length b == 1 -> sorry
+                                | otherwise       -> case parsed of [(rol, _)] -> (mkGecr ws is c a, Just rol)
+                                                                    _          -> sorry
   where
-    sorry = return (Sorry n, Nothing)
--}
+    sorry = (Sorry n, Nothing)
 
 
 -- ==================================================
@@ -295,14 +291,14 @@ procGecrMisRm gecrMis                          = patternMatchFail "procGecrMisRm
 
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisCon cn (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
+procGecrMisCon _  (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
 procGecrMisCon cn (Mult 1 n Nothing  _,   Nothing) = Left $ "The " <> cn <> " doesn't contain " <> aOrAn n <> "." <> nlt
 procGecrMisCon cn (Mult _ n Nothing  _,   Nothing) = Left $ "The " <> cn <> " doesn't contain any " <> n <> "s."  <> nlt
-procGecrMisCon cn (Mult _ _ (Just _) _,   Just is) = Right is
+procGecrMisCon _  (Mult _ _ (Just _) _,   Just is) = Right is
 procGecrMisCon cn (Indexed _ n (Left ""), Nothing) = Left $ "The " <> cn <> " doesn't contain any " <> n <> "s."  <> nlt
 procGecrMisCon cn (Indexed x _ (Left p),  Nothing) = Left $ "The " <> cn <> " doesn't contain " <> showText x <> " " <> p <> "." <> nlt
-procGecrMisCon cn (Indexed _ _ (Right _), Just is) = Right is
-procGecrMisCon cn (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
+procGecrMisCon _  (Indexed _ _ (Right _), Just is) = Right is
+procGecrMisCon _  (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
 procGecrMisCon cn (Sorry n,               Nothing) = Left $ "The " <> cn <> " doesn't contain " <> aOrAn n <> "." <> nlt
 procGecrMisCon _  gecrMis                          = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
 
@@ -420,7 +416,7 @@ procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.co
     c = if cop /= 0 then "The " <> cn <> " doesn't contain any copper pieces." <> nlt else ""
     s = if sil /= 0 then "The " <> cn <> " doesn't contain any silver pieces." <> nlt else ""
     g = if gol /= 0 then "The " <> cn <> " doesn't contain any gold pieces."   <> nlt else ""
-procReconciledCoinsCon cn (Right (SomeOf c                      )) = Right c
+procReconciledCoinsCon _  (Right (SomeOf c                      )) = Right c
 procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
     c = if cop /= 0 then "The " <> cn <> "doesn't contain " <> showText cop <> " copper pieces." <> nlt else ""
