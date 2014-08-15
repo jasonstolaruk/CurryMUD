@@ -303,6 +303,7 @@ procGecrMisCon cn (Sorry n,               Nothing) = Left $ "The " <> cn <> " do
 procGecrMisCon _  gecrMis                          = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
 
 
+-- TODO: Use sorryMrol.
 {-
 procGecrMrolMiss :: (Maybe RightOrLeft -> Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe RightOrLeft, Maybe Inv) -> MudStack ()
 procGecrMrolMiss _ (_,                     _,    Just []) = return () -- Nothing left after eliminating duplicate IDs.
@@ -321,15 +322,15 @@ sorryMrol :: T.Text -> MudStack ()
 sorryMrol n
   | slotChar `elem` n^.unpacked = mapM_ output . T.lines . T.concat $ [ "Please specify ", dblQuote "r", " or ", dblQuote "l", ".\n", ringHelp ] -- TODO: No need for T.lines.
   | otherwise                   = output $ "You don't have " <> aOrAn n <> "."
+-}
 
 
 ringHelp :: T.Text
-ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l", " immediately followed by:\n"
-                    , dblQuote "i", " for index finger,\n"
-                    , dblQuote "m", " for middle finter,\n"
-                    , dblQuote "r", " for ring finger,\n"
-                    , dblQuote "p", " for pinky finger." ]
--}
+ringHelp = T.concat [ "For rings, specify ", dblQuote "r", " or ", dblQuote "l", " immediately followed by:", nlt
+                    , dblQuote "i", " for index finger,",  nlt
+                    , dblQuote "m", " for middle finter,", nlt
+                    , dblQuote "r", " for ring finger,",   nlt
+                    , dblQuote "p", " for pinky finger.",  nlt ]
 
 
 procGecrMisPCEq_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()

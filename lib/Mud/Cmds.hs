@@ -6,7 +6,7 @@ module Mud.Cmds (gameWrapper) where
 
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import Mud.MiscDataTypes
-import Mud.NameResolution
+import Mud.NameResolution hiding (blowUp, patternMatchFail) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
 import Mud.StateDataTypes
 import Mud.StateInIORefT
 import Mud.StateHelpers hiding (blowUp, patternMatchFail) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
@@ -810,19 +810,21 @@ readyDispatcher :: Id -> Maybe RightOrLeft -> (WorldState, T.Text) -> Id -> (Wor
 readyDispatcher pi mrol (ws, msgs) i = let e = (ws^.entTbl)  ! i
                                            t = (ws^.typeTbl) ! i
                                        in case t of
-                                         ClothType -> undefined
-                                         WpnType   -> undefined
-                                         _         -> undefined
+                                         ClothType -> readyCloth pi mrol (ws, msgs) i e
+                                         WpnType   -> readyWpn   pi mrol (ws, msgs) i e
+                                         _         -> (ws, msgs <> "You can't ready a " <> e^.sing <> "." <> nlt)
 
-          --ClothType -> getCloth i >>= \c -> readyCloth i e c em mrol
-          --WpnType   -> readyWpn i e em mrol
-          --_         -> output $ "You can't ready a " <> e^.sing <> "."
+
+moveReadiedItem :: (WorldState, T.Text) -> Id -> EqMap -> Slot -> Id -> T.Text -> (WorldState, T.Text)
+moveReadiedItem (ws, msgs) pi em s i msg = let pis = (ws^.invTbl) ! pi
+                                               ws' = ws & invTbl.at pi ?~ (filter (/= i) pis)
+                                                        & eqTbl.at  pi ?~ (em & at s ?~ i)
+                                           in (ws', msgs <> msg)
 
 
 -- Helpers for the entity type-specific ready functions:
 
 
-{-
 otherGender :: Gender -> Gender
 otherGender Male     = Female
 otherGender Female   = Male
@@ -858,8 +860,8 @@ findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
 findAvailSlot em = find (isSlotAvail em)
 
 
-sorryFullClothSlots :: Cloth -> MudStack ()
-sorryFullClothSlots = output . (<>) "You can't wear any more " . whatWhere
+sorryFullClothSlots :: Cloth -> T.Text
+sorryFullClothSlots c = "You can't wear any more " <> whatWhere c <> nlt
   where
     whatWhere = \case
       EarC      -> aoy <> "ears."
@@ -876,120 +878,129 @@ sorryFullClothSlots = output . (<>) "You can't wear any more " . whatWhere
     coy = "clothing on your "
 
 
-sorryFullClothSlotsOneSide :: Slot -> MudStack ()
-sorryFullClothSlotsOneSide s = output $ "You can't wear any more on your " <> pp s <> "."
+sorryFullClothSlotsOneSide :: Slot -> T.Text
+sorryFullClothSlotsOneSide s = "You can't wear any more on your " <> pp s <> "." <> nlt
 
 
 -- Ready clothing:
 
 
-readyCloth :: Int -> Ent -> Cloth -> EqMap -> Maybe RightOrLeft -> MudStack ()
-readyCloth i e c em mrol = maybe (getAvailClothSlot c em) (getDesigClothSlot e c em) mrol >>= \ms ->
-    maybeVoid (\s -> moveReadiedItem i em s >> readiedMsg s c) ms
+readyCloth :: Id -> Maybe RightOrLeft -> (WorldState, T.Text) -> Id -> Ent -> (WorldState, T.Text)
+readyCloth pi mrol (ws, msgs) i e = let em = (ws^.eqTbl)    ! pi
+                                        c  = (ws^.clothTbl) ! i
+                                    in case maybe (getAvailClothSlot ws pi c em) (getDesigClothSlot ws pi e c em) mrol of
+                                      Left  msg -> (ws, msgs <> msg)
+                                      Right s   -> moveReadiedItem (ws, msgs) pi em s i . mkReadyMsg s $ c
   where
-    readiedMsg s = \case NoseC   -> putOnMsg
+    mkReadyMsg s = \case NoseC   -> putOnMsg
                          NeckC   -> putOnMsg
-                         FingerC -> outputCon [ "You slide the ", e^.sing, " on your ", pp s, "." ]
+                         FingerC -> "You slide the " <> e^.sing <> " on your " <> pp s <> "." <> nlt
                          _       -> wearMsg
       where
-        putOnMsg = output $ "You put on the " <> e^.sing <> "."
-        wearMsg  = outputCon [ "You wear the ", e^.sing, " on your ", pp s, "." ]
+        putOnMsg = "You put on the " <> e^.sing <> "." <> nlt
+        wearMsg  = "You wear the "   <> e^.sing <> " on your " <> pp s <> "." <> nlt
 
 
-getDesigClothSlot :: Ent -> Cloth -> EqMap -> RightOrLeft -> MudStack (Maybe Slot)
-getDesigClothSlot e c em rol
-  | c `elem` [NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC] = sorryCantWearThere
-  | isRingRol rol && c /= FingerC           = sorryCantWearThere
-  | c == FingerC && (not . isRingRol $ rol) = sorryNeedRingRol
-  | otherwise = case c of EarC    -> maybe sorryFullEar   (return . Just) (findSlotFromList rEarSlots   lEarSlots)
-                          WristC  -> maybe sorryFullWrist (return . Just) (findSlotFromList rWristSlots lWristSlots)
-                          FingerC -> maybe (return (Just slotFromRol))
-                                           (getEnt >=> sorry slotFromRol)
-                                           (em^.at slotFromRol)
-                          _       -> undefined -- TODO
+getAvailClothSlot :: WorldState -> Id -> Cloth -> EqMap -> Either T.Text Slot
+getAvailClothSlot ws pi c em = let m = (ws^.mobTbl) ! pi
+                                   g = m^.gender
+                                   h = m^.hand
+                               -- TODO: Move "procMaybe" to the left of the "case".
+                               in case c of EarC    -> procMaybe $ getEarSlotForGender g `mplus` (getEarSlotForGender . otherGender $ g)
+                                            NoseC   -> procMaybe $ findAvailSlot em noseSlots
+                                            NeckC   -> procMaybe $ findAvailSlot em neckSlots
+                                            WristC  -> procMaybe $ getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
+                                            FingerC -> procMaybe $ getRingSlot g h
+                                            _       -> undefined -- TODO
   where
-    sorryCantWearThere     = outputCon [ "You can't wear a ", e^.sing, " on your ", pp rol, "." ] >> return Nothing
-    sorryNeedRingRol       = (mapM_ output . T.lines $ ringHelp) >> return Nothing -- TODO No need for T.lines.
-    findSlotFromList rs ls = findAvailSlot em $ case rol of R -> rs
-                                                            L -> ls
-                                                            _ -> patternMatchFail "getDesigClothSlot findSlotFromList" [ showText rol ]
-    getSlotFromList rs ls  = head $ case rol of R -> rs
-                                                L -> ls
-                                                _ -> patternMatchFail "getDesigClothSlot getSlotFromList" [ showText rol ]
-    sorryFullEar     = sorryFullClothSlotsOneSide (getSlotFromList rEarSlots   lEarSlots)          >> return Nothing
-    sorryFullWrist   = sorryFullClothSlotsOneSide (getSlotFromList rWristSlots lWristSlots)        >> return Nothing
-    slotFromRol      = fromRol rol :: Slot
-    sorry s e'       = outputCon [ "You're already wearing a ", e'^.sing, " on your ", pp s, "." ] >> return Nothing
-
-
-getAvailClothSlot :: Cloth -> EqMap -> MudStack (Maybe Slot)
-getAvailClothSlot c em = do
-    s <- getMobGender 0
-    h <- getMobHand   0
-    case c of EarC    -> procMaybe $ getEarSlotForGender s `mplus` (getEarSlotForGender . otherGender $ s)
-              NoseC   -> procMaybe $ findAvailSlot em noseSlots
-              NeckC   -> procMaybe $ findAvailSlot em neckSlots
-              WristC  -> procMaybe $ getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
-              FingerC -> procMaybe =<< getRingSlotForHand h
-              _       -> undefined -- TODO
-  where
-    procMaybe             = maybe (sorryFullClothSlots c >> return Nothing) (return . Just)
-    getEarSlotForGender s = findAvailSlot em $ case s of Male   -> lEarSlots
+    procMaybe             = maybe (Left . sorryFullClothSlots $ c) Right
+    getEarSlotForGender g = findAvailSlot em $ case g of Male   -> lEarSlots
                                                          Female -> rEarSlots
-                                                         _      -> patternMatchFail "getAvailClothSlot getEarSlotForGender" [ showText s ]
+                                                         _      -> patternMatchFail "getAvailClothSlot getEarSlotForGender" [ showText g ]
     getWristSlotForHand h = findAvailSlot em $ case h of RHand  -> lWristSlots
                                                          LHand  -> rWristSlots
                                                          _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
-    getRingSlotForHand h  = getMobGender 0 >>= \s ->
-        return (findAvailSlot em $ case s of Male   -> case h of
-                                                         RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
-                                                         LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
-                                                         _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
-                                             Female -> case h of
-                                                         RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
-                                                         LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
-                                                         _     -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText h ]
-                                             _      -> patternMatchFail "getAvailClothSlot getRingSlotForHand" [ showText s ])
+    getRingSlot g h       = findAvailSlot em $ case g of Male   -> case h of
+                                                                     RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
+                                                                     LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
+                                                                     _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
+                                                         Female -> case h of
+                                                                     RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
+                                                                     LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
+                                                                     _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
+                                                         _      -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText g ]
+
+
+getDesigClothSlot :: WorldState -> Id -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigClothSlot ws pi e c em rol
+  | c `elem` [NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC] = Left sorryCantWearThere
+  | isRingRol rol && c /= FingerC           = Left sorryCantWearThere
+  | c == FingerC && (not . isRingRol $ rol) = Left ringHelp
+  | otherwise = case c of EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
+                          WristC  -> maybe (Left sorryFullWrist) Right (findSlotFromList rWristSlots lWristSlots)
+                          FingerC -> maybe (Right slotFromRol)
+                                           (\i -> let e' = (ws^.entTbl) ! i in Left . sorry slotFromRol $ e')
+                                           (em^.at slotFromRol)
+                          _       -> undefined -- TODO
+  where
+    sorryCantWearThere     = "You can't wear a " <> e^.sing <> " on your " <> pp rol <> "." <> nlt
+    findSlotFromList rs ls = findAvailSlot em $ case rol of R -> rs
+                                                            L -> ls
+                                                            _ -> patternMatchFail "getDesigClothSlot findSlotFromList" [ showText rol ]
+    getSlotFromList  rs ls = head $ case rol of R -> rs
+                                                L -> ls
+                                                _ -> patternMatchFail "getDesigClothSlot getSlotFromList" [ showText rol ]
+    sorryFullEar     = sorryFullClothSlotsOneSide (getSlotFromList rEarSlots   lEarSlots)
+    sorryFullWrist   = sorryFullClothSlotsOneSide (getSlotFromList rWristSlots lWristSlots)
+    slotFromRol      = fromRol rol :: Slot
+    sorry s e'       = "You're already wearing a " <> e'^.sing <> " on your " <> pp s <> "." <> nlt
 
 
 -- Ready weapons:
 
 
-readyWpn :: Id -> Ent -> EqMap -> Maybe RightOrLeft -> MudStack ()
-readyWpn i e em mrol
-  | not . isSlotAvail em $ BothHandsS = output "You're already wielding a two-handed weapon."
-  | otherwise = maybe (getAvailWpnSlot em) (getDesigWpnSlot e em) mrol >>= maybeVoid (\s -> readyHelper s =<< getWpn i)
-  where
-    readyHelper s w = case w^.wpnSub of OneHanded -> moveReadiedItem i em s >> outputCon [ "You wield the ", e^.sing, " with your ", pp s, "." ]
-                                        TwoHanded -> if all (isSlotAvail em) [RHandS, LHandS]
-                                                       then moveReadiedItem i em BothHandsS >> output ("You wield the " <> e^.sing <> " with both hands.")
-                                                       else output $ "Both hands are required to weild the " <> e^.sing <> "."
+readyWpn :: Id -> Maybe RightOrLeft -> (WorldState, T.Text) -> Id -> Ent -> (WorldState, T.Text)
+readyWpn pi mrol (ws, msgs) i e = let em  = (ws^.eqTbl)  ! pi
+                                      w   = (ws^.wpnTbl) ! i
+                                      sub = w^.wpnSub
+                                  in if not . isSlotAvail em $ BothHandsS
+                                    then (ws, msgs <> "You're already wielding a two-handed weapon." <> nlt)
+                                    else case maybe (getAvailWpnSlot ws pi em) (getDesigWpnSlot ws pi e em) mrol of
+                                      Left  msg -> (ws, msgs <> msg)
+                                      Right s   -> case sub of
+                                                     OneHanded -> moveReadiedItem (ws, msgs) pi em s i $ "You wield the " <> e^.sing <> " with your " <> pp s <> "." <> nlt
+                                                     TwoHanded -> if all (isSlotAvail em) [RHandS, LHandS]
+                                                                    then moveReadiedItem (ws, msgs) pi em BothHandsS i $ "You wield the " <> e^.sing <> " with both hands." <> nlt
+                                                                    else (ws, msgs <> "Both hands are required to wield the " <> e^.sing <> "." <> nlt)
 
 
-getDesigWpnSlot :: Ent -> EqMap -> RightOrLeft -> MudStack (Maybe Slot)
-getDesigWpnSlot e em rol
-  | isRingRol rol = sorryNotRing
-  | otherwise     = maybe (return (Just . desigSlot $ rol)) (getEnt >=> sorry) $ em^.at (desigSlot rol)
-  where
-    sorryNotRing = output ("You can't wield a " <> e^.sing <> " with your finger!") >> return Nothing
-    sorry e'     = outputCon [ "You're already wielding a ", e'^.sing, " with your ", pp . desigSlot $ rol, "." ] >> return Nothing
-    desigSlot    = \case R -> RHandS
-                         L -> LHandS
-                         _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
-
-
-getAvailWpnSlot :: EqMap -> MudStack (Maybe Slot)
-getAvailWpnSlot em = getMobHand 0 >>= \h ->
-    maybe sorry (return . Just) (findAvailSlot em . map getSlotForHand $ [ h, otherHand h ])
+getAvailWpnSlot :: WorldState -> Id -> EqMap -> Either T.Text Slot
+getAvailWpnSlot ws pi em = let m = (ws^.mobTbl) ! pi
+                               h = m^.hand
+                           in maybe (Left $ "You're already wielding two weapons." <> nlt)
+                                    Right
+                                    (findAvailSlot em . map getSlotForHand $ [ h, otherHand h ])
   where
     getSlotForHand h = case h of RHand -> RHandS
                                  LHand -> LHandS
                                  _     -> patternMatchFail "getAvailWpnSlot getSlotForHand" [ showText h ]
-    sorry = output "You're already wielding two weapons." >> return Nothing
+
+
+getDesigWpnSlot :: WorldState -> Id -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigWpnSlot ws pi e em rol
+  | isRingRol rol = Left sorryNotRing
+  | otherwise     = maybe (Right desigSlot)
+                          (\i -> let e' = (ws^.entTbl) ! i in Left . sorry $ e')
+                          (em^.at desigSlot)
+  where
+    sorryNotRing = "You can't wield a " <> e^.sing <> " with your finger!" <> nlt
+    sorry e'     = "You're already wielding a " <> e'^.sing <> " with your " <> pp desigSlot <> "." <> nlt
+    desigSlot    = case rol of R -> RHandS
+                               L -> LHandS
+                               _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
 
 
 -- Ready armor:
--}
 
 
 -----
