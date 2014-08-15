@@ -789,39 +789,40 @@ ready [] = advise ["ready"] $ "Please specify one or more things to ready, as in
 ready rs = helper >>= output . (<> nlt)
   where
     helper = onWS $ \(t, ws) ->
-        let pis = (ws^.invTbl)   ! 0
-            pc  = (ws^.coinsTbl) ! 0
-        in if (not . null $ pis)
-          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws rs pis pc
-               in undefined
-                   --eiss               = map procGecrMisPCInv . zip gecrs $ miss
-                   --ecs                = map procReconciledCoinsPCInv rcs
-                   --(ws',  msgs)       = foldl' (helperGetDropEitherInv   Drop 0 i) (ws, "")    eiss
-                   --(ws'', msgs')      = foldl' (helperGetDropEitherCoins Drop 0 i) (ws', msgs) ecs
-               --in putTMVar t ws'' >> return msgs'
+        let is = (ws^.invTbl)   ! 0
+            c  = (ws^.coinsTbl) ! 0
+        in if (not . null $ is) || (c /= mempty)
+          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws rs is c
+                   eiss                      = map procGecrMisPCInv . zip gecrs $ miss
+                   msgs                      = if null rcs then "" else "You can't ready coins." <> nlt
+                   (ws',  msgs')             = foldl' (helperReady 0) (ws, msgs) . zip eiss $ mrols
+               in putTMVar t ws' >> return msgs'
           else putTMVar t ws >> return dudeYourHandsAreEmpty
 
-    --(gecrs, mrols, mis, rcs) <- resolveEntCoinNamesWithRols rs =<< getInvCoins 0
-    --mapM_ (procGecrMrolMiss readyDispatcher) $ zip3 gecrs mrols mis
-    --unless (null rcs) $ output "You can't ready coins."
+
+helperReady :: Id -> (WorldState, T.Text) -> (Either T.Text Inv, Maybe RightOrLeft) -> (WorldState, T.Text)
+helperReady pi (ws, msgs) (eis, mrol) = case eis of
+  Left  msg -> (ws, msgs <> msg)
+  Right is  -> foldl' (readyDispatcher pi mrol) (ws, msgs) is
 
 
-{-
-readyDispatcher :: Maybe RightOrLeft -> Inv -> MudStack ()
-readyDispatcher mrol = mapM_ dispatchByType
-  where
-    dispatchByType i = do
-        e <- getEnt i
-        em <- getEqMap 0
-        getEntType e >>= \case
-          ClothType -> getCloth i >>= \c -> readyCloth i e c em mrol
-          WpnType   -> readyWpn i e em mrol
-          _         -> output $ "You can't ready a " <> e^.sing <> "."
+readyDispatcher :: Id -> Maybe RightOrLeft -> (WorldState, T.Text) -> Id -> (WorldState, T.Text)
+readyDispatcher pi mrol (ws, msgs) i = let e = (ws^.entTbl)  ! i
+                                           t = (ws^.typeTbl) ! i
+                                       in case t of
+                                         ClothType -> undefined
+                                         WpnType   -> undefined
+                                         _         -> undefined
+
+          --ClothType -> getCloth i >>= \c -> readyCloth i e c em mrol
+          --WpnType   -> readyWpn i e em mrol
+          --_         -> output $ "You can't ready a " <> e^.sing <> "."
 
 
 -- Helpers for the entity type-specific ready functions:
 
 
+{-
 otherGender :: Gender -> Gender
 otherGender Male     = Female
 otherGender Female   = Male
@@ -850,7 +851,7 @@ lWristSlots = [LWrist1S .. LWrist3S]
 
 
 isSlotAvail :: EqMap -> Slot -> Bool
-isSlotAvail em s = isNothing $ em^.at s
+isSlotAvail em s = em^.at s.to isNothing
 
 
 findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
