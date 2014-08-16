@@ -128,8 +128,8 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
           , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
           , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
-          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." } ]
-          --, Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
+          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
+          , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 
 
 prefixCmd :: Char -> CmdName -> T.Text
@@ -273,7 +273,7 @@ plaDispCmdList = dispCmdList (cmdPred Nothing)
 dispCmdList :: (Cmd -> Bool) -> Action
 dispCmdList p [] = mapM_ (outputIndent 10) (cmdListText p) >> liftIO newLine
 dispCmdList p rs = forM_ rs $ \r ->
-    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ p) >> liftIO newLine
+    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ p) >> liftIO newLine -- TODO: Grep only the command names (why does "? w" give "d"?)
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
@@ -1061,21 +1061,38 @@ mkIdCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
 -----
 
 
-{-
 what :: Action
 what [] = advise ["what"] $ "Please specify one or more abbreviations to disambiguate, as in " <> dblQuote "what up" <> "."
-what rs = mapM_ helper rs
+what rs = getWS >>= \ws ->
+  let pi  = 0
+      p   = (ws^.pcTbl)    ! pi
+      pis = (ws^.invTbl)   ! pi
+      pc  = (ws^.coinsTbl) ! pi
+      em  = (ws^.eqTbl)    ! pi
+      ri  = p^.rmId
+      r   = (ws^.rmTbl)    ! ri
+      ris = (ws^.invTbl)   ! ri
+      rc  = (ws^.coinsTbl) ! ri
+  in mapM_ (helper r) rs
+    where
+      helper r n = sequence_ [ whatCmd r n
+                             --, whatInv PCInv r
+                             --, whatInv PCEq r
+                             --, whatInv RmInv r
+                             , liftIO newLine ]
+
+
+
+whatCmd :: Rm -> T.Text -> MudStack ()
+whatCmd r n = maybe notFound found . findFullNameForAbbrev (T.toLower n) $ cs
   where
-    helper r = whatCmd >> whatInv PCInv r >> whatInv PCEq r >> whatInv RmInv r >> liftIO newLine
-      where
-        whatCmd  = (findFullNameForAbbrev (T.toLower r) <$> cs) >>= maybe notFound found
-        cs       = filter isPlaCmd <$> map cmdName <$> onWorldState $ \ws ->
-                       mkCmdListWithRmLinks_STM ws =<< getPCRmId_STM ws 0
-        isPlaCmd = (`notElem` [wizCmdChar, debugCmdChar]) . T.head
-        notFound = output $ dblQuote r <> " doesn't refer to any commands."
-        found cn = outputCon [ dblQuote r, " may refer to the ", dblQuote cn, " command." ]
+    cs       = filter isPlaCmd . map cmdName . mkCmdListWithRmLinks $ r
+    isPlaCmd = (`notElem` [wizCmdChar, debugCmdChar]) . T.head
+    notFound = output $ dblQuote n <> " doesn't refer to any commands." <> nlt
+    found cn = outputCon [ dblQuote n, " may refer to the ", dblQuote cn, " command." ]
 
 
+{-
 whatInv :: InvType -> T.Text -> MudStack ()
 whatInv it r = resolveName >>= \(is, gecrs, rcs) ->
     if not . null $ gecrs
