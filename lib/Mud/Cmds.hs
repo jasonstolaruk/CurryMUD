@@ -19,6 +19,7 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Arrow (first)
 import Control.Concurrent (forkIO, myThreadId)
+import Control.Concurrent.Async (asyncThreadId)
 import Control.Concurrent.STM (STM)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
@@ -26,7 +27,7 @@ import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad ((>=>), forever, forM_, guard, mplus, replicateM_, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (get)
+import Control.Monad.State (get, gets)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
@@ -36,6 +37,7 @@ import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
+import GHC.Conc (threadStatus, ThreadStatus(..))
 import System.Console.Readline (readline)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
@@ -97,6 +99,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
           , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
+          , Cmd { cmdName = prefixDebugCmd "sniff", action = debugSniff, cmdDesc = "Sniff out a dirty thread." }
 
           -- ==================================================
           -- Player commands:
@@ -1222,6 +1225,7 @@ debugBuffCheck [] = try buffCheckHelper >>= eitherRet (logAndDispIOEx "wizBuffCh
         td      <- liftIO getTemporaryDirectory
         (fn, h) <- liftIO . openTempFile td $ "temp"
         bm      <- liftIO . hGetBuffering $ h
+        -- TODO: What's with the extra whitespace?
         outputConIndent 2 [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, ".", nlt ]
         liftIO $ hClose  h >> removeFile fn
 debugBuffCheck rs = ignore rs >> debugBuffCheck []
@@ -1258,3 +1262,23 @@ debugLog rs = ignore rs >> debugLog []
 debugThrow :: Action
 debugThrow [] = liftIO . throwIO $ DivideByZero
 debugThrow rs = ignore rs >> debugThrow []
+
+
+-----
+
+
+debugSniff :: Action
+debugSniff [] = gets (^.nonWorldState.logServices) >>= \ls ->
+    let Just (nla, _) = ls^.noticeLog
+        Just (ela, _) = ls^.errorLog
+        nli           = asyncThreadId nla
+        eli           = asyncThreadId ela
+    in do
+        nls <- liftIO . threadStatus $ nli
+        els <- liftIO . threadStatus $ eli
+        divider
+        output $ "Notice log thread status: " <> showText nls
+        output $ "Error  log thread status: " <> showText els
+        divider
+        liftIO newLine
+debugSniff rs = ignore rs >> debugSniff []
