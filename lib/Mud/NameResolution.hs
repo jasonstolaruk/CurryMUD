@@ -265,12 +265,12 @@ procGecrMisPCInv gecrMis                          = patternMatchFail "procGecrMi
 
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisReady (Sorry n, Nothing) = Left . sorryMrol $ n
+procGecrMisReady (Sorry n, Nothing) = Left . sorryBadSlot $ n
 procGecrMisReady gecrMis            = procGecrMisPCInv gecrMis
 
 
-sorryMrol :: T.Text -> T.Text
-sorryMrol n
+sorryBadSlot :: T.Text -> T.Text
+sorryBadSlot n
   | slotChar `elem` n^.unpacked = "Please specify " <> mkSlotTxt "r" <> " or " <> mkSlotTxt "l" <> "." <> nlt <> ringHelp
   | otherwise                   = "You don't have " <> aOrAn n <> "."
 
