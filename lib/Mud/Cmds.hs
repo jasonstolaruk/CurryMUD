@@ -6,7 +6,7 @@ module Mud.Cmds (gameWrapper) where
 
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import Mud.MiscDataTypes
-import Mud.NameResolution hiding (blowUp, patternMatchFail) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
+import Mud.NameResolution
 import Mud.StateDataTypes
 import Mud.StateInIORefT
 import Mud.StateHelpers hiding (blowUp, patternMatchFail) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
@@ -795,7 +795,7 @@ ready rs = helper >>= output . (<> nlt)
             c  = (ws^.coinsTbl) ! 0
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws rs is mempty
-                   eiss                      = map procGecrMisPCInv . zip gecrs $ miss
+                   eiss                      = map procGecrMisReady . zip gecrs $ miss
                    msgs                      = if null rcs then "" else "You can't ready coins." <> nlt
                    (ws',  msgs')             = foldl' (helperReady 0) (ws, msgs) . zip eiss $ mrols
                in putTMVar t ws' >> return msgs'
