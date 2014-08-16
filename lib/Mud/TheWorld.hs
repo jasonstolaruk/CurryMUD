@@ -91,7 +91,7 @@ createWorld = do
     putRm iHole [iNeck1, iNeck2, iNeck3, iNeck4, iHelm] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. \
         \It's damp and smells of soil." 0 [RmLink "w" iVoid, RmLink "u" iCliff])
     putRm iVoid [iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." 0 [RmLink "e" iHole])
-    putRm iHut [iLongName1, iLongName2] (Coins (0, 5, 0)) (Rm "The hut" "The tiny hut is dusty and smells of mold." 0 [RmLink "out" iCliff])
+    putRm iHut [iLongName1, iLongName2, iPaper] (Coins (0, 5, 0)) (Rm "The hut" "The tiny hut is dusty and smells of mold." 0 [RmLink "out" iCliff])
 
     putObj iKewpie1 (Ent iKewpie1 "doll" "kewpie doll" "" "The red kewpie doll is disgustingly cute." 0) (Obj 1 1)
     putObj iKewpie2 (Ent iKewpie2 "doll" "kewpie doll" "" "The orange kewpie doll is disgustingly cute." 0) (Obj 1 1)
@@ -143,6 +143,11 @@ createWorld = do
 
     putObj iLongName1 (Ent iLongName1 "long" "item with a very long name, gosh this truly is a long name, it just goes on and on, no one knows when it might stop" "" "It's long." 0) (Obj 1 1)
     putObj iLongName2 (Ent iLongName2 "long" "item with a very long name, gosh this truly is a long name, it just goes on and on, no one knows when it might stop" "" "It's long." 0) (Obj 1 1)
+
+    putMob iPaper (Ent iPaper "paperboy" "paperboy" "" "The poor, innocent paperboy looks lost." 0) [] mempty (M.fromList [(RHandS, iKnife1), (LHandS, iKnife2)]) (Mob Male 10 10 10 10 10 10 25 RHand)
+
+    putWpn iKnife1 (Ent iKnife1 "knife" "pocket knife" "pocket knives" "This small utility knife could be useful in a pinch." 0) (Obj 1 1) (Wpn OneHanded 1 5)
+    putWpn iKnife2 (Ent iKnife2 "knife" "pocket knife" "pocket knives" "This small utility knife could be useful in a pinch." 0) (Obj 1 1) (Wpn OneHanded 1 5)
 
 
 sortAllInvs :: MudStack ()

@@ -346,6 +346,19 @@ procGecrMisPCEq_ _ (Sorry n,               Nothing) = outputCon [ "You don't hav
 procGecrMisPCEq_ _ gecrMis                          = patternMatchFail "procGecrMisPCEq_" [ showText gecrMis ]
 
 
+procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisPCEq (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
+procGecrMisPCEq (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't have " <> aOrAn n <> " among your readied equipment." <> nlt
+procGecrMisPCEq (Mult _ n Nothing  _,   Nothing) = Left $ "You don't have any " <> n <> "s among your readied equipment."  <> nlt
+procGecrMisPCEq (Mult _ _ (Just _) _,   Just is) = Right is
+procGecrMisPCEq (Indexed _ n (Left ""), Nothing) = Left $ "You don't have any " <> n <> "s among your readied equipment."  <> nlt
+procGecrMisPCEq (Indexed x _ (Left p),  Nothing) = Left $ "You don't have " <> showText x <> " " <> p <> " among your readied equipment." <> nlt
+procGecrMisPCEq (Indexed _ _ (Right _), Just is) = Right is
+procGecrMisPCEq (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
+procGecrMisPCEq (Sorry n,               Nothing) = Left $ "You don't have " <> aOrAn n <> " among your readied equipment." <> nlt
+procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
+
+
 -- ==================================================
 -- Processing "ReconciledCoins":
 

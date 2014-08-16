@@ -82,3 +82,9 @@ iHut = 38 :: Int
 iLongName1 = 39 :: Int
 
 iLongName2 = 40 :: Int
+
+iPaper = 41 :: Int
+
+iKnife1 = 42 :: Int
+
+iKnife2 = 43 :: Int

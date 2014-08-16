@@ -47,7 +47,7 @@ import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
-import qualified Data.Map.Lazy as M (elems, null, toList)
+import qualified Data.Map.Lazy as M (elems, filter, null, toList)
 import qualified Data.Text as T
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -126,7 +126,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
           , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
           , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
-          --, Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
+          , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
           , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
           , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." } ]
           --, Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
@@ -380,7 +380,7 @@ look rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
       else output $ "You don't see anything here to look at." <> nlt <> nlt
 
 
--- TODO: Consider implementing a color scheme for lists such as these such that the least significant characters of each name are highlighted or bolded somehow.
+-- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
 dispRmInvCoins :: WorldState -> Id -> MudStack ()
 dispRmInvCoins ws i = let is = (ws^.invTbl)   ! i
                           c  = (ws^.coinsTbl) ! i
@@ -401,7 +401,7 @@ mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
 
 descEnts :: WorldState -> Inv -> MudStack ()
 descEnts ws is = let boths = [ (i, (ws^.entTbl) ! i) | i <- is ]
-                 in mapM_ (\both -> descEnt ws both >> liftIO newLine) boths
+                 in mapM_ (descEnt ws) boths
 
 
 descEnt :: WorldState -> (Id, Ent) -> MudStack ()
@@ -420,7 +420,7 @@ dispInvCoins ws i e = let is       = (ws^.invTbl)   ! i
                       in case (hasInv, hasCoins) of
                         (False, False) -> if i == 0
                                             then output dudeYourHandsAreEmpty
-                                            else outputCon [ "The ", e^.sing, " is empty.", nlt ] -- TODO: How do the linebreaks look?
+                                            else outputCon [ "The ", e^.sing, " is empty." ]
                         (True,  False) -> header >> dispEntsInInv ws is
                         (False, True ) -> header >> summarizeCoins c
                         (True,  True ) -> header >> dispEntsInInv ws is >> summarizeCoins c
@@ -510,10 +510,9 @@ equip rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
            in do
                mapM_ (procGecrMisPCEq_ (descEnts ws)) . zip gecrs $ miss
                unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt <> nlt)
-      else dudeYou'reNaked
+      else output $ dudeYou'reNaked <> nlt
 
 
--- TODO: Test to make sure that mob eq looks good.
 dispEq :: WorldState -> Id -> Ent -> MudStack ()
 dispEq ws i e = let em   = (ws^.eqTbl) ! i
                     desc = map mkDesc . mkSlotNameIdList . M.toList $ em
@@ -525,15 +524,15 @@ dispEq ws i e = let em   = (ws^.eqTbl) ! i
                            e'       = (ws^.entTbl) ! i'
                        in T.concat [ sn', e'^.sing, " ", e'^.name.to bracketQuote ]
     none
-      | i == 0    = dudeYou'reNaked
+      | i == 0    = output $ dudeYou'reNaked <> nlt
       | otherwise = output $ "The " <> e^.sing <> " doesn't have anything readied." -- TODO: What if it's another player?
     header
       | i == 0    = output "You have readied the following equipment:"
       | otherwise = output $ "The " <> e^.sing <> " has readied the following equipment:" -- TODO: What if it's another player?
 
 
-dudeYou'reNaked :: MudStack ()
-dudeYou'reNaked = output $ "You don't have anything readied. You're naked!" <> nlt <> nlt
+dudeYou'reNaked :: T.Text
+dudeYou'reNaked = "You don't have anything readied. You're naked!" <> nlt
 
 
 -----
@@ -571,7 +570,7 @@ type ToId   = Id
 
 
 helperGetDropEitherInv :: GetOrDrop -> FromId -> ToId -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
-helperGetDropEitherInv god fi ti (ws, msgs) eis = case eis of
+helperGetDropEitherInv god fi ti (ws, msgs) = \case
   Left  msg -> (ws, msgs <> msg)
   Right is  -> let fis = (ws^.invTbl) ! fi
                    tis = (ws^.invTbl) ! ti
@@ -591,7 +590,7 @@ mkGetDropInvDesc ws god is = T.concat . map helper . mkNameCountBothList ws $ is
 
 
 helperGetDropEitherCoins :: GetOrDrop -> FromId -> ToId -> (WorldState, T.Text) -> Either T.Text Coins -> (WorldState, T.Text)
-helperGetDropEitherCoins god fi ti (ws, msgs) ec = case ec of
+helperGetDropEitherCoins god fi ti (ws, msgs) = \case
   Left  msg -> (ws, msgs <> msg)
   Right c   -> let fc  = (ws^.coinsTbl) ! fi
                    tc  = (ws^.coinsTbl) ! ti
@@ -690,7 +689,7 @@ type ToEnt = Ent
 
 
 helperPutRemEitherInv :: PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
-helperPutRemEitherInv por fi ti te (ws, msgs) eis = case eis of
+helperPutRemEitherInv por fi ti te (ws, msgs) = \case
   Left  msg -> (ws, msgs <> msg)
   Right is  -> let (is', msgs') = if ti `elem` is
                                     then (filter (/= ti) is, msgs <> "You can't put the " <> te^.sing <> " inside itself." <> nlt)
@@ -715,7 +714,7 @@ mkPutRemInvDesc ws por is te = T.concat . map helper . mkNameCountBothList ws $ 
 
 
 helperPutRemEitherCoins :: PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text) -> Either T.Text Coins -> (WorldState, T.Text)
-helperPutRemEitherCoins por fi ti te (ws, msgs) ec = case ec of
+helperPutRemEitherCoins por fi ti te (ws, msgs) = \case
   Left  msg -> (ws, msgs <> msg)
   Right c   -> let fc  = (ws^.coinsTbl) ! fi
                    tc  = (ws^.coinsTbl) ! ti
@@ -795,7 +794,7 @@ ready rs = helper >>= output . (<> nlt)
         let is = (ws^.invTbl)   ! 0
             c  = (ws^.coinsTbl) ! 0
         in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws rs is c
+          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws rs is mempty
                    eiss                      = map procGecrMisPCInv . zip gecrs $ miss
                    msgs                      = if null rcs then "" else "You can't ready coins." <> nlt
                    (ws',  msgs')             = foldl' (helperReady 0) (ws, msgs) . zip eiss $ mrols
@@ -1009,35 +1008,52 @@ getDesigWpnSlot ws pi e em rol
 -----
 
 
-{-
 unready :: Action
 unready [] = advise ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
-unready rs = hasEq 0 >>= \he -> if not he then dudeYou'reNaked else do
-    is <- getEq 0
-    (gecrs, miss, rcs) <- resolveEntCoinNames rs (is, mempty)
-    mapM_ (procGecrMisPCEq $ \is' -> sequence_ [shuffleInvUnready is', descUnready is']) . zip gecrs $ miss
-    unless (null rcs) $ output "You can't unready coins."
-    liftIO newLine
-
-
-descUnready :: Inv -> MudStack ()
-descUnready is = mapM_ descUnreadyHelper =<< mkIdCountBothList is
+unready rs = helper >>= output . (<> nlt)
   where
-    descUnreadyHelper (i, c, b@(s, _)) = verb i >>= \v ->
-        outputCon $ if c == 1
-          then [ "You ", v, "the ", s, "." ]
-          else [ "You ", v, showText c, " ", mkPlurFromBoth b, "." ]
-    verb i = getEnt i >>= getEntType >>= \case
-      ClothType -> getCloth i >>= \_ -> return unwearGenericVerb -- TODO
-      WpnType   -> return "stop wielding "
-      _         -> undefined -- TODO
-    unwearGenericVerb = "take off "
+    helper = onWS $ \(t, ws) ->
+        let em = (ws^.eqTbl) ! 0
+            is = M.elems em
+        in if not . null $ is
+          then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs is mempty
+                   eiss               = map procGecrMisPCEq . zip gecrs $ miss
+                   msgs               = if null rcs then "" else "You can't unready coins." <> nlt
+                   (ws',  msgs')      = foldl' (helperUnready 0) (ws, msgs) eiss
+               in putTMVar t ws' >> return msgs'
+          else putTMVar t ws >> return dudeYou'reNaked
 
 
-mkIdCountBothList :: Inv -> MudStack [(Id, Int, BothGramNos)]
-mkIdCountBothList is = getEntBothGramNosInInv is >>= \ebgns ->
-    let cs = mkCountList ebgns
-    in return (nubBy equalCountsAndBoths . zip3 is cs $ ebgns)
+helperUnready :: Id -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
+helperUnready pi (ws, msgs) = \case
+  Left  msg -> (ws, msgs <> msg)
+  Right is  -> let em  = (ws^.eqTbl)  ! pi
+                   pis = (ws^.invTbl) ! pi
+                   ws' = ws & eqTbl.at  pi ?~ M.filter (`notElem` is) em
+                            & invTbl.at pi ?~ (sortInv ws . (++) pis $ is)
+                   msg = mkUnreadyDesc ws' is
+               in (ws', msgs <> msg)
+
+
+mkUnreadyDesc :: WorldState -> Inv -> T.Text
+mkUnreadyDesc ws is = T.concat [ helper icb | icb <- mkIdCountBothList ws is ]
+  where
+    helper (i, c, b@(s, _)) = let v = verb i in if c == 1
+      then "You " <> v <> " the " <> s <> "." <> nlt
+      else "You " <> v <> " " <> showText c <> " " <> mkPlurFromBoth b <> "." <> nlt
+    verb i = let t = (ws^.typeTbl) ! i
+             in case t of
+               ClothType -> unwearGenericVerb -- TODO
+               WpnType   -> "stop wielding"
+               _         -> undefined -- TODO
+    unwearGenericVerb = "take off"
+
+
+mkIdCountBothList :: WorldState -> Inv -> [(Id, Int, BothGramNos)]
+mkIdCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
+                              ebgns = [ getEntBothGramNos e | e <- es ]
+                              cs    = mkCountList ebgns
+                          in nubBy equalCountsAndBoths . zip3 is cs $ ebgns
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
 
@@ -1045,6 +1061,7 @@ mkIdCountBothList is = getEntBothGramNosInInv is >>= \ebgns ->
 -----
 
 
+{-
 what :: Action
 what [] = advise ["what"] $ "Please specify one or more abbreviations to disambiguate, as in " <> dblQuote "what up" <> "."
 what rs = mapM_ helper rs
