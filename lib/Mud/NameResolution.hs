@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
--- TODO: -Werror
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.NameResolution ( ReconciledCoins
@@ -22,13 +21,11 @@ module Mud.NameResolution ( ReconciledCoins
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
-import Mud.StateHelpers hiding (blowUp, patternMatchFail) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
+import Mud.StateHelpers
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
-import Control.Applicative ((<$>))
-import Control.Concurrent.STM (STM)
 import Control.Lens (_1, _2, dropping, folded, over, to)
 import Control.Lens.Operators ((^.), (^..))
 import Control.Monad (unless)

@@ -11,7 +11,7 @@ module Mud.Logging ( closeLogs
                    , logNotice) where
 
 import Mud.StateDataTypes
-import Mud.StateHelpers hiding (blowUp) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
+import Mud.StateHelpers
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp)
 import qualified Mud.Util as U (blowUp)

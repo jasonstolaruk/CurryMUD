@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
--- TODO: -Werror
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.Cmds (gameWrapper) where
@@ -9,27 +8,26 @@ import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
 import Mud.StateInIORefT
-import Mud.StateHelpers hiding (blowUp, patternMatchFail) -- TODO: Delete "hiding" after you provide an export list for "Mud.StateHelpers".
+import Mud.StateHelpers
 import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Arrow (first)
 import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.Async (asyncThreadId)
 import Control.Concurrent.STM (STM)
+import Control.Concurrent.STM.TMVar (putTMVar, TMVar)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
 import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
-import Control.Monad ((>=>), forever, forM_, guard, mplus, replicateM_, unless, void, when)
+import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
 import Data.Char (isSpace, toUpper)
-import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
 import Data.Maybe (fromJust, isNothing)
@@ -37,7 +35,8 @@ import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
-import GHC.Conc (threadStatus, ThreadStatus(..))
+import GHC.Conc (threadStatus)
+import Prelude hiding (pi)
 import System.Console.Readline (readline)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
@@ -109,7 +108,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
-          , Cmd { cmdName = "exits", action = exits True, cmdDesc = "Display obvious exits." }
+          , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
           , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
           , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
@@ -338,7 +337,7 @@ tryMove dir = let dir' = T.toLower dir
                       in case findExit r dir' of
                         Nothing -> putTMVar t ws >> return (Left . sorry $ dir')
                         Just i  -> let p' = p & rmId .~ i
-                                   in (putTMVar t $ ws & pcTbl.at 0 ?~ p') >> return (Right ())
+                                   in putTMVar t (ws & pcTbl.at 0 ?~ p') >> return (Right ())
     sorry dir'  = if dir' `elem` stdLinkNames
                     then "You can't go that way."
                     else dblQuote dir <> " is not a valid direction."
@@ -462,12 +461,12 @@ descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
 -----
 
 
-exits :: ShouldNewLine -> Action
-exits snl [] = getWS >>= \ws ->
+exits :: Action
+exits [] = getWS >>= \ws ->
     let p = (ws^.pcTbl) ! 0
         r = (ws^.rmTbl) ! (p^.rmId)
-    in summarizeExits r >> maybeNewLine snl
-exits snl rs = ignore rs >> exits snl []
+    in summarizeExits r >> liftIO newLine
+exits rs = ignore rs >> exits []
 
 
 summarizeExits :: Rm -> MudStack ()
@@ -514,9 +513,9 @@ equip rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
 
 
 dispEq :: WorldState -> Id -> Ent -> MudStack ()
-dispEq ws i e = let em   = (ws^.eqTbl) ! i
-                    desc = map mkDesc . mkSlotNameIdList . M.toList $ em
-                in if null desc then none else header >> forM_ desc (outputIndent 15) >> liftIO newLine
+dispEq ws i e = let em    = (ws^.eqTbl) ! i
+                    descs = map mkDesc . mkSlotNameIdList . M.toList $ em
+                in if null descs then none else header >> forM_ descs (outputIndent 15) >> liftIO newLine
   where
     mkSlotNameIdList = map (first pp)
     mkDesc (sn, i')  = let sn'      = parensPad 15 noFinger
@@ -549,7 +548,7 @@ getAction rs = helper >>= output . (<> nlt)
             rc  = (ws^.coinsTbl) ! i
         in if (not . null $ ris) || (rc /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs ris rc
-                   eiss               = map procGecrMisRm . zip gecrs $ miss
+                   eiss               = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                = map procReconciledCoinsRm rcs
                    (ws',  msgs)       = foldl' (helperGetDropEitherInv   Get i 0) (ws, "")    eiss
                    (ws'', msgs')      = foldl' (helperGetDropEitherCoins Get i 0) (ws', msgs) ecs
@@ -574,7 +573,7 @@ helperGetDropEitherInv god fi ti (ws, msgs) = \case
   Left  msg -> (ws, msgs <> msg)
   Right is  -> let fis = (ws^.invTbl) ! fi
                    tis = (ws^.invTbl) ! ti
-                   ws' = ws & invTbl.at fi ?~ (deleteFirstOfEach is fis)
+                   ws' = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
                             & invTbl.at ti ?~ (sortInv ws . (++) tis $ is)
                    msg = mkGetDropInvDesc ws' god is
                in (ws', msgs <> msg)
@@ -626,7 +625,7 @@ dropAction rs = helper >>= output . (<> nlt)
             i   = p^.rmId
         in if (not . null $ pis) || (pc /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs pis pc
-                   eiss               = map procGecrMisPCInv . zip gecrs $ miss
+                   eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                = map procReconciledCoinsPCInv rcs
                    (ws',  msgs)       = foldl' (helperGetDropEitherInv   Drop 0 i) (ws, "")    eiss
                    (ws'', msgs')      = foldl' (helperGetDropEitherCoins Drop 0 i) (ws', msgs) ecs
@@ -677,7 +676,7 @@ shufflePut (t, ws) cn rs is c pis pc f = let (gecrs, miss, rcs) = resolveEntCoin
                                                             in if t' /= ConType
                                                               then putTMVar t ws >> return ("The " <> e^.sing <> " isn't a container." <> nlt)
                                                               else let (gecrs', miss', rcs') = resolveEntCoinNames ws rs pis pc
-                                                                       eiss                  = map procGecrMisPCInv . zip gecrs' $ miss'
+                                                                       eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
                                                                        ecs                   = map procReconciledCoinsPCInv rcs'
                                                                        (ws',  msgs)          = foldl' (helperPutRemEitherInv   Put 0 i e) (ws, "")    eiss
                                                                        (ws'', msgs')         = foldl' (helperPutRemEitherCoins Put 0 i e) (ws', msgs) ecs
@@ -696,7 +695,7 @@ helperPutRemEitherInv por fi ti te (ws, msgs) = \case
                                     else (is, msgs)
                    fis = (ws^.invTbl) ! fi
                    tis = (ws^.invTbl) ! ti
-                   ws' = ws & invTbl.at fi ?~ (deleteFirstOfEach is' fis)
+                   ws' = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
                             & invTbl.at ti ?~ (sortInv ws . (++) tis $ is')
                    msg = mkPutRemInvDesc ws' por is' te
                in (ws', msgs' <> msg)
@@ -795,7 +794,7 @@ ready rs = helper >>= output . (<> nlt)
             c  = (ws^.coinsTbl) ! 0
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws rs is mempty
-                   eiss                      = map procGecrMisReady . zip gecrs $ miss
+                   eiss                      = zipWith (curry procGecrMisReady) gecrs miss
                    msgs                      = if null rcs then "" else "You can't ready coins." <> nlt
                    (ws',  msgs')             = foldl' (helperReady 0) (ws, msgs) . zip eiss $ mrols
                in putTMVar t ws' >> return msgs'
@@ -819,7 +818,7 @@ readyDispatcher pi mrol (ws, msgs) i = let e = (ws^.entTbl)  ! i
 
 moveReadiedItem :: (WorldState, T.Text) -> Id -> EqMap -> Slot -> Id -> T.Text -> (WorldState, T.Text)
 moveReadiedItem (ws, msgs) pi em s i msg = let pis = (ws^.invTbl) ! pi
-                                               ws' = ws & invTbl.at pi ?~ (filter (/= i) pis)
+                                               ws' = ws & invTbl.at pi ?~ filter (/= i) pis
                                                         & eqTbl.at  pi ?~ (em & at s ?~ i)
                                            in (ws', msgs <> msg)
 
@@ -890,7 +889,7 @@ sorryFullClothSlotsOneSide s = "You can't wear any more on your " <> pp s <> "."
 readyCloth :: Id -> Maybe RightOrLeft -> (WorldState, T.Text) -> Id -> Ent -> (WorldState, T.Text)
 readyCloth pi mrol (ws, msgs) i e = let em = (ws^.eqTbl)    ! pi
                                         c  = (ws^.clothTbl) ! i
-                                    in case maybe (getAvailClothSlot ws pi c em) (getDesigClothSlot ws pi e c em) mrol of
+                                    in case maybe (getAvailClothSlot ws pi c em) (getDesigClothSlot ws e c em) mrol of
                                       Left  msg -> (ws, msgs <> msg)
                                       Right s   -> moveReadiedItem (ws, msgs) pi em s i . mkReadyMsg s $ c
   where
@@ -933,8 +932,8 @@ getAvailClothSlot ws pi c em = let m = (ws^.mobTbl) ! pi
                                                          _      -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText g ]
 
 
-getDesigClothSlot :: WorldState -> Id -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigClothSlot ws pi e c em rol
+getDesigClothSlot :: WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigClothSlot ws e c em rol
   | c `elem` [NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC] = Left sorryCantWearThere
   | isRingRol rol && c /= FingerC           = Left sorryCantWearThere
   | c == FingerC && (not . isRingRol $ rol) = Left ringHelp
@@ -967,7 +966,7 @@ readyWpn pi mrol (ws, msgs) i e = let em  = (ws^.eqTbl)  ! pi
                                       sub = w^.wpnSub
                                   in if not . isSlotAvail em $ BothHandsS
                                     then (ws, msgs <> "You're already wielding a two-handed weapon." <> nlt)
-                                    else case maybe (getAvailWpnSlot ws pi em) (getDesigWpnSlot ws pi e em) mrol of
+                                    else case maybe (getAvailWpnSlot ws pi em) (getDesigWpnSlot ws e em) mrol of
                                       Left  msg -> (ws, msgs <> msg)
                                       Right s   -> case sub of
                                                      OneHanded -> moveReadiedItem (ws, msgs) pi em s i $ "You wield the " <> e^.sing <> " with your " <> pp s <> "." <> nlt
@@ -988,8 +987,8 @@ getAvailWpnSlot ws pi em = let m = (ws^.mobTbl) ! pi
                                  _     -> patternMatchFail "getAvailWpnSlot getSlotForHand" [ showText h ]
 
 
-getDesigWpnSlot :: WorldState -> Id -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigWpnSlot ws pi e em rol
+getDesigWpnSlot :: WorldState -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigWpnSlot ws e em rol
   | isRingRol rol = Left sorryNotRing
   | otherwise     = maybe (Right desigSlot)
                           (\i -> let e' = (ws^.entTbl) ! i in Left . sorry $ e')
@@ -1017,7 +1016,7 @@ unready rs = helper >>= output . (<> nlt)
             is = M.elems em
         in if not . null $ is
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs is mempty
-                   eiss               = map procGecrMisPCEq . zip gecrs $ miss
+                   eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
                    msgs               = if null rcs then "" else "You can't unready coins." <> nlt
                    (ws',  msgs')      = foldl' (helperUnready 0) (ws, msgs) eiss
                in putTMVar t ws' >> return msgs'
@@ -1066,21 +1065,14 @@ what [] = advise ["what"] $ "Please specify one or more abbreviations to disambi
 what rs = getWS >>= \ws ->
   let pi  = 0
       p   = (ws^.pcTbl)    ! pi
-      pis = (ws^.invTbl)   ! pi
-      pc  = (ws^.coinsTbl) ! pi
-      em  = (ws^.eqTbl)    ! pi
       ri  = p^.rmId
       r   = (ws^.rmTbl)    ! ri
-      ris = (ws^.invTbl)   ! ri
-      rc  = (ws^.coinsTbl) ! ri
-  in mapM_ (helper r) rs
-    where
-      helper r n = sequence_ [ whatCmd r n
-                             --, whatInv PCInv r
-                             --, whatInv PCEq r
-                             --, whatInv RmInv r
-                             , liftIO newLine ]
-
+      helper n = sequence_ [ whatCmd r n
+                           , whatInv ws pi PCInv n
+                           , whatInv ws pi PCEq  n
+                           , whatInv ws pi RmInv n
+                           , liftIO newLine ]
+  in mapM_ helper rs
 
 
 whatCmd :: Rm -> T.Text -> MudStack ()
@@ -1092,24 +1084,24 @@ whatCmd r n = maybe notFound found . findFullNameForAbbrev (T.toLower n) $ cs
     found cn = outputCon [ dblQuote n, " may refer to the ", dblQuote cn, " command." ]
 
 
-{-
-whatInv :: InvType -> T.Text -> MudStack ()
-whatInv it r = resolveName >>= \(is, gecrs, rcs) ->
-    if not . null $ gecrs
-      then whatInvEnts it r (head gecrs) is
-      else mapM_ (whatInvCoins it r) rcs
+whatInv :: WorldState -> Id -> InvType -> T.Text -> MudStack ()
+whatInv ws pi it n = let (is, gecrs, rcs) = resolveName
+                     in if not . null $ gecrs
+                       then whatInvEnts ws it n (head gecrs) is
+                       else mapM_ (whatInvCoins it n) rcs
   where
-    resolveName = onWorldState $ \ws -> do
-        ic@(is, _)      <- getLocInvCoins_STM ws it
-        (gecrs, _, rcs) <- resolveEntCoinNames_STM ws [r] ic
-        return (is, gecrs, rcs)
-    getLocInvCoins_STM ws = \case PCInv -> getInvCoins_STM     ws 0
-                                  PCEq  -> getEq_STM           ws 0 >>= \is -> return (is, mempty)
-                                  RmInv -> getPCRmInvCoins_STM ws 0
+    resolveName = let (is, c)         = getLocInvCoins
+                      (gecrs, _, rcs) = resolveEntCoinNames ws [n] is c
+                  in (is, gecrs, rcs)
+    getLocInvCoins = case it of PCInv -> ((ws^.invTbl) ! pi,           (ws^.coinsTbl) ! pi)
+                                PCEq  -> (M.elems $ (ws^.eqTbl)  ! pi, mempty)
+                                RmInv -> ((ws^.invTbl) ! ri,           (ws^.coinsTbl) ! ri)
+    p  = (ws^.pcTbl) ! pi
+    ri = p^.rmId
 
 
-whatInvEnts :: InvType -> T.Text -> GetEntsCoinsRes -> Inv -> MudStack ()
-whatInvEnts it r gecr is = case gecr of
+whatInvEnts :: WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> MudStack ()
+whatInvEnts ws it r gecr is = case gecr of
   Mult _ n (Just es) _ | n == acp  -> outputCon [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]
                        | otherwise -> let e   = head es
                                           len = length es
@@ -1118,8 +1110,8 @@ whatInvEnts it r gecr is = case gecr of
                                                  h      = head ebgns
                                                  target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
                                              in outputCon [ dblQuote r, " may refer to the ", showText len, " ", target, " ", getLocTxtForInvType it, "." ]
-                                        else getEntNamesInInv is >>= \ens ->
-                                            outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, " ", getLocTxtForInvType it, "." ]
+                                        else let ens = [ let e' = (ws^.entTbl) ! i in e'^.name | i <- is ]
+                                             in outputCon [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, " ", getLocTxtForInvType it, "." ]
   Indexed x _ (Right e) -> outputCon [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
   _                     -> outputCon [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
   where
@@ -1146,8 +1138,8 @@ whatInvCoins it r rc
     Right (SomeOf c) -> outputCon [ dblQuote r, " refers to ", mkTxtForCoinsWithAmt c, " ", getLocTxtForInvType it, "." ]
     _                -> patternMatchFail "whatInvCoins" [ showText rc ]
   where
-    supplementNone cn      = \case PCInv -> "(you don't have any " <> cn <> ")"
-                                   RmInv -> "(there aren't any "   <> cn <> " here)"
+    supplementNone cn      = \case PCInv -> "(you don't have any "       <> cn <> ")"
+                                   RmInv -> "(there aren't any "         <> cn <> " here)"
                                    PCEq  -> oops "supplementNone"
     supplementNotEnough cn = \case PCInv -> "(you don't have that many " <> cn <> ")"
                                    RmInv -> "(there aren't that many "   <> cn <> " here)"
@@ -1166,7 +1158,6 @@ whatInvCoins it r rc
       | gol == 1  = "1 gold piece"
       | gol /= 0  = showText gol <> " gold pieces"
       | otherwise = blowUp "whatInvCoins mkTxtForCoinsWithAmt" "attempted to make text for empty coins" [ showText c ]
--}
 
 
 -----

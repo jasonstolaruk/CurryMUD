@@ -3,7 +3,6 @@
 
 module Mud.Util ( adjustIndent
                 , aOrAn
-                , appendNewline
                 , blowUp
                 , bracketPad
                 , bracketQuote
@@ -19,7 +18,6 @@ module Mud.Util ( adjustIndent
                 , isVowel
                 , maybeRet
                 , maybeVoid
-                , maybeNewLine
                 , mkCountList
                 , mkOrdinal
                 , newLine
@@ -28,7 +26,6 @@ module Mud.Util ( adjustIndent
                 , parensQuote
                 , patternMatchFail
                 , quoteWithAndPad
-                , ShouldNewLine
                 , showText
                 , singleQuote
                 , unquote
@@ -39,12 +36,10 @@ module Mud.Util ( adjustIndent
                 , xformLeading ) where
 
 import Mud.TopLvlDefs
-import Mud.StateDataTypes
 
 import Control.Lens (_1, _2, both, folded, over, to)
 import Control.Lens.Operators ((^.), (^..))
-import Control.Monad (guard, when)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad (guard)
 import Data.Char (isDigit, isSpace)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
@@ -74,14 +69,6 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 
 newLine :: IO ()
 newLine = putChar '\n'
-
-
-type ShouldNewLine = Bool
-
-
--- TODO: Needed?
-maybeNewLine :: ShouldNewLine -> MudStack ()
-maybeNewLine snl = when snl . liftIO $ newLine
 
 
 dumpFileNoWrapping :: FilePath -> IO ()
@@ -250,11 +237,6 @@ padOrTrunc x t
 
 -- ==================================================
 -- Misc.:
-
-
--- TODO: Am I going to use this?
-appendNewline :: T.Text -> T.Text
-appendNewline = (<>) nlt
 
 
 showText :: (Show a) => a -> T.Text

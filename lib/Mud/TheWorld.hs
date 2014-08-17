@@ -14,8 +14,6 @@ import Data.Monoid (mempty)
 import qualified Data.IntMap.Lazy as IM (map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
-{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-} -- TODO: Needed?
-
 
 logNotice :: String -> String -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld"
