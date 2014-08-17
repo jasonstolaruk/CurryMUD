@@ -52,6 +52,18 @@ import qualified Data.Text as T
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
+-- TODO: Here's the plan:
+-- 1. Go into server mode. Accept incoming connections.
+-- 2. Implement client-based routing of output.
+-- 3. Refactor the output helper functions so that they all expect a list of text.
+-- 4. Refactor the output helper functions so that line breaks are handled consistently.
+-- 5. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
+-- a. Code reduction.
+-- b. Consistency in binding names.
+-- c. Sylistic issues.
+-- ... etc.
+
+
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.Cmds"
 
