@@ -18,9 +18,10 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
 import Control.Concurrent (forkFinally, forkIO, myThreadId)
-import Control.Concurrent.Async (asyncThreadId)
-import Control.Concurrent.STM (STM)
+import Control.Concurrent.Async (asyncThreadId, race_)
+import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, TMVar)
+import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
 import Control.Lens (_1, at, both, folded, over, to)
@@ -30,8 +31,8 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
 import Data.Char (isSpace, toUpper)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
-import Data.Maybe (fromJust, isNothing)
+import Data.List (delete, find, foldl', intercalate, nub, nubBy, sort)
+import Data.Maybe (isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
@@ -39,11 +40,10 @@ import Data.Time.Format (formatTime)
 import GHC.Conc (threadStatus)
 import Network (accept, listenOn, PortID(..))
 import Prelude hiding (pi)
-import System.Console.Readline (readline)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.Exit (ExitCode(ExitSuccess), exitFailure, exitSuccess)
-import System.IO (BufferMode(..), Handle, hClose, hGetBuffering, hPutStrLn, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
+import System.IO (BufferMode(..), Handle, hClose, hGetBuffering, hGetLine, hPutStr, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
 import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
@@ -63,8 +63,7 @@ import qualified Data.Text as T
 -- 6. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
 -- a. Code reduction.
 -- b. Consistency in binding names.
--- c. Sylistic issues.
--- ... etc.
+-- c. Sylistic issues. Use <> instead of ++ where applicable, etc.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -165,10 +164,10 @@ serverWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
         initLogging
         logNotice "serverWrapper" "server started"
         initWorld
-        logNotice "serverWrapper" $ "listening for incoming connections on port " <> show port
         listen
 
---sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
+
+-- TODO: sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
 
 
 topLvlExHandler :: SomeException -> MudStack ()
@@ -179,20 +178,37 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO ex
                       Nothing          -> oops "exception caught by the top level handler; exiting gracefully"
 
 
-listen :: MudStack ()
+listen :: MudStack () -- TODO: Consider using withSocketsDo.
 listen = do
+    logNotice "listen" $ "listening for incoming connections on port " <> show port
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
     forever $ do
         (h, host, port') <- liftIO . accept $ sock
-        logNotice "listen" $ "connected to " <> show host <> " on port " <> show port'
-        liftIO . forkFinally (talk h) $ (\_ -> hClose h)
+        logNotice "listen" $ "connected to " <> show host <> " on local port " <> show port'
+        s <- get
+        liftIO $ forkFinally (runStateInIORefT (talk h) s) (\_ -> hClose h)
 
 
-talk :: Handle -> IO ()
+talk :: Handle -> MudStack ()
 talk h = do
-    hSetNewlineMode h universalNewlineMode
-    hSetBuffering h LineBuffering
-    hPutStrLn h "HELLO!"
+    liftIO . hSetNewlineMode h $ universalNewlineMode
+    liftIO . hSetBuffering   h $ LineBuffering
+    mq <- liftIO newTQueueIO
+    let c = Client h mq
+    s <- get
+    liftIO $ race_ (runStateInIORefT (server c) s) (runStateInIORefT (receive c) s)
+
+
+server :: Client -> MudStack ()
+server c@(Client h mq) = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
+  FromServer msg -> liftIO . hPutStr h $ msg^.unpacked
+  FromClient msg -> let msg' = T.strip msg
+                    in if T.null msg' then return () else handleInp msg'
+
+
+receive :: Client -> MudStack ()
+receive (Client h mq) = forever $ (liftIO . hGetLine $ h) >>= \msg ->
+    liftIO . atomically . writeTQueue mq . FromClient $ msg^.packed
 
 
 dispTitle :: MudStack ()
@@ -213,12 +229,12 @@ dispTitleExHandler e = f "dispTitle" e
            | otherwise             -> logIOExRethrow
 
 
--- TODO: Rename?
--- TODO: When you get rid of readline, edit your .cabal file and delete install-readline.sh.
+{-
 game :: MudStack ()
 game = (liftIO . readline $ "> ") >>= \ms ->
     let t = ms^.to fromJust.packed.to T.strip
     in unless (T.null t) . handleInp $ t
+-}
 
 
 handleInp :: T.Text -> MudStack ()

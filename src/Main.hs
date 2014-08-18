@@ -40,7 +40,7 @@ welcome :: IO ()
 welcome = do
     un <- getEnv "USER"
     mn <- whatsMyName
-    T.putStrLn . T.concat $ [ "Hello, ", un^.packed, ". Welcome to ", dblQuote mn, " ver ", ver, "." ]
+    T.putStrLn . T.concat $ [ "Hello, ", un^.packed, ". Welcome to ", dblQuote mn, " ver ", ver, ".", nlt ]
   where
     whatsMyName = getProgName >>= \mn ->
         return (if mn == "<interactive>" then "Y U NO COMPILE ME?" else mn^.packed)
@@ -50,4 +50,4 @@ initMudState :: IO MudState
 initMudState = newTMVarIO ws >>= \wsTMVar -> return (MudState wsTMVar nws)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
-    nws = NonWorldState (LogServices Nothing Nothing) IM.empty
+    nws = NonWorldState (LogServices Nothing Nothing) IM.empty IM.empty
