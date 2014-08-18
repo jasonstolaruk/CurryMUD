@@ -33,14 +33,14 @@ main :: IO ()
 main = do
     setCurrentDirectory mudDir
     welcome
-    initMudState >>= void . runStateInIORefT gameWrapper
+    initMudState >>= void . runStateInIORefT serverWrapper
 
 
 welcome :: IO ()
 welcome = do
     un <- getEnv "USER"
     mn <- whatsMyName
-    T.putStrLn . T.concat $ [ "\nHello, ", un^.packed, ". Welcome to ", dblQuote mn, " ver ", ver, ".\n" ]
+    T.putStrLn . T.concat $ [ "Hello, ", un^.packed, ". Welcome to ", dblQuote mn, " ver ", ver, "." ]
   where
     whatsMyName = getProgName >>= \mn ->
         return (if mn == "<interactive>" then "Y U NO COMPILE ME?" else mn^.packed)

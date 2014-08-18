@@ -1,7 +1,8 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall #-}
+-- TODO: -Werror
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-module Mud.Cmds (gameWrapper) where
+module Mud.Cmds (serverWrapper) where
 
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import Mud.MiscDataTypes
@@ -16,7 +17,7 @@ import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRet
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
-import Control.Concurrent (forkIO, myThreadId)
+import Control.Concurrent (forkFinally, forkIO, myThreadId)
 import Control.Concurrent.Async (asyncThreadId)
 import Control.Concurrent.STM (STM)
 import Control.Concurrent.STM.TMVar (putTMVar, TMVar)
@@ -36,12 +37,13 @@ import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
 import GHC.Conc (threadStatus)
+import Network (accept, listenOn, PortID(..))
 import Prelude hiding (pi)
 import System.Console.Readline (readline)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.Exit (ExitCode(ExitSuccess), exitFailure, exitSuccess)
-import System.IO (hClose, hGetBuffering, openTempFile)
+import System.IO (BufferMode(..), Handle, hClose, hGetBuffering, hPutStrLn, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
 import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
@@ -53,11 +55,12 @@ import qualified Data.Text as T
 
 
 -- TODO: Here's the plan:
--- 1. Go into server mode. Accept incoming connections.
--- 2. Implement client-based routing of output.
--- 3. Refactor the output helper functions so that they all expect a list of text.
--- 4. Refactor the output helper functions so that line breaks are handled consistently.
--- 5. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
+-- [DONE] 1. Consider using conduit.
+-- 2. Go into server mode. Accept incoming connections.
+-- 3. Implement client-based routing of output.
+-- 4. Refactor the output helper functions so that they all expect a list of text.
+-- 5. Refactor the output helper functions so that line breaks are handled consistently.
+-- 6. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
 -- a. Code reduction.
 -- b. Consistency in binding names.
 -- c. Sylistic issues.
@@ -155,15 +158,17 @@ prefixDebugCmd :: CmdName -> T.Text
 prefixDebugCmd = prefixCmd debugCmdChar
 
 
--- TODO: Rename?
-gameWrapper :: MudStack ()
-gameWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
+serverWrapper :: MudStack ()
+serverWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
   where
     initAndStart = do
         initLogging
-        logNotice "gameWrapper" "server started"
-        sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
-        forever game
+        logNotice "serverWrapper" "server started"
+        initWorld
+        logNotice "serverWrapper" $ "listening for incoming connections on port " <> show port
+        listen
+
+--sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
 
 
 topLvlExHandler :: SomeException -> MudStack ()
@@ -172,6 +177,22 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO ex
                       Just ExitSuccess -> logNotice "topLvlExHandler" "exiting normally"
                       Just _           -> oops $ dblQuoteStr "ExitFailure" ++ " caught by the top level handler; rethrowing"
                       Nothing          -> oops "exception caught by the top level handler; exiting gracefully"
+
+
+listen :: MudStack ()
+listen = do
+    sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
+    forever $ do
+        (h, host, port') <- liftIO . accept $ sock
+        logNotice "listen" $ "connected to " <> show host <> " on port " <> show port'
+        liftIO . forkFinally (talk h) $ (\_ -> hClose h)
+
+
+talk :: Handle -> IO ()
+talk h = do
+    hSetNewlineMode h universalNewlineMode
+    hSetBuffering h LineBuffering
+    hPutStrLn h "HELLO!"
 
 
 dispTitle :: MudStack ()

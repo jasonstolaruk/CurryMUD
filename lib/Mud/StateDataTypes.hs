@@ -10,6 +10,7 @@ import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
+import System.IO (Handle) -- TODO: Or use the GHC.IO.Handle?
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
@@ -310,6 +311,17 @@ data Pla = Pla { _columns :: Int }
 
 
 -- ==================================================
+-- TODO
+
+
+data Client = Client { _handle   :: Handle
+                     , _msgQueue :: TQueue Msg }
+
+data Msg = FromServer T.Text
+         | FromClient T.Text
+
+
+-- ==================================================
 -- Template Haskell for creating lenses:
 
 
@@ -328,3 +340,4 @@ makeLenses ''RmLink
 makeLenses ''NonWorldState
 makeLenses ''LogServices
 makeLenses ''Pla
+makeLenses ''Client -- TODO: Move?

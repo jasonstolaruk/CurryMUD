@@ -16,6 +16,10 @@ ver :: T.Text
 ver = "0.1.0.0 (in development since 2013-10)"
 
 
+port :: Int
+port = 4000 -- TODO: Pick a port.
+
+
 mudDir :: FilePath
 mudDir = let home = unsafePerformIO . getEnv $ "HOME"
          in home ++ "/CurryMUD/"^.unpacked
