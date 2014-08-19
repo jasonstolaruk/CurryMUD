@@ -22,6 +22,7 @@ import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((^.))
 import Control.Monad (void)
 import Data.Text.Strict.Lens (packed)
+import Network (withSocketsDo)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getEnv, getProgName)
 import qualified Data.IntMap.Lazy as IM (empty)
@@ -30,7 +31,7 @@ import qualified Data.Text.IO as T (putStrLn)
 
 
 main :: IO ()
-main = do
+main = withSocketsDo $ do
     setCurrentDirectory mudDir
     welcome
     initMudState >>= void . runStateInIORefT serverWrapper
@@ -47,7 +48,11 @@ welcome = do
 
 
 initMudState :: IO MudState
-initMudState = newTMVarIO ws >>= \wsTMVar -> return (MudState wsTMVar nws)
+initMudState = do
+    wsTMVar <- newTMVarIO ws
+    ptTMVar <- newTMVarIO IM.empty
+    ctTMVar <- newTMVarIO IM.empty
+    return (MudState wsTMVar . nws ptTMVar $ ctTMVar)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
-    nws = NonWorldState (LogServices Nothing Nothing) IM.empty IM.empty
+    nws = NonWorldState (LogServices Nothing Nothing)

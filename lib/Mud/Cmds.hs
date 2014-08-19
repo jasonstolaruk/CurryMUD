@@ -20,7 +20,7 @@ import Control.Arrow (first)
 import Control.Concurrent (forkFinally, forkIO, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, race_)
 import Control.Concurrent.STM (atomically, STM)
-import Control.Concurrent.STM.TMVar (putTMVar, TMVar)
+import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
@@ -31,7 +31,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
 import Data.Char (isSpace, toUpper)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, find, foldl', intercalate, nub, nubBy, sort)
+import Data.List ((\\), delete, find, foldl', intercalate, nub, nubBy, sort)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
@@ -48,7 +48,8 @@ import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
-import qualified Data.Map.Lazy as M (elems, filter, null, toList)
+import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.Map.Lazy as M (elems, empty, filter, null, toList)
 import qualified Data.Text as T
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -56,7 +57,7 @@ import qualified Data.Text as T
 
 -- TODO: Here's the plan:
 -- [DONE] 1. Consider using conduit.
--- 2. Go into server mode. Accept incoming connections.
+-- [DONE] 2. Go into server mode. Accept incoming connections.
 -- 3. Implement client-based routing of output.
 -- 4. Refactor the output helper functions so that they all expect a list of text.
 -- 5. Refactor the output helper functions so that line breaks are handled consistently.
@@ -167,9 +168,6 @@ serverWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
         listen
 
 
--- TODO: sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
-
-
 topLvlExHandler :: SomeException -> MudStack ()
 topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO exitFailure
                     in case fromException e of
@@ -178,7 +176,7 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO ex
                       Nothing          -> oops "exception caught by the top level handler; exiting gracefully"
 
 
-listen :: MudStack () -- TODO: Consider using withSocketsDo.
+listen :: MudStack ()
 listen = do
     logNotice "listen" $ "listening for incoming connections on port " <> show port
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
@@ -189,21 +187,58 @@ listen = do
         liftIO $ forkFinally (runStateInIORefT (talk h) s) (\_ -> hClose h)
 
 
+-- TODO: sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
 talk :: Handle -> MudStack ()
 talk h = do
     liftIO . hSetNewlineMode h $ universalNewlineMode
     liftIO . hSetBuffering   h $ LineBuffering
     mq <- liftIO newTQueueIO
     let c = Client h mq
+    i <- adHoc c
+    logNotice "talk" $ "new ID for player: " <> show i
     s <- get
     liftIO $ race_ (runStateInIORefT (server c) s) (runStateInIORefT (receive c) s)
 
 
+adHoc :: Client -> MudStack Id
+adHoc cl = do
+    wsTMVar <- gets (^.worldStateTMVar)
+    ptTMVar <- gets (^.nonWorldState.plaTblTMVar)
+    ctTMVar <- gets (^.nonWorldState.clientTblTMVar)
+    let helper = liftIO . atomically $ do
+        ws <- takeTMVar wsTMVar
+        pt <- takeTMVar ptTMVar
+        ct <- takeTMVar ctTMVar
+        -----
+        let ks  = ws^.typeTbl.to IM.keys
+        let i   = head . (\\) [0..] $ ks
+        -----
+        let e   = Ent i "player" "Player Character" "" "You see an ad-hoc player character." 0
+        let is  = []
+        let co  = mempty
+        let em  = M.empty
+        let m   = Mob Male 10 10 10 10 10 10 0 RHand
+        let pc  = PC 1 Human
+        -----
+        let pla = Pla 80
+        -----
+        let ws' = ws & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc
+        let pt' = pt & at i ?~ pla
+        let ct' = ct & at i ?~ cl
+        -----
+        putTMVar wsTMVar ws'
+        putTMVar ptTMVar pt'
+        putTMVar ctTMVar ct'
+        -----
+        return i
+    helper
+
+
 server :: Client -> MudStack ()
-server c@(Client h mq) = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
+server (Client h mq) = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
   FromServer msg -> liftIO . hPutStr h $ msg^.unpacked
   FromClient msg -> let msg' = T.strip msg
-                    in if T.null msg' then return () else handleInp msg'
+                    in unless (T.null msg') (handleInp msg')
 
 
 receive :: Client -> MudStack ()
@@ -227,14 +262,6 @@ dispTitleExHandler e = f "dispTitle" e
     f = if | isDoesNotExistError e -> logIOEx
            | isPermissionError   e -> logIOEx
            | otherwise             -> logIOExRethrow
-
-
-{-
-game :: MudStack ()
-game = (liftIO . readline $ "> ") >>= \ms ->
-    let t = ms^.to fromJust.packed.to T.strip
-    in unless (T.null t) . handleInp $ t
--}
 
 
 handleInp :: T.Text -> MudStack ()

@@ -8,8 +8,7 @@ import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
-import Control.Lens (at)
-import Control.Lens.Operators ((&), (?~), (?=), (.~), (^.))
+import Control.Lens.Operators ((&), (.~), (^.))
 import Data.Monoid (mempty)
 import qualified Data.IntMap.Lazy as IM (map)
 import qualified Data.Map.Lazy as M (empty, fromList)
@@ -17,54 +16,6 @@ import qualified Data.Map.Lazy as M (empty, fromList)
 
 logNotice :: String -> String -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld"
-
-
--- ==================================================
--- Helper functions for registering world elements:
-
-
-putObj :: Id -> Ent -> Obj -> MudStack ()
-putObj i e o = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ ObjType & entTbl.at i ?~ e & objTbl.at i ?~ o
-
-
-putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
-putCloth i e o c = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ ClothType & entTbl.at i ?~ e & objTbl.at i ?~ o & clothTbl.at i ?~ c
-
-
-putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
-putCon i e o is coi con = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ ConType & entTbl.at i ?~ e & objTbl.at i ?~ o & invTbl.at i ?~ is & coinsTbl.at i ?~ coi & conTbl.at i ?~ con
-
-
-putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
-putWpn i e o w = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ WpnType & entTbl.at i ?~ e & objTbl.at i ?~ o & wpnTbl.at i ?~ w
-
-
-putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
-putArm i e o a = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ ArmType & entTbl.at i ?~ e & objTbl.at i ?~ o & armTbl.at i ?~ a
-
-
-putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
-putMob i e is c em m = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ MobType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ c & eqTbl.at i ?~ em & mobTbl.at i ?~ m
-
-
-putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
-putPC i e is c em m p = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ c & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ p
-
-
-putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
-putRm i is c r = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ RmType & invTbl.at i ?~ is & coinsTbl.at i ?~ c & rmTbl.at i ?~ r
-
-
-putPla :: Id -> Pla -> MudStack () -- TODO
-putPla i p = nonWorldState.plaTbl.at i ?= p
 
 
 -- ==================================================
@@ -78,10 +29,6 @@ initWorld = createWorld >> sortAllInvs
 createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world"
-
-    putPla 0 (Pla 80)
-
-    putPC 0 (Ent 0 "" "" "" "" 0) [iKewpie1, iBag1, iClub] (Coins (10, 0, 20)) (M.fromList [(RHandS, iSword1), (LHandS, iSword2)]) (Mob Male 10 10 10 10 10 10 0 LHand) (PC iHill Human)
 
     putRm iHill [iGP1, iLongSword] (Coins (0, 0, 1)) (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
     putRm iCliff [iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4] mempty (Rm "The cliff" "You have reached the edge of a cliff. \

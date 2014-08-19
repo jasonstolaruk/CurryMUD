@@ -10,7 +10,7 @@ import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
-import System.IO (Handle) -- TODO: Or use the GHC.IO.Handle? (Here and also in Cmds.)
+import System.IO (Handle) -- TODO: Or use the GHC.IO.Handle? (Here and elsewhere.)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
@@ -283,9 +283,9 @@ data Type = ObjType
 -- Non-world state:
 
 
-data NonWorldState = NonWorldState { _logServices :: LogServices
-                                   , _plaTbl      :: IM.IntMap Pla      -- TODO: Put in STM.
-                                   , _clientTbl   :: IM.IntMap Client } -- TODO: Put in STM.
+data NonWorldState = NonWorldState { _logServices    :: LogServices
+                                   , _plaTblTMVar    :: TMVar (IM.IntMap Pla)
+                                   , _clientTblTMVar :: TMVar (IM.IntMap Client) }
 
 
 -- ==================================================
@@ -312,7 +312,7 @@ data Pla = Pla { _columns :: Int }
 
 
 -- ==================================================
--- TODO
+-- Client:
 
 
 data Client = Client { _handle   :: Handle
@@ -341,4 +341,4 @@ makeLenses ''RmLink
 makeLenses ''NonWorldState
 makeLenses ''LogServices
 makeLenses ''Pla
-makeLenses ''Client -- TODO: Move?
+makeLenses ''Client
