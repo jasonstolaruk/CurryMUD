@@ -12,6 +12,7 @@ module Mud.MiscDataTypes ( Action
                          , GetOrDrop(..)
                          , Index
                          , InvType(..)
+                         , MsgQueueId
                          , NameSearchedFor
                          , pp
                          , Pretty
@@ -103,9 +104,10 @@ instance ConvRol Slot where
 -- Data types:
 
 
-type CmdName = T.Text
-type Rest    = [T.Text]
-type Action  = Rest -> MudStack ()
+type CmdName    = T.Text
+type Action     = Rest -> MudStack ()
+type MsgQueueId = (MsgQueue, Id) -- TODO: Move?
+type Rest       = [T.Text]
 
 data Cmd = Cmd { cmdName :: !CmdName
                , action  :: !Action

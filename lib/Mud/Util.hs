@@ -11,7 +11,6 @@ module Mud.Util ( adjustIndent
                 , dblQuote
                 , dblQuoteStr
                 , deleteFirstOfEach
-                , dumpFileNoWrapping
                 , eitherRet
                 , findFullNameForAbbrev
                 , grepTextList
@@ -20,7 +19,6 @@ module Mud.Util ( adjustIndent
                 , maybeVoid
                 , mkCountList
                 , mkOrdinal
-                , newLine
                 , padOrTrunc
                 , parensPad
                 , parensQuote
@@ -45,7 +43,6 @@ import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
 import Data.Text.Strict.Lens (packed, unpacked)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (putStrLn, readFile)
 
 
 -- ==================================================
@@ -61,20 +58,6 @@ blowUp modName funName msg vals = error $ errorMsg^.unpacked
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a
 patternMatchFail modName funName = blowUp modName funName "pattern match failure"
-
-
--- ==================================================
--- Output:
-
-
-newLine :: IO ()
-newLine = putChar '\n'
-
-
-dumpFileNoWrapping :: FilePath -> IO ()
-dumpFileNoWrapping fn = takeADump =<< T.readFile fn
-  where
-    takeADump = T.putStrLn
 
 
 -- ==================================================

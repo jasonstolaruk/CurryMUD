@@ -6,8 +6,8 @@ module Mud.StateHelpers ( BothGramNos
                         , dispGenericErrorMsg
                         , divider
                         , dumpFile
+                        , dumpFileNoWrapping
                         , dumpFileWithDividers
-                        , getClient
                         , getEntBothGramNos
                         , getWS
                         , mkCoinsFromList
@@ -15,13 +15,13 @@ module Mud.StateHelpers ( BothGramNos
                         , mkPlurFromBoth
                         , modifyWS
                         , negateCoins
+                        , newLine
                         , onWS
                         , output
                         , outputCon
                         , outputConIndent
                         , outputIndent
                         , putArm
-                        , putClient
                         , putCloth
                         , putCon
                         , putMob
@@ -30,6 +30,7 @@ module Mud.StateHelpers ( BothGramNos
                         , putPla
                         , putRm
                         , putWpn
+                        , send
                         , sortInv ) where
 
 import Mud.StateDataTypes
@@ -39,6 +40,7 @@ import qualified Mud.Util as U (patternMatchFail)
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
+import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (_1, at, each, folded)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.), (^..))
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -141,21 +143,6 @@ getPlaColumns i = (^.columns) <$> getPla i
 
 
 -- ============================================================
--- Helper functions for working with "Client":
-
-
-putClient :: Id -> Client -> MudStack () -- TODO: Currently not used.
-putClient i c = liftIO . atomically . transaction =<< gets (^.nonWorldState.clientTblTMVar)
-  where
-    transaction t = takeTMVar t >>= \ct ->
-        putTMVar t (ct & at i ?~ c)
-
-
-getClient :: Id -> MudStack Client -- TODO: Currently not used.
-getClient i = (! i) <$> (liftIO . atomically . readTMVar =<< gets (^.nonWorldState.clientTblTMVar))
-
-
--- ============================================================
 -- Misc. helpers:
 
 
@@ -194,7 +181,15 @@ negateCoins (Coins c) = Coins (each %~ negate $ c)
 
 
 -- ============================================================
--- "output" and related helpers:
+-- Helper functions relating to output:
+
+
+send :: MsgQueue -> T.Text -> MudStack () -- TODO: Currently not used.
+send mq = liftIO . atomically . writeTQueue mq . FromServer
+
+
+newLine :: IO () -- TODO: Can we do away with this function?
+newLine = putChar '\n'
 
 
 output :: T.Text -> MudStack ()
@@ -231,6 +226,12 @@ dumpFileWithDividers fn = divider >> dumpFile fn >> divider
 divider :: MudStack ()
 divider = getPlaColumns 0 >>= \cols ->
     liftIO . T.putStrLn . T.replicate cols $ "="
+
+
+dumpFileNoWrapping :: FilePath -> IO ()
+dumpFileNoWrapping fn = takeADump =<< T.readFile fn
+  where
+    takeADump = T.putStrLn
 
 
 dispAssocList :: (Show a, Show b) => [(a, b)] -> MudStack ()

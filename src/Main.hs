@@ -49,10 +49,10 @@ welcome = do
 
 initMudState :: IO MudState
 initMudState = do
-    wsTMVar <- newTMVarIO ws
-    ptTMVar <- newTMVarIO IM.empty
-    ctTMVar <- newTMVarIO IM.empty
-    return (MudState wsTMVar . nws ptTMVar $ ctTMVar)
+    wsTMVar  <- newTMVarIO ws
+    ptTMVar  <- newTMVarIO IM.empty
+    mqtTMVar <- newTMVarIO IM.empty
+    return (MudState wsTMVar . nws ptTMVar $ mqtTMVar)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
     nws = NonWorldState (LogServices Nothing Nothing)

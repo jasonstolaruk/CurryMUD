@@ -10,7 +10,6 @@ import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
-import System.IO (Handle) -- TODO: Or use the GHC.IO.Handle? (Here and elsewhere.)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
@@ -283,9 +282,9 @@ data Type = ObjType
 -- Non-world state:
 
 
-data NonWorldState = NonWorldState { _logServices    :: LogServices
-                                   , _plaTblTMVar    :: TMVar (IM.IntMap Pla)
-                                   , _clientTblTMVar :: TMVar (IM.IntMap Client) }
+data NonWorldState = NonWorldState { _logServices      :: LogServices
+                                   , _plaTblTMVar      :: TMVar (IM.IntMap Pla)
+                                   , _msgQueueTblTMVar :: TMVar (IM.IntMap MsgQueue) }
 
 
 -- ==================================================
@@ -312,11 +311,11 @@ data Pla = Pla { _columns :: Int }
 
 
 -- ==================================================
--- Client:
+-- Message queue:
 
 
-data Client = Client { _handle   :: Handle
-                     , _msgQueue :: TQueue Msg }
+type MsgQueue = TQueue Msg
+
 
 data Msg = FromServer T.Text
          | FromClient T.Text
@@ -341,4 +340,3 @@ makeLenses ''RmLink
 makeLenses ''NonWorldState
 makeLenses ''LogServices
 makeLenses ''Pla
-makeLenses ''Client

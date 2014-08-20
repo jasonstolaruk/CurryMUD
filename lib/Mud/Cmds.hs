@@ -187,28 +187,27 @@ listen = do
         liftIO $ forkFinally (runStateInIORefT (talk h) s) (\_ -> hClose h)
 
 
--- TODO: sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
+--- TODO: sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
 talk :: Handle -> MudStack ()
 talk h = do
     liftIO . hSetNewlineMode h $ universalNewlineMode
     liftIO . hSetBuffering   h $ LineBuffering
     mq <- liftIO newTQueueIO
-    let c = Client h mq
-    i <- adHoc c
-    logNotice "talk" $ "new ID for player: " <> show i
+    i  <- adHoc mq
+    logNotice "talk" $ "new ID for incoming player: " <> show i
     s <- get
-    liftIO $ race_ (runStateInIORefT (server c) s) (runStateInIORefT (receive c) s)
+    liftIO $ race_ (runStateInIORefT (server h mq i) s) (runStateInIORefT (receive h mq) s)
 
 
-adHoc :: Client -> MudStack Id
-adHoc cl = do
-    wsTMVar <- gets (^.worldStateTMVar)
-    ptTMVar <- gets (^.nonWorldState.plaTblTMVar)
-    ctTMVar <- gets (^.nonWorldState.clientTblTMVar)
+adHoc :: MsgQueue -> MudStack Id
+adHoc mq = do
+    wsTMVar  <- gets (^.worldStateTMVar)
+    ptTMVar  <- gets (^.nonWorldState.plaTblTMVar)
+    mqtTMVar <- gets (^.nonWorldState.msgQueueTblTMVar)
     let helper = liftIO . atomically $ do
-        ws <- takeTMVar wsTMVar
-        pt <- takeTMVar ptTMVar
-        ct <- takeTMVar ctTMVar
+        ws  <- takeTMVar wsTMVar
+        pt  <- takeTMVar ptTMVar
+        mqt <- takeTMVar mqtTMVar
         -----
         let ks  = ws^.typeTbl.to IM.keys
         let i   = head . (\\) [0..] $ ks
@@ -222,30 +221,31 @@ adHoc cl = do
         -----
         let pla = Pla 80
         -----
-        let ws' = ws & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc
-        let pt' = pt & at i ?~ pla
-        let ct' = ct & at i ?~ cl
+        let ws'  = ws  & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc
+        let pt'  = pt  & at i ?~ pla
+        let mqt' = mqt & at i ?~ mq
         -----
-        putTMVar wsTMVar ws'
-        putTMVar ptTMVar pt'
-        putTMVar ctTMVar ct'
+        putTMVar wsTMVar  ws'
+        putTMVar ptTMVar  pt'
+        putTMVar mqtTMVar mqt'
         -----
         return i
     helper
 
 
-server :: Client -> MudStack ()
-server (Client h mq) = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
+server :: Handle -> MsgQueue -> Id -> MudStack ()
+server h mq i = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
   FromServer msg -> liftIO . hPutStr h $ msg^.unpacked
   FromClient msg -> let msg' = T.strip msg
-                    in unless (T.null msg') (handleInp msg')
+                    in unless (T.null msg') (handleInp (mq, i) msg')
 
 
-receive :: Client -> MudStack ()
-receive (Client h mq) = forever $ (liftIO . hGetLine $ h) >>= \msg ->
+receive :: Handle -> MsgQueue -> MudStack ()
+receive h mq = forever $ (liftIO . hGetLine $ h) >>= \msg ->
     liftIO . atomically . writeTQueue mq . FromClient $ msg^.packed
 
 
+-- TODO: Move?
 dispTitle :: MudStack ()
 dispTitle = liftIO newStdGen >>= \g ->
     let range = (1, noOfTitles)
@@ -256,6 +256,7 @@ dispTitle = liftIO newStdGen >>= \g ->
     takeADump = dumpFileNoWrapping . (++) titleDir
 
 
+-- TODO: Move?
 dispTitleExHandler :: IOException -> MudStack ()
 dispTitleExHandler e = f "dispTitle" e
   where
@@ -264,8 +265,8 @@ dispTitleExHandler e = f "dispTitle" e
            | otherwise             -> logIOExRethrow
 
 
-handleInp :: T.Text -> MudStack ()
-handleInp = maybeVoid dispatch . splitInp
+handleInp :: MsgQueueId -> T.Text -> MudStack ()
+handleInp mqi = maybeVoid (dispatch mqi) . splitInp
 
 
 type Input = (CmdName, Rest)
@@ -279,13 +280,13 @@ splitInp = splitUp . T.words
     splitUp (t:ts) = Just (t, ts)
 
 
-dispatch :: Input -> MudStack ()
-dispatch (cn, rest) = findAction cn >>= maybe (output $ "What?" <> nlt <> nlt) (\act -> act rest)
+dispatch :: MsgQueueId -> Input -> MudStack ()
+dispatch (mq, i) (cn, rest) = findAction i cn >>= maybe (output $ "What?" <> nlt <> nlt) (\act -> act rest)
 
 
-findAction :: CmdName -> MudStack (Maybe Action)
-findAction cn = getWS >>= \ws ->
-    let p        = (ws^.pcTbl) ! 0
+findAction :: Id -> CmdName -> MudStack (Maybe Action)
+findAction pi cn = getWS >>= \ws ->
+    let p        = (ws^.pcTbl) ! pi
         r        = (ws^.rmTbl) ! (p^.rmId)
         cmdList' = mkCmdListWithRmLinks r
         cns      = map cmdName cmdList'
@@ -297,7 +298,7 @@ findAction cn = getWS >>= \ws ->
 
 
 mkCmdListWithRmLinks :: Rm -> [Cmd]
-mkCmdListWithRmLinks r = cmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, rl^.linkName `notElem` stdLinkNames ]
+mkCmdListWithRmLinks r = cmdList <> [ mkCmdForRmLink rl | rl <- r^.rmLinks, rl^.linkName `notElem` stdLinkNames ]
   where
     mkCmdForRmLink rl = let ln = rl^.linkName.to T.toLower
                         in Cmd { cmdName = ln, action = go ln, cmdDesc = "" }
@@ -310,7 +311,7 @@ mkCmdListWithRmLinks r = cmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, rl^.
 about :: Action
 about [] = try takeADump >>= eitherRet (dumpExHandler "about") >> liftIO newLine
   where
-    takeADump = dumpFile . (++) miscDir $ "about"
+    takeADump = dumpFile . (<>) miscDir $ "about"
 about rs = ignore rs >> about []
 
 
@@ -1359,7 +1360,7 @@ debugLog rs = ignore rs >> debugLog []
 ------
 
 
--- TODO: Also write a command that throws an exception from a child thread.
+-- TODO: Also write a command that throws an exception from a child thread. Perhaps use "error".
 debugThrow :: Action
 debugThrow [] = liftIO . throwIO $ DivideByZero
 debugThrow rs = ignore rs >> debugThrow []
