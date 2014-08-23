@@ -10,6 +10,7 @@ module Mud.Logging ( closeLogs
                    , logIOExRethrow
                    , logNotice) where
 
+import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.StateHelpers
 import Mud.TopLvlDefs
@@ -118,9 +119,9 @@ logIOEx :: String -> String -> IOException -> MudStack ()
 logIOEx modName funName e = logError . concat $ [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
 
 
-logAndDispIOEx :: String -> String -> IOException -> MudStack ()
-logAndDispIOEx modName funName e = let msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
-                                   in logError msg >> output (msg^.packed <> nlt <> nlt)
+logAndDispIOEx :: MsgQueueId -> String -> String -> IOException -> MudStack ()
+logAndDispIOEx mqi modName funName e = let msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
+                                       in logError msg >> output mqi [ msg^.packed, "" ]
 
 
 logIOExRethrow :: String -> String -> IOException -> MudStack ()

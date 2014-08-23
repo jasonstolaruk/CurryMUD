@@ -30,6 +30,7 @@ import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void, w
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
 import Data.Char (isSpace, toUpper)
+import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, find, foldl', intercalate, nub, nubBy, sort)
 import Data.Maybe (isNothing)
@@ -51,6 +52,7 @@ import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. 
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, empty, filter, null, toList)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T (readFile)
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -83,8 +85,8 @@ logIOEx :: String -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds"
 
 
-logAndDispIOEx :: String -> IOException -> MudStack ()
-logAndDispIOEx = L.logAndDispIOEx "Mud.Cmds"
+logAndDispIOEx :: MsgQueueId -> String -> IOException -> MudStack ()
+logAndDispIOEx mqi = L.logAndDispIOEx mqi "Mud.Cmds"
 
 
 logIOExRethrow :: String -> IOException -> MudStack ()
@@ -172,7 +174,7 @@ topLvlExHandler :: SomeException -> MudStack ()
 topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO exitFailure
                     in case fromException e of
                       Just ExitSuccess -> logNotice "topLvlExHandler" "exiting normally"
-                      Just _           -> oops $ dblQuoteStr "ExitFailure" ++ " caught by the top level handler; rethrowing"
+                      Just _           -> oops $ dblQuoteStr "ExitFailure" <> " caught by the top level handler; rethrowing"
                       Nothing          -> oops "exception caught by the top level handler; exiting gracefully"
 
 
@@ -187,16 +189,18 @@ listen = do
         liftIO $ forkFinally (runStateInIORefT (talk h) s) (\_ -> hClose h)
 
 
---- TODO: sequence_ . intersperse (liftIO newLine) $ [initWorld, dispTitle, motd []]
 talk :: Handle -> MudStack ()
 talk h = do
-    liftIO . hSetNewlineMode h $ universalNewlineMode
-    liftIO . hSetBuffering   h $ LineBuffering
+    liftIO configBuffer
     mq <- liftIO newTQueueIO
     i  <- adHoc mq
     logNotice "talk" $ "new ID for incoming player: " <> show i
+    dumpTitle mq
     s <- get
-    liftIO $ race_ (runStateInIORefT (server h mq i) s) (runStateInIORefT (receive h mq) s)
+    liftIO $ race_ (runStateInIORefT (server  h (mq, i)) s)
+                   (runStateInIORefT (receive h mq)      s)
+  where
+    configBuffer = hSetNewlineMode h universalNewlineMode >> hSetBuffering h LineBuffering
 
 
 adHoc :: MsgQueue -> MudStack Id
@@ -233,8 +237,26 @@ adHoc mq = do
     helper
 
 
-server :: Handle -> MsgQueue -> Id -> MudStack ()
-server h mq i = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
+dumpTitle :: MsgQueue -> MudStack ()
+dumpTitle mq = liftIO newStdGen >>= \g ->
+    let range = (1, noOfTitles)
+        n     = randomR range g^._1
+        fn    = "title"^.unpacked ++ show n
+    in (try . takeADump $ fn) >>= eitherRet dumpTitleTxtExHandler
+  where
+    takeADump fn = send mq =<< ((<> nlt) <$> (liftIO . T.readFile . (titleDir ++) $ fn))
+
+
+dumpTitleTxtExHandler :: IOException -> MudStack ()
+dumpTitleTxtExHandler e = f "dumpTitleTxt" e
+  where
+    f = if | isDoesNotExistError e -> logIOEx
+           | isPermissionError   e -> logIOEx
+           | otherwise             -> logIOExRethrow
+
+
+server :: Handle -> MsgQueueId -> MudStack ()
+server h (mq, i) = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
   FromServer msg -> liftIO . hPutStr h $ msg^.unpacked
   FromClient msg -> let msg' = T.strip msg
                     in unless (T.null msg') (handleInp (mq, i) msg')
@@ -243,26 +265,6 @@ server h mq i = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
 receive :: Handle -> MsgQueue -> MudStack ()
 receive h mq = forever $ (liftIO . hGetLine $ h) >>= \msg ->
     liftIO . atomically . writeTQueue mq . FromClient $ msg^.packed
-
-
--- TODO: Move?
-dispTitle :: MudStack ()
-dispTitle = liftIO newStdGen >>= \g ->
-    let range = (1, noOfTitles)
-        n     = randomR range g^._1
-        fn    = "title"^.unpacked ++ show n
-    in (try . liftIO . takeADump $ fn) >>= eitherRet dispTitleExHandler
-  where
-    takeADump = dumpFileNoWrapping . (++) titleDir
-
-
--- TODO: Move?
-dispTitleExHandler :: IOException -> MudStack ()
-dispTitleExHandler e = f "dispTitle" e
-  where
-    f = if | isDoesNotExistError e -> logIOEx
-           | isPermissionError   e -> logIOEx
-           | otherwise             -> logIOExRethrow
 
 
 handleInp :: MsgQueueId -> T.Text -> MudStack ()
@@ -281,12 +283,14 @@ splitInp = splitUp . T.words
 
 
 dispatch :: MsgQueueId -> Input -> MudStack ()
-dispatch (mq, i) (cn, rest) = findAction i cn >>= maybe (output $ "What?" <> nlt <> nlt) (\act -> act rest)
+dispatch mqi@(_, i) (cn, rest) = findAction i cn >>= maybe sorry (\act -> act mqi rest)
+  where
+    sorry = output mqi ["What?", ""]
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
-findAction pi cn = getWS >>= \ws ->
-    let p        = (ws^.pcTbl) ! pi
+findAction i cn = getWS >>= \ws ->
+    let p        = (ws^.pcTbl) ! i
         r        = (ws^.rmTbl) ! (p^.rmId)
         cmdList' = mkCmdListWithRmLinks r
         cns      = map cmdName cmdList'
@@ -309,14 +313,15 @@ mkCmdListWithRmLinks r = cmdList <> [ mkCmdForRmLink rl | rl <- r^.rmLinks, rl^.
 
 
 about :: Action
-about [] = try takeADump >>= eitherRet (dumpExHandler "about") >> liftIO newLine
+about mqi [] = try helper >>= eitherRet (readFileExHandler mqi "about")
   where
-    takeADump = dumpFile . (<>) miscDir $ "about"
-about rs = ignore rs >> about []
+    helper = (liftIO . T.readFile . (miscDir ++) $ "about") >>= \contents ->
+        output mqi . (<> [""]) . T.lines $ contents
+about mqi rs = ignore mqi rs >> about mqi []
 
 
-dumpExHandler :: String -> IOException -> MudStack ()
-dumpExHandler fn e = handleThat >> dispGenericErrorMsg
+readFileExHandler :: MsgQueueId -> String -> IOException -> MudStack ()
+readFileExHandler mqi fn e = handleThat >> dispGenericErrorMsg mqi
   where
     handleThat
       | isDoesNotExistError e = logIOEx fn e
@@ -324,19 +329,27 @@ dumpExHandler fn e = handleThat >> dispGenericErrorMsg
       | otherwise             = logIOExRethrow fn e
 
 
-ignore :: Rest -> MudStack ()
-ignore rs = let ignored = dblQuote . T.unwords $ rs
-            in output ("(Ignoring " <> ignored <> "...)")
+ignore :: MsgQueueId -> Rest -> MudStack ()
+ignore mqi rs = let ignored = dblQuote . T.unwords $ rs
+                in output mqi [ "(Ignoring " <> ignored <> "...)" ]
 
 
 -----
 
 
+-- TODO: Automatically execute this cmd after a user authenticates.
 motd :: Action
-motd [] = try takeADump >>= eitherRet (dumpExHandler "motd") >> liftIO newLine
+motd mqi [] = output mqi =<< getMotdTxt mqi
+motd mqi rs = ignore mqi rs >> motd mqi []
+
+
+getMotdTxt :: MsgQueueId -> MudStack [T.Text]
+getMotdTxt mqi@(_, i) = try helper >>= eitherRet (readFileExHandler mqi "getMotdTxt")
   where
-    takeADump = dumpFileWithDividers . (++) miscDir $ "motd"
-motd rs = ignore rs >> motd []
+    helper = do
+        divider  <- mkDividerTxt i
+        contents <- liftIO . T.readFile . (miscDir ++) $ "motd"
+        return ([divider] <> T.lines contents <> [divider, ""])
 
 
 -----
@@ -347,15 +360,18 @@ plaDispCmdList = dispCmdList (cmdPred Nothing)
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
-dispCmdList p [] = mapM_ (outputIndent 10) (cmdListText p) >> liftIO newLine
-dispCmdList p rs = forM_ rs $ \r ->
-    mapM_ (outputIndent 10) (grepTextList r . cmdListText $ p) >> liftIO newLine -- TODO: Grep only the command names (why does "? w" give "d"?)
+dispCmdList p [] (mq, i) = getPlaColumns i >>= \cols ->
+    let descs = map (wordWrapIndent 10 cols) . cmdListText $ p
+    in send mq . T.unlines . (++ [""]) $ descs
+dispCmdList p rs (mq, i) = getPlaColumns i >>= \cols ->
+    forM_ rs $ \r -> let descs = map (wordWrapIndent 10 cols) . grepTextList r . cmdListText $ p
+                     in send mq . T.unlines . (++ [""]) $ descs
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
 cmdListText p = sort . T.lines . T.concat . foldl' mkTxtForCmd [] . filter p $ cmdList
   where
-    mkTxtForCmd acc c = T.concat [ padOrTrunc 10 . cmdName $ c, cmdDesc c, "\n" ] : acc
+    mkTxtForCmd acc c = T.concat [ padOrTrunc 10 . cmdName $ c, cmdDesc c, nlt ] : acc
 
 
 cmdPred :: Maybe Char -> Cmd -> Bool
@@ -367,26 +383,30 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 
 
 help :: Action
-help [] = try takeADump >>= eitherRet (dumpExHandler "help")
+help mqi@(mq, i) [] = try helper >>= eitherRet (readFileExHandler mqi "help")
   where
-    takeADump = (dumpFile . (++) helpDir $ "root") >> liftIO newLine
-help rs = sequence_ . intercalate [divider >> liftIO newLine] $ [ [dispHelpTopicByName r] | r <- rs ]
+    helper = (liftIO . T.readFile . (helpDir ++) $ "root") >>= \contents ->
+        output mqi . (++ [""]) . T.lines $ contents
+help mqi@(mq, i) rs = do
+    topics  <- mapM (T.lines . getHelpTopicByName mqi) rs
+    divider <- mkDividerTxt i
+    output mqi . (++ [""]) . intercalate ["", divider, ""] $ topics
 
 
 type HelpTopic = T.Text
 
 
-dispHelpTopicByName :: HelpTopic -> MudStack ()
-dispHelpTopicByName r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
+getHelpTopicByName :: MsgQueueId -> HelpTopic -> MudStack T.Text
+getHelpTopicByName mqi r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
     let fns' = tail . tail . sort . delete "root" $ fns
         tns  = fns'^..folded.packed
     in maybe sorry
-             helper
+             getHelpTopic
              (findFullNameForAbbrev r tns)
   where
-    sorry     = outputCon [ "No help is available on ", dblQuote r, ".", nlt ]
-    helper tn = (try . takeADump $ tn) >>= eitherRet (dumpExHandler "dispHelpTopicByName") >> liftIO newLine
-    takeADump = dumpFile . (++) helpDir . T.unpack
+    sorry           = return ("No help is available on " <> dblQuote r <> ".")
+    getHelpTopic tn = (try . helper $ tn) >>= eitherRet (readFileExHandler mqi "getHelpTopicByName" >> return "") -- TODO: Return an error message? Could this be done elsewhere, too?
+    helper       tn = liftIO . T.readFile . (helpDir ++) $ tn^.unpacked
 
 
 -----
@@ -432,39 +452,40 @@ findExit r ln = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
 
 
 look :: Action
-look [] = getWS >>= \ws ->
-    let p  = (ws^.pcTbl) ! 0
-        i  = p^.rmId
-        r  = (ws^.rmTbl) ! i
-    in do
-        descRm r
-        summarizeExits r
-        dispRmInvCoins ws i
-        liftIO newLine
+look mqi@(_, i) [] = getWS >>= \ws ->
+    let p  = (ws^.pcTbl) ! i
+        ri = p^.rmId
+        r  = (ws^.rmTbl) ! ri
+    in mkRmInvCoindsDesc i ws ri >>= \ricd ->
+        output mqi $ [ r^.name, r^.desc, mkExitsSummary r ] ++ ricd ++ [""]
   where
-    descRm r = output $ r^.name <> nlt <> r^.desc
-look rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
+    mkRmDesc r = r^.name <> nlt <> r^.desc
+look mqi rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -- TODO: Are you nubbing everywhere you should nub?
     let p  = (ws^.pcTbl)    ! 0
         i  = p^.rmId
         is = (ws^.invTbl)   ! i
         c  = (ws^.coinsTbl) ! i
     in if (not . null $ is) || (c /= mempty)
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
-           in do
-               mapM_ (procGecrMisRm_ (descEnts ws)) . zip gecrs $ miss
-               mapM_ (procReconciledCoinsRm_ descCoins) rcs
+           in undefined --do
+               --mapM_ (procGecrMisRm_ (descEnts ws)) . zip gecrs $ miss
+               --mapM_ (procReconciledCoinsRm_ descCoins) rcs
       else output $ "You don't see anything here to look at." <> nlt <> nlt
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
-dispRmInvCoins :: WorldState -> Id -> MudStack ()
-dispRmInvCoins ws i = let is = (ws^.invTbl)   ! i
-                          c  = (ws^.coinsTbl) ! i
-                      in (mapM_ dispEntInRm . mkNameCountBothList ws $ is) >> maybeSummarizeCoins c
+mkRmInvCoindsDesc :: Id -> WorldState -> Id -> MudStack [T.Text]
+mkRmInvCoindsDesc i ws ri = let is = (ws^.invTbl)   ! ri
+                                c  = (ws^.coinsTbl) ! ri
+                            in do
+                                cols <- getPlaColumns i
+                                let entDescs = map (mkEntInRmDesc cols) . mkNameCountBothList ws $ is
+                                return $ if c /= mempty
+                                  then (entDescs ++) . mkCoinsSummary $ c
+                                  else entDescs
   where
-    dispEntInRm (en, count, (s, _)) | count == 1 = outputIndent    2 $ aOrAn s <> " " <> bracketQuote en
-    dispEntInRm (en, count, b)                   = outputConIndent 2 [ showText count, " ", mkPlurFromBoth b, " ", bracketQuote en ]
-    maybeSummarizeCoins c                        = when (c /= mempty) (summarizeCoins c)
+    mkEntInRmDesc cols (en, count, (s, _)) | count == 1 = wordWrapIndent 2 cols $ aOrAn s <> " " <> bracketQuote en
+    mkEntInRmDesc cols (en, count, b)                   = wordWrapIndent 2 cols $ showText count <> " " <> mkPlurFromBoth b <> " " <> bracketQuote en
 
 
 mkNameCountBothList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
@@ -498,8 +519,8 @@ dispInvCoins ws i e = let is       = (ws^.invTbl)   ! i
                                             then output dudeYourHandsAreEmpty
                                             else outputCon [ "The ", e^.sing, " is empty." ]
                         (True,  False) -> header >> dispEntsInInv ws is
-                        (False, True ) -> header >> summarizeCoins c
-                        (True,  True ) -> header >> dispEntsInInv ws is >> summarizeCoins c
+                        (False, True ) -> undefined --header >> summarizeCoins c
+                        (True,  True ) -> undefined --header >> dispEntsInInv ws is >> summarizeCoins c
   where
     header
       | i == 0    = output "You are carrying:"
@@ -519,12 +540,12 @@ dispEntsInInv ws = mapM_ dispEntInInv . mkNameCountBothList ws
     nameCol = bracketPad ind
 
 
-summarizeCoins :: Coins -> MudStack ()
-summarizeCoins c = dispCoinsWithNamesList mkCoinsWithNamesList
+mkCoinsSummary :: Coins -> T.Text
+mkCoinsSummary c = helper mkCoinsWithNamesList
   where
-    dispCoinsWithNamesList = output . T.intercalate ", " . filter (not . T.null) . map dispNameAmt
-    dispNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
-    mkCoinsWithNamesList   = zip coinNames . mkListFromCoins $ c
+    helper               = T.intercalate ", " . filter (not . T.null) . map mkNameAmt
+    mkNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
+    mkCoinsWithNamesList = zip coinNames . mkListFromCoins $ c
 
 
 descCoins :: Coins -> MudStack ()
@@ -542,15 +563,15 @@ exits :: Action
 exits [] = getWS >>= \ws ->
     let p = (ws^.pcTbl) ! 0
         r = (ws^.rmTbl) ! (p^.rmId)
-    in summarizeExits r >> liftIO newLine
+    in mkExitsSummary r >> liftIO newLine
 exits rs = ignore rs >> exits []
 
 
-summarizeExits :: Rm -> MudStack ()
-summarizeExits r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
+mkExitsSummary :: Rm -> T.Text
+mkExitsSummary r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
                        stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
                        customNames = filter (`notElem` stdLinkNames) rlns
-                   in output . (<>) "Obvious exits: " . T.intercalate ", " . (++) stdNames $ customNames
+                   in ("Obvious exits: " <>)  . T.intercalate ", " . (stdNames <>) $ customNames
 
 
 -----
@@ -565,9 +586,9 @@ inv rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
         c  = (ws^.coinsTbl) ! 0
     in if (not . null $ is) || (c /= mempty)
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
-           in do
-               mapM_ (procGecrMisPCInv_ (descEnts ws)) . zip gecrs $ miss
-               mapM_ (procReconciledCoinsPCInv_ descCoins) rcs
+           in undefined --do
+               --mapM_ (procGecrMisPCInv_ (descEnts ws)) . zip gecrs $ miss
+               --mapM_ (procReconciledCoinsPCInv_ descCoins) rcs
       else output $ dudeYourHandsAreEmpty <> nlt
 
 
@@ -583,9 +604,9 @@ equip rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
         is = M.elems em
     in if not . M.null $ em
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is mempty
-           in do
-               mapM_ (procGecrMisPCEq_ (descEnts ws)) . zip gecrs $ miss
-               unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt <> nlt)
+           in undefined --do
+               --mapM_ (procGecrMisPCEq_ (descEnts ws)) . zip gecrs $ miss
+               --unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt <> nlt)
       else output $ dudeYou'reNaked <> nlt
 
 
@@ -1321,7 +1342,7 @@ debugDispCmdList = dispCmdList (cmdPred . Just $ debugCmdChar)
 
 
 debugBuffCheck :: Action
-debugBuffCheck [] = try buffCheckHelper >>= eitherRet (logAndDispIOEx "wizBuffCheck")
+debugBuffCheck mqi [] = try buffCheckHelper >>= eitherRet (logAndDispIOEx mqi "debugBuffCheck")
   where
     buffCheckHelper = do
         td      <- liftIO getTemporaryDirectory
@@ -1330,7 +1351,7 @@ debugBuffCheck [] = try buffCheckHelper >>= eitherRet (logAndDispIOEx "wizBuffCh
         -- TODO: What's with the extra whitespace?
         outputConIndent 2 [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, ".", nlt ]
         liftIO $ hClose  h >> removeFile fn
-debugBuffCheck rs = ignore rs >> debugBuffCheck []
+debugBuffCheck mqi rs = ignore mqi rs >> debugBuffCheck mqi []
 
 
 -----
@@ -1378,9 +1399,9 @@ debugSniff [] = gets (^.nonWorldState.logServices) >>= \ls ->
     in do
         nls <- liftIO . threadStatus $ nli
         els <- liftIO . threadStatus $ eli
-        divider
+        --divider -- TODO
         output $ "Notice log thread status: " <> showText nls
         output $ "Error  log thread status: " <> showText els
-        divider
+        --divider -- TODO
         liftIO newLine
 debugSniff rs = ignore rs >> debugSniff []

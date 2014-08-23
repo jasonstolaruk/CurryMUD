@@ -4,17 +4,17 @@
 module Mud.NameResolution ( ReconciledCoins
                           , procGecrMisCon
                           , procGecrMisPCEq
-                          , procGecrMisPCEq_
+                          --, procGecrMisPCEq_
                           , procGecrMisPCInv
-                          , procGecrMisPCInv_
+                          --, procGecrMisPCInv_
                           , procGecrMisReady
                           , procGecrMisRm
-                          , procGecrMisRm_
+                          --, procGecrMisRm_
                           , procReconciledCoinsCon
                           , procReconciledCoinsPCInv
-                          , procReconciledCoinsPCInv_
+                          --, procReconciledCoinsPCInv_
                           , procReconciledCoinsRm
-                          , procReconciledCoinsRm_
+                          --, procReconciledCoinsRm_
                           , ringHelp
                           , resolveEntCoinNames
                           , resolveEntCoinNamesWithRols ) where
@@ -28,7 +28,6 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Lens (_1, _2, dropping, folded, over, to)
 import Control.Lens.Operators ((^.), (^..))
-import Control.Monad (unless)
 import Data.Char (isDigit, toUpper)
 import Data.IntMap.Lazy ((!))
 import Data.List (foldl')
@@ -231,6 +230,7 @@ mkGecrWithRol ws is c n = let (a, b) = T.break (== slotChar) n
 -- Processing "GetEntsCoinsRes":
 
 
+{-
 procGecrMisPCInv_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisPCInv_ _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMisPCInv_ _ (Mult 1 n Nothing  _,   Nothing) = outputCon [ "You don't have ", aOrAn n, ".", nlt ]
@@ -242,6 +242,7 @@ procGecrMisPCInv_ f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisPCInv_ _ (SorryIndexedCoins,     Nothing) = output sorryIndexedCoins
 procGecrMisPCInv_ _ (Sorry n,               Nothing) = outputCon [ "You don't have ", aOrAn n, ".", nlt ]
 procGecrMisPCInv_ _ gecrMis                          = patternMatchFail "procGecrMisPCInv_" [ showText gecrMis ]
+-}
 
 
 sorryIndexedCoins :: T.Text
@@ -284,6 +285,7 @@ ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l
                     , dblQuote "p", " for pinky finger.",   nlt ]
 
 
+{-
 procGecrMisRm_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisRm_ _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMisRm_ _ (Mult 1 n Nothing  _,   Nothing) = outputCon [ "You don't see ", aOrAn n, " here.", nlt ]
@@ -295,6 +297,7 @@ procGecrMisRm_ f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisRm_ _ (SorryIndexedCoins,     Nothing) = output sorryIndexedCoins
 procGecrMisRm_ _ (Sorry n,               Nothing) = outputCon [ "You don't see ", aOrAn n, " here.", nlt ]
 procGecrMisRm_ _ gecrMis                          = patternMatchFail "procGecrMisRm_" [ showText gecrMis ]
+-}
 
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
@@ -323,6 +326,7 @@ procGecrMisCon cn (Sorry n,               Nothing) = Left $ "The " <> cn <> " do
 procGecrMisCon _  gecrMis                          = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
 
 
+{-
 procGecrMisPCEq_ :: (Inv -> MudStack ()) -> (GetEntsCoinsRes, Maybe Inv) -> MudStack ()
 procGecrMisPCEq_ _ (_,                     Just []) = return () -- Nothing left after eliminating duplicate IDs.
 procGecrMisPCEq_ _ (Mult 1 n Nothing  _,   Nothing) = outputCon [ "You don't have ", aOrAn n, " among your readied equipment.", nlt ]
@@ -334,6 +338,7 @@ procGecrMisPCEq_ f (Indexed _ _ (Right _), Just is) = f is
 procGecrMisPCEq_ _ (SorryIndexedCoins,     Nothing) = output sorryIndexedCoins
 procGecrMisPCEq_ _ (Sorry n,               Nothing) = outputCon [ "You don't have ", aOrAn n, " among your readied equipment.", nlt ]
 procGecrMisPCEq_ _ gecrMis                          = patternMatchFail "procGecrMisPCEq_" [ showText gecrMis ]
+-}
 
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
@@ -353,6 +358,7 @@ procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMis
 -- Processing "ReconciledCoins":
 
 
+{-
 procReconciledCoinsPCInv_ :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsPCInv_ _ (Left  Empty)                            = output $ "You don't have any coins." <> nlt <> nlt
 procReconciledCoinsPCInv_ _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
@@ -365,6 +371,7 @@ procReconciledCoinsPCInv_ _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (sil == 0) $ outputCon [ "You don't have ", showText sil, " silver pieces.", nlt ]
     unless (gol == 0) $ outputCon [ "You don't have ", showText gol, " gold pieces.",   nlt ]
 procReconciledCoinsPCInv_ _ rc = patternMatchFail "procReconciledCoinsPCInv_" [ showText rc ]
+-}
 
 
 procReconciledCoinsPCInv :: ReconciledCoins -> Either T.Text Coins
@@ -383,6 +390,7 @@ procReconciledCoinsPCInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.con
 procReconciledCoinsPCInv rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
 
 
+{-
 procReconciledCoinsRm_ :: (Coins -> MudStack ()) -> ReconciledCoins -> MudStack ()
 procReconciledCoinsRm_ _ (Left  Empty)                            = output $ "You don't see any coins here." <> nlt <> nlt
 procReconciledCoinsRm_ _ (Left  (NoneOf (Coins (cop, sil, gol)))) = do
@@ -395,6 +403,7 @@ procReconciledCoinsRm_ _ (Left  (SomeOf (Coins (cop, sil, gol)))) = do
     unless (sil == 0) $ outputCon [ "You don't see ", showText sil, " silver pieces here.", nlt ]
     unless (gol == 0) $ outputCon [ "You don't see ", showText gol, " gold pieces here.",   nlt ]
 procReconciledCoinsRm_ _ rc = patternMatchFail "procReconciledCoinsRm_" [ showText rc ]
+-}
 
 
 procReconciledCoinsRm :: ReconciledCoins -> Either T.Text Coins

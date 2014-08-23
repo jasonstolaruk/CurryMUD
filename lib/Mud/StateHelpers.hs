@@ -4,13 +4,12 @@
 module Mud.StateHelpers ( BothGramNos
                         , dispAssocList
                         , dispGenericErrorMsg
-                        , divider
                         , dumpFile
-                        , dumpFileNoWrapping
-                        , dumpFileWithDividers
                         , getEntBothGramNos
+                        , getPlaColumns
                         , getWS
                         , mkCoinsFromList
+                        , mkDividerTxt
                         , mkListFromCoins
                         , mkPlurFromBoth
                         , modifyWS
@@ -33,11 +32,12 @@ module Mud.StateHelpers ( BothGramNos
                         , send
                         , sortInv ) where
 
+import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -184,7 +184,7 @@ negateCoins (Coins c) = Coins (each %~ negate $ c)
 -- Helper functions relating to output:
 
 
-send :: MsgQueue -> T.Text -> MudStack () -- TODO: Currently not used.
+send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
@@ -192,9 +192,9 @@ newLine :: IO () -- TODO: Can we do away with this function?
 newLine = putChar '\n'
 
 
-output :: T.Text -> MudStack ()
-output t = getPlaColumns 0 >>= \cols ->
-    liftIO . T.putStr . T.unlines . concatMap (wordWrap cols) . T.lines $ t
+output :: MsgQueueId -> [T.Text] -> MudStack ()
+output (mq, i) ts = getPlaColumns i >>= \cols ->
+    liftIO . atomically . writeTQueue mq . FromServer . T.unlines . concatMap (wordWrap cols) $ ts
 
 
 outputIndent :: Int -> T.Text -> MudStack ()
@@ -219,19 +219,8 @@ dumpFile fn = takeADump =<< (liftIO . T.readFile $ fn)
         liftIO . T.putStr . T.unlines . concat . wordWrapLines cols . T.lines $ contents
 
 
-dumpFileWithDividers :: FilePath -> MudStack ()
-dumpFileWithDividers fn = divider >> dumpFile fn >> divider
-
-
-divider :: MudStack ()
-divider = getPlaColumns 0 >>= \cols ->
-    liftIO . T.putStrLn . T.replicate cols $ "="
-
-
-dumpFileNoWrapping :: FilePath -> IO ()
-dumpFileNoWrapping fn = takeADump =<< T.readFile fn
-  where
-    takeADump = T.putStrLn
+mkDividerTxt :: Id -> MudStack T.Text
+mkDividerTxt i = T.replicate <$> getPlaColumns i <*> pure "="
 
 
 dispAssocList :: (Show a, Show b) => [(a, b)] -> MudStack ()
@@ -240,5 +229,5 @@ dispAssocList = mapM_ takeADump
     takeADump (a, b) = outputIndent 2 $ (unquote . showText $ a) <> ": " <> showText b
 
 
-dispGenericErrorMsg :: MudStack ()
-dispGenericErrorMsg = output "Unfortunately, an error occured while executing your command."
+dispGenericErrorMsg :: MsgQueueId -> MudStack ()
+dispGenericErrorMsg mqi = output mqi ["Unfortunately, an error occured while executing your command."]

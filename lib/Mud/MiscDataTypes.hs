@@ -105,8 +105,8 @@ instance ConvRol Slot where
 
 
 type CmdName    = T.Text
-type Action     = Rest -> MudStack ()
-type MsgQueueId = (MsgQueue, Id) -- TODO: Move?
+type Action     = MsgQueueId -> Rest -> MudStack ()
+type MsgQueueId = (MsgQueue, Id)
 type Rest       = [T.Text]
 
 data Cmd = Cmd { cmdName :: !CmdName
