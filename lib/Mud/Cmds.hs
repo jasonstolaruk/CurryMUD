@@ -121,30 +121,30 @@ cmdList = -- ==================================================
           -- Player commands:
           , Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = "about", action = about, cmdDesc = "About this game." }
-          --, Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
+          , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
           --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
-          --, Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
+          , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           --, Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
-          --, Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
+          , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
           --, Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
           --, Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
           --, Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
           , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
-          --, Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
-          --, Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
-          --, Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
+          , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
+          , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
+          , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
           --, Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           --, Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
           --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
           --, Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
-          --, Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
-          --, Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
-          --, Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
-          --, Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
+          , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
+          , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
+          , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
+          , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
           --, Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
-          , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." } ]
-          --, Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." } ]
+          , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
+          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." } ]
           --, Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 
 
@@ -415,30 +415,29 @@ getHelpTopicByName mq cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fn
 -----
 
 
-{-
 go :: T.Text -> Action
-go dir mqi [] = goDispatcher mqi [dir]
-go dir mqi rs = goDispatcher mqi . (dir :) $ rs
+go dir mic [] = goDispatcher mic [dir]
+go dir mic rs = goDispatcher mic . (dir :) $ rs
 
 
 goDispatcher :: Action
 goDispatcher _   [] = return ()
-goDispatcher mqi rs = mapM_ (tryMove mqi) rs
+goDispatcher mic rs = mapM_ (tryMove mic) rs
 
 
-tryMove :: MsgQueueId -> T.Text -> MudStack ()
-tryMove mqi dir = let dir' = T.toLower dir
-                  in helper dir' >>= \case
-                    Left msg -> output mqi [msg, ""]
-                    Right _  -> look   mqi []
+tryMove :: MsgQueueIdCols -> T.Text -> MudStack ()
+tryMove mic@(mq, i, cols) dir = let dir' = T.toLower dir
+                                in helper dir' >>= \case
+                                  Left msg -> send mq . (<> nlt) . T.unlines . wordWrap cols $ msg
+                                  Right _  -> undefined --TODO: look mic []
   where
     helper dir' = onWS $ \(t, ws) ->
-                      let p = (ws^.pcTbl) ! 0
+                      let p = (ws^.pcTbl) ! i
                           r = (ws^.rmTbl) ! (p^.rmId)
                       in case findExit r dir' of
                         Nothing -> putTMVar t ws >> return (Left . sorry $ dir')
-                        Just i  -> let p' = p & rmId .~ i
-                                   in putTMVar t (ws & pcTbl.at 0 ?~ p') >> return (Right ())
+                        Just ri -> let p' = p & rmId .~ ri
+                                   in putTMVar t (ws & pcTbl.at i ?~ p') >> return (Right ())
     sorry dir'  = if dir' `elem` stdLinkNames
                     then "You can't go that way."
                     else dblQuote dir <> " is not a valid direction."
@@ -455,8 +454,9 @@ findExit r ln = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
 -----
 
 
+{-
 look :: Action
-look mqi@(_, i) [] = getWS >>= \ws ->
+look (mq, i, cols) [] = getWS >>= \ws ->
     let p  = (ws^.pcTbl) ! i
         ri = p^.rmId
         r  = (ws^.rmTbl) ! ri
@@ -490,6 +490,7 @@ mkRmInvCoindsDesc i ws ri = let is = (ws^.invTbl)   ! ri
   where
     mkEntInRmDesc cols (en, count, (s, _)) | count == 1 = wordWrapIndent 2 cols $ aOrAn s <> " " <> bracketQuote en
     mkEntInRmDesc cols (en, count, b)                   = wordWrapIndent 2 cols $ showText count <> " " <> mkPlurFromBoth b <> " " <> bracketQuote en
+-}
 
 
 mkNameCountBothList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
@@ -500,6 +501,7 @@ mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
                             in nub . zip3 ens cs $ ebgns
 
 
+{-
 descEnts :: WorldState -> Inv -> MudStack ()
 descEnts ws is = let boths = [ (i, (ws^.entTbl) ! i) | i <- is ]
                  in mapM_ (descEnt ws) boths
@@ -529,58 +531,60 @@ mkInvCoinsDesc ws i e = let is       = (ws^.invTbl)   ! i
     header
       | i == 0    = output "You are carrying:"
       | otherwise = output $ "The " <> e^.sing <> " contains:"
+-}
 
 
 dudeYourHandsAreEmpty :: T.Text
-dudeYourHandsAreEmpty = "You aren't carrying anything." <> nlt
+dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 
-dispEntsInInv :: WorldState -> Inv -> MudStack ()
-dispEntsInInv ws = mapM_ dispEntInInv . mkNameCountBothList ws
+mkEntsInInvDesc :: Cols -> WorldState -> Inv -> T.Text
+mkEntsInInvDesc cols ws = (<> nlt) . T.unlines . concatMap (wordWrapIndent ind cols . helper) . mkNameCountBothList ws
   where
-    dispEntInInv (en, c, (s, _)) | c == 1 = outputIndent    ind $ nameCol en <> "1 " <> s
-    dispEntInInv (en, c, b     )          = outputConIndent ind [ nameCol en, showText c, " ", mkPlurFromBoth b ]
+    helper (en, c, (s, _)) | c == 1 = nameCol en <> "1 " <> s
+    helper (en, c, b     )          = nameCol en <> showText c <> " "  <> mkPlurFromBoth b
     ind     = 11
     nameCol = bracketPad ind
 
 
-mkCoinsSummary :: Coins -> T.Text
-mkCoinsSummary c = helper mkCoinsWithNamesList
+mkCoinsSummary :: Cols -> Coins -> T.Text
+mkCoinsSummary cols c = helper mkCoinsWithNamesList
   where
-    helper               = T.intercalate ", " . filter (not . T.null) . map mkNameAmt
+    helper               = T.unlines . wordWrapIndent 2 cols . T.intercalate ", " . filter (not . T.null) . map mkNameAmt
     mkNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
     mkCoinsWithNamesList = zip coinNames . mkListFromCoins $ c
 
 
-descCoins :: Coins -> MudStack ()
-descCoins (Coins (cop, sil, gol)) = descCop >> descSil >> descGol
+mkCoinsDesc :: Cols -> Coins -> T.Text
+mkCoinsDesc cols (Coins (cop, sil, gol)) = (<> nlt) . T.unlines . intercalate [""] . map (wordWrapIndent 2 cols) . filter (not . T.null) $ [copDesc, silDesc, golDesc]
   where -- TODO: Come up with good descriptions.
-    descCop = unless (cop == 0) $ output ("The copper piece is round and shiny." <> nlt <> nlt)
-    descSil = unless (sil == 0) $ output ("The silver piece is round and shiny." <> nlt <> nlt)
-    descGol = unless (gol == 0) $ output ("The gold piece is round and shiny."   <> nlt <> nlt)
+    copDesc = if cop /= 0 then "The copper piece is round and shiny." else ""
+    silDesc = if sil /= 0 then "The silver piece is round and shiny." else ""
+    golDesc = if gol /= 0 then "The gold piece is round and shiny."   else ""
 
 
 -----
 
 
 exits :: Action
-exits [] = getWS >>= \ws ->
-    let p = (ws^.pcTbl) ! 0
+exits (mq, i, cols) [] = getWS >>= \ws ->
+    let p = (ws^.pcTbl) ! i
         r = (ws^.rmTbl) ! (p^.rmId)
-    in mkExitsSummary r >> liftIO newLine
-exits rs = ignore rs >> exits []
+    in send mq . (<> nlt) . mkExitsSummary cols $ r
+exits mic@(mq, _, cols) rs = ignore mq cols rs >> exits mic []
 
 
-mkExitsSummary :: Rm -> T.Text
-mkExitsSummary r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
-                       stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
-                       customNames = filter (`notElem` stdLinkNames) rlns
-                   in ("Obvious exits: " <>)  . T.intercalate ", " . (stdNames <>) $ customNames
+mkExitsSummary :: Cols -> Rm -> T.Text
+mkExitsSummary cols r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
+                            stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
+                            customNames = filter (`notElem` stdLinkNames) rlns
+                        in T.unlines . wordWrapIndent 2 cols . ("Obvious exits: " <>)  . T.intercalate ", " . (stdNames ++) $ customNames
 
 
 -----
 
 
+{-
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv [] = getWS >>= \ws ->
     let e  = (ws^.entTbl) ! 0
