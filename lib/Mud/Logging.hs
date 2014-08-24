@@ -119,9 +119,9 @@ logIOEx :: String -> String -> IOException -> MudStack ()
 logIOEx modName funName e = logError . concat $ [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
 
 
-logAndDispIOEx :: MsgQueueId -> String -> String -> IOException -> MudStack ()
-logAndDispIOEx mqi modName funName e = let msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
-                                       in logError msg >> output mqi [ msg^.packed, "" ]
+logAndDispIOEx :: MsgQueue -> Cols -> String -> String -> IOException -> MudStack ()
+logAndDispIOEx mq cols modName funName e = let msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
+                                           in logError msg >> (send mq . T.unlines . (++ [""]) . wordWrap cols $ msg^.packed)
 
 
 logIOExRethrow :: String -> String -> IOException -> MudStack ()

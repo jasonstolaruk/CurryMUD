@@ -2,24 +2,17 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, RankNTypes #-}
 
 module Mud.StateHelpers ( BothGramNos
-                        , dispAssocList
-                        , dispGenericErrorMsg
-                        , dumpFile
                         , getEntBothGramNos
                         , getPlaColumns
                         , getWS
+                        , mkAssocListTxt
                         , mkCoinsFromList
                         , mkDividerTxt
                         , mkListFromCoins
                         , mkPlurFromBoth
                         , modifyWS
                         , negateCoins
-                        , newLine
                         , onWS
-                        , output
-                        , outputCon
-                        , outputConIndent
-                        , outputIndent
                         , putArm
                         , putCloth
                         , putCon
@@ -37,7 +30,6 @@ import Mud.StateDataTypes
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>), pure)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -45,11 +37,11 @@ import Control.Lens (_1, at, each, folded)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.), (^..))
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
+import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List (sortBy)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (putStr, putStrLn, readFile)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -188,10 +180,7 @@ send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
-newLine :: IO () -- TODO: Can we do away with this function?
-newLine = putChar '\n'
-
-
+{-
 output :: MsgQueueId -> [T.Text] -> MudStack ()
 output (mq, i) ts = getPlaColumns i >>= \cols ->
     liftIO . atomically . writeTQueue mq . FromServer . T.unlines . concatMap (wordWrap cols) $ ts
@@ -217,17 +206,14 @@ dumpFile fn = takeADump =<< (liftIO . T.readFile $ fn)
   where
     takeADump contents = getPlaColumns 0 >>= \cols ->
         liftIO . T.putStr . T.unlines . concat . wordWrapLines cols . T.lines $ contents
+-}
 
 
-mkDividerTxt :: Id -> MudStack T.Text
-mkDividerTxt i = T.replicate <$> getPlaColumns i <*> pure "="
+mkDividerTxt :: Cols -> T.Text
+mkDividerTxt = flip T.replicate "="
 
 
-dispAssocList :: (Show a, Show b) => [(a, b)] -> MudStack ()
-dispAssocList = mapM_ takeADump
+mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
+mkAssocListTxt cols = T.concat . map helper
   where
-    takeADump (a, b) = outputIndent 2 $ (unquote . showText $ a) <> ": " <> showText b
-
-
-dispGenericErrorMsg :: MsgQueueId -> MudStack ()
-dispGenericErrorMsg mqi = output mqi ["Unfortunately, an error occured while executing your command."]
+    helper (a, b) = T.unlines . wordWrapIndent 2 cols $ (unquote . showText $ a) <> ": " <> showText b

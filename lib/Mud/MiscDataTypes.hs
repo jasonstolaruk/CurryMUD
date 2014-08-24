@@ -5,19 +5,20 @@ module Mud.MiscDataTypes ( Action
                          , Amount
                          , Cmd(..)
                          , CmdName
+                         , Cols
                          , ConvRol
                          , EmptyNoneSome(..)
-                         , fromRol
                          , GetEntsCoinsRes(..)
                          , GetOrDrop(..)
                          , Index
                          , InvType(..)
-                         , MsgQueueId
+                         , MsgQueueIdCols
                          , NameSearchedFor
-                         , pp
                          , Pretty
                          , PutOrRem(..)
                          , Rest
+                         , fromRol
+                         , pp
                          , RightOrLeft(..) ) where
 
 import Mud.StateDataTypes
@@ -104,10 +105,11 @@ instance ConvRol Slot where
 -- Data types:
 
 
-type CmdName    = T.Text
-type Action     = MsgQueueId -> Rest -> MudStack ()
-type MsgQueueId = (MsgQueue, Id)
-type Rest       = [T.Text]
+type CmdName        = T.Text
+type Action         = MsgQueueIdCols -> Rest -> MudStack ()
+type MsgQueueIdCols = (MsgQueue, Id, Cols)
+type Cols           = Int
+type Rest           = [T.Text]
 
 data Cmd = Cmd { cmdName :: !CmdName
                , action  :: !Action

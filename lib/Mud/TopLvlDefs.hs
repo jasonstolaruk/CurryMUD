@@ -71,3 +71,7 @@ aggregateCoinNames = ["coin", "coins"]
 
 allCoinNames :: [T.Text]
 allCoinNames = coinNames ++ aggregateCoinNames
+
+
+genericErrorMsg :: T.Text
+genericErrorMsg = "Unfortunately, an error occured while executing your command."
