@@ -455,24 +455,31 @@ findExit r ln = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
 
 look :: Action
 look (mq, i, cols) [] = getWS >>= \ws ->
-    let p  = (ws^.pcTbl) ! i
-        ri = p^.rmId
-        r  = (ws^.rmTbl) ! ri
+    let p       = (ws^.pcTbl) ! i
+        ri      = p^.rmId
+        r       = (ws^.rmTbl) ! ri
         primary = T.unlines . concatMap (wordWrap cols) $ [ r^.name, r^.desc ]
         suppl   = mkExitsSummary cols r <> ricd
         ricd    = mkRmInvCoinsDesc i cols ws ri
     in send mq $ primary <> suppl <> nlt
 look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -- TODO: Are you nubbing everywhere you should nub?
     let p  = (ws^.pcTbl)    ! i
-        ri  = p^.rmId
+        ri = p^.rmId
         is = (ws^.invTbl)   ! ri
         c  = (ws^.coinsTbl) ! ri
-    in if (not . null $ is) || (c /= mempty)
+    in send mq $ if (not . null $ is) || (c /= mempty)
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
-           in undefined -- TODO: do
-               --mapM_ (procGecrMisRm_ (descEnts ws)) . zip gecrs $ miss
-               --mapM_ (procReconciledCoinsRm_ descCoins) rcs
-      else send mq $ "You don't see anything here to look at." <> nlt <> nlt
+               eiss               = zipWith (curry procGecrMisRm) gecrs miss
+               ecs                = map procReconciledCoinsRm rcs
+               invDesc            = foldl' (helperLookEitherInv ws) "" eiss
+               coinsDesc          = foldl' (helperLookEitherCoins ) "" ecs
+           in invDesc <> coinsDesc
+      else "You don't see anything here to look at." <> nlt <> nlt
+  where
+    helperLookEitherInv _  acc (Left  msg) = acc <> msg                     <> nlt
+    helperLookEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> nlt
+    helperLookEitherCoins  acc (Left  msg) = acc <> msg                     <> nlt
+    helperLookEitherCoins  acc (Right c  ) = acc <> mkCoinsDesc cols c      <> nlt
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
@@ -501,7 +508,7 @@ mkEntDescs i cols ws is = let boths = [ (ei, (ws^.entTbl) ! ei) | ei <- is ]
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
 mkEntDesc i cols ws (ei, e) = let t       = (ws^.typeTbl) ! ei
-                                  primary = (<> nlt) . T.unlines . wordWrap cols $ e^.desc
+                                  primary = T.unlines . wordWrap cols $ e^.desc
                                   suppl   = case t of ConType -> mkInvCoinsDesc i cols ws ei e
                                                       MobType -> undefined -- TODO: mkEqDesc       ws ei e
                                                       _       -> ""
@@ -531,7 +538,7 @@ dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 
 mkEntsInInvDesc :: Cols -> WorldState -> Inv -> T.Text
-mkEntsInInvDesc cols ws = (<> nlt) . T.unlines . concatMap (wordWrapIndent ind cols . helper) . mkNameCountBothList ws
+mkEntsInInvDesc cols ws = T.unlines . concatMap (wordWrapIndent ind cols . helper) . mkNameCountBothList ws
   where
     helper (en, c, (s, _)) | c == 1 = nameCol en <> "1 " <> s
     helper (en, c, b     )          = nameCol en <> showText c <> " "  <> mkPlurFromBoth b
@@ -548,7 +555,7 @@ mkCoinsSummary cols c = helper mkCoinsWithNamesList
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
-mkCoinsDesc cols (Coins (cop, sil, gol)) = (<> nlt) . T.unlines . intercalate [""] . map (wordWrapIndent 2 cols) . filter (not . T.null) $ [copDesc, silDesc, golDesc]
+mkCoinsDesc cols (Coins (cop, sil, gol)) = T.unlines . intercalate [""] . map (wordWrap cols) . filter (not . T.null) $ [copDesc, silDesc, golDesc]
   where -- TODO: Come up with good descriptions.
     copDesc = if cop /= 0 then "The copper piece is round and shiny." else ""
     silDesc = if sil /= 0 then "The silver piece is round and shiny." else ""
