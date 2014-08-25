@@ -61,12 +61,11 @@ import qualified Data.Text.IO as T (readFile)
 -- [DONE] 1. Consider using conduit.
 -- [DONE] 2. Go into server mode. Accept incoming connections.
 -- 3. Implement client-based routing of output.
--- 4. Refactor the output helper functions so that they all expect a list of text.
--- 5. Refactor the output helper functions so that line breaks are handled consistently.
--- 6. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
+-- 4. Implement the broadcasting of messages.
+-- 5. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
 -- a. Code reduction.
 -- b. Consistency in binding names.
--- c. Sylistic issues. Use ++ instead of <> where applicable, etc.
+-- c. Sylistic issues. Use ++ instead of <> where applicable. Use <> or concat lists of text(?), etc.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -129,7 +128,7 @@ cmdList = -- ==================================================
           --, Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
           --, Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
-          --, Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
+          , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
           , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
           , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
           , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
@@ -264,7 +263,7 @@ server :: Handle -> MsgQueue -> Id -> MudStack ()
 server h mq i = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
   FromServer msg -> liftIO . hPutStr h $ msg^.unpacked
   FromClient msg -> let msg' = T.strip msg
-                    in unless (T.null msg') (handleInp mq i msg')
+                    in unless (T.null msg') (handleInp mq i msg' `catch` topLvlExHandler) -- TODO: Figure out how to handle exceptions.
   Prompt     p   -> liftIO $ hPutStr h (p^.unpacked) >> hFlush h
 
 
@@ -314,7 +313,7 @@ mkCmdListWithRmLinks :: Rm -> [Cmd]
 mkCmdListWithRmLinks r = cmdList <> [ mkCmdForRmLink rl | rl <- r^.rmLinks, rl^.linkName `notElem` stdLinkNames ]
   where
     mkCmdForRmLink rl = let ln = rl^.linkName.to T.toLower
-                        in Cmd { cmdName = ln, action = undefined {- go ln -}, cmdDesc = "" }
+                        in Cmd { cmdName = ln, action = go ln, cmdDesc = "" }
 
 
 -- ==================================================
@@ -428,8 +427,8 @@ goDispatcher mic rs = mapM_ (tryMove mic) rs
 tryMove :: MsgQueueIdCols -> T.Text -> MudStack ()
 tryMove mic@(mq, i, cols) dir = let dir' = T.toLower dir
                                 in helper dir' >>= \case
-                                  Left msg -> send mq . (<> nlt) . T.unlines . wordWrap cols $ msg
-                                  Right _  -> undefined --TODO: look mic []
+                                  Left  msg -> send mq . (<> nlt) . T.unlines . wordWrap cols $ msg
+                                  Right _   -> look mic []
   where
     helper dir' = onWS $ \(t, ws) ->
                       let p = (ws^.pcTbl) ! i
@@ -454,43 +453,37 @@ findExit r ln = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
 -----
 
 
-{-
 look :: Action
 look (mq, i, cols) [] = getWS >>= \ws ->
     let p  = (ws^.pcTbl) ! i
         ri = p^.rmId
         r  = (ws^.rmTbl) ! ri
-    in mkRmInvCoindsDesc i ws ri >>= \ricd ->
-        output mqi $ [ r^.name, r^.desc, mkExitsSummary r ] ++ ricd ++ [""]
-  where
-    mkRmDesc r = r^.name <> nlt <> r^.desc
-look mqi rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -- TODO: Are you nubbing everywhere you should nub?
-    let p  = (ws^.pcTbl)    ! 0
-        i  = p^.rmId
-        is = (ws^.invTbl)   ! i
-        c  = (ws^.coinsTbl) ! i
+        primary = T.unlines . concatMap (wordWrap cols) $ [ r^.name, r^.desc ]
+        suppl   = mkExitsSummary cols r <> ricd
+        ricd    = mkRmInvCoinsDesc i cols ws ri
+    in send mq $ primary <> suppl <> nlt
+look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -- TODO: Are you nubbing everywhere you should nub?
+    let p  = (ws^.pcTbl)    ! i
+        ri  = p^.rmId
+        is = (ws^.invTbl)   ! ri
+        c  = (ws^.coinsTbl) ! ri
     in if (not . null $ is) || (c /= mempty)
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
-           in undefined --do
+           in undefined -- TODO: do
                --mapM_ (procGecrMisRm_ (descEnts ws)) . zip gecrs $ miss
                --mapM_ (procReconciledCoinsRm_ descCoins) rcs
-      else output mqi ["You don't see anything here to look at.", ""]
+      else send mq $ "You don't see anything here to look at." <> nlt <> nlt
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
-mkRmInvCoindsDesc :: Id -> WorldState -> Id -> MudStack [T.Text]
-mkRmInvCoindsDesc i ws ri = let is = (ws^.invTbl)   ! ri
-                                c  = (ws^.coinsTbl) ! ri
-                            in do
-                                cols <- getPlaColumns i
-                                let entDescs = map (mkEntInRmDesc cols) . mkNameCountBothList ws $ is
-                                return $ if c /= mempty
-                                  then (entDescs ++) . mkCoinsSummary $ c
-                                  else entDescs
+mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
+mkRmInvCoinsDesc i cols ws ri = let is       = (ws^.invTbl)   ! ri
+                                    c        = (ws^.coinsTbl) ! ri
+                                    entDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkEntInRmDesc cols) . mkNameCountBothList ws $ is
+                                in if c == mempty then entDescs else entDescs <> mkCoinsSummary cols c
   where
-    mkEntInRmDesc cols (en, count, (s, _)) | count == 1 = wordWrapIndent 2 cols $ aOrAn s <> " " <> bracketQuote en
-    mkEntInRmDesc cols (en, count, b)                   = wordWrapIndent 2 cols $ showText count <> " " <> mkPlurFromBoth b <> " " <> bracketQuote en
--}
+    mkEntInRmDesc cols (en, count, (s, _)) | count == 1 = aOrAn s <> " " <> bracketQuote en
+    mkEntInRmDesc cols (en, count, b)                   = showText count <> " " <> mkPlurFromBoth b <> " " <> bracketQuote en
 
 
 mkNameCountBothList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
@@ -501,37 +494,36 @@ mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
                             in nub . zip3 ens cs $ ebgns
 
 
-{-
-descEnts :: WorldState -> Inv -> MudStack ()
-descEnts ws is = let boths = [ (i, (ws^.entTbl) ! i) | i <- is ]
-                 in mapM_ (descEnt ws) boths
+mkEntDescs :: Id -> Cols -> WorldState -> Inv -> T.Text
+mkEntDescs i cols ws is = let boths = [ (ei, (ws^.entTbl) ! ei) | ei <- is ]
+                          in T.concat . map (mkEntDesc i cols ws) $ boths
 
 
-descEnt :: WorldState -> (Id, Ent) -> MudStack ()
-descEnt ws (i, e) = let t = (ws^.typeTbl) ! i
-                    in do
-                        e^.desc.to output
-                        when (t == ConType) $ mkInvCoinsDesc ws i e
-                        when (t == MobType) $ mkEqDesc       ws i e
+mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
+mkEntDesc i cols ws (ei, e) = let t       = (ws^.typeTbl) ! ei
+                                  primary = (<> nlt) . T.unlines . wordWrap cols $ e^.desc
+                                  suppl   = case t of ConType -> mkInvCoinsDesc i cols ws ei e
+                                                      MobType -> undefined -- TODO: mkEqDesc       ws ei e
+                                                      _       -> ""
+                              in primary <> suppl
 
 
-mkInvCoinsDesc :: WorldState -> Id -> Ent -> MudStack ()
-mkInvCoinsDesc ws i e = let is       = (ws^.invTbl)   ! i
-                            c        = (ws^.coinsTbl) ! i
-                            hasInv   = not . null $ is
-                            hasCoins = c /= mempty
-                        in case (hasInv, hasCoins) of
-                          (False, False) -> if i == 0
-                                              then output dudeYourHandsAreEmpty
-                                              else outputCon [ "The ", e^.sing, " is empty." ]
-                          (True,  False) -> header >> dispEntsInInv ws is
-                          (False, True ) -> undefined --header >> summarizeCoins c
-                          (True,  True ) -> undefined --header >> dispEntsInInv ws is >> summarizeCoins c
+mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
+mkInvCoinsDesc i cols ws ei e = let is       = (ws^.invTbl)   ! ei
+                                    c        = (ws^.coinsTbl) ! ei
+                                    hasInv   = not . null $ is
+                                    hasCoins = c /= mempty
+                                in case (hasInv, hasCoins) of
+                                  (False, False) -> T.unlines . wordWrap cols $ if ei == i
+                                                      then dudeYourHandsAreEmpty
+                                                      else "The " <> e^.sing <> " is empty."
+                                  (True,  False) -> header <> mkEntsInInvDesc cols ws is
+                                  (False, True ) -> header <> mkCoinsSummary  cols c
+                                  (True,  True ) -> header <> mkEntsInInvDesc cols ws is <> mkCoinsSummary cols c
   where
     header
-      | i == 0    = output "You are carrying:"
-      | otherwise = output $ "The " <> e^.sing <> " contains:"
--}
+      | ei == i   = "You are carrying:" <> nlt
+      | otherwise = T.unlines . wordWrap cols $ "The " <> e^.sing <> " contains:"
 
 
 dudeYourHandsAreEmpty :: T.Text
@@ -1402,6 +1394,7 @@ debugThrow mic@(mq, _, cols) rs = ignore mq cols rs >> debugThrow mic []
 -----
 
 
+-- TODO: Show the status of other threads, too.
 debugSniff :: Action
 debugSniff (mq, _, cols) [] = gets (^.nonWorldState.logServices) >>= \ls ->
     let Just (nla, _) = ls^.noticeLog
