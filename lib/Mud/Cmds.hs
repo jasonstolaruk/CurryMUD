@@ -51,7 +51,7 @@ import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M (elems, empty, filter, null, toList)
+import qualified Data.Map.Lazy as M (elems, empty, filter, fromList, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
@@ -124,9 +124,9 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
           --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-          --, Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
+          , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
           , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
-          --, Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
+          , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
           , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
           , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
@@ -218,9 +218,9 @@ adHoc mq = do
         let i   = head . (\\) [0..] $ ks
         -----
         let e   = Ent i "player" "Player Character" "" "You see an ad-hoc player character." 0
-        let is  = [iKewpie1, iBag1, iClub]
-        let co  = mempty
-        let em  = M.empty
+        let is  = [iKewpie1, iBag1, iClub] -- TODO: New items should be created for each new player.
+        let co  = Coins (1, 2, 3)
+        let em  = M.fromList [(RHandS, iSword1), (LHandS, iSword2)] -- TODO: New items should be created for each new player.
         let m   = Mob Male 10 10 10 10 10 10 0 RHand
         let pc  = PC 1 Human
         -----
@@ -596,35 +596,39 @@ inv (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
                eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                ecs                = map procReconciledCoinsPCInv rcs
-               invDesc            = foldl' (helperInvEitherInv ws) "" eiss
-               coinsDesc          = foldl' (helperInvEitherCoins ) "" ecs
+               invDesc            = foldl' (helperEitherInv ws) "" eiss
+               coinsDesc          = foldl' (helperEitherCoins ) "" ecs
            in invDesc <> coinsDesc
       else (<> nlt) . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty
   where
-    helperInvEitherInv _  acc (Left  msg) = acc <> msg                     <> nlt
-    helperInvEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> nlt
-    helperInvEitherCoins  acc (Left  msg) = acc <> msg                     <> nlt
-    helperInvEitherCoins  acc (Right c  ) = acc <> mkCoinsDesc cols c      <> nlt
+    helperEitherInv _  acc (Left  msg) = acc <> msg                     <> nlt
+    helperEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> nlt
+    helperEitherCoins  acc (Left  msg) = acc <> msg                     <> nlt
+    helperEitherCoins  acc (Right c  ) = acc <> mkCoinsDesc cols c      <> nlt
 
 
 -----
 
 
-{-
 equip :: Action
-equip [] = getWS >>= \ws ->
-    let e = (ws^.entTbl) ! 0
-    in mkEqDesc ws 0 e
-equip rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
-    let em = (ws^.eqTbl) ! 0
+equip (mq, i, cols) [] = getWS >>= \ws ->
+    let e = (ws^.entTbl) ! i
+    in send mq . (<> nlt) . mkEqDesc i cols ws i e $ PCType
+equip (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
+    let em = (ws^.eqTbl) ! i
         is = M.elems em
-    in if not . M.null $ em
+    in send mq $ if (not . M.null $ em)
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is mempty
-           in undefined --do
-               --mapM_ (procGecrMisPCEq_ (descEnts ws)) . zip gecrs $ miss
-               --unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt <> nlt)
-      else output $ dudeYou'reNaked <> nlt
--}
+               eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
+               invDesc            = foldl' (helperEitherInv ws) "" eiss
+               coinsDesc          = if (not . null $ rcs)
+                                      then (<> nlt) . T.unlines . wordWrap cols $ "You don't have any coins among your readied equipment."
+                                      else ""
+           in invDesc <> coinsDesc
+      else (<> nlt) . T.unlines . wordWrap cols $ dudeYou'reNaked
+  where
+    helperEitherInv _  acc (Left  msg) = acc <> msg                     <> nlt
+    helperEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> nlt
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
@@ -656,30 +660,29 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 -----
 
 
-{-
 getAction :: Action
-getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction rs = helper >>= output . (<> nlt)
+getAction (mq, _, cols) [] = advise mq cols ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
+getAction (mq, i, cols) rs = helper >>= send mq . (<> nlt)
   where
     helper = onWS $ \(t, ws) ->
-        let p   = (ws^.pcTbl)    ! 0
-            i   = p^.rmId
-            ris = (ws^.invTbl)   ! i
-            rc  = (ws^.coinsTbl) ! i
+        let p   = (ws^.pcTbl)    ! i
+            ri  = p^.rmId
+            ris = (ws^.invTbl)   ! ri
+            rc  = (ws^.coinsTbl) ! ri
         in if (not . null $ ris) || (rc /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs ris rc
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                = map procReconciledCoinsRm rcs
-                   (ws',  msgs)       = foldl' (helperGetDropEitherInv   Get i 0) (ws, "")    eiss
-                   (ws'', msgs')      = foldl' (helperGetDropEitherCoins Get i 0) (ws', msgs) ecs
+                   (ws',  msgs)       = foldl' (helperGetDropEitherInv   Get ri i) (ws, "")    eiss
+                   (ws'', msgs')      = foldl' (helperGetDropEitherCoins Get ri i) (ws', msgs) ecs
                in putTMVar t ws'' >> return msgs'
-          else putTMVar t ws >> return ("You don't see anything here to pick up." <> nlt)
+          else putTMVar t ws >> return (T.unlines . wordWrap cols $ "You don't see anything here to pick up.")
 
 
-advise :: [HelpTopic] -> T.Text -> MudStack ()
-advise []  msg = output $ msg <> nlt
-advise [h] msg = output msg >> outputCon [ "For more information, type ", dblQuote . (<>) "help " $ h, ".", nlt ]
-advise hs  msg = output msg >> outputCon [ "See also the following help topics: ", helpTopics,         ".", nlt ]
+advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
+advise mq cols []  msg = send mq . (<> nlt) . T.unlines . wordWrap cols $ msg
+advise mq cols [h] msg = send mq . (<> nlt) . T.unlines . concatMap (wordWrap cols) $ [ msg, T.concat [ "For more information, type ", dblQuote . ("help " <>) $ h, "." ] ]
+advise mq cols hs  msg = send mq . (<> nlt) . T.unlines . concatMap (wordWrap cols) $ [ msg, T.concat [ "See also the following help topics: ", helpTopics, "." ] ]
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
@@ -734,6 +737,7 @@ mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [c, s, g]
 -----
 
 
+{-
 dropAction :: Action
 dropAction [] = advise ["drop"] $ "Please specify one or more things to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction rs = helper >>= output . (<> nlt)
