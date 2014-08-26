@@ -4,12 +4,13 @@
 
 module Mud.Cmds (serverWrapper) where
 
+import Mud.Ids
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
 import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
-import Mud.StateInIORefT
 import Mud.StateHelpers
+import Mud.StateInIORefT
 import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
@@ -127,7 +128,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
           --, Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
           , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
-          --, Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
+          , Cmd { cmdName = "inv", action = inv, cmdDesc = "Inventory." }
           , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
           , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
           , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
@@ -217,7 +218,7 @@ adHoc mq = do
         let i   = head . (\\) [0..] $ ks
         -----
         let e   = Ent i "player" "Player Character" "" "You see an ad-hoc player character." 0
-        let is  = []
+        let is  = [iKewpie1, iBag1, iClub]
         let co  = mempty
         let em  = M.empty
         let m   = Mob Male 10 10 10 10 10 10 0 RHand
@@ -474,7 +475,7 @@ look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -
                invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                coinsDesc          = foldl' (helperLookEitherCoins ) "" ecs
            in invDesc <> coinsDesc
-      else "You don't see anything here to look at." <> nlt <> nlt
+      else (<> nlt) . T.unlines . wordWrap cols $ "You don't see anything here to look at."
   where
     helperLookEitherInv _  acc (Left  msg) = acc <> msg                     <> nlt
     helperLookEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> nlt
@@ -503,14 +504,15 @@ mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
 
 mkEntDescs :: Id -> Cols -> WorldState -> Inv -> T.Text
 mkEntDescs i cols ws is = let boths = [ (ei, (ws^.entTbl) ! ei) | ei <- is ]
-                          in T.concat . map (mkEntDesc i cols ws) $ boths
+                          in T.intercalate nlt . map (mkEntDesc i cols ws) $ boths
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
 mkEntDesc i cols ws (ei, e) = let t       = (ws^.typeTbl) ! ei
                                   primary = T.unlines . wordWrap cols $ e^.desc
                                   suppl   = case t of ConType -> mkInvCoinsDesc i cols ws ei e
-                                                      MobType -> undefined -- TODO: mkEqDesc       ws ei e
+                                                      MobType -> mkEqDesc       i cols ws ei e t
+                                                      PCType  -> mkEqDesc       i cols ws ei e t
                                                       _       -> ""
                               in primary <> suppl
 
@@ -522,8 +524,8 @@ mkInvCoinsDesc i cols ws ei e = let is       = (ws^.invTbl)   ! ei
                                     hasCoins = c /= mempty
                                 in case (hasInv, hasCoins) of
                                   (False, False) -> T.unlines . wordWrap cols $ if ei == i
-                                                      then dudeYourHandsAreEmpty
-                                                      else "The " <> e^.sing <> " is empty."
+                                                      then dudeYourHandsAreEmpty <> nlt
+                                                      else "The " <> e^.sing <> " is empty." <> nlt
                                   (True,  False) -> header <> mkEntsInInvDesc cols ws is
                                   (False, True ) -> header <> mkCoinsSummary  cols c
                                   (True,  True ) -> header <> mkEntsInInvDesc cols ws is <> mkCoinsSummary cols c
@@ -583,25 +585,32 @@ mkExitsSummary cols r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
 -----
 
 
-{-
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv [] = getWS >>= \ws ->
-    let e  = (ws^.entTbl) ! 0
-    in dispInvCoins ws 0 e >> liftIO newLine
-inv rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
-    let is = (ws^.invTbl)   ! 0
-        c  = (ws^.coinsTbl) ! 0
-    in if (not . null $ is) || (c /= mempty)
+inv (mq, i, cols) [] = getWS >>= \ws ->
+    let e = (ws^.entTbl) ! i
+    in send mq . (<> nlt) . mkInvCoinsDesc i cols ws i $ e
+inv (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
+    let is = (ws^.invTbl)   ! i
+        c  = (ws^.coinsTbl) ! i
+    in send mq $ if (not . null $ is) || (c /= mempty)
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
-           in undefined --do
-               --mapM_ (procGecrMisPCInv_ (descEnts ws)) . zip gecrs $ miss
-               --mapM_ (procReconciledCoinsPCInv_ descCoins) rcs
-      else output $ dudeYourHandsAreEmpty <> nlt
+               eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
+               ecs                = map procReconciledCoinsPCInv rcs
+               invDesc            = foldl' (helperInvEitherInv ws) "" eiss
+               coinsDesc          = foldl' (helperInvEitherCoins ) "" ecs
+           in invDesc <> coinsDesc
+      else (<> nlt) . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty
+  where
+    helperInvEitherInv _  acc (Left  msg) = acc <> msg                     <> nlt
+    helperInvEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> nlt
+    helperInvEitherCoins  acc (Left  msg) = acc <> msg                     <> nlt
+    helperInvEitherCoins  acc (Right c  ) = acc <> mkCoinsDesc cols c      <> nlt
 
 
 -----
 
 
+{-
 equip :: Action
 equip [] = getWS >>= \ws ->
     let e = (ws^.entTbl) ! 0
@@ -615,25 +624,29 @@ equip rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
                --mapM_ (procGecrMisPCEq_ (descEnts ws)) . zip gecrs $ miss
                --unless (null rcs) $ output ("You don't have any coins among your readied equipment." <> nlt <> nlt)
       else output $ dudeYou'reNaked <> nlt
+-}
 
 
-mkEqDesc :: Id -> WorldState -> Id -> Ent -> MudStack [T.Text]
-mkEqDesc i ws ei e = let em    = (ws^.eqTbl) ! ei
-                         descs = map mkDesc . mkSlotNameIdList . M.toList $ em
-                     in if null descs then none else getPlaColumns i >>= \cols ->
-                         return (concat . (++ [[""]]) . ([header] :) $ [ wordWrapIndent 15 cols desc | desc <- descs ])
+mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
+mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
+                                descs = map mkDesc . mkSlotNameIdList . M.toList $ em
+                            in if null descs
+                              then none
+                              else (header <>) . T.unlines . concat $ [ wordWrapIndent 15 cols l | l <- descs ]
   where
     mkSlotNameIdList = map (first pp)
     mkDesc (sn, i')  = let sn'      = parensPad 15 noFinger
                            noFinger = T.breakOn " finger" sn ^._1
                            e'       = (ws^.entTbl) ! i'
-                       in T.concat [ sn', e'^.sing, " ", e'^.name.to bracketQuote ]
-    none -- TODO: Check for PC type instead of for 0.
-      | i == 0    = return [ dudeYou'reNaked, "" ]
-      | otherwise = return [ "The " <> e^.sing <> " doesn't have anything readied.", "" ] -- TODO: What if it's another player?
-    header -- TODO: Check for PC type instead of for 0.
-      | i == 0    = "You have readied the following equipment:"
-      | otherwise = "The " <> e^.sing <> " has readied the following equipment:" -- TODO: What if it's another player?
+                       in sn' <> e'^.sing <> " " <> e'^.name.to bracketQuote
+    none   = T.unlines . wordWrap cols $ if
+      | ei == i      -> dudeYou'reNaked
+      | t  == PCType -> e^.sing <> " doesn't have anything readied."
+      | otherwise    -> "The " <> e^.sing <> " doesn't have anything readied."
+    header = T.unlines . wordWrap cols $ if
+      | ei == i      -> "You have readied the following equipment:"
+      | t  == PCType -> e^.sing <> " has readied the following equipment:"
+      | otherwise    -> "The " <> e^.sing <> " has readied the following equipment:"
 
 
 dudeYou'reNaked :: T.Text
@@ -643,6 +656,7 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 -----
 
 
+{-
 getAction :: Action
 getAction [] = advise ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction rs = helper >>= output . (<> nlt)
