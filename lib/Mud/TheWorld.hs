@@ -30,7 +30,7 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world"
 
-    putRm iHill [iGP1, iLongSword] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
+    putRm iHill [iGP1, iLongSword, iKewpie1, iBag1, iClub, iSword1, iSword2] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
     putRm iCliff [iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4] mempty (Rm "The cliff" "You have reached the edge of a cliff. \
         \There is a sizeable hole in the ground. Next to the hole is a small hut." 0 [RmLink "w" iHill, RmLink "d" iHole, RmLink "hut" iHut])
     putRm iHole [iNeck1, iNeck2, iNeck3, iNeck4, iHelm] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. \

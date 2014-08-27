@@ -33,7 +33,7 @@ import Control.Monad.State (get, gets)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, find, foldl', intercalate, nub, nubBy, sort)
+import Data.List ((\\), delete, find, foldl', intercalate, nub, nubBy, sort, zip4)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
@@ -217,16 +217,17 @@ adHoc mq = do
         let ks  = ws^.typeTbl.to IM.keys
         let i   = head . (\\) [0..] $ ks
         -----
-        let e   = Ent i "player" "Player Character" "" "You see an ad-hoc player character." 0
-        let is  = [iKewpie1, iBag1, iClub] -- TODO: New items should be created for each new player.
-        let co  = Coins (1, 2, 3)
-        let em  = M.fromList [(RHandS, iSword1), (LHandS, iSword2)] -- TODO: New items should be created for each new player.
+        let e   = Ent i "player" ("PlayerCharacter" <> showText i) "" "You see an ad-hoc player character." 0
+        let is  = []
+        let co  = mempty
+        let em  = M.empty
         let m   = Mob Male 10 10 10 10 10 10 0 RHand
         let pc  = PC 1 Human
+        let ris = i : (ws^.invTbl) ! iHill
         -----
         let pla = Pla 30
         -----
-        let ws'  = ws  & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc
+        let ws'  = ws  & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc & invTbl.at iHill ?~ ris
         let pt'  = pt  & at i ?~ pla
         let mqt' = mqt & at i ?~ mq
         -----
@@ -432,12 +433,15 @@ tryMove mic@(mq, i, cols) dir = let dir' = T.toLower dir
                                   Right _   -> look mic []
   where
     helper dir' = onWS $ \(t, ws) ->
-                      let p = (ws^.pcTbl) ! i
-                          r = (ws^.rmTbl) ! (p^.rmId)
+                      let p   = (ws^.pcTbl)  ! i
+                          ri  = p^.rmId
+                          r   = (ws^.rmTbl)  ! ri
+                          ris = (ws^.invTbl) ! ri
                       in case findExit r dir' of
-                        Nothing -> putTMVar t ws >> return (Left . sorry $ dir')
-                        Just ri -> let p' = p & rmId .~ ri
-                                   in putTMVar t (ws & pcTbl.at i ?~ p') >> return (Right ())
+                        Nothing  -> putTMVar t ws >> return (Left . sorry $ dir')
+                        Just ri' -> let p'   = p & rmId .~ ri'
+                                        ris' = (ws^.invTbl) ! ri'
+                                    in putTMVar t (ws & pcTbl.at i ?~ p' & invTbl.at ri ?~ (delete i ris) & invTbl.at ri' ?~ (i : ris')) >> return (Right ())
     sorry dir'  = if dir' `elem` stdLinkNames
                     then "You can't go that way."
                     else dblQuote dir <> " is not a valid direction."
@@ -461,7 +465,7 @@ look (mq, i, cols) [] = getWS >>= \ws ->
         r       = (ws^.rmTbl) ! ri
         primary = T.unlines . concatMap (wordWrap cols) $ [ r^.name, r^.desc ]
         suppl   = mkExitsSummary cols r <> ricd
-        ricd    = mkRmInvCoinsDesc i cols ws ri
+        ricd    = mkRmInvCoinsDesc cols ws ri
     in send mq $ primary <> suppl <> nlt
 look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -- TODO: Are you nubbing everywhere you should nub?
     let p  = (ws^.pcTbl)    ! i
@@ -484,14 +488,18 @@ look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
-mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
-mkRmInvCoinsDesc i cols ws ri = let is       = (ws^.invTbl)   ! ri
-                                    c        = (ws^.coinsTbl) ! ri
-                                    entDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkEntInRmDesc cols) . mkNameCountBothList ws $ is
-                                in if c == mempty then entDescs else entDescs <> mkCoinsSummary cols c
+mkRmInvCoinsDesc :: Cols -> WorldState -> Id -> T.Text
+mkRmInvCoinsDesc cols ws ri = let is       = (ws^.invTbl)   ! ri
+                                  c        = (ws^.coinsTbl) ! ri
+                                  entDescs = T.unlines . concatMap (wordWrapIndent 2 cols . helper) . mkNameCountBothTypeList ws $ is
+                              in if c == mempty then entDescs else entDescs <> mkCoinsSummary cols c
   where
-    mkEntInRmDesc cols (en, count, (s, _)) | count == 1 = aOrAn s <> " " <> bracketQuote en
-    mkEntInRmDesc cols (en, count, b)                   = showText count <> " " <> mkPlurFromBoth b <> " " <> bracketQuote en
+    helper (en, c, (s, _), t)
+      | c == 1 = f s <> " " <> bracketQuote en
+        where
+          f = case t of PCType -> id
+                        _      -> aOrAn
+    helper (en, c, b,      _) = showText c <> " " <> mkPlurFromBoth b <> " " <> bracketQuote en
 
 
 mkNameCountBothList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
@@ -500,6 +508,15 @@ mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
                                 ebgns = [ getEntBothGramNos e | e <- es ]
                                 cs    = mkCountList ebgns
                             in nub . zip3 ens cs $ ebgns
+
+
+mkNameCountBothTypeList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos, Type)]
+mkNameCountBothTypeList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
+                                    ens   = [ e^.name             | e <- es ]
+                                    ebgns = [ getEntBothGramNos e | e <- es ]
+                                    cs    = mkCountList ebgns
+                                    ts    = [ (ws^.typeTbl) ! i   | i <- is ]
+                                in nub . zip4 ens cs ebgns $ ts
 
 
 mkEntDescs :: Id -> Cols -> WorldState -> Inv -> T.Text
@@ -737,29 +754,29 @@ mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [c, s, g]
 -----
 
 
-{-
 dropAction :: Action
-dropAction [] = advise ["drop"] $ "Please specify one or more things to drop, as in " <> dblQuote "drop sword" <> "."
-dropAction rs = helper >>= output . (<> nlt)
+dropAction (mq, _, cols) [] = advise mq cols ["drop"] $ "Please specify one or more things to drop, as in " <> dblQuote "drop sword" <> "."
+dropAction (mq, i, cols) rs = helper >>= send mq . (<> nlt)
   where
     helper = onWS $ \(t, ws) ->
-        let p   = (ws^.pcTbl)    ! 0
-            pis = (ws^.invTbl)   ! 0
-            pc  = (ws^.coinsTbl) ! 0
-            i   = p^.rmId
+        let p   = (ws^.pcTbl)    ! i
+            pis = (ws^.invTbl)   ! i
+            pc  = (ws^.coinsTbl) ! i
+            ri  = p^.rmId
         in if (not . null $ pis) || (pc /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs pis pc
                    eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                = map procReconciledCoinsPCInv rcs
-                   (ws',  msgs)       = foldl' (helperGetDropEitherInv   Drop 0 i) (ws, "")    eiss
-                   (ws'', msgs')      = foldl' (helperGetDropEitherCoins Drop 0 i) (ws', msgs) ecs
+                   (ws',  msgs)       = foldl' (helperGetDropEitherInv   Drop i ri) (ws, "")    eiss
+                   (ws'', msgs')      = foldl' (helperGetDropEitherCoins Drop i ri) (ws', msgs) ecs
                in putTMVar t ws'' >> return msgs'
-          else putTMVar t ws >> return dudeYourHandsAreEmpty
+          else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
 
 
 -----
 
 
+{-
 putAction :: Action
 putAction []  = advise ["put"] $ "Please specify one or more things you want to put, followed by where you want to put them, as in " <> dblQuote "put doll sack" <> "."
 putAction [r] = advise ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
