@@ -138,7 +138,7 @@ getPlaColumns i = (^.columns) <$> getPla i
 -- Misc. helpers:
 
 
-sortInv :: WorldState -> Inv -> Inv
+sortInv :: WorldState -> Inv -> Inv -- TODO: Should we be using this more?
 sortInv ws is = ((^..folded._1) . sortBy nameThenSing) zipped
   where
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
