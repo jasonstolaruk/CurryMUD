@@ -18,7 +18,7 @@ import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRet
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
-import Control.Concurrent (forkFinally, forkIO, myThreadId)
+import Control.Concurrent (forkFinally, forkIO, killThread, myThreadId, ThreadId)
 import Control.Concurrent.Async (asyncThreadId, race_)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
@@ -135,7 +135,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
           , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
           , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
-          --, Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
+          , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
           --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
           --, Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
           , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
@@ -180,17 +180,18 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO ex
 
 listen :: MudStack ()
 listen = do
+    ti <- liftIO myThreadId
     logNotice "listen" $ "listening for incoming connections on port " <> show port
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
     forever $ do
         (h, host, port') <- liftIO . accept $ sock
         logNotice "listen" $ "connected to " <> show host <> " on local port " <> show port'
         s <- get
-        liftIO $ forkFinally (runStateInIORefT (talk h) s) (\_ -> hClose h)
+        liftIO $ forkFinally (runStateInIORefT (talk ti h) s) (\_ -> hClose h)
 
 
-talk :: Handle -> MudStack ()
-talk h = do
+talk :: ThreadId -> Handle -> MudStack ()
+talk ti h = do
     liftIO configBuffer
     mq <- liftIO newTQueueIO
     i  <- adHoc mq
@@ -198,8 +199,8 @@ talk h = do
     dumpTitle mq
     prompt mq "> "
     s <- get
-    liftIO $ race_ (runStateInIORefT (server  h mq i) s)
-                   (runStateInIORefT (receive h mq)   s)
+    liftIO $ race_ (runStateInIORefT (server  ti h mq i) s)
+                   (runStateInIORefT (receive    h mq)   s)
   where
     configBuffer = hSetNewlineMode h universalNewlineMode >> hSetBuffering h LineBuffering
 
@@ -261,12 +262,16 @@ prompt :: MsgQueue -> T.Text -> MudStack ()
 prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
-server :: Handle -> MsgQueue -> Id -> MudStack ()
-server h mq i = forever $ (liftIO . atomically . readTQueue $ mq) >>= \case
-  FromServer msg -> liftIO . hPutStr h $ msg^.unpacked
-  FromClient msg -> let msg' = T.strip msg
-                    in unless (T.null msg') (handleInp mq i msg' `catch` topLvlExHandler) -- TODO: Figure out how to handle exceptions.
-  Prompt     p   -> liftIO $ hPutStr h (p^.unpacked) >> hFlush h
+server :: ThreadId -> Handle -> MsgQueue -> Id -> MudStack ()
+server ti h mq i = do
+    m <- (liftIO . atomically . readTQueue $ mq)
+    case m of
+      FromServer msg -> (liftIO . hPutStr h $ msg^.unpacked) >> server ti h mq i
+      FromClient msg -> let msg' = T.strip msg
+                        in unless (T.null msg') (handleInp mq i msg' `catch` topLvlExHandler) >> server ti h mq i -- TODO: Figure out how to handle exceptions.
+      Prompt     p   -> (liftIO $ hPutStr h (p^.unpacked) >> hFlush h) >> server ti h mq i
+      Quit       msg -> (liftIO . hPutStr h $ msg^.unpacked) >> handleQuit i
+      Shutdown       -> liftIO . killThread $ ti
 
 
 receive :: Handle -> MsgQueue -> MudStack ()
@@ -1325,11 +1330,32 @@ uptimeExHandler mq cols e = logIOEx "uptime" e >> (send mq . T.unlines . wordWra
 -----
 
 
-{-
 quit :: Action
-quit [] = output ("Thanks for playing! See you next time." <> nlt <> nlt) >> liftIO exitSuccess
-quit _  = outputCon [ "Type ", dblQuote "quit", " with no arguments to quit the game.", nlt ]
--}
+quit (mq, _, cols) [] = liftIO . atomically . writeTQueue mq . Quit . (<> nlt) . T.unlines . wordWrap cols $ "Thanks for playing! See you next time."
+quit (mq, _, cols) _  = send mq . (<> nlt) . T.unlines . wordWrap cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
+
+
+handleQuit :: Id -> MudStack ()
+handleQuit i = do
+    logNotice "handleQuit" $ "player " <> show i <> " has quit"
+    wsTMVar  <- gets (^.worldStateTMVar)
+    ptTMVar  <- gets (^.nonWorldState.plaTblTMVar)
+    mqtTMVar <- gets (^.nonWorldState.msgQueueTblTMVar)
+    liftIO . atomically $ do
+        ws  <- takeTMVar wsTMVar
+        pt  <- takeTMVar ptTMVar
+        mqt <- takeTMVar mqtTMVar
+        -----
+        let p    = (ws^.pcTbl)  ! i
+        let ri   = p^.rmId
+        let ris  = (ws^.invTbl) ! ri
+        let ws'  = ws  & typeTbl.at i .~ Nothing & entTbl.at i .~ Nothing & invTbl.at i .~ Nothing & coinsTbl.at i .~ Nothing & eqTbl.at i .~ Nothing & mobTbl.at i .~ Nothing & pcTbl.at i .~ Nothing & invTbl.at ri ?~ delete i ris
+        let pt'  = pt  & at i .~ Nothing
+        let mqt' = mqt & at i .~ Nothing
+        -----
+        putTMVar wsTMVar  ws'
+        putTMVar ptTMVar  pt'
+        putTMVar mqtTMVar mqt'
 
 
 -- ==================================================
@@ -1344,8 +1370,8 @@ wizDispCmdList = dispCmdList (cmdPred . Just $ wizCmdChar)
 
 
 wizShutdown :: Action
-wizShutdown _             [] = logNotice "wizShutdown" "shutting down" >> liftIO exitSuccess
-wizShutdown (mq, _, cols) _  = send mq . T.unlines . (++ [""]) . wordWrap cols $  "Type " <> quoted <> " with no arguments to shut down the game server."
+wizShutdown (mq, _, _   ) [] = logNotice "wizShutdown" "shutting down" >> (liftIO . atomically . writeTQueue mq $ Shutdown)
+wizShutdown (mq, _, cols) _  = send mq . (<> nlt) . T.unlines . wordWrap cols $  "Type " <> quoted <> " with no arguments to shut down the game server."
   where
     quoted = dblQuote . prefixWizCmd $ "shutdown"
 

@@ -320,6 +320,8 @@ type MsgQueue = TQueue Msg
 data Msg = FromServer T.Text
          | FromClient T.Text
          | Prompt     T.Text
+         | Quit       T.Text
+         | Shutdown
 
 
 -- ==================================================
