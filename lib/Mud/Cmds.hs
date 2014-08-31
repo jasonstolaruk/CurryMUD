@@ -122,7 +122,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = "about", action = about, cmdDesc = "About this game." }
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-          --, Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
+          , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
           , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
           , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
@@ -137,7 +137,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
           , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
           --, Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
-          --, Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
+          , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
           , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
           , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
           , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
@@ -805,29 +805,29 @@ putAction (mq, i, cols) rs  = helper >>= send mq . (<> nlt)
       else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
 
 
-type InvWithCont   = Inv
-type CoinsWithCont = Coins
-type InvToPut      = Inv
-type CoinsToPut    = Coins
+type InvWithCon   = Inv
+type CoinsWithCon = Coins
+type PCInv         = Inv
+type PCCoins       = Coins
 
 
-shufflePut :: Id -> Cols -> (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCont -> CoinsWithCont -> InvToPut -> CoinsToPut -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
+shufflePut :: Id -> Cols -> (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCon -> CoinsWithCon -> PCInv -> PCCoins -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
 shufflePut i cols (t, ws) cn rs is c pis pc f = let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
-                                                  in if null miss && (not . null $ rcs)
-                                                    then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't put something inside a coin.")
-                                                    else case f . head . zip gecrs $ miss of
-                                                      Left  msg  -> putTMVar t ws >> return msg
-                                                      Right [ci] -> let e  = (ws^.entTbl)  ! ci
-                                                                        t' = (ws^.typeTbl) ! ci
-                                                                    in if t' /= ConType
-                                                                      then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.")
-                                                                      else let (gecrs', miss', rcs') = resolveEntCoinNames ws rs pis pc
-                                                                               eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
-                                                                               ecs                   = map procReconciledCoinsPCInv rcs'
-                                                                               (ws',  msgs)          = foldl' (helperPutRemEitherInv   cols Put i ci e) (ws, "")    eiss
-                                                                               (ws'', msgs')         = foldl' (helperPutRemEitherCoins cols Put i ci e) (ws', msgs) ecs
-                                                                           in putTMVar t ws'' >> return msgs'
-                                                      Right _   -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only put things into one container at a time.")
+                                                in if null miss && (not . null $ rcs)
+                                                  then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't put something inside a coin.")
+                                                  else case f . head . zip gecrs $ miss of
+                                                    Left  msg  -> putTMVar t ws >> return msg
+                                                    Right [ci] -> let e  = (ws^.entTbl)  ! ci
+                                                                      t' = (ws^.typeTbl) ! ci
+                                                                  in if t' /= ConType
+                                                                    then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.")
+                                                                    else let (gecrs', miss', rcs') = resolveEntCoinNames ws rs pis pc
+                                                                             eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
+                                                                             ecs                   = map procReconciledCoinsPCInv rcs'
+                                                                             (ws',  msgs)          = foldl' (helperPutRemEitherInv   cols Put i ci e) (ws, "")    eiss
+                                                                             (ws'', msgs')         = foldl' (helperPutRemEitherCoins cols Put i ci e) (ws', msgs) ecs
+                                                                         in putTMVar t ws'' >> return msgs'
+                                                    Right _   -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only put things into one container at a time.")
 
 
 type ToEnt = Ent
@@ -837,7 +837,7 @@ helperPutRemEitherInv :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldSt
 helperPutRemEitherInv cols por fi ti te (ws, msgs) = \case
   Left  msg -> (ws, msgs <> msg)
   Right is  -> let (is', msgs') = if ti `elem` is
-                                    then (filter (/= ti) is, (msgs <>) . T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself.")
+                                    then (filter (/= ti) is, (msgs <>) . T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself.") -- TODO: What about removing?
                                     else (is, msgs)
                    fis = (ws^.invTbl) ! fi
                    tis = (ws^.invTbl) ! ti
@@ -870,7 +870,7 @@ helperPutRemEitherCoins cols por fi ti te (ws, msgs) = \case
 
 
 mkPutRemCoinsDesc :: Cols -> PutOrRem -> Coins -> ToEnt -> T.Text
-mkPutRemCoinsDesc cols por (Coins (cop, sil, gol)) te = T.concat . map (T.unlines . wordWrap cols) $ [c, s, g]
+mkPutRemCoinsDesc cols por (Coins (cop, sil, gol)) te = T.unlines . concatMap (wordWrap cols) . filter (not . T.null) $ [c, s, g]
   where
     c = if cop /= 0 then helper cop "copper piece" else ""
     s = if sil /= 0 then helper sil "silver piece" else ""
@@ -886,52 +886,52 @@ mkPutRemCoinsDesc cols por (Coins (cop, sil, gol)) te = T.concat . map (T.unline
 -----
 
 
-{-
 remove :: Action
-remove []  = advise ["remove"] $ "Please specify one or more things to remove, followed by the container you want to remove them from, as in " <> dblQuote "remove doll sack" <> "."
-remove [r] = advise ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
-remove rs  = helper >>= output . (<> nlt)
+remove (mq, _, cols) []  = advise mq cols ["remove"] $ "Please specify one or more things to remove, followed by the container you want to remove them from, as in " <> dblQuote "remove doll sack" <> "."
+remove (mq, _, cols) [r] = advise mq cols ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
+remove (mq, i, cols) rs  = helper >>= send mq . (<> nlt)
   where
     helper = onWS $ \(t, ws) ->
-      let p   = (ws^.pcTbl)    ! 0
-          pis = (ws^.invTbl)   ! 0
-          pc  = (ws^.coinsTbl) ! 0
+      let p   = (ws^.pcTbl)    ! i
+          pis = (ws^.invTbl)   ! i
+          pc  = (ws^.coinsTbl) ! i
           ri  = p^.rmId
-          ris = (ws^.invTbl)   ! ri
+          ris = delete i . (! ri) $ ws^.invTbl
           rc  = (ws^.coinsTbl) ! ri
           cn  = last rs
           restWithoutCon = init rs
       in if T.head cn == rmChar
           then if not . null $ ris
-            then shuffleRem (t, ws) (T.tail cn) restWithoutCon ris rc procGecrMisRm
-            else putTMVar t ws >> return ("You don't see any containers here." <> nlt)
-          else shuffleRem (t, ws) cn restWithoutCon pis pc procGecrMisPCInv
+            then shuffleRem i cols (t, ws) (T.tail cn) restWithoutCon ris rc pis pc procGecrMisRm
+            else putTMVar t ws >> return (T.unlines . wordWrap cols $ "You don't see any containers here.")
+          else shuffleRem i cols (t, ws) cn restWithoutCon pis pc pis pc procGecrMisPCInv
 
 
-shuffleRem :: (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCont -> CoinsWithCont -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
-shuffleRem (t, ws) cn rs is c f = let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
-                                  in if null miss && (not . null $ rcs)
-                                    then putTMVar t ws >> return ("You can't remove something from a coin." <> nlt)
-                                    else case f . head . zip gecrs $ miss of
-                                      Left  msg -> putTMVar t ws >> return msg
-                                      Right [i] -> let e  = (ws^.entTbl)  ! i
-                                                       t' = (ws^.typeTbl) ! i
-                                                   in if t' /= ConType
-                                                     then putTMVar t ws >> return ("The " <> e^.sing <> " isn't a container." <> nlt)
-                                                     else let cis                   = (ws^.invTbl)   ! i
-                                                              cc                    = (ws^.coinsTbl) ! i
-                                                              (gecrs', miss', rcs') = resolveEntCoinNames ws rs cis cc
-                                                              eiss                  = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
-                                                              ecs                   = map (procReconciledCoinsCon (e^.sing)) rcs'
-                                                              (ws',  msgs)          = foldl' (helperPutRemEitherInv   Rem i 0 e) (ws, "")    eiss
-                                                              (ws'', msgs')         = foldl' (helperPutRemEitherCoins Rem i 0 e) (ws', msgs) ecs
-                                                          in putTMVar t ws'' >> return msgs'
-                                      Right _   -> putTMVar t ws >> return ("You can only remove things from one container at a time." <> nlt)
+shuffleRem :: Id -> Cols -> (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCon -> CoinsWithCon -> PCInv -> PCCoins -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
+shuffleRem i cols (t, ws) cn rs is c pis pc f = let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
+                                                in if null miss && (not . null $ rcs)
+                                                  then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't remove something from a coin.")
+                                                  else case f . head . zip gecrs $ miss of
+                                                    Left  msg  -> putTMVar t ws >> return msg
+                                                    Right [ci] -> let e  = (ws^.entTbl)  ! ci
+                                                                      t' = (ws^.typeTbl) ! ci
+                                                                  in if t' /= ConType
+                                                                    then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.")
+                                                                    else let cis                   = (ws^.invTbl)   ! ci
+                                                                             cc                    = (ws^.coinsTbl) ! ci
+                                                                             (gecrs', miss', rcs') = resolveEntCoinNames ws rs cis cc
+                                                                             eiss                  = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
+                                                                             ecs                   = map (procReconciledCoinsCon (e^.sing)) rcs'
+                                                                             (ws',  msgs)          = foldl' (helperPutRemEitherInv   cols Rem ci i e) (ws, "")    eiss
+                                                                             (ws'', msgs')         = foldl' (helperPutRemEitherCoins cols Rem ci i e) (ws', msgs) ecs
+                                                                         in putTMVar t ws'' >> return msgs'
+                                                    Right _   -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only remove things from one container at a time.")
 
 
 -----
 
 
+{-
 ready :: Action
 ready [] = advise ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready rs = helper >>= output . (<> nlt)
