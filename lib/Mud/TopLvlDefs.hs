@@ -17,7 +17,7 @@ ver = "0.1.0.0 (in development since 2013-10)"
 
 
 port :: Int
-port = 4000 -- TODO: Pick a port.
+port = 9696
 
 
 mudDir :: FilePath
@@ -35,10 +35,6 @@ miscDir  = resDir ++ "misc/"
 
 noOfTitles :: Int
 noOfTitles = 35
-
-
-nlt :: T.Text
-nlt = "\n"
 
 
 allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizCmdChar, debugCmdChar :: Char

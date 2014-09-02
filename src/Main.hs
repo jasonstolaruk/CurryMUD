@@ -41,7 +41,7 @@ welcome :: IO ()
 welcome = do
     un <- getEnv "USER"
     mn <- whatsMyName
-    T.putStrLn . T.concat $ [ "Hello, ", un^.packed, ". Welcome to ", dblQuote mn, " ver ", ver, ".", nlt ]
+    T.putStrLn . T.concat $ [ "Hello, ", un^.packed, ". Welcome to ", dblQuote mn, " ver ", ver, ".\n" ]
   where
     whatsMyName = getProgName >>= \mn ->
         return (if mn == "<interactive>" then "Y U NO COMPILE ME?" else mn^.packed)

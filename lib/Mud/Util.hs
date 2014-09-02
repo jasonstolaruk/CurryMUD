@@ -14,6 +14,7 @@ module Mud.Util ( adjustIndent
                 , eitherRet
                 , findFullNameForAbbrev
                 , grepTextList
+                , injectCR
                 , isVowel
                 , maybeRet
                 , maybeVoid
@@ -220,6 +221,10 @@ padOrTrunc x t
 
 -- ==================================================
 -- Misc.:
+
+
+injectCR :: T.Text -> T.Text
+injectCR = T.replace "\n" "\r\n"
 
 
 showText :: (Show a) => a -> T.Text

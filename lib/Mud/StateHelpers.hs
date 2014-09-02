@@ -180,35 +180,6 @@ send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
-{-
-output :: MsgQueueId -> [T.Text] -> MudStack ()
-output (mq, i) ts = getPlaColumns i >>= \cols ->
-    liftIO . atomically . writeTQueue mq . FromServer . T.unlines . concatMap (wordWrap cols) $ ts
-
-
-outputIndent :: Int -> T.Text -> MudStack ()
-outputIndent n t = getPlaColumns 0 >>= \cols ->
-    liftIO . T.putStr . T.unlines . concatMap (wordWrapIndent n cols) . T.lines $ t
-
-
-outputCon :: [T.Text] -> MudStack () -- Prefer over "output" when there would be more than two "<>"s.
-outputCon ts = getPlaColumns 0 >>= \cols ->
-    liftIO . T.putStrLn . T.concat . wordWrap cols . T.concat $ ts
-
-
-outputConIndent :: Int -> [T.Text] -> MudStack ()
-outputConIndent n ts = getPlaColumns 0 >>= \cols ->
-    liftIO . T.putStrLn . T.concat . wordWrapIndent n cols . T.concat $ ts
-
-
-dumpFile :: FilePath -> MudStack () -- TODO: Implement paging.
-dumpFile fn = takeADump =<< (liftIO . T.readFile $ fn)
-  where
-    takeADump contents = getPlaColumns 0 >>= \cols ->
-        liftIO . T.putStr . T.unlines . concat . wordWrapLines cols . T.lines $ contents
--}
-
-
 mkDividerTxt :: Cols -> T.Text
 mkDividerTxt = flip T.replicate "="
 
