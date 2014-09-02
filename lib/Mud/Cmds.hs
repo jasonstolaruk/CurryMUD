@@ -23,7 +23,7 @@ import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), fromException, IOException, SomeException)
-import Control.Exception.Lifted (catch, finally, throwIO, try)
+import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
 import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
@@ -170,12 +170,14 @@ serverWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
 
 
 topLvlExHandler :: SomeException -> MudStack ()
-topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO exitFailure
+topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
                     in case fromException e of
                       Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt"
                       Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed"
-                      Just e'            -> oops $ (dblQuoteStr . show $ e') ++ " caught by the top level handler; rethrowing"
-                      Nothing            -> oops "exception caught by the top level handler; exiting gracefully"
+                      Just _             -> (oops . (showIt ++) $ " caught by the top level handler; rethrowing") >> throwIO e
+                      Nothing            -> oops "exception caught by the top level handler; exiting gracefully"  >> liftIO exitFailure
+  where
+    showIt = dblQuoteStr . show $ e
 
 
 listen :: MudStack ()
@@ -263,15 +265,17 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 server :: ThreadId -> Handle -> MsgQueue -> Id -> MudStack ()
-server ti h mq i = do
-    m <- liftIO . atomically . readTQueue $ mq
-    case m of
-      FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> server ti h mq i
-      FromClient msg -> let msg' = T.strip msg
-                        in unless (T.null msg') (handleInp mq i msg' `catch` topLvlExHandler) >> server ti h mq i -- TODO: Figure out how to handle exceptions.
-      Prompt     p   -> liftIO (hPutStr h (p^.unpacked) >> hFlush h) >> server ti h mq i
-      Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
-      Shutdown       -> liftIO . killThread $ ti
+server ti h mq i = (liftIO . atomically . readTQueue $ mq) >>= \case
+  FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> server ti h mq i
+  FromClient msg -> let msg' = T.strip msg
+                    in unless (T.null msg') (handleInp mq i msg' `catch` handleInpExHandler ti) >> server ti h mq i
+  Prompt     p   -> liftIO (hPutStr h (p^.unpacked) >> hFlush h) >> server ti h mq i
+  Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
+  Shutdown       -> liftIO . killThread $ ti
+
+
+handleInpExHandler :: ThreadId -> SomeException -> MudStack ()
+handleInpExHandler ti e = logExMsg "handleInpExHandler" "exception caught on server thread; rethrowing" e >> throwTo ti e
 
 
 receive :: Handle -> MsgQueue -> MudStack ()
@@ -1455,7 +1459,7 @@ debugLog mic@(mq, _, cols) rs = ignore mq cols rs >> debugLog mic []
 
 
 debugThrow :: Action
-debugThrow _                 [] = liftIO . throwIO $ DivideByZero
+debugThrow _                 [] = throwIO DivideByZero
 debugThrow mic@(mq, _, cols) rs = ignore mq cols rs >> debugThrow mic []
 
 
