@@ -374,7 +374,7 @@ plaDispCmdList = dispCmdList (cmdPred Nothing)
 
 dispCmdList :: (Cmd -> Bool) -> Action
 dispCmdList p (mq, _, cols) [] = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . cmdListText $ p
-dispCmdList p (mq, _, cols) rs = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ [ grepTextList r . cmdListText $ p | r <- rs ]
+dispCmdList p (mq, _, cols) rs = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ [ grepTextList r . cmdListText $ p | r <- nub . map T.toLower $ rs ]
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
@@ -396,7 +396,7 @@ help (mq, _, cols) [] = try helper >>= eitherRet (readFileExHandler mq cols "hel
   where
     helper = (liftIO . T.readFile . (helpDir ++) $ "root") >>= \contents ->
         send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines $ contents
-help (mq, _, cols) rs = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName mq cols r) rs >>= \topics ->
+help (mq, _, cols) rs = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName mq cols r) (nub . map T.toLower $ rs) >>= \topics ->
     send mq . nl . T.unlines . intercalate ["", mkDividerTxt cols, ""] $ topics
 
 
@@ -472,13 +472,13 @@ look (mq, i, cols) [] = getWS >>= \ws ->
         suppl   = mkExitsSummary cols r <> ricd
         ricd    = mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
-look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -- TODO: Are you nubbing everywhere you should nub?
+look (mq, i, cols) rs = getWS >>= \ws ->
     let p  = (ws^.pcTbl)    ! i
         ri = p^.rmId
         is = delete i . (! ri) $ ws^.invTbl
         c  = (ws^.coinsTbl) ! ri
     in send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
+      then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
                eiss               = zipWith (curry procGecrMisRm) gecrs miss
                ecs                = map procReconciledCoinsRm rcs
                invDesc            = foldl' (helperLookEitherInv ws) "" eiss
@@ -611,11 +611,11 @@ inv :: Action -- TODO: Give some indication of encumbrance.
 inv (mq, i, cols) [] = getWS >>= \ws ->
     let e = (ws^.entTbl) ! i
     in send mq . nl . mkInvCoinsDesc i cols ws i $ e
-inv (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
+inv (mq, i, cols) rs = getWS >>= \ws ->
     let is = (ws^.invTbl)   ! i
         c  = (ws^.coinsTbl) ! i
     in send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is c
+      then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
                eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                ecs                = map procReconciledCoinsPCInv rcs
                invDesc            = foldl' (helperEitherInv ws) "" eiss
@@ -636,11 +636,11 @@ equip :: Action
 equip (mq, i, cols) [] = getWS >>= \ws ->
     let e = (ws^.entTbl) ! i
     in send mq . nl . mkEqDesc i cols ws i e $ PCType
-equip (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
+equip (mq, i, cols) rs = getWS >>= \ws ->
     let em = (ws^.eqTbl) ! i
         is = M.elems em
     in send mq $ if not . M.null $ em
-      then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is mempty
+      then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is mempty
                eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc            = foldl' (helperEitherInv ws) "" eiss
                coinsDesc          = if not . null $ rcs
@@ -692,7 +692,7 @@ getAction (mq, i, cols) rs = helper >>= send mq . nl
             ris = delete i . (! ri) $ ws^.invTbl
             rc  = (ws^.coinsTbl) ! ri
         in if (not . null $ ris) || (rc /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs ris rc
+          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) ris rc
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                = map procReconciledCoinsRm rcs
                    (ws',  msgs)       = foldl' (helperGetDropEitherInv   cols Get ri i) (ws, "")    eiss
@@ -769,7 +769,7 @@ dropAction (mq, i, cols) rs = helper >>= send mq . nl
             pc  = (ws^.coinsTbl) ! i
             ri  = p^.rmId
         in if (not . null $ pis) || (pc /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs pis pc
+          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) pis pc
                    eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                = map procReconciledCoinsPCInv rcs
                    (ws',  msgs)       = foldl' (helperGetDropEitherInv   cols Drop i ri) (ws, "")    eiss
@@ -793,8 +793,9 @@ putAction (mq, i, cols) rs  = helper >>= send mq . nl
           ri  = p^.rmId
           ris = delete i . (! ri) $ ws^.invTbl
           rc  = (ws^.coinsTbl) ! ri
-          cn  = last rs
-          restWithoutCon = init rs
+          rs' = nub . map T.toLower $ rs
+          cn  = last rs'
+          restWithoutCon = init rs'
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar
           then if not . null $ ris
@@ -897,8 +898,9 @@ remove (mq, i, cols) rs  = helper >>= send mq . nl
           ri  = p^.rmId
           ris = delete i . (! ri) $ ws^.invTbl
           rc  = (ws^.coinsTbl) ! ri
-          cn  = last rs
-          restWithoutCon = init rs
+          rs' = nub . map T.toLower $ rs
+          cn  = last rs'
+          restWithoutCon = init rs'
       in if T.head cn == rmChar
           then if not . null $ ris
             then shuffleRem i cols (t, ws) (T.tail cn) restWithoutCon ris rc procGecrMisRm
@@ -938,7 +940,7 @@ ready (mq, i, cols) rs = helper >>= send mq . nl
         let is = (ws^.invTbl)   ! i
             c  = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws rs is mempty
+          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws (nub . map T.toLower $ rs) is mempty
                    eiss                      = zipWith (curry procGecrMisReady) gecrs miss
                    msgs                      = if null rcs then "" else "You can't ready coins.\n"
                    (ws',  msgs')             = foldl' (helperReady cols i) (ws, msgs) . zip eiss $ mrols
@@ -1161,7 +1163,7 @@ unready (mq, i, cols) rs = helper >>= send mq . nl
         let em = (ws^.eqTbl) ! i
             is = M.elems em
         in if not . null $ is
-          then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs is mempty
+          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is mempty
                    eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
                    msgs               = if null rcs then "" else "You can't unready coins.\n"
                    (ws',  msgs')      = foldl' (helperUnready cols i) (ws, msgs) eiss
@@ -1211,12 +1213,13 @@ what (mq, _, cols) [] = advise mq cols ["what"] $ "Please specify one or more ab
 what (mq, i, cols) rs = getWS >>= \ws ->
   let p  = (ws^.pcTbl) ! i
       r  = (ws^.rmTbl) ! (p^.rmId)
-      helper n = T.concat [ whatCmd cols r n
-                          , whatInv cols ws i PCInv n
-                          , whatInv cols ws i PCEq  n
-                          , whatInv cols ws i RmInv n
-                          , "\n" ]
-  in send mq . T.concat . map helper $ rs
+  in send mq . T.concat . map (helper ws r) . nub . map T.toLower $ rs
+  where
+    helper ws r n = T.concat [ whatCmd cols r n
+                             , whatInv cols ws i PCInv n
+                             , whatInv cols ws i PCEq  n
+                             , whatInv cols ws i RmInv n
+                             , "\n" ]
 
 
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
@@ -1427,7 +1430,7 @@ debugBuffCheck mic@(mq, _, cols) rs = ignore mq cols rs >> debugBuffCheck mic []
 debugDispEnv :: Action
 debugDispEnv (mq, _, cols) [] = send mq . nl =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
 debugDispEnv (mq, _, cols) rs = liftIO getEnvironment >>= \env ->
-    send mq . T.unlines . map (helper env) $ rs
+    send mq . T.unlines . map (helper env) . nub $ rs
   where
     helper env r = mkAssocListTxt cols . filter grepPair $ env
       where
