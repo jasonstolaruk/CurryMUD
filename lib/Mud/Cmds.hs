@@ -22,7 +22,7 @@ import Control.Concurrent.Async (asyncThreadId, race_)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Exception (ArithException(..), fromException, IOException, SomeException)
+import Control.Exception (ArithException(..), AsyncException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, try)
 import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
@@ -43,7 +43,7 @@ import Network (accept, listenOn, PortID(..))
 import Prelude hiding (pi)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
-import System.Exit (ExitCode(ExitSuccess), exitFailure)
+import System.Exit (exitFailure)
 import System.IO (BufferMode(..), Handle, hClose, hFlush, hGetBuffering, hGetLine, hPutStr, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
 import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
@@ -172,9 +172,10 @@ serverWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
 topLvlExHandler :: SomeException -> MudStack ()
 topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e >> liftIO exitFailure
                     in case fromException e of
-                      Just ExitSuccess -> logNotice "topLvlExHandler" "exiting normally"
-                      Just _           -> oops $ dblQuoteStr "ExitFailure" <> " caught by the top level handler; rethrowing"
-                      Nothing          -> oops "exception caught by the top level handler; exiting gracefully"
+                      Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt"
+                      Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed"
+                      Just e'            -> oops $ (dblQuoteStr . show $ e') ++ " caught by the top level handler; rethrowing"
+                      Nothing            -> oops "exception caught by the top level handler; exiting gracefully"
 
 
 listen :: MudStack ()
