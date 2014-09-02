@@ -246,7 +246,7 @@ dumpTitle mq = liftIO newStdGen >>= \g ->
         fn    = "title"^.unpacked ++ show n
     in (try . takeADump $ fn) >>= eitherRet dumpTitleTxtExHandler
   where
-    takeADump fn = send mq =<< ((<> "\n") <$> (liftIO . T.readFile . (titleDir ++) $ fn))
+    takeADump fn = send mq =<< ((<> fn^.packed <> "\n") . (<> "\n") <$> (liftIO . T.readFile . (titleDir ++) $ fn)) -- TODO: Remove "(<> fn^.packed <> "\n")" when convinced that all the titles look good.
 
 
 dumpTitleTxtExHandler :: IOException -> MudStack ()
@@ -263,12 +263,12 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 server :: ThreadId -> Handle -> MsgQueue -> Id -> MudStack ()
 server ti h mq i = do
-    m <- (liftIO . atomically . readTQueue $ mq)
+    m <- liftIO . atomically . readTQueue $ mq
     case m of
       FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> server ti h mq i
       FromClient msg -> let msg' = T.strip msg
                         in unless (T.null msg') (handleInp mq i msg' `catch` topLvlExHandler) >> server ti h mq i -- TODO: Figure out how to handle exceptions.
-      Prompt     p   -> (liftIO $ hPutStr h (p^.unpacked) >> hFlush h) >> server ti h mq i
+      Prompt     p   -> liftIO (hPutStr h (p^.unpacked) >> hFlush h) >> server ti h mq i
       Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
       Shutdown       -> liftIO . killThread $ ti
 
@@ -330,7 +330,7 @@ about :: Action
 about (mq, _, cols) [] = try helper >>= eitherRet (readFileExHandler mq cols "about")
   where
     helper = (liftIO . T.readFile . (miscDir ++) $ "about") >>= \contents ->
-        send mq . T.unlines . (++ [""]) . concat . map (wordWrap cols) . T.lines $ contents
+        send mq . T.unlines . (++ [""]) . concatMap (wordWrap cols) . T.lines $ contents
 about mic@(mq, _, cols) rs = ignore mq cols rs >> about mic []
 
 
@@ -445,7 +445,7 @@ tryMove mic@(mq, i, cols) dir = let dir' = T.toLower dir
                         Just ri' -> let p'   = p & rmId .~ ri'
                                         ris' = (ws^.invTbl) ! ri'
                                     in putTMVar t (ws & pcTbl.at i ?~ p'
-                                                      & invTbl.at ri  ?~ (delete i ris)
+                                                      & invTbl.at ri  ?~ delete i ris
                                                       & invTbl.at ri' ?~ (i : ris')) >> return (Right ())
     sorry dir'  = if dir' `elem` stdLinkNames
                     then "You can't go that way."
@@ -482,7 +482,7 @@ look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -
                eiss               = zipWith (curry procGecrMisRm) gecrs miss
                ecs                = map procReconciledCoinsRm rcs
                invDesc            = foldl' (helperLookEitherInv ws) "" eiss
-               coinsDesc          = foldl' (helperLookEitherCoins ) "" ecs
+               coinsDesc          = foldl' helperLookEitherCoins    "" ecs
            in invDesc <> coinsDesc
       else (<> "\n") . T.unlines . wordWrap cols $ "You don't see anything here to look at."
   where
@@ -619,7 +619,7 @@ inv (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
                eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                ecs                = map procReconciledCoinsPCInv rcs
                invDesc            = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc          = foldl' (helperEitherCoins ) "" ecs
+               coinsDesc          = foldl' helperEitherCoins    "" ecs
            in invDesc <> coinsDesc
       else (<> "\n") . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty
   where
@@ -639,11 +639,11 @@ equip (mq, i, cols) [] = getWS >>= \ws ->
 equip (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
     let em = (ws^.eqTbl) ! i
         is = M.elems em
-    in send mq $ if (not . M.null $ em)
+    in send mq $ if not . M.null $ em
       then let (gecrs, miss, rcs) = resolveEntCoinNames ws rs' is mempty
                eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc            = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc          = if (not . null $ rcs)
+               coinsDesc          = if not . null $ rcs
                                       then (<> "\n") . T.unlines . wordWrap cols $ "You don't have any coins among your readied equipment."
                                       else ""
            in invDesc <> coinsDesc
@@ -836,7 +836,7 @@ helperPutRemEitherInv :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldSt
 helperPutRemEitherInv cols por fi ti te (ws, msgs) = \case
   Left  msg -> (ws, msgs <> msg)
   Right is  -> let (is', msgs') = if ti `elem` is
-                                    then (filter (/= ti) is, (msgs <>) . T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself.") -- TODO: What about removing?
+                                    then (filter (/= ti) is, (msgs <>) . T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself.")
                                     else (is, msgs)
                    fis = (ws^.invTbl) ! fi
                    tis = (ws^.invTbl) ! ti
@@ -1052,12 +1052,13 @@ getAvailClothSlot cols ws i c em = let m = (ws^.mobTbl) ! i
                                        g = m^.gender
                                        h = m^.hand
                                    -- TODO: Move "procMaybe" to the left of the "case".
-                                   in case c of EarC    -> procMaybe $ getEarSlotForGender g `mplus` (getEarSlotForGender . otherGender $ g)
-                                                NoseC   -> procMaybe $ findAvailSlot em noseSlots
-                                                NeckC   -> procMaybe $ findAvailSlot em neckSlots
-                                                WristC  -> procMaybe $ getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
-                                                FingerC -> procMaybe $ getRingSlot g h
-                                                _       -> undefined -- TODO
+                                   in procMaybe $ case c of
+                                     EarC    -> getEarSlotForGender g `mplus` (getEarSlotForGender . otherGender $ g)
+                                     NoseC   -> findAvailSlot em noseSlots
+                                     NeckC   -> findAvailSlot em neckSlots
+                                     WristC  -> getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
+                                     FingerC -> getRingSlot g h
+                                     _       -> undefined -- TODO
   where
     procMaybe             = maybe (Left . T.unlines . wordWrap cols . sorryFullClothSlots $ c) Right
     getEarSlotForGender g = findAvailSlot em $ case g of Male   -> lEarSlots
@@ -1081,7 +1082,7 @@ getDesigClothSlot :: Cols -> WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft 
 getDesigClothSlot cols ws e c em rol
   | c `elem` [NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC] = Left sorryCantWearThere
   | isRingRol rol && c /= FingerC           = Left sorryCantWearThere
-  | c == FingerC && (not . isRingRol $ rol) = Left . T.unlines . wordWrap cols $ ringHelp -- TODO: How does this look?
+  | c == FingerC && (not . isRingRol $ rol) = Left . T.unlines . wordWrap cols $ ringHelp
   | otherwise = case c of EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
                           WristC  -> maybe (Left sorryFullWrist) Right (findSlotFromList rWristSlots lWristSlots)
                           FingerC -> maybe (Right slotFromRol)
@@ -1096,8 +1097,8 @@ getDesigClothSlot cols ws e c em rol
     getSlotFromList  rs ls = head $ case rol of R -> rs
                                                 L -> ls
                                                 _ -> patternMatchFail "getDesigClothSlot getSlotFromList" [ showText rol ]
-    sorryFullEar     = T.unlines . wordWrap cols . sorryFullClothSlotsOneSide $ (getSlotFromList rEarSlots   lEarSlots)
-    sorryFullWrist   = T.unlines . wordWrap cols . sorryFullClothSlotsOneSide $ (getSlotFromList rWristSlots lWristSlots)
+    sorryFullEar     = T.unlines . wordWrap cols . sorryFullClothSlotsOneSide . getSlotFromList rEarSlots   $ lEarSlots
+    sorryFullWrist   = T.unlines . wordWrap cols . sorryFullClothSlotsOneSide . getSlotFromList rWristSlots $ lWristSlots
     slotFromRol      = fromRol rol :: Slot
     sorry s e'       = T.unlines . wordWrap cols $ "You're already wearing a " <> e'^.sing <> " on your " <> pp s <> "."
 
@@ -1438,7 +1439,7 @@ debugDispEnv (mq, _, cols) rs = liftIO getEnvironment >>= \env ->
 
 
 debugLog :: Action
-debugLog (mq, _, _) [] = helper >> (send mq $ "OK!\n\n")
+debugLog (mq, _, _) [] = helper >> send mq "OK!\n\n"
   where
     helper       = replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get
     heavyLogging = liftIO myThreadId >>= \i ->
@@ -1449,7 +1450,6 @@ debugLog mic@(mq, _, cols) rs = ignore mq cols rs >> debugLog mic []
 ------
 
 
--- TODO: Also write a command that throws an exception from a child thread. Perhaps use "error".
 debugThrow :: Action
 debugThrow _                 [] = liftIO . throwIO $ DivideByZero
 debugThrow mic@(mq, _, cols) rs = ignore mq cols rs >> debugThrow mic []

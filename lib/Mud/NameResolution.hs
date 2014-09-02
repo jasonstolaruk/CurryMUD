@@ -226,7 +226,7 @@ mkGecrWithRol ws is c n = let (a, b) = T.break (== slotChar) n
 
 
 sorryIndexedCoins :: T.Text
-sorryIndexedCoins = "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins.\n\n" -- TODO: How does this look?
+sorryIndexedCoins = "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins.\n"
 
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
@@ -309,7 +309,7 @@ procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMis
 
 
 procReconciledCoinsPCInv :: ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsPCInv (Left  Empty)                            = Left $ "You don't have any coins.\n"
+procReconciledCoinsPCInv (Left  Empty)                            = Left "You don't have any coins.\n"
 procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
     c = if cop /= 0 then "You don't have any copper pieces.\n" else ""
@@ -325,7 +325,7 @@ procReconciledCoinsPCInv rc = patternMatchFail "procReconciledCoinsPCInv" [ show
 
 
 procReconciledCoinsRm :: ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsRm (Left  Empty)                            = Left $ "You don't see any coins here.\n"
+procReconciledCoinsRm (Left  Empty)                            = Left "You don't see any coins here.\n"
 procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
     c = if cop /= 0 then "You don't see any copper pieces here.\n" else ""

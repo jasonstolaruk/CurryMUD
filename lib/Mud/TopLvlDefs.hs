@@ -34,7 +34,7 @@ miscDir  = resDir ++ "misc/"
 
 
 noOfTitles :: Int
-noOfTitles = 35
+noOfTitles = 34
 
 
 allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizCmdChar, debugCmdChar :: Char
