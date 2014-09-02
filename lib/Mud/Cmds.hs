@@ -246,7 +246,7 @@ dumpTitle mq = liftIO newStdGen >>= \g ->
         fn    = "title"^.unpacked ++ show n
     in (try . takeADump $ fn) >>= eitherRet dumpTitleTxtExHandler
   where
-    takeADump fn = send mq =<< ((<> fn^.packed <> "\n") . (<> "\n") <$> (liftIO . T.readFile . (titleDir ++) $ fn)) -- TODO: Remove "(<> fn^.packed <> "\n")" when convinced that all the titles look good.
+    takeADump fn = send mq =<< (nl . (<> fn^.packed) . nl <$> (liftIO . T.readFile . (titleDir ++) $ fn)) -- TODO: Remove "nl . (<> fn^.packed)" when convinced that all the titles look good.
 
 
 dumpTitleTxtExHandler :: IOException -> MudStack ()
@@ -299,7 +299,7 @@ dispatch mq i (cn, rest) = do
     findAction i cn >>= maybe sorry (\act -> act (mq, i, cols) rest)
     prompt mq "> "
   where
-    sorry = send mq $ "What?" <> "\n\n"
+    sorry = send mq . nlnl $ "What?"
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
@@ -373,8 +373,8 @@ plaDispCmdList = dispCmdList (cmdPred Nothing)
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
-dispCmdList p (mq, _, cols) [] = send mq . (<> "\n") . T.unlines . concatMap (wordWrapIndent 10 cols) . cmdListText $ p
-dispCmdList p (mq, _, cols) rs = send mq . (<> "\n") . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ [ grepTextList r . cmdListText $ p | r <- rs ]
+dispCmdList p (mq, _, cols) [] = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . cmdListText $ p
+dispCmdList p (mq, _, cols) rs = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ [ grepTextList r . cmdListText $ p | r <- rs ]
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
@@ -395,9 +395,9 @@ help :: Action
 help (mq, _, cols) [] = try helper >>= eitherRet (readFileExHandler mq cols "help")
   where
     helper = (liftIO . T.readFile . (helpDir ++) $ "root") >>= \contents ->
-        send mq . (<> "\n") . T.unlines . concat . wordWrapLines cols . T.lines $ contents
+        send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines $ contents
 help (mq, _, cols) rs = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName mq cols r) rs >>= \topics ->
-    send mq . (<> "\n") . T.unlines . intercalate ["", mkDividerTxt cols, ""] $ topics
+    send mq . nl . T.unlines . intercalate ["", mkDividerTxt cols, ""] $ topics
 
 
 type HelpTopic = T.Text
@@ -432,7 +432,7 @@ goDispatcher mic rs = mapM_ (tryMove mic) rs
 tryMove :: MsgQueueIdCols -> T.Text -> MudStack ()
 tryMove mic@(mq, i, cols) dir = let dir' = T.toLower dir
                                 in helper dir' >>= \case
-                                  Left  msg -> send mq . (<> "\n") . T.unlines . wordWrap cols $ msg
+                                  Left  msg -> send mq . nl . T.unlines . wordWrap cols $ msg
                                   Right _   -> look mic []
   where
     helper dir' = onWS $ \(t, ws) ->
@@ -471,7 +471,7 @@ look (mq, i, cols) [] = getWS >>= \ws ->
         primary = T.unlines . concatMap (wordWrap cols) $ [ r^.name, r^.desc ]
         suppl   = mkExitsSummary cols r <> ricd
         ricd    = mkRmInvCoinsDesc i cols ws ri
-    in send mq $ primary <> suppl <> "\n"
+    in send mq . nl $ primary <> suppl
 look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -- TODO: Are you nubbing everywhere you should nub?
     let p  = (ws^.pcTbl)    ! i
         ri = p^.rmId
@@ -484,12 +484,12 @@ look (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws -> -
                invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                coinsDesc          = foldl' helperLookEitherCoins    "" ecs
            in invDesc <> coinsDesc
-      else (<> "\n") . T.unlines . wordWrap cols $ "You don't see anything here to look at."
+      else nl . T.unlines . wordWrap cols $ "You don't see anything here to look at."
   where
-    helperLookEitherInv _  acc (Left  msg) = acc <> msg                     <> "\n"
-    helperLookEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> "\n"
-    helperLookEitherCoins  acc (Left  msg) = acc <> msg                     <> "\n"
-    helperLookEitherCoins  acc (Right c  ) = acc <> mkCoinsDesc cols c      <> "\n"
+    helperLookEitherInv _  acc (Left  msg) = nl $ acc <> msg
+    helperLookEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
+    helperLookEitherCoins  acc (Left  msg) = nl $ acc <> msg
+    helperLookEitherCoins  acc (Right c  ) = nl $ acc <> mkCoinsDesc cols c
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
@@ -593,7 +593,7 @@ exits :: Action
 exits (mq, i, cols) [] = getWS >>= \ws ->
     let p = (ws^.pcTbl) ! i
         r = (ws^.rmTbl) ! (p^.rmId)
-    in send mq . (<> "\n") . mkExitsSummary cols $ r
+    in send mq . nl . mkExitsSummary cols $ r
 exits mic@(mq, _, cols) rs = ignore mq cols rs >> exits mic []
 
 
@@ -610,7 +610,7 @@ mkExitsSummary cols r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv (mq, i, cols) [] = getWS >>= \ws ->
     let e = (ws^.entTbl) ! i
-    in send mq . (<> "\n") . mkInvCoinsDesc i cols ws i $ e
+    in send mq . nl . mkInvCoinsDesc i cols ws i $ e
 inv (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
     let is = (ws^.invTbl)   ! i
         c  = (ws^.coinsTbl) ! i
@@ -621,12 +621,12 @@ inv (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
                invDesc            = foldl' (helperEitherInv ws) "" eiss
                coinsDesc          = foldl' helperEitherCoins    "" ecs
            in invDesc <> coinsDesc
-      else (<> "\n") . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty
+      else nl . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty
   where
-    helperEitherInv _  acc (Left  msg) = acc <> msg                     <> "\n"
-    helperEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> "\n"
-    helperEitherCoins  acc (Left  msg) = acc <> msg                     <> "\n"
-    helperEitherCoins  acc (Right c  ) = acc <> mkCoinsDesc cols c      <> "\n"
+    helperEitherInv _  acc (Left  msg) = nl $ acc <> msg
+    helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
+    helperEitherCoins  acc (Left  msg) = nl $ acc <> msg
+    helperEitherCoins  acc (Right c  ) = nl $ acc <> mkCoinsDesc cols c
 
 
 -----
@@ -635,7 +635,7 @@ inv (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
 equip :: Action
 equip (mq, i, cols) [] = getWS >>= \ws ->
     let e = (ws^.entTbl) ! i
-    in send mq . (<> "\n") . mkEqDesc i cols ws i e $ PCType
+    in send mq . nl . mkEqDesc i cols ws i e $ PCType
 equip (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
     let em = (ws^.eqTbl) ! i
         is = M.elems em
@@ -644,13 +644,13 @@ equip (mq, i, cols) rs = let rs' = nub . map T.toLower $ rs in getWS >>= \ws ->
                eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc            = foldl' (helperEitherInv ws) "" eiss
                coinsDesc          = if not . null $ rcs
-                                      then (<> "\n") . T.unlines . wordWrap cols $ "You don't have any coins among your readied equipment."
+                                      then nl . T.unlines . wordWrap cols $ "You don't have any coins among your readied equipment."
                                       else ""
            in invDesc <> coinsDesc
-      else (<> "\n") . T.unlines . wordWrap cols $ dudeYou'reNaked
+      else nl . T.unlines . wordWrap cols $ dudeYou'reNaked
   where
-    helperEitherInv _  acc (Left  msg) = acc <> msg                     <> "\n"
-    helperEitherInv ws acc (Right is ) = acc <> mkEntDescs i cols ws is <> "\n"
+    helperEitherInv _  acc (Left  msg) = nl $ acc <> msg
+    helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
@@ -684,7 +684,7 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 getAction :: Action
 getAction (mq, _, cols) [] = advise mq cols ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction (mq, i, cols) rs = helper >>= send mq . (<> "\n")
+getAction (mq, i, cols) rs = helper >>= send mq . nl
   where
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl)    ! i
@@ -702,9 +702,9 @@ getAction (mq, i, cols) rs = helper >>= send mq . (<> "\n")
 
 
 advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
-advise mq cols []  msg = send mq . (<> "\n") . T.unlines . wordWrap cols $ msg
-advise mq cols [h] msg = send mq . (<> "\n") . T.unlines . concatMap (wordWrap cols) $ [ msg, T.concat [ "For more information, type ", dblQuote . ("help " <>) $ h, "." ] ]
-advise mq cols hs  msg = send mq . (<> "\n") . T.unlines . concatMap (wordWrap cols) $ [ msg, T.concat [ "See also the following help topics: ", helpTopics, "." ] ]
+advise mq cols []  msg = send mq . nl . T.unlines . wordWrap cols $ msg
+advise mq cols [h] msg = send mq . nl . T.unlines . concatMap (wordWrap cols) $ [ msg, T.concat [ "For more information, type ", dblQuote . ("help " <>) $ h, "." ] ]
+advise mq cols hs  msg = send mq . nl . T.unlines . concatMap (wordWrap cols) $ [ msg, T.concat [ "See also the following help topics: ", helpTopics, "." ] ]
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
@@ -761,7 +761,7 @@ mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [c, s, g]
 
 dropAction :: Action
 dropAction (mq, _, cols) [] = advise mq cols ["drop"] $ "Please specify one or more things to drop, as in " <> dblQuote "drop sword" <> "."
-dropAction (mq, i, cols) rs = helper >>= send mq . (<> "\n")
+dropAction (mq, i, cols) rs = helper >>= send mq . nl
   where
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl)    ! i
@@ -784,7 +784,7 @@ dropAction (mq, i, cols) rs = helper >>= send mq . (<> "\n")
 putAction :: Action
 putAction (mq, _, cols) []  = advise mq cols ["put"] $ "Please specify one or more things you want to put, followed by where you want to put them, as in " <> dblQuote "put doll sack" <> "."
 putAction (mq, _, cols) [r] = advise mq cols ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
-putAction (mq, i, cols) rs  = helper >>= send mq . (<> "\n")
+putAction (mq, i, cols) rs  = helper >>= send mq . nl
   where
     helper = onWS $ \(t, ws) ->
       let p   = (ws^.pcTbl)    ! i
@@ -888,7 +888,7 @@ mkPutRemCoinsDesc cols por (Coins (cop, sil, gol)) te = T.unlines . concatMap (w
 remove :: Action
 remove (mq, _, cols) []  = advise mq cols ["remove"] $ "Please specify one or more things to remove, followed by the container you want to remove them from, as in " <> dblQuote "remove doll sack" <> "."
 remove (mq, _, cols) [r] = advise mq cols ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
-remove (mq, i, cols) rs  = helper >>= send mq . (<> "\n")
+remove (mq, i, cols) rs  = helper >>= send mq . nl
   where
     helper = onWS $ \(t, ws) ->
       let p   = (ws^.pcTbl)    ! i
@@ -932,7 +932,7 @@ shuffleRem i cols (t, ws) cn rs is c f = let (gecrs, miss, rcs) = resolveEntCoin
 
 ready :: Action
 ready (mq, _, cols) [] = advise mq cols ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
-ready (mq, i, cols) rs = helper >>= send mq . (<> "\n")
+ready (mq, i, cols) rs = helper >>= send mq . nl
   where
     helper = onWS $ \(t, ws) ->
         let is = (ws^.invTbl)   ! i
@@ -1155,7 +1155,7 @@ getDesigWpnSlot cols ws e em rol
 
 unready :: Action
 unready (mq, _, cols) [] = advise mq cols ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
-unready (mq, i, cols) rs = helper >>= send mq . (<> "\n")
+unready (mq, i, cols) rs = helper >>= send mq . nl
   where
     helper = onWS $ \(t, ws) ->
         let em = (ws^.eqTbl) ! i
@@ -1327,8 +1327,8 @@ uptimeExHandler mq cols e = logIOEx "uptime" e >> (send mq . T.unlines . wordWra
 
 
 quit :: Action
-quit (mq, _, cols) [] = liftIO . atomically . writeTQueue mq . Quit . (<> "\n") . T.unlines . wordWrap cols $ "Thanks for playing! See you next time."
-quit (mq, _, cols) _  = send mq . (<> "\n") . T.unlines . wordWrap cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
+quit (mq, _, cols) [] = liftIO . atomically . writeTQueue mq . Quit . nl . T.unlines . wordWrap cols $ "Thanks for playing! See you next time."
+quit (mq, _, cols) _  = send mq . nl . T.unlines . wordWrap cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
 
 handleQuit :: Id -> MudStack ()
@@ -1367,7 +1367,7 @@ wizDispCmdList = dispCmdList (cmdPred . Just $ wizCmdChar)
 
 wizShutdown :: Action
 wizShutdown (mq, _, _   ) [] = logNotice "wizShutdown" "shutting down" >> (liftIO . atomically . writeTQueue mq $ Shutdown)
-wizShutdown (mq, _, cols) _  = send mq . (<> "\n") . T.unlines . wordWrap cols $  "Type " <> quoted <> " with no arguments to shut down the game server."
+wizShutdown (mq, _, cols) _  = send mq . nl . T.unlines . wordWrap cols $  "Type " <> quoted <> " with no arguments to shut down the game server."
   where
     quoted = dblQuote . prefixWizCmd $ "shutdown"
 
@@ -1394,7 +1394,7 @@ wizTime mic@(mq, _, cols) rs = ignore mq cols rs >> wizTime mic []
 
 wizDay :: Action
 wizDay (mq, _, _) [] = liftIO getZonedTime >>= \zt ->
-    send mq $ formatTime defaultTimeLocale "%A %B %d" zt ^.packed <> "\n\n"
+    send mq . nlnl $ formatTime defaultTimeLocale "%A %B %d" zt ^.packed
 wizDay mic@(mq, _, cols) rs = ignore mq cols rs >> wizDay mic []
 
 
@@ -1425,7 +1425,7 @@ debugBuffCheck mic@(mq, _, cols) rs = ignore mq cols rs >> debugBuffCheck mic []
 
 
 debugDispEnv :: Action
-debugDispEnv (mq, _, cols) [] = send mq . (<> "\n") =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
+debugDispEnv (mq, _, cols) [] = send mq . nl =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
 debugDispEnv (mq, _, cols) rs = liftIO getEnvironment >>= \env ->
     send mq . T.unlines . map (helper env) $ rs
   where
@@ -1469,7 +1469,7 @@ debugSniff (mq, _, cols) [] = gets (^.nonWorldState.logServices) >>= \ls ->
         nls <- liftIO . threadStatus $ nli
         els <- liftIO . threadStatus $ eli
         let msg = T.unlines . concatMap (wordWrap cols) $ [ "Notice log thread status: " <> showText nls, "Error  log thread status: " <> showText els ]
-        send mq $ divider <> msg <> divider <> "\n"
+        send mq . nl $ divider <> msg <> divider
   where
-    divider = mkDividerTxt cols <> "\n"
+    divider = nl . mkDividerTxt $ cols
 debugSniff mic@(mq, _, cols) rs = ignore mq cols rs >> debugSniff mic []

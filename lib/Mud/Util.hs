@@ -20,6 +20,8 @@ module Mud.Util ( adjustIndent
                 , maybeVoid
                 , mkCountList
                 , mkOrdinal
+                , nl
+                , nlnl
                 , padOrTrunc
                 , parensPad
                 , parensQuote
@@ -221,6 +223,14 @@ padOrTrunc x t
 
 -- ==================================================
 -- Misc.:
+
+
+nl :: T.Text -> T.Text
+nl = (<> "\n")
+
+
+nlnl :: T.Text -> T.Text
+nlnl = (<> "\n\n")
 
 
 injectCR :: T.Text -> T.Text
