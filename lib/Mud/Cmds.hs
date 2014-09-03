@@ -247,17 +247,16 @@ dumpTitle mq = liftIO newStdGen >>= \g ->
     let range = (1, noOfTitles)
         n     = randomR range g^._1
         fn    = "title"^.unpacked ++ show n
-    in (try . takeADump $ fn) >>= eitherRet dumpTitleTxtExHandler
+    in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
   where
     takeADump fn = send mq =<< (nl . (<> fn^.packed) . nl <$> (liftIO . T.readFile . (titleDir ++) $ fn)) -- TODO: Remove "nl . (<> fn^.packed)" when convinced that all the titles look good.
 
 
-dumpTitleTxtExHandler :: IOException -> MudStack ()
-dumpTitleTxtExHandler e = f "dumpTitleTxt" e
-  where
-    f = if | isDoesNotExistError e -> logIOEx
-           | isPermissionError   e -> logIOEx
-           | otherwise             -> logIOExRethrow
+readFileExHandler :: String -> IOException -> MudStack ()
+readFileExHandler fn e
+  | isDoesNotExistError e = logIOEx fn e
+  | isPermissionError   e = logIOEx fn e
+  | otherwise             = logIOExRethrow fn e
 
 
 prompt :: MsgQueue -> T.Text -> MudStack ()
@@ -332,20 +331,15 @@ mkCmdListWithRmLinks r = cmdList <> [ mkCmdForRmLink rl | rl <- r^.rmLinks, rl^.
 
 
 about :: Action
-about (mq, _, cols) [] = try helper >>= eitherRet (readFileExHandler mq cols "about")
+about (mq, _, cols) [] = try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
     helper = (liftIO . T.readFile . (miscDir ++) $ "about") >>= \contents ->
-        send mq . T.unlines . (++ [""]) . concatMap (wordWrap cols) . T.lines $ contents
+        send mq . nl . T.unlines . concatMap (wordWrap cols) . T.lines $ contents
 about mic@(mq, _, cols) rs = ignore mq cols rs >> about mic []
 
 
-readFileExHandler :: MsgQueue -> Cols -> String -> IOException -> MudStack ()
-readFileExHandler mq cols fn e = handleThat >> (send mq . T.unlines . wordWrap cols $ genericErrorMsg)
-  where
-    handleThat
-      | isDoesNotExistError e = logIOEx fn e
-      | isPermissionError   e = logIOEx fn e
-      | otherwise             = logIOExRethrow fn e
+sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
+sendGenericErrorMsg mq cols = send mq . nl . T.unlines . wordWrap cols $ genericErrorMsg
 
 
 ignore :: MsgQueue -> Cols -> Rest -> MudStack ()
@@ -358,12 +352,12 @@ ignore mq cols rs = let ignored = dblQuote . T.unwords $ rs
 
 -- TODO: Automatically execute this cmd after a user authenticates.
 motd :: Action
-motd     (mq, _, cols) [] = send mq =<< getMotdTxt mq cols
+motd     (mq, _, cols) [] = send mq =<< getMotdTxt cols
 motd mic@(mq, _, cols) rs = ignore mq cols rs >> motd mic []
 
 
-getMotdTxt :: MsgQueue -> Cols -> MudStack T.Text
-getMotdTxt mq cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler mq cols "getMotdTxt" e >> return genericErrorMsg)
+getMotdTxt :: Cols -> MudStack T.Text
+getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler "getMotdTxt" e >> (return . nl . T.unlines . wordWrap cols $ "Unfortunately, the message of the day could not be retrieved."))
   where
     helper  = (T.readFile . (miscDir ++) $ "motd") >>= \contents ->
         return (T.unlines . (++ [divider, ""]) . (divider :) . concatMap (wordWrap cols) . T.lines $ contents)
@@ -397,19 +391,19 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 
 
 help :: Action
-help (mq, _, cols) [] = try helper >>= eitherRet (readFileExHandler mq cols "help")
+help (mq, _, cols) [] = try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
   where
     helper = (liftIO . T.readFile . (helpDir ++) $ "root") >>= \contents ->
         send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines $ contents
-help (mq, _, cols) rs = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName mq cols r) (nub . map T.toLower $ rs) >>= \topics ->
+help (mq, _, cols) rs = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName cols r) (nub . map T.toLower $ rs) >>= \topics ->
     send mq . nl . T.unlines . intercalate ["", mkDividerTxt cols, ""] $ topics
 
 
 type HelpTopic = T.Text
 
 
-getHelpTopicByName :: MsgQueue -> Cols -> HelpTopic -> MudStack T.Text
-getHelpTopicByName mq cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
+getHelpTopicByName :: Cols -> HelpTopic -> MudStack T.Text
+getHelpTopicByName cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
     let fns' = tail . tail . sort . delete "root" $ fns
         tns  = fns'^..folded.packed
     in maybe sorry
@@ -417,7 +411,7 @@ getHelpTopicByName mq cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fn
              (findFullNameForAbbrev r tns)
   where
     sorry           = return ("No help is available on " <> dblQuote r <> ".")
-    getHelpTopic tn = (try . helper $ tn) >>= eitherRet (\e -> readFileExHandler mq cols "getHelpTopicByName" e >> return genericErrorMsg) -- TODO: Return an error message elsewhere, too?
+    getHelpTopic tn = (try . helper $ tn) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . T.unlines . wordWrap cols $ "Unfortunately, the " <> dblQuote tn <> " help file could not be retrieved."))
     helper       tn = liftIO . T.readFile . (helpDir ++) $ tn^.unpacked
 
 
@@ -1316,7 +1310,7 @@ whatInvCoins cols it r rc
 
 
 uptime :: Action
-uptime (mq, _, cols) [] = (try . send mq . parse =<< runUptime) >>= eitherRet (uptimeExHandler mq cols)
+uptime (mq, _, cols) [] = (try . send mq . parse =<< runUptime) >>= eitherRet (\e -> logIOEx "uptime" e >> sendGenericErrorMsg mq cols)
   where
     runUptime = liftIO . readProcess "uptime" [] $ ""
     parse ut  = let (a, b) = span (/= ',') ut
@@ -1325,10 +1319,6 @@ uptime (mq, _, cols) [] = (try . send mq . parse =<< runUptime) >>= eitherRet (u
                     c      = (toUpper . head $ a') : tail a'
                 in T.concat [ c^.packed, " ", b'^.packed, ".\n\n" ]
 uptime mic@(mq, _, cols) rs = ignore mq cols rs >> uptime mic []
-
-
-uptimeExHandler :: MsgQueue -> Cols -> IOException -> MudStack ()
-uptimeExHandler mq cols e = logIOEx "uptime" e >> (send mq . T.unlines . wordWrap cols $ genericErrorMsg)
 
 
 -----
