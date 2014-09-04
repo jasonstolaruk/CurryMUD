@@ -20,7 +20,7 @@ import Control.Arrow (first)
 import Control.Concurrent (forkFinally, forkIO, killThread, myThreadId, ThreadId)
 import Control.Concurrent.Async (asyncThreadId, race_)
 import Control.Concurrent.STM (atomically, STM)
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
+import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
@@ -50,7 +50,7 @@ import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M (elems, empty, filter, null, toList)
+import qualified Data.Map.Lazy as M (assocs, elems, empty, filter, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
@@ -182,18 +182,28 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
 
 listen :: MudStack ()
 listen = do
-    ti <- liftIO myThreadId
+    registerThread Listen
     logNotice "listen" $ "listening for incoming connections on port " <> show port
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
     forever $ do
         (h, host, port') <- liftIO . accept $ sock
         logNotice "listen" $ "connected to " <> show host <> " on local port " <> show port'
         s <- get
-        liftIO $ forkFinally (runStateInIORefT (talk ti h) s) (\_ -> hClose h)
+        liftIO $ forkFinally (runStateInIORefT (talk h) s) (\_ -> hClose h)
 
 
-talk :: ThreadId -> Handle -> MudStack ()
-talk ti h = do
+registerThread :: ThreadType -> MudStack ()
+registerThread t = do
+    ti      <- liftIO myThreadId
+    ttTMVar <- gets (^.nonWorldState.threadTblTMVar)
+    liftIO . atomically $ do
+        tt <- takeTMVar ttTMVar
+        let tt' = tt & at ti ?~ t
+        putTMVar ttTMVar tt'
+
+
+talk :: Handle -> MudStack ()
+talk h = do
     liftIO configBuffer
     mq <- liftIO newTQueueIO
     i  <- adHoc mq
@@ -201,8 +211,8 @@ talk ti h = do
     dumpTitle mq
     prompt mq "> "
     s <- get
-    liftIO $ race_ (runStateInIORefT (server  ti h mq i) s)
-                   (runStateInIORefT (receive    h mq)   s)
+    liftIO $ race_ (runStateInIORefT (server  h mq i) s)
+                   (runStateInIORefT (receive h mq i) s)
   where
     configBuffer = hSetNewlineMode h universalNewlineMode >> hSetBuffering h LineBuffering
 
@@ -228,7 +238,7 @@ adHoc mq = do
         let pc  = PC 1 Human
         let ris = i : (ws^.invTbl) ! iHill
         -----
-        let pla = Pla 30
+        let pla = Pla 80
         -----
         let ws'  = ws  & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc & invTbl.at iHill ?~ ris
         let pt'  = pt  & at i ?~ pla
@@ -249,7 +259,7 @@ dumpTitle mq = liftIO newStdGen >>= \g ->
         fn    = "title"^.unpacked ++ show n
     in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
   where
-    takeADump fn = send mq =<< (nl . (<> fn^.packed) . nl <$> (liftIO . T.readFile . (titleDir ++) $ fn)) -- TODO: Remove "nl . (<> fn^.packed)" when convinced that all the titles look good.
+    takeADump fn = send mq =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
 
 
 readFileExHandler :: String -> IOException -> MudStack ()
@@ -263,23 +273,41 @@ prompt :: MsgQueue -> T.Text -> MudStack ()
 prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
-server :: ThreadId -> Handle -> MsgQueue -> Id -> MudStack ()
-server ti h mq i = (liftIO . atomically . readTQueue $ mq) >>= \case
-  FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> server ti h mq i
-  FromClient msg -> let msg' = T.strip msg
-                    in unless (T.null msg') (handleInp mq i msg' `catch` handleInpExHandler ti) >> server ti h mq i
-  Prompt     p   -> liftIO (hPutStr h (p^.unpacked) >> hFlush h) >> server ti h mq i
-  Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
-  Shutdown       -> liftIO . killThread $ ti
+server :: Handle -> MsgQueue -> Id -> MudStack ()
+server h mq i = (registerThread . Server $ i) >> loop
+  where
+    loop = (liftIO . atomically . readTQueue $ mq) >>= \case
+      FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> loop
+      FromClient msg -> let msg' = T.strip msg
+                        in unless (T.null msg') (handleInp mq i msg' `catch` handleInpExHandler) >> loop
+      Prompt     p   -> liftIO (hPutStr h (p^.unpacked) >> hFlush h) >> loop
+      Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
+      Shutdown       -> commitSuicide
 
 
-handleInpExHandler :: ThreadId -> SomeException -> MudStack ()
-handleInpExHandler ti e = logExMsg "handleInpExHandler" "exception caught on server thread; rethrowing" e >> throwTo ti e
+handleInpExHandler :: SomeException -> MudStack ()
+handleInpExHandler e = do
+    logExMsg "handleInpExHandler" "exception caught on server thread; rethrowing" e
+    ti <- getListenThreadId
+    liftIO . throwTo ti $ e
 
 
-receive :: Handle -> MsgQueue -> MudStack ()
-receive h mq = forever $ (liftIO . hGetLine $ h) >>= \msg ->
-    liftIO . atomically . writeTQueue mq . FromClient $ msg^.packed
+getListenThreadId :: MudStack ThreadId
+getListenThreadId = do
+    ttTMVar <- gets (^.nonWorldState.threadTblTMVar)
+    tt      <- liftIO . atomically . readTMVar $ ttTMVar
+    return . reverseLookup Listen $ tt
+
+
+commitSuicide :: MudStack ()
+commitSuicide = getListenThreadId >>= liftIO . killThread
+
+
+receive :: Handle -> MsgQueue -> Id -> MudStack ()
+receive h mq i = do
+    registerThread . Receive $ i
+    forever $ (liftIO . hGetLine $ h) >>= \msg ->
+        liftIO . atomically . writeTQueue mq . FromClient $ msg^.packed
 
 
 handleInp :: MsgQueue -> Id -> T.Text -> MudStack ()
@@ -360,7 +388,7 @@ getMotdTxt :: Cols -> MudStack T.Text
 getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler "getMotdTxt" e >> (return . nl . T.unlines . wordWrap cols $ "Unfortunately, the message of the day could not be retrieved."))
   where
     helper  = (T.readFile . (miscDir ++) $ "motd") >>= \contents ->
-        return (T.unlines . (++ [divider, ""]) . (divider :) . concatMap (wordWrap cols) . T.lines $ contents)
+        return . T.unlines . (++ [divider, ""]) . (divider :) . concatMap (wordWrap cols) . T.lines $ contents
     divider = mkDividerTxt cols
 
 
@@ -410,7 +438,7 @@ getHelpTopicByName cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns -
              getHelpTopic
              (findFullNameForAbbrev r tns)
   where
-    sorry           = return ("No help is available on " <> dblQuote r <> ".")
+    sorry           = return $ "No help is available on " <> dblQuote r <> "."
     getHelpTopic tn = (try . helper $ tn) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . T.unlines . wordWrap cols $ "Unfortunately, the " <> dblQuote tn <> " help file could not be retrieved."))
     helper       tn = liftIO . T.readFile . (helpDir ++) $ tn^.unpacked
 
@@ -440,12 +468,12 @@ tryMove mic@(mq, i, cols) dir = let dir' = T.toLower dir
                           r   = (ws^.rmTbl)  ! ri
                           ris = (ws^.invTbl) ! ri
                       in case findExit r dir' of
-                        Nothing  -> putTMVar t ws >> return (Left . sorry $ dir')
+                        Nothing  -> putTMVar t ws >> (return . Left . sorry $ dir')
                         Just ri' -> let p'   = p & rmId .~ ri'
                                         ris' = (ws^.invTbl) ! ri'
                                     in putTMVar t (ws & pcTbl.at i ?~ p'
                                                       & invTbl.at ri  ?~ delete i ris
-                                                      & invTbl.at ri' ?~ (i : ris')) >> return (Right ())
+                                                      & invTbl.at ri' ?~ (i : ris')) >> (return . Right $ ())
     sorry dir'  = if dir' `elem` stdLinkNames
                     then "You can't go that way."
                     else dblQuote dir <> " is not a valid direction."
@@ -697,7 +725,7 @@ getAction (mq, i, cols) rs = helper >>= send mq . nl
                    (ws',  msgs)       = foldl' (helperGetDropEitherInv   cols Get ri i) (ws, "")    eiss
                    (ws'', msgs')      = foldl' (helperGetDropEitherCoins      Get ri i) (ws', msgs) ecs
                in putTMVar t ws'' >> return msgs'
-          else putTMVar t ws >> return (T.unlines . wordWrap cols $ "You don't see anything here to pick up.")
+          else putTMVar t ws >> (return . T.unlines . wordWrap cols $ "You don't see anything here to pick up.")
 
 
 advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
@@ -774,7 +802,7 @@ dropAction (mq, i, cols) rs = helper >>= send mq . nl
                    (ws',  msgs)       = foldl' (helperGetDropEitherInv   cols Drop i ri) (ws, "")    eiss
                    (ws'', msgs')      = foldl' (helperGetDropEitherCoins      Drop i ri) (ws', msgs) ecs
                in putTMVar t ws'' >> return msgs'
-          else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
+          else putTMVar t ws >> (return . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
 
 
 -----
@@ -799,9 +827,9 @@ putAction (mq, i, cols) rs  = helper >>= send mq . nl
         then if T.head cn == rmChar
           then if not . null $ ris
             then shufflePut i cols (t, ws) (T.tail cn) restWithoutCon ris rc pis pc procGecrMisRm
-            else putTMVar t ws >> return (T.unlines . wordWrap cols $ "You don't see any containers here.")
+            else putTMVar t ws >> (return . T.unlines . wordWrap cols $ "You don't see any containers here.")
           else shufflePut i cols (t, ws) cn restWithoutCon pis pc pis pc procGecrMisPCInv
-      else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
+      else putTMVar t ws >> (return . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
 
 
 type InvWithCon   = Inv
@@ -813,20 +841,20 @@ type PCCoins       = Coins
 shufflePut :: Id -> Cols -> (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCon -> CoinsWithCon -> PCInv -> PCCoins -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
 shufflePut i cols (t, ws) cn rs is c pis pc f = let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
                                                 in if null miss && (not . null $ rcs)
-                                                  then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't put something inside a coin.")
+                                                  then putTMVar t ws >> (return . T.unlines . wordWrap cols $ "You can't put something inside a coin.")
                                                   else case f . head . zip gecrs $ miss of
                                                     Left  msg  -> putTMVar t ws >> return msg
                                                     Right [ci] -> let e  = (ws^.entTbl)  ! ci
                                                                       t' = (ws^.typeTbl) ! ci
                                                                   in if t' /= ConType
-                                                                    then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.")
+                                                                    then putTMVar t ws >> (return . T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.")
                                                                     else let (gecrs', miss', rcs') = resolveEntCoinNames ws rs pis pc
                                                                              eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
                                                                              ecs                   = map procReconciledCoinsPCInv rcs'
                                                                              (ws',  msgs)          = foldl' (helperPutRemEitherInv   cols Put i ci e) (ws, "")    eiss
                                                                              (ws'', msgs')         = foldl' (helperPutRemEitherCoins cols Put i ci e) (ws', msgs) ecs
                                                                          in putTMVar t ws'' >> return msgs'
-                                                    Right _   -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only put things into one container at a time.")
+                                                    Right _   -> putTMVar t ws >> (return . T.unlines . wordWrap cols $ "You can only put things into one container at a time.")
 
 
 type ToEnt = Ent
@@ -903,20 +931,20 @@ remove (mq, i, cols) rs  = helper >>= send mq . nl
       in if T.head cn == rmChar
           then if not . null $ ris
             then shuffleRem i cols (t, ws) (T.tail cn) restWithoutCon ris rc procGecrMisRm
-            else putTMVar t ws >> return (T.unlines . wordWrap cols $ "You don't see any containers here.")
+            else putTMVar t ws >> (return . T.unlines . wordWrap cols $ "You don't see any containers here.")
           else shuffleRem i cols (t, ws) cn restWithoutCon pis pc procGecrMisPCInv
 
 
 shuffleRem :: Id -> Cols -> (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCon -> CoinsWithCon -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM T.Text
 shuffleRem i cols (t, ws) cn rs is c f = let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
                                          in if null miss && (not . null $ rcs)
-                                           then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't remove something from a coin.")
+                                           then putTMVar t ws >> (return . T.unlines . wordWrap cols $ "You can't remove something from a coin.")
                                            else case f . head . zip gecrs $ miss of
                                              Left  msg  -> putTMVar t ws >> return msg
                                              Right [ci] -> let e  = (ws^.entTbl)  ! ci
                                                                t' = (ws^.typeTbl) ! ci
                                                            in if t' /= ConType
-                                                             then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.")
+                                                             then putTMVar t ws >> (return . T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.")
                                                              else let cis                   = (ws^.invTbl)   ! ci
                                                                       cc                    = (ws^.coinsTbl) ! ci
                                                                       (gecrs', miss', rcs') = resolveEntCoinNames ws rs cis cc
@@ -925,7 +953,7 @@ shuffleRem i cols (t, ws) cn rs is c f = let (gecrs, miss, rcs) = resolveEntCoin
                                                                       (ws',  msgs)          = foldl' (helperPutRemEitherInv   cols Rem ci i e) (ws, "")    eiss
                                                                       (ws'', msgs')         = foldl' (helperPutRemEitherCoins cols Rem ci i e) (ws', msgs) ecs
                                                                   in putTMVar t ws'' >> return msgs'
-                                             Right _   -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only remove things from one container at a time.")
+                                             Right _   -> putTMVar t ws >> (return . T.unlines . wordWrap cols $ "You can only remove things from one container at a time.")
 
 
 -----
@@ -944,7 +972,7 @@ ready (mq, i, cols) rs = helper >>= send mq . nl
                    msgs                      = if null rcs then "" else "You can't ready coins.\n"
                    (ws',  msgs')             = foldl' (helperReady cols i) (ws, msgs) . zip eiss $ mrols
                in putTMVar t ws' >> return msgs'
-          else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
+          else putTMVar t ws >> (return . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
 
 
 helperReady :: Cols -> Id -> (WorldState, T.Text) -> (Either T.Text Inv, Maybe RightOrLeft) -> (WorldState, T.Text)
@@ -1052,7 +1080,6 @@ getAvailClothSlot :: Cols -> WorldState -> Id -> Cloth -> EqMap -> Either T.Text
 getAvailClothSlot cols ws i c em = let m = (ws^.mobTbl) ! i
                                        g = m^.gender
                                        h = m^.hand
-                                   -- TODO: Move "procMaybe" to the left of the "case".
                                    in procMaybe $ case c of
                                      EarC    -> getEarSlotForGender g `mplus` (getEarSlotForGender . otherGender $ g)
                                      NoseC   -> findAvailSlot em noseSlots
@@ -1167,7 +1194,7 @@ unready (mq, i, cols) rs = helper >>= send mq . nl
                    msgs               = if null rcs then "" else "You can't unready coins.\n"
                    (ws',  msgs')      = foldl' (helperUnready cols i) (ws, msgs) eiss
                in putTMVar t ws' >> return msgs'
-          else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYou'reNaked)
+          else putTMVar t ws >> (return . T.unlines . wordWrap cols $ dudeYou'reNaked)
 
 
 helperUnready :: Cols -> Id -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
@@ -1456,7 +1483,6 @@ debugThrow mic@(mq, _, cols) rs = ignore mq cols rs >> debugThrow mic []
 -----
 
 
--- TODO: Show the status of other threads, too.
 debugSniff :: Action
 debugSniff (mq, _, cols) [] = gets (^.nonWorldState.logServices) >>= \ls ->
     let Just (nla, _) = ls^.noticeLog
@@ -1464,10 +1490,15 @@ debugSniff (mq, _, cols) [] = gets (^.nonWorldState.logServices) >>= \ls ->
         nli           = asyncThreadId nla
         eli           = asyncThreadId ela
     in do
-        nls <- liftIO . threadStatus $ nli
-        els <- liftIO . threadStatus $ eli
-        let msg = T.unlines . concatMap (wordWrap cols) $ [ "Notice log thread status: " <> showText nls, "Error  log thread status: " <> showText els ]
+        ttTMVar <- gets (^.nonWorldState.threadTblTMVar)
+        kvs     <- M.assocs <$> (liftIO . atomically . readTMVar $ ttTMVar)
+        ds      <- mapM mkDesc $ head kvs : (nli, Notice) : (eli, Error) : tail kvs
+        let msg = T.unlines . concatMap (wordWrap cols) $ ds
         send mq . nl $ divider <> msg <> divider
   where
-    divider = nl . mkDividerTxt $ cols
+    mkDesc (k, v) = (liftIO . threadStatus $ k) >>= \s ->
+        return $ showText k <> " " <> (bracketPad 15 . mkTypeName $ v) <> showText s
+    mkTypeName (Server i) = "Server  " <> showText i
+    mkTypeName t          = showText t
+    divider               = nl . mkDividerTxt $ cols
 debugSniff mic@(mq, _, cols) rs = ignore mq cols rs >> debugSniff mic []

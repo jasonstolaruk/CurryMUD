@@ -26,6 +26,7 @@ import Network (withSocketsDo)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getEnv, getProgName)
 import qualified Data.IntMap.Lazy as IM (empty)
+import qualified Data.Map.Lazy as M (empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 
@@ -50,9 +51,10 @@ welcome = do
 initMudState :: IO MudState
 initMudState = do
     wsTMVar  <- newTMVarIO ws
-    ptTMVar  <- newTMVarIO IM.empty
+    ttTMVar  <- newTMVarIO M.empty
     mqtTMVar <- newTMVarIO IM.empty
-    return (MudState wsTMVar . nws ptTMVar $ mqtTMVar)
+    ptTMVar  <- newTMVarIO IM.empty
+    return (MudState wsTMVar . nws ttTMVar mqtTMVar $ ptTMVar)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
     nws = NonWorldState (LogServices Nothing Nothing)

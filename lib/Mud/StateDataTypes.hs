@@ -5,6 +5,7 @@ module Mud.StateDataTypes where
 
 import Mud.StateInIORefT
 
+import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Concurrent.STM.TMVar (TMVar)
@@ -283,8 +284,9 @@ data Type = ObjType
 
 
 data NonWorldState = NonWorldState { _logServices      :: LogServices
-                                   , _plaTblTMVar      :: TMVar (IM.IntMap Pla)
-                                   , _msgQueueTblTMVar :: TMVar (IM.IntMap MsgQueue) }
+                                   , _threadTblTMVar   :: TMVar ThreadTbl
+                                   , _msgQueueTblTMVar :: TMVar (IM.IntMap MsgQueue)
+                                   , _plaTblTMVar      :: TMVar (IM.IntMap Pla) }
 
 
 -- ==================================================
@@ -304,10 +306,17 @@ data LogServices = LogServices { _noticeLog :: Maybe LogService
 
 
 -- ==================================================
--- Player:
+-- Thread table:
 
 
-data Pla = Pla { _columns :: Int }
+type ThreadTbl  = M.Map ThreadId ThreadType
+
+data ThreadType = Notice
+                | Error
+                | Listen
+                | Talk
+                | Server  Id
+                | Receive Id deriving (Eq, Show)
 
 
 -- ==================================================
@@ -322,6 +331,13 @@ data Msg = FromServer T.Text
          | Prompt     T.Text
          | Quit       T.Text
          | Shutdown
+
+
+-- ==================================================
+-- Player:
+
+
+data Pla = Pla { _columns :: Int }
 
 
 -- ==================================================

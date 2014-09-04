@@ -27,6 +27,7 @@ module Mud.Util ( adjustIndent
                 , parensQuote
                 , patternMatchFail
                 , quoteWithAndPad
+                , reverseLookup
                 , showText
                 , singleQuote
                 , unquote
@@ -45,6 +46,7 @@ import Data.Char (isDigit, isSpace)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
 import Data.Text.Strict.Lens (packed, unpacked)
+import qualified Data.Map.Lazy as M (assocs, Map)
 import qualified Data.Text as T
 
 
@@ -284,6 +286,10 @@ mkOrdinal x  = let t = showText x
 
 grepTextList :: T.Text -> [T.Text] -> [T.Text]
 grepTextList needle = filter (needle `T.isInfixOf`)
+
+
+reverseLookup :: (Eq v) => v -> M.Map k v -> k
+reverseLookup v = (^.to head._1) . filter (\(_, v') -> v' == v) . M.assocs
 
 
 maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
