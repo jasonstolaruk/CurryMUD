@@ -26,7 +26,7 @@ import Control.Exception (ArithException(..), AsyncException(..), fromException,
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
 import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
-import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
+import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
 import Data.Char (isSpace, toUpper)
@@ -38,7 +38,7 @@ import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
-import GHC.Conc (threadStatus)
+import GHC.Conc (threadStatus, ThreadStatus(..))
 import Network (accept, listenOn, PortID(..))
 import Prelude hiding (pi)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
@@ -50,7 +50,7 @@ import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M (assocs, elems, empty, filter, null, toList)
+import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
@@ -117,8 +117,9 @@ cmdList = -- ==================================================
           , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
           , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
-          , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
+          , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread table." }
           , Cmd { cmdName = prefixDebugCmd "sniff", action = debugSniff, cmdDesc = "Sniff out a dirty thread." }
+          , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
 
           -- ==================================================
           -- Player commands:
@@ -242,7 +243,7 @@ adHoc mq = do
         let pc  = PC iHill Human
         let ris = i : (ws^.invTbl) ! iHill
         -----
-        let pla = Pla 30
+        let pla = Pla 80
         -----
         let ws'  = ws  & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc & invTbl.at iHill ?~ ris
         let pt'  = pt  & at i ?~ pla
@@ -479,35 +480,25 @@ tryMove mic@(mq, i, cols) dir = let dir' = T.toLower dir
                           destIs    = (ws^.invTbl) ! ri'
                           originPis = findPCIds ws originIs
                           destPis   = findPCIds ws destIs
-                          originMsg = e^.sing <> " " <> verb dir' <> " " <> showLinkName    dir' <> "."
-                          destMsg   = e^.sing <> " arrives from "        <> showOppLinkName dir' <> "."
+                          originMsg
+                            | dir' `elem` stdLinkNames = e^.sing <> " " <> verb dir' <> " " <> expandLinkName    dir' <> "."
+                            | otherwise = undefined -- TODO
+                          destMsg
+                            | dir' `elem` stdLinkNames = e^.sing <> " arrives from " <>        expandOppLinkName dir' <> "."
+                            | otherwise = undefined -- TODO
                       in do
                           putTMVar t (ws & pcTbl.at  i   ?~ p'
                                          & invTbl.at ri  ?~ originIs
                                          & invTbl.at ri' ?~ i : destIs)
                           return . Right $ [(originMsg, originPis), (destMsg, destPis)]
-    sorry dir'  = if dir' `elem` stdLinkNames
-                    then "You can't go that way."
-                    else dblQuote dir <> " is not a valid direction."
+    sorry dir' = if dir' `elem` stdLinkNames
+                   then "You can't go that way."
+                   else dblQuote dir <> " is not a valid exit."
     verb  dir'
       | dir' == "u"              = "goes"
       | dir' == "d"              = "heads"
       | dir' `elem` stdLinkNames = "leaves"
       | otherwise                = "enters"
-
-
-broadcast :: [(T.Text, [Id])] -> MudStack () -- TODO: Does this deserve a type synonym?
-broadcast bs = do
-    mqtTMVar  <- gets (^.nonWorldState.msgQueueTblTMVar)
-    ptTMVar   <- gets (^.nonWorldState.plaTblTMVar)
-    (mqt, pt) <- liftIO . atomically $ do
-        mqt <- readTMVar mqtTMVar
-        pt  <- readTMVar ptTMVar
-        return (mqt, pt)
-    let helper msg i = let mq   = mqt ! i
-                           cols = (pt ! i)^.columns
-                       in send mq . nl . T.unlines . wordWrap cols $ msg
-    forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 
 findExit :: Rm -> LinkName -> Maybe Id
@@ -518,32 +509,32 @@ findExit r ln = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
     isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)
 
 
-showLinkName :: T.Text -> T.Text
-showLinkName "n"  = "north"
-showLinkName "ne" = "northeast"
-showLinkName "e"  = "east"
-showLinkName "se" = "southeast"
-showLinkName "s"  = "south"
-showLinkName "sw" = "southwest"
-showLinkName "w"  = "west"
-showLinkName "nw" = "northwest"
-showLinkName "u"  = "up"
-showLinkName "d"  = "down"
-showLinkName x    = "the " <> x
+expandLinkName :: T.Text -> T.Text
+expandLinkName "n"  = "north"
+expandLinkName "ne" = "northeast"
+expandLinkName "e"  = "east"
+expandLinkName "se" = "southeast"
+expandLinkName "s"  = "south"
+expandLinkName "sw" = "southwest"
+expandLinkName "w"  = "west"
+expandLinkName "nw" = "northwest"
+expandLinkName "u"  = "up"
+expandLinkName "d"  = "down"
+expandLinkName x    = patternMatchFail "expandLinkName" [x]
 
 
-showOppLinkName :: T.Text -> T.Text
-showOppLinkName "n"  = "the south"
-showOppLinkName "ne" = "the southwest"
-showOppLinkName "e"  = "the west"
-showOppLinkName "se" = "the northwest"
-showOppLinkName "s"  = "the north"
-showOppLinkName "sw" = "the northeast"
-showOppLinkName "w"  = "the east"
-showOppLinkName "nw" = "the southeast"
-showOppLinkName "u"  = "below"
-showOppLinkName "d"  = "above"
-showOppLinkName x    = "the " <> x -- TODO: Nope...
+expandOppLinkName :: T.Text -> T.Text
+expandOppLinkName "n"  = "the south"
+expandOppLinkName "ne" = "the southwest"
+expandOppLinkName "e"  = "the west"
+expandOppLinkName "se" = "the northwest"
+expandOppLinkName "s"  = "the north"
+expandOppLinkName "sw" = "the northeast"
+expandOppLinkName "w"  = "the east"
+expandOppLinkName "nw" = "the southeast"
+expandOppLinkName "u"  = "below"
+expandOppLinkName "d"  = "above"
+expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
 findPCIds :: WorldState -> [Id] -> [Id]
@@ -1527,13 +1518,16 @@ debugDispEnv (mq, _, cols) rs = liftIO getEnvironment >>= \env ->
 
 
 debugLog :: Action
-debugLog (mq, _, _) [] = helper >> send mq "OK!\n\n"
+debugLog (mq, _, _) [] = helper >> ok mq
   where
     helper       = replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get
     heavyLogging = liftIO myThreadId >>= \i ->
         replicateM_ 100 . logNotice "debugLog" $ "Logging from " ++ show i
 debugLog mic@(mq, _, cols) rs = ignore mq cols rs >> debugLog mic []
 
+
+ok :: MsgQueue -> MudStack ()
+ok mq = send mq . nlnl $ "OK!"
 
 ------
 
@@ -1546,7 +1540,7 @@ debugThrow mic@(mq, _, cols) rs = ignore mq cols rs >> debugThrow mic []
 -----
 
 
-debugSniff :: Action -- TODO: Consider making a command that purges the thread table. This command could be automatically run at certain intervals.
+debugSniff :: Action
 debugSniff (mq, _, cols) [] = gets (^.nonWorldState.logServices) >>= \ls ->
     let Just (nla, _) = ls^.noticeLog
         Just (ela, _) = ls^.errorLog
@@ -1565,3 +1559,23 @@ debugSniff (mq, _, cols) [] = gets (^.nonWorldState.logServices) >>= \ls ->
     mkTypeName t          = showText t
     divider               = nl . mkDividerTxt $ cols
 debugSniff mic@(mq, _, cols) rs = ignore mq cols rs >> debugSniff mic []
+
+
+-----
+
+
+-- TODO: This command could be automatically run at certain intervals.
+debugPurge :: Action
+debugPurge (mq, _, _) [] = purge >> ok mq
+debugPurge mic@(mq, _, cols) rs = ignore mq cols rs >> debugPurge mic []
+
+
+purge :: MudStack ()
+purge = do
+    ttTMVar <- gets (^.nonWorldState.threadTblTMVar)
+    ks <- M.keys <$> (liftIO . atomically . readTMVar $ ttTMVar)
+    ss <- liftIO . mapM threadStatus $ ks
+    let kss = zip ks ss
+    liftIO . atomically $ do
+        tt <- takeTMVar ttTMVar
+        putTMVar ttTMVar . foldl' (\m (k, s) -> if s == ThreadFinished then M.delete k m else m) tt $ kss

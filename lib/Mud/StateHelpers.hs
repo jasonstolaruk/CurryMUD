@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, RankNTypes #-}
 
 module Mud.StateHelpers ( BothGramNos
+                        , broadcast
                         , getEntBothGramNos
                         , getPlaColumns
                         , getWS
@@ -35,6 +36,7 @@ import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (_1, at, each, folded)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.), (^..))
+import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
 import Data.Functor ((<$>))
@@ -178,6 +180,20 @@ negateCoins (Coins c) = Coins (each %~ negate $ c)
 
 send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
+
+
+broadcast :: [(T.Text, [Id])] -> MudStack () -- TODO: Does this deserve a type synonym?
+broadcast bs = do
+    mqtTMVar  <- gets (^.nonWorldState.msgQueueTblTMVar)
+    ptTMVar   <- gets (^.nonWorldState.plaTblTMVar)
+    (mqt, pt) <- liftIO . atomically $ do
+        mqt <- readTMVar mqtTMVar
+        pt  <- readTMVar ptTMVar
+        return (mqt, pt)
+    let helper msg i = let mq   = mqt ! i
+                           cols = (pt ! i)^.columns
+                       in send mq . nl . T.unlines . wordWrap cols $ msg
+    forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 
 mkDividerTxt :: Cols -> T.Text
