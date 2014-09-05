@@ -107,7 +107,7 @@ instance ConvRol Slot where
 
 type CmdName        = T.Text
 type Action         = MsgQueueIdCols -> Rest -> MudStack ()
-type MsgQueueIdCols = (MsgQueue, Id, Cols)
+type MsgQueueIdCols = (MsgQueue, Id, Cols) -- TODO: Consider changing the order.
 type Cols           = Int
 type Rest           = [T.Text]
 

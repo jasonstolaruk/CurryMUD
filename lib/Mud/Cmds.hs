@@ -26,7 +26,7 @@ import Control.Exception (ArithException(..), AsyncException(..), fromException,
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
 import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
-import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
+import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
 import Data.Char (isSpace, toUpper)
@@ -65,7 +65,11 @@ import qualified Data.Text.IO as T (readFile)
 -- 5. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
 -- a. Code reduction.
 -- b. Consistency in binding names.
--- c. Stylistic issues. Use ++ instead of <> where applicable. Use <> or concat lists of text(?), etc.
+-- c. Stylistic issues:
+--    Use "++" instead of "<>" where applicable.
+--    Concat lists of text instead of using "<>".
+--    ">>=" vs. "=<<".
+--    "(..)" instead of "(blah)" in import statements.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -235,10 +239,10 @@ adHoc mq = do
         let co  = mempty
         let em  = M.empty
         let m   = Mob Male 10 10 10 10 10 10 0 RHand
-        let pc  = PC 1 Human
+        let pc  = PC iHill Human
         let ris = i : (ws^.invTbl) ! iHill
         -----
-        let pla = Pla 80
+        let pla = Pla 30
         -----
         let ws'  = ws  & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc & invTbl.at iHill ?~ ris
         let pt'  = pt  & at i ?~ pla
@@ -294,13 +298,13 @@ handleInpExHandler e = do
 
 getListenThreadId :: MudStack ThreadId
 getListenThreadId = do
-    ttTMVar <- gets (^.nonWorldState.threadTblTMVar)
+    ttTMVar <- gets (^.nonWorldState.threadTblTMVar) -- TODO: Can we make helper functions for working with nws? At the very least we should be able to make helpers for "readTMVar" operations...
     tt      <- liftIO . atomically . readTMVar $ ttTMVar
     return . reverseLookup Listen $ tt
 
 
 commitSuicide :: MudStack ()
-commitSuicide = getListenThreadId >>= liftIO . killThread
+commitSuicide = liftIO . killThread =<< getListenThreadId
 
 
 receive :: Handle -> MsgQueue -> Id -> MudStack ()
@@ -460,23 +464,50 @@ tryMove :: MsgQueueIdCols -> T.Text -> MudStack ()
 tryMove mic@(mq, i, cols) dir = let dir' = T.toLower dir
                                 in helper dir' >>= \case
                                   Left  msg -> send mq . nl . T.unlines . wordWrap cols $ msg
-                                  Right _   -> look mic []
+                                  Right bs  -> broadcast bs >> look mic []
   where
     helper dir' = onWS $ \(t, ws) ->
-                      let p   = (ws^.pcTbl)  ! i
-                          ri  = p^.rmId
-                          r   = (ws^.rmTbl)  ! ri
-                          ris = (ws^.invTbl) ! ri
-                      in case findExit r dir' of
-                        Nothing  -> putTMVar t ws >> (return . Left . sorry $ dir')
-                        Just ri' -> let p'   = p & rmId .~ ri'
-                                        ris' = (ws^.invTbl) ! ri'
-                                    in putTMVar t (ws & pcTbl.at i ?~ p'
-                                                      & invTbl.at ri  ?~ delete i ris
-                                                      & invTbl.at ri' ?~ (i : ris')) >> (return . Right $ ())
+        let e   = (ws^.entTbl) ! i
+            p   = (ws^.pcTbl)  ! i
+            ri  = p^.rmId
+            r   = (ws^.rmTbl)  ! ri
+            ris = (ws^.invTbl) ! ri
+        in case findExit r dir' of
+          Nothing  -> putTMVar t ws >> (return . Left . sorry $ dir')
+          Just ri' -> let p'        = p & rmId .~ ri'
+                          originIs  = delete i ris
+                          destIs    = (ws^.invTbl) ! ri'
+                          originPis = findPCIds ws originIs
+                          destPis   = findPCIds ws destIs
+                          originMsg = e^.sing <> " " <> verb dir' <> " " <> showLinkName    dir' <> "."
+                          destMsg   = e^.sing <> " arrives from "        <> showOppLinkName dir' <> "."
+                      in do
+                          putTMVar t (ws & pcTbl.at  i   ?~ p'
+                                         & invTbl.at ri  ?~ originIs
+                                         & invTbl.at ri' ?~ i : destIs)
+                          return . Right $ [(originMsg, originPis), (destMsg, destPis)]
     sorry dir'  = if dir' `elem` stdLinkNames
                     then "You can't go that way."
                     else dblQuote dir <> " is not a valid direction."
+    verb  dir'
+      | dir' == "u"              = "goes"
+      | dir' == "d"              = "heads"
+      | dir' `elem` stdLinkNames = "leaves"
+      | otherwise                = "enters"
+
+
+broadcast :: [(T.Text, [Id])] -> MudStack () -- TODO: Does this deserve a type synonym?
+broadcast bs = do
+    mqtTMVar  <- gets (^.nonWorldState.msgQueueTblTMVar)
+    ptTMVar   <- gets (^.nonWorldState.plaTblTMVar)
+    (mqt, pt) <- liftIO . atomically $ do
+        mqt <- readTMVar mqtTMVar
+        pt  <- readTMVar ptTMVar
+        return (mqt, pt)
+    let helper msg i = let mq   = mqt ! i
+                           cols = (pt ! i)^.columns
+                       in send mq . nl . T.unlines . wordWrap cols $ msg
+    forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 
 findExit :: Rm -> LinkName -> Maybe Id
@@ -485,6 +516,38 @@ findExit r ln = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
                   is -> Just . head $ is
   where
     isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)
+
+
+showLinkName :: T.Text -> T.Text
+showLinkName "n"  = "north"
+showLinkName "ne" = "northeast"
+showLinkName "e"  = "east"
+showLinkName "se" = "southeast"
+showLinkName "s"  = "south"
+showLinkName "sw" = "southwest"
+showLinkName "w"  = "west"
+showLinkName "nw" = "northwest"
+showLinkName "u"  = "up"
+showLinkName "d"  = "down"
+showLinkName x    = "the " <> x
+
+
+showOppLinkName :: T.Text -> T.Text
+showOppLinkName "n"  = "the south"
+showOppLinkName "ne" = "the southwest"
+showOppLinkName "e"  = "the west"
+showOppLinkName "se" = "the northwest"
+showOppLinkName "s"  = "the north"
+showOppLinkName "sw" = "the northeast"
+showOppLinkName "w"  = "the east"
+showOppLinkName "nw" = "the southeast"
+showOppLinkName "u"  = "below"
+showOppLinkName "d"  = "above"
+showOppLinkName x    = "the " <> x -- TODO: Nope...
+
+
+findPCIds :: WorldState -> [Id] -> [Id]
+findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
 
 
 -----
@@ -1483,7 +1546,7 @@ debugThrow mic@(mq, _, cols) rs = ignore mq cols rs >> debugThrow mic []
 -----
 
 
-debugSniff :: Action
+debugSniff :: Action -- TODO: Consider making a command that purges the thread table. This command could be automatically run at certain intervals.
 debugSniff (mq, _, cols) [] = gets (^.nonWorldState.logServices) >>= \ls ->
     let Just (nla, _) = ls^.noticeLog
         Just (ela, _) = ls^.errorLog
