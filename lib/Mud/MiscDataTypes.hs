@@ -10,9 +10,9 @@ module Mud.MiscDataTypes ( Action
                          , EmptyNoneSome(..)
                          , GetEntsCoinsRes(..)
                          , GetOrDrop(..)
+                         , IdMsgQueueCols
                          , Index
                          , InvType(..)
-                         , MsgQueueIdCols
                          , NameSearchedFor
                          , Pretty
                          , PutOrRem(..)
@@ -106,8 +106,8 @@ instance ConvRol Slot where
 
 
 type CmdName        = T.Text
-type Action         = MsgQueueIdCols -> Rest -> MudStack ()
-type MsgQueueIdCols = (MsgQueue, Id, Cols) -- TODO: Consider changing the order.
+type Action         = IdMsgQueueCols -> Rest -> MudStack ()
+type IdMsgQueueCols = (Id, MsgQueue, Cols)
 type Cols           = Int
 type Rest           = [T.Text]
 
