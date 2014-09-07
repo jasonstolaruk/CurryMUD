@@ -20,7 +20,7 @@ import Control.Arrow (first)
 import Control.Concurrent (forkFinally, forkIO, killThread, myThreadId, ThreadId)
 import Control.Concurrent.Async (asyncThreadId, race_)
 import Control.Concurrent.STM (atomically, STM)
-import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
+import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
@@ -28,7 +28,7 @@ import Control.Lens (_1, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (get, gets)
+import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
@@ -198,15 +198,13 @@ listen = do
 
 
 registerThread :: ThreadType -> MudStack ()
-registerThread t = do
-    ti      <- liftIO myThreadId
-    ttTMVar <- gets (^.nonWorldState.threadTblTMVar)
-    liftIO . atomically $ do
-        tt <- takeTMVar ttTMVar
-        let tt' = tt & at ti ?~ t
-        putTMVar ttTMVar tt'
+registerThread threadType = liftIO myThreadId >>= \ti ->
+    onNWS threadTblTMVar $ \(t, tt) ->
+        let tt' = tt & at ti ?~ threadType
+        in putTMVar t tt'
 
 
+-- TODO: Spawn a log for the new player.
 talk :: Handle -> MudStack ()
 talk h = do
     liftIO configBuffer
@@ -215,6 +213,7 @@ talk h = do
     logNotice "talk" $ "new ID for incoming player: " <> show i
     dumpTitle mq
     prompt mq "> "
+    notifyArrival i
     s <- get
     liftIO $ race_ (runStateInIORefT (server  h i mq) s)
                    (runStateInIORefT (receive h i mq) s)
@@ -224,10 +223,10 @@ talk h = do
 
 adHoc :: MsgQueue -> MudStack Id
 adHoc mq = do
-    wsTMVar  <- gets (^.worldStateTMVar)
-    ptTMVar  <- gets (^.nonWorldState.plaTblTMVar)
-    mqtTMVar <- gets (^.nonWorldState.msgQueueTblTMVar)
-    let helper = liftIO . atomically $ do
+    wsTMVar  <- getWSTMVar
+    ptTMVar  <- getNWSTMVar plaTblTMVar
+    mqtTMVar <- getNWSTMVar msgQueueTblTMVar
+    liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         pt  <- takeTMVar ptTMVar
         mqt <- takeTMVar mqtTMVar
@@ -245,7 +244,14 @@ adHoc mq = do
         -----
         let pla = Pla 80
         -----
-        let ws'  = ws  & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ co & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ pc & invTbl.at iHill ?~ ris
+        let ws'  = ws  & typeTbl.at  i     ?~ PCType
+                       & entTbl.at   i     ?~ e
+                       & invTbl.at   i     ?~ is
+                       & coinsTbl.at i     ?~ co
+                       & eqTbl.at    i     ?~ em
+                       & mobTbl.at   i     ?~ m
+                       & pcTbl.at    i     ?~ pc
+                       & invTbl.at   iHill ?~ ris
         let pt'  = pt  & at i ?~ pla
         let mqt' = mqt & at i ?~ mq
         -----
@@ -254,7 +260,6 @@ adHoc mq = do
         putTMVar mqtTMVar mqt'
         -----
         return i
-    helper
 
 
 dumpTitle :: MsgQueue -> MudStack ()
@@ -278,30 +283,36 @@ prompt :: MsgQueue -> T.Text -> MudStack ()
 prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
+notifyArrival :: Id -> MudStack ()
+notifyArrival i = getWS >>= \ws ->
+    let e    = (ws^.entTbl) ! i
+        p    = (ws^.pcTbl)  ! i
+        ris  = (ws^.invTbl) ! (p^.rmId)
+        pcIs = findPCIds ws . delete i $ ris
+    in broadcast [(e^.sing <> " has arrived in the game.", pcIs)]
+
+
 server :: Handle -> Id -> MsgQueue -> MudStack ()
-server h i mq = (registerThread . Server $ i) >> loop
+server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> loop
       FromClient msg -> let msg' = T.strip msg
-                        in unless (T.null msg') (handleInp i mq msg' `catch` handleInpExHandler) >> loop
-      Prompt     p   -> liftIO (hPutStr h (p^.unpacked) >> hFlush h) >> loop
+                        in unless (T.null msg') (handleInp i mq msg') >> loop
+      Prompt     p   -> liftIO (hPutStr h (p^.unpacked) >> hFlush h)  >> loop
       Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
       Shutdown       -> commitSuicide
 
 
-handleInpExHandler :: SomeException -> MudStack ()
-handleInpExHandler e = do
-    logExMsg "handleInpExHandler" "exception caught on server thread; rethrowing" e
+serverExHandler :: SomeException -> MudStack ()
+serverExHandler e = do
+    logExMsg "serverExHandler" "exception caught on server thread; rethrowing" e
     ti <- getListenThreadId
     liftIO . throwTo ti $ e
 
 
 getListenThreadId :: MudStack ThreadId
-getListenThreadId = do
-    ttTMVar <- gets (^.nonWorldState.threadTblTMVar) -- TODO: Can we make helper functions for working with nws? At the very least we should be able to make helpers for "readTMVar" operations...
-    tt      <- liftIO . atomically . readTMVar $ ttTMVar
-    return . reverseLookup Listen $ tt
+getListenThreadId = reverseLookup Listen <$> getNWS threadTblTMVar
 
 
 commitSuicide :: MudStack ()
@@ -476,6 +487,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
           Just ri' -> let p'        = p & rmId .~ ri'
                           originIs  = delete i ris
                           destIs    = (ws^.invTbl) ! ri'
+                          destIs'   = sortInv ws $ i : destIs
                           originPis = findPCIds ws originIs
                           destPis   = findPCIds ws destIs
                           originMsg
@@ -487,7 +499,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                       in do
                           putTMVar t (ws & pcTbl.at  i   ?~ p'
                                          & invTbl.at ri  ?~ originIs
-                                         & invTbl.at ri' ?~ i : destIs)
+                                         & invTbl.at ri' ?~ destIs')
                           return . Right $ [(originMsg, originPis), (destMsg, destPis)]
     sorry dir' = if dir' `elem` stdLinkNames
                    then "You can't go that way."
@@ -533,10 +545,6 @@ expandOppLinkName "nw" = "the southeast"
 expandOppLinkName "u"  = "below"
 expandOppLinkName "d"  = "above"
 expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
-
-
-findPCIds :: WorldState -> [Id] -> [Id]
-findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
 
 
 -----
@@ -1411,9 +1419,9 @@ quit (_, mq, cols) _  = send mq . nl . T.unlines . wordWrap cols $ "Type " <> db
 handleQuit :: Id -> MudStack ()
 handleQuit i = do
     logNotice "handleQuit" $ "player " <> show i <> " has quit"
-    wsTMVar  <- gets (^.worldStateTMVar)
-    ptTMVar  <- gets (^.nonWorldState.plaTblTMVar)
-    mqtTMVar <- gets (^.nonWorldState.msgQueueTblTMVar)
+    wsTMVar  <- getWSTMVar
+    ptTMVar  <- getNWSTMVar plaTblTMVar
+    mqtTMVar <- getNWSTMVar msgQueueTblTMVar
     liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         pt  <- takeTMVar ptTMVar
@@ -1422,7 +1430,14 @@ handleQuit i = do
         let p    = (ws^.pcTbl)  ! i
         let ri   = p^.rmId
         let ris  = (ws^.invTbl) ! ri
-        let ws'  = ws  & typeTbl.at i .~ Nothing & entTbl.at i .~ Nothing & invTbl.at i .~ Nothing & coinsTbl.at i .~ Nothing & eqTbl.at i .~ Nothing & mobTbl.at i .~ Nothing & pcTbl.at i .~ Nothing & invTbl.at ri ?~ delete i ris
+        let ws'  = ws  & typeTbl.at  i  .~ Nothing
+                       & entTbl.at   i  .~ Nothing
+                       & invTbl.at   i  .~ Nothing
+                       & coinsTbl.at i  .~ Nothing
+                       & eqTbl.at    i  .~ Nothing
+                       & mobTbl.at   i  .~ Nothing
+                       & pcTbl.at    i  .~ Nothing
+                       & invTbl.at   ri ?~ delete i ris
         let pt'  = pt  & at i .~ Nothing
         let mqt' = mqt & at i .~ Nothing
         -----
@@ -1537,17 +1552,12 @@ debugThrow imc@(_, mq, cols) rs = ignore mq cols rs >> debugThrow imc []
 
 
 debugSniff :: Action
-debugSniff (_, mq, cols) [] = gets (^.nonWorldState.logServices) >>= \ls ->
-    let Just (nla, _) = ls^.noticeLog
-        Just (ela, _) = ls^.errorLog
-        nli           = asyncThreadId nla
-        eli           = asyncThreadId ela
-    in do
-        ttTMVar <- gets (^.nonWorldState.threadTblTMVar)
-        kvs     <- M.assocs <$> (liftIO . atomically . readTMVar $ ttTMVar)
-        ds      <- mapM mkDesc $ head kvs : (nli, Notice) : (eli, Error) : tail kvs
-        let msg = T.unlines . concatMap (wordWrap cols) $ ds
-        send mq . nl $ divider <> msg <> divider
+debugSniff (_, mq, cols) [] = do
+    (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
+    kvs <- M.assocs <$> getNWS threadTblTMVar
+    ds  <- mapM mkDesc $ head kvs : (nli, Notice) : (eli, Error) : tail kvs
+    let msg = T.unlines . concatMap (wordWrap cols) $ ds
+    send mq . nl $ divider <> msg <> divider
   where
     mkDesc (k, v) = (liftIO . threadStatus $ k) >>= \s ->
         return $ showText k <> " " <> (bracketPad 15 . mkTypeName $ v) <> showText s
@@ -1568,10 +1578,11 @@ debugPurge imc@(_, mq, cols) rs = ignore mq cols rs >> debugPurge imc []
 
 purge :: MudStack ()
 purge = do
-    ttTMVar <- gets (^.nonWorldState.threadTblTMVar)
-    ks <- M.keys <$> (liftIO . atomically . readTMVar $ ttTMVar)
+    ks <- M.keys <$> getNWS threadTblTMVar
     ss <- liftIO . mapM threadStatus $ ks
     let kss = zip ks ss
-    liftIO . atomically $ do
-        tt <- takeTMVar ttTMVar
-        putTMVar ttTMVar . foldl' (\m (k, s) -> if s == ThreadFinished then M.delete k m else m) tt $ kss
+    modifyNWS threadTblTMVar $ \tt -> foldl' helper tt kss
+  where
+    helper m (k, s)
+      | s == ThreadFinished = M.delete k m
+      | otherwise           = m

@@ -1,18 +1,26 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
 module Mud.StateHelpers ( BothGramNos
                         , broadcast
+                        , findPCIds
                         , getEntBothGramNos
+                        , getLog
+                        , getLogAsyncs
+                        , getNWS
+                        , getNWSTMVar
                         , getPlaColumns
                         , getWS
+                        , getWSTMVar
                         , mkAssocListTxt
                         , mkCoinsFromList
                         , mkDividerTxt
                         , mkListFromCoins
                         , mkPlurFromBoth
+                        , modifyNWS
                         , modifyWS
                         , negateCoins
+                        , onNWS
                         , onWS
                         , putArm
                         , putCloth
@@ -28,22 +36,30 @@ module Mud.StateHelpers ( BothGramNos
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
+import Mud.StateInIORefT
 import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Util as U (patternMatchFail)
+import qualified Mud.Util as U (blowUp, patternMatchFail)
 
+import Control.Applicative (Const)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (_1, at, each, folded)
-import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.), (^..))
+import Control.Lens (_1, _2, at, each, to)
+import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
+import Control.Monad.State.Class (MonadState)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List (sortBy)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+
+
+blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp = U.blowUp "Mud.StateHelpers"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -54,23 +70,62 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 -- Higher level abstractions for working with STM:
 
 
+getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
+getWSTMVar = gets (^.worldStateTMVar)
+
+
+getNWSTMVar :: forall a (m :: * -> *) . MonadState MudState m => ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> m a
+getNWSTMVar lens = gets (^.nonWorldState.lens)
+
+
 getWS :: MudStack WorldState
-getWS = liftIO . atomically . readTMVar =<< gets (^.worldStateTMVar)
+getWS = liftIO . atomically . readTMVar =<< getWSTMVar
 
 
 onWS :: ((TMVar WorldState, WorldState) -> STM a) -> MudStack a
-onWS f = liftIO . atomically . transaction =<< gets (^.worldStateTMVar)
+onWS f = liftIO . atomically . transaction =<< getWSTMVar
   where
     transaction t = takeTMVar t >>= \ws ->
         f (t, ws)
 
 
 modifyWS :: (WorldState -> WorldState) -> MudStack ()
-modifyWS f = liftIO . atomically . transaction =<< gets (^.worldStateTMVar)
+modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
   where
-    transaction t = takeTMVar t >>= \ws ->
-        let ws' = f ws
-        in putTMVar t ws'
+    transaction t = takeTMVar t >>= putTMVar t . f
+
+
+getNWS :: forall (m :: * -> *) a . (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> m a
+getNWS lens = liftIO . atomically . readTMVar =<< getNWSTMVar lens
+
+
+onNWS :: forall t (m :: * -> *) a . (MonadIO m, MonadState MudState m) => ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) -> ((TMVar t, t) -> STM a) -> m a
+onNWS lens f = liftIO . atomically . transaction =<< getNWSTMVar lens
+  where
+    transaction t = takeTMVar t >>= \x ->
+        f (t, x)
+
+
+modifyNWS :: forall a (m :: * -> *) . (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> (a -> a) -> m ()
+modifyNWS lens f = liftIO . atomically . transaction =<< getNWSTMVar lens
+  where
+    transaction t = takeTMVar t >>= putTMVar t . f
+
+
+getLog :: forall (m :: * -> *) . MonadState MudState m => ((Maybe LogService -> Const LogService (Maybe LogService)) -> LogServices -> Const LogService LogServices) -> T.Text -> m LogService
+getLog l n = gets (^.nonWorldState.logServices.l.to (fromMaybeLogService n))
+
+
+fromMaybeLogService :: T.Text -> Maybe LogService -> LogService
+fromMaybeLogService n = fromMaybe (blowUp "fromMaybeLogService" (n <> " log service not initialized") [])
+
+
+getLogAsyncs :: MudStack (LogAsync, LogAsync)
+getLogAsyncs = helper <$> gets (^.nonWorldState.logServices)
+  where
+    helper ls = let Just (nla, _) = ls^.noticeLog
+                    Just (ela, _) = ls^.errorLog
+                in (nla, ela)
 
 
 -- ============================================================
@@ -122,14 +177,11 @@ putRm i is c r = modifyWS $ \ws ->
 
 
 putPla :: Id -> Pla -> MudStack () -- TODO: Currently not used.
-putPla i p = liftIO . atomically . transaction =<< gets (^.nonWorldState.plaTblTMVar)
-  where
-    transaction t = takeTMVar t >>= \pt ->
-        putTMVar t (pt & at i ?~ p)
+putPla i p = modifyNWS plaTblTMVar $ \pt -> pt & at i ?~ p
 
 
 getPla :: Id -> MudStack Pla
-getPla i = (! i) <$> (liftIO . atomically . readTMVar =<< gets (^.nonWorldState.plaTblTMVar))
+getPla i = (! i) <$> getNWS plaTblTMVar
 
 
 getPlaColumns :: Id -> MudStack Int
@@ -140,13 +192,17 @@ getPlaColumns i = (^.columns) <$> getPla i
 -- Misc. helpers:
 
 
-sortInv :: WorldState -> Inv -> Inv -- TODO: Should we be using this more?
-sortInv ws is = ((^..folded._1) . sortBy nameThenSing) zipped
+sortInv :: WorldState -> Inv -> Inv
+sortInv ws is = let ts         = [ (ws^.typeTbl) ! i | i <- is ]
+                    pcIs       = map (^._1) . filter ((== PCType) . (^._2)) . zip is $ ts
+                    sortedPCIs = map (^._1) . sortBy pcSorter . zip pcIs . names $ pcIs
+                in (sortedPCIs ++) . sortNonPCs . deleteFirstOfEach pcIs $ is
   where
+    names is'                          = [ let e = (ws^.entTbl) ! i in e^.name | i <- is' ]
+    pcSorter (_, n) (_, n')            = n `compare` n'
+    sortNonPCs is'                     = map (^._1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
-    zipped = zip3 is names sings
-    names  = [ let e = (ws^.entTbl) ! i in e^.name | i <- is ]
-    sings  = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is ]
+    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is' ]
 
 
 type BothGramNos = (Sing, Plur)
@@ -174,6 +230,10 @@ negateCoins :: Coins -> Coins
 negateCoins (Coins c) = Coins (each %~ negate $ c)
 
 
+findPCIds :: WorldState -> [Id] -> [Id]
+findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
+
+
 -- ============================================================
 -- Helper functions relating to output:
 
@@ -182,10 +242,10 @@ send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
-broadcast :: [(T.Text, [Id])] -> MudStack () -- TODO: Does this deserve a type synonym?
+broadcast :: [(T.Text, [Id])] -> MudStack ()
 broadcast bs = do
-    mqtTMVar  <- gets (^.nonWorldState.msgQueueTblTMVar)
-    ptTMVar   <- gets (^.nonWorldState.plaTblTMVar)
+    mqtTMVar  <- getNWSTMVar msgQueueTblTMVar
+    ptTMVar   <- getNWSTMVar plaTblTMVar
     (mqt, pt) <- liftIO . atomically $ do
         mqt <- readTMVar mqtTMVar
         pt  <- readTMVar ptTMVar
