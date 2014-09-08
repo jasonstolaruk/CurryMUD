@@ -235,7 +235,7 @@ procGecrMisPCInv (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't have " <> 
 procGecrMisPCInv (Mult _ n Nothing  _,   Nothing) = Left $ "You don't have any " <> n <> "s.\n"
 procGecrMisPCInv (Mult _ _ (Just _) _,   Just is) = Right is
 procGecrMisPCInv (Indexed _ n (Left ""), Nothing) = Left $ "You don't have any " <> n <> "s.\n"
-procGecrMisPCInv (Indexed x _ (Left p),  Nothing) = Left $ "You don't have " <> showText x <> " " <> p <> ".\n"
+procGecrMisPCInv (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "You don't have ", showText x, " ", p, ".\n" ]
 procGecrMisPCInv (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisPCInv (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
 procGecrMisPCInv (Sorry n,               Nothing) = Left $ "You don't have " <> aOrAn n <> ".\n"
@@ -249,7 +249,7 @@ procGecrMisReady gecrMis            = procGecrMisPCInv gecrMis
 
 sorryBadSlot :: T.Text -> T.Text
 sorryBadSlot n
-  | slotChar `elem` n^.unpacked = "Please specify " <> mkSlotTxt "r" <> " or " <> mkSlotTxt "l" <> ".\n" <> ringHelp
+  | slotChar `elem` n^.unpacked = T.concat [ "Please specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", ".\n", ringHelp ]
   | otherwise                   = "You don't have " <> aOrAn n <> "."
 
 
@@ -271,7 +271,7 @@ procGecrMisRm (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't see " <> aOrA
 procGecrMisRm (Mult _ n Nothing  _,   Nothing) = Left $ "You don't see any " <> n <> "s here.\n"
 procGecrMisRm (Mult _ _ (Just _) _,   Just is) = Right is
 procGecrMisRm (Indexed _ n (Left ""), Nothing) = Left $ "You don't see any " <> n <> "s here.\n"
-procGecrMisRm (Indexed x _ (Left p),  Nothing) = Left $ "You don't see " <> showText x <> " " <> p <> " here.\n"
+procGecrMisRm (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "You don't see ", showText x, " ", p, " here.\n" ]
 procGecrMisRm (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisRm (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
 procGecrMisRm (Sorry n,               Nothing) = Left $ "You don't see " <> aOrAn n <> " here.\n"
@@ -280,14 +280,14 @@ procGecrMisRm gecrMis                          = patternMatchFail "procGecrMisRm
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisCon _  (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisCon cn (Mult 1 n Nothing  _,   Nothing) = Left $ "The " <> cn <> " doesn't contain " <> aOrAn n <> ".\n"
-procGecrMisCon cn (Mult _ n Nothing  _,   Nothing) = Left $ "The " <> cn <> " doesn't contain any " <> n <> "s.\n"
+procGecrMisCon cn (Mult 1 n Nothing  _,   Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn n, ".\n" ]
+procGecrMisCon cn (Mult _ n Nothing  _,   Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain any ", n, "s.\n"  ]
 procGecrMisCon _  (Mult _ _ (Just _) _,   Just is) = Right is
-procGecrMisCon cn (Indexed _ n (Left ""), Nothing) = Left $ "The " <> cn <> " doesn't contain any " <> n <> "s.\n"
-procGecrMisCon cn (Indexed x _ (Left p),  Nothing) = Left $ "The " <> cn <> " doesn't contain " <> showText x <> " " <> p <> ".\n"
+procGecrMisCon cn (Indexed _ n (Left ""), Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain any ", n, "s.\n"  ]
+procGecrMisCon cn (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", showText x, " ", p, ".\n" ]
 procGecrMisCon _  (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisCon _  (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
-procGecrMisCon cn (Sorry n,               Nothing) = Left $ "The " <> cn <> " doesn't contain " <> aOrAn n <> ".\n"
+procGecrMisCon cn (Sorry n,               Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn n, ".\n" ]
 procGecrMisCon _  gecrMis                          = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
 
 
@@ -297,7 +297,7 @@ procGecrMisPCEq (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't have " <> a
 procGecrMisPCEq (Mult _ n Nothing  _,   Nothing) = Left $ "You don't have any " <> n <> "s among your readied equipment.\n"
 procGecrMisPCEq (Mult _ _ (Just _) _,   Just is) = Right is
 procGecrMisPCEq (Indexed _ n (Left ""), Nothing) = Left $ "You don't have any " <> n <> "s among your readied equipment.\n"
-procGecrMisPCEq (Indexed x _ (Left p),  Nothing) = Left $ "You don't have " <> showText x <> " " <> p <> " among your readied equipment.\n"
+procGecrMisPCEq (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "You don't have ", showText x, " ", p, " among your readied equipment.\n" ]
 procGecrMisPCEq (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisPCEq (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
 procGecrMisPCEq (Sorry n,               Nothing) = Left $ "You don't have " <> aOrAn n <> " among your readied equipment.\n"
@@ -350,7 +350,7 @@ procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.co
 procReconciledCoinsCon _  (Right (SomeOf c                      )) = Right c
 procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [c, s, g]
   where
-    c = if cop /= 0 then "The " <> cn <> "doesn't contain " <> showText cop <> " copper pieces.\n" else ""
-    s = if sil /= 0 then "The " <> cn <> "doesn't contain " <> showText sil <> " silver pieces.\n" else ""
-    g = if gol /= 0 then "The " <> cn <> "doesn't contain " <> showText gol <> " gold pieces.\n"   else ""
+    c = if cop /= 0 then T.concat [ "The ", cn, "doesn't contain ", showText cop, " copper pieces.\n" ] else ""
+    s = if sil /= 0 then T.concat [ "The ", cn, "doesn't contain ", showText sil, " silver pieces.\n" ] else ""
+    g = if gol /= 0 then T.concat [ "The ", cn, "doesn't contain ", showText gol, " gold pieces.\n"   ] else ""
 procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]

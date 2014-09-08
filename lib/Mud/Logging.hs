@@ -86,7 +86,7 @@ registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
 
 
 logNotice :: String -> String -> String -> MudStack ()
-logNotice modName funName msg = registerMsg (concat [ modName, " ", funName, ": ", msg, "." ]) =<< getLogQueue getNoticeLog
+logNotice modName funName msg = (registerMsg . concat $ [modName, " ", funName, ": ", msg, "."]) =<< getLogQueue getNoticeLog
 
 
 logError :: String -> MudStack ()
@@ -108,5 +108,5 @@ logAndDispIOEx mq cols modName funName e = let msg = concat [ modName, " ", funN
 
 logIOExRethrow :: String -> String -> IOException -> MudStack ()
 logIOExRethrow modName funName e = do
-    logError . concat $ [ modName, " ", funName, ": unexpected exception; rethrowing." ]
+    logError . concat $ [modName, " ", funName, ": unexpected exception; rethrowing."]
     liftIO . throwIO $ e

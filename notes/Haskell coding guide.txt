@@ -47,6 +47,10 @@ x : (f y)
 
 If appropriate, use "\" to split text across multiple lines. (RWH p.315)
 
+Prefer "(<>)" over "mappend".
+
+When you would otherwise be stringing more than 2 "(++)" or "(<>)" operations together, use "concat" instead.
+
 
 READABILITY
 ==================================================
