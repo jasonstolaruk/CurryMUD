@@ -1,16 +1,19 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld (initWorld) where
+module Mud.TheWorld ( initMudState
+                    , initWorld
+                    , sortAllInvs ) where
 
 import Mud.Ids
 import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
+import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Data.Monoid (mempty)
-import qualified Data.IntMap.Lazy as IM (map)
+import qualified Data.IntMap.Lazy as IM (empty, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 
 
@@ -22,6 +25,18 @@ logNotice = L.logNotice "Mud.TheWorld"
 -- Initializing and creating the world:
 
 
+initMudState :: IO MudState
+initMudState = do
+    wsTMVar  <- newTMVarIO ws
+    ttTMVar  <- newTMVarIO M.empty
+    mqtTMVar <- newTMVarIO IM.empty
+    ptTMVar  <- newTMVarIO IM.empty
+    return (MudState wsTMVar . nws ttTMVar mqtTMVar $ ptTMVar)
+  where
+    ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
+    nws = NonWorldState (LogServices Nothing Nothing)
+
+
 initWorld :: MudStack ()
 initWorld = createWorld >> sortAllInvs
 
@@ -30,13 +45,13 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world"
 
-    putRm iHill [iGP1, iLongSword, iKewpie1, iBag1, iClub, iSword1, iSword2] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." 0 [RmLink "e" iCliff])
-    putRm iCliff [iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4] mempty (Rm "The cliff" "You have reached the edge of a cliff. \
-        \There is a sizeable hole in the ground. Next to the hole is a small hut." 0 [RmLink "w" iHill, RmLink "d" iHole, RmLink "hut" iHut])
-    putRm iHole [iNeck1, iNeck2, iNeck3, iNeck4, iHelm] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. \
-        \It's damp and smells of soil." 0 [RmLink "w" iVoid, RmLink "u" iCliff])
-    putRm iVoid [iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." 0 [RmLink "e" iHole])
-    putRm iHut [iLongName1, iLongName2, iPaper] (Coins (0, 5, 0)) (Rm "The hut" "The tiny hut is dusty and smells of mold." 0 [RmLink "out" iCliff])
+    putRm iHill [ iGP1, iLongSword, iKewpie1, iBag1, iClub, iSword1, iSword2 ] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." 0 [ RmLink "e" iCliff ])
+    putRm iCliff [ iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4 ] mempty (Rm "The cliff" "You have reached the edge of a cliff. \
+        \There is a sizeable hole in the ground. Next to the hole is a small hut." 0 [ RmLink "w" iHill, RmLink "d" iHole, RmLink "hut" iHut ])
+    putRm iHole [ iNeck1, iNeck2, iNeck3, iNeck4, iHelm ] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. \
+        \It's damp and smells of soil." 0 [ RmLink "w" iVoid, RmLink "u" iCliff ])
+    putRm iVoid [ iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3 ] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." 0 [ RmLink "e" iHole ])
+    putRm iHut [ iLongName1, iLongName2, iPaper ] (Coins (0, 5, 0)) (Rm "The hut" "The tiny hut is dusty and smells of mold." 0 [ RmLink "out" iCliff ])
 
     putObj iKewpie1 (Ent iKewpie1 "doll" "kewpie doll" "" "The red kewpie doll is disgustingly cute." 0) (Obj 1 1)
     putObj iKewpie2 (Ent iKewpie2 "doll" "kewpie doll" "" "The orange kewpie doll is disgustingly cute." 0) (Obj 1 1)
@@ -47,8 +62,8 @@ createWorld = do
 
     putObj iElephant (Ent iElephant "elephant" "elephant" "" "The elephant is huge and smells terrible." 0) (Obj 1 1)
 
-    putCon iBag1 (Ent iBag1 "sack" "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's red." 0) (Obj 1 1) [iGP2, iGP3] (Coins (15, 10, 5)) (Con 10)
-    putCon iBag2 (Ent iBag2 "sack" "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's blue." 0) (Obj 1 1) [iKewpie2, iRing1, iRing2, iRing3, iRing4] (Coins (15, 10, 5)) (Con 10)
+    putCon iBag1 (Ent iBag1 "sack" "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's red." 0) (Obj 1 1) [ iGP2, iGP3 ] (Coins (15, 10, 5)) (Con 10)
+    putCon iBag2 (Ent iBag2 "sack" "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's blue." 0) (Obj 1 1) [ iKewpie2, iRing1, iRing2, iRing3, iRing4 ] (Coins (15, 10, 5)) (Con 10)
 
     putWpn iSword1 (Ent iSword1 "sword" "short sword" "" "It's a sword; short but still sharp! It's silver." 0) (Obj 1 1) (Wpn OneHanded 1 10)
     putWpn iSword2 (Ent iSword2 "sword" "short sword" "" "It's a sword; short but still sharp! It's gold." 0) (Obj 1 1) (Wpn OneHanded 1 10)
@@ -89,7 +104,7 @@ createWorld = do
     putObj iLongName1 (Ent iLongName1 "long" "item with a very long name, gosh this truly is a long name, it just goes on and on, no one knows when it might stop" "" "It's long." 0) (Obj 1 1)
     putObj iLongName2 (Ent iLongName2 "long" "item with a very long name, gosh this truly is a long name, it just goes on and on, no one knows when it might stop" "" "It's long." 0) (Obj 1 1)
 
-    putMob iPaper (Ent iPaper "paperboy" "paperboy" "" "The poor, innocent paperboy looks lost." 0) [] mempty (M.fromList [(RHandS, iKnife1), (LHandS, iKnife2)]) (Mob Male 10 10 10 10 10 10 25 RHand)
+    putMob iPaper (Ent iPaper "paperboy" "paperboy" "" "The poor, innocent paperboy looks lost." 0) [] mempty (M.fromList [ (RHandS, iKnife1), (LHandS, iKnife2) ]) (Mob Male 10 10 10 10 10 10 25 RHand)
 
     putWpn iKnife1 (Ent iKnife1 "knife" "pocket knife" "pocket knives" "This small utility knife could be useful in a pinch." 0) (Obj 1 1) (Wpn OneHanded 1 5)
     putWpn iKnife2 (Ent iKnife2 "knife" "pocket knife" "pocket knives" "This small utility knife could be useful in a pinch." 0) (Obj 1 1) (Wpn OneHanded 1 5)

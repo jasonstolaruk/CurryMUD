@@ -49,8 +49,8 @@ getLogQueue = fmap (^._2)
 closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs"
-    [(na, nq), (ea, eq)] <- sequence [getNoticeLog, getErrorLog]
-    forM_ [nq, eq] $ liftIO . atomically . flip writeTQueue Stop
+    [ (na, nq), (ea, eq) ] <- sequence [ getNoticeLog, getErrorLog ]
+    forM_ [ nq, eq ] $ liftIO . atomically . flip writeTQueue Stop
     liftIO . void . waitBoth na $ ea
 
 
@@ -86,7 +86,7 @@ registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
 
 
 logNotice :: String -> String -> String -> MudStack ()
-logNotice modName funName msg = (registerMsg . concat $ [modName, " ", funName, ": ", msg, "."]) =<< getLogQueue getNoticeLog
+logNotice modName funName msg = (registerMsg . concat $ [ modName, " ", funName, ": ", msg, "." ]) =<< getLogQueue getNoticeLog
 
 
 logError :: String -> MudStack ()
@@ -108,5 +108,5 @@ logAndDispIOEx mq cols modName funName e = let msg = concat [ modName, " ", funN
 
 logIOExRethrow :: String -> String -> IOException -> MudStack ()
 logIOExRethrow modName funName e = do
-    logError . concat $ [modName, " ", funName, ": unexpected exception; rethrowing."]
+    logError . concat $ [ modName, " ", funName, ": unexpected exception; rethrowing." ]
     liftIO . throwIO $ e

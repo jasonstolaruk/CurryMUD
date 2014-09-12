@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
-module Mud.StateHelpers ( BothGramNos
+module Mud.StateHelpers ( allKeys
+                        , BothGramNos
                         , broadcast
                         , findPCIds
                         , getEntBothGramNos
@@ -10,6 +11,7 @@ module Mud.StateHelpers ( BothGramNos
                         , getNWS
                         , getNWSTMVar
                         , getPlaColumns
+                        , getUnusedId
                         , getWS
                         , getWSTMVar
                         , mkAssocListTxt
@@ -52,9 +54,11 @@ import Control.Monad.State (gets)
 import Control.Monad.State.Class (MonadState)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
+import Data.List ((\\))
 import Data.List (sortBy)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
 
 
@@ -192,6 +196,14 @@ getPlaColumns i = (^.columns) <$> getPla i
 -- Misc. helpers:
 
 
+allKeys :: WorldState -> Inv
+allKeys = (^.typeTbl.to IM.keys)
+
+
+getUnusedId :: WorldState -> Id
+getUnusedId = head . (\\) [0..] . allKeys
+
+
 sortInv :: WorldState -> Inv -> Inv
 sortInv ws is = let ts         = [ (ws^.typeTbl) ! i | i <- is ]
                     pcIs       = map (^._1) . filter ((== PCType) . (^._2)) . zip is $ ts
@@ -218,12 +230,12 @@ mkPlurFromBoth (_, p ) = p
 
 
 mkListFromCoins :: Coins -> [Int]
-mkListFromCoins (Coins (c, g, s)) = [c, g, s]
+mkListFromCoins (Coins (c, g, s)) = [ c, g, s ]
 
 
 mkCoinsFromList :: [Int] -> Coins
-mkCoinsFromList [cop, sil, gol] = Coins (cop, sil, gol)
-mkCoinsFromList xs              = patternMatchFail "mkCoinsFromList" [ showText xs ]
+mkCoinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
+mkCoinsFromList xs                = patternMatchFail "mkCoinsFromList" [ showText xs ]
 
 
 negateCoins :: Coins -> Coins

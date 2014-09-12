@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 
+import MudTests.StateHelpersTests
 import MudTests.TheWorldTests
 import MudTests.UtilTests
 
---import Test.Tasty.HUnit
-
 import Test.Tasty (defaultMain, testGroup, TestTree)
+--import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck as QC (testProperty)
 
 
@@ -13,15 +13,15 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [testTheWorld, testUtil, unitTests]
+tests = testGroup "Tests" [ testStateHelpers, testTheWorld, testUtil, unitTests ]
 
 -- ==================================================
 
+testStateHelpers :: TestTree
+testStateHelpers = testGroup "StateHelpersTests" [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
+
 testTheWorld :: TestTree
-testTheWorld = testGroup "TheWorldTests"
-  [ QC.testProperty "prop_noDupIds" prop_noDupIds
-  , QC.testProperty "prop_getUnusedId" prop_getUnusedId
-  , QC.testProperty "prop_findAvailKey" prop_findAvailKey ]
+testTheWorld = testGroup "TheWorldTests" [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
 
 -- --------------------------------------------------
 

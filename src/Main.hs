@@ -13,20 +13,17 @@
 module Main (main) where
 
 import Mud.Cmds
-import Mud.StateDataTypes
 import Mud.StateInIORefT
+import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util
 
-import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((^.))
 import Control.Monad (void)
 import Data.Text.Strict.Lens (packed)
 import Network (withSocketsDo)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getEnv, getProgName)
-import qualified Data.IntMap.Lazy as IM (empty)
-import qualified Data.Map.Lazy as M (empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 
@@ -46,15 +43,3 @@ welcome = do
   where
     whatsMyName = getProgName >>= \mn ->
         return (if mn == "<interactive>" then "Y U NO COMPILE ME?" else mn^.packed)
-
-
-initMudState :: IO MudState
-initMudState = do
-    wsTMVar  <- newTMVarIO ws
-    ttTMVar  <- newTMVarIO M.empty
-    mqtTMVar <- newTMVarIO IM.empty
-    ptTMVar  <- newTMVarIO IM.empty
-    return (MudState wsTMVar . nws ttTMVar mqtTMVar $ ptTMVar)
-  where
-    ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
-    nws = NonWorldState (LogServices Nothing Nothing)

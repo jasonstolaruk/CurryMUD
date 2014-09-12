@@ -24,7 +24,7 @@ import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
-import Control.Lens (_1, at, both, folded, over, to)
+import Control.Lens (_1, at, both, folded, over, to) -- TODO: No! Stop using _1 and _2 so much. Use "fst" and "snd" instead.
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -32,7 +32,7 @@ import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, find, foldl', intercalate, nub, nubBy, sort, zip4)
+import Data.List (delete, find, foldl', intercalate, nub, nubBy, sort, zip4)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed, unpacked)
@@ -49,7 +49,6 @@ import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
-import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -231,8 +230,7 @@ adHoc mq = do
         pt  <- takeTMVar ptTMVar
         mqt <- takeTMVar mqtTMVar
         -----
-        let ks  = ws^.typeTbl.to IM.keys
-        let i   = head . (\\) [0..] $ ks
+        let i   = getUnusedId ws
         -----
         let e   = Ent i "player" ("PlayerCharacter" <> showText i) "" "You see an ad-hoc player character." 0
         let is  = []
@@ -289,7 +287,7 @@ notifyArrival i = getWS >>= \ws ->
         p    = (ws^.pcTbl)  ! i
         ris  = (ws^.invTbl) ! (p^.rmId)
         pcIs = findPCIds ws . delete i $ ris
-    in broadcast [(e^.sing <> " has arrived in the game.", pcIs)]
+    in broadcast [ (e^.sing <> " has arrived in the game.", pcIs) ]
 
 
 server :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -401,7 +399,7 @@ motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
 getMotdTxt :: Cols -> MudStack T.Text
 getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler "getMotdTxt" e >> (return . nl . T.unlines . wordWrap cols $ "Unfortunately, the message of the day could not be retrieved."))
   where
-    helper  = return . T.unlines . (++ [divider, ""]) . (divider :) . concatMap (wordWrap cols) . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
+    helper  = return . T.unlines . (++ [ divider, "" ]) . (divider :) . concatMap (wordWrap cols) . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
     divider = mkDividerTxt cols
 
 
@@ -436,7 +434,7 @@ help (_, mq, cols) [] = try helper >>= eitherRet (\e -> readFileExHandler "help"
   where
     helper  = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
-help (_, mq, cols) rs = send mq . nl . T.unlines . intercalate ["", mkDividerTxt cols, ""] =<< getTopics
+help (_, mq, cols) rs = send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
   where
     getTopics = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName cols r) (nub . map T.toLower $ rs)
 
@@ -500,7 +498,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                           putTMVar t (ws & pcTbl.at  i   ?~ p'
                                          & invTbl.at ri  ?~ originIs
                                          & invTbl.at ri' ?~ destIs')
-                          return . Right $ [(originMsg, originPis), (destMsg, destPis)]
+                          return . Right $ [ (originMsg, originPis), (destMsg, destPis) ]
     sorry dir' = if dir' `elem` stdLinkNames
                    then "You can't go that way."
                    else dblQuote dir <> " is not a valid exit."
@@ -666,7 +664,7 @@ mkCoinsSummary cols c = helper mkCoinsWithNamesList
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
-mkCoinsDesc cols (Coins (cop, sil, gol)) = T.unlines . intercalate [""] . map (wordWrap cols) . filter (not . T.null) $ [copDesc, silDesc, golDesc]
+mkCoinsDesc cols (Coins (cop, sil, gol)) = T.unlines . intercalate [""] . map (wordWrap cols) . filter (not . T.null) $ [ copDesc, silDesc, golDesc ]
   where -- TODO: Come up with good descriptions.
     copDesc = if cop /= 0 then "The copper piece is round and shiny." else ""
     silDesc = if sil /= 0 then "The silver piece is round and shiny." else ""
@@ -832,7 +830,7 @@ helperGetDropEitherCoins god fi ti (ws, msgs) = \case
 
 
 mkGetDropCoinsDesc :: GetOrDrop -> Coins -> T.Text
-mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [c, s, g]
+mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [ c, s, g ]
   where
     c = if cop /= 0 then helper cop "copper piece" else ""
     s = if sil /= 0 then helper sil "silver piece" else ""
@@ -957,7 +955,7 @@ helperPutRemEitherCoins cols por fi ti te (ws, msgs) = \case
 
 
 mkPutRemCoinsDesc :: Cols -> PutOrRem -> Coins -> ToEnt -> T.Text
-mkPutRemCoinsDesc cols por (Coins (cop, sil, gol)) te = T.unlines . concatMap (wordWrap cols) . filter (not . T.null) $ [c, s, g]
+mkPutRemCoinsDesc cols por (Coins (cop, sil, gol)) te = T.unlines . concatMap (wordWrap cols) . filter (not . T.null) $ [ c, s, g ]
   where
     c = if cop /= 0 then helper cop "copper piece" else ""
     s = if sil /= 0 then helper sil "silver piece" else ""
@@ -1079,12 +1077,12 @@ isRingRol = \case R -> False
 
 
 rEarSlots, lEarSlots, noseSlots, neckSlots, rWristSlots, lWristSlots :: [Slot]
-rEarSlots   = [REar1S, REar2S]
-lEarSlots   = [LEar1S, LEar2S]
-noseSlots   = [Nose1S, Nose2S]
-neckSlots   = [Neck1S   .. Neck3S]
-rWristSlots = [RWrist1S .. RWrist3S]
-lWristSlots = [LWrist1S .. LWrist3S]
+rEarSlots   = [ REar1S, REar2S       ]
+lEarSlots   = [ LEar1S, LEar2S       ]
+noseSlots   = [ Nose1S, Nose2S       ]
+neckSlots   = [ Neck1S   .. Neck3S   ]
+rWristSlots = [ RWrist1S .. RWrist3S ]
+lWristSlots = [ LWrist1S .. LWrist3S ]
 
 
 isSlotAvail :: EqMap -> Slot -> Bool
@@ -1156,19 +1154,19 @@ getAvailClothSlot cols ws i c em = let m = (ws^.mobTbl) ! i
                                                          LHand  -> rWristSlots
                                                          _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
     getRingSlot g h       = findAvailSlot em $ case g of Male   -> case h of
-                                                                     RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS]
-                                                                     LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS]
+                                                                     RHand -> [ LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS ]
+                                                                     LHand -> [ RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS ]
                                                                      _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
                                                          Female -> case h of
-                                                                     RHand -> [LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS]
-                                                                     LHand -> [RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS]
+                                                                     RHand -> [ LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS ]
+                                                                     LHand -> [ RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS ]
                                                                      _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
                                                          _      -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText g ]
 
 
 getDesigClothSlot :: Cols -> WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigClothSlot cols ws e c em rol
-  | c `elem` [NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC] = Left sorryCantWearThere
+  | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCantWearThere
   | isRingRol rol && c /= FingerC           = Left sorryCantWearThere
   | c == FingerC && (not . isRingRol $ rol) = Left . T.unlines . wordWrap cols $ ringHelp
   | otherwise = case c of EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
@@ -1204,7 +1202,7 @@ readyWpn i cols mrol (ws, msgs) ei e = let em  = (ws^.eqTbl)  ! i
                                            Left  msg -> (ws, msgs <> msg)
                                            Right s   -> case sub of
                                                           OneHanded -> moveReadiedItem i (ws, msgs) em s ei . T.unlines . wordWrap cols . T.concat $ [ "You wield the ", e^.sing, " with your ", pp s, "." ]
-                                                          TwoHanded -> if all (isSlotAvail em) [RHandS, LHandS]
+                                                          TwoHanded -> if all (isSlotAvail em) [ RHandS, LHandS ]
                                                                          then moveReadiedItem i (ws, msgs) em BothHandsS ei . T.unlines . wordWrap cols $ "You wield the " <> e^.sing <> " with both hands."
                                                                          else (ws, (msgs <>) . T.unlines . wordWrap cols $ "Both hands are required to wield the " <> e^.sing <> ".")
 
@@ -1272,7 +1270,7 @@ mkUnreadyDesc :: Cols -> WorldState -> Inv -> T.Text
 mkUnreadyDesc cols ws is = T.concat [ helper icb | icb <- mkIdCountBothList ws is ]
   where
     helper (i, c, b@(s, _)) = let v = verb i in T.unlines . wordWrap cols $ if c == 1
-      then T.concat ["You ", v, " the ", s, "."]
+      then T.concat [ "You ", v, " the ", s, "." ]
       else T.concat [ "You ", v, " ", showText c, " ", mkPlurFromBoth b, "." ]
     verb i = let t = (ws^.typeTbl) ! i
              in case t of
@@ -1312,7 +1310,7 @@ whatCmd :: Cols -> Rm -> T.Text -> T.Text
 whatCmd cols r n = maybe notFound found . findFullNameForAbbrev (T.toLower n) $ cs
   where
     cs       = filter isPlaCmd . map cmdName . mkCmdListWithRmLinks $ r
-    isPlaCmd = (`notElem` [wizCmdChar, debugCmdChar]) . T.head
+    isPlaCmd = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
     notFound = T.unlines . wordWrap cols $ dblQuote n <> " doesn't refer to any commands."
     found cn = T.unlines . wordWrap cols . T.concat $ [ dblQuote n, " may refer to the ", dblQuote cn, " command." ]
 
@@ -1348,11 +1346,11 @@ whatInvEnts cols ws it r gecr is = case gecr of
   Indexed x _ (Right e) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
   _                     -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
   where
-    acp                                   = [allChar]^.packed
-    supplement | it `elem` [PCInv, RmInv] = " (including any coins)"
-               | otherwise                = ""
-    checkFirst e ens                      = let matches = filter (== e^.name) ens
-                                            in guard (length matches > 1) >> ("first "^.unpacked)
+    acp                                     = [allChar]^.packed
+    supplement | it `elem` [ PCInv, RmInv ] = " (including any coins)"
+               | otherwise                  = ""
+    checkFirst e ens                        = let matches = filter (== e^.name) ens
+                                              in guard (length matches > 1) >> ("first "^.unpacked)
 
 
 getLocTxtForInvType :: InvType -> T.Text
@@ -1477,7 +1475,7 @@ wizTime (_, mq, cols) [] = do
                        zone  = last wordy
                        date  = head wordy
                        time  = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
-                   in T.concat [zone, ": ", date, " ", time]
+                   in T.concat [ zone, ": ", date, " ", time ]
 wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
 
 

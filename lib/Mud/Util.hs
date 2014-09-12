@@ -57,7 +57,7 @@ import qualified Data.Text as T
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
 blowUp modName funName msg vals = error $ errorMsg^.unpacked
   where
-    errorMsg = T.concat [modName, " ", funName, ": ", msg, ". ", valsText]
+    errorMsg = T.concat [ modName, " ", funName, ": ", msg, ". ", valsText ]
     valsText = bracketQuote . T.intercalate ", " . map singleQuote $ vals
 
 
@@ -167,7 +167,7 @@ calcIndent t
 
 
 quoteWith :: (T.Text, T.Text) -> T.Text -> T.Text
-quoteWith (a, b) t = T.concat [a, t, b]
+quoteWith (a, b) t = T.concat [ a, t, b ]
 
 
 singleQuote :: T.Text -> T.Text
@@ -202,7 +202,7 @@ quoteWithAndPad :: (T.Text, T.Text) -> Int -> T.Text -> T.Text
 quoteWithAndPad q x t = quoteWith q t' <> T.replicate p " "
   where
     t' = T.take (x - l - 1) t
-    l  = sum $ [q^._1, q^._2]^..folded.to T.length
+    l  = sum $ [ q^._1, q^._2 ]^..folded.to T.length
     p  = x - T.length t' - 2
 
 

@@ -54,15 +54,15 @@ maxCols = 200
 
 
 stdLinkNames :: [LinkName]
-stdLinkNames = ["n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d"]
+stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
 coinNames :: [T.Text]
-coinNames = ["cp", "sp", "gp"]
+coinNames = [ "cp", "sp", "gp" ]
 
 
 aggregateCoinNames :: [T.Text]
-aggregateCoinNames = ["coin", "coins"]
+aggregateCoinNames = [ "coin", "coins" ]
 
 
 allCoinNames :: [T.Text]

@@ -12,18 +12,15 @@ import Control.Monad (replicateM)
 import Data.Char (chr)
 import Data.Functor ((<$>))
 import Data.Text.Strict.Lens (packed)
-import qualified Data.Text as T
+import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck (choose, Gen)
 import Test.QuickCheck.Instances ()
 import Test.QuickCheck.Monadic (PropertyM, run)
-
-
-initWorldForMonadicTests :: MudStack ()
-initWorldForMonadicTests = createWorld >> sortAllInvs
+import qualified Data.Text as T
 
 
 inWorld :: MudStack a -> PropertyM IO a
-inWorld f = run $ runStateInIORefT (initWorldForMonadicTests >> f) initMudState >>= \(a, _) -> return a
+inWorld f = run $ runStateInIORefT (initWorld >> f) (unsafePerformIO initMudState) >>= return . fst
 
 
 genAlphaNum :: Gen Char
@@ -35,13 +32,11 @@ genTextOfLen n = (^.packed) <$> replicateM n genAlphaNum
 
 
 genTextLongerThan :: Int -> Gen T.Text
-genTextLongerThan x = choose (1, 50) >>= \y ->
-    genTextOfLen $ x + y
+genTextLongerThan x = genTextOfLen . (x +) =<< choose (1, 50)
 
 
 genTextOfRandLen :: (Int, Int) -> Gen T.Text
-genTextOfRandLen (nMin, nMax) = choose (nMin, nMax) >>= \n ->
-    genTextOfLen n
+genTextOfRandLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
 
 
 genCols :: Gen Int
