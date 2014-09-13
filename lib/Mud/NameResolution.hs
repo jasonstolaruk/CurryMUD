@@ -57,7 +57,7 @@ mkGecr ws is c n
                              in Mult (length is) n (Just es) (Just . SomeOf $ c)
   | T.head n == allChar    = mkGecrMult ws (maxBound :: Int) (T.tail n) is c
   | isDigit (T.head n)     = let numText = T.takeWhile isDigit n
-                                 numInt  = either (oops numText) (^._1) $ decimal numText
+                                 numInt  = either (oops numText) fst $ decimal numText
                                  rest    = T.drop (T.length numText) n
                              in if numText /= "0" then parse rest numInt else Sorry n
   | otherwise              = mkGecrMult ws 1 n is c

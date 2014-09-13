@@ -20,11 +20,12 @@ import Control.Concurrent.Async (async, waitBoth)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (throwIO)
-import Control.Lens (_2)
 import Control.Lens.Operators ((.=), (^.))
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
+import Data.Functor ((<$>))
+import Data.Maybe (fromJust)
 import Data.Text.Strict.Lens (packed)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
@@ -34,22 +35,10 @@ import System.Log.Logger (errorM, noticeM, setHandlers, setLevel, updateGlobalLo
 import qualified Data.Text as T
 
 
-getNoticeLog :: MudStack LogService
-getNoticeLog = getLog noticeLog "notice"
-
-
-getErrorLog :: MudStack LogService
-getErrorLog = getLog errorLog "error"
-
-
-getLogQueue :: MudStack LogService -> MudStack LogQueue
-getLogQueue = fmap (^._2)
-
-
 closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs"
-    [ (na, nq), (ea, eq) ] <- sequence [ getNoticeLog, getErrorLog ]
+    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> getLog noticeLog, fromJust <$> getLog errorLog ]
     forM_ [ nq, eq ] $ liftIO . atomically . flip writeTQueue Stop
     liftIO . void . waitBoth na $ ea
 
@@ -86,11 +75,13 @@ registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
 
 
 logNotice :: String -> String -> String -> MudStack ()
-logNotice modName funName msg = (registerMsg . concat $ [ modName, " ", funName, ": ", msg, "." ]) =<< getLogQueue getNoticeLog
+logNotice modName funName msg = maybeVoid helper =<< getLog noticeLog
+  where
+    helper = registerMsg (concat [ modName, " ", funName, ": ", msg, "." ]) . snd
 
 
 logError :: String -> MudStack ()
-logError msg = registerMsg msg =<< getLogQueue getErrorLog
+logError msg = maybeVoid (registerMsg msg . snd) =<< getLog errorLog
 
 
 logExMsg :: String -> String -> String -> SomeException -> MudStack ()

@@ -39,7 +39,7 @@ module Mud.Util ( adjustIndent
 
 import Mud.TopLvlDefs
 
-import Control.Lens (_1, _2, both, folded, over, to)
+import Control.Lens (both, folded, over, to)
 import Control.Lens.Operators ((^.), (^..))
 import Control.Monad (guard)
 import Data.Char (isDigit, isSpace)
@@ -202,7 +202,7 @@ quoteWithAndPad :: (T.Text, T.Text) -> Int -> T.Text -> T.Text
 quoteWithAndPad q x t = quoteWith q t' <> T.replicate p " "
   where
     t' = T.take (x - l - 1) t
-    l  = sum $ [ q^._1, q^._2 ]^..folded.to T.length
+    l  = sum $ [ fst q, snd q ]^..folded.to T.length
     p  = x - T.length t' - 2
 
 
@@ -289,7 +289,7 @@ grepTextList needle = filter (needle `T.isInfixOf`)
 
 
 reverseLookup :: (Eq v) => v -> M.Map k v -> k
-reverseLookup v = (^.to head._1) . filter (\(_, v') -> v' == v) . M.assocs
+reverseLookup v = fst . head . filter (\(_, v') -> v' == v) . M.assocs
 
 
 maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()

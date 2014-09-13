@@ -24,7 +24,7 @@ import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
-import Control.Lens (_1, at, both, folded, over, to) -- TODO: No! Stop using _1 and _2 so much. Use "fst" and "snd" instead.
+import Control.Lens (at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -263,7 +263,7 @@ adHoc mq = do
 dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO newStdGen >>= \g ->
     let range = (1, noOfTitles)
-        n     = randomR range g^._1
+        n     = fst . randomR range $ g
         fn    = "title"^.unpacked ++ show n
     in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
   where
@@ -747,7 +747,7 @@ mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
   where
     mkSlotNameIdList = map (first pp)
     mkDesc (sn, i')  = let sn'      = parensPad 15 noFinger
-                           noFinger = T.breakOn " finger" sn ^._1
+                           noFinger = fst . T.breakOn " finger" $ sn
                            e'       = (ws^.entTbl) ! i'
                        in T.concat [ sn', e'^.sing, " ", e'^.name.to bracketQuote ]
     none   = T.unlines . wordWrap cols $ if

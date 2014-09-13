@@ -39,14 +39,14 @@ module Mud.StateHelpers ( allKeys
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.StateInIORefT
-import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Util as U (blowUp, patternMatchFail)
+import Mud.Util hiding (patternMatchFail)
+import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative (Const)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (_1, _2, at, each, to)
+import Control.Lens (_1, at, each, to)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -56,14 +56,9 @@ import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\))
 import Data.List (sortBy)
-import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
-
-
-blowUp :: T.Text -> T.Text -> [T.Text] -> a
-blowUp = U.blowUp "Mud.StateHelpers"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -116,12 +111,8 @@ modifyNWS lens f = liftIO . atomically . transaction =<< getNWSTMVar lens
     transaction t = takeTMVar t >>= putTMVar t . f
 
 
-getLog :: forall (m :: * -> *) . MonadState MudState m => ((Maybe LogService -> Const LogService (Maybe LogService)) -> LogServices -> Const LogService LogServices) -> T.Text -> m LogService
-getLog l n = gets (^.nonWorldState.logServices.l.to (fromMaybeLogService n))
-
-
-fromMaybeLogService :: T.Text -> Maybe LogService -> LogService
-fromMaybeLogService n = fromMaybe (blowUp "fromMaybeLogService" (n <> " log service not initialized") [])
+getLog :: forall a (m :: * -> *) . MonadState MudState m => ((a -> Const a a) -> LogServices -> Const a LogServices) -> m a
+getLog l = gets (^.nonWorldState.logServices.l)
 
 
 getLogAsyncs :: MudStack (LogAsync, LogAsync)
@@ -206,8 +197,8 @@ getUnusedId = head . (\\) [0..] . allKeys
 
 sortInv :: WorldState -> Inv -> Inv
 sortInv ws is = let ts         = [ (ws^.typeTbl) ! i | i <- is ]
-                    pcIs       = map (^._1) . filter ((== PCType) . (^._2)) . zip is $ ts
-                    sortedPCIs = map (^._1) . sortBy pcSorter . zip pcIs . names $ pcIs
+                    pcIs       = map fst . filter ((== PCType) . snd) . zip is $ ts
+                    sortedPCIs = map fst . sortBy pcSorter . zip pcIs . names $ pcIs
                 in (sortedPCIs ++) . sortNonPCs . deleteFirstOfEach pcIs $ is
   where
     names is'                          = [ let e = (ws^.entTbl) ! i in e^.name | i <- is' ]
