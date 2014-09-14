@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE KindSignatures, LambdaCase, OverloadedStrings, RankNTypes #-}
 
+-- This module is considered to have sufficient test coverage as of 2014-09-13.
+
 module Mud.Util ( adjustIndent
                 , aOrAn
                 , blowUp
@@ -40,12 +42,11 @@ module Mud.Util ( adjustIndent
 import Mud.TopLvlDefs
 
 import Control.Lens (both, folded, over, to)
-import Control.Lens.Operators ((^.), (^..))
+import Control.Lens.Operators ((^..))
 import Control.Monad (guard)
 import Data.Char (isDigit, isSpace)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
-import Data.Text.Strict.Lens (packed, unpacked)
 import qualified Data.Map.Lazy as M (assocs, Map)
 import qualified Data.Text as T
 
@@ -55,7 +56,7 @@ import qualified Data.Text as T
 
 
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
-blowUp modName funName msg vals = error $ errorMsg^.unpacked
+blowUp modName funName msg vals = error . T.unpack $ errorMsg
   where
     errorMsg = T.concat [ modName, " ", funName, ": ", msg, ". ", valsText ]
     valsText = bracketQuote . T.intercalate ", " . map singleQuote $ vals
@@ -93,7 +94,7 @@ wordWrapIndent n cols = map leadingNullsToSpcs . wrapIt . leadingSpcsToNulls
       | otherwise               = beforeMax   : wordWrapIndent n cols (leadingIndent <> afterMax)
       where
         leadingIndent             = T.replicate (adjustIndent n cols) "\NUL"
-        (beforeMax, afterMax)     = T.splitAt cols t
+        (beforeMax,   afterMax)   = T.splitAt cols t
         (beforeSpace, afterSpace) = breakEnd beforeMax
 
 
@@ -109,27 +110,26 @@ xformLeading :: Char -> Char -> T.Text -> T.Text
 xformLeading _ _ "" = ""
 xformLeading a b t  = let (as, t') = T.break (/= a) t
                           n        = T.length as
-                      in replicate n b ^.packed <> t'
+                      in T.replicate n (T.pack [b]) <> t'
 
 
 adjustIndent :: Int -> Int -> Int
 adjustIndent n cols = if n >= cols then cols - 1 else n
 
 
--- TODO: Write tests.
 wordWrapLines :: Int -> [T.Text] -> [[T.Text]]
 wordWrapLines _    []  = []
 wordWrapLines cols [t] = let nolst = numOfLeadingSpcs t
                          in [ wordWrapIndent nolst cols t ]
 wordWrapLines cols (a:b:rest) = if T.null a
-  then [""] : wrapNext
-  else f a  : wrapNext
+  then [""]     : wrapNext
+  else helper a : wrapNext
     where
       wrapNext = wordWrapLines cols $ b : rest
-      f
+      helper
         | hasIndentTag = wrapLineWithIndentTag cols
-        | nolsa > 0    = wordWrapIndent nolsa cols
-        | nolsb > 0    = wordWrapIndent nolsb cols
+        | nolsa > 0    = wordWrapIndent nolsa  cols
+        | nolsb > 0    = wordWrapIndent nolsb  cols
         | otherwise    = wordWrap cols
       hasIndentTag = T.last a == indentTagChar
       nolsa        = numOfLeadingSpcs a
@@ -145,7 +145,7 @@ wrapLineWithIndentTag cols t = wordWrapIndent n' cols t'
   where
     parseIndentTag = T.break (not . isDigit) . T.reverse . T.init $ t
     (numText, t')  = over both T.reverse parseIndentTag
-    readsRes       = reads $ numText^.unpacked :: [(Int, String)]
+    readsRes       = reads . T.unpack $ numText :: [(Int, String)]
     n              = \case []       -> 0
                            [(x, _)] -> x
                            xs       -> patternMatchFail "Mud.Util" "wrapLineWithIndentTag n" [ showText xs ]
@@ -179,7 +179,7 @@ dblQuote = quoteWith ("\"", "\"")
 
 
 dblQuoteStr :: String -> String
-dblQuoteStr = (^.unpacked) . dblQuote . (^.packed)
+dblQuoteStr = T.unpack . dblQuote . T.pack
 
 
 bracketQuote :: T.Text -> T.Text
@@ -240,7 +240,7 @@ injectCR = T.replace "\n" "\r\n"
 
 
 showText :: (Show a) => a -> T.Text
-showText t = t^.to show.packed
+showText = T.pack . show
 
 
 aOrAn :: T.Text -> T.Text
@@ -252,7 +252,7 @@ aOrAn t | T.null t' = ""
 
 
 isVowel :: Char -> Bool
-isVowel c = c `elem` "aeiou"^.unpacked
+isVowel = (`elem` T.unpack "aeiou")
 
 
 findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text

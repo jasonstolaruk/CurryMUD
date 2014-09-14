@@ -15,15 +15,17 @@ import Data.Char (isDigit, isSpace)
 import Data.List (elemIndices, group, sort)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
-import Data.Text.Strict.Lens (packed)
 import qualified Data.Text as T
 import Test.QuickCheck.Instances ()
 import Test.QuickCheck.Modifiers
-import Test.Tasty.QuickCheck as QC ((==>), choose, forAll, Property)
+import Test.Tasty.QuickCheck ((==>), choose, forAll, Property)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "UtilTests"
+
+
+-- ==================================================
 
 
 prop_wordWrap :: Property
@@ -33,17 +35,17 @@ prop_wordWrap = forAll genCols               $ \c ->
 
 
 prop_wordWrapIndent_wraps :: Property
-prop_wordWrapIndent_wraps = forAll genCols                    $ \c ->
+prop_wordWrapIndent_wraps = forAll (choose (0, maxCols + 10)) $ \n ->
+                            forAll genCols                    $ \c ->
                             forAll (genTextLongerThan c)      $ \t ->
-                            forAll (choose (0, maxCols + 10)) $ \n ->
-    all (\l -> T.length l <= c) . wordWrapIndent c n $ t
+    all (\l -> T.length l <= c) . wordWrapIndent n c $ t
 
 
 prop_wordWrapIndent_indents :: Property
-prop_wordWrapIndent_indents = forAll genCols                    $ \c ->
+prop_wordWrapIndent_indents = forAll (choose (0, maxCols + 10)) $ \n ->
+                              forAll genCols                    $ \c ->
                               forAll (genTextLongerThan c)      $ \t ->
-                              forAll (choose (0, maxCols + 10)) $ \n ->
-    let res = wordWrapIndent c n t
+    let res = wordWrapIndent n c t
     in resIsIndented (adjustIndent n c) res
 
 
@@ -59,7 +61,7 @@ prop_xformLeading :: Char -> Char -> Property
 prop_xformLeading a b = forAll (choose (0, 10))           $ \numOfLeading ->
                         forAll (genTextOfRandLen (0, 10)) $ \rest ->
                         (T.null . T.takeWhile (== a) $ rest) ==>
-    let leading    = replicate numOfLeading a ^.packed
+    let leading    = T.pack . replicate numOfLeading $ a
         t          = leading <> rest
         res        = xformLeading a b t
         resLeading = T.take numOfLeading res
@@ -73,7 +75,7 @@ prop_wrapLineWithIndentTag = forAll genCols                       $ \c ->
                              forAll (genTextOfRandLen (0, c * 2)) $ \t ->
                              forAll (choose (1, maxCols + 10))    $ \n ->
                              T.null t || (not . isDigit . T.last $ t) ==>
-    let t'  = t <> showText n <> [indentTagChar]^.packed
+    let t'  = t <> showText n <> T.pack [indentTagChar]
         res = wrapLineWithIndentTag c t'
     in if T.length t <= c
          then res == [t]
@@ -106,7 +108,7 @@ prop_quoteWithAndPad_quotes :: Char -> Char -> T.Text -> Property
 prop_quoteWithAndPad_quotes left right t = (not . isSpace $ left) &&
                                            (not . isSpace $ right) ==>
   forAll (choose (3, 50)) $ \len ->
-      let quotes    = over both (^.packed) ([left], [right])
+      let quotes    = over both T.pack ([left], [right])
           res       = quoteWithAndPad quotes len t
           grabRight = T.head . T.dropWhile isSpace . T.reverse
       in T.head res == left && grabRight res == right
@@ -114,23 +116,23 @@ prop_quoteWithAndPad_quotes left right t = (not . isSpace $ left) &&
 
 prop_padOrTrunc_pads :: NonNegative Int -> T.Text -> Property
 prop_padOrTrunc_pads (NonNegative x) t = T.length t <= x ==>
-  (==) (T.length . padOrTrunc x $ t) x
+  (T.length . padOrTrunc x $ t) == x
 
 
 prop_padOrTrunc_truncates :: NonNegative Int -> T.Text -> Property
 prop_padOrTrunc_truncates (NonNegative x) t = T.length t > x ==>
-  (==) (T.length . padOrTrunc x $ t) x
+  (T.length . padOrTrunc x $ t) == x
 
 
 prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [T.Text] -> Property
-prop_findFullNameForAbbrev_findsNothing (NonEmpty needle) hay = let needle' = needle^.packed
+prop_findFullNameForAbbrev_findsNothing (NonEmpty needle) hay = let needle' = T.pack needle
                                                                 in any (not . T.null) hay &&
                                                                    all (not . (needle' `T.isInfixOf`)) hay ==>
   isNothing . findFullNameForAbbrev needle' $ hay
 
 
 prop_findFullNameForAbbrev_findsMatch :: NonEmptyList Char -> [T.Text] -> Property
-prop_findFullNameForAbbrev_findsMatch (NonEmpty needle) hay = let needle' = needle^.packed
+prop_findFullNameForAbbrev_findsMatch (NonEmpty needle) hay = let needle' = T.pack needle
                                                               in any (not . T.null) hay &&
                                                                  all (not . (needle' `T.isInfixOf`)) hay ==>
   let nonNull = head . filter (not . T.null) $ hay
@@ -145,12 +147,6 @@ prop_countOcc needle hay = countOcc needle hay == matches
     matches = length . elemIndices needle $ hay
 
 
-prop_deleteFirstOfEach :: [Int] -> [Int] -> Property
-prop_deleteFirstOfEach delThese fromThis = all (\x -> countOcc x fromThis < 2) delThese ==>
-  let res = deleteFirstOfEach delThese fromThis
-  in all (`notElem` res) delThese
-
-
 prop_mkCountList :: [Int] -> Bool
 prop_mkCountList xs = mkCountList xs == mkCountList' xs
   where
@@ -159,3 +155,9 @@ prop_mkCountList xs = mkCountList xs == mkCountList' xs
                            elemCountList     = map mkPair grouped
                            getCountForElem x = (head . filter (^._1.to (== x)) $ elemCountList)^._2
                        in map getCountForElem xs'
+
+
+prop_deleteFirstOfEach :: [Int] -> [Int] -> Property
+prop_deleteFirstOfEach delThese fromThis = all (\x -> countOcc x fromThis < 2) delThese ==>
+  let res = deleteFirstOfEach delThese fromThis
+  in all (`notElem` res) delThese

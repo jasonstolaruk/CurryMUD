@@ -6,10 +6,9 @@ import Mud.StateHelpers
 import MudTests.TestHelpers
 
 import Test.QuickCheck.Monadic (assert, monadicIO)
-import Test.Tasty.QuickCheck as QC (Property)
+import Test.Tasty.QuickCheck (Property)
 
 
 prop_getUnusedId :: Property
-prop_getUnusedId = monadicIO $ do
-    ws <- inWorld getWS
+prop_getUnusedId = monadicIO $ inWorld getWS >>= \ws ->
     assert $ getUnusedId ws `notElem` allKeys ws

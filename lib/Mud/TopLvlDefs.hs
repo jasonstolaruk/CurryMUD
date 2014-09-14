@@ -5,11 +5,9 @@ module Mud.TopLvlDefs where
 
 import Mud.StateDataTypes
 
-import Control.Lens.Operators ((^.))
-import Data.Text.Strict.Lens (unpacked)
-import qualified Data.Text as T
 import System.Environment (getEnv)
 import System.IO.Unsafe (unsafePerformIO)
+import qualified Data.Text as T
 
 
 ver :: T.Text
@@ -20,9 +18,15 @@ port :: Int
 port = 9696
 
 
+telnetIAC, telnetSB, telnetSE :: Char
+telnetIAC = '\255'
+telnetSB  = '\250'
+telnetSE  = '\240'
+
+
 mudDir :: FilePath
 mudDir = let home = unsafePerformIO . getEnv $ "HOME"
-         in home ++ "/CurryMUD/"^.unpacked
+         in (home ++) . T.unpack $ "/CurryMUD/"
 
 
 logDir, resDir, helpDir, titleDir, miscDir :: FilePath

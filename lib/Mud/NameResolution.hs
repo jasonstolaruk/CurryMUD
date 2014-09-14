@@ -28,7 +28,7 @@ import Data.IntMap.Lazy ((!))
 import Data.List (foldl')
 import Data.Monoid ((<>), mempty)
 import Data.Text.Read (decimal)
-import Data.Text.Strict.Lens (packed, unpacked)
+import Data.Text.Strict.Lens (unpacked)
 import qualified Data.Text as T
 
 
@@ -53,14 +53,14 @@ resolveEntCoinNames ws rs is c = expandGecrs c . map (mkGecr ws is c . T.toLower
 
 mkGecr :: WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
 mkGecr ws is c n
-  | n == [allChar]^.packed = let es = [ (ws^.entTbl) ! i | i <- is ]
-                             in Mult (length is) n (Just es) (Just . SomeOf $ c)
-  | T.head n == allChar    = mkGecrMult ws (maxBound :: Int) (T.tail n) is c
-  | isDigit (T.head n)     = let numText = T.takeWhile isDigit n
-                                 numInt  = either (oops numText) fst $ decimal numText
-                                 rest    = T.drop (T.length numText) n
-                             in if numText /= "0" then parse rest numInt else Sorry n
-  | otherwise              = mkGecrMult ws 1 n is c
+  | n == T.pack [allChar] = let es = [ (ws^.entTbl) ! i | i <- is ]
+                            in Mult (length is) n (Just es) (Just . SomeOf $ c)
+  | T.head n == allChar   = mkGecrMult ws (maxBound :: Int) (T.tail n) is c
+  | isDigit (T.head n)    = let numText = T.takeWhile isDigit n
+                                numInt  = either (oops numText) fst $ decimal numText
+                                rest    = T.drop (T.length numText) n
+                            in if numText /= "0" then parse rest numInt else Sorry n
+  | otherwise             = mkGecrMult ws 1 n is c
   where
     oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
@@ -226,7 +226,7 @@ mkGecrWithRol ws is c n = let (a, b) = T.break (== slotChar) n
 
 
 sorryIndexedCoins :: T.Text
-sorryIndexedCoins = "Sorry, but " <> dblQuote ([indexChar]^.packed) <> " cannot be used with coins.\n"
+sorryIndexedCoins = "Sorry, but " <> (dblQuote . T.pack $ [indexChar]) <> " cannot be used with coins.\n"
 
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
@@ -249,12 +249,12 @@ procGecrMisReady gecrMis            = procGecrMisPCInv gecrMis
 
 sorryBadSlot :: T.Text -> T.Text
 sorryBadSlot n
-  | slotChar `elem` n^.unpacked = T.concat [ "Please specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", ".\n", ringHelp ]
-  | otherwise                   = "You don't have " <> aOrAn n <> "."
+  | slotChar `elem` T.unpack n = T.concat [ "Please specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", ".\n", ringHelp ]
+  | otherwise                  = "You don't have " <> aOrAn n <> "."
 
 
 mkSlotTxt :: T.Text -> T.Text
-mkSlotTxt = dblQuote . ([slotChar]^.packed <>)
+mkSlotTxt = dblQuote . (T.pack [slotChar] <>)
 
 
 ringHelp :: T.Text

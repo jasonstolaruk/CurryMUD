@@ -29,13 +29,13 @@ import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
-import Data.Char (isSpace, toUpper)
+import Data.Char -- TODO (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, find, foldl', intercalate, nub, nubBy, sort, zip4)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>), mempty)
-import Data.Text.Strict.Lens (packed, unpacked)
+import Data.Text.Strict.Lens (packed)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
 import GHC.Conc (threadStatus, ThreadStatus(..))
@@ -69,6 +69,7 @@ import qualified Data.Text.IO as T (readFile)
 --    [DONE] Concat lists of text instead of using "<>".
 --    [DONE] ">>=" vs. "=<<".
 --    [DONE] "(..)" instead of "(blah)" in import statements.
+-- d. Check for superfluous exports.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -152,7 +153,7 @@ cmdList = -- ==================================================
 
 
 prefixCmd :: Char -> CmdName -> T.Text
-prefixCmd c cn = [c]^.packed <> cn
+prefixCmd c cn = T.pack [c] <> cn
 
 
 prefixWizCmd :: CmdName -> T.Text
@@ -264,7 +265,7 @@ dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO newStdGen >>= \g ->
     let range = (1, noOfTitles)
         n     = fst . randomR range $ g
-        fn    = "title"^.unpacked ++ show n
+        fn    = T.unpack "title" ++ show n
     in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
   where
     takeADump fn = send mq =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
@@ -295,11 +296,22 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> loop
-      FromClient msg -> let msg' = T.strip msg
-                        in unless (T.null msg') (handleInp i mq msg') >> loop
-      Prompt     p   -> liftIO (hPutStr h (p^.unpacked) >> hFlush h)  >> loop
+      FromClient msg -> let msg' = T.strip . T.pack . stripTelnet . T.unpack $ msg
+                        in unless (T.null msg') (handleInp i mq msg')    >> loop
+      Prompt     p   -> liftIO ((hPutStr h . T.unpack $ p) >> hFlush h)  >> loop
       Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
       Shutdown       -> commitSuicide
+
+
+-- TODO: Move? Also write an hunit test for the following:
+-- [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
+stripTelnet :: String -> String
+stripTelnet msg@(x:y:_:rest)
+  | x == telnetIAC = if y == telnetSB
+                       then tail . dropWhile (/= telnetSE) $ rest
+                       else stripTelnet rest
+  | otherwise      = msg
+stripTelnet msg = msg
 
 
 serverExHandler :: SomeException -> MudStack ()
@@ -320,7 +332,7 @@ commitSuicide = liftIO . killThread =<< getListenThreadId
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
 receive h i mq = do
     registerThread . Receive $ i
-    forever . liftIO $ atomically . writeTQueue mq . FromClient . (^.packed) =<< hGetLine h
+    forever . liftIO $ atomically . writeTQueue mq . FromClient . T.pack =<< hGetLine h
 
 
 handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
@@ -432,7 +444,7 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 help :: Action
 help (_, mq, cols) [] = try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
   where
-    helper  = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
+    helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
 help (_, mq, cols) rs = send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
   where
@@ -452,7 +464,7 @@ getHelpTopicByName cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns -
   where
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
     getHelpTopic tn = (try . helper $ tn) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . T.unlines . wordWrap cols $ "Unfortunately, the " <> dblQuote tn <> " help file could not be retrieved."))
-    helper       tn = liftIO . T.readFile . (helpDir ++) $ tn^.unpacked
+    helper       tn = liftIO . T.readFile . (helpDir ++) . T.unpack $ tn
 
 
 -----
@@ -1269,9 +1281,9 @@ helperUnready i cols (ws, msgs) = \case
 mkUnreadyDesc :: Cols -> WorldState -> Inv -> T.Text
 mkUnreadyDesc cols ws is = T.concat [ helper icb | icb <- mkIdCountBothList ws is ]
   where
-    helper (i, c, b@(s, _)) = let v = verb i in T.unlines . wordWrap cols $ if c == 1
-      then T.concat [ "You ", v, " the ", s, "." ]
-      else T.concat [ "You ", v, " ", showText c, " ", mkPlurFromBoth b, "." ]
+    helper (i, c, b@(s, _)) = let v = verb i in T.unlines . wordWrap cols . T.concat $ if c == 1
+      then [ "You ", v, " the ", s, "." ]
+      else [ "You ", v, " ", showText c, " ", mkPlurFromBoth b, "." ]
     verb i = let t = (ws^.typeTbl) ! i
              in case t of
                ClothType -> unwearGenericVerb -- TODO
@@ -1342,15 +1354,15 @@ whatInvEnts cols ws it r gecr is = case gecr of
                                                  target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
                                              in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", showText len, " ", target, " ", getLocTxtForInvType it, "." ]
                                         else let ens = [ let e' = (ws^.entTbl) ! i in e'^.name | i <- is ]
-                                             in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", checkFirst e ens ^.packed, e^.sing, " ", getLocTxtForInvType it, "." ]
+                                             in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", T.pack . checkFirst e $ ens, e^.sing, " ", getLocTxtForInvType it, "." ]
   Indexed x _ (Right e) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
   _                     -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
   where
-    acp                                     = [allChar]^.packed
+    acp                                     = T.pack [allChar]
     supplement | it `elem` [ PCInv, RmInv ] = " (including any coins)"
                | otherwise                  = ""
     checkFirst e ens                        = let matches = filter (== e^.name) ens
-                                              in guard (length matches > 1) >> ("first "^.unpacked)
+                                              in guard (length matches > 1) >> T.unpack "first "
 
 
 getLocTxtForInvType :: InvType -> T.Text
@@ -1402,7 +1414,7 @@ uptime (_, mq, cols) [] = (try . send mq . parse =<< runUptime) >>= eitherRet (\
                     a'     = unwords . tail . words $ a
                     b'     = dropWhile isSpace . takeWhile (/= ',') . tail $ b
                     c      = (toUpper . head $ a') : tail a'
-                in T.concat [ c^.packed, " ", b'^.packed, ".\n\n" ]
+                in T.concat [ T.pack c, " ", T.pack b', ".\n\n" ]
 uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
 
 
@@ -1483,7 +1495,7 @@ wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
 
 
 wizDay :: Action
-wizDay     (_, mq, _)    [] =  send mq . nlnl . (^.packed) . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
+wizDay     (_, mq, _)    [] =  send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 wizDay imc@(_, mq, cols) rs = ignore mq cols rs >> wizDay imc []
 
 
@@ -1506,7 +1518,7 @@ debugBuffCheck (_, mq, cols) [] = try helper >>= eitherRet (logAndDispIOEx mq co
         (fn, h) <- liftIO . openTempFile td $ "temp"
         bm      <- liftIO . hGetBuffering $ h
         liftIO $ hClose h >> removeFile fn
-        send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ "(Default) buffering mode for temp file ", fn^.packed.to dblQuote, " is ", dblQuote . showText $ bm, "." ]
+        send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ "(Default) buffering mode for temp file ", dblQuote . T.pack $ fn, " is ", dblQuote . showText $ bm, "." ]
 debugBuffCheck imc@(_, mq, cols) rs = ignore mq cols rs >> debugBuffCheck imc []
 
 
@@ -1520,7 +1532,7 @@ debugDispEnv (_, mq, cols) rs = liftIO getEnvironment >>= \env ->
   where
     helper env r = mkAssocListTxt cols . filter grepPair $ env
       where
-        grepPair = uncurry (||) . over both (^.packed.to grep)
+        grepPair = uncurry (||) . over both (grep . T.pack)
         grep     = (r `T.isInfixOf`)
 
 

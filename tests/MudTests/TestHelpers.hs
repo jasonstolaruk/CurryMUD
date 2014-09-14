@@ -7,11 +7,9 @@ import Mud.StateInIORefT
 import Mud.TheWorld
 import Mud.TopLvlDefs
 
-import Control.Lens.Operators ((^.))
 import Control.Monad (replicateM)
 import Data.Char (chr)
 import Data.Functor ((<$>))
-import Data.Text.Strict.Lens (packed)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck (choose, Gen)
 import Test.QuickCheck.Instances ()
@@ -20,15 +18,17 @@ import qualified Data.Text as T
 
 
 inWorld :: MudStack a -> PropertyM IO a
-inWorld f = run $ runStateInIORefT (initWorld >> f) (unsafePerformIO initMudState) >>= return . fst
+inWorld f = run helper
+  where
+    helper = fst <$> runStateInIORefT (initWorld >> f) (unsafePerformIO initMudState)
 
 
-genAlphaNum :: Gen Char
-genAlphaNum = chr <$> choose (32, 126)
+genAsciiAlphaNum :: Gen Char
+genAsciiAlphaNum = chr <$> choose (32, 126)
 
 
 genTextOfLen :: Int -> Gen T.Text
-genTextOfLen n = (^.packed) <$> replicateM n genAlphaNum
+genTextOfLen n = T.pack <$> replicateM n genAsciiAlphaNum
 
 
 genTextLongerThan :: Int -> Gen T.Text

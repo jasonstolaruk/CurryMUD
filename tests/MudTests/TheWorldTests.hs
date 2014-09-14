@@ -7,13 +7,14 @@ import Mud.StateHelpers
 import MudTests.TestHelpers
 
 import Control.Lens.Operators ((^.))
+import Data.Functor ((<$>))
 import Data.List (group)
 import Test.QuickCheck.Monadic (assert, monadicIO)
-import Test.Tasty.QuickCheck as QC (Property)
+import Test.Tasty.QuickCheck (Property)
 import qualified Data.IntMap.Lazy as IM (elems)
 
 
 prop_noDupIds :: Property
-prop_noDupIds = monadicIO $ do
-    it <- inWorld (getWS >>= \ws -> return (ws^.invTbl))
-    assert . not . any ((> 1) . length) . group . concat . IM.elems $ it
+prop_noDupIds = monadicIO $ getInvTbl >>= assert . not . any ((> 1) . length) . group . concat . IM.elems
+  where
+    getInvTbl = inWorld ((^.invTbl) <$> getWS)

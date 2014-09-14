@@ -20,13 +20,12 @@ import Control.Concurrent.Async (async, waitBoth)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (throwIO)
-import Control.Lens.Operators ((.=), (^.))
+import Control.Lens.Operators ((.=))
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
-import Data.Text.Strict.Lens (packed)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
@@ -94,7 +93,7 @@ logIOEx modName funName e = logError . concat $ [ modName, " ", funName, ": ", d
 
 logAndDispIOEx :: MsgQueue -> Cols -> String -> String -> IOException -> MudStack ()
 logAndDispIOEx mq cols modName funName e = let msg = concat [ modName, " ", funName, ": ", dblQuoteStr . show $ e ]
-                                           in logError msg >> (send mq . nl . T.unlines . wordWrap cols $ msg^.packed)
+                                           in logError msg >> (send mq . nl . T.unlines . wordWrap cols . T.pack $ msg)
 
 
 logIOExRethrow :: String -> String -> IOException -> MudStack ()

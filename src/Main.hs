@@ -18,9 +18,7 @@ import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util
 
-import Control.Lens.Operators ((^.))
 import Control.Monad (void)
-import Data.Text.Strict.Lens (packed)
 import Network (withSocketsDo)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getEnv, getProgName)
@@ -39,7 +37,7 @@ welcome :: IO ()
 welcome = do
     un <- getEnv "USER"
     mn <- whatsMyName
-    T.putStrLn . T.concat $ [ "Hello, ", un^.packed, ". Welcome to ", dblQuote mn, " ver ", ver, ".\n" ]
+    T.putStrLn . T.concat $ [ "Hello, ", T.pack un, ". Welcome to ", dblQuote mn, " ver ", ver, ".\n" ]
   where
     whatsMyName = getProgName >>= \mn ->
-        return (if mn == "<interactive>" then "Y U NO COMPILE ME?" else mn^.packed)
+        return (if mn == "<interactive>" then "Y U NO COMPILE ME?" else T.pack mn)
