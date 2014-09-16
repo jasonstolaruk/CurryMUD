@@ -4,7 +4,7 @@
 {-
   CurryMud - A Multi-User Dungeon written in Haskell.
   By Jason Stolaruk.
-  jasonstolaruk `at` (gmail . com)
+  jasonstolaruk (`at` gmail) . com
   @JasonStolaruk
   https://github.com/jasonstolaruk/CurryMUD
   kickButt <$> take maxBound names
@@ -30,7 +30,7 @@ main :: IO ()
 main = withSocketsDo $ do
     setCurrentDirectory mudDir
     welcome
-    initMudState >>= void . runStateInIORefT serverWrapper
+    initMudState >>= void . runStateInIORefT topLvlWrapper
 
 
 welcome :: IO ()

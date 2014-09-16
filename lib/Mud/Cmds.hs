@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-module Mud.Cmds (serverWrapper) where
+module Mud.Cmds (topLvlWrapper) where
 
 import Mud.Ids
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
@@ -29,7 +29,7 @@ import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
-import Data.Char -- TODO (isSpace, toUpper)
+import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, find, foldl', intercalate, nub, nubBy, sort, zip4)
@@ -69,7 +69,7 @@ import qualified Data.Text.IO as T (readFile)
 --    [DONE] Concat lists of text instead of using "<>".
 --    [DONE] ">>=" vs. "=<<".
 --    [DONE] "(..)" instead of "(blah)" in import statements.
--- d. Check for superfluous exports.
+-- d. [DONE] Check for superfluous exports.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -164,12 +164,12 @@ prefixDebugCmd :: CmdName -> T.Text
 prefixDebugCmd = prefixCmd debugCmdChar
 
 
-serverWrapper :: MudStack ()
-serverWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
+topLvlWrapper :: MudStack ()
+topLvlWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
   where
     initAndStart = do
         initLogging
-        logNotice "serverWrapper" "server started"
+        logNotice "topLvlWrapper" "server started"
         initWorld
         listen
 

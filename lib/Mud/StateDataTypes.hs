@@ -62,19 +62,19 @@ data MudState = MudState { _worldStateTMVar :: TMVar WorldState
 -- World state:
 
 
-data WorldState = WorldState { _entTbl      :: IM.IntMap Ent
-                             , _objTbl      :: IM.IntMap Obj
-                             , _clothTbl    :: IM.IntMap Cloth
-                             , _invTbl      :: IM.IntMap Inv
-                             , _coinsTbl    :: IM.IntMap Coins
-                             , _conTbl      :: IM.IntMap Con
-                             , _wpnTbl      :: IM.IntMap Wpn
-                             , _armTbl      :: IM.IntMap Arm
-                             , _eqTbl       :: IM.IntMap EqMap
-                             , _mobTbl      :: IM.IntMap Mob
-                             , _pcTbl       :: IM.IntMap PC
-                             , _rmTbl       :: IM.IntMap Rm
-                             , _typeTbl     :: IM.IntMap Type }
+data WorldState = WorldState { _entTbl   :: IM.IntMap Ent
+                             , _objTbl   :: IM.IntMap Obj
+                             , _clothTbl :: IM.IntMap Cloth
+                             , _invTbl   :: IM.IntMap Inv
+                             , _coinsTbl :: IM.IntMap Coins
+                             , _conTbl   :: IM.IntMap Con
+                             , _wpnTbl   :: IM.IntMap Wpn
+                             , _armTbl   :: IM.IntMap Arm
+                             , _eqTbl    :: IM.IntMap EqMap
+                             , _mobTbl   :: IM.IntMap Mob
+                             , _pcTbl    :: IM.IntMap PC
+                             , _rmTbl    :: IM.IntMap Rm
+                             , _typeTbl  :: IM.IntMap Type }
 
 
 -- ==================================================
@@ -142,7 +142,7 @@ instance Monoid Coins where
   Coins (cop, sil, gol) `mappend` Coins (cop', sil', gol') = Coins (cop + cop', sil + sil', gol + gol')
 
 
--- ==================================================
+-- ============================================================
 -- Container:
 -- Has an object (and an entity) and an inventory and coins.
 
@@ -231,7 +231,7 @@ data Hand   = RHand
             | NoHand deriving (Eq, Show)
 
 
--- ==================================================
+-- ======================================================================
 -- Player character:
 -- Has a mob (and an entity and an inventory and coins and equipment).
 
@@ -261,8 +261,10 @@ data Rm = Rm { _rmName  :: !T.Text
 
 type LinkName = T.Text
 
-data RmLink = RmLink { _linkName :: !LinkName
-                     , _destId   :: !Id } deriving (Eq, Show)
+data RmLink = RmLink { _linkName      :: !LinkName
+                     , _destId        :: !Id
+                     , _departViaMsg  :: !T.Text
+                     , _arriveFromMsg :: !T.Text } deriving (Eq, Show)
 
 
 -- ==================================================
