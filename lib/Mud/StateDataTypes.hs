@@ -15,6 +15,8 @@ import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
 
+-- TODO: Unnecessary derivings?
+
 
 -- ==================================================
 -- Typeclasses and instances:
@@ -259,12 +261,25 @@ data Rm = Rm { _rmName  :: !T.Text
              , _rmFlags :: !Int
              , _rmLinks :: ![RmLink] } deriving (Eq, Show)
 
+data LinkDir  = North
+              | Northeast
+              | East
+              | Southeast
+              | South
+              | Southwest
+              | West
+              | Northwest
+              | Up
+              | Down deriving (Eq, Show)
+
 type LinkName = T.Text
 
-data RmLink = RmLink { _linkName      :: !LinkName
-                     , _destId        :: !Id } deriving (Eq, Show)
-                     -- , _departViaMsg  :: !T.Text
-                     -- , _arriveFromMsg :: !T.Text } deriving (Eq, Show)
+data RmLink   = StdLink    { _linkDir      :: !LinkDir
+                           , _stdDestId    :: !Id }
+              | NonStdLink { _linkName     :: !LinkName
+                           , _nonStdDestId :: !Id
+                           , _originMsg    :: !T.Text
+                           , _destMsg      :: !T.Text } deriving (Eq, Show)
 
 
 -- ==================================================

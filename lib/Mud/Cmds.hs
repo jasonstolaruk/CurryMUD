@@ -363,7 +363,7 @@ findAction :: Id -> CmdName -> MudStack (Maybe Action)
 findAction i cn = getWS >>= \ws ->
     let p        = (ws^.pcTbl) ! i
         r        = (ws^.rmTbl) ! (p^.rmId)
-        cmdList' = mkCmdListWithRmLinks r
+        cmdList' = mkCmdListWithNonStdRmLinks r
         cns      = map cmdName cmdList'
     in maybe (return Nothing)
              (\fn -> return . Just . findActionForFullName fn $ cmdList')
@@ -372,11 +372,34 @@ findAction i cn = getWS >>= \ws ->
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)
 
 
-mkCmdListWithRmLinks :: Rm -> [Cmd]
-mkCmdListWithRmLinks r = cmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, rl^.linkName `notElem` stdLinkNames ]
+mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
+mkCmdListWithNonStdRmLinks r = cmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, isNonStdLink rl ]
+
+
+isNonStdLink :: RmLink -> Bool
+isNonStdLink (NonStdLink _ _ _ _) = True
+isNonStdLink _                    = False
+
+
+mkCmdForRmLink :: RmLink -> Cmd
+mkCmdForRmLink rl = let cn = T.toLower . mkCmdNameForRmLink $ rl
+                    in Cmd { cmdName = cn, action = go cn, cmdDesc = "" }
   where
-    mkCmdForRmLink rl = let ln = rl^.linkName.to T.toLower
-                        in Cmd { cmdName = ln, action = go ln, cmdDesc = "" }
+    mkCmdNameForRmLink (StdLink    dir _    ) = linkDirToCmdName dir
+    mkCmdNameForRmLink (NonStdLink ln  _ _ _) = ln
+
+
+linkDirToCmdName :: LinkDir -> CmdName
+linkDirToCmdName North     = "n"
+linkDirToCmdName Northeast = "ne"
+linkDirToCmdName East      = "e"
+linkDirToCmdName Southeast = "se"
+linkDirToCmdName South     = "s"
+linkDirToCmdName Southwest = "sw"
+linkDirToCmdName West      = "w"
+linkDirToCmdName Northwest = "nw"
+linkDirToCmdName Up        = "u"
+linkDirToCmdName Down      = "d"
 
 
 -- ==================================================
@@ -500,17 +523,17 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                           destIs'   = sortInv ws $ i : destIs
                           originPis = findPCIds ws originIs
                           destPis   = findPCIds ws destIs
-                          originMsg
+                          msgAtOrigin
                             | dir' `elem` stdLinkNames = T.concat [ e^.sing, " ", verb dir', " ", expandLinkName dir', "." ]
                             | otherwise = undefined -- TODO: message for non-standard link names.
-                          destMsg
+                          msgAtDest
                             | dir' `elem` stdLinkNames = T.concat [ e^.sing, " arrives from ", expandOppLinkName dir', "." ]
                             | otherwise = undefined -- TODO: message for non-standard link names.
                       in do
                           putTMVar t (ws & pcTbl.at  i   ?~ p'
                                          & invTbl.at ri  ?~ originIs
                                          & invTbl.at ri' ?~ destIs')
-                          return . Right $ [ (originMsg, originPis), (destMsg, destPis) ]
+                          return . Right $ [ (msgAtOrigin, originPis), (msgAtDest, destPis) ]
     sorry dir' = if dir' `elem` stdLinkNames
                    then "You can't go that way."
                    else dblQuote dir <> " is not a valid exit."
@@ -522,11 +545,14 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
 
 
 findExit :: Rm -> LinkName -> Maybe Id
-findExit r ln = case [ rl^.destId | rl <- r^.rmLinks, isValid rl ] of
+findExit r ln = case [ getDestId rl | rl <- r^.rmLinks, isValid rl ] of
                   [] -> Nothing
                   is -> Just . head $ is
   where
-    isValid rl = ln `elem` stdLinkNames && ln == (rl^.linkName) || ln `notElem` stdLinkNames && ln `T.isInfixOf` (rl^.linkName)
+    isValid   (StdLink    dir _    ) = ln == linkDirToCmdName dir
+    isValid   (NonStdLink ln' _ _ _) = ln `T.isInfixOf` ln'
+    getDestId (StdLink    _   i    ) = i
+    getDestId (NonStdLink _   i _ _) = i
 
 
 expandLinkName :: T.Text -> T.Text
@@ -695,10 +721,12 @@ exits imc@(_, mq, cols) rs = ignore mq cols rs >> exits imc []
 
 
 mkExitsSummary :: Cols -> Rm -> T.Text
-mkExitsSummary cols r = let rlns        = [ rl^.linkName | rl <- r^.rmLinks ]
-                            stdNames    = [ sln | sln <- stdLinkNames, sln `elem` rlns ]
-                            customNames = filter (`notElem` stdLinkNames) rlns
-                        in T.unlines . wordWrapIndent 2 cols . ("Obvious exits: " <>)  . T.intercalate ", " . (stdNames ++) $ customNames
+mkExitsSummary cols r = let stdNames    = [ rl^.linkDir.to linkDirToCmdName | rl <- r^.rmLinks, not . isNonStdLink $ rl ]
+                            customNames = [ rl^.linkName | rl <- r^.rmLinks, isNonStdLink $ rl ]
+                        in T.unlines . wordWrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
+  where
+    summarize []  []  = "None!"
+    summarize std cus = T.intercalate ", " . (std ++) $ cus
 
 
 -----
@@ -1321,7 +1349,7 @@ what (i, mq, cols) rs = getWS >>= \ws ->
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
 whatCmd cols r n = maybe notFound found . findFullNameForAbbrev (T.toLower n) $ cs
   where
-    cs       = filter isPlaCmd . map cmdName . mkCmdListWithRmLinks $ r
+    cs       = filter isPlaCmd . map cmdName . mkCmdListWithNonStdRmLinks $ r
     isPlaCmd = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
     notFound = T.unlines . wordWrap cols $ dblQuote n <> " doesn't refer to any commands."
     found cn = T.unlines . wordWrap cols . T.concat $ [ dblQuote n, " may refer to the ", dblQuote cn, " command." ]
