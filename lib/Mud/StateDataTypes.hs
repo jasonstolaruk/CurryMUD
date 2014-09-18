@@ -262,9 +262,9 @@ data Rm = Rm { _rmName  :: !T.Text
 type LinkName = T.Text
 
 data RmLink = RmLink { _linkName      :: !LinkName
-                     , _destId        :: !Id
-                     , _departViaMsg  :: !T.Text
-                     , _arriveFromMsg :: !T.Text } deriving (Eq, Show)
+                     , _destId        :: !Id } deriving (Eq, Show)
+                     -- , _departViaMsg  :: !T.Text
+                     -- , _arriveFromMsg :: !T.Text } deriving (Eq, Show)
 
 
 -- ==================================================

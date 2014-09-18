@@ -4,10 +4,10 @@
 module Mud.StateHelpers ( allKeys
                         , BothGramNos
                         , broadcast
-                        --, findPCIds
+                        , findPCIds
                         , getEntBothGramNos
                         , getLog
-                        --, getLogAsyncs
+                        , getLogAsyncs
                         , getNWS
                         , getNWSTMVar
                         , getPlaColumns
@@ -114,12 +114,12 @@ getLog :: forall a (m :: * -> *) . MonadState MudState m => ((a -> Const a a) ->
 getLog l = gets (^.nonWorldState.logServices.l)
 
 
--- getLogAsyncs :: MudStack (LogAsync, LogAsync)
--- getLogAsyncs = helper <$> gets (^.nonWorldState.logServices)
---   where
---     helper ls = let Just (nla, _) = ls^.noticeLog
---                     Just (ela, _) = ls^.errorLog
---                 in (nla, ela)
+getLogAsyncs :: MudStack (LogAsync, LogAsync)
+getLogAsyncs = helper <$> gets (^.nonWorldState.logServices)
+  where
+    helper ls = let Just (nla, _) = ls^.noticeLog
+                    Just (ela, _) = ls^.errorLog
+                in (nla, ela)
 
 
 -- ============================================================
@@ -232,8 +232,8 @@ negateCoins :: Coins -> Coins
 negateCoins (Coins c) = Coins (each %~ negate $ c)
 
 
--- findPCIds :: WorldState -> [Id] -> [Id]
--- findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
+findPCIds :: WorldState -> [Id] -> [Id]
+findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
 
 
 -- ============================================================
