@@ -516,19 +516,19 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
             r   = (ws^.rmTbl)  ! ri
             ris = (ws^.invTbl) ! ri
         in case findExit r dir' of
-          Nothing  -> putTMVar t ws >> (return . Left . sorry $ dir')
-          Just ri' -> let p'        = p & rmId .~ ri'
-                          originIs  = delete i ris
-                          destIs    = (ws^.invTbl) ! ri'
-                          destIs'   = sortInv ws $ i : destIs
-                          originPis = findPCIds ws originIs
-                          destPis   = findPCIds ws destIs
-                          msgAtOrigin
-                            | dir' `elem` stdLinkNames = T.concat [ e^.sing, " ", verb dir', " ", expandLinkName dir', "." ]
-                            | otherwise = undefined -- TODO: message for non-standard link names.
-                          msgAtDest
-                            | dir' `elem` stdLinkNames = T.concat [ e^.sing, " arrives from ", expandOppLinkName dir', "." ]
-                            | otherwise = undefined -- TODO: message for non-standard link names.
+          Nothing              -> putTMVar t ws >> (return . Left . sorry $ dir')
+          Just (ri', mom, mdm) -> let p'        = p & rmId .~ ri'
+                                      originIs  = delete i ris
+                                      destIs    = (ws^.invTbl) ! ri'
+                                      destIs'   = sortInv ws $ i : destIs
+                                      originPis = findPCIds ws originIs
+                                      destPis   = findPCIds ws destIs
+                                      msgAtOrigin = case mom of
+                                                      Nothing -> T.concat [ e^.sing, " ", verb dir', " ", expandLinkName dir', "." ]
+                                                      Just f  -> f $ e^.sing
+                                      msgAtDest   = case mdm of
+                                                      Nothing -> T.concat [ e^.sing, " arrives from ", expandOppLinkName dir', "." ]
+                                                      Just f  -> f $ e^.sing
                       in do
                           putTMVar t (ws & pcTbl.at  i   ?~ p'
                                          & invTbl.at ri  ?~ originIs
@@ -544,15 +544,19 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
       | otherwise                = "enters"
 
 
-findExit :: Rm -> LinkName -> Maybe Id
-findExit r ln = case [ getDestId rl | rl <- r^.rmLinks, isValid rl ] of
+findExit :: Rm -> LinkName -> Maybe (Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
+findExit r ln = case [ (getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- r^.rmLinks, isValid rl ] of
                   [] -> Nothing
-                  is -> Just . head $ is
+                  xs -> Just . head $ xs
   where
-    isValid   (StdLink    dir _    ) = ln == linkDirToCmdName dir
-    isValid   (NonStdLink ln' _ _ _) = ln `T.isInfixOf` ln'
-    getDestId (StdLink    _   i    ) = i
-    getDestId (NonStdLink _   i _ _) = i
+    isValid      (StdLink    dir _    ) = ln == linkDirToCmdName dir
+    isValid      (NonStdLink ln' _ _ _) = ln `T.isInfixOf` ln'
+    getDestId    (StdLink    _   i    ) = i
+    getDestId    (NonStdLink _   i _ _) = i
+    getOriginMsg (NonStdLink _   _ f _) = Just f
+    getOriginMsg _                      = Nothing
+    getDestMsg   (NonStdLink _   _ _ f) = Just f
+    getDestMsg   _                      = Nothing
 
 
 expandLinkName :: T.Text -> T.Text

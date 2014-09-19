@@ -15,8 +15,6 @@ import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
 
--- TODO: Unnecessary derivings?
-
 
 -- ==================================================
 -- Typeclasses and instances:
@@ -259,7 +257,7 @@ data Race = Human
 data Rm = Rm { _rmName  :: !T.Text
              , _rmDesc  :: !T.Text
              , _rmFlags :: !Int
-             , _rmLinks :: ![RmLink] } deriving (Eq, Show)
+             , _rmLinks :: ![RmLink] } deriving Eq
 
 data LinkDir  = North
               | Northeast
@@ -278,8 +276,14 @@ data RmLink   = StdLink    { _linkDir      :: !LinkDir
                            , _stdDestId    :: !Id }
               | NonStdLink { _linkName     :: !LinkName
                            , _nonStdDestId :: !Id
-                           , _originMsg    :: !T.Text
-                           , _destMsg      :: !T.Text } deriving (Eq, Show)
+                           , _originMsg    :: !(T.Text -> T.Text)
+                           , _destMsg      :: !(T.Text -> T.Text) }
+
+
+instance Eq RmLink where
+  (StdLink    dir i    ) == (StdLink    dir' i'    ) = dir == dir' && i == i'
+  (NonStdLink ln  i _ _) == (NonStdLink ln'  i' _ _) = ln  == ln'  && i == i'
+  _                      == _                        = False
 
 
 -- ==================================================
