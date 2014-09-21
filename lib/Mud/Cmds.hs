@@ -39,7 +39,7 @@ import Data.Text.Strict.Lens (packed)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
 import GHC.Conc (threadStatus, ThreadStatus(..))
-import Network (accept, listenOn, PortID(..))
+import Network (accept, listenOn, PortID(..), sClose)
 import Prelude hiding (pi)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
@@ -52,6 +52,7 @@ import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. 
 import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -169,7 +170,7 @@ topLvlWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
   where
     initAndStart = do
         initLogging
-        logNotice "topLvlWrapper" "server started"
+        logNotice "topLvlWrapper initAndStart" "server started"
         initWorld
         listen
 
@@ -179,7 +180,7 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
                     in case fromException e of
                       Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt"
                       Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed"
-                      Just _             -> (oops . (showIt ++) $ " caught by the top level handler; rethrowing") >> throwIO e
+                      Just _             -> (oops $ showIt ++ " caught by the top level handler; rethrowing") >> throwIO e
                       Nothing            -> oops "exception caught by the top level handler; exiting gracefully"  >> liftIO exitFailure
   where
     showIt = dblQuoteStr . show $ e
@@ -188,13 +189,20 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
 listen :: MudStack ()
 listen = do
     registerThread Listen
+    listInterfaces
     logNotice "listen" $ "listening for incoming connections on port " ++ show port
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-    forever $ do
+    (forever . loop $ sock) `finally` cleanUp sock
+  where
+    listInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
+        let ifList = intercalate ", " $ [ concat [ "[", show . NI.name $ n, ": ", show . NI.ipv4 $ n, "]" ] | n <- ns ]
+        in logNotice "listen listInterfaces" $ "server network interfaces: " ++ ifList
+    loop sock = do
         (h, host, port') <- liftIO . accept $ sock
-        logNotice "listen" . concat $ [ "connected to ", show host, " on local port ", show port' ]
+        logNotice "listen loop" . concat $ [ "connected to ", show host, " on local port ", show port' ]
         s <- get
         liftIO $ forkFinally (runStateInIORefT (talk h) s) (\_ -> hClose h)
+    cleanUp sock = logNotice "listen cleanUp" "closing the socket" >> (liftIO . sClose $ sock)
 
 
 registerThread :: ThreadType -> MudStack ()
