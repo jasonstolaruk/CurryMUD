@@ -296,7 +296,7 @@ maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
 maybeVoid = maybe (return ())
 
 
-maybeRet :: forall a (m :: * -> *) . Monad m => m a -> Maybe a -> m a
+maybeRet :: forall a (m :: * -> *). Monad m => m a -> Maybe a -> m a
 maybeRet dflt = maybe dflt return
 
 

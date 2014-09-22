@@ -3,12 +3,13 @@
 
 module Mud.Logging ( closeLogs
                    , initLogging
+                   , initPlaLog
                    , logAndDispIOEx
                    , logError
                    , logExMsg
                    , logIOEx
                    , logIOExRethrow
-                   , logNotice) where
+                   , logNotice ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -20,17 +21,19 @@ import Control.Concurrent.Async (async, waitBoth)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (throwIO)
-import Control.Lens.Operators ((.=))
+import Control.Lens (at)
+import Control.Lens.Operators ((&), (.=), (?~))
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
+import Data.Monoid ((<>))
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
 import System.Log.Handler.Simple (fileHandler)
-import System.Log.Logger (errorM, noticeM, setHandlers, setLevel, updateGlobalLogger)
+import System.Log.Logger (errorM, infoM, noticeM, setHandlers, setLevel, updateGlobalLogger)
 import qualified Data.Text as T
 
 
@@ -46,8 +49,8 @@ initLogging :: MudStack ()
 initLogging = do
     nq <- liftIO newTQueueIO
     eq <- liftIO newTQueueIO
-    na <- spawnLogger "notice.log" NOTICE "currymud.notice" noticeM nq
-    ea <- spawnLogger "error.log"  ERROR  "currymud.error"  errorM  eq
+    na <- liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM $ nq
+    ea <- liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  $ eq
     nonWorldState.logServices.noticeLog .= Just (na, nq)
     nonWorldState.logServices.errorLog  .= Just (ea, eq)
 
@@ -56,8 +59,8 @@ type LogName    = String
 type LoggingFun = String -> String -> IO ()
 
 
-spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> MudStack LogAsync
-spawnLogger fn p ln f q = liftIO (async . loop =<< initLog)
+spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
+spawnLogger fn p ln f q = async . loop =<< initLog
   where
     initLog = do
         gh <- fileHandler (logDir ++ fn) p
@@ -100,3 +103,10 @@ logIOExRethrow :: String -> String -> IOException -> MudStack ()
 logIOExRethrow modName funName e = do
     logError . concat $ [ modName, " ", funName, ": unexpected exception; rethrowing." ]
     liftIO . throwIO $ e
+
+
+initPlaLog :: Id -> Sing -> MudStack ()
+initPlaLog i n = do
+    q <- liftIO newTQueueIO
+    a <- liftIO . spawnLogger (T.unpack $ n <> ".log") INFO (T.unpack $ "currymud." <> n) infoM $ q
+    modifyNWS plaLogsTblTMVar $ \plt -> plt & at i ?~ (a, q)

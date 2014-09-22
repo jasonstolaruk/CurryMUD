@@ -212,13 +212,14 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
         in putTMVar t tt'
 
 
--- TODO: Spawn a log for the new player.
 talk :: Handle -> MudStack ()
 talk h = do
+    registerThread Talk
     liftIO configBuffer
-    mq <- liftIO newTQueueIO
-    i  <- adHoc mq
+    mq     <- liftIO newTQueueIO
+    (i, _) <- adHoc mq
     logNotice "talk" $ "new ID for incoming player: " ++ show i
+    --initPlaLog i n
     dumpTitle mq
     prompt mq "> "
     notifyArrival i
@@ -229,15 +230,15 @@ talk h = do
     configBuffer = hSetNewlineMode h universalNewlineMode >> hSetBuffering h LineBuffering
 
 
-adHoc :: MsgQueue -> MudStack Id
+adHoc :: MsgQueue -> MudStack (Id, Sing)
 adHoc mq = do
     wsTMVar  <- getWSTMVar
-    ptTMVar  <- getNWSTMVar plaTblTMVar
     mqtTMVar <- getNWSTMVar msgQueueTblTMVar
+    ptTMVar  <- getNWSTMVar plaTblTMVar
     liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
-        pt  <- takeTMVar ptTMVar
         mqt <- takeTMVar mqtTMVar
+        pt  <- takeTMVar ptTMVar
         -----
         let i   = getUnusedId ws
         -----
@@ -259,14 +260,14 @@ adHoc mq = do
                        & mobTbl.at   i     ?~ m
                        & pcTbl.at    i     ?~ pc
                        & invTbl.at   iHill ?~ ris
-        let pt'  = pt  & at i ?~ pla
         let mqt' = mqt & at i ?~ mq
+        let pt'  = pt  & at i ?~ pla
         -----
         putTMVar wsTMVar  ws'
-        putTMVar ptTMVar  pt'
         putTMVar mqtTMVar mqt'
+        putTMVar ptTMVar  pt'
         -----
-        return i
+        return (i, e^.sing)
 
 
 dumpTitle :: MsgQueue -> MudStack ()
@@ -1470,12 +1471,12 @@ handleQuit :: Id -> MudStack ()
 handleQuit i = do
     logNotice "handleQuit" $ "player " <> show i <> " has quit"
     wsTMVar  <- getWSTMVar
-    ptTMVar  <- getNWSTMVar plaTblTMVar
     mqtTMVar <- getNWSTMVar msgQueueTblTMVar
+    ptTMVar  <- getNWSTMVar plaTblTMVar
     liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
-        pt  <- takeTMVar ptTMVar
         mqt <- takeTMVar mqtTMVar
+        pt  <- takeTMVar ptTMVar
         -----
         let p    = (ws^.pcTbl)  ! i
         let ri   = p^.rmId
@@ -1488,12 +1489,12 @@ handleQuit i = do
                        & mobTbl.at   i  .~ Nothing
                        & pcTbl.at    i  .~ Nothing
                        & invTbl.at   ri ?~ delete i ris
-        let pt'  = pt  & at i .~ Nothing
         let mqt' = mqt & at i .~ Nothing
+        let pt'  = pt  & at i .~ Nothing
         -----
         putTMVar wsTMVar  ws'
-        putTMVar ptTMVar  pt'
         putTMVar mqtTMVar mqt'
+        putTMVar ptTMVar  pt'
 
 
 -- ==================================================

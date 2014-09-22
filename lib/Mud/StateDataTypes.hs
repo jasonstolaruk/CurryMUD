@@ -281,9 +281,13 @@ data RmLink   = StdLink    { _linkDir      :: !LinkDir
 
 
 instance Eq RmLink where
-  (StdLink    dir i    ) == (StdLink    dir' i'    ) = dir == dir' && i == i'
-  (NonStdLink ln  i _ _) == (NonStdLink ln'  i' _ _) = ln  == ln'  && i == i'
-  _                      == _                        = False
+  (StdLink    dir i      ) == (StdLink    dir' i'        ) = dir   == dir'   &&
+                                                             i     == i'
+  (NonStdLink ln  i om dm) == (NonStdLink ln'  i' om' dm') = ln    == ln'    &&
+                                                             i     == i'     &&
+                                                             om "" == om' "" &&
+                                                             dm "" == dm' ""
+  _                      == _                              = False
 
 
 -- ==================================================
@@ -305,6 +309,7 @@ data Type = ObjType
 
 
 data NonWorldState = NonWorldState { _logServices      :: LogServices
+                                   , _plaLogsTblTMVar  :: TMVar (IM.IntMap LogService)
                                    , _threadTblTMVar   :: TMVar ThreadTbl
                                    , _msgQueueTblTMVar :: TMVar (IM.IntMap MsgQueue)
                                    , _plaTblTMVar      :: TMVar (IM.IntMap Pla) }
@@ -337,7 +342,8 @@ data ThreadType = Notice
                 | Listen
                 | Talk
                 | Server  Id
-                | Receive Id deriving (Eq, Show)
+                | Receive Id
+                | PlaLog  Id deriving (Eq, Show)
 
 
 -- ==================================================

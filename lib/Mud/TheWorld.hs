@@ -31,10 +31,11 @@ logNotice = L.logNotice "Mud.TheWorld"
 initMudState :: IO MudState
 initMudState = do
     wsTMVar  <- newTMVarIO ws
+    pltTMVar <- newTMVarIO IM.empty
     ttTMVar  <- newTMVarIO M.empty
     mqtTMVar <- newTMVarIO IM.empty
     ptTMVar  <- newTMVarIO IM.empty
-    return (MudState wsTMVar . nws ttTMVar mqtTMVar $ ptTMVar)
+    return (MudState wsTMVar . nws pltTMVar ttTMVar mqtTMVar $ ptTMVar)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
     nws = NonWorldState (LogServices Nothing Nothing)
