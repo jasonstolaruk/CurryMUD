@@ -11,6 +11,7 @@ module Mud.StateHelpers ( allKeys
                         , getNWS
                         , getNWSTMVar
                         , getPlaColumns
+                        , getPlaLogQueue
                         , getUnusedId
                         , getWS
                         , getWSTMVar
@@ -120,6 +121,10 @@ getLogAsyncs = helper <$> gets (^.nonWorldState.logServices)
     helper ls = let Just (nla, _) = ls^.noticeLog
                     Just (ela, _) = ls^.errorLog
                 in (nla, ela)
+
+
+getPlaLogQueue :: Id -> MudStack LogQueue
+getPlaLogQueue i = snd . (! i) <$> getNWS plaLogsTblTMVar
 
 
 -- ============================================================

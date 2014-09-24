@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RankNTypes #-}
 
 module Mud.Logging ( closeLogs
+                   , closePlaLog
                    , initLogging
                    , initPlaLog
                    , logAndDispIOEx
@@ -9,7 +10,8 @@ module Mud.Logging ( closeLogs
                    , logExMsg
                    , logIOEx
                    , logIOExRethrow
-                   , logNotice ) where
+                   , logNotice
+                   , logPla ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -41,8 +43,12 @@ closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs"
     [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> getLog noticeLog, fromJust <$> getLog errorLog ]
-    forM_ [ nq, eq ] $ liftIO . atomically . flip writeTQueue Stop
+    forM_ [ nq, eq ] stopLog
     liftIO . void . waitBoth na $ ea
+
+
+stopLog :: LogQueue -> MudStack ()
+stopLog = liftIO . atomically . flip writeTQueue Stop
 
 
 initLogging :: MudStack ()
@@ -110,3 +116,13 @@ initPlaLog i n = do
     q <- liftIO newTQueueIO
     a <- liftIO . spawnLogger (T.unpack $ n <> ".log") INFO (T.unpack $ "currymud." <> n) infoM $ q
     modifyNWS plaLogsTblTMVar $ \plt -> plt & at i ?~ (a, q)
+
+
+logPla :: String -> String -> Id -> String -> MudStack ()
+logPla modName funName i msg = helper =<< getPlaLogQueue i
+  where
+    helper = registerMsg (concat [ modName, " ", funName, ": ", msg, "." ])
+
+
+closePlaLog :: Id -> MudStack ()
+closePlaLog i = stopLog =<< getPlaLogQueue i

@@ -4,7 +4,7 @@
 module Mud.Cmds (topLvlWrapper) where
 
 import Mud.Ids
-import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
+import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla)
 import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
@@ -13,7 +13,7 @@ import Mud.StateInIORefT
 import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice)
+import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
@@ -39,7 +39,7 @@ import Data.Text.Strict.Lens (packed)
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
 import GHC.Conc (threadStatus, ThreadStatus(..))
-import Network (accept, listenOn, PortID(..), sClose)
+import Network (accept, HostName, listenOn, PortID(..), sClose)
 import Prelude hiding (pi)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
@@ -99,6 +99,10 @@ logIOExRethrow = L.logIOExRethrow "Mud.Cmds"
 
 logExMsg :: String -> String -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Cmds"
+
+
+logPla :: String -> Id -> String -> MudStack ()
+logPla = L.logPla "Mud.Cmds"
 
 
 -- ==================================================
@@ -201,7 +205,7 @@ listen = do
         (h, host, port') <- liftIO . accept $ sock
         logNotice "listen loop" . concat $ [ "connected to ", show host, " on local port ", show port' ]
         s <- get
-        liftIO $ forkFinally (runStateInIORefT (talk h) s) (\_ -> hClose h)
+        liftIO $ forkFinally (runStateInIORefT (talk h host) s) (\_ -> hClose h)
     cleanUp sock = logNotice "listen cleanUp" "closing the socket" >> (liftIO . sClose $ sock)
 
 
@@ -212,14 +216,15 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
         in putTMVar t tt'
 
 
-talk :: Handle -> MudStack ()
-talk h = do
+talk :: Handle -> HostName -> MudStack ()
+talk h host = do
     registerThread Talk
     liftIO configBuffer
     mq     <- liftIO newTQueueIO
-    (i, _) <- adHoc mq
+    (i, n) <- adHoc mq
     logNotice "talk" $ "new ID for incoming player: " ++ show i
-    --initPlaLog i n
+    initPlaLog i n
+    logPla "talk" i $ "logged on from " ++ host
     dumpTitle mq
     prompt mq "> "
     notifyArrival i
@@ -1470,6 +1475,8 @@ quit (_, mq, cols) _  = send mq . nl . T.unlines . wordWrap cols $ "Type " <> db
 handleQuit :: Id -> MudStack ()
 handleQuit i = do
     logNotice "handleQuit" $ "player " <> show i <> " has quit"
+    logPla "handleQuit" i "player quit"
+    closePlaLog i
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSTMVar msgQueueTblTMVar
     ptTMVar  <- getNWSTMVar plaTblTMVar
