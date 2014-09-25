@@ -2,11 +2,10 @@ name:                  currymud
 version:               0.1.0.0
 synopsis:              A Multi-User Dungeon server.
 description:           A text-based multiplayer real-time virtual world implemented over the Telnet protocol.
--- license:               
--- license-file:          LICENSE
-author:                Jason P. Stolaruk
+license-file:          LICENSE
+author:                Jason Stolaruk
 maintainer:            jasonstolaruk@gmail.com
--- copyright:             
+copyright:             Jason Stolaruk and Detroit Labs LLC
 category:              Game
 build-type:            Simple
 cabal-version:         >=1.10
