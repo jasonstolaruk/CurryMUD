@@ -1,22 +1,6 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-{-
-Copyright 2014 Jason Stolaruk and Detroit Labs LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
--}
-
 -- This module is considered to have sufficient test coverage as of 2014-09-13.
 
 module Mud.TheWorld ( initMudState
@@ -34,9 +18,10 @@ import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
 import qualified Data.IntMap.Lazy as IM (empty, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
+import qualified Data.Text as T
 
 
-logNotice :: String -> String -> MudStack ()
+logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld"
 
 
@@ -51,10 +36,9 @@ initMudState = do
     ttTMVar  <- newTMVarIO M.empty
     mqtTMVar <- newTMVarIO IM.empty
     ptTMVar  <- newTMVarIO IM.empty
-    return (MudState wsTMVar . nws pltTMVar ttTMVar mqtTMVar $ ptTMVar)
+    return (MudState wsTMVar . NonWorldState Nothing Nothing pltTMVar ttTMVar mqtTMVar $ ptTMVar)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
-    nws = NonWorldState (LogServices Nothing Nothing)
 
 
 initWorld :: MudStack ()

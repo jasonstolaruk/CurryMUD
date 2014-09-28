@@ -1,28 +1,11 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
 
-{-
-Copyright 2014 Jason Stolaruk and Detroit Labs LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
--}
-
 module Mud.StateHelpers ( allKeys
                         , BothGramNos
                         , broadcast
                         , findPCIds
                         , getEntBothGramNos
-                        , getLog
                         , getLogAsyncs
                         , getNWS
                         , getNWSTMVar
@@ -127,16 +110,12 @@ modifyNWS lens f = liftIO . atomically . transaction =<< getNWSTMVar lens
     transaction t = takeTMVar t >>= putTMVar t . f
 
 
-getLog :: forall a (m :: * -> *). MonadState MudState m => ((a -> Const a a) -> LogServices -> Const a LogServices) -> m a
-getLog l = gets (^.nonWorldState.logServices.l)
-
-
 getLogAsyncs :: MudStack (LogAsync, LogAsync)
-getLogAsyncs = helper <$> gets (^.nonWorldState.logServices)
+getLogAsyncs = helper <$> gets (^.nonWorldState)
   where
-    helper ls = let Just (nla, _) = ls^.noticeLog
-                    Just (ela, _) = ls^.errorLog
-                in (nla, ela)
+    helper nws = let Just (nla, _) = nws^.noticeLog
+                     Just (ela, _) = nws^.errorLog
+                 in (nla, ela)
 
 
 getPlaLogQueue :: Id -> MudStack LogQueue

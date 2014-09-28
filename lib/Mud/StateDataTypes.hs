@@ -1,32 +1,17 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 
-{-
-Copyright 2014 Jason Stolaruk and Detroit Labs LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
--}
-
 module Mud.StateDataTypes where
 
 import Mud.StateInIORefT
 
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
-import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Concurrent.STM.TMVar (TMVar)
+import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (lens, Lens', makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
+import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
@@ -324,7 +309,8 @@ data Type = ObjType
 -- Non-world state:
 
 
-data NonWorldState = NonWorldState { _logServices      :: LogServices
+data NonWorldState = NonWorldState { _noticeLog        :: Maybe LogService
+                                   , _errorLog         :: Maybe LogService
                                    , _plaLogsTblTMVar  :: TMVar (IM.IntMap LogService)
                                    , _threadTblTMVar   :: TMVar ThreadTbl
                                    , _msgQueueTblTMVar :: TMVar (IM.IntMap MsgQueue)
@@ -335,16 +321,13 @@ data NonWorldState = NonWorldState { _logServices      :: LogServices
 -- Log services:
 
 
-data LogCmd      = Stop | Msg String
+data LogCmd     = Stop | Msg T.Text
 
-type LogAsync    = Async ()
+type LogAsync   = Async ()
 
-type LogQueue    = TQueue LogCmd
+type LogQueue   = TQueue LogCmd
 
-type LogService  = (LogAsync, LogQueue)
-
-data LogServices = LogServices { _noticeLog :: Maybe LogService
-                               , _errorLog  :: Maybe LogService }
+type LogService = (LogAsync, LogQueue)
 
 
 -- ==================================================
@@ -380,7 +363,8 @@ data Msg = FromServer T.Text
 -- Player:
 
 
-data Pla = Pla { _columns :: Int }
+data Pla = Pla { _hostName :: HostName
+               , _columns :: Int }
 
 
 -- ==================================================
@@ -400,5 +384,4 @@ makeLenses ''Rm
 makeLenses ''RmLink
 
 makeLenses ''NonWorldState
-makeLenses ''LogServices
 makeLenses ''Pla

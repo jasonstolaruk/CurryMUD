@@ -1,26 +1,10 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-{-
-Copyright 2014 Jason Stolaruk and Detroit Labs LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
--}
-
 module Mud.Cmds (topLvlWrapper) where
 
 import Mud.Ids
-import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla)
+import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs)
 import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
@@ -29,7 +13,7 @@ import Mud.StateInIORefT
 import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla)
+import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
@@ -65,10 +49,12 @@ import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
+import qualified Data.IntMap.Lazy as IM (elems, keys)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
+
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -97,28 +83,36 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds"
 
 
-logNotice :: String -> String -> MudStack ()
+logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds"
 
 
-logIOEx :: String -> IOException -> MudStack ()
+logIOEx :: T.Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds"
 
 
-logAndDispIOEx :: MsgQueue -> Cols -> String -> IOException -> MudStack ()
+logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols = L.logAndDispIOEx mq cols "Mud.Cmds"
 
 
-logIOExRethrow :: String -> IOException -> MudStack ()
+logIOExRethrow :: T.Text -> IOException -> MudStack ()
 logIOExRethrow = L.logIOExRethrow "Mud.Cmds"
 
 
-logExMsg :: String -> String -> SomeException -> MudStack ()
+logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Cmds"
 
 
-logPla :: String -> Id -> String -> MudStack ()
+logPla :: T.Text -> Id -> T.Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds"
+
+
+logPlaExec :: CmdName -> Id -> MudStack ()
+logPlaExec = L.logPlaExec "Mud.Cmds"
+
+
+logPlaExecArgs :: CmdName -> Rest -> Id -> MudStack ()
+logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds"
 
 
 -- ==================================================
@@ -200,26 +194,26 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
                     in case fromException e of
                       Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt"
                       Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed"
-                      Just _             -> (oops $ showIt ++ " caught by the top level handler; rethrowing") >> throwIO e
+                      Just _             -> (oops $ showIt <> " caught by the top level handler; rethrowing") >> throwIO e
                       Nothing            -> oops "exception caught by the top level handler; exiting gracefully"  >> liftIO exitFailure
   where
-    showIt = dblQuoteStr . show $ e
+    showIt = dblQuote . showText $ e
 
 
 listen :: MudStack ()
 listen = do
     registerThread Listen
     listInterfaces
-    logNotice "listen" $ "listening for incoming connections on port " ++ show port
+    logNotice "listen" $ "listening for incoming connections on port " <> showText port
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
     (forever . loop $ sock) `finally` cleanUp sock
   where
     listInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
-        let ifList = intercalate ", " $ [ concat [ "[", show . NI.name $ n, ": ", show . NI.ipv4 $ n, "]" ] | n <- ns ]
-        in logNotice "listen listInterfaces" $ "server network interfaces: " ++ ifList
+        let ifList = T.intercalate ", " $ [ T.concat [ "[", showText . NI.name $ n, ": ", showText . NI.ipv4 $ n, "]" ] | n <- ns ]
+        in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList
     loop sock = do
         (h, host, port') <- liftIO . accept $ sock
-        logNotice "listen loop" . concat $ [ "connected to ", show host, " on local port ", show port' ]
+        logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port' ]
         s <- get
         liftIO $ forkFinally (runStateInIORefT (talk h host) s) (\_ -> hClose h)
     cleanUp sock = logNotice "listen cleanUp" "closing the socket" >> (liftIO . sClose $ sock)
@@ -237,10 +231,10 @@ talk h host = do
     registerThread Talk
     liftIO configBuffer
     mq     <- liftIO newTQueueIO
-    (i, n) <- adHoc mq
-    logNotice "talk" $ "new ID for incoming player: " ++ show i
+    (i, n) <- adHoc mq host
+    logNotice "talk" $ "new ID for incoming player: " <> showText i
     initPlaLog i n
-    logPla "talk" i $ "logged on from " ++ host
+    logPla "talk" i $ "logged on from " <> T.pack host
     dumpTitle mq
     prompt mq "> "
     notifyArrival i
@@ -251,8 +245,8 @@ talk h host = do
     configBuffer = hSetNewlineMode h universalNewlineMode >> hSetBuffering h LineBuffering
 
 
-adHoc :: MsgQueue -> MudStack (Id, Sing)
-adHoc mq = do
+adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
+adHoc mq host = do
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSTMVar msgQueueTblTMVar
     ptTMVar  <- getNWSTMVar plaTblTMVar
@@ -271,7 +265,7 @@ adHoc mq = do
         let pc  = PC iHill Human
         let ris = i : (ws^.invTbl) ! iHill
         -----
-        let pla = Pla 80
+        let pla = Pla host 80
         -----
         let ws'  = ws  & typeTbl.at  i     ?~ PCType
                        & entTbl.at   i     ?~ e
@@ -301,7 +295,7 @@ dumpTitle mq = liftIO newStdGen >>= \g ->
     takeADump fn = send mq =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
 
 
-readFileExHandler :: String -> IOException -> MudStack ()
+readFileExHandler :: T.Text -> IOException -> MudStack ()
 readFileExHandler fn e
   | isDoesNotExistError e = logIOEx fn e
   | isPermissionError   e = logIOEx fn e
@@ -437,7 +431,9 @@ linkDirToCmdName Down      = "d"
 
 
 about :: Action
-about (_, mq, cols) [] = try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
+about (i, mq, cols) [] = do
+    try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
+    logPlaExec "about" i
   where
     helper = send mq . nl . T.unlines . concatMap (wordWrap cols) . T.lines =<< (liftIO . T.readFile . (miscDir ++) $ "about")
 about mic@(_, mq, cols) rs = ignore mq cols rs >> about mic []
@@ -457,7 +453,7 @@ ignore mq cols rs = let ignored = dblQuote . T.unwords $ rs
 
 -- TODO: Automatically execute this cmd after a user authenticates.
 motd :: Action
-motd     (_, mq, cols) [] = send mq =<< getMotdTxt cols
+motd     (i, mq, cols) [] = (send mq =<< getMotdTxt cols) >> logPlaExec "motd" i
 motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
 
 
@@ -472,7 +468,7 @@ getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler
 
 
 plaDispCmdList :: Action
-plaDispCmdList = dispCmdList (cmdPred Nothing)
+plaDispCmdList imc@(i, _, _) rs = dispCmdList (cmdPred Nothing) imc rs >> logPlaExecArgs "?" rs i
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
@@ -1490,7 +1486,7 @@ quit (_, mq, cols) _  = send mq . nl . T.unlines . wordWrap cols $ "Type " <> db
 
 handleQuit :: Id -> MudStack ()
 handleQuit i = do
-    logNotice "handleQuit" $ "player " <> show i <> " has quit"
+    logNotice "handleQuit" $ "player " <> showText i <> " has quit"
     logPla "handleQuit" i "player quit"
     closePlaLog i
     wsTMVar  <- getWSTMVar
@@ -1525,7 +1521,7 @@ handleQuit i = do
 
 
 wizDispCmdList :: Action
-wizDispCmdList = dispCmdList (cmdPred . Just $ wizCmdChar)
+wizDispCmdList imc@(i, _, _) rs = dispCmdList (cmdPred . Just $ wizCmdChar) imc rs >> logPlaExecArgs (prefixWizCmd "?") rs i
 
 
 -----
@@ -1568,7 +1564,7 @@ wizDay imc@(_, mq, cols) rs = ignore mq cols rs >> wizDay imc []
 
 
 debugDispCmdList :: Action
-debugDispCmdList = dispCmdList (cmdPred . Just $ debugCmdChar)
+debugDispCmdList imc@(i, _, _) rs = dispCmdList (cmdPred . Just $ debugCmdChar) imc rs >> logPlaExecArgs (prefixDebugCmd "?") rs i
 
 
 -----
@@ -1607,7 +1603,7 @@ debugLog :: Action
 debugLog (_, mq, _) [] = helper >> ok mq
   where
     helper       = replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get
-    heavyLogging = replicateM_ 100 . logNotice "debugLog" . ("Logging from " ++) . show =<< liftIO myThreadId
+    heavyLogging = replicateM_ 100 . logNotice "debugLog" . ("Logging from " <>) . showText =<< liftIO myThreadId
 debugLog imc@(_, mq, cols) rs = ignore mq cols rs >> debugLog imc []
 
 
@@ -1629,13 +1625,15 @@ debugSniff :: Action
 debugSniff (_, mq, cols) [] = do
     (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
     kvs <- M.assocs <$> getNWS threadTblTMVar
-    ds  <- mapM mkDesc $ head kvs : (nli, Notice) : (eli, Error) : tail kvs
+    plt <- getNWS plaLogsTblTMVar
+    ds  <- mapM mkDesc $ head kvs : (nli, Notice) : (eli, Error) : tail kvs ++ zip (map (asyncThreadId . fst) . IM.elems $ plt) (map PlaLog . IM.keys $ plt)
     let msg = T.unlines . concatMap (wordWrap cols) $ ds
     send mq . nl $ divider <> msg <> divider
   where
     mkDesc (k, v) = (liftIO . threadStatus $ k) >>= \s ->
         return . T.concat $ [ showText k, " ", bracketPad 15 . mkTypeName $ v, showText s ]
     mkTypeName (Server i) = "Server  " <> showText i
+    mkTypeName (PlaLog i) = "PlaLog  " <> showText i
     mkTypeName t          = showText t
     divider               = nl . mkDividerTxt $ cols
 debugSniff imc@(_, mq, cols) rs = ignore mq cols rs >> debugSniff imc []
