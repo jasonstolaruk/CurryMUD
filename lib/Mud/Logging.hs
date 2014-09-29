@@ -27,17 +27,21 @@ import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (throwIO)
 import Control.Lens (at)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
+import Control.Monad (when, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
 import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
+import Data.Time (getZonedTime)
+import System.Directory (doesFileExist, renameFile)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
 import System.Log.Handler.Simple (fileHandler)
-import System.Log.Logger (errorM, infoM, noticeM, setHandlers, setLevel, updateGlobalLogger)
+import System.Log.Logger (errorM, infoM, noticeM, setHandlers, setLevel, removeAllHandlers, updateGlobalLogger)
+import System.Posix.Files (fileSize, getFileStatus)
 import qualified Data.IntMap.Lazy as IM (elems)
 import qualified Data.Text as T
 
@@ -49,6 +53,7 @@ closeLogs = do
     ls <- IM.elems <$> getNWS plaLogsTblTMVar
     mapM_ stopLog $ nq : eq : map snd ls
     mapM_ (liftIO . wait) $ na : ea : map fst ls
+    liftIO removeAllHandlers
 
 
 stopLog :: LogQueue -> MudStack ()
@@ -72,14 +77,31 @@ type LoggingFun = String -> String -> IO ()
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
 spawnLogger fn p ln f q = async . loop =<< initLog
   where
-    initLog = do
-        gh <- fileHandler (logDir ++ fn) p
-        let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
-        updateGlobalLogger (T.unpack ln) (setHandlers [h] . setLevel p)
-        return gh
+    initLog = let fn' = logDir ++ fn
+              in do
+                  rotateLog fn'
+                  gh <- fileHandler fn' p
+                  let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
+                  updateGlobalLogger (T.unpack ln) (setHandlers [h] . setLevel p)
+                  return gh
     loop gh = (atomically . readTQueue $ q) >>= \case
       Stop  -> close gh
       Msg m -> f (T.unpack ln) (T.unpack m) >> loop gh
+
+
+rotateLog :: FilePath -> IO () -- TODO: Handle exceptions.
+rotateLog fn = doesFileExist fn >>= \doesExist -> when doesExist $ do
+    fs <- fileSize <$> getFileStatus fn
+    unless (fs < maxLogSize) rotateIt
+  where
+    rotateIt = getZonedTime >>= \t ->
+        let wordy = words . show $ t
+            date  = head wordy
+            time  = map replaceColons . init . reverse . dropWhile (/= '.') . reverse . head . tail $ wordy
+        in renameFile fn $ concat [ dropExt fn, ".", date, "_", time, ".log" ]
+    replaceColons ':' = '-'
+    replaceColons x   = x
+    dropExt           = reverse . drop 4 . reverse
 
 
 registerMsg :: T.Text -> LogQueue -> MudStack ()

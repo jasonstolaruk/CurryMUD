@@ -7,6 +7,7 @@ import Mud.StateDataTypes
 
 import System.Environment (getEnv)
 import System.IO.Unsafe (unsafePerformIO)
+import System.Posix.Types (FileOffset)
 import qualified Data.Text as T
 
 
@@ -39,6 +40,10 @@ miscDir  = resDir ++ "misc/"
 
 noOfTitles :: Int
 noOfTitles = 33
+
+
+maxLogSize :: FileOffset
+maxLogSize = 2000
 
 
 allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizCmdChar, debugCmdChar :: Char

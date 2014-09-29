@@ -73,7 +73,8 @@ library
                        text >=1.1 && <2.0,
                        time >=1.4 && <2.0,
                        transformers >=0.4 && <0.5,
-                       transformers-base >=0.4 && <0.5
+                       transformers-base >=0.4 && <0.5,
+                       unix >=2.7 && <3.0
   hs-source-dirs:      lib
 
 test-suite             test
