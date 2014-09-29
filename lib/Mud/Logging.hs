@@ -13,7 +13,8 @@ module Mud.Logging ( closeLogs
                    , logNotice
                    , logPla
                    , logPlaExec
-                   , logPlaExecArgs ) where
+                   , logPlaExecArgs
+                   , logPlaOut ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -77,18 +78,19 @@ type LoggingFun = String -> String -> IO ()
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
 spawnLogger fn p ln f q = async . loop =<< initLog
   where
-    initLog = let fn' = logDir ++ fn
-              in do
-                  rotateLog fn'
-                  gh <- fileHandler fn' p
-                  let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
-                  updateGlobalLogger (T.unpack ln) (setHandlers [h] . setLevel p)
-                  return gh
+    fn'     = logDir ++ fn
+    initLog = do
+        rotateLog fn'
+        gh <- fileHandler fn' p
+        let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
+        updateGlobalLogger (T.unpack ln) (setHandlers [h] . setLevel p)
+        return gh
     loop gh = (atomically . readTQueue $ q) >>= \case
       Stop  -> close gh
       Msg m -> f (T.unpack ln) (T.unpack m) >> loop gh
 
 
+-- TODO: Consider writing a function that can periodically be called to rotate the notice and error logs on the fly.
 rotateLog :: FilePath -> IO () -- TODO: Handle exceptions.
 rotateLog fn = doesFileExist fn >>= \doesExist -> when doesExist $ do
     fs <- fileSize <$> getFileStatus fn
@@ -159,6 +161,12 @@ logPlaExecArgs modName cn rs i = logPla modName cn i $ "executed " <> helper
   where
     helper = case rs of [] -> dblQuote cn <> " with no arguments"
                         _  -> dblQuote . T.intercalate " " $ cn : rs
+
+
+logPlaOut :: T.Text -> T.Text -> Id -> [T.Text] -> MudStack ()
+logPlaOut modName funName i msgs = helper =<< getPlaLogQueue i
+  where
+    helper = registerMsg (T.concat [ modName, " ", funName, " (output): ", T.intercalate " / " msgs ])
 
 
 closePlaLog :: Id -> MudStack ()

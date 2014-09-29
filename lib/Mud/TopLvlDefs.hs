@@ -43,7 +43,7 @@ noOfTitles = 33
 
 
 maxLogSize :: FileOffset
-maxLogSize = 2000
+maxLogSize = 100000
 
 
 allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizCmdChar, debugCmdChar :: Char

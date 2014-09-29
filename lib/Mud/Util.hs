@@ -13,6 +13,7 @@ module Mud.Util ( adjustIndent
                 , dblQuote
                 , dblQuoteStr
                 , deleteFirstOfEach
+                , dropBlanks
                 , eitherRet
                 , findFullNameForAbbrev
                 , grepTextList
@@ -271,6 +272,12 @@ countOcc needle = foldl' (\acc x -> if x == needle then succ acc else acc) 0
 
 deleteFirstOfEach :: (Eq a) => [a] -> [a] -> [a]
 deleteFirstOfEach delThese fromThis = foldl' (flip delete) fromThis delThese
+
+
+dropBlanks :: [T.Text] -> [T.Text]
+dropBlanks []      = []
+dropBlanks ("":xs) =     dropBlanks xs
+dropBlanks ( x:xs) = x : dropBlanks xs
 
 
 mkOrdinal :: Int -> T.Text

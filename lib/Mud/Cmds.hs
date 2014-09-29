@@ -4,7 +4,7 @@
 module Mud.Cmds (topLvlWrapper) where
 
 import Mud.Ids
-import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs)
+import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
@@ -13,7 +13,7 @@ import Mud.StateInIORefT
 import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs)
+import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
@@ -113,6 +113,10 @@ logPlaExec = L.logPlaExec "Mud.Cmds"
 
 logPlaExecArgs :: CmdName -> Rest -> Id -> MudStack ()
 logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds"
+
+
+logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
+logPlaOut = L.logPlaOut "Mud.Cmds"
 
 
 -- ==================================================
@@ -638,16 +642,14 @@ look (i, mq, cols) rs = getWS >>= \ws ->
         ri = p^.rmId
         is = delete i . (! ri) $ ws^.invTbl
         c  = (ws^.coinsTbl) ! ri
-    in do
-        logPlaExecArgs "look" rs i
-        send mq $ if (not . null $ is) || (c /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
-                   eiss               = zipWith (curry procGecrMisRm) gecrs miss
-                   ecs                = map procReconciledCoinsRm rcs
-                   invDesc            = foldl' (helperLookEitherInv ws) "" eiss
-                   coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-               in invDesc <> coinsDesc
-          else nl . T.unlines . wordWrap cols $ "You don't see anything here to look at."
+    in send mq $ if (not . null $ is) || (c /= mempty)
+      then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
+               eiss               = zipWith (curry procGecrMisRm) gecrs miss
+               ecs                = map procReconciledCoinsRm rcs
+               invDesc            = foldl' (helperLookEitherInv ws) "" eiss
+               coinsDesc          = foldl' helperLookEitherCoins    "" ecs
+           in invDesc <> coinsDesc
+      else nl . T.unlines . wordWrap cols $ "You don't see anything here to look at."
   where
     helperLookEitherInv _  acc (Left  msg) = nl $ acc <> msg
     helperLookEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
@@ -849,7 +851,8 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 getAction :: Action
 getAction (_, mq, cols) [] = advise mq cols ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
-getAction (i, mq, cols) rs = send mq . nl =<< helper
+getAction (i, mq, cols) rs = helper >>= \(msg, logMsgs) ->
+    logPlaOut "getAction" i logMsgs >> (send mq . nl $ msg)
   where
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl) ! i
@@ -857,13 +860,15 @@ getAction (i, mq, cols) rs = send mq . nl =<< helper
             ris = delete i . (! ri) $ ws^.invTbl
             rc  = (ws^.coinsTbl) ! ri
         in if (not . null $ ris) || (rc /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) ris rc
-                   eiss               = zipWith (curry procGecrMisRm) gecrs miss
-                   ecs                = map procReconciledCoinsRm rcs
-                   (ws',  msgs)       = foldl' (helperGetDropEitherInv   cols Get ri i) (ws, "")    eiss
-                   (ws'', msgs')      = foldl' (helperGetDropEitherCoins      Get ri i) (ws', msgs) ecs
-               in putTMVar t ws'' >> return msgs'
-          else putTMVar t ws >> (return . T.unlines . wordWrap cols $ "You don't see anything here to pick up.")
+          then let (gecrs, miss, rcs)     = resolveEntCoinNames ws (nub . map T.toLower $ rs) ris rc
+                   eiss                   = zipWith (curry procGecrMisRm) gecrs miss
+                   ecs                    = map procReconciledCoinsRm rcs
+                   (ws',  msg,  logMsgs ) = foldl' (helperGetDropEitherInv   cols Get ri i) (ws,  "",  []     ) eiss
+                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins      Get ri i) (ws', msg, logMsgs) ecs
+               in putTMVar t ws'' >> return (msg', logMsgs')
+          else do
+              putTMVar t ws
+              return (T.unlines . wordWrap cols $ "You don't see anything here to pick up.", [])
 
 
 advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
@@ -878,19 +883,20 @@ type FromId = Id
 type ToId   = Id
 
 
-helperGetDropEitherInv :: Cols -> GetOrDrop -> FromId -> ToId -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
-helperGetDropEitherInv cols god fi ti (ws, msgs) = \case
-  Left  msg -> (ws, msgs <> msg)
-  Right is  -> let fis = (ws^.invTbl) ! fi
-                   tis = (ws^.invTbl) ! ti
-                   ws' = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
-                            & invTbl.at ti ?~ (sortInv ws . (++) tis $ is)
-                   msg = mkGetDropInvDesc cols ws' god is
-               in (ws', msgs <> msg)
+helperGetDropEitherInv :: Cols -> GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
+helperGetDropEitherInv cols god fi ti (ws, msg, logMsgs) = \case
+  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Right is   -> let fis              = (ws^.invTbl) ! fi
+                    tis              = (ws^.invTbl) ! ti
+                    ws'              = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
+                                          & invTbl.at ti ?~ (sortInv ws . (++) tis $ is)
+                    (msg', logMsgs') = mkGetDropInvDesc cols ws' god is
+                in (ws', msg <> msg', logMsgs ++ logMsgs')
 
 
-mkGetDropInvDesc :: Cols -> WorldState -> GetOrDrop -> Inv -> T.Text
-mkGetDropInvDesc cols ws god is = T.concat . map (T.unlines . wordWrap cols . helper) . mkNameCountBothList ws $ is
+mkGetDropInvDesc :: Cols -> WorldState -> GetOrDrop -> Inv -> (T.Text, [T.Text])
+mkGetDropInvDesc cols ws god is = let msgs = map helper . mkNameCountBothList ws $ is
+                                  in (T.concat . map (T.unlines . wordWrap cols) $ msgs, msgs)
   where
     helper (_, c, (s, _)) | c == 1 = T.concat [ "You ", verb god, " the ", s, "." ]
     helper (_, c, b)               = T.concat [ "You ", verb god, " ", showText c, " ", mkPlurFromBoth b, "." ]
@@ -898,27 +904,33 @@ mkGetDropInvDesc cols ws god is = T.concat . map (T.unlines . wordWrap cols . he
                  Drop -> "drop"
 
 
-helperGetDropEitherCoins :: GetOrDrop -> FromId -> ToId -> (WorldState, T.Text) -> Either T.Text Coins -> (WorldState, T.Text)
-helperGetDropEitherCoins god fi ti (ws, msgs) = \case
-  Left  msg -> (ws, msgs <> msg)
-  Right c   -> let fc  = (ws^.coinsTbl) ! fi
-                   tc  = (ws^.coinsTbl) ! ti
-                   ws' = ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                            & coinsTbl.at ti ?~ tc <> c
-                   msg = mkGetDropCoinsDesc god c
-               in (ws', msgs <> msg)
+helperGetDropEitherCoins :: GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either T.Text Coins -> (WorldState, T.Text, [T.Text])
+helperGetDropEitherCoins god fi ti (ws, msg, logMsgs) = \case
+  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Right c   -> let fc               = (ws^.coinsTbl) ! fi
+                   tc               = (ws^.coinsTbl) ! ti
+                   ws'              = ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                                         & coinsTbl.at ti ?~ tc <> c
+                   (msg', logMsgs') = mkGetDropCoinsDesc god c
+               in (ws', msg <> msg', logMsgs ++ logMsgs')
 
 
-mkGetDropCoinsDesc :: GetOrDrop -> Coins -> T.Text
-mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [ c, s, g ]
+mkGetDropCoinsDesc :: GetOrDrop -> Coins -> (T.Text, [T.Text])
+mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = (T.concat . mkPlaMsgs $ [ c, s, g ], mkLogMsgs [ c, s, g ])
   where
-    c = if cop /= 0 then helper cop "copper piece" else ""
-    s = if sil /= 0 then helper sil "silver piece" else ""
-    g = if gol /= 0 then helper gol "gold piece"   else ""
-    helper a cn | a == 1 = T.concat [ "You ", verb god, " a ", cn, ".\n" ]
-    helper a cn          = T.concat [ "You ", verb god, " ", showText a, " ", cn, "s.\n" ]
+    c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
+    s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
+    g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
+    helper a cn | a == 1 = T.concat [ "You ", verb god, " a ", cn, "." ]
+    helper a cn          = T.concat [ "You ", verb god, " ", showText a, " ", cn, "s." ]
     verb = \case Get  -> "pick up"
                  Drop -> "drop"
+    mkPlaMsgs []            = []
+    mkPlaMsgs ( Nothing:xs) = mkPlaMsgs xs
+    mkPlaMsgs ((Just x):xs) = nl x : mkPlaMsgs xs
+    mkLogMsgs []            = []
+    mkLogMsgs ( Nothing:xs) = mkLogMsgs xs
+    mkLogMsgs ((Just x):xs) = x : mkLogMsgs xs
 
 
 -----
@@ -926,7 +938,8 @@ mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = T.concat [ c, s, g ]
 
 dropAction :: Action
 dropAction (_, mq, cols) [] = advise mq cols ["drop"] $ "Please specify one or more things to drop, as in " <> dblQuote "drop sword" <> "."
-dropAction (i, mq, cols) rs = send mq . nl =<< helper
+dropAction (i, mq, cols) rs = helper >>= \(msg, logMsgs) ->
+    logPlaOut "dropAction" i logMsgs >> (send mq . nl $ msg)
   where
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl)    ! i
@@ -934,13 +947,15 @@ dropAction (i, mq, cols) rs = send mq . nl =<< helper
             pc  = (ws^.coinsTbl) ! i
             ri  = p^.rmId
         in if (not . null $ pis) || (pc /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) pis pc
-                   eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
-                   ecs                = map procReconciledCoinsPCInv rcs
-                   (ws',  msgs)       = foldl' (helperGetDropEitherInv   cols Drop i ri) (ws, "")    eiss
-                   (ws'', msgs')      = foldl' (helperGetDropEitherCoins      Drop i ri) (ws', msgs) ecs
-               in putTMVar t ws'' >> return msgs'
-          else putTMVar t ws >> (return . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty)
+          then let (gecrs, miss, rcs)     = resolveEntCoinNames ws (nub . map T.toLower $ rs) pis pc
+                   eiss                   = zipWith (curry procGecrMisPCInv) gecrs miss
+                   ecs                    = map procReconciledCoinsPCInv rcs
+                   (ws',  msg,  logMsgs ) = foldl' (helperGetDropEitherInv   cols Drop i ri) (ws,  "",  []     ) eiss
+                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins      Drop i ri) (ws', msg, logMsgs) ecs
+               in putTMVar t ws'' >> return (msg', logMsgs')
+          else do
+              putTMVar t ws
+              return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty, [])
 
 
 -----
@@ -1531,13 +1546,13 @@ handleQuit i = do
 
 
 wizDispCmdList :: Action
-wizDispCmdList imc@(i, _, _) rs = dispCmdList (cmdPred . Just $ wizCmdChar) imc rs >> logPlaExecArgs (prefixWizCmd "?") rs i
+wizDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixWizCmd "?") rs i >> dispCmdList (cmdPred . Just $ wizCmdChar) imc rs
 
 
 -----
 
 
-wizShutdown :: Action
+wizShutdown :: Action -- TODO: Send a msg to all players. Indicate normal shutdown in all player logs.
 wizShutdown (_, mq, _   ) [] = logNotice "wizShutdown" "shutting down" >> (liftIO . atomically . writeTQueue mq $ Shutdown)
 wizShutdown (_, mq, cols) _  = send mq . nl . T.unlines . wordWrap cols $  "Type " <> quoted <> " with no arguments to shut down the game server."
   where
@@ -1574,7 +1589,7 @@ wizDay imc@(_, mq, cols) rs = ignore mq cols rs >> wizDay imc []
 
 
 debugDispCmdList :: Action
-debugDispCmdList imc@(i, _, _) rs = dispCmdList (cmdPred . Just $ debugCmdChar) imc rs >> logPlaExecArgs (prefixDebugCmd "?") rs i
+debugDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixDebugCmd "?") rs i >> dispCmdList (cmdPred . Just $ debugCmdChar) imc rs
 
 
 -----
