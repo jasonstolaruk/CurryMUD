@@ -194,8 +194,8 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
                     in case fromException e of
                       Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt"
                       Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed"
-                      Just _             -> (oops $ showIt <> " caught by the top level handler; rethrowing") >> throwIO e
-                      Nothing            -> oops "exception caught by the top level handler; exiting gracefully"  >> liftIO exitFailure
+                      Just _             -> (oops $ showIt <> " caught by the top level handler; rethrowing")    >> throwIO e
+                      Nothing            -> oops "exception caught by the top level handler; exiting gracefully" >> liftIO exitFailure
   where
     showIt = dblQuote . showText $ e
 
@@ -432,8 +432,8 @@ linkDirToCmdName Down      = "d"
 
 about :: Action
 about (i, mq, cols) [] = do
-    try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
     logPlaExec "about" i
+    try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
     helper = send mq . nl . T.unlines . concatMap (wordWrap cols) . T.lines =<< (liftIO . T.readFile . (miscDir ++) $ "about")
 about mic@(_, mq, cols) rs = ignore mq cols rs >> about mic []
@@ -453,7 +453,7 @@ ignore mq cols rs = let ignored = dblQuote . T.unwords $ rs
 
 -- TODO: Automatically execute this cmd after a user authenticates.
 motd :: Action
-motd     (i, mq, cols) [] = (send mq =<< getMotdTxt cols) >> logPlaExec "motd" i
+motd     (i, mq, cols) [] = logPlaExec "motd" i >> (send mq =<< getMotdTxt cols)
 motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
 
 
@@ -468,7 +468,7 @@ getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler
 
 
 plaDispCmdList :: Action
-plaDispCmdList imc@(i, _, _) rs = dispCmdList (cmdPred Nothing) imc rs >> logPlaExecArgs "?" rs i
+plaDispCmdList imc@(i, _, _) rs = logPlaExecArgs "?" rs i >> dispCmdList (cmdPred Nothing) imc rs
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
@@ -491,24 +491,26 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 
 
 help :: Action
-help (_, mq, cols) [] = try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
+help (i, mq, cols) [] = do
+    try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
+    logPla "help" i $ "read the root help file"
   where
     helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
-help (_, mq, cols) rs = send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
+help (i, mq, cols) rs = send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
   where
-    getTopics = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName cols r) (nub . map T.toLower $ rs)
+    getTopics = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols r) (nub . map T.toLower $ rs)
 
 
 type HelpTopic = T.Text
 
 
-getHelpTopicByName :: Cols -> HelpTopic -> MudStack T.Text
-getHelpTopicByName cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
+getHelpTopicByName :: Id -> Cols -> HelpTopic -> MudStack T.Text
+getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
     let fns' = tail . tail . sort . delete "root" $ fns
         tns  = fns'^..folded.packed
     in maybe sorry
-             getHelpTopic
+             (\tn -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote tn) >> getHelpTopic tn)
              (findFullNameForAbbrev r tns)
   where
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
@@ -532,8 +534,8 @@ goDispatcher imc rs = mapM_ (tryMove imc) rs
 tryMove :: IdMsgQueueCols -> T.Text -> MudStack ()
 tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                                 in helper dir' >>= \case
-                                  Left  msg -> send mq . nl . T.unlines . wordWrap cols $ msg
-                                  Right bs  -> broadcast bs >> look imc []
+                                  Left  msg          -> send mq . nl . T.unlines . wordWrap cols $ msg
+                                  Right (logMsg, bs) -> logPla "tryMove" i logMsg >> broadcast bs >> look imc []
   where
     helper dir' = onWS $ \(t, ws) ->
         let e   = (ws^.entTbl) ! i
@@ -542,41 +544,47 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
             r   = (ws^.rmTbl)  ! ri
             ris = (ws^.invTbl) ! ri
         in case findExit r dir' of
-          Nothing              -> putTMVar t ws >> (return . Left . sorry $ dir')
-          Just (ri', mom, mdm) -> let p'        = p & rmId .~ ri'
-                                      originIs  = delete i ris
-                                      destIs    = (ws^.invTbl) ! ri'
-                                      destIs'   = sortInv ws $ i : destIs
-                                      originPis = findPCIds ws originIs
-                                      destPis   = findPCIds ws destIs
-                                      msgAtOrigin = case mom of
-                                                      Nothing -> T.concat [ e^.sing, " ", verb dir', " ", expandLinkName dir', "." ]
-                                                      Just f  -> f $ e^.sing
-                                      msgAtDest   = case mdm of
-                                                      Nothing -> T.concat [ e^.sing, " arrives from ", expandOppLinkName dir', "." ]
-                                                      Just f  -> f $ e^.sing
-                      in do
-                          putTMVar t (ws & pcTbl.at  i   ?~ p'
-                                         & invTbl.at ri  ?~ originIs
-                                         & invTbl.at ri' ?~ destIs')
-                          return . Right $ [ (msgAtOrigin, originPis), (msgAtDest, destPis) ]
-    sorry dir' = if dir' `elem` stdLinkNames
-                   then "You can't go that way."
-                   else dblQuote dir <> " is not a valid exit."
+          Nothing                       -> putTMVar t ws >> (return . Left . sorry $ dir')
+          Just (linkTxt, ri', mom, mdm) ->
+              let p'          = p & rmId .~ ri'
+                  r'          = (ws^.rmTbl)  ! ri'
+                  originIs    = delete i ris
+                  destIs      = (ws^.invTbl) ! ri'
+                  destIs'     = sortInv ws $ i : destIs
+                  originPis   = findPCIds ws originIs
+                  destPis     = findPCIds ws destIs
+                  msgAtOrigin = case mom of
+                                  Nothing -> T.concat [ e^.sing, " ", verb dir', " ", expandLinkName dir', "." ]
+                                  Just f  -> f $ e^.sing
+                  msgAtDest   = case mdm of
+                                  Nothing -> T.concat [ e^.sing, " arrives from ", expandOppLinkName dir', "." ]
+                                  Just f  -> f $ e^.sing
+                  logMsg      = "moved " <> linkTxt <> " from room " <> showRm ri r <> " to room " <> showRm ri' r'
+              in do
+                  putTMVar t (ws & pcTbl.at  i   ?~ p'
+                                 & invTbl.at ri  ?~ originIs
+                                 & invTbl.at ri' ?~ destIs')
+                  return . Right $ (logMsg, [ (msgAtOrigin, originPis), (msgAtDest, destPis) ])
+    sorry dir'                   = if dir' `elem` stdLinkNames
+                                     then "You can't go that way."
+                                     else dblQuote dir <> " is not a valid exit."
     verb  dir'
       | dir' == "u"              = "goes"
       | dir' == "d"              = "heads"
       | dir' `elem` stdLinkNames = "leaves"
       | otherwise                = "enters"
+    showRm ri r                  = showText ri <> " (" <> r^.name <> ")"
 
 
-findExit :: Rm -> LinkName -> Maybe (Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
-findExit r ln = case [ (getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- r^.rmLinks, isValid rl ] of
+findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
+findExit r ln = case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- r^.rmLinks, isValid rl ] of
                   [] -> Nothing
                   xs -> Just . head $ xs
   where
     isValid      (StdLink    dir _    ) = ln == linkDirToCmdName dir
     isValid      (NonStdLink ln' _ _ _) = ln `T.isInfixOf` ln'
+    showLink     (StdLink    dir _    ) = showText dir
+    showLink     (NonStdLink ln' _ _ _) = ln'
     getDestId    (StdLink    _   i    ) = i
     getDestId    (NonStdLink _   i _ _) = i
     getOriginMsg (NonStdLink _   _ f _) = Just f
@@ -630,14 +638,16 @@ look (i, mq, cols) rs = getWS >>= \ws ->
         ri = p^.rmId
         is = delete i . (! ri) $ ws^.invTbl
         c  = (ws^.coinsTbl) ! ri
-    in send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
-               eiss               = zipWith (curry procGecrMisRm) gecrs miss
-               ecs                = map procReconciledCoinsRm rcs
-               invDesc            = foldl' (helperLookEitherInv ws) "" eiss
-               coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-           in invDesc <> coinsDesc
-      else nl . T.unlines . wordWrap cols $ "You don't see anything here to look at."
+    in do
+        logPlaExecArgs "look" rs i
+        send mq $ if (not . null $ is) || (c /= mempty)
+          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
+                   eiss               = zipWith (curry procGecrMisRm) gecrs miss
+                   ecs                = map procReconciledCoinsRm rcs
+                   invDesc            = foldl' (helperLookEitherInv ws) "" eiss
+                   coinsDesc          = foldl' helperLookEitherCoins    "" ecs
+               in invDesc <> coinsDesc
+          else nl . T.unlines . wordWrap cols $ "You don't see anything here to look at."
   where
     helperLookEitherInv _  acc (Left  msg) = nl $ acc <> msg
     helperLookEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
@@ -746,7 +756,7 @@ exits :: Action
 exits (i, mq, cols) [] = getWS >>= \ws ->
     let p = (ws^.pcTbl) ! i
         r = (ws^.rmTbl) ! (p^.rmId)
-    in send mq . nl . mkExitsSummary cols $ r
+    in logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
 exits imc@(_, mq, cols) rs = ignore mq cols rs >> exits imc []
 
 
