@@ -199,7 +199,7 @@ topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
                     in case fromException e of
                       Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt"
                       Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed"
-                      Just _             -> (oops $ showIt <> " caught by the top level handler; rethrowing")    >> throwIO e
+                      Just _             -> oops (showIt <> " caught by the top level handler; rethrowing")      >> throwIO e
                       Nothing            -> oops "exception caught by the top level handler; exiting gracefully" >> liftIO exitFailure
   where
     showIt = dblQuote . showText $ e
@@ -214,7 +214,7 @@ listen = do
     (forever . loop $ sock) `finally` cleanUp sock
   where
     listInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
-        let ifList = T.intercalate ", " $ [ T.concat [ "[", showText . NI.name $ n, ": ", showText . NI.ipv4 $ n, "]" ] | n <- ns ]
+        let ifList = T.intercalate ", " [ T.concat [ "[", showText . NI.name $ n, ": ", showText . NI.ipv4 $ n, "]" ] | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList
     loop sock = do
         (h, host, port') <- liftIO . accept $ sock
@@ -406,8 +406,8 @@ mkCmdListWithNonStdRmLinks r = cmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks
 
 
 isNonStdLink :: RmLink -> Bool
-isNonStdLink (NonStdLink _ _ _ _) = True
-isNonStdLink _                    = False
+isNonStdLink (NonStdLink {}) = True
+isNonStdLink _               = False
 
 
 mkCmdForRmLink :: RmLink -> Cmd
@@ -498,7 +498,7 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 help :: Action
 help (i, mq, cols) [] = do
     try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
-    logPla "help" i $ "read the root help file"
+    logPla "help" i "read the root help file"
   where
     helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
@@ -544,7 +544,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
   where
     helper dir' = onWS $ \(t, ws) ->
         let e   = (ws^.entTbl) ! i
-            p   = (ws^.pcTbl)  ! i
+            p   = (ws^.pcTbl)  ! i -- TODO: Reduce duplication... "f t = (ws ^. t) ! i"?
             ri  = p^.rmId
             r   = (ws^.rmTbl)  ! ri
             ris = (ws^.invTbl) ! ri
@@ -765,7 +765,7 @@ exits imc@(_, mq, cols) rs = ignore mq cols rs >> exits imc []
 
 mkExitsSummary :: Cols -> Rm -> T.Text
 mkExitsSummary cols r = let stdNames    = [ rl^.linkDir.to linkDirToCmdName | rl <- r^.rmLinks, not . isNonStdLink $ rl ]
-                            customNames = [ rl^.linkName | rl <- r^.rmLinks, isNonStdLink $ rl ]
+                            customNames = [ rl^.linkName | rl <- r^.rmLinks, isNonStdLink rl ]
                         in T.unlines . wordWrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"
@@ -865,7 +865,7 @@ getAction (i, mq, cols) rs = helper >>= \(msg, logMsgs) ->
                    eiss                   = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                    = map procReconciledCoinsRm rcs
                    (ws',  msg,  logMsgs ) = foldl' (helperGetDropEitherInv   cols Get ri i) (ws,  "",  []     ) eiss
-                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins      Get ri i) (ws', msg, logMsgs) ecs
+                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins cols Get ri i) (ws', msg, logMsgs) ecs
                in putTMVar t ws'' >> return (msg', logMsgs')
           else do
               putTMVar t ws
@@ -905,20 +905,19 @@ mkGetDropInvDesc cols ws god is = let msgs = map helper . mkNameCountBothList ws
                  Drop -> "drop"
 
 
-helperGetDropEitherCoins :: GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either T.Text Coins -> (WorldState, T.Text, [T.Text])
-helperGetDropEitherCoins god fi ti (ws, msg, logMsgs) = \case
+helperGetDropEitherCoins :: Cols -> GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either T.Text Coins -> (WorldState, T.Text, [T.Text])
+helperGetDropEitherCoins cols god fi ti (ws, msg, logMsgs) = \case
   Left  msg' -> (ws, msg <> msg', logMsgs)
   Right c   -> let fc               = (ws^.coinsTbl) ! fi
                    tc               = (ws^.coinsTbl) ! ti
                    ws'              = ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                          & coinsTbl.at ti ?~ tc <> c
-                   (msg', logMsgs') = mkGetDropCoinsDesc god c
+                   (msg', logMsgs') = mkGetDropCoinsDesc cols god c
                in (ws', msg <> msg', logMsgs ++ logMsgs')
 
 
--- TODO: We should be word wrapping here, and in other places where we make coins desc.
-mkGetDropCoinsDesc :: GetOrDrop -> Coins -> (T.Text, [T.Text])
-mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = (T.concat . mkPlaMsgs $ [ c, s, g ], mkLogMsgs [ c, s, g ])
+mkGetDropCoinsDesc :: Cols -> GetOrDrop -> Coins -> (T.Text, [T.Text])
+mkGetDropCoinsDesc cols god (Coins (cop, sil, gol)) = (T.concat . mkPlaMsgs $ [ c, s, g ], mkLogMsgs [ c, s, g ])
   where
     c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
     s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
@@ -929,10 +928,10 @@ mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = (T.concat . mkPlaMsgs $ [ c, s,
                  Drop -> "drop"
     mkPlaMsgs []            = []
     mkPlaMsgs ( Nothing:xs) = mkPlaMsgs xs
-    mkPlaMsgs ((Just x):xs) = nl x : mkPlaMsgs xs
+    mkPlaMsgs (Just   x:xs) = let x' = T.unlines . wordWrap cols $ x in x' : mkPlaMsgs xs
     mkLogMsgs []            = []
     mkLogMsgs ( Nothing:xs) = mkLogMsgs xs
-    mkLogMsgs ((Just x):xs) = x : mkLogMsgs xs
+    mkLogMsgs (Just   x:xs) = x : mkLogMsgs xs
 
 
 -----
@@ -953,7 +952,7 @@ dropAction (i, mq, cols) rs = helper >>= \(msg, logMsgs) ->
                    eiss                   = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                    = map procReconciledCoinsPCInv rcs
                    (ws',  msg,  logMsgs ) = foldl' (helperGetDropEitherInv   cols Drop i ri) (ws,  "",  []     ) eiss
-                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins      Drop i ri) (ws', msg, logMsgs) ecs
+                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins cols Drop i ri) (ws', msg, logMsgs) ecs
                in putTMVar t ws'' >> return (msg', logMsgs')
           else do
               putTMVar t ws
@@ -1598,7 +1597,6 @@ wizDay imc@(_, mq, cols) rs = ignore mq cols rs >> wizDay imc []
 -- Debug commands:
 
 
--- TODO: Consider putting quotes around the function name in logging statements. :?: looks too weird...
 debugDispCmdList :: Action
 debugDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixDebugCmd "?") rs i >> dispCmdList (cmdPred . Just $ debugCmdChar) imc rs
 

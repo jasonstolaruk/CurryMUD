@@ -90,7 +90,7 @@ spawnLogger fn p ln f q = async . loop =<< initLog
       Msg m -> f (T.unpack ln) (T.unpack m) >> loop gh
 
 
--- TODO: Consider writing a function that can periodically be called to rotate the notice and error logs on the fly.
+-- TODO: Consider writing a function that can periodically be called to rotate logs on the fly.
 rotateLog :: FilePath -> IO ()
 rotateLog fn = helper `catch` \e -> throwIO (e :: SomeException)
   where
@@ -154,11 +154,11 @@ logPla modName funName i msg = helper =<< getPlaLogQueue i
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
-logPlaExec modName cn i = logPla modName cn i $ "executed " <> dblQuote cn
+logPlaExec modName cn i = logPla modName (dblQuote cn) i $ "executed " <> dblQuote cn
 
 
 logPlaExecArgs :: T.Text -> CmdName -> Rest -> Id -> MudStack ()
-logPlaExecArgs modName cn rs i = logPla modName cn i $ "executed " <> helper
+logPlaExecArgs modName cn rs i = logPla modName (dblQuote cn) i $ "executed " <> helper
   where
     helper = case rs of [] -> dblQuote cn <> " with no arguments"
                         _  -> dblQuote . T.intercalate " " $ cn : rs
