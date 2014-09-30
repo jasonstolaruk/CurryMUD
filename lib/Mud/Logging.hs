@@ -25,7 +25,7 @@ import Mud.Util
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
-import Control.Exception.Lifted (throwIO)
+import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
 import Control.Monad (when, unless)
@@ -91,16 +91,17 @@ spawnLogger fn p ln f q = async . loop =<< initLog
 
 
 -- TODO: Consider writing a function that can periodically be called to rotate the notice and error logs on the fly.
-rotateLog :: FilePath -> IO () -- TODO: Handle exceptions.
-rotateLog fn = doesFileExist fn >>= \doesExist -> when doesExist $ do
-    fs <- fileSize <$> getFileStatus fn
-    unless (fs < maxLogSize) rotateIt
+rotateLog :: FilePath -> IO ()
+rotateLog fn = helper `catch` \e -> throwIO (e :: SomeException)
   where
+    helper = doesFileExist fn >>= \doesExist -> when doesExist $ do
+        fs <- fileSize <$> getFileStatus fn
+        unless (fs < maxLogSize) rotateIt
     rotateIt = getZonedTime >>= \t ->
         let wordy = words . show $ t
             date  = head wordy
             time  = map replaceColons . init . reverse . dropWhile (/= '.') . reverse . head . tail $ wordy
-        in renameFile fn $ concat [ dropExt fn, ".", date, "_", time, ".log" ]
+        in renameFile fn . concat $ [ dropExt fn, ".", date, "_", time, ".log" ]
     replaceColons ':' = '-'
     replaceColons x   = x
     dropExt           = reverse . drop 4 . reverse

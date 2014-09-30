@@ -73,6 +73,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --    [DONE] ">>=" vs. "=<<".
 --    [DONE] "(..)" instead of "(blah)" in import statements.
 -- d. [DONE] Check for superfluous exports.
+-- Don't forget to fix the bug that Nathan found!
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -236,7 +237,7 @@ talk h host = do
     liftIO configBuffer
     mq     <- liftIO newTQueueIO
     (i, n) <- adHoc mq host
-    logNotice "talk" $ "new ID for incoming player: " <> showText i
+    logNotice "talk" . T.concat $ [ n, " has logged on (new ID for incoming player: ", showText i, ")" ]
     initPlaLog i n
     logPla "talk" i $ "logged on from " <> T.pack host
     dumpTitle mq
@@ -455,7 +456,7 @@ ignore mq cols rs = let ignored = dblQuote . T.unwords $ rs
 -----
 
 
--- TODO: Automatically execute this cmd after a user authenticates.
+-- TODO: Automatically execute this cmd after a user authenticates. (We won't want to log anything in that case.)
 motd :: Action
 motd     (i, mq, cols) [] = logPlaExec "motd" i >> (send mq =<< getMotdTxt cols)
 motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
@@ -915,6 +916,7 @@ helperGetDropEitherCoins god fi ti (ws, msg, logMsgs) = \case
                in (ws', msg <> msg', logMsgs ++ logMsgs')
 
 
+-- TODO: We should be word wrapping here, and in other places where we make coins desc.
 mkGetDropCoinsDesc :: GetOrDrop -> Coins -> (T.Text, [T.Text])
 mkGetDropCoinsDesc god (Coins (cop, sil, gol)) = (T.concat . mkPlaMsgs $ [ c, s, g ], mkLogMsgs [ c, s, g ])
   where
@@ -1392,7 +1394,7 @@ what (_, mq, cols) [] = advise mq cols ["what"] $ "Please specify one or more ab
 what (i, mq, cols) rs = getWS >>= \ws ->
   let p  = (ws^.pcTbl) ! i
       r  = (ws^.rmTbl) ! (p^.rmId)
-  in send mq . T.concat . map (helper ws r) . nub . map T.toLower $ rs
+  in logPlaExecArgs "what" rs i >> (send mq . T.concat . map (helper ws r) . nub . map T.toLower $ rs)
   where
     helper ws r n = T.concat [ whatCmd   cols r        n
                              , whatInv i cols ws PCInv n
@@ -1490,7 +1492,9 @@ whatInvCoins cols it r rc
 
 
 uptime :: Action
-uptime (_, mq, cols) [] = (try . send mq . parse =<< runUptime) >>= eitherRet (\e -> logIOEx "uptime" e >> sendGenericErrorMsg mq cols)
+uptime (i, mq, cols) [] = do
+    logPlaExec "uptime" i
+    (try . send mq . parse =<< runUptime) >>= eitherRet (\e -> logIOEx "uptime" e >> sendGenericErrorMsg mq cols)
   where
     runUptime = liftIO . readProcess "uptime" [] $ ""
     parse ut  = let (a, b) = span (/= ',') ut
@@ -1511,17 +1515,17 @@ quit (_, mq, cols) _  = send mq . nl . T.unlines . wordWrap cols $ "Type " <> db
 
 handleQuit :: Id -> MudStack ()
 handleQuit i = do
-    logNotice "handleQuit" $ "player " <> showText i <> " has quit"
-    logPla "handleQuit" i "player quit"
+    logPlaExec "quit" i
     closePlaLog i
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSTMVar msgQueueTblTMVar
     ptTMVar  <- getNWSTMVar plaTblTMVar
-    liftIO . atomically $ do
+    n <- liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
         pt  <- takeTMVar ptTMVar
         -----
+        let e    = (ws^.entTbl) ! i
         let p    = (ws^.pcTbl)  ! i
         let ri   = p^.rmId
         let ris  = (ws^.invTbl) ! ri
@@ -1539,7 +1543,8 @@ handleQuit i = do
         putTMVar wsTMVar  ws'
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
-
+        return $ e^.sing
+    logNotice "handleQuit" . T.concat $ [ "player ", showText i, " (", n, ") has quit" ]
 
 -- ==================================================
 -- Wizard commands:
@@ -1552,16 +1557,21 @@ wizDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixWizCmd "?") rs i >> disp
 -----
 
 
-wizShutdown :: Action -- TODO: Send a msg to all players. Indicate normal shutdown in all player logs.
-wizShutdown (_, mq, _   ) [] = logNotice "wizShutdown" "shutting down" >> (liftIO . atomically . writeTQueue mq $ Shutdown)
-wizShutdown (_, mq, cols) _  = send mq . nl . T.unlines . wordWrap cols $  "Type " <> quoted <> " with no arguments to shut down the game server."
-  where
-    quoted = dblQuote . prefixWizCmd $ "shutdown"
+wizShutdown :: Action -- TODO: Indicate normal shutdown in all player logs.
+wizShutdown (i, mq, _) [] = getWS >>= \ws ->
+    let e = (ws^.entTbl) ! i
+    in do
+        massBroadcast "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
+        logPlaExecArgs (prefixWizCmd "shutdown") [] i
+        logNotice "wizShutdown" $ "server shut down by " <> e^.sing <> " (no message given)"
+        liftIO . atomically . writeTQueue mq $ Shutdown
+wizShutdown _ _  = undefined -- TODO
 
 
 -----
 
 
+-- TODO: Continue adding logging from here...
 wizTime :: Action
 wizTime (_, mq, cols) [] = do
     ct <- liftIO getCurrentTime
@@ -1588,6 +1598,7 @@ wizDay imc@(_, mq, cols) rs = ignore mq cols rs >> wizDay imc []
 -- Debug commands:
 
 
+-- TODO: Consider putting quotes around the function name in logging statements. :?: looks too weird...
 debugDispCmdList :: Action
 debugDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixDebugCmd "?") rs i >> dispCmdList (cmdPred . Just $ debugCmdChar) imc rs
 
@@ -1667,12 +1678,12 @@ debugSniff imc@(_, mq, cols) rs = ignore mq cols rs >> debugSniff imc []
 -----
 
 
--- TODO: This command could be automatically run at certain intervals.
 debugPurge :: Action
 debugPurge     (_, mq, _)    [] = purge >> ok mq
 debugPurge imc@(_, mq, cols) rs = ignore mq cols rs >> debugPurge imc []
 
 
+-- TODO: This function could be automatically run at certain intervals.
 purge :: MudStack ()
 purge = do
     ks <- M.keys <$> getNWS threadTblTMVar

@@ -14,6 +14,7 @@ module Mud.StateHelpers ( allKeys
                         , getUnusedId
                         , getWS
                         , getWSTMVar
+                        , massBroadcast
                         , mkAssocListTxt
                         , mkCoinsFromList
                         , mkDividerTxt
@@ -56,7 +57,7 @@ import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), sortBy)
 import Data.Monoid ((<>))
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
 
 
@@ -70,10 +71,6 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
 getWSTMVar = gets (^.worldStateTMVar)
-
-
-getNWSTMVar :: forall a (m :: * -> *). MonadState MudState m => ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> m a
-getNWSTMVar lens = gets (^.nonWorldState.lens)
 
 
 getWS :: MudStack WorldState
@@ -93,8 +90,22 @@ modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
     transaction t = takeTMVar t >>= putTMVar t . f
 
 
+getNWSTMVar :: forall a (m :: * -> *). MonadState MudState m => ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> m a
+getNWSTMVar lens = gets (^.nonWorldState.lens)
+
+
 getNWS :: forall (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> m a
 getNWS lens = liftIO . atomically . readTMVar =<< getNWSTMVar lens
+
+
+getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
+getMqtPt = do
+    mqtTMVar <- getNWSTMVar msgQueueTblTMVar
+    ptTMVar  <- getNWSTMVar plaTblTMVar
+    liftIO . atomically $ do
+        mqt <- readTMVar mqtTMVar
+        pt  <- readTMVar ptTMVar
+        return (mqt, pt)
 
 
 onNWS :: forall t (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) -> ((TMVar t, t) -> STM a) -> m a
@@ -245,17 +256,20 @@ send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
 broadcast :: [(T.Text, [Id])] -> MudStack ()
-broadcast bs = do
-    mqtTMVar  <- getNWSTMVar msgQueueTblTMVar
-    ptTMVar   <- getNWSTMVar plaTblTMVar
-    (mqt, pt) <- liftIO . atomically $ do
-        mqt <- readTMVar mqtTMVar
-        pt  <- readTMVar ptTMVar
-        return (mqt, pt)
+broadcast bs = getMqtPt >>= \(mqt, pt) -> do
     let helper msg i = let mq   = mqt ! i
                            cols = (pt ! i)^.columns
                        in send mq . nl . T.unlines . wordWrap cols $ msg
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
+
+
+-- TODO: Make a utility function for surrounding text with dividers. Between "broadcast" and "massBroadcast", there may be a possibility for code reduction...
+massBroadcast :: T.Text -> MudStack ()
+massBroadcast msg = getMqtPt >>= \(mqt, pt) -> do
+    let helper i = let mq   = mqt ! i
+                       cols = (pt ! i)^.columns
+                   in send mq . T.unlines . (++ [ mkDividerTxt cols, "" ]) . ([ "", mkDividerTxt cols ] ++) . wordWrap cols $ msg
+    forM_ (IM.keys pt) helper
 
 
 mkDividerTxt :: Cols -> T.Text
