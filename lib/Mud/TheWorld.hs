@@ -48,7 +48,7 @@ initWorld = createWorld >> sortAllInvs
 
 createWorld :: MudStack ()
 createWorld = do
-    logNotice "createWorld" "creating the world"
+    logNotice "createWorld" "creating the world."
 
     putRm iHill [ iGP1, iLongSword, iKewpie1, iBag1, iClub, iSword1, iSword2 ] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." 0 [ StdLink East iCliff ])
     putRm iCliff [ iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4 ] mempty (Rm "The cliff" "You have reached the edge of a cliff. \
@@ -117,6 +117,6 @@ createWorld = do
 
 sortAllInvs :: MudStack ()
 sortAllInvs = do
-    logNotice "sortAllInvs" "sorting all inventories"
+    logNotice "sortAllInvs" "sorting all inventories."
     modifyWS $ \ws ->
         ws & invTbl .~ IM.map (sortInv ws) (ws^.invTbl)

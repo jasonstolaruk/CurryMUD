@@ -50,7 +50,7 @@ import qualified Data.Text as T
 
 closeLogs :: MudStack ()
 closeLogs = do
-    logNotice "Mud.Logging" "closeLogs" "closing the logs"
+    logNotice "Mud.Logging" "closeLogs" "closing the logs."
     [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (^.nonWorldState.noticeLog), fromJust <$> gets (^.nonWorldState.errorLog) ]
     ls <- IM.elems <$> getNWS plaLogsTblTMVar
     mapM_ stopLog $ nq : eq : map snd ls
@@ -115,7 +115,7 @@ registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
 logNotice modName funName msg = maybeVoid helper =<< gets (^.nonWorldState.noticeLog)
   where
-    helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg, "." ]) . snd
+    helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ]) . snd
 
 
 logError :: T.Text -> MudStack ()
@@ -151,15 +151,15 @@ initPlaLog i n = do
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
 logPla modName funName i msg = helper =<< getPlaLogQueue i
   where
-    helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg, "." ])
+    helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
-logPlaExec modName cn i = logPla modName (dblQuote cn) i $ "executed " <> dblQuote cn
+logPlaExec modName cn i = logPla modName (dblQuote cn) i $ "executed " <> dblQuote cn <> "."
 
 
 logPlaExecArgs :: T.Text -> CmdName -> Rest -> Id -> MudStack ()
-logPlaExecArgs modName cn rs i = logPla modName (dblQuote cn) i $ "executed " <> helper
+logPlaExecArgs modName cn rs i = logPla modName (dblQuote cn) i $ "executed " <> helper <> "."
   where
     helper = case rs of [] -> dblQuote cn <> " with no arguments"
                         _  -> dblQuote . T.intercalate " " $ cn : rs
@@ -168,13 +168,13 @@ logPlaExecArgs modName cn rs i = logPla modName (dblQuote cn) i $ "executed " <>
 logPlaOut :: T.Text -> T.Text -> Id -> [T.Text] -> MudStack ()
 logPlaOut modName funName i msgs = helper =<< getPlaLogQueue i
   where
-    helper = registerMsg (T.concat [ modName, " ", funName, " (output): ", T.intercalate " / " msgs ])
+    helper = registerMsg (T.concat [ modName, " ", funName, " (output): ", T.intercalate " / " msgs ]) -- TODO: Looks OK w/ no period?
 
 
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
 massLogPla modName funName msg = getNWS plaLogsTblTMVar >>= \plt ->
     let logQueues = [ snd logService | logService <- IM.elems plt ]
-    in forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg, "." ])
+    in forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
 
 closePlaLog :: Id -> MudStack ()

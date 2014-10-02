@@ -141,6 +141,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
           , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
+          , Cmd { cmdName = prefixDebugCmd "massBoot", action = debugMassBoot, cmdDesc = "Boot all players (including yourself)." }
           , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread table." }
           , Cmd { cmdName = prefixDebugCmd "sniff", action = debugSniff, cmdDesc = "Sniff out a dirty thread." }
           , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
@@ -193,7 +194,7 @@ topLvlWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
   where
     initAndStart = do
         initLogging
-        logNotice "topLvlWrapper initAndStart" "server started"
+        logNotice "topLvlWrapper initAndStart" "server started."
         initWorld
         listen
 
@@ -201,8 +202,8 @@ topLvlWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
 topLvlExHandler :: SomeException -> MudStack ()
 topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
                     in case fromException e of
-                      Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt"
-                      Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed"
+                      Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt."
+                      Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed."
                       Just _             -> oops (showIt <> " caught by the top level handler; rethrowing")      >> throwIO e
                       Nothing            -> oops "exception caught by the top level handler; exiting gracefully" >> liftIO exitFailure
   where
@@ -213,19 +214,19 @@ listen :: MudStack ()
 listen = do
     registerThread Listen
     listInterfaces
-    logNotice "listen" $ "listening for incoming connections on port " <> showText port
+    logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
     (forever . loop $ sock) `finally` cleanUp sock
   where
     listInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
         let ifList = T.intercalate ", " [ T.concat [ "[", showText . NI.name $ n, ": ", showText . NI.ipv4 $ n, "]" ] | n <- ns ]
-        in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList
+        in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
     loop sock = do
         (h, host, port') <- liftIO . accept $ sock
-        logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port' ]
+        logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
         a <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
         modifyNWS talkAsyncsTMVar (a :)
-    cleanUp sock = logNotice "listen cleanUp" "closing the socket" >> (liftIO . sClose $ sock)
+    cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
 
 registerThread :: ThreadType -> MudStack ()
@@ -243,9 +244,9 @@ talk h host = helper `finally` cleanUp
         liftIO configBuffer
         mq     <- liftIO newTQueueIO
         (i, n) <- adHoc mq host
-        logNotice "talk" . T.concat $ [ n, " has logged on (new ID for incoming player: ", showText i, ")" ]
+        logNotice "talk" . T.concat $ [ n, " has logged on (new ID for incoming player: ", showText i, ")." ]
         initPlaLog i n
-        logPla "talk" i $ "logged on from " <> T.pack host
+        logPla "talk" i $ "logged on from " <> T.pack host <> "."
         dumpTitle mq
         prompt mq "> "
         notifyArrival i
@@ -253,7 +254,7 @@ talk h host = helper `finally` cleanUp
         liftIO $ race_ (runStateInIORefT (server  h i mq) s)
                        (runStateInIORefT (receive h i mq) s)
     configBuffer = hSetNewlineMode h universalNewlineMode >> hSetBuffering h LineBuffering
-    cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host) >> (liftIO . hClose $ h)
+    cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
 
 
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
@@ -364,12 +365,15 @@ getListenThreadId = reverseLookup Listen <$> getNWS threadTblTMVar
 shutDown :: MudStack ()
 shutDown = bootAllPla >> commitSuicide
   where
-    bootAllPla = getNWS msgQueueTblTMVar >>= \mqt ->
-        forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue Die
     commitSuicide = do
         tas <- getNWS talkAsyncsTMVar
         ti  <- getListenThreadId
         liftIO . void . forkIO $ mapM_ wait tas >> killThread ti
+
+
+bootAllPla :: MudStack ()
+bootAllPla = getNWS msgQueueTblTMVar >>= \mqt ->
+    forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue Die
 
 
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -512,7 +516,7 @@ cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdC
 help :: Action
 help (i, mq, cols) [] = do
     try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
-    logPla "help" i "read the root help file"
+    logPla "help" i "read the root help file."
   where
     helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
@@ -529,7 +533,7 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns
     let fns' = tail . tail . sort . delete "root" $ fns
         tns  = fns'^..folded.packed
     in maybe sorry
-             (\tn -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote tn) >> getHelpTopic tn)
+             (\tn -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote tn <> ".") >> getHelpTopic tn)
              (findFullNameForAbbrev r tns)
   where
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
@@ -578,7 +582,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                   msgAtDest   = case mdm of
                                   Nothing -> T.concat [ e^.sing, " arrives from ", expandOppLinkName dir', "." ]
                                   Just f  -> f $ e^.sing
-                  logMsg      = "moved " <> linkTxt <> " from room " <> showRm ri r <> " to room " <> showRm ri' r'
+                  logMsg      = T.concat [ "moved ", linkTxt, " from room ", showRm ri r, " to room ", showRm ri' r', "." ]
               in do
                   putTMVar t (ws & pcTbl.at  i   ?~ p'
                                  & invTbl.at ri  ?~ originIs
@@ -883,7 +887,7 @@ getAction (i, mq, cols) rs = helper >>= \(msg, logMsgs) ->
                in putTMVar t ws'' >> return (msg', logMsgs')
           else do
               putTMVar t ws
-              return (T.unlines . wordWrap cols $ "You don't see anything here to pick up.", [])
+              return (T.unlines . wordWrap cols $ "You don't see anything here to pick up.", []) -- TODO: Logs empty line.
 
 
 advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
@@ -970,7 +974,7 @@ dropAction (i, mq, cols) rs = helper >>= \(msg, logMsgs) ->
                in putTMVar t ws'' >> return (msg', logMsgs')
           else do
               putTMVar t ws
-              return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty, [])
+              return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty, []) -- TODO: Logs empty line.
 
 
 -----
@@ -1557,7 +1561,7 @@ handleQuit i = do
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         return $ e^.sing
-    logNotice "handleQuit" . T.concat $ [ "player ", showText i, " (", n, ") has quit" ]
+    logNotice "handleQuit" . T.concat $ [ "player ", showText i, " (", n, ") has quit." ]
 
 -- ==================================================
 -- Wizard commands:
@@ -1576,10 +1580,18 @@ wizShutdown (i, mq, _) [] = getWS >>= \ws ->
     in do
         massBroadcast "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
         logPlaExecArgs (prefixWizCmd "shutdown") [] i
-        massLogPla "wizShutDown" $ "closing connection due to server shutdown initiated by " <> e^.sing <> " (no message given)"
-        logNotice  "wizShutdown" $ "server shutdown initiated by " <> e^.sing <> " (no message given)"
+        massLogPla "wizShutDown" $ "closing connection due to server shutdown initiated by " <> e^.sing <> " (no message given)."
+        logNotice  "wizShutdown" $ "server shutdown initiated by " <> e^.sing <> " (no message given)."
         liftIO . atomically . writeTQueue mq $ Shutdown
-wizShutdown _ _  = undefined -- TODO
+wizShutdown (i, mq, _) rs = getWS >>= \ws ->
+    let e = (ws^.entTbl) ! i
+        msg = T.intercalate " " rs
+    in do
+        massBroadcast msg
+        logPlaExecArgs (prefixWizCmd "shutdown") rs i
+        massLogPla "wizShutDown" . T.concat $ [ "closing connection due to server shutdown initiated by ", e^.sing, "; reason: ", msg, "." ]
+        logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", e^.sing, "; reason: ", msg, "." ]
+        liftIO . atomically . writeTQueue mq $ Shutdown
 
 
 -----
@@ -1652,7 +1664,7 @@ debugLog :: Action
 debugLog (_, mq, _) [] = helper >> ok mq
   where
     helper       = replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get
-    heavyLogging = replicateM_ 100 . logNotice "debugLog" . ("Logging from " <>) . showText =<< liftIO myThreadId
+    heavyLogging = replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText =<< liftIO myThreadId
 debugLog imc@(_, mq, cols) rs = ignore mq cols rs >> debugLog imc []
 
 
@@ -1681,8 +1693,8 @@ debugSniff (_, mq, cols) [] = do
   where
     mkDesc (k, v) = (liftIO . threadStatus $ k) >>= \s ->
         return . T.concat $ [ showText k, " ", bracketPad 15 . mkTypeName $ v, showText s ]
-    mkTypeName (Server i) = "Server  " <> showText i
-    mkTypeName (PlaLog i) = "PlaLog  " <> showText i
+    mkTypeName (Server i) = "Server  " <> showText i -- TODO: Use pad/truncate util.
+    mkTypeName (PlaLog i) = "PlaLog  " <> showText i -- TODO: Use pad/truncate util.
     mkTypeName t          = showText t
     divider               = nl . mkDividerTxt $ cols
 debugSniff imc@(_, mq, cols) rs = ignore mq cols rs >> debugSniff imc []
@@ -1692,7 +1704,7 @@ debugSniff imc@(_, mq, cols) rs = ignore mq cols rs >> debugSniff imc []
 
 
 debugPurge :: Action
-debugPurge     (_, mq, _)    [] = purge >> ok mq
+debugPurge     (_, mq, _   ) [] = purge >> ok mq
 debugPurge imc@(_, mq, cols) rs = ignore mq cols rs >> debugPurge imc []
 
 
@@ -1708,3 +1720,11 @@ purge = do
     helper m (k, s)
       | s == ThreadFinished = M.delete k m
       | otherwise           = m
+
+
+-----
+
+
+debugMassBoot :: Action
+debugMassBoot     (_, mq, _   ) [] = ok mq >> bootAllPla
+debugMassBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugMassBoot imc []
