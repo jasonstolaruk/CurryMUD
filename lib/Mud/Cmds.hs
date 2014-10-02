@@ -75,6 +75,8 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- d. [DONE] Check for superfluous exports.
 -- Don't forget to fix the bug that Nathan found!
 
+-- TODO: Use "poll" to get the thread status of an async.
+
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.Cmds"
@@ -142,8 +144,9 @@ cmdList = -- ==================================================
           , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
           , Cmd { cmdName = prefixDebugCmd "massBoot", action = debugMassBoot, cmdDesc = "Boot all players (including yourself)." }
-          , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread table." }
-          , Cmd { cmdName = prefixDebugCmd "sniff", action = debugSniff, cmdDesc = "Sniff out a dirty thread." }
+          , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread and talk async tables." }
+          , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
+          , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
           , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
 
           -- ==================================================
@@ -225,15 +228,14 @@ listen = do
         (h, host, port') <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
         a <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
-        modifyNWS talkAsyncsTMVar (a :)
+        let ti = asyncThreadId a
+        modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
 
 registerThread :: ThreadType -> MudStack ()
 registerThread threadType = liftIO myThreadId >>= \ti ->
-    onNWS threadTblTMVar $ \(t, tt) ->
-        let tt' = tt & at ti ?~ threadType
-        in putTMVar t tt'
+    modifyNWS threadTblTMVar $ \tt -> tt & at ti ?~ threadType
 
 
 talk :: Handle -> HostName -> MudStack ()
@@ -366,9 +368,9 @@ shutDown :: MudStack ()
 shutDown = bootAllPla >> commitSuicide
   where
     commitSuicide = do
-        tas <- getNWS talkAsyncsTMVar
-        ti  <- getListenThreadId
-        liftIO . void . forkIO $ mapM_ wait tas >> killThread ti
+        tas <- M.elems <$> getNWS talkAsyncTblTMVar
+        liftIO . void . forkIO $ mapM_ wait tas
+        liftIO . killThread =<< getListenThreadId
 
 
 bootAllPla :: MudStack ()
@@ -1597,9 +1599,9 @@ wizShutdown (i, mq, _) rs = getWS >>= \ws ->
 -----
 
 
--- TODO: Continue adding logging from here...
 wizTime :: Action
-wizTime (_, mq, cols) [] = do
+wizTime (i, mq, cols) [] = do
+    logPlaExec (prefixWizCmd "time") i
     ct <- liftIO getCurrentTime
     zt <- liftIO getZonedTime
     send mq . T.unlines . concatMap (wordWrap cols) $ [ "At the tone, the time will be...", formatThat ct, formatThat zt, "" ]
@@ -1608,7 +1610,7 @@ wizTime (_, mq, cols) [] = do
                        zone  = last wordy
                        date  = head wordy
                        time  = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
-                   in T.concat [ zone, ": ", date, " ", time ]
+                   in T.concat [ zone, ": ", date, " ", time, "\b" ]
 wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
 
 
@@ -1616,7 +1618,9 @@ wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
 
 
 wizDay :: Action
-wizDay     (_, mq, _)    [] =  send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
+wizDay (i, mq, _)    [] = do
+    logPlaExec (prefixWizCmd "day") i
+    send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 wizDay imc@(_, mq, cols) rs = ignore mq cols rs >> wizDay imc []
 
 
@@ -1632,7 +1636,9 @@ debugDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixDebugCmd "?") rs i >> 
 
 
 debugBuffCheck :: Action
-debugBuffCheck (_, mq, cols) [] = try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
+debugBuffCheck (i, mq, cols) [] = do
+    logPlaExec (prefixDebugCmd "buffer") i
+    try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
   where
     helper = do
         td      <- liftIO getTemporaryDirectory
@@ -1647,8 +1653,12 @@ debugBuffCheck imc@(_, mq, cols) rs = ignore mq cols rs >> debugBuffCheck imc []
 
 
 debugDispEnv :: Action
-debugDispEnv (_, mq, cols) [] = send mq . nl =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
-debugDispEnv (_, mq, cols) rs = liftIO getEnvironment >>= \env ->
+debugDispEnv (i, mq, cols) [] = do
+    logPlaExecArgs (prefixDebugCmd "env") [] i
+    send mq . nl =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
+debugDispEnv (i, mq, cols) rs = do
+    logPlaExecArgs (prefixDebugCmd "env") rs i
+    env <- liftIO getEnvironment
     send mq . T.unlines . map (helper env) . nub $ rs
   where
     helper env r = mkAssocListTxt cols . filter grepPair $ env
@@ -1661,7 +1671,7 @@ debugDispEnv (_, mq, cols) rs = liftIO getEnvironment >>= \env ->
 
 
 debugLog :: Action
-debugLog (_, mq, _) [] = helper >> ok mq
+debugLog (i, mq, _) [] = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
     helper       = replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get
     heavyLogging = replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText =<< liftIO myThreadId
@@ -1675,15 +1685,16 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 debugThrow :: Action
-debugThrow _                 [] = throwIO DivideByZero
+debugThrow     (i, _,  _   ) [] = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
 debugThrow imc@(_, mq, cols) rs = ignore mq cols rs >> debugThrow imc []
 
 
 -----
 
 
-debugSniff :: Action
-debugSniff (_, mq, cols) [] = do
+debugThread :: Action
+debugThread (i, mq, cols) [] = do
+    logPlaExec (prefixDebugCmd "thread") i
     (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
     kvs <- M.assocs <$> getNWS threadTblTMVar
     plt <- getNWS plaLogsTblTMVar
@@ -1693,38 +1704,65 @@ debugSniff (_, mq, cols) [] = do
   where
     mkDesc (k, v) = (liftIO . threadStatus $ k) >>= \s ->
         return . T.concat $ [ showText k, " ", bracketPad 15 . mkTypeName $ v, showText s ]
-    mkTypeName (Server i) = "Server  " <> showText i -- TODO: Use pad/truncate util.
-    mkTypeName (PlaLog i) = "PlaLog  " <> showText i -- TODO: Use pad/truncate util.
-    mkTypeName t          = showText t
-    divider               = nl . mkDividerTxt $ cols
-debugSniff imc@(_, mq, cols) rs = ignore mq cols rs >> debugSniff imc []
+    mkTypeName (Server ti) = padOrTrunc 8 "Server" <> showText ti
+    mkTypeName (PlaLog ti) = padOrTrunc 8 "PlaLog" <> showText ti
+    mkTypeName t           = showText t
+    divider                = nl . mkDividerTxt $ cols
+debugThread imc@(_, mq, cols) rs = ignore mq cols rs >> debugThread imc []
 
 
 -----
 
 
+debugTalk :: Action
+debugTalk (i, mq, cols) [] = do
+    logPlaExec (prefixDebugCmd "talk") i
+    ds <- (M.elems <$> getNWS talkAsyncTblTMVar) >>= mapM mkDesc
+    let msg = T.unlines . concatMap (wordWrap cols) $ ds
+    send mq . nl $ divider <> msg <> divider
+  where
+    mkDesc a = let ti = asyncThreadId a
+               in (liftIO . threadStatus  $ ti) >>= \ts ->
+                   return . T.concat $ [ "Talk async ", showText ti, ": ", showText ts, "." ]
+    divider = nl . mkDividerTxt $ cols
+debugTalk imc@(_, mq, cols) rs = ignore mq cols rs >> debugTalk imc []
+
+
+-----
+
 debugPurge :: Action
-debugPurge     (_, mq, _   ) [] = purge >> ok mq
+debugPurge     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "purge") i >> purge >> ok mq
 debugPurge imc@(_, mq, cols) rs = ignore mq cols rs >> debugPurge imc []
 
 
 -- TODO: This function could be automatically run at certain intervals.
--- TODO: Also purge the talk asyncs list?
 purge :: MudStack ()
-purge = do
+purge = purgeThreadTbl >> purgeTalkAsyncsList
+
+
+purgeThreadTbl :: MudStack ()
+purgeThreadTbl = do
     ks <- M.keys <$> getNWS threadTblTMVar
     ss <- liftIO . mapM threadStatus $ ks
-    let kss = zip ks ss
-    modifyNWS threadTblTMVar $ \tt -> foldl' helper tt kss
+    let zipped = zip ks ss
+    modifyNWS threadTblTMVar $ flip (foldl' helper) zipped
   where
     helper m (k, s)
       | s == ThreadFinished = M.delete k m
       | otherwise           = m
 
 
+purgeTalkAsyncsList :: MudStack ()
+purgeTalkAsyncsList = do
+    asyncs <- M.elems <$> getNWS talkAsyncTblTMVar
+    modifyNWS talkAsyncTblTMVar $ flip (foldl' helper) asyncs
+  where
+    helper _ _ = undefined
+
+
 -----
 
 
 debugMassBoot :: Action
-debugMassBoot     (_, mq, _   ) [] = ok mq >> bootAllPla
+debugMassBoot     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "massBoot") i >> ok mq >> bootAllPla
 debugMassBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugMassBoot imc []

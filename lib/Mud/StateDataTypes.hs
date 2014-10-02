@@ -309,13 +309,13 @@ data Type = ObjType
 -- Non-world state:
 
 
-data NonWorldState = NonWorldState { _noticeLog        :: Maybe LogService
-                                   , _errorLog         :: Maybe LogService
-                                   , _plaLogsTblTMVar  :: TMVar (IM.IntMap LogService)
-                                   , _threadTblTMVar   :: TMVar ThreadTbl
-                                   , _talkAsyncsTMVar  :: TMVar [Async ()]
-                                   , _msgQueueTblTMVar :: TMVar (IM.IntMap MsgQueue)
-                                   , _plaTblTMVar      :: TMVar (IM.IntMap Pla) }
+data NonWorldState = NonWorldState { _noticeLog          :: Maybe LogService
+                                   , _errorLog           :: Maybe LogService
+                                   , _plaLogsTblTMVar    :: TMVar (IM.IntMap LogService)
+                                   , _threadTblTMVar     :: TMVar ThreadTbl
+                                   , _talkAsyncTblTMVar  :: TMVar TalkAsyncTbl
+                                   , _msgQueueTblTMVar   :: TMVar (IM.IntMap MsgQueue)
+                                   , _plaTblTMVar        :: TMVar (IM.IntMap Pla) }
 
 
 -- ==================================================
@@ -344,6 +344,13 @@ data ThreadType = Notice
                 | Server  Id
                 | Receive Id
                 | PlaLog  Id deriving (Eq, Show)
+
+
+-- ==================================================
+-- Talk async table:
+
+
+type TalkAsyncTbl = M.Map ThreadId (Async ())
 
 
 -- ==================================================
