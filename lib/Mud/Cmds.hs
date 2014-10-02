@@ -4,7 +4,7 @@
 module Mud.Cmds (topLvlWrapper) where
 
 import Mud.Ids
-import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
@@ -13,12 +13,12 @@ import Mud.StateInIORefT
 import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
-import Control.Concurrent (forkFinally, forkIO, killThread, myThreadId, ThreadId)
-import Control.Concurrent.Async (asyncThreadId, race_)
+import Control.Concurrent (forkIO, killThread, myThreadId, ThreadId)
+import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
@@ -26,7 +26,7 @@ import Control.Exception (ArithException(..), AsyncException(..), fromException,
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
 import Control.Lens (at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
-import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
+import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
@@ -118,6 +118,10 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds"
 
 logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds"
+
+
+massLogPla :: T.Text -> T.Text -> MudStack ()
+massLogPla = L.massLogPla "Mud.Cmds"
 
 
 -- ==================================================
@@ -219,8 +223,8 @@ listen = do
     loop sock = do
         (h, host, port') <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port' ]
-        s <- get
-        liftIO $ forkFinally (runStateInIORefT (talk h host) s) (\_ -> hClose h)
+        a <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
+        modifyNWS talkAsyncsTMVar (a :)
     cleanUp sock = logNotice "listen cleanUp" "closing the socket" >> (liftIO . sClose $ sock)
 
 
@@ -232,22 +236,24 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
 
 
 talk :: Handle -> HostName -> MudStack ()
-talk h host = do
-    registerThread Talk
-    liftIO configBuffer
-    mq     <- liftIO newTQueueIO
-    (i, n) <- adHoc mq host
-    logNotice "talk" . T.concat $ [ n, " has logged on (new ID for incoming player: ", showText i, ")" ]
-    initPlaLog i n
-    logPla "talk" i $ "logged on from " <> T.pack host
-    dumpTitle mq
-    prompt mq "> "
-    notifyArrival i
-    s <- get
-    liftIO $ race_ (runStateInIORefT (server  h i mq) s)
-                   (runStateInIORefT (receive h i mq) s)
+talk h host = helper `finally` cleanUp
   where
+    helper = do
+        registerThread Talk
+        liftIO configBuffer
+        mq     <- liftIO newTQueueIO
+        (i, n) <- adHoc mq host
+        logNotice "talk" . T.concat $ [ n, " has logged on (new ID for incoming player: ", showText i, ")" ]
+        initPlaLog i n
+        logPla "talk" i $ "logged on from " <> T.pack host
+        dumpTitle mq
+        prompt mq "> "
+        notifyArrival i
+        s <- get
+        liftIO $ race_ (runStateInIORefT (server  h i mq) s)
+                       (runStateInIORefT (receive h i mq) s)
     configBuffer = hSetNewlineMode h universalNewlineMode >> hSetBuffering h LineBuffering
+    cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host) >> (liftIO . hClose $ h)
 
 
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
@@ -329,7 +335,8 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler
                         in unless (T.null msg') (handleInp i mq msg')    >> loop
       Prompt     p   -> liftIO ((hPutStr h . T.unpack $ p) >> hFlush h)  >> loop
       Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
-      Shutdown       -> commitSuicide
+      Shutdown       -> shutDown >> loop
+      Die            -> return ()
 
 
 -- TODO: Move? Also write an hunit test for the following:
@@ -354,8 +361,15 @@ getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> getNWS threadTblTMVar
 
 
-commitSuicide :: MudStack ()
-commitSuicide = liftIO . killThread =<< getListenThreadId
+shutDown :: MudStack ()
+shutDown = bootAllPla >> commitSuicide
+  where
+    bootAllPla = getNWS msgQueueTblTMVar >>= \mqt ->
+        forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue Die
+    commitSuicide = do
+        tas <- getNWS talkAsyncsTMVar
+        ti  <- getListenThreadId
+        liftIO . void . forkIO $ mapM_ wait tas >> killThread ti
 
 
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -1556,13 +1570,14 @@ wizDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixWizCmd "?") rs i >> disp
 -----
 
 
-wizShutdown :: Action -- TODO: Indicate normal shutdown in all player logs.
+wizShutdown :: Action
 wizShutdown (i, mq, _) [] = getWS >>= \ws ->
     let e = (ws^.entTbl) ! i
     in do
         massBroadcast "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
         logPlaExecArgs (prefixWizCmd "shutdown") [] i
-        logNotice "wizShutdown" $ "server shut down by " <> e^.sing <> " (no message given)"
+        massLogPla "wizShutDown" $ "closing connection due to server shutdown initiated by " <> e^.sing <> " (no message given)"
+        logNotice  "wizShutdown" $ "server shutdown initiated by " <> e^.sing <> " (no message given)"
         liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown _ _  = undefined -- TODO
 
@@ -1682,6 +1697,7 @@ debugPurge imc@(_, mq, cols) rs = ignore mq cols rs >> debugPurge imc []
 
 
 -- TODO: This function could be automatically run at certain intervals.
+-- TODO: Also purge the talk asyncs list?
 purge :: MudStack ()
 purge = do
     ks <- M.keys <$> getNWS threadTblTMVar

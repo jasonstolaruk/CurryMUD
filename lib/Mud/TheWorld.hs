@@ -34,9 +34,10 @@ initMudState = do
     wsTMVar  <- newTMVarIO ws
     pltTMVar <- newTMVarIO IM.empty
     ttTMVar  <- newTMVarIO M.empty
+    tasTMVar <- newTMVarIO []
     mqtTMVar <- newTMVarIO IM.empty
     ptTMVar  <- newTMVarIO IM.empty
-    return (MudState wsTMVar . NonWorldState Nothing Nothing pltTMVar ttTMVar mqtTMVar $ ptTMVar)
+    return (MudState wsTMVar . NonWorldState Nothing Nothing pltTMVar ttTMVar tasTMVar mqtTMVar $ ptTMVar)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
 

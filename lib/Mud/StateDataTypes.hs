@@ -313,6 +313,7 @@ data NonWorldState = NonWorldState { _noticeLog        :: Maybe LogService
                                    , _errorLog         :: Maybe LogService
                                    , _plaLogsTblTMVar  :: TMVar (IM.IntMap LogService)
                                    , _threadTblTMVar   :: TMVar ThreadTbl
+                                   , _talkAsyncsTMVar  :: TMVar [Async ()]
                                    , _msgQueueTblTMVar :: TMVar (IM.IntMap MsgQueue)
                                    , _plaTblTMVar      :: TMVar (IM.IntMap Pla) }
 
@@ -357,6 +358,7 @@ data Msg = FromServer T.Text
          | Prompt     T.Text
          | Quit       T.Text
          | Shutdown
+         | Die
 
 
 -- ==================================================

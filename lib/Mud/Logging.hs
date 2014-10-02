@@ -14,7 +14,8 @@ module Mud.Logging ( closeLogs
                    , logPla
                    , logPlaExec
                    , logPlaExecArgs
-                   , logPlaOut ) where
+                   , logPlaOut
+                   , massLogPla ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -28,7 +29,7 @@ import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
-import Control.Monad (when, unless)
+import Control.Monad (forM_, when, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
@@ -168,6 +169,12 @@ logPlaOut :: T.Text -> T.Text -> Id -> [T.Text] -> MudStack ()
 logPlaOut modName funName i msgs = helper =<< getPlaLogQueue i
   where
     helper = registerMsg (T.concat [ modName, " ", funName, " (output): ", T.intercalate " / " msgs ])
+
+
+massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
+massLogPla modName funName msg = getNWS plaLogsTblTMVar >>= \plt ->
+    let logQueues = [ snd logService | logService <- IM.elems plt ]
+    in forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg, "." ])
 
 
 closePlaLog :: Id -> MudStack ()
