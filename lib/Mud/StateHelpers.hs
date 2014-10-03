@@ -67,7 +67,7 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 -- ============================================================
--- Higher level abstractions for working with STM:
+-- Higher-level abstractions for working with STM:
 
 
 getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
