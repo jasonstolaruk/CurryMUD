@@ -311,7 +311,7 @@ data Type = ObjType
 
 data NonWorldState = NonWorldState { _noticeLog          :: Maybe LogService
                                    , _errorLog           :: Maybe LogService
-                                   , _plaLogsTblTMVar    :: TMVar (IM.IntMap LogService)
+                                   , _plaLogTblTMVar     :: TMVar (IM.IntMap LogService)
                                    , _threadTblTMVar     :: TMVar ThreadTbl
                                    , _talkAsyncTblTMVar  :: TMVar TalkAsyncTbl
                                    , _msgQueueTblTMVar   :: TMVar (IM.IntMap MsgQueue)

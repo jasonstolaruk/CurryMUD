@@ -5,6 +5,7 @@ module Mud.StateHelpers ( allKeys
                         , BothGramNos
                         , broadcast
                         , findPCIds
+                        , frame
                         , getEntBothGramNos
                         , getLogAsyncs
                         , getNWS
@@ -130,7 +131,7 @@ getLogAsyncs = helper <$> gets (^.nonWorldState)
 
 
 getPlaLogQueue :: Id -> MudStack LogQueue
-getPlaLogQueue i = snd . (! i) <$> getNWS plaLogsTblTMVar
+getPlaLogQueue i = snd . (! i) <$> getNWS plaLogTblTMVar
 
 
 -- ============================================================
@@ -263,13 +264,18 @@ broadcast bs = getMqtPt >>= \(mqt, pt) -> do
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 
--- TODO: Make a utility function for surrounding text with dividers. Between "broadcast" and "massBroadcast", there may be a possibility for code reduction...
 massBroadcast :: T.Text -> MudStack ()
 massBroadcast msg = getMqtPt >>= \(mqt, pt) -> do
     let helper i = let mq   = mqt ! i
                        cols = (pt ! i)^.columns
-                   in send mq . T.unlines . (++ [ mkDividerTxt cols, "" ]) . ([ "", mkDividerTxt cols ] ++) . wordWrap cols $ msg
+                   in send mq . frame cols . T.unlines . wordWrap cols $ msg
     forM_ (IM.keys pt) helper
+
+
+frame :: Cols -> T.Text -> T.Text
+frame cols = nl . (<> divider) . (divider <>)
+  where
+    divider = nl . mkDividerTxt $ cols
 
 
 mkDividerTxt :: Cols -> T.Text

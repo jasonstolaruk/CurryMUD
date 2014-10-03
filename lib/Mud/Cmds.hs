@@ -18,7 +18,7 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
 import Control.Concurrent (forkIO, killThread, myThreadId, ThreadId)
-import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
+import Control.Concurrent.Async (async, asyncThreadId, poll, race_, wait)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
@@ -49,7 +49,7 @@ import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
-import qualified Data.IntMap.Lazy as IM (elems, keys)
+import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -74,8 +74,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --    [DONE] "(..)" instead of "(blah)" in import statements.
 -- d. [DONE] Check for superfluous exports.
 -- Don't forget to fix the bug that Nathan found!
-
--- TODO: Use "poll" to get the thread status of an async.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -144,7 +142,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
           , Cmd { cmdName = prefixDebugCmd "massBoot", action = debugMassBoot, cmdDesc = "Boot all players (including yourself)." }
-          , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread and talk async tables." }
+          , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
           , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
           , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
           , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
@@ -246,7 +244,7 @@ talk h host = helper `finally` cleanUp
         liftIO configBuffer
         mq     <- liftIO newTQueueIO
         (i, n) <- adHoc mq host
-        logNotice "talk" . T.concat $ [ n, " has logged on (new ID for incoming player: ", showText i, ")." ]
+        logNotice "talk" . T.concat $ [ n, " has logged on ", parensQuote $ "new ID for incoming player: " <> showText i, "." ]
         initPlaLog i n
         logPla "talk" i $ "logged on from " <> T.pack host <> "."
         dumpTitle mq
@@ -470,7 +468,7 @@ sendGenericErrorMsg mq cols = send mq . nl . T.unlines . wordWrap cols $ generic
 
 ignore :: MsgQueue -> Cols -> Rest -> MudStack ()
 ignore mq cols rs = let ignored = dblQuote . T.unwords $ rs
-                    in send mq . T.unlines . wordWrap cols $ "(Ignoring " <> ignored <> "...)"
+                    in send mq . T.unlines . wordWrap cols . parensQuote $ "Ignoring " <> ignored <> "..."
 
 
 -----
@@ -485,8 +483,7 @@ motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
 getMotdTxt :: Cols -> MudStack T.Text
 getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler "getMotdTxt" e >> (return . nl . T.unlines . wordWrap cols $ "Unfortunately, the message of the day could not be retrieved."))
   where
-    helper  = return . T.unlines . (++ [ divider, "" ]) . (divider :) . concatMap (wordWrap cols) . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
-    divider = mkDividerTxt cols
+    helper  = return . frame cols . T.unlines . concatMap (wordWrap cols) . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
 
 
 -----
@@ -598,7 +595,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
       | dir' == "d"              = "heads"
       | dir' `elem` stdLinkNames = "leaves"
       | otherwise                = "enters"
-    showRm ri r                  = showText ri <> " (" <> r^.name <> ")"
+    showRm ri r                  = showText ri <> " " <> parensQuote (r^.name)
 
 
 findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
@@ -1463,7 +1460,7 @@ whatInvEnts cols ws it r gecr is = case gecr of
   _                     -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
   where
     acp                                     = T.pack [allChar]
-    supplement | it `elem` [ PCInv, RmInv ] = " (including any coins)"
+    supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
                | otherwise                  = ""
     checkFirst e ens                        = let matches = filter (== e^.name) ens
                                               in guard (length matches > 1) >> T.unpack "first "
@@ -1485,11 +1482,11 @@ whatInvCoins cols it r rc
     Right (SomeOf c) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", mkTxtForCoinsWithAmt c, " ", getLocTxtForInvType it, "." ]
     _                -> patternMatchFail "whatInvCoins" [ showText rc ]
   where
-    supplementNone cn      = \case PCInv -> "(you don't have any "       <> cn <> ")"
-                                   RmInv -> "(there aren't any "         <> cn <> " here)"
+    supplementNone cn      = \case PCInv -> parensQuote $ "you don't have any "       <> cn
+                                   RmInv -> parensQuote $ "there aren't any "         <> cn <> " here"
                                    PCEq  -> oops "supplementNone"
-    supplementNotEnough cn = \case PCInv -> "(you don't have that many " <> cn <> ")"
-                                   RmInv -> "(there aren't that many "   <> cn <> " here)"
+    supplementNotEnough cn = \case PCInv -> parensQuote $ "you don't have that many " <> cn
+                                   RmInv -> parensQuote $ "there aren't that many "   <> cn <> " here"
                                    PCEq  -> oops "supplementNotEnough"
     oops fn                = blowUp ("whatInvCoins " <> fn) "called for InvType of PCEq" []
     mkTxtForCoins c@(Coins (cop, sil, gol))
@@ -1563,7 +1560,7 @@ handleQuit i = do
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         return $ e^.sing
-    logNotice "handleQuit" . T.concat $ [ "player ", showText i, " (", n, ") has quit." ]
+    logNotice "handleQuit" . T.concat $ [ "player ", showText i, " ", parensQuote n, " has quit." ]
 
 -- ==================================================
 -- Wizard commands:
@@ -1582,8 +1579,8 @@ wizShutdown (i, mq, _) [] = getWS >>= \ws ->
     in do
         massBroadcast "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
         logPlaExecArgs (prefixWizCmd "shutdown") [] i
-        massLogPla "wizShutDown" $ "closing connection due to server shutdown initiated by " <> e^.sing <> " (no message given)."
-        logNotice  "wizShutdown" $ "server shutdown initiated by " <> e^.sing <> " (no message given)."
+        massLogPla "wizShutDown" $ T.concat [ "closing connection due to server shutdown initiated by ", e^.sing, " ", parensQuote "no message given", "." ]
+        logNotice  "wizShutdown" $ T.concat [ "server shutdown initiated by ", e^.sing, " ", parensQuote "no message given", "." ]
         liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown (i, mq, _) rs = getWS >>= \ws ->
     let e = (ws^.entTbl) ! i
@@ -1645,7 +1642,7 @@ debugBuffCheck (i, mq, cols) [] = do
         (fn, h) <- liftIO . openTempFile td $ "temp"
         bm      <- liftIO . hGetBuffering $ h
         liftIO $ hClose h >> removeFile fn
-        send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ "(Default) buffering mode for temp file ", dblQuote . T.pack $ fn, " is ", dblQuote . showText $ bm, "." ]
+        send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ parensQuote "Default", " buffering mode for temp file ", dblQuote . T.pack $ fn, " is ", dblQuote . showText $ bm, "." ]
 debugBuffCheck imc@(_, mq, cols) rs = ignore mq cols rs >> debugBuffCheck imc []
 
 
@@ -1697,17 +1694,16 @@ debugThread (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "thread") i
     (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
     kvs <- M.assocs <$> getNWS threadTblTMVar
-    plt <- getNWS plaLogsTblTMVar
+    plt <- getNWS plaLogTblTMVar
     ds  <- mapM mkDesc $ head kvs : (nli, Notice) : (eli, Error) : tail kvs ++ zip (map (asyncThreadId . fst) . IM.elems $ plt) (map PlaLog . IM.keys $ plt)
     let msg = T.unlines . concatMap (wordWrap cols) $ ds
-    send mq . nl $ divider <> msg <> divider
+    send mq . frame cols $ msg
   where
     mkDesc (k, v) = (liftIO . threadStatus $ k) >>= \s ->
         return . T.concat $ [ showText k, " ", bracketPad 15 . mkTypeName $ v, showText s ]
     mkTypeName (Server ti) = padOrTrunc 8 "Server" <> showText ti
     mkTypeName (PlaLog ti) = padOrTrunc 8 "PlaLog" <> showText ti
     mkTypeName t           = showText t
-    divider                = nl . mkDividerTxt $ cols
 debugThread imc@(_, mq, cols) rs = ignore mq cols rs >> debugThread imc []
 
 
@@ -1717,18 +1713,20 @@ debugThread imc@(_, mq, cols) rs = ignore mq cols rs >> debugThread imc []
 debugTalk :: Action
 debugTalk (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "talk") i
-    ds <- (M.elems <$> getNWS talkAsyncTblTMVar) >>= mapM mkDesc
+    ds <- getNWS talkAsyncTblTMVar >>= mapM mkDesc . M.elems
     let msg = T.unlines . concatMap (wordWrap cols) $ ds
-    send mq . nl $ divider <> msg <> divider
+    send mq . frame cols $ msg
   where
-    mkDesc a = let ti = asyncThreadId a
-               in (liftIO . threadStatus  $ ti) >>= \ts ->
-                   return . T.concat $ [ "Talk async ", showText ti, ": ", showText ts, "." ]
-    divider = nl . mkDividerTxt $ cols
+    mkDesc a = (liftIO . poll $ a) >>= \status ->
+        let statusTxt = case status of Nothing         -> "running"
+                                       Just (Left  e ) -> ("exception " <>) . parensQuote . showText $ e
+                                       Just (Right ()) -> "finished"
+        in return . T.concat $ [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
 debugTalk imc@(_, mq, cols) rs = ignore mq cols rs >> debugTalk imc []
 
 
 -----
+
 
 debugPurge :: Action
 debugPurge     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "purge") i >> purge >> ok mq
@@ -1737,27 +1735,43 @@ debugPurge imc@(_, mq, cols) rs = ignore mq cols rs >> debugPurge imc []
 
 -- TODO: This function could be automatically run at certain intervals.
 purge :: MudStack ()
-purge = purgeThreadTbl >> purgeTalkAsyncsList
+purge = purgePlaLogTbl >> purgeThreadTbl >> purgeTalkAsyncTbl
+
+
+purgePlaLogTbl :: MudStack ()
+purgePlaLogTbl = do
+    kvs <- IM.assocs <$> getNWS plaLogTblTMVar
+    let is     = map fst         kvs
+    let asyncs = map (fst . snd) kvs
+    ss <- liftIO . mapM poll $ asyncs
+    let zipped = zip is ss
+    modifyNWS plaLogTblTMVar $ flip (foldl' helper) zipped
+  where
+    helper m (_, Nothing) = m
+    helper m (i, _      ) = IM.delete i m
 
 
 purgeThreadTbl :: MudStack ()
 purgeThreadTbl = do
-    ks <- M.keys <$> getNWS threadTblTMVar
-    ss <- liftIO . mapM threadStatus $ ks
-    let zipped = zip ks ss
+    tis <- M.keys <$> getNWS threadTblTMVar
+    ss  <- liftIO . mapM threadStatus $ tis
+    let zipped = zip tis ss
     modifyNWS threadTblTMVar $ flip (foldl' helper) zipped
   where
-    helper m (k, s)
-      | s == ThreadFinished = M.delete k m
+    helper m (ti, s)
+      | s == ThreadFinished = M.delete ti m
       | otherwise           = m
 
 
-purgeTalkAsyncsList :: MudStack ()
-purgeTalkAsyncsList = do
+purgeTalkAsyncTbl :: MudStack ()
+purgeTalkAsyncTbl = do
     asyncs <- M.elems <$> getNWS talkAsyncTblTMVar
-    modifyNWS talkAsyncTblTMVar $ flip (foldl' helper) asyncs
+    ss     <- liftIO . mapM poll $ asyncs
+    let zipped = zip asyncs ss
+    modifyNWS talkAsyncTblTMVar $ flip (foldl' helper) zipped
   where
-    helper _ _ = undefined
+    helper m (_, Nothing) = m
+    helper m (a, _      ) = M.delete (asyncThreadId a) m
 
 
 -----

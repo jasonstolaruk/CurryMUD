@@ -52,7 +52,7 @@ closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
     [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (^.nonWorldState.noticeLog), fromJust <$> gets (^.nonWorldState.errorLog) ]
-    ls <- IM.elems <$> getNWS plaLogsTblTMVar
+    ls <- IM.elems <$> getNWS plaLogTblTMVar
     mapM_ stopLog $ nq : eq : map snd ls
     mapM_ (liftIO . wait) $ na : ea : map fst ls
     liftIO removeAllHandlers
@@ -145,7 +145,7 @@ initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n = do
     q <- liftIO newTQueueIO
     a <- liftIO . spawnLogger (T.unpack $ n <> ".log") INFO ("currymud." <> n) infoM $ q
-    modifyNWS plaLogsTblTMVar $ \plt -> plt & at i ?~ (a, q)
+    modifyNWS plaLogTblTMVar $ \plt -> plt & at i ?~ (a, q)
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
@@ -168,11 +168,11 @@ logPlaExecArgs modName cn rs i = logPla modName (dblQuote cn) i $ "executed " <>
 logPlaOut :: T.Text -> T.Text -> Id -> [T.Text] -> MudStack ()
 logPlaOut modName funName i msgs = helper =<< getPlaLogQueue i
   where
-    helper = registerMsg (T.concat [ modName, " ", funName, " (output): ", T.intercalate " / " msgs ]) -- TODO: Looks OK w/ no period?
+    helper = registerMsg (T.concat [ modName, " ", funName, " (output): ", T.intercalate " / " msgs ])
 
 
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
-massLogPla modName funName msg = getNWS plaLogsTblTMVar >>= \plt ->
+massLogPla modName funName msg = getNWS plaLogTblTMVar >>= \plt ->
     let logQueues = [ snd logService | logService <- IM.elems plt ]
     in forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
