@@ -277,7 +277,7 @@ adHoc mq host = do
         let pc  = PC iHill Human
         let ris = i : (ws^.invTbl) ! iHill
         -----
-        let pla = Pla host 80
+        let pla = Pla host 30
         -----
         let ws'  = ws  & typeTbl.at  i     ?~ PCType
                        & entTbl.at   i     ?~ e
@@ -871,7 +871,7 @@ getAction :: Action
 getAction (_, mq, cols) [] = advise mq cols ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction (i, mq, cols) rs = do
     (msg, logMsgs) <- helper
-    unless (null logMsgs) $ logPlaOut "getAction" i logMsgs
+    unless (null logMsgs) $ logPlaOut "get" i logMsgs
     send mq . nl $ msg
   where
     helper = onWS $ \(t, ws) ->
@@ -960,7 +960,7 @@ dropAction :: Action
 dropAction (_, mq, cols) [] = advise mq cols ["drop"] $ "Please specify one or more things to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction (i, mq, cols) rs = do
     (msg, logMsgs) <- helper
-    unless (null logMsgs) $ logPlaOut "dropAction" i logMsgs
+    unless (null logMsgs) $ logPlaOut "drop" i logMsgs
     send mq . nl $ msg
   where
     helper = onWS $ \(t, ws) ->
@@ -988,7 +988,7 @@ putAction (_, mq, cols) []  = advise mq cols ["put"] $ "Please specify one or mo
 putAction (_, mq, cols) [r] = advise mq cols ["put"] $ "Please also specify where you want to put it, as in " <> dblQuote ("put " <> r <> " sack") <> "."
 putAction (i, mq, cols) rs  = do
     (msg, logMsgs) <- helper
-    unless (null logMsgs) $ logPlaOut "dropAction" i logMsgs
+    unless (null logMsgs) $ logPlaOut "put" i logMsgs
     send mq . nl $ msg
   where
     helper = onWS $ \(t, ws) ->
@@ -1027,30 +1027,30 @@ shufflePut i cols (t, ws) cn rs is c pis pc f =
                           t' = (ws^.typeTbl) ! ci
                       in if t' /= ConType
                         then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.", [])
-                        else let (gecrs', miss', rcs')   = resolveEntCoinNames ws rs pis pc
-                                 eiss                    = zipWith (curry procGecrMisPCInv) gecrs' miss'
-                                 ecs                     = map procReconciledCoinsPCInv rcs'
-                                 (ws',  msgs,  logMsgs ) = foldl' (helperPutRemEitherInv   cols Put i ci e) (ws, "",    []     ) eiss
-                                 (ws'', msgs', logMsgs') = foldl' (helperPutRemEitherCoins cols Put i ci e) (ws', msgs, logMsgs) ecs
-                             in putTMVar t ws'' >> return (msgs', logMsgs')
-        Right _   -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only put things into one container at a time.", [])
+                        else let (gecrs', miss', rcs')  = resolveEntCoinNames ws rs pis pc
+                                 eiss                   = zipWith (curry procGecrMisPCInv) gecrs' miss'
+                                 ecs                    = map procReconciledCoinsPCInv rcs'
+                                 (ws',  msg,  logMsgs ) = foldl' (helperPutRemEitherInv   cols Put i ci e) (ws, "",   []     ) eiss
+                                 (ws'', msg', logMsgs') = foldl' (helperPutRemEitherCoins cols Put i ci e) (ws', msg, logMsgs) ecs
+                             in putTMVar t ws'' >> return (msg', logMsgs')
+        Right _    -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only put things into one container at a time.", [])
 
 
 type ToEnt = Ent
 
 
 helperPutRemEitherInv :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
-helperPutRemEitherInv cols por fi ti te (ws, msgs, logMsgs) = \case
-  Left  msg -> (ws, msgs <> msg, logMsgs)
-  Right is  -> let (is', msgs') = if ti `elem` is
-                                    then (filter (/= ti) is, (msgs <>) . T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself.")
-                                    else (is, msgs)
-                   fis          = (ws^.invTbl) ! fi
-                   tis          = (ws^.invTbl) ! ti
-                   ws'          = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
+helperPutRemEitherInv cols por fi ti te (ws, msg, logMsgs) = \case
+  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Right is   -> let (is', msg') = if ti `elem` is
+                                    then (filter (/= ti) is, (msg <>) . T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself.")
+                                    else (is, msg)
+                    fis         = (ws^.invTbl) ! fi
+                    tis         = (ws^.invTbl) ! ti
+                    ws'         = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
                                      & invTbl.at ti ?~ (sortInv ws . (++) tis $ is')
-                   msg          = mkPutRemInvDesc cols ws' por is' te
-               in (ws', msgs' <> msg, logMsgs ++ [msg])
+                    msg''       = mkPutRemInvDesc cols ws' por is' te
+                in (ws', msg' <> msg'', logMsgs ++ [msg''])
 
 
 mkPutRemInvDesc :: Cols -> WorldState -> PutOrRem -> Inv -> ToEnt -> T.Text
@@ -1065,18 +1065,18 @@ mkPutRemInvDesc cols ws por is te = T.concat . map (T.unlines . wordWrap cols . 
 
 
 helperPutRemEitherCoins :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either T.Text Coins -> (WorldState, T.Text, [T.Text])
-helperPutRemEitherCoins cols por fi ti te (ws, msgs, logMsgs) = \case
-  Left  msg -> (ws, msgs <> msg, logMsgs)
-  Right c   -> let fc  = (ws^.coinsTbl) ! fi
-                   tc  = (ws^.coinsTbl) ! ti
-                   ws' = ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                            & coinsTbl.at ti ?~ tc <> c
-                   msg = mkPutRemCoinsDesc cols por c te
-               in (ws', msgs <> msg, logMsgs ++ [msg])
+helperPutRemEitherCoins cols por fi ti te (ws, msg, logMsgs) = \case
+  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Right c    -> let fc   = (ws^.coinsTbl) ! fi
+                    tc   = (ws^.coinsTbl) ! ti
+                    ws'  = ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                              & coinsTbl.at ti ?~ tc <> c
+                    msgs = mkPutRemCoinsDescs cols por c te
+                in (ws', (msg <>) . T.unlines $ msgs, logMsgs ++ msgs)
 
 
-mkPutRemCoinsDesc :: Cols -> PutOrRem -> Coins -> ToEnt -> T.Text
-mkPutRemCoinsDesc cols por (Coins (cop, sil, gol)) te = T.unlines . concatMap (wordWrap cols) . filter (not . T.null) $ [ c, s, g ]
+mkPutRemCoinsDescs :: Cols -> PutOrRem -> Coins -> ToEnt -> [T.Text]
+mkPutRemCoinsDescs cols por (Coins (cop, sil, gol)) te = concatMap (wordWrap cols) . filter (not . T.null) $ [ c, s, g ]
   where
     c = if cop /= 0 then helper cop "copper piece" else ""
     s = if sil /= 0 then helper sil "silver piece" else ""
@@ -1128,15 +1128,15 @@ shuffleRem i cols (t, ws) cn rs is c f =
                           t' = (ws^.typeTbl) ! ci
                       in if t' /= ConType
                         then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.", [])
-                        else let cis                     = (ws^.invTbl)   ! ci
-                                 cc                      = (ws^.coinsTbl) ! ci
-                                 (gecrs', miss', rcs')   = resolveEntCoinNames ws rs cis cc
-                                 eiss                    = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
-                                 ecs                     = map (procReconciledCoinsCon (e^.sing)) rcs'
-                                 (ws',  msgs,  logMsgs)  = foldl' (helperPutRemEitherInv   cols Rem ci i e) (ws, "",    []     ) eiss
-                                 (ws'', msgs', logMsgs') = foldl' (helperPutRemEitherCoins cols Rem ci i e) (ws', msgs, logMsgs) ecs
-                              in putTMVar t ws'' >> return (msgs', logMsgs')
-        Right _   -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only remove things from one container at a time.", [])
+                        else let cis                    = (ws^.invTbl)   ! ci
+                                 cc                     = (ws^.coinsTbl) ! ci
+                                 (gecrs', miss', rcs')  = resolveEntCoinNames ws rs cis cc
+                                 eiss                   = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
+                                 ecs                    = map (procReconciledCoinsCon (e^.sing)) rcs'
+                                 (ws',  msg,  logMsgs)  = foldl' (helperPutRemEitherInv   cols Rem ci i e) (ws, "",   []     ) eiss
+                                 (ws'', msg', logMsgs') = foldl' (helperPutRemEitherCoins cols Rem ci i e) (ws', msg, logMsgs) ecs
+                              in putTMVar t ws'' >> return (msg', logMsgs')
+        Right _    -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only remove things from one container at a time.", [])
 
 
 -----
