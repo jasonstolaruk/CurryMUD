@@ -73,7 +73,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --    [DONE] ">>=" vs. "=<<".
 --    [DONE] "(..)" instead of "(blah)" in import statements.
 -- d. [DONE] Check for superfluous exports.
--- Don't forget to fix the bug that Nathan found!
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -945,12 +944,12 @@ mkGetDropCoinsDesc cols god (Coins (cop, sil, gol)) = (T.concat . mkPlaMsgs $ [ 
     helper a cn          = T.concat [ "You ", verb god, " ", showText a, " ", cn, "s." ]
     verb = \case Get  -> "pick up"
                  Drop -> "drop"
-    mkPlaMsgs []            = []
-    mkPlaMsgs ( Nothing:xs) = mkPlaMsgs xs
-    mkPlaMsgs (Just   x:xs) = let x' = T.unlines . wordWrap cols $ x in x' : mkPlaMsgs xs
-    mkLogMsgs []            = []
-    mkLogMsgs ( Nothing:xs) = mkLogMsgs xs
-    mkLogMsgs (Just   x:xs) = x : mkLogMsgs xs
+    mkPlaMsgs []           = []
+    mkPlaMsgs (Nothing:xs) = mkPlaMsgs xs
+    mkPlaMsgs (Just  x:xs) = let x' = T.unlines . wordWrap cols $ x in x' : mkPlaMsgs xs
+    mkLogMsgs []           = []
+    mkLogMsgs (Nothing:xs) = mkLogMsgs xs
+    mkLogMsgs (Just  x:xs) = x : mkLogMsgs xs
 
 
 -----
@@ -992,15 +991,17 @@ putAction (i, mq, cols) rs  = do
     send mq . nl $ msg
   where
     helper = onWS $ \(t, ws) ->
-      let p   = (ws^.pcTbl)    ! i
-          pis = (ws^.invTbl)   ! i
-          pc  = (ws^.coinsTbl) ! i
-          ri  = p^.rmId
-          ris = delete i . (! ri) $ ws^.invTbl
-          rc  = (ws^.coinsTbl) ! ri
-          rs' = nub . map T.toLower $ rs
-          cn  = last rs'
-          restWithoutCon = init rs'
+      let p              = (ws^.pcTbl)    ! i
+          pis            = (ws^.invTbl)   ! i
+          pc             = (ws^.coinsTbl) ! i
+          ri             = p^.rmId
+          ris            = delete i . (! ri) $ ws^.invTbl
+          rc             = (ws^.coinsTbl) ! ri
+          rs'            = map T.toLower rs
+          cn             = last rs'
+          rs''           = case rs' of [_, _] -> rs'
+                                       _      -> (++ [cn]) . nub . init $ rs'
+          restWithoutCon = init rs''
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar
           then if not . null $ ris
@@ -1042,19 +1043,22 @@ type ToEnt = Ent
 helperPutRemEitherInv :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
 helperPutRemEitherInv cols por fi ti te (ws, msg, logMsgs) = \case
   Left  msg' -> (ws, msg <> msg', logMsgs)
-  Right is   -> let (is', msg') = if ti `elem` is
-                                    then (filter (/= ti) is, (msg <>) . T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself.")
-                                    else (is, msg)
-                    fis         = (ws^.invTbl) ! fi
-                    tis         = (ws^.invTbl) ! ti
-                    ws'         = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
-                                     & invTbl.at ti ?~ (sortInv ws . (++) tis $ is')
-                    msg''       = mkPutRemInvDesc cols ws' por is' te
-                in (ws', msg' <> msg'', logMsgs ++ [msg''])
+  Right is   -> let (is', msg')       = if ti `elem` is
+                                          then (filter (/= ti) is, msg <> sorry)
+                                          else (is, msg)
+                    fis               = (ws^.invTbl) ! fi
+                    tis               = (ws^.invTbl) ! ti
+                    ws'               = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
+                                           & invTbl.at ti ?~ (sortInv ws . (++) tis $ is')
+                    (msg'', logMsgs') = mkPutRemInvDesc cols ws' por is' te
+                in (ws', msg' <> msg'', logMsgs ++ logMsgs')
+  where
+    sorry = T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself."
 
 
-mkPutRemInvDesc :: Cols -> WorldState -> PutOrRem -> Inv -> ToEnt -> T.Text
-mkPutRemInvDesc cols ws por is te = T.concat . map (T.unlines . wordWrap cols . helper) . mkNameCountBothList ws $ is
+mkPutRemInvDesc :: Cols -> WorldState -> PutOrRem -> Inv -> ToEnt -> (T.Text, [T.Text])
+mkPutRemInvDesc cols ws por is te = let msgs = map helper . mkNameCountBothList ws $ is
+                                    in (T.concat . map (T.unlines . wordWrap cols) $ msgs, msgs)
   where
     helper (_, c, (s, _)) | c == 1 = T.concat [ "You ", verb por, " the ", s, " ", prep por, " ", te^.sing, "." ]
     helper (_, c, b)               = T.concat [ "You ", verb por, " ", showText c, " ", mkPlurFromBoth b, " ", prep por, " ", te^.sing, "." ]
@@ -1067,26 +1071,32 @@ mkPutRemInvDesc cols ws por is te = T.concat . map (T.unlines . wordWrap cols . 
 helperPutRemEitherCoins :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either T.Text Coins -> (WorldState, T.Text, [T.Text])
 helperPutRemEitherCoins cols por fi ti te (ws, msg, logMsgs) = \case
   Left  msg' -> (ws, msg <> msg', logMsgs)
-  Right c    -> let fc   = (ws^.coinsTbl) ! fi
-                    tc   = (ws^.coinsTbl) ! ti
-                    ws'  = ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                              & coinsTbl.at ti ?~ tc <> c
-                    msgs = mkPutRemCoinsDescs cols por c te
-                in (ws', (msg <>) . T.unlines $ msgs, logMsgs ++ msgs)
+  Right c    -> let fc               = (ws^.coinsTbl) ! fi
+                    tc               = (ws^.coinsTbl) ! ti
+                    ws'              = ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                                          & coinsTbl.at ti ?~ tc <> c
+                    (msg', logMsgs') = mkPutRemCoinsDescs cols por c te
+                in (ws', msg <> msg', logMsgs ++ logMsgs')
 
 
-mkPutRemCoinsDescs :: Cols -> PutOrRem -> Coins -> ToEnt -> [T.Text]
-mkPutRemCoinsDescs cols por (Coins (cop, sil, gol)) te = concatMap (wordWrap cols) . filter (not . T.null) $ [ c, s, g ]
+mkPutRemCoinsDescs :: Cols -> PutOrRem -> Coins -> ToEnt -> (T.Text, [T.Text])
+mkPutRemCoinsDescs cols por (Coins (cop, sil, gol)) te = (T.concat . mkPlaMsgs $ [ c, s, g ], mkLogMsgs [ c, s, g ])
   where
-    c = if cop /= 0 then helper cop "copper piece" else ""
-    s = if sil /= 0 then helper sil "silver piece" else ""
-    g = if gol /= 0 then helper gol "gold piece"   else ""
+    c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
+    s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
+    g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
     helper a cn | a == 1 = T.concat [ "You ", verb por, " a ", cn, " ", prep por, " ", te^.sing, "." ]
     helper a cn          = T.concat [ "You ", verb por, " ", showText a, " ", cn, "s ", prep por, " ", te^.sing, "." ]
     verb = \case Put -> "put"
                  Rem -> "remove"
     prep = \case Put -> "in the"
                  Rem -> "from the"
+    mkPlaMsgs []           = []
+    mkPlaMsgs (Nothing:xs) = mkPlaMsgs xs
+    mkPlaMsgs (Just  x:xs) = let x' = T.unlines . wordWrap cols $ x in x' : mkPlaMsgs xs
+    mkLogMsgs []           = []
+    mkLogMsgs (Nothing:xs) = mkLogMsgs xs
+    mkLogMsgs (Just  x:xs) = x : mkLogMsgs xs
 
 
 -----
@@ -1101,15 +1111,17 @@ remove (i, mq, cols) rs  = do
     send mq . nl $ msg
   where
     helper = onWS $ \(t, ws) ->
-      let p   = (ws^.pcTbl)    ! i
-          pis = (ws^.invTbl)   ! i
-          pc  = (ws^.coinsTbl) ! i
-          ri  = p^.rmId
-          ris = delete i . (! ri) $ ws^.invTbl
-          rc  = (ws^.coinsTbl) ! ri
-          rs' = nub . map T.toLower $ rs
-          cn  = last rs'
-          restWithoutCon = init rs'
+      let p              = (ws^.pcTbl)    ! i
+          pis            = (ws^.invTbl)   ! i
+          pc             = (ws^.coinsTbl) ! i
+          ri             = p^.rmId
+          ris            = delete i . (! ri) $ ws^.invTbl
+          rc             = (ws^.coinsTbl) ! ri
+          rs'            = map T.toLower rs
+          cn             = last rs'
+          rs''           = case rs' of [_, _] -> rs'
+                                       _      -> (++ [cn]) . nub . init $ rs'
+          restWithoutCon = init rs''
       in if T.head cn == rmChar
           then if not . null $ ris
             then shuffleRem i cols (t, ws) (T.tail cn) restWithoutCon ris rc procGecrMisRm
