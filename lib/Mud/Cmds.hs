@@ -1154,6 +1154,7 @@ shuffleRem i cols (t, ws) cn rs is c f =
 -----
 
 
+-- TODO: Add logging.
 ready :: Action
 ready (_, mq, cols) [] = advise mq cols ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready (i, mq, cols) rs = send mq . nl =<< helper
@@ -1376,6 +1377,7 @@ getDesigWpnSlot cols ws e em rol
 -----
 
 
+-- TODO: Add logging.
 unready :: Action
 unready (_, mq, cols) [] = advise mq cols ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
 unready (i, mq, cols) rs = send mq . nl =<< helper
@@ -1429,6 +1431,7 @@ mkIdCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
 -----
 
 
+-- TODO: Disambiguate player names.
 what :: Action
 what (_, mq, cols) [] = advise mq cols ["what"] $ "Please specify one or more abbreviations to disambiguate, as in " <> dblQuote "what up" <> "."
 what (i, mq, cols) rs = getWS >>= \ws ->
@@ -1586,6 +1589,7 @@ handleQuit i = do
         return $ e^.sing
     logNotice "handleQuit" . T.concat $ [ "player ", showText i, " ", parensQuote n, " has quit." ]
 
+
 -- ==================================================
 -- Wizard commands:
 
@@ -1702,6 +1706,7 @@ debugLog imc@(_, mq, cols) rs = ignore mq cols rs >> debugLog imc []
 ok :: MsgQueue -> MudStack ()
 ok mq = send mq . nlnl $ "OK!"
 
+
 ------
 
 
@@ -1759,7 +1764,7 @@ debugPurge imc@(_, mq, cols) rs = ignore mq cols rs >> debugPurge imc []
 
 -- TODO: This function could be automatically run at certain intervals.
 purge :: MudStack ()
-purge = purgePlaLogTbl >> purgeThreadTbl >> purgeTalkAsyncTbl
+purge = logNotice "purge" "purging the thread tables." >> purgePlaLogTbl >> purgeThreadTbl >> purgeTalkAsyncTbl
 
 
 purgePlaLogTbl :: MudStack ()
