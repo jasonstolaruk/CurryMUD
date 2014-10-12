@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-module Mud.Cmds (topLvlWrapper) where
+module Mud.Cmds (listenWrapper) where
 
 import Mud.Ids
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
@@ -43,8 +43,7 @@ import Network (accept, HostName, listenOn, PortID(..), sClose)
 import Prelude hiding (pi)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
-import System.Exit (exitFailure)
-import System.IO (BufferMode(..), Handle, hClose, hFlush, hGetBuffering, hGetLine, hPutStr, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
+import System.IO (BufferMode(..), Handle, hClose, hFlush, hGetBuffering, hGetLine, hIsEOF, hPutStr, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
 import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
@@ -189,25 +188,22 @@ prefixDebugCmd :: CmdName -> T.Text
 prefixDebugCmd = prefixCmd debugCmdChar
 
 
-topLvlWrapper :: MudStack ()
-topLvlWrapper = (initAndStart `catch` topLvlExHandler) `finally` closeLogs
+listenWrapper :: MudStack ()
+listenWrapper = (initAndStart `catch` listenExHandler) `finally` closeLogs
   where
     initAndStart = do
         initLogging
-        logNotice "topLvlWrapper initAndStart" "server started."
+        logNotice "listenWrapper initAndStart" "server started."
         initWorld
         listen
 
 
-topLvlExHandler :: SomeException -> MudStack ()
-topLvlExHandler e = let oops msg = logExMsg "topLvlExHandler" msg e
-                    in case fromException e of
-                      Just UserInterrupt -> logNotice "topLvlExHandler" "exiting on user interrupt."
-                      Just ThreadKilled  -> logNotice "topLvlExHandler" "thread killed."
-                      Just _             -> oops (showIt <> " caught by the top level handler; rethrowing")      >> throwIO e
-                      Nothing            -> oops "exception caught by the top level handler; exiting gracefully" >> liftIO exitFailure
-  where
-    showIt = dblQuote . showText $ e
+listenExHandler :: SomeException -> MudStack ()
+listenExHandler e =
+    case fromException e of
+      Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
+      Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
+      _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
 
 
 listen :: MudStack ()
@@ -276,7 +272,7 @@ adHoc mq host = do
         let pc  = PC iHill Human
         let ris = i : (ws^.invTbl) ! iHill
         -----
-        let pla = Pla host 30
+        let pla = Pla host 80
         -----
         let ws'  = ws  & typeTbl.at  i     ?~ PCType
                        & entTbl.at   i     ?~ e
@@ -298,9 +294,9 @@ adHoc mq host = do
 
 dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO newStdGen >>= \g ->
-    let range = (1, noOfTitles)
-        n     = fst . randomR range $ g
-        fn    = T.unpack "title" ++ show n
+    let range  = (1, noOfTitles)
+        (n, _) = randomR range g
+        fn     = T.unpack "title" ++ show n
     in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
   where
     takeADump fn = send mq =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
@@ -327,7 +323,7 @@ notifyArrival i = getWS >>= \ws ->
 
 
 server :: Handle -> Id -> MsgQueue -> MudStack ()
-server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler
+server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> loop
@@ -350,11 +346,15 @@ stripTelnet msg@(x:y:_:rest)
 stripTelnet msg = msg
 
 
-serverExHandler :: SomeException -> MudStack ()
-serverExHandler e = do
-    logExMsg "serverExHandler" "exception caught on server thread; rethrowing" e
-    ti <- getListenThreadId
-    liftIO . throwTo ti $ e
+serverExHandler :: Id -> SomeException -> MudStack ()
+serverExHandler i e = case fromException e of
+                        Just ThreadKilled -> logExMsg "serverExHandler" "exception caught on server thread" e >> closePlaLog i
+                        _                 -> helper
+  where
+    helper = do
+        logExMsg "serverExHandler" "exception caught on server thread; rethrowing to listen thread" e
+        ti <- getListenThreadId
+        liftIO . throwTo ti $ e
 
 
 getListenThreadId :: MudStack ThreadId
@@ -376,9 +376,24 @@ bootAllPla = getNWS msgQueueTblTMVar >>= \mqt ->
 
 
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
-receive h i mq = do
-    registerThread . Receive $ i
-    forever . liftIO $ atomically . writeTQueue mq . FromClient . T.pack =<< hGetLine h
+receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler i
+  where
+    loop = (liftIO . hIsEOF $ h) >>= \case
+      True  -> logPla "receive" i "connection dropped." >> closePlaLog i
+      False -> do
+          liftIO $ atomically . writeTQueue mq . FromClient . T.pack =<< hGetLine h
+          loop
+
+
+receiveExHandler :: Id -> SomeException -> MudStack ()
+receiveExHandler i e = case fromException e of
+                         Just ThreadKilled -> logExMsg "receiveExHandler" "exception caught on receive thread" e >> closePlaLog i
+                         _                 -> helper
+  where
+    helper = do
+        logExMsg "receiveExHandler" "exception caught on receive thread; rethrowing to listen thread" e
+        ti <- getListenThreadId
+        liftIO . throwTo ti $ e
 
 
 handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
@@ -845,9 +860,9 @@ mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
                               else (header <>) . T.unlines . concat $ [ wordWrapIndent 15 cols l | l <- descs ]
   where
     mkSlotNameIdList = map (first pp)
-    mkDesc (sn, i')  = let sn'      = parensPad 15 noFinger
-                           noFinger = fst . T.breakOn " finger" $ sn
-                           e'       = (ws^.entTbl) ! i'
+    mkDesc (sn, i')  = let sn'           = parensPad 15 noFinger
+                           (noFinger, _) = T.breakOn " finger" sn
+                           e'            = (ws^.entTbl) ! i'
                        in T.concat [ sn', e'^.sing, " ", e'^.name.to bracketQuote ]
     none   = T.unlines . wordWrap cols $ if
       | ei == i      -> dudeYou'reNaked
@@ -1770,8 +1785,8 @@ purge = logNotice "purge" "purging the thread tables." >> purgePlaLogTbl >> purg
 purgePlaLogTbl :: MudStack ()
 purgePlaLogTbl = do
     kvs <- IM.assocs <$> getNWS plaLogTblTMVar
-    let is     = map fst         kvs
-    let asyncs = map (fst . snd) kvs
+    let is     = [ fst kv         | kv <- kvs ]
+    let asyncs = [ fst . snd $ kv | kv <- kvs ]
     ss <- liftIO . mapM poll $ asyncs
     let zipped = zip is ss
     modifyNWS plaLogTblTMVar $ flip (foldl' helper) zipped

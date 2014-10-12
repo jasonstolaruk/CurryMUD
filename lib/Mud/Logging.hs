@@ -53,8 +53,8 @@ closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
     [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (^.nonWorldState.noticeLog), fromJust <$> gets (^.nonWorldState.errorLog) ]
     ls <- IM.elems <$> getNWS plaLogTblTMVar
-    mapM_ stopLog $ nq : eq : map snd ls
-    mapM_ (liftIO . wait) $ na : ea : map fst ls
+    mapM_ stopLog         $ nq : eq : [ snd l | l <- ls ]
+    mapM_ (liftIO . wait) $ na : ea : [ fst l | l <- ls ]
     liftIO removeAllHandlers
 
 
