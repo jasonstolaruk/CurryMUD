@@ -13,20 +13,27 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [ testStateHelpers, testTheWorld, testUtil, unitTests ]
+tests = testGroup "tests" [ propertyTests, unitTests ]
 
 -- ==================================================
 
-testStateHelpers :: TestTree
-testStateHelpers = testGroup "StateHelpersTests" [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
-
-testTheWorld :: TestTree
-testTheWorld = testGroup "TheWorldTests" [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
+propertyTests :: TestTree
+propertyTests = testGroup "property tests" [ propTestsStateHelpers, propTestsTheWorld, propTestsUtil ]
 
 -- --------------------------------------------------
 
-testUtil :: TestTree
-testUtil = testGroup "UtilTests"
+propTestsStateHelpers :: TestTree
+propTestsStateHelpers = testGroup "property tests StateHelpers" [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
+
+-- --------------------------------------------------
+
+propTestsTheWorld :: TestTree
+propTestsTheWorld = testGroup "property tests TheWorld" [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
+
+-- --------------------------------------------------
+
+propTestsUtil :: TestTree
+propTestsUtil = testGroup "property tests Util"
   [ QC.testProperty "prop_wordWrap" prop_wordWrap
   , QC.testProperty "prop_wordWrapIndent_wraps" prop_wordWrapIndent_wraps
   , QC.testProperty "prop_wordWrapIndent_indents" prop_wordWrapIndent_indents
@@ -47,5 +54,7 @@ testUtil = testGroup "UtilTests"
 -- ==================================================
 
 unitTests :: TestTree
-unitTests = testGroup "Unit tests"
-  [ testCase "stripTelnet" $ test_stripTelnet @?= "test" ]
+unitTests = testGroup "unit tests" [ unitTestsUtil ]
+
+unitTestsUtil :: TestTree
+unitTestsUtil = testGroup "unit tests Util" [ testCase "stripTelnet" $ test_stripTelnet @?= "test" ]

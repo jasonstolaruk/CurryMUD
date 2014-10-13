@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE KindSignatures, LambdaCase, OverloadedStrings, RankNTypes #-}
 
--- This module is considered to have sufficient test coverage as of 2014-09-13.
+-- This module is considered to have sufficient test coverage as of 2014-10-13.
 
 module Mud.Util ( adjustIndent
                 , aOrAn
