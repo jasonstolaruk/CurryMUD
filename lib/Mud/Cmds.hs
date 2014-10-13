@@ -63,7 +63,8 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 2. Go into server mode. Accept incoming connections.
 -- [DONE] 3. Implement client-based routing of output.
 -- 4. Implement the broadcasting of messages.
--- 5. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
+-- [DONE] 5. Log commands.
+-- 6. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
 -- a. Code reduction.
 -- b. Consistency in binding names.
 -- c. Stylistic issues:
@@ -1403,45 +1404,46 @@ getDesigWpnSlot cols ws e em rol
 -----
 
 
--- TODO: Add logging.
 unready :: Action
 unready (_, mq, cols) [] = advise mq cols ["unready"] $ "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
-unready (i, mq, cols) rs = send mq . nl =<< helper
+unready (i, mq, cols) rs = do
+    (msg, logMsgs) <- helper
+    unless (null logMsgs) $ logPlaOut "unready" i logMsgs
+    send mq . nl $ msg
   where
     helper = onWS $ \(t, ws) ->
         let em = (ws^.eqTbl) ! i
             is = M.elems em
         in if not . null $ is
-          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is mempty
-                   eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
-                   msgs               = if null rcs then "" else "You can't unready coins.\n"
-                   (ws',  msgs')      = foldl' (helperUnready i cols) (ws, msgs) eiss
-               in putTMVar t ws' >> return msgs'
-          else putTMVar t ws >> (return . T.unlines . wordWrap cols $ dudeYou'reNaked)
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames ws (nub . map T.toLower $ rs) is mempty
+                   eiss                  = zipWith (curry procGecrMisPCEq) gecrs miss
+                   msg                   = if null rcs then "" else "You can't unready coins.\n"
+                   (ws',  msg', logMsgs) = foldl' (helperUnready i cols) (ws, msg, []) eiss
+               in putTMVar t ws' >> return (msg', logMsgs)
+          else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYou'reNaked, [])
 
 
-helperUnready :: Id -> Cols -> (WorldState, T.Text) -> Either T.Text Inv -> (WorldState, T.Text)
-helperUnready i cols (ws, msgs) = \case
-  Left  msg -> (ws, msgs <> msg)
-  Right is  -> let em  = (ws^.eqTbl)  ! i
-                   pis = (ws^.invTbl) ! i
-                   ws' = ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
-                            & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
-                   msg = mkUnreadyDesc cols ws' is
-               in (ws', msgs <> msg)
+helperUnready :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
+helperUnready i cols (ws, msg, logMsgs) = \case
+  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Right is   -> let em   = (ws^.eqTbl)  ! i
+                    pis  = (ws^.invTbl) ! i
+                    ws'  = ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
+                              & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
+                    msgs = mkUnreadyDescs ws' is
+                in (ws', (msg <>) . T.concat . map (T.unlines . wordWrap cols) $ msgs, logMsgs ++ msgs)
 
 
-mkUnreadyDesc :: Cols -> WorldState -> Inv -> T.Text
-mkUnreadyDesc cols ws is = T.concat [ helper icb | icb <- mkIdCountBothList ws is ]
+mkUnreadyDescs :: WorldState -> Inv -> [T.Text]
+mkUnreadyDescs ws is = [ helper icb | icb <- mkIdCountBothList ws is ]
   where
-    helper (i, c, b@(s, _)) = let v = verb i in T.unlines . wordWrap cols . T.concat $ if c == 1
+    helper (i, c, b@(s, _)) = let v = verb i in T.concat $ if c == 1
       then [ "You ", v, " the ", s, "." ]
       else [ "You ", v, " ", showText c, " ", mkPlurFromBoth b, "." ]
-    verb i = let t = (ws^.typeTbl) ! i
-             in case t of
-               ClothType -> unwearGenericVerb -- TODO
-               WpnType   -> "stop wielding"
-               _         -> undefined -- TODO
+    verb i = case (ws^.typeTbl) ! i of
+      ClothType -> unwearGenericVerb -- TODO
+      WpnType   -> "stop wielding"
+      _         -> undefined -- TODO
     unwearGenericVerb = "take off"
 
 
