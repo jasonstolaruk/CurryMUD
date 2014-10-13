@@ -5,7 +5,7 @@ import MudTests.TheWorldTests
 import MudTests.UtilTests
 
 import Test.Tasty (defaultMain, testGroup, TestTree)
---import Test.Tasty.HUnit
+import Test.Tasty.HUnit ((@?=), testCase)
 import Test.Tasty.QuickCheck as QC (testProperty)
 
 
@@ -47,12 +47,6 @@ testUtil = testGroup "UtilTests"
 -- --------------------------------------------------
 
 unitTests :: TestTree
-unitTests = testGroup "Unit tests" [] -- TODO
-
-{-
-  HUnit example:
-
-  [ testCase "List comparison (different length)" $
-      [1, 2, 3] `compare` [1,2] @?= GT
-  ]
--}
+unitTests = testGroup "Unit tests"
+  [ testCase "List comparison (different length)" $ ([ 1, 2, 3 ] :: [Int]) `compare` [ 1, 2    ] @?= GT
+  , testCase "List comparison (same length)"      $ ([ 1, 2, 3 ] :: [Int]) `compare` [ 1, 2, 2 ] @?= GT ]

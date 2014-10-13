@@ -336,17 +336,6 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
       Die            -> return ()
 
 
--- TODO: Move? Also write an hunit test for the following:
--- [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
-stripTelnet :: String -> String
-stripTelnet msg@(x:y:_:rest)
-  | x == telnetIAC = if y == telnetSB
-                       then tail . dropWhile (/= telnetSE) $ rest
-                       else stripTelnet rest
-  | otherwise      = msg
-stripTelnet msg = msg
-
-
 serverExHandler :: Id -> SomeException -> MudStack ()
 serverExHandler i e = case fromException e of
                         Just ThreadKilled -> closePlaLog i
