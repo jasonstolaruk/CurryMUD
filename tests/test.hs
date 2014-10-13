@@ -44,9 +44,8 @@ testUtil = testGroup "UtilTests"
   , QC.testProperty "prop_deleteFirstOfEach" prop_deleteFirstOfEach
   , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 
--- --------------------------------------------------
+-- ==================================================
 
 unitTests :: TestTree
 unitTests = testGroup "Unit tests"
-  [ testCase "List comparison (different length)" $ ([ 1, 2, 3 ] :: [Int]) `compare` [ 1, 2    ] @?= GT
-  , testCase "List comparison (same length)"      $ ([ 1, 2, 3 ] :: [Int]) `compare` [ 1, 2, 2 ] @?= GT ]
+  [ testCase "stripTelnet" $ test_stripTelnet @?= "test" ]

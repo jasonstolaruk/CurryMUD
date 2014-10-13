@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-orphans #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module MudTests.UtilTests where
@@ -11,7 +11,7 @@ import qualified Mud.Util as U (patternMatchFail)
 import Control.Applicative ((<$>), (<*>))
 import Control.Lens (_1, _2, both, over, to)
 import Control.Lens.Operators ((^.))
-import Data.Char (isDigit, isSpace)
+import Data.Char (chr, isDigit, isSpace)
 import Data.List (elemIndices, group, sort)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
@@ -19,6 +19,9 @@ import qualified Data.Text as T
 import Test.QuickCheck.Instances ()
 import Test.QuickCheck.Modifiers
 import Test.Tasty.QuickCheck ((==>), choose, forAll, Property)
+
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -161,3 +164,12 @@ prop_deleteFirstOfEach :: [Int] -> [Int] -> Property
 prop_deleteFirstOfEach delThese fromThis = all (\x -> countOcc x fromThis < 2) delThese ==>
   let res = deleteFirstOfEach delThese fromThis
   in all (`notElem` res) delThese
+
+
+-- --------------------------------------------------
+
+
+test_stripTelnet :: String
+test_stripTelnet = stripTelnet $ telnetChars ++ "test"
+  where
+    telnetChars = map chr [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]

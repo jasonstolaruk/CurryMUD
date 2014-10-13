@@ -241,8 +241,6 @@ injectCR :: T.Text -> T.Text
 injectCR = T.replace "\n" "\r\n"
 
 
--- TODO: Write an hunit test for the following:
--- [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
 stripTelnet :: String -> String
 stripTelnet msg@(x:y:_:rest)
   | x == telnetIAC = if y == telnetSB
