@@ -74,7 +74,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --      [DONE] "(..)" instead of "(blah)" in import statements.
 --   d. [DONE] Check for superfluous exports.
 -- 7. Write tests for NameResolution and Cmds.
--- TODO: cabal bench?
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -275,7 +274,7 @@ adHoc mq host = do
         let pc  = PC iHill Human
         let ris = i : (ws^.invTbl) ! iHill
         -----
-        let pla = Pla host 30
+        let pla = Pla host 80
         -----
         let ws'  = ws  & typeTbl.at  i     ?~ PCType
                        & entTbl.at   i     ?~ e
@@ -339,14 +338,16 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
 
 
 serverExHandler :: Id -> SomeException -> MudStack ()
-serverExHandler i e = case fromException e of
-                        Just ThreadKilled -> closePlaLog i
-                        _                 -> helper
-  where
-    helper = do
-        logExMsg "serverExHandler" "exception caught on server thread; rethrowing to listen thread" e
-        ti <- getListenThreadId
-        liftIO . throwTo ti $ e
+serverExHandler = plaThreadExHandler "server"
+
+
+plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
+plaThreadExHandler n i e =
+    if fromException e == Just ThreadKilled
+      then closePlaLog i
+      else do
+          logExMsg (n <> "ExHandler") ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
+          liftIO . flip throwTo e =<< getListenThreadId
 
 
 getListenThreadId :: MudStack ThreadId
@@ -378,14 +379,7 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
 
 
 receiveExHandler :: Id -> SomeException -> MudStack ()
-receiveExHandler i e = case fromException e of
-                         Just ThreadKilled -> closePlaLog i
-                         _                 -> helper
-  where
-    helper = do
-        logExMsg "receiveExHandler" "exception caught on receive thread; rethrowing to listen thread" e
-        ti <- getListenThreadId
-        liftIO . throwTo ti $ e
+receiveExHandler = plaThreadExHandler "receive"
 
 
 handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
@@ -661,20 +655,23 @@ look (i, mq, cols) [] = getWS >>= \ws ->
         suppl   = mkExitsSummary cols r <> ricd
         ricd    = mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
-look (i, mq, cols) rs = getWS >>= \ws ->
-    let p  = (ws^.pcTbl)    ! i
-        ri = p^.rmId
-        is = delete i . (! ri) $ ws^.invTbl
-        c  = (ws^.coinsTbl) ! ri
-    in send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
-               eiss               = zipWith (curry procGecrMisRm) gecrs miss
-               ecs                = map procReconciledCoinsRm rcs
-               invDesc            = foldl' (helperLookEitherInv ws) "" eiss
-               coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-           in invDesc <> coinsDesc
-      else nl . T.unlines . wordWrap cols $ "You don't see anything here to look at."
+look (i, mq, cols) rs = helper >>= \case -- TODO: Continue to work on broadcasting.
+  Left  msg -> send mq . nl . T.unlines . wordWrap cols $ msg
+  Right msg -> send mq msg
   where
+    helper = onWS $ \(t, ws) ->
+        let p  = (ws^.pcTbl) ! i
+            ri = p^.rmId
+            is = delete i . (! ri) $ ws^.invTbl
+            c  = (ws^.coinsTbl) ! ri
+        in if (not . null $ is) || (c /= mempty)
+          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
+                   eiss               = zipWith (curry procGecrMisRm) gecrs miss
+                   ecs                = map procReconciledCoinsRm rcs
+                   invDesc            = foldl' (helperLookEitherInv ws) "" eiss
+                   coinsDesc          = foldl' helperLookEitherCoins    "" ecs
+               in putTMVar t ws >> (return . Right $ invDesc <> coinsDesc)
+          else    putTMVar t ws >> (return . Left  $ "You don't see anything here to look at.")
     helperLookEitherInv _  acc (Left  msg) = nl $ acc <> msg
     helperLookEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
     helperLookEitherCoins  acc (Left  msg) = nl $ acc <> msg
