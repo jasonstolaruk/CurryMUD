@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-module Mud.Cmds (listenWrapper) where -- TODO: Write tests?
+module Mud.Cmds (listenWrapper) where
 
 import Mud.Ids
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
@@ -65,14 +65,16 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- 4. Implement the broadcasting of messages.
 -- [DONE] 5. Log commands.
 -- 6. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
--- a. Code reduction.
--- b. Consistency in binding names.
--- c. Stylistic issues:
---    [DONE] Use "++" instead of "<>" where applicable.
---    [DONE] Concat lists of text instead of using "<>".
---    [DONE] ">>=" vs. "=<<".
---    [DONE] "(..)" instead of "(blah)" in import statements.
--- d. [DONE] Check for superfluous exports.
+--   a. Code reduction.
+--   b. Consistency in binding names.
+--   c. Stylistic issues:
+--      [DONE] Use "++" instead of "<>" where applicable.
+--      [DONE] Concat lists of text instead of using "<>".
+--      [DONE] ">>=" vs. "=<<".
+--      [DONE] "(..)" instead of "(blah)" in import statements.
+--   d. [DONE] Check for superfluous exports.
+-- 7. Write tests for NameResolution and Cmds.
+-- TODO: cabal bench?
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a

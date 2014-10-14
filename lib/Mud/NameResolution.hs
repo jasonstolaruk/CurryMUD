@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
-module Mud.NameResolution ( ReconciledCoins -- TODO: Write tests?
+module Mud.NameResolution ( ReconciledCoins
                           , procGecrMisCon
                           , procGecrMisPCEq
                           , procGecrMisPCInv
