@@ -316,12 +316,14 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 notifyArrival :: Id -> MudStack ()
-notifyArrival i = getWS >>= \ws ->
-    let e    = (ws^.entTbl) ! i
-        p    = (ws^.pcTbl)  ! i
-        ris  = (ws^.invTbl) ! (p^.rmId)
-        pcIs = findPCIds ws . delete i $ ris
-    in broadcast [ (e^.sing <> " has arrived in the game.", pcIs) ]
+notifyArrival i = broadcast =<< helper
+  where
+    helper = onWS $ \(t, ws) ->
+        let e    = (ws^.entTbl) ! i
+            p    = (ws^.pcTbl)  ! i
+            ris  = (ws^.invTbl) ! (p^.rmId)
+            pcIs = findPCIds ws . delete i $ ris
+        in putTMVar t ws >> return [ (e^.sing <> " has arrived in the game.", pcIs) ]
 
 
 server :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -372,7 +374,7 @@ receive :: Handle -> Id -> MsgQueue -> MudStack ()
 receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler i
   where
     loop = (liftIO . hIsEOF $ h) >>= \case
-      True  -> logPla "receive" i "connection dropped." >> closePlaLog i
+      True  -> logPla "receive" i "connection dropped." >> closePlaLog i -- TODO: We also have to delete the PC and such.
       False -> do
           liftIO $ atomically . writeTQueue mq . FromClient . T.pack =<< hGetLine h
           loop
@@ -557,7 +559,7 @@ tryMove :: IdMsgQueueCols -> T.Text -> MudStack ()
 tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                                 in helper dir' >>= \case
                                   Left  msg          -> send mq . nl . T.unlines . wordWrap cols $ msg
-                                  Right (logMsg, bs) -> logPla "tryMove" i logMsg >> broadcast bs >> look imc []
+                                  Right (logMsg, bs) -> broadcast bs >> logPla "tryMove" i logMsg >> look imc []
   where
     helper dir' = onWS $ \(t, ws) ->
         let e   = (ws^.entTbl) ! i
@@ -655,23 +657,32 @@ look (i, mq, cols) [] = getWS >>= \ws ->
         suppl   = mkExitsSummary cols r <> ricd
         ricd    = mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
-look (i, mq, cols) rs = helper >>= \case -- TODO: Continue to work on broadcasting.
-  Left  msg -> send mq . nl . T.unlines . wordWrap cols $ msg
-  Right msg -> send mq msg
+look (i, mq, cols) rs = helper >>= \case
+  (Left  msg, _              ) -> send mq . nl . T.unlines . wordWrap cols $ msg
+  (Right msg, Nothing        ) -> send mq msg
+  (Right msg, Just (pis, iss)) -> do -- TODO: Log?
+      let (_, s)         = head iss
+      let f acc (pi, ps) = (s <> " looks at you.", [pi]) : (T.concat [ s, " looks at ", ps, "." ], pi `delete` pis) : acc
+      broadcast . foldl' f [] . tail $ iss
+      send mq msg
   where
     helper = onWS $ \(t, ws) ->
-        let p  = (ws^.pcTbl) ! i
-            ri = p^.rmId
-            is = delete i . (! ri) $ ws^.invTbl
-            c  = (ws^.coinsTbl) ! ri
+        let p      = (ws^.pcTbl) ! i
+            ri     = p^.rmId
+            is     = delete i . (! ri) $ ws^.invTbl
+            allPis = findPCIds ws is
+            c      = (ws^.coinsTbl) ! ri
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                = map procReconciledCoinsRm rcs
+                   lookPis            = foldl' (helperFindPCIds     ws) [] eiss
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-               in putTMVar t ws >> (return . Right $ invDesc <> coinsDesc)
-          else    putTMVar t ws >> (return . Left  $ "You don't see anything here to look at.")
+               in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (allPis, mkIdSingList ws $ i : lookPis))
+          else    putTMVar t ws >> return (Left "You don't see anything here to look at.", Nothing)
+    helperFindPCIds     _  acc (Left  _ )  = acc
+    helperFindPCIds     ws acc (Right is)  = acc ++ findPCIds ws is
     helperLookEitherInv _  acc (Left  msg) = nl $ acc <> msg
     helperLookEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
     helperLookEitherCoins  acc (Left  msg) = nl $ acc <> msg
@@ -680,10 +691,11 @@ look (i, mq, cols) rs = helper >>= \case -- TODO: Continue to work on broadcasti
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
-mkRmInvCoinsDesc i cols ws ri = let is       = delete i . (! ri) $ ws^.invTbl
-                                    c        = (ws^.coinsTbl) ! ri
-                                    entDescs = T.unlines . concatMap (wordWrapIndent 2 cols . helper) . mkNameCountBothTypeList ws $ is
-                                in if c == mempty then entDescs else entDescs <> mkCoinsSummary cols c
+mkRmInvCoinsDesc i cols ws ri =
+    let is       = delete i . (! ri) $ ws^.invTbl
+        c        = (ws^.coinsTbl) ! ri
+        entDescs = T.unlines . concatMap (wordWrapIndent 2 cols . helper) . mkNameCountBothTypeList ws $ is
+    in if c == mempty then entDescs else entDescs <> mkCoinsSummary cols c
   where
     helper (en, c, (s, _), t)
       | c == 1 = f s <> " " <> bracketQuote en
