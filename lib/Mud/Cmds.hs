@@ -316,14 +316,10 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 notifyArrival :: Id -> MudStack ()
-notifyArrival i = broadcast =<< helper
-  where
-    helper = onWS $ \(t, ws) ->
-        let e    = (ws^.entTbl) ! i
-            p    = (ws^.pcTbl)  ! i
-            ris  = (ws^.invTbl) ! (p^.rmId)
-            pcIs = findPCIds ws . delete i $ ris
-        in putTMVar t ws >> return [ (e^.sing <> " has arrived in the game.", pcIs) ]
+notifyArrival i = getWS >>= \ws ->
+    let e = (ws^.entTbl) ! i
+        msg = e^.sing <> " has arrived in the game."
+    in broadcastOthersInRm i msg
 
 
 server :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -374,7 +370,7 @@ receive :: Handle -> Id -> MsgQueue -> MudStack ()
 receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler i
   where
     loop = (liftIO . hIsEOF $ h) >>= \case
-      True  -> logPla "receive" i "connection dropped." >> closePlaLog i -- TODO: We also have to delete the PC and such.
+      True  -> logPla "receive" i "connection dropped." >> handleQuit i
       False -> do
           liftIO $ atomically . writeTQueue mq . FromClient . T.pack =<< hGetLine h
           loop
@@ -660,11 +656,12 @@ look (i, mq, cols) [] = getWS >>= \ws ->
 look (i, mq, cols) rs = helper >>= \case
   (Left  msg, _              ) -> send mq . nl . T.unlines . wordWrap cols $ msg
   (Right msg, Nothing        ) -> send mq msg
-  (Right msg, Just (pis, iss)) -> do -- TODO: Log?
+  (Right msg, Just (pis, iss)) -> do
       let (_, s)         = head iss
       let f acc (pi, ps) = (s <> " looks at you.", [pi]) : (T.concat [ s, " looks at ", ps, "." ], pi `delete` pis) : acc
       broadcast . foldl' f [] . tail $ iss
       send mq msg
+      forM_ (tail iss) $ \(_, ps) -> logPla "look" i ("looked at " <> ps <> ".")
   where
     helper = onWS $ \(t, ws) ->
         let p      = (ws^.pcTbl) ! i
@@ -1580,14 +1577,16 @@ uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
 
 
 quit :: Action
-quit (_, mq, cols) [] = liftIO . atomically . writeTQueue mq . Quit . nl . T.unlines . wordWrap cols $ "Thanks for playing! See you next time."
-quit (_, mq, cols) _  = send mq . nl . T.unlines . wordWrap cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
+quit (i, mq, cols) [] = do
+    liftIO . atomically . writeTQueue mq . Quit . nl . T.unlines . wordWrap cols $ "Thanks for playing! See you next time."
+    logPlaExec "quit" i
+quit (_, mq, cols) _  =
+    send mq . nl . T.unlines . wordWrap cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
 
 handleQuit :: Id -> MudStack ()
 handleQuit i = do
-    logPlaExec "quit" i
-    closePlaLog i
+    notifyEgress i
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSTMVar msgQueueTblTMVar
     ptTMVar  <- getNWSTMVar plaTblTMVar
@@ -1616,6 +1615,14 @@ handleQuit i = do
         putTMVar ptTMVar  pt'
         return $ e^.sing
     logNotice "handleQuit" . T.concat $ [ "player ", showText i, " ", parensQuote n, " has quit." ]
+    closePlaLog i
+
+
+notifyEgress :: Id -> MudStack ()
+notifyEgress i = getWS >>= \ws ->
+    let e = (ws^.entTbl) ! i
+        msg = e^.sing <> " has left the game."
+    in broadcastOthersInRm i msg
 
 
 -- ==================================================

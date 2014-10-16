@@ -6,6 +6,7 @@
 module Mud.StateHelpers ( allKeys
                         , BothGramNos
                         , broadcast
+                        , broadcastOthersInRm
                         , findPCIds
                         , frame
                         , getEntBothGramNos
@@ -60,6 +61,7 @@ import Control.Monad.State.Class (MonadState)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), sortBy)
+import Data.List (delete)
 import Data.Monoid ((<>))
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
@@ -271,6 +273,16 @@ broadcast bs = getMqtPt >>= \(mqt, pt) -> do
                            cols = (pt ! i)^.columns
                        in send mq . nl . T.unlines . wordWrap cols $ msg
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
+
+
+broadcastOthersInRm :: Id -> T.Text -> MudStack ()
+broadcastOthersInRm i msg = broadcast =<< helper
+  where
+    helper = onWS $ \(t, ws) ->
+        let p   = (ws^.pcTbl)  ! i
+            ris = (ws^.invTbl) ! (p^.rmId)
+            pis = findPCIds ws . delete i $ ris
+        in putTMVar t ws >> return [ (msg, pis) ]
 
 
 massBroadcast :: T.Text -> MudStack ()
