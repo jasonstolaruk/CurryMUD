@@ -572,7 +572,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
           Just (linkTxt, ri', mom, mdm) ->
               let p'          = p & rmId .~ ri'
                   r'          = (ws^.rmTbl)  ! ri'
-                  originIs    = delete i ris
+                  originIs    = i `delete` ris
                   destIs      = (ws^.invTbl) ! ri'
                   destIs'     = sortInv ws $ i : destIs
                   originPis   = findPCIds ws originIs
@@ -1607,7 +1607,7 @@ handleQuit i = do
                        & eqTbl.at    i  .~ Nothing
                        & mobTbl.at   i  .~ Nothing
                        & pcTbl.at    i  .~ Nothing
-                       & invTbl.at   ri ?~ delete i ris
+                       & invTbl.at   ri ?~ i `delete` ris
         let mqt' = mqt & at i .~ Nothing
         let pt'  = pt  & at i .~ Nothing
         -----
