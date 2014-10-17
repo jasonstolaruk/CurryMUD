@@ -60,8 +60,7 @@ import Control.Monad.State (gets)
 import Control.Monad.State.Class (MonadState)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), sortBy)
-import Data.List (delete)
+import Data.List ((\\), delete, sortBy)
 import Data.Monoid ((<>))
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
@@ -289,7 +288,7 @@ massBroadcast :: T.Text -> MudStack ()
 massBroadcast msg = getMqtPt >>= \(mqt, pt) -> do
     let helper i = let mq   = mqt ! i
                        cols = (pt ! i)^.columns
-                   in send mq . frame cols . T.unlines . wordWrap cols $ msg
+                   in send mq . nl' . frame cols . T.unlines . wordWrap cols $ msg
     forM_ (IM.keys pt) helper
 
 

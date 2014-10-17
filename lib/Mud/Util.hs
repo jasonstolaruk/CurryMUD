@@ -24,6 +24,7 @@ module Mud.Util ( adjustIndent
                 , mkCountList
                 , mkOrdinal
                 , nl
+                , nl'
                 , nlnl
                 , padOrTrunc
                 , parensPad
@@ -234,7 +235,11 @@ nl = (<> "\n")
 
 
 nlnl :: T.Text -> T.Text
-nlnl = (<> "\n\n")
+nlnl = nl . nl
+
+
+nl' :: T.Text -> T.Text
+nl' = ("\n" <>)
 
 
 injectCR :: T.Text -> T.Text

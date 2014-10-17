@@ -301,7 +301,7 @@ dumpTitle mq = liftIO newStdGen >>= \g ->
         fn     = T.unpack "title" ++ show n
     in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
   where
-    takeADump fn = send mq . ("\n" <>) =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
+    takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
 
 
 readFileExHandler :: T.Text -> IOException -> MudStack ()
@@ -497,9 +497,10 @@ dispCmdList p (_, mq, cols) rs = send mq . nl . T.unlines . concatMap (wordWrapI
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
-cmdListText p = sort . T.lines . T.concat . foldl' mkTxtForCmd [] . filter p $ cmdList
+cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ cmdList
   where
-    mkTxtForCmd acc c = T.concat [ padOrTrunc 10 . cmdName $ c, cmdDesc c, "\n" ] : acc
+    helper acc c = let cmdTxt = nl $ (padOrTrunc 10 . cmdName $ c) <> cmdDesc c
+                   in  cmdTxt : acc
 
 
 cmdPred :: Maybe Char -> Cmd -> Bool
@@ -748,7 +749,7 @@ mkInvCoinsDesc i cols ws ei e = let is       = (ws^.invTbl)   ! ei
                                   (True,  True ) -> header <> mkEntsInInvDesc cols ws is <> mkCoinsSummary cols c
   where
     header
-      | ei == i   = "You are carrying:\n"
+      | ei == i   = nl "You are carrying:"
       | otherwise = T.unlines . wordWrap cols $ "The " <> e^.sing <> " contains:"
 
 
@@ -861,7 +862,8 @@ mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
     mkDesc (sn, i')  = let sn'           = parensPad 15 noFinger
                            (noFinger, _) = T.breakOn " finger" sn
                            e'            = (ws^.entTbl) ! i'
-                       in T.concat [ sn', e'^.sing, " ", e'^.name.to bracketQuote ]
+                           en            = if ei == i then " " <> e'^.name.to bracketQuote else ""
+                       in sn' <> e'^.sing <> en
     none   = T.unlines . wordWrap cols $ if
       | ei == i      -> dudeYou'reNaked
       | t  == PCType -> e^.sing <> " doesn't have anything readied."
@@ -1180,7 +1182,7 @@ ready (i, mq, cols) rs = do
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws (nub . map T.toLower $ rs) is mempty
                    eiss                      = zipWith (curry procGecrMisReady) gecrs miss
-                   msg                       = if null rcs then "" else "You can't ready coins.\n"
+                   msg                       = if null rcs then "" else nl "You can't ready coins."
                    (ws',  msg', logMsgs)     = foldl' (helperReady i cols) (ws, msg, []) . zip eiss $ mrols
                in putTMVar t ws' >> return (msg', logMsgs)
           else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty, [])
@@ -1414,7 +1416,7 @@ unready (i, mq, cols) rs = do
         in if not . null $ is
           then let (gecrs, miss, rcs)    = resolveEntCoinNames ws (nub . map T.toLower $ rs) is mempty
                    eiss                  = zipWith (curry procGecrMisPCEq) gecrs miss
-                   msg                   = if null rcs then "" else "You can't unready coins.\n"
+                   msg                   = if null rcs then "" else nl "You can't unready coins."
                    (ws',  msg', logMsgs) = foldl' (helperUnready i cols) (ws, msg, []) eiss
                in putTMVar t ws' >> return (msg', logMsgs)
           else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYou'reNaked, [])
@@ -1464,11 +1466,10 @@ what (i, mq, cols) rs = getWS >>= \ws ->
       r  = (ws^.rmTbl) ! (p^.rmId)
   in logPlaExecArgs "what" rs i >> (send mq . T.concat . map (helper ws r) . nub . map T.toLower $ rs)
   where
-    helper ws r n = T.concat [ whatCmd   cols r        n
-                             , whatInv i cols ws PCInv n
-                             , whatInv i cols ws PCEq  n
-                             , whatInv i cols ws RmInv n
-                             , "\n" ]
+    helper ws r n = nl . T.concat $ [ whatCmd   cols r        n
+                                    , whatInv i cols ws PCInv n
+                                    , whatInv i cols ws PCEq  n
+                                    , whatInv i cols ws RmInv n ]
 
 
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
@@ -1569,7 +1570,7 @@ uptime (i, mq, cols) [] = do
                     a'     = unwords . tail . words $ a
                     b'     = dropWhile isSpace . takeWhile (/= ',') . tail $ b
                     c      = (toUpper . head $ a') : tail a'
-                in T.concat [ T.pack c, " ", T.pack b', ".\n\n" ]
+                in nlnl . T.concat $ [ T.pack c, " ", T.pack b', "." ]
 uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
 
 
@@ -1646,7 +1647,7 @@ wizShutdown (i, mq, _) [] = getWS >>= \ws ->
         logNotice  "wizShutdown" $ T.concat [ "server shutdown initiated by ", e^.sing, " ", parensQuote "no message given", "." ]
         liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown (i, mq, _) rs = getWS >>= \ws ->
-    let e = (ws^.entTbl) ! i
+    let e   = (ws^.entTbl) ! i
         msg = T.intercalate " " rs
     in do
         massBroadcast msg

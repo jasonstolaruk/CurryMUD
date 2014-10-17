@@ -226,19 +226,19 @@ mkGecrWithRol ws is c n = let (a, b) = T.break (== slotChar) n
 
 
 sorryIndexedCoins :: T.Text
-sorryIndexedCoins = "Sorry, but " <> (dblQuote . T.pack $ [indexChar]) <> " cannot be used with coins.\n"
+sorryIndexedCoins = nl $ "Sorry, but " <> (dblQuote . T.pack $ [indexChar]) <> " cannot be used with coins."
 
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisPCInv (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCInv (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't have " <> aOrAn n <> ".\n"
-procGecrMisPCInv (Mult _ n Nothing  _,   Nothing) = Left $ "You don't have any " <> n <> "s.\n"
+procGecrMisPCInv (Mult 1 n Nothing  _,   Nothing) = Left . nl $ "You don't have " <> aOrAn n <> "."
+procGecrMisPCInv (Mult _ n Nothing  _,   Nothing) = Left . nl $ "You don't have any " <> n <> "s."
 procGecrMisPCInv (Mult _ _ (Just _) _,   Just is) = Right is
-procGecrMisPCInv (Indexed _ n (Left ""), Nothing) = Left $ "You don't have any " <> n <> "s.\n"
-procGecrMisPCInv (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "You don't have ", showText x, " ", p, ".\n" ]
+procGecrMisPCInv (Indexed _ n (Left ""), Nothing) = Left . nl $ "You don't have any " <> n <> "s."
+procGecrMisPCInv (Indexed x _ (Left p),  Nothing) = Left . nl . T.concat $ [ "You don't have ", showText x, " ", p, "." ]
 procGecrMisPCInv (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisPCInv (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
-procGecrMisPCInv (Sorry n,               Nothing) = Left $ "You don't have " <> aOrAn n <> ".\n"
+procGecrMisPCInv (Sorry n,               Nothing) = Left . nl $ "You don't have " <> aOrAn n <> "."
 procGecrMisPCInv gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
@@ -249,7 +249,7 @@ procGecrMisReady gecrMis            = procGecrMisPCInv gecrMis
 
 sorryBadSlot :: T.Text -> T.Text
 sorryBadSlot n
-  | slotChar `elem` T.unpack n = T.concat [ "Please specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", ".\n", ringHelp ]
+  | slotChar `elem` T.unpack n = T.concat [ "Please specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", ".", nl' ringHelp ]
   | otherwise                  = "You don't have " <> aOrAn n <> "."
 
 
@@ -258,49 +258,49 @@ mkSlotTxt = dblQuote . (T.pack [slotChar] <>)
 
 
 ringHelp :: T.Text
-ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", " immediately followed by:\n"
-                    , dblQuote "i", " for index finger,\n"
-                    , dblQuote "m", " for middle finger,\n"
-                    , dblQuote "r", " for ring finger, or\n"
-                    , dblQuote "p", " for pinky finger.\n" ]
+ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", nl " immediately followed by:"
+                    , dblQuote "i", nl " for index finger,"
+                    , dblQuote "m", nl " for middle finger,"
+                    , dblQuote "r", nl " for ring finger, or"
+                    , dblQuote "p", nl " for pinky finger." ]
 
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisRm (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisRm (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't see " <> aOrAn n <> " here.\n"
-procGecrMisRm (Mult _ n Nothing  _,   Nothing) = Left $ "You don't see any " <> n <> "s here.\n"
+procGecrMisRm (Mult 1 n Nothing  _,   Nothing) = Left . nl $ "You don't see " <> aOrAn n <> " here."
+procGecrMisRm (Mult _ n Nothing  _,   Nothing) = Left . nl $ "You don't see any " <> n <> "s here."
 procGecrMisRm (Mult _ _ (Just _) _,   Just is) = Right is
-procGecrMisRm (Indexed _ n (Left ""), Nothing) = Left $ "You don't see any " <> n <> "s here.\n"
-procGecrMisRm (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "You don't see ", showText x, " ", p, " here.\n" ]
+procGecrMisRm (Indexed _ n (Left ""), Nothing) = Left . nl $ "You don't see any " <> n <> "s here."
+procGecrMisRm (Indexed x _ (Left p),  Nothing) = Left . nl . T.concat $ [ "You don't see ", showText x, " ", p, " here." ]
 procGecrMisRm (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisRm (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
-procGecrMisRm (Sorry n,               Nothing) = Left $ "You don't see " <> aOrAn n <> " here.\n"
+procGecrMisRm (Sorry n,               Nothing) = Left . nl $ "You don't see " <> aOrAn n <> " here."
 procGecrMisRm gecrMis                          = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisCon _  (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisCon cn (Mult 1 n Nothing  _,   Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn n, ".\n" ]
-procGecrMisCon cn (Mult _ n Nothing  _,   Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain any ", n, "s.\n"  ]
+procGecrMisCon cn (Mult 1 n Nothing  _,   Nothing) = Left . nl . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
+procGecrMisCon cn (Mult _ n Nothing  _,   Nothing) = Left . nl . T.concat $ [ "The ", cn, " doesn't contain any ", n, "s."  ]
 procGecrMisCon _  (Mult _ _ (Just _) _,   Just is) = Right is
-procGecrMisCon cn (Indexed _ n (Left ""), Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain any ", n, "s.\n"  ]
-procGecrMisCon cn (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", showText x, " ", p, ".\n" ]
+procGecrMisCon cn (Indexed _ n (Left ""), Nothing) = Left . nl . T.concat $ [ "The ", cn, " doesn't contain any ", n, "s."  ]
+procGecrMisCon cn (Indexed x _ (Left p),  Nothing) = Left . nl . T.concat $ [ "The ", cn, " doesn't contain ", showText x, " ", p, "." ]
 procGecrMisCon _  (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisCon _  (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
-procGecrMisCon cn (Sorry n,               Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn n, ".\n" ]
+procGecrMisCon cn (Sorry n,               Nothing) = Left . nl . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn n, "." ]
 procGecrMisCon _  gecrMis                          = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
 
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisPCEq (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCEq (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't have " <> aOrAn n <> " among your readied equipment.\n"
-procGecrMisPCEq (Mult _ n Nothing  _,   Nothing) = Left $ "You don't have any " <> n <> "s among your readied equipment.\n"
+procGecrMisPCEq (Mult 1 n Nothing  _,   Nothing) = Left . nl $ "You don't have " <> aOrAn n <> " among your readied equipment."
+procGecrMisPCEq (Mult _ n Nothing  _,   Nothing) = Left . nl $ "You don't have any " <> n <> "s among your readied equipment."
 procGecrMisPCEq (Mult _ _ (Just _) _,   Just is) = Right is
-procGecrMisPCEq (Indexed _ n (Left ""), Nothing) = Left $ "You don't have any " <> n <> "s among your readied equipment.\n"
-procGecrMisPCEq (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "You don't have ", showText x, " ", p, " among your readied equipment.\n" ]
+procGecrMisPCEq (Indexed _ n (Left ""), Nothing) = Left . nl $ "You don't have any " <> n <> "s among your readied equipment."
+procGecrMisPCEq (Indexed x _ (Left p),  Nothing) = Left . nl . T.concat $ [ "You don't have ", showText x, " ", p, " among your readied equipment." ]
 procGecrMisPCEq (Indexed _ _ (Right _), Just is) = Right is
 procGecrMisPCEq (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
-procGecrMisPCEq (Sorry n,               Nothing) = Left $ "You don't have " <> aOrAn n <> " among your readied equipment.\n"
+procGecrMisPCEq (Sorry n,               Nothing) = Left . nl $ "You don't have " <> aOrAn n <> " among your readied equipment."
 procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
 
 
@@ -309,48 +309,48 @@ procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMis
 
 
 procReconciledCoinsPCInv :: ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsPCInv (Left  Empty)                            = Left "You don't have any coins.\n"
+procReconciledCoinsPCInv (Left  Empty)                            = Left . nl $ "You don't have any coins."
 procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
   where
-    c = if cop /= 0 then "You don't have any copper pieces.\n" else ""
-    s = if sil /= 0 then "You don't have any silver pieces.\n" else ""
-    g = if gol /= 0 then "You don't have any gold pieces.\n"   else ""
+    c = if cop /= 0 then nl "You don't have any copper pieces." else ""
+    s = if sil /= 0 then nl "You don't have any silver pieces." else ""
+    g = if gol /= 0 then nl "You don't have any gold pieces."   else ""
 procReconciledCoinsPCInv (Right (SomeOf c                      )) = Right c
 procReconciledCoinsPCInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
   where
-    c = if cop /= 0 then "You don't have " <> showText cop <> " copper pieces.\n" else ""
-    s = if sil /= 0 then "You don't have " <> showText sil <> " silver pieces.\n" else ""
-    g = if gol /= 0 then "You don't have " <> showText gol <> " gold pieces.\n"   else ""
+    c = if cop /= 0 then nl $ "You don't have " <> showText cop <> " copper pieces." else ""
+    s = if sil /= 0 then nl $ "You don't have " <> showText sil <> " silver pieces." else ""
+    g = if gol /= 0 then nl $ "You don't have " <> showText gol <> " gold pieces."   else ""
 procReconciledCoinsPCInv rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
 
 
 procReconciledCoinsRm :: ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsRm (Left  Empty)                            = Left "You don't see any coins here.\n"
+procReconciledCoinsRm (Left  Empty)                            = Left . nl $ "You don't see any coins here."
 procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
   where
-    c = if cop /= 0 then "You don't see any copper pieces here.\n" else ""
-    s = if sil /= 0 then "You don't see any silver pieces here.\n" else ""
-    g = if gol /= 0 then "You don't see any gold pieces here.\n"   else ""
+    c = if cop /= 0 then nl "You don't see any copper pieces here." else ""
+    s = if sil /= 0 then nl "You don't see any silver pieces here." else ""
+    g = if gol /= 0 then nl "You don't see any gold pieces here."   else ""
 procReconciledCoinsRm (Right (SomeOf c                      )) = Right c
 procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
   where
-    c = if cop /= 0 then "You don't see " <> showText cop <> " copper pieces here.\n" else ""
-    s = if sil /= 0 then "You don't see " <> showText sil <> " silver pieces here.\n" else ""
-    g = if gol /= 0 then "You don't see " <> showText gol <> " gold pieces here.\n"   else ""
+    c = if cop /= 0 then nl $ "You don't see " <> showText cop <> " copper pieces here." else ""
+    s = if sil /= 0 then nl $ "You don't see " <> showText sil <> " silver pieces here." else ""
+    g = if gol /= 0 then nl $ "You don't see " <> showText gol <> " gold pieces here."   else ""
 procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
 
 
 procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsCon cn (Left  Empty)                            = Left $ "The " <> cn <> " doesn't contain any coins.\n"
+procReconciledCoinsCon cn (Left  Empty)                            = Left . nl $ "The " <> cn <> " doesn't contain any coins."
 procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
   where
-    c = if cop /= 0 then "The " <> cn <> " doesn't contain any copper pieces.\n" else ""
-    s = if sil /= 0 then "The " <> cn <> " doesn't contain any silver pieces.\n" else ""
-    g = if gol /= 0 then "The " <> cn <> " doesn't contain any gold pieces.\n"   else ""
+    c = if cop /= 0 then nl $ "The " <> cn <> " doesn't contain any copper pieces." else ""
+    s = if sil /= 0 then nl $ "The " <> cn <> " doesn't contain any silver pieces." else ""
+    g = if gol /= 0 then nl $ "The " <> cn <> " doesn't contain any gold pieces."   else ""
 procReconciledCoinsCon _  (Right (SomeOf c                      )) = Right c
 procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
   where
-    c = if cop /= 0 then T.concat [ "The ", cn, "doesn't contain ", showText cop, " copper pieces.\n" ] else ""
-    s = if sil /= 0 then T.concat [ "The ", cn, "doesn't contain ", showText sil, " silver pieces.\n" ] else ""
-    g = if gol /= 0 then T.concat [ "The ", cn, "doesn't contain ", showText gol, " gold pieces.\n"   ] else ""
+    c = if cop /= 0 then nl . T.concat $ [ "The ", cn, "doesn't contain ", showText cop, " copper pieces." ] else ""
+    s = if sil /= 0 then nl . T.concat $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ] else ""
+    g = if gol /= 0 then nl . T.concat $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces."   ] else ""
 procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]
