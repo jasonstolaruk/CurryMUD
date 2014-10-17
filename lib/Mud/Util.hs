@@ -9,6 +9,7 @@ module Mud.Util ( adjustIndent
                 , bracketPad
                 , bracketQuote
                 , calcIndent
+                , capitalize
                 , countOcc
                 , dblQuote
                 , dblQuoteStr
@@ -47,7 +48,7 @@ import Mud.TopLvlDefs
 import Control.Lens (both, folded, over, to)
 import Control.Lens.Operators ((^..))
 import Control.Monad (guard)
-import Data.Char (isDigit, isSpace)
+import Data.Char (isDigit, isSpace, toUpper)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
 import qualified Data.Map.Lazy as M (assocs, Map)
@@ -257,6 +258,10 @@ stripTelnet msg = msg
 
 showText :: (Show a) => a -> T.Text
 showText = T.pack . show
+
+
+capitalize :: T.Text -> T.Text
+capitalize txt = T.pack [ toUpper . T.head $ txt ] <> T.tail txt
 
 
 aOrAn :: T.Text -> T.Text

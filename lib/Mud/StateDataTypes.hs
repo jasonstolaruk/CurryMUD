@@ -237,8 +237,10 @@ data Hand   = RHand
 -- Has a mob (and an entity and an inventory and coins and equipment).
 
 
-data PC = PC { _rmId :: !Id
-             , _race :: !Race } deriving (Eq, Show)
+data PC = PC { _rmId       :: !Id
+             , _race       :: !Race
+             , _introduced :: ![Sing]
+             , _linked     :: ![Sing] } deriving (Eq, Show)
 
 data Race = Human
           | Elf

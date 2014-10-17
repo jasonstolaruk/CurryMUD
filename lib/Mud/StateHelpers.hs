@@ -28,6 +28,7 @@ module Mud.StateHelpers ( allKeys
                         , modifyNWS
                         , modifyWS
                         , negateCoins
+                        , ok
                         , onNWS
                         , onWS
                         , putArm
@@ -300,6 +301,10 @@ frame cols = nl . (<> divider) . (divider <>)
 
 mkDividerTxt :: Cols -> T.Text
 mkDividerTxt = flip T.replicate "="
+
+
+ok :: MsgQueue -> MudStack ()
+ok mq = send mq . nlnl $ "OK!"
 
 
 mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text

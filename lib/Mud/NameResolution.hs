@@ -308,7 +308,7 @@ procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMis
 -- Processing "ReconciledCoins":
 
 
-procReconciledCoinsPCInv :: ReconciledCoins -> Either T.Text Coins
+procReconciledCoinsPCInv :: ReconciledCoins -> Either T.Text Coins -- TODO: We shouldn't "nl" here. The caller should word wrap.
 procReconciledCoinsPCInv (Left  Empty)                            = Left . nl $ "You don't have any coins."
 procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
   where
