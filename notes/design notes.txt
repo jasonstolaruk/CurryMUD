@@ -277,6 +277,8 @@ Also make a Unit Monster and a Multibeast.
 
 PCs:
 
+Ensure that a player cannot choose a name for their character that is the name of a race or mob.
+
 Make it clear that player descriptions must be written from an objective viewpoint. They must be passive.
 Emotes must also be objective (though not necessarily passive).
 
