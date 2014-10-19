@@ -63,6 +63,7 @@ import Control.Monad.State.Class (MonadState)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, sortBy)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
@@ -276,16 +277,15 @@ mkIdSingList ws is = [ (i, getSing i) | i <- is ]
 
 
 getEffName :: Id -> WorldState -> Id -> T.Text
-getEffName i ws i' = let e  = (ws^.entTbl) ! i'
-                         mn = e^.entName
-                     in if case mn of
-                       Nothing -> let p      = (ws^.pcTbl) ! i
-                                      intros = p^.introduced
-                                      s      = e^.sing
-                                      p'     = (ws^.pcTbl) ! i'
-                                      r      = p'^.race
-                                  in if s `elem` intros then uncapitalize s else pp r
-                       Just n -> n
+getEffName i ws i' = let e = (ws^.entTbl) ! i'
+                     in fromMaybe (helper e) $ e^.entName
+  where
+    helper e = let p      = (ws^.pcTbl) ! i
+                   intros = p^.introduced
+                   s      = e^.sing
+                   p'     = (ws^.pcTbl) ! i'
+                   r      = p'^.race
+               in if s `elem` intros then uncapitalize s else pp r
 
 
 -- ============================================================

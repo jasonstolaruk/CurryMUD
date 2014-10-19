@@ -49,7 +49,7 @@ import Mud.TopLvlDefs
 import Control.Lens (both, folded, over, to)
 import Control.Lens.Operators ((^..))
 import Control.Monad (guard)
-import Data.Char (isDigit, isSpace, toUpper)
+import Data.Char (isDigit, isSpace, toLower, toUpper)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
 import qualified Data.Map.Lazy as M (assocs, Map)

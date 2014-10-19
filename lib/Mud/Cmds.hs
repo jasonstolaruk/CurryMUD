@@ -33,7 +33,7 @@ import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, find, foldl', intercalate, nub, nubBy, sort, zip4)
-import Data.Maybe (isNothing)
+import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed)
 import Data.Time (getCurrentTime, getZonedTime)
@@ -672,7 +672,7 @@ look (i, mq, cols) rs = helper >>= \case
             pis = findPCIds ws is
             c   = (ws^.coinsTbl) ! ri
         in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
+          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is c
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                = map procReconciledCoinsRm rcs
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
@@ -690,7 +690,7 @@ mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
     let is       = delete i . (! ri) $ ws^.invTbl
         c        = (ws^.coinsTbl) ! ri
-        entDescs = T.unlines . concatMap (wordWrapIndent 2 cols . helper) . mkNameCountBothTypeList ws $ is
+        entDescs = T.unlines . concatMap (wordWrapIndent 2 cols . helper) . mkNameCountBothTypeList i ws $ is
     in if c == mempty then entDescs else entDescs <> mkCoinsSummary cols c
   where
     helper (en, c, (s, _), t)
@@ -747,9 +747,9 @@ mkInvCoinsDesc i cols ws ei e = let is       = (ws^.invTbl)   ! ei
                                   (False, False) -> T.unlines . wordWrap cols $ if ei == i
                                                       then dudeYourHandsAreEmpty
                                                       else "The " <> e^.sing <> " is empty."
-                                  (True,  False) -> header <> mkEntsInInvDesc cols ws is
-                                  (False, True ) -> header <> mkCoinsSummary  cols c
-                                  (True,  True ) -> header <> mkEntsInInvDesc cols ws is <> mkCoinsSummary cols c
+                                  (True,  False) -> header <> mkEntsInInvDesc i cols ws is
+                                  (False, True ) -> header <> mkCoinsSummary    cols c
+                                  (True,  True ) -> header <> mkEntsInInvDesc i cols ws is <> mkCoinsSummary cols c
   where
     header
       | ei == i   = nl "You are carrying:"
@@ -760,8 +760,8 @@ dudeYourHandsAreEmpty :: T.Text
 dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 
-mkEntsInInvDesc :: Cols -> WorldState -> Inv -> T.Text
-mkEntsInInvDesc cols ws = T.unlines . concatMap (wordWrapIndent ind cols . helper) . mkNameCountBothList ws
+mkEntsInInvDesc :: Id -> Cols -> WorldState -> Inv -> T.Text
+mkEntsInInvDesc i cols ws = T.unlines . concatMap (wordWrapIndent ind cols . helper) . mkNameCountBothList i ws
   where
     helper (en, c, (s, _)) | c == 1 = nameCol en <> "1 " <> s
     helper (en, c, b     )          = T.concat [ nameCol en, showText c, " ", mkPlurFromBoth b ]
@@ -816,7 +816,7 @@ inv (i, mq, cols) rs = getWS >>= \ws ->
     let is = (ws^.invTbl)   ! i
         c  = (ws^.coinsTbl) ! i
     in send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
+      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is c
                eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                ecs                = map procReconciledCoinsPCInv rcs
                invDesc            = foldl' (helperEitherInv ws) "" eiss
@@ -841,7 +841,7 @@ equip (i, mq, cols) rs = getWS >>= \ws ->
     let em = (ws^.eqTbl) ! i
         is = M.elems em
     in send mq $ if not . M.null $ em
-      then let (gecrs, miss, rcs) = resolveEntCoinNames ws (nub . map T.toLower $ rs) is mempty
+      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is mempty
                eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc            = foldl' (helperEitherInv ws) "" eiss
                coinsDesc          = if not . null $ rcs
@@ -865,7 +865,7 @@ mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
     mkDesc (sn, i')  = let sn'           = parensPad 15 noFinger
                            (noFinger, _) = T.breakOn " finger" sn
                            e'            = (ws^.entTbl) ! i'
-                           en            = if ei == i then " " <> bracketQuote . fromJust $ e'^.entName else ""
+                           en            = if ei == i then (" " <>) . bracketQuote . fromJust $ e'^.entName else ""
                        in sn' <> e'^.sing <> en
     none   = T.unlines . wordWrap cols $ if
       | ei == i      -> dudeYou'reNaked
@@ -897,11 +897,11 @@ getAction (i, mq, cols) rs = do
             ris = delete i . (! ri) $ ws^.invTbl
             rc  = (ws^.coinsTbl) ! ri
         in if (not . null $ ris) || (rc /= mempty)
-          then let (gecrs, miss, rcs)     = resolveEntCoinNames ws (nub . map T.toLower $ rs) ris rc
+          then let (gecrs, miss, rcs)     = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris rc
                    eiss                   = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                    = map procReconciledCoinsRm rcs
-                   (ws',  msg,  logMsgs ) = foldl' (helperGetDropEitherInv   cols Get ri i) (ws,  "",  []     ) eiss
-                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins cols Get ri i) (ws', msg, logMsgs) ecs
+                   (ws',  msg,  logMsgs ) = foldl' (helperGetDropEitherInv   i cols Get ri i) (ws,  "",  []     ) eiss
+                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins   cols Get ri i) (ws', msg, logMsgs) ecs
                in putTMVar t ws'' >> return (msg', logMsgs')
           else do
               putTMVar t ws
@@ -920,20 +920,20 @@ type FromId = Id
 type ToId   = Id
 
 
-helperGetDropEitherInv :: Cols -> GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
-helperGetDropEitherInv cols god fi ti (ws, msg, logMsgs) = \case
+helperGetDropEitherInv :: Id -> Cols -> GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
+helperGetDropEitherInv i cols god fi ti (ws, msg, logMsgs) = \case
   Left  msg' -> (ws, msg <> msg', logMsgs)
   Right is   -> let fis              = (ws^.invTbl) ! fi
                     tis              = (ws^.invTbl) ! ti
                     ws'              = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
                                           & invTbl.at ti ?~ (sortInv ws . (++) tis $ is)
-                    (msg', logMsgs') = mkGetDropInvDesc cols ws' god is
+                    (msg', logMsgs') = mkGetDropInvDesc i cols ws' god is
                 in (ws', msg <> msg', logMsgs ++ logMsgs')
 
 
-mkGetDropInvDesc :: Cols -> WorldState -> GetOrDrop -> Inv -> (T.Text, [T.Text])
-mkGetDropInvDesc cols ws god is = let msgs = map helper . mkNameCountBothList ws $ is
-                                  in (T.concat . map (T.unlines . wordWrap cols) $ msgs, msgs)
+mkGetDropInvDesc :: Id -> Cols -> WorldState -> GetOrDrop -> Inv -> (T.Text, [T.Text])
+mkGetDropInvDesc i cols ws god is = let msgs = map helper . mkNameCountBothList i ws $ is
+                                    in (T.concat . map (T.unlines . wordWrap cols) $ msgs, msgs)
   where
     helper (_, c, (s, _)) | c == 1 = T.concat [ "You ", verb god, " the ", s, "." ]
     helper (_, c, b)               = T.concat [ "You ", verb god, " ", showText c, " ", mkPlurFromBoth b, "." ]
@@ -986,11 +986,11 @@ dropAction (i, mq, cols) rs = do
             pc  = (ws^.coinsTbl) ! i
             ri  = p^.rmId
         in if (not . null $ pis) || (pc /= mempty)
-          then let (gecrs, miss, rcs)     = resolveEntCoinNames ws (nub . map T.toLower $ rs) pis pc
+          then let (gecrs, miss, rcs)     = resolveEntCoinNames i ws (nub . map T.toLower $ rs) pis pc
                    eiss                   = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                    = map procReconciledCoinsPCInv rcs
-                   (ws',  msg,  logMsgs ) = foldl' (helperGetDropEitherInv   cols Drop i ri) (ws,  "",  []     ) eiss
-                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins cols Drop i ri) (ws', msg, logMsgs) ecs
+                   (ws',  msg,  logMsgs ) = foldl' (helperGetDropEitherInv   i cols Drop i ri) (ws,  "",  []     ) eiss
+                   (ws'', msg', logMsgs') = foldl' (helperGetDropEitherCoins   cols Drop i ri) (ws', msg, logMsgs) ecs
                in putTMVar t ws'' >> return (msg', logMsgs')
           else do
               putTMVar t ws
@@ -1037,29 +1037,30 @@ type PCCoins       = Coins
 
 shufflePut :: Id -> Cols -> (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCon -> CoinsWithCon -> PCInv -> PCCoins -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM (T.Text, [T.Text])
 shufflePut i cols (t, ws) cn rs is c pis pc f =
-    let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
+    let (gecrs, miss, rcs) = resolveEntCoinNames i ws [cn] is c
     in if null miss && (not . null $ rcs)
       then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't put something inside a coin.", [])
       else case f . head . zip gecrs $ miss of
         Left  msg  -> putTMVar t ws >> return (msg, [])
-        Right [ci] -> let e  = (ws^.entTbl)  ! ci
-                          t' = (ws^.typeTbl) ! ci
-                      in if t' /= ConType
-                        then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.", [])
-                        else let (gecrs', miss', rcs')  = resolveEntCoinNames ws rs pis pc
-                                 eiss                   = zipWith (curry procGecrMisPCInv) gecrs' miss'
-                                 ecs                    = map procReconciledCoinsPCInv rcs'
-                                 (ws',  msg,  logMsgs ) = foldl' (helperPutRemEitherInv   cols Put i ci e) (ws, "",   []     ) eiss
-                                 (ws'', msg', logMsgs') = foldl' (helperPutRemEitherCoins cols Put i ci e) (ws', msg, logMsgs) ecs
-                             in putTMVar t ws'' >> return (msg', logMsgs')
+        Right [ci] ->
+            let e  = (ws^.entTbl)  ! ci
+                t' = (ws^.typeTbl) ! ci
+            in if t' /= ConType
+              then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.", [])
+              else let (gecrs', miss', rcs')  = resolveEntCoinNames i ws rs pis pc
+                       eiss                   = zipWith (curry procGecrMisPCInv) gecrs' miss'
+                       ecs                    = map procReconciledCoinsPCInv rcs'
+                       (ws',  msg,  logMsgs ) = foldl' (helperPutRemEitherInv   i cols Put i ci e) (ws, "",   []     ) eiss
+                       (ws'', msg', logMsgs') = foldl' (helperPutRemEitherCoins   cols Put i ci e) (ws', msg, logMsgs) ecs
+                   in putTMVar t ws'' >> return (msg', logMsgs')
         Right _    -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only put things into one container at a time.", [])
 
 
 type ToEnt = Ent
 
 
-helperPutRemEitherInv :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
-helperPutRemEitherInv cols por fi ti te (ws, msg, logMsgs) = \case
+helperPutRemEitherInv :: Id -> Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
+helperPutRemEitherInv i cols por fi ti te (ws, msg, logMsgs) = \case
   Left  msg' -> (ws, msg <> msg', logMsgs)
   Right is   -> let (is', msg')       = if ti `elem` is
                                           then (filter (/= ti) is, msg <> sorry)
@@ -1068,15 +1069,15 @@ helperPutRemEitherInv cols por fi ti te (ws, msg, logMsgs) = \case
                     tis               = (ws^.invTbl) ! ti
                     ws'               = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
                                            & invTbl.at ti ?~ (sortInv ws . (++) tis $ is')
-                    (msg'', logMsgs') = mkPutRemInvDesc cols ws' por is' te
+                    (msg'', logMsgs') = mkPutRemInvDesc i cols ws' por is' te
                 in (ws', msg' <> msg'', logMsgs ++ logMsgs')
   where
     sorry = T.unlines . wordWrap cols $ "You can't put the " <> te^.sing <> " inside itself."
 
 
-mkPutRemInvDesc :: Cols -> WorldState -> PutOrRem -> Inv -> ToEnt -> (T.Text, [T.Text])
-mkPutRemInvDesc cols ws por is te = let msgs = map helper . mkNameCountBothList ws $ is
-                                    in (T.concat . map (T.unlines . wordWrap cols) $ msgs, msgs)
+mkPutRemInvDesc :: Id -> Cols -> WorldState -> PutOrRem -> Inv -> ToEnt -> (T.Text, [T.Text])
+mkPutRemInvDesc i cols ws por is te = let msgs = map helper . mkNameCountBothList i ws $ is
+                                      in (T.concat . map (T.unlines . wordWrap cols) $ msgs, msgs)
   where
     helper (_, c, (s, _)) | c == 1 = T.concat [ "You ", verb por, " the ", s, " ", prep por, " ", te^.sing, "." ]
     helper (_, c, b)               = T.concat [ "You ", verb por, " ", showText c, " ", mkPlurFromBoth b, " ", prep por, " ", te^.sing, "." ]
@@ -1149,23 +1150,24 @@ remove (i, mq, cols) rs  = do
 
 shuffleRem :: Id -> Cols -> (TMVar WorldState, WorldState) -> ConName -> Rest -> InvWithCon -> CoinsWithCon -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) -> STM (T.Text, [T.Text])
 shuffleRem i cols (t, ws) cn rs is c f =
-    let (gecrs, miss, rcs) = resolveEntCoinNames ws [cn] is c
+    let (gecrs, miss, rcs) = resolveEntCoinNames i ws [cn] is c
     in if null miss && (not . null $ rcs)
       then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't remove something from a coin.", [])
       else case f . head . zip gecrs $ miss of
         Left  msg  -> putTMVar t ws >> return (msg, [])
-        Right [ci] -> let e  = (ws^.entTbl)  ! ci
-                          t' = (ws^.typeTbl) ! ci
-                      in if t' /= ConType
-                        then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.", [])
-                        else let cis                    = (ws^.invTbl)   ! ci
-                                 cc                     = (ws^.coinsTbl) ! ci
-                                 (gecrs', miss', rcs')  = resolveEntCoinNames ws rs cis cc
-                                 eiss                   = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
-                                 ecs                    = map (procReconciledCoinsCon (e^.sing)) rcs'
-                                 (ws',  msg,  logMsgs)  = foldl' (helperPutRemEitherInv   cols Rem ci i e) (ws, "",   []     ) eiss
-                                 (ws'', msg', logMsgs') = foldl' (helperPutRemEitherCoins cols Rem ci i e) (ws', msg, logMsgs) ecs
-                              in putTMVar t ws'' >> return (msg', logMsgs')
+        Right [ci] ->
+            let e  = (ws^.entTbl)  ! ci
+                t' = (ws^.typeTbl) ! ci
+            in if t' /= ConType
+              then putTMVar t ws >> return (T.unlines . wordWrap cols $ "The " <> e^.sing <> " isn't a container.", [])
+              else let cis                    = (ws^.invTbl)   ! ci
+                       cc                     = (ws^.coinsTbl) ! ci
+                       (gecrs', miss', rcs')  = resolveEntCoinNames i ws rs cis cc
+                       eiss                   = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
+                       ecs                    = map (procReconciledCoinsCon (e^.sing)) rcs'
+                       (ws',  msg,  logMsgs)  = foldl' (helperPutRemEitherInv   i cols Rem ci i e) (ws, "",   []     ) eiss
+                       (ws'', msg', logMsgs') = foldl' (helperPutRemEitherCoins   cols Rem ci i e) (ws', msg, logMsgs) ecs
+                   in putTMVar t ws'' >> return (msg', logMsgs')
         Right _    -> putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can only remove things from one container at a time.", [])
 
 
@@ -1183,7 +1185,7 @@ ready (i, mq, cols) rs = do
         let is = (ws^.invTbl)   ! i
             c  = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols ws (nub . map T.toLower $ rs) is mempty
+          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws (nub . map T.toLower $ rs) is mempty
                    eiss                      = zipWith (curry procGecrMisReady) gecrs miss
                    msg                       = if null rcs then "" else nl "You can't ready coins."
                    (ws',  msg', logMsgs)     = foldl' (helperReady i cols) (ws, msg, []) . zip eiss $ mrols
@@ -1417,7 +1419,7 @@ unready (i, mq, cols) rs = do
         let em = (ws^.eqTbl) ! i
             is = M.elems em
         in if not . null $ is
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames ws (nub . map T.toLower $ rs) is mempty
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is mempty
                    eiss                  = zipWith (curry procGecrMisPCEq) gecrs miss
                    msg                   = if null rcs then "" else nl "You can't unready coins."
                    (ws',  msg', logMsgs) = foldl' (helperUnready i cols) (ws, msg, []) eiss
@@ -1432,17 +1434,17 @@ helperUnready i cols (ws, msg, logMsgs) = \case
                     pis  = (ws^.invTbl) ! i
                     ws'  = ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
                               & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
-                    msgs = mkUnreadyDescs ws' is
+                    msgs = mkUnreadyDescs i ws' is
                 in (ws', (msg <>) . T.concat . map (T.unlines . wordWrap cols) $ msgs, logMsgs ++ msgs)
 
 
-mkUnreadyDescs :: WorldState -> Inv -> [T.Text]
-mkUnreadyDescs ws is = [ helper icb | icb <- mkIdCountBothList ws is ]
+mkUnreadyDescs :: Id -> WorldState -> Inv -> [T.Text]
+mkUnreadyDescs i ws is = [ helper icb | icb <- mkIdCountBothList i ws is ]
   where
-    helper (i, c, b@(s, _)) = let v = verb i in T.concat $ if c == 1
+    helper (i', c, b@(s, _)) = let v = verb i' in T.concat $ if c == 1
       then [ "You ", v, " the ", s, "." ]
       else [ "You ", v, " ", showText c, " ", mkPlurFromBoth b, "." ]
-    verb i = case (ws^.typeTbl) ! i of
+    verb i' = case (ws^.typeTbl) ! i' of
       ClothType -> unwearGenericVerb -- TODO
       WpnType   -> "stop wielding"
       _         -> undefined -- TODO
@@ -1486,7 +1488,7 @@ intro (i, mq, cols) rs = do
             is  = delete i . (! ri) $ ws^.invTbl
             c   = (ws^.coinsTbl) ! ri
         in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, miss, rcs)     = resolveEntCoinNames ws (nub . map T.toLower $ rs) is c
+          then let (gecrs, miss, rcs)     = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is c
                    eiss                   = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                    = map procReconciledCoinsRm rcs
                    (ws',  msg,  logMsgs ) = foldl' (helperIntroEitherInv s) (ws,  "",  []     ) eiss
@@ -1549,11 +1551,11 @@ whatCmd cols r n = maybe notFound found . findFullNameForAbbrev (T.toLower n) $ 
 whatInv :: Id -> Cols -> WorldState -> InvType -> T.Text -> T.Text
 whatInv i cols ws it n = let (is, gecrs, rcs) = resolveName
                          in if not . null $ gecrs
-                           then whatInvEnts cols ws it n (head gecrs) is
+                           then whatInvEnts i cols ws it n (head gecrs) is
                            else T.concat . map (whatInvCoins cols it n) $ rcs
   where
     resolveName = let (is, c)         = getLocInvCoins
-                      (gecrs, _, rcs) = resolveEntCoinNames ws [n] is c
+                      (gecrs, _, rcs) = resolveEntCoinNames i ws [n] is c
                   in (is, gecrs, rcs)
     getLocInvCoins = case it of PCInv -> ((ws^.invTbl) ! i,          (ws^.coinsTbl) ! i )
                                 PCEq  -> (M.elems $ (ws^.eqTbl) ! i, mempty             )

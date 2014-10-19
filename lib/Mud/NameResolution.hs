@@ -47,35 +47,35 @@ patternMatchFail = U.patternMatchFail "Mud.NameResolution"
 type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 
-resolveEntCoinNames :: WorldState -> Rest -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNames ws rs is c = expandGecrs c . map (mkGecr ws is c . T.toLower) $ rs
+resolveEntCoinNames :: Id -> WorldState -> Rest -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNames i ws rs is c = expandGecrs c . map (mkGecr i ws is c . T.toLower) $ rs
 
 
-mkGecr :: WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
-mkGecr ws is c n
-  | n == T.pack [allChar] = let es = [ (ws^.entTbl) ! i | i <- is ]
+mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
+mkGecr i ws is c n
+  | n == T.pack [allChar] = let es = [ (ws^.entTbl) ! i' | i' <- is ]
                             in Mult (length is) n (Just es) (Just . SomeOf $ c)
-  | T.head n == allChar   = mkGecrMult ws (maxBound :: Int) (T.tail n) is c
+  | T.head n == allChar   = mkGecrMult i ws (maxBound :: Int) (T.tail n) is c
   | isDigit (T.head n)    = let numText = T.takeWhile isDigit n
                                 numInt  = either (oops numText) fst $ decimal numText
                                 rest    = T.drop (T.length numText) n
                             in if numText /= "0" then parse rest numInt else Sorry n
-  | otherwise             = mkGecrMult ws 1 n is c
+  | otherwise             = mkGecrMult i ws 1 n is c
   where
     oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
       | T.length rest < 2 = Sorry n
       | otherwise = let delim = T.head rest
                         rest' = T.tail rest
-                    in if | delim == amountChar -> mkGecrMult    ws numInt rest' is c
-                          | delim == indexChar  -> mkGecrIndexed ws numInt rest' is
+                    in if | delim == amountChar -> mkGecrMult    i ws numInt rest' is c
+                          | delim == indexChar  -> mkGecrIndexed i ws numInt rest' is
                           | otherwise           -> Sorry n
 
 
-mkGecrMult :: WorldState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
-mkGecrMult ws a n is c = if n `elem` allCoinNames
-                           then mkGecrMultForCoins   a n c
-                           else mkGecrMultForEnts ws a n is
+mkGecrMult :: Id -> WorldState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
+mkGecrMult i ws a n is c = if n `elem` allCoinNames
+                             then mkGecrMultForCoins     a n c
+                             else mkGecrMultForEnts i ws a n is
 
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> GetEntsCoinsRes
@@ -109,11 +109,11 @@ mkGecrMultForEnts :: Id -> WorldState -> Amount -> T.Text -> Inv -> GetEntsCoins
 mkGecrMultForEnts i ws a n is = let ens = [ getEffName i ws i' | i' <- is ]
                                 in maybe notFound (found ens) . findFullNameForAbbrev n $ ens
   where
-    notFound                = Mult a n Nothing Nothing
-    found ens fn            = let zipped = zip is ens
-                              in Mult a n (Just . takeMatchingEnts $ zipped) Nothing
-    takeMatchingEnts zipped = let matches = filter (\(_, en) -> en == fn) zipped
-                              in take a [ (ws^.entTbl) ! i' | (i', _) <- matches ]
+    notFound                   = Mult a n Nothing Nothing
+    found ens fn               = let zipped = zip is ens
+                                 in Mult a n (Just . takeMatchingEnts zipped $ fn) Nothing
+    takeMatchingEnts zipped fn = let matches = filter (\(_, en) -> en == fn) zipped
+                                 in take a [ (ws^.entTbl) ! i' | (i', _) <- matches ]
 
 
 mkGecrIndexed :: Id -> WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
@@ -205,20 +205,20 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
 -- Resolving entity and coin names with right/left indicators:
 
 
-resolveEntCoinNamesWithRols :: WorldState -> Rest -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNamesWithRols ws rs is c = let gecrMrols           = map (mkGecrWithRol ws is c . T.toLower) rs
-                                             (gecrs, mrols)      = (,) (gecrMrols^..folded._1) (gecrMrols^..folded._2)
-                                             (gecrs', miss, rcs) = expandGecrs c gecrs
-                                         in (gecrs', mrols, miss, rcs)
+resolveEntCoinNamesWithRols :: Id -> WorldState -> Rest -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNamesWithRols i ws rs is c = let gecrMrols           = map (mkGecrWithRol i ws is c . T.toLower) rs
+                                               (gecrs, mrols)      = (,) (gecrMrols^..folded._1) (gecrMrols^..folded._2)
+                                               (gecrs', miss, rcs) = expandGecrs c gecrs
+                                           in (gecrs', mrols, miss, rcs)
 
 
-mkGecrWithRol :: WorldState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
-mkGecrWithRol ws is c n = let (a, b) = T.break (== slotChar) n
-                              parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [ (RightOrLeft, String) ]
-                          in if | T.null b        -> (mkGecr ws is c n, Nothing)
-                                | T.length b == 1 -> sorry
-                                | otherwise       -> case parsed of [ (rol, _) ] -> (mkGecr ws is c a, Just rol)
-                                                                    _            -> sorry
+mkGecrWithRol :: Id -> WorldState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
+mkGecrWithRol i ws is c n = let (a, b) = T.break (== slotChar) n
+                                parsed = reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [ (RightOrLeft, String) ]
+                            in if | T.null b        -> (mkGecr i ws is c n, Nothing)
+                                  | T.length b == 1 -> sorry
+                                  | otherwise       -> case parsed of [ (rol, _) ] -> (mkGecr i ws is c a, Just rol)
+                                                                      _            -> sorry
   where
     sorry = (Sorry n, Nothing)
 
