@@ -36,6 +36,7 @@ module Mud.Util ( adjustIndent
                 , showText
                 , singleQuote
                 , stripTelnet
+                , uncapitalize
                 , unquote
                 , wordWrap
                 , wordWrapIndent
@@ -262,6 +263,10 @@ showText = T.pack . show
 
 capitalize :: T.Text -> T.Text
 capitalize txt = T.pack [ toUpper . T.head $ txt ] <> T.tail txt
+
+
+uncapitalize :: T.Text -> T.Text
+uncapitalize txt = T.pack [ toLower . T.head $ txt ] <> T.tail txt
 
 
 aOrAn :: T.Text -> T.Text

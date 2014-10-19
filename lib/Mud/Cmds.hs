@@ -267,7 +267,7 @@ adHoc mq host = do
         -----
         let i   = getUnusedId ws
         -----
-        let e   = Ent i "player" ("PlayerCharacter" <> showText i) "" "You see an ad-hoc player character." 0
+        let e   = Ent i Nothing ("Player" <> showText i) "" "You see an ad-hoc player character." 0
         let is  = []
         let co  = mempty
         let em  = M.empty
@@ -701,21 +701,19 @@ mkRmInvCoinsDesc i cols ws ri =
     helper (en, c, b, _) = T.concat [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
 
 
-mkNameCountBothList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
-                                ens   = [ e^.entName          | e <- es ]
-                                ebgns = [ getEntBothGramNos e | e <- es ]
-                                cs    = mkCountList ebgns
-                            in nub . zip3 ens cs $ ebgns
+mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkNameCountBothList i ws is = let ens   = [ getEffName        i ws i' | i' <- is ]
+                                  ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
+                                  cs    = mkCountList ebgns
+                              in nub . zip3 ens cs $ ebgns
 
 
-mkNameCountBothTypeList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos, Type)]
-mkNameCountBothTypeList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
-                                    ens   = [ e^.entName          | e <- es ]
-                                    ebgns = [ getEntBothGramNos e | e <- es ]
-                                    cs    = mkCountList ebgns
-                                    ts    = [ (ws^.typeTbl) ! i   | i <- is ]
-                                in nub . zip4 ens cs ebgns $ ts
+mkNameCountBothTypeList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos, Type)]
+mkNameCountBothTypeList i ws is = let ens   = [ getEffName        i ws i' | i' <- is ]
+                                      ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
+                                      cs    = mkCountList ebgns
+                                      ts    = [ (ws^.typeTbl) ! i'        | i' <- is ]
+                              in nub . zip4 ens cs ebgns $ ts
 
 
 extractPCIdsFromEiss :: WorldState -> [Either T.Text Inv] -> [Id]
@@ -867,7 +865,7 @@ mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
     mkDesc (sn, i')  = let sn'           = parensPad 15 noFinger
                            (noFinger, _) = T.breakOn " finger" sn
                            e'            = (ws^.entTbl) ! i'
-                           en            = if ei == i then " " <> e'^.entName.to bracketQuote else ""
+                           en            = if ei == i then " " <> bracketQuote . fromJust $ e'^.entName else ""
                        in sn' <> e'^.sing <> en
     none   = T.unlines . wordWrap cols $ if
       | ei == i      -> dudeYou'reNaked
@@ -1565,25 +1563,53 @@ whatInv i cols ws it n = let (is, gecrs, rcs) = resolveName
     ri = p^.rmId
 
 
-whatInvEnts :: Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
-whatInvEnts cols ws it r gecr is = case gecr of
-  Mult _ n (Just es) _ | n == acp  -> T.unlines . wordWrap cols . T.concat $ [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]
-                       | otherwise -> let e   = head es
-                                          len = length es
-                                      in if len > 1
-                                        then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
-                                                 h      = head ebgns
-                                                 target = if all (== h) ebgns then mkPlurFromBoth h else e^.entName.to bracketQuote <> "s"
-                                             in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", showText len, " ", target, " ", getLocTxtForInvType it, "." ]
-                                        else let ens = [ let e' = (ws^.entTbl) ! i in e'^.entName | i <- is ]
-                                             in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", T.pack . checkFirst e $ ens, e^.sing, " ", getLocTxtForInvType it, "." ]
-  Indexed x _ (Right e) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.entName.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
-  _                     -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
+whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
+whatInvEnts i cols ws it r gecr is = case gecr of
+  Mult _ n (Just es) _
+    | n == acp  -> T.unlines . wordWrap cols . T.concat $ [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]
+    | otherwise ->
+        let e   = head es
+            len = length es
+        in if len > 1
+          then let ebgns  = take len [ getEffBothGramNos i ws (e'^.entId) | e' <- es ]
+                   h      = head ebgns
+                   target = if all (== h) ebgns then mkPlurFromBoth h else bracketQuote . (<> "s") . getEffName i ws $ e^.entId
+               in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                         , " may refer to the "
+                                                         , showText len
+                                                         , " "
+                                                         , target
+                                                         , " "
+                                                         , getLocTxtForInvType it
+                                                         , "." ]
+          else let ens = [ getEffName i ws i' | i' <- is ]
+               in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                         , " may refer to the "
+                                                         , T.pack . checkFirst e $ ens
+                                                         , e^.sing
+                                                         , " "
+                                                         , getLocTxtForInvType it
+                                                         , "." ]
+  Indexed x _ (Right e) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                                  , " may refer to the "
+                                                                  , mkOrdinal x
+                                                                  , " "
+                                                                  , bracketQuote . getEffName i ws $ e^.entId
+                                                                  , " "
+                                                                  , e^.sing.to parensQuote
+                                                                  , " "
+                                                                  , getLocTxtForInvType it
+                                                                  , "." ]
+  _                     -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                                  , " doesn't refer to anything "
+                                                                  , getLocTxtForInvType it
+                                                                  , "." ]
   where
     acp                                     = T.pack [allChar]
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
                | otherwise                  = ""
-    checkFirst e ens                        = let matches = filter (== e^.entName) ens
+    checkFirst e ens                        = let en      = getEffName i ws $ e^.entId
+                                                  matches = filter (== en) ens
                                               in guard (length matches > 1) >> T.unpack "first "
 
 
@@ -1597,10 +1623,34 @@ whatInvCoins :: Cols -> InvType -> T.Text -> ReconciledCoins -> T.Text
 whatInvCoins cols it r rc
   | it == PCEq = ""
   | otherwise = case rc of
-    Left  Empty      -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " doesn't refer to any coins ", getLocTxtForInvType it, " ", supplementNone "coins" it, "." ]
-    Left  (NoneOf c) -> let cn = mkTxtForCoins c in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNone cn it, "." ]
-    Left  (SomeOf c) -> let cn = mkTxtForCoins c in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " doesn't refer to any ", cn, " ", getLocTxtForInvType it, " ", supplementNotEnough cn it, "." ]
-    Right (SomeOf c) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", mkTxtForCoinsWithAmt c, " ", getLocTxtForInvType it, "." ]
+    Left  Empty      -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                               , " doesn't refer to any coins "
+                                                               , getLocTxtForInvType it
+                                                               , " "
+                                                               , supplementNone "coins" it
+                                                               , "." ]
+    Left  (NoneOf c) -> let cn = mkTxtForCoins c in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                                                           , " doesn't refer to any "
+                                                                                           , cn
+                                                                                           , " "
+                                                                                           , getLocTxtForInvType it
+                                                                                           , " "
+                                                                                           , supplementNone cn it
+                                                                                           , "." ]
+    Left  (SomeOf c) -> let cn = mkTxtForCoins c in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                                                           , " doesn't refer to any "
+                                                                                           , cn
+                                                                                           , " "
+                                                                                           , getLocTxtForInvType it
+                                                                                           , " "
+                                                                                           , supplementNotEnough cn it
+                                                                                           , "." ]
+    Right (SomeOf c) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                               , " may refer to the "
+                                                               , mkTxtForCoinsWithAmt c
+                                                               , " "
+                                                               , getLocTxtForInvType it
+                                                               , "." ]
     _                -> patternMatchFail "whatInvCoins" [ showText rc ]
   where
     supplementNone cn      = \case PCInv -> parensQuote $ "you don't have any "       <> cn

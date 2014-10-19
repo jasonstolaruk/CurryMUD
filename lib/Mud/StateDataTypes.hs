@@ -61,7 +61,7 @@ type Sing = T.Text
 type Plur = T.Text
 
 data Ent = Ent { _entId    :: !Id
-               , _entName  :: !T.Text
+               , _entName  :: !(Maybe T.Text)
                , _sing     :: !Sing
                , _plur     :: !Plur
                , _entDesc  :: !T.Text
@@ -215,14 +215,14 @@ data PC = PC { _rmId       :: !Id
              , _introduced :: ![Sing]
              , _linked     :: ![Sing] } deriving (Eq, Show)
 
-data Race = Human
+data Race = Dwarf
           | Elf
-          | Dwarf
-          | Halfling
-          | Nymph
           | Felinoid
-          | Vulpenoid
-          | Lagomorph deriving (Eq, Show)
+          | Halfling
+          | Human
+          | Lagomorph
+          | Nymph
+          | Vulpenoid deriving (Eq, Show)
 
 
 -- ==================================================

@@ -9,8 +9,8 @@ module Mud.StateHelpers ( allKeys
                         , broadcastOthersInRm
                         , findPCIds
                         , frame
-                        , getEffectiveName
-                        , getEntBothGramNos
+                        , getEffBothGramNos
+                        , getEffName
                         , getLogAsyncs
                         , getNWS
                         , getNWSTMVar
@@ -228,8 +228,23 @@ sortInv ws is = let ts         = [ (ws^.typeTbl) ! i | i <- is ]
 type BothGramNos = (Sing, Plur)
 
 
-getEntBothGramNos :: Ent -> BothGramNos
-getEntBothGramNos e = (e^.sing, e^.plur)
+getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
+getEffBothGramNos i ws i' = let e  = (ws^.entTbl) ! i'
+                                mn = e^.entName
+                            in case mn of
+                              Nothing -> let p      = (ws^.pcTbl) ! i
+                                             intros = p^.introduced
+                                             s      = e^.sing
+                                             p'     = (ws^.pcTbl) ! i'
+                                             rn     = pp $ p'^.race
+                                         in if s `elem` intros
+                                           then (s,  "")
+                                           else (rn, pluralize rn)
+                              Just _ -> (e^.sing, e^.plur)
+  where
+    pluralize "drawf" = "dwarves"
+    pluralize "elf"   = "elves"
+    pluralize rn      = rn <> "s"
 
 
 mkPlurFromBoth :: BothGramNos -> Plur
@@ -260,16 +275,17 @@ mkIdSingList ws is = [ (i, getSing i) | i <- is ]
     getSing = (^.sing) . ((ws^.entTbl) !)
 
 
-getEffectiveName :: Id -> WorldState -> Id -> T.Text
-getEffectiveName i ws i' = let t      = (ws^.typeTbl) ! i'
-                               e      = (ws^.entTbl)  ! i'
-                               s      = e^.sing
-                               p      = (ws^.pcTbl) ! i
-                               intros = p^.introduced
-                           in case t of PCType -> if s `elem` intros
-                                                    then s
-                                                    else pp $ p^.race
-                                        _      -> e^.entName
+getEffName :: Id -> WorldState -> Id -> T.Text
+getEffName i ws i' = let e  = (ws^.entTbl) ! i'
+                         mn = e^.entName
+                     in if case mn of
+                       Nothing -> let p      = (ws^.pcTbl) ! i
+                                      intros = p^.introduced
+                                      s      = e^.sing
+                                      p'     = (ws^.pcTbl) ! i'
+                                      r      = p'^.race
+                                  in if s `elem` intros then uncapitalize s else pp r
+                       Just n -> n
 
 
 -- ============================================================
