@@ -595,7 +595,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
       | dir' == "d"              = "heads"
       | dir' `elem` stdLinkNames = "leaves"
       | otherwise                = "enters"
-    showRm ri r                  = showText ri <> " " <> parensQuote (r^.name)
+    showRm ri r                  = showText ri <> " " <> parensQuote (r^.rmName)
 
 
 findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
@@ -651,7 +651,7 @@ look (i, mq, cols) [] = getWS >>= \ws ->
     let p       = (ws^.pcTbl) ! i
         ri      = p^.rmId
         r       = (ws^.rmTbl) ! ri
-        primary = T.unlines . concatMap (wordWrap cols) $ [ r^.name, r^.desc ]
+        primary = T.unlines . concatMap (wordWrap cols) $ [ r^.rmName, r^.rmDesc ]
         suppl   = mkExitsSummary cols r <> ricd
         ricd    = mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
@@ -703,7 +703,7 @@ mkRmInvCoinsDesc i cols ws ri =
 
 mkNameCountBothList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
 mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
-                                ens   = [ e^.name             | e <- es ]
+                                ens   = [ e^.entName          | e <- es ]
                                 ebgns = [ getEntBothGramNos e | e <- es ]
                                 cs    = mkCountList ebgns
                             in nub . zip3 ens cs $ ebgns
@@ -711,7 +711,7 @@ mkNameCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
 
 mkNameCountBothTypeList :: WorldState -> Inv -> [(T.Text, Int, BothGramNos, Type)]
 mkNameCountBothTypeList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
-                                    ens   = [ e^.name             | e <- es ]
+                                    ens   = [ e^.entName          | e <- es ]
                                     ebgns = [ getEntBothGramNos e | e <- es ]
                                     cs    = mkCountList ebgns
                                     ts    = [ (ws^.typeTbl) ! i   | i <- is ]
@@ -732,7 +732,7 @@ mkEntDescs i cols ws is = let boths = [ (ei, (ws^.entTbl) ! ei) | ei <- is ]
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
 mkEntDesc i cols ws (ei, e) = let t       = (ws^.typeTbl) ! ei
-                                  primary = T.unlines . wordWrap cols $ e^.desc
+                                  primary = T.unlines . wordWrap cols $ e^.entDesc
                                   suppl   = case t of ConType -> mkInvCoinsDesc i cols ws ei e
                                                       MobType -> mkEqDesc       i cols ws ei e t
                                                       PCType  -> mkEqDesc       i cols ws ei e t
@@ -867,7 +867,7 @@ mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
     mkDesc (sn, i')  = let sn'           = parensPad 15 noFinger
                            (noFinger, _) = T.breakOn " finger" sn
                            e'            = (ws^.entTbl) ! i'
-                           en            = if ei == i then " " <> e'^.name.to bracketQuote else ""
+                           en            = if ei == i then " " <> e'^.entName.to bracketQuote else ""
                        in sn' <> e'^.sing <> en
     none   = T.unlines . wordWrap cols $ if
       | ei == i      -> dudeYou'reNaked
@@ -1501,18 +1501,18 @@ intro (i, mq, cols) rs = do
       | otherwise   = (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
     helperIntroEitherInv s a (Right is) = foldl' tryIntro a is
       where
-        tryIntro (ws, msg, logMsgs) i =
-            let t  = (ws^.typeTbl) ! i
-                e  = (ws^.entTbl)  ! i
+        tryIntro (ws, msg, logMsgs) i' =
+            let t  = (ws^.typeTbl) ! i'
+                e  = (ws^.entTbl)  ! i'
                 s' = e^.sing
             in case t of
-              PCType -> let p      = (ws^.pcTbl) ! i
+              PCType -> let p      = (ws^.pcTbl) ! i'
                             intros = p^.introduced
                         in if s `elem` intros
                           then let msg' = "You've already introduced yourself to " <> s' <> "."
                                in (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
                           else let p'     = p & introduced .~ sort (s : intros)
-                                   ws'    = ws & pcTbl.at i ?~ p'
+                                   ws'    = ws & pcTbl.at i' ?~ p'
                                    msg'   = "You introduce yourself to " <> s' <> "."
                                in (ws', (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs ++ [msg'])
               _      -> let msg' = T.unlines . wordWrap cols $ "You can't introduce yourself to a " <> s' <> "."
@@ -1573,17 +1573,17 @@ whatInvEnts cols ws it r gecr is = case gecr of
                                       in if len > 1
                                         then let ebgns  = take len [ getEntBothGramNos e' | e' <- es ]
                                                  h      = head ebgns
-                                                 target = if all (== h) ebgns then mkPlurFromBoth h else e^.name.to bracketQuote <> "s"
+                                                 target = if all (== h) ebgns then mkPlurFromBoth h else e^.entName.to bracketQuote <> "s"
                                              in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", showText len, " ", target, " ", getLocTxtForInvType it, "." ]
-                                        else let ens = [ let e' = (ws^.entTbl) ! i in e'^.name | i <- is ]
+                                        else let ens = [ let e' = (ws^.entTbl) ! i in e'^.entName | i <- is ]
                                              in T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", T.pack . checkFirst e $ ens, e^.sing, " ", getLocTxtForInvType it, "." ]
-  Indexed x _ (Right e) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.name.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
+  Indexed x _ (Right e) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " may refer to the ", mkOrdinal x, " ", e^.entName.to bracketQuote, " ", e^.sing.to parensQuote, " ", getLocTxtForInvType it, "." ]
   _                     -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r, " doesn't refer to anything ", getLocTxtForInvType it, "." ]
   where
     acp                                     = T.pack [allChar]
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
                | otherwise                  = ""
-    checkFirst e ens                        = let matches = filter (== e^.name) ens
+    checkFirst e ens                        = let matches = filter (== e^.entName) ens
                                               in guard (length matches > 1) >> T.unpack "first "
 
 

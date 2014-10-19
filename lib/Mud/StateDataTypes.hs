@@ -9,39 +9,12 @@ import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
-import Control.Lens (lens, Lens', makeLenses)
+import Control.Lens (makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
-
-
--- ==================================================
--- Typeclasses and instances:
-
-
-class HasNameDesc a where
-  name, desc :: Lens' a T.Text
-
-instance HasNameDesc Ent where
-  name = lens _entName (\e v -> e { _entName = v })
-  desc = lens _entDesc (\e v -> e { _entDesc = v })
-
-instance HasNameDesc Rm where
-  name = lens _rmName (\e v -> e { _rmName = v })
-  desc = lens _rmDesc (\e v -> e { _rmDesc = v })
-
------
-
-class HasFlags a where
-  flags :: Lens' a Int
-
-instance HasFlags Ent where
-  flags = lens _entFlags (\e v -> e { _entFlags = v })
-
-instance HasFlags Rm where
-  flags = lens _rmFlags (\e v -> e { _rmFlags = v })
 
 
 -- ==================================================

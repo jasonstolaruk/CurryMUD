@@ -9,6 +9,7 @@ module Mud.StateHelpers ( allKeys
                         , broadcastOthersInRm
                         , findPCIds
                         , frame
+                        , getEffectiveName
                         , getEntBothGramNos
                         , getLogAsyncs
                         , getNWS
@@ -217,7 +218,7 @@ sortInv ws is = let ts         = [ (ws^.typeTbl) ! i | i <- is ]
                     sortedPCIs = map fst . sortBy pcSorter . zip pcIs . names $ pcIs
                 in (sortedPCIs ++) . sortNonPCs . deleteFirstOfEach pcIs $ is
   where
-    names is'                          = [ let e = (ws^.entTbl) ! i in e^.name | i <- is' ]
+    names is'                          = [ let e = (ws^.entTbl) ! i in e^.entName | i <- is' ]
     pcSorter (_, n) (_, n')            = n `compare` n'
     sortNonPCs is'                     = map (^._1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
@@ -257,6 +258,13 @@ mkIdSingList :: WorldState -> [Id] -> [(Id, Sing)]
 mkIdSingList ws is = [ (i, getSing i) | i <- is ]
   where
     getSing = (^.sing) . ((ws^.entTbl) !)
+
+
+getEffectiveName :: Id -> WorldState -> Id -> T.Text
+getEffectiveName _ ws i' = let t = (ws^.typeTbl) ! i'
+                           in case t of PCType -> undefined -- TODO
+                                        _      -> let e = (ws^.entTbl) ! i'
+                                                  in e^.entName
 
 
 -- ============================================================

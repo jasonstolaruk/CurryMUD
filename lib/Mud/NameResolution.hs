@@ -107,23 +107,23 @@ distributeAmt amt (c:cs) = let diff = amt - c
 
 mkGecrMultForEnts :: WorldState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrMultForEnts ws a n is = let es  = [ (ws^.entTbl) ! i | i <- is ]
-                                  ens = [ e^.name          | e <- es ]
+                                  ens = [ e^.entName       | e <- es ]
                               in maybe notFound (found es) . findFullNameForAbbrev n $ ens
   where
     notFound            = Mult a n Nothing Nothing
     found es fn         = Mult a n (Just . takeMatchingEnts fn $ es) Nothing
-    takeMatchingEnts fn = take a . filter (\e -> e^.name == fn)
+    takeMatchingEnts fn = take a . filter (\e -> e^.entName == fn)
 
 
 mkGecrIndexed :: WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrIndexed ws x n is = if n `elem` allCoinNames
                             then SorryIndexedCoins
                             else let es  = [ (ws^.entTbl) ! i | i <- is ]
-                                     ens = [ e^.name          | e <- es ]
+                                     ens = [ e^.entName       | e <- es ]
                                  in maybe notFound (found es) . findFullNameForAbbrev n $ ens
   where
     notFound    = Indexed x n (Left "")
-    found es fn = let matches = filter (\e -> e^.name == fn) es
+    found es fn = let matches = filter (\e -> e^.entName == fn) es
                   in if length matches < x
                        then let both = getEntBothGramNos . head $ matches
                             in Indexed x n (Left . mkPlurFromBoth $ both)
