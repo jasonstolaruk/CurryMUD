@@ -1449,11 +1449,10 @@ mkUnreadyDescs ws is = [ helper icb | icb <- mkIdCountBothList ws is ]
     unwearGenericVerb = "take off"
 
 
-mkIdCountBothList :: WorldState -> Inv -> [(Id, Int, BothGramNos)]
-mkIdCountBothList ws is = let es    = [ (ws^.entTbl) ! i    | i <- is ]
-                              ebgns = [ getEntBothGramNos e | e <- es ]
-                              cs    = mkCountList ebgns
-                          in nubBy equalCountsAndBoths . zip3 is cs $ ebgns
+mkIdCountBothList :: Id -> WorldState -> Inv -> [(Id, Int, BothGramNos)]
+mkIdCountBothList i ws is = let ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
+                                cs    = mkCountList ebgns
+                            in nubBy equalCountsAndBoths . zip3 is cs $ ebgns
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
 
@@ -1563,7 +1562,7 @@ whatInv i cols ws it n = let (is, gecrs, rcs) = resolveName
     ri = p^.rmId
 
 
-whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
+whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text -- TODO: Capitalization?
 whatInvEnts i cols ws it r gecr is = case gecr of
   Mult _ n (Just es) _
     | n == acp  -> T.unlines . wordWrap cols . T.concat $ [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]

@@ -105,14 +105,14 @@ distributeAmt amt (c:cs) = let diff = amt - c
                                 else amt : distributeAmt 0    cs
 
 
-mkGecrMultForEnts :: WorldState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
-mkGecrMultForEnts ws a n is = let es  = [ (ws^.entTbl) ! i | i <- is ]
-                                  ens = [ e^.entName       | e <- es ]
-                              in maybe notFound (found es) . findFullNameForAbbrev n $ ens
+mkGecrMultForEnts :: Id -> WorldState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
+mkGecrMultForEnts i ws a n is = let ens = [ getEffName i ws i' | i' <- is ]
+                                in maybe notFound found . findFullNameForAbbrev n $ ens
   where
     notFound            = Mult a n Nothing Nothing
-    found es fn         = Mult a n (Just . takeMatchingEnts fn $ es) Nothing
-    takeMatchingEnts fn = take a . filter (\e -> e^.entName == fn)
+    found fn            = Mult a n (Just . takeMatchingEnts $ fn) Nothing
+    takeMatchingEnts fn = let matches = filter (\i' -> getEffName i ws i' == fn) is
+                          in take a [ (ws^.entTbl) ! i' | i' <- matches ]
 
 
 mkGecrIndexed :: WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
