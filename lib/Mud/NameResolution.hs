@@ -107,27 +107,29 @@ distributeAmt amt (c:cs) = let diff = amt - c
 
 mkGecrMultForEnts :: Id -> WorldState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrMultForEnts i ws a n is = let ens = [ getEffName i ws i' | i' <- is ]
-                                in maybe notFound found . findFullNameForAbbrev n $ ens
+                                in maybe notFound (found ens) . findFullNameForAbbrev n $ ens
   where
-    notFound            = Mult a n Nothing Nothing
-    found fn            = Mult a n (Just . takeMatchingEnts $ fn) Nothing
-    takeMatchingEnts fn = let matches = filter (\i' -> getEffName i ws i' == fn) is
-                          in take a [ (ws^.entTbl) ! i' | i' <- matches ]
+    notFound                = Mult a n Nothing Nothing
+    found ens fn            = let zipped = zip is ens
+                              in Mult a n (Just . takeMatchingEnts $ zipped) Nothing
+    takeMatchingEnts zipped = let matches = filter (\(_, en) -> en == fn) zipped
+                              in take a [ (ws^.entTbl) ! i' | (i', _) <- matches ]
 
 
-mkGecrIndexed :: WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
-mkGecrIndexed ws x n is = if n `elem` allCoinNames
-                            then SorryIndexedCoins
-                            else let es  = [ (ws^.entTbl) ! i | i <- is ]
-                                     ens = [ e^.entName       | e <- es ]
-                                 in maybe notFound (found es) . findFullNameForAbbrev n $ ens
+mkGecrIndexed :: Id -> WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
+mkGecrIndexed i ws x n is = if n `elem` allCoinNames
+                              then SorryIndexedCoins
+                              else let ens = [ getEffName i ws i' | i' <- is ]
+                                   in maybe notFound (found ens) . findFullNameForAbbrev n $ ens
   where
-    notFound    = Indexed x n (Left "")
-    found es fn = let matches = filter (\e -> e^.entName == fn) es
-                  in if length matches < x
-                       then let both = getEntBothGramNos . head $ matches
-                            in Indexed x n (Left . mkPlurFromBoth $ both)
-                     else Indexed x n (Right $ matches !! (x - 1))
+    notFound     = Indexed x n . Left $ ""
+    found ens fn = let zipped  = zip is ens
+                       matches = filter (\(_, en) -> en == fn) zipped
+                   in if length matches < x
+                        then let both = getEffBothGramNos i ws . fst . head $ matches
+                             in Indexed x n . Left . mkPlurFromBoth $ both
+                      else let (i', _) = matches !! (x - 1)
+                           in Indexed x n . Right $ (ws^.entTbl) ! i'
 
 
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])

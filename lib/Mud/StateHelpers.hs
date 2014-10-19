@@ -212,17 +212,17 @@ getUnusedId :: WorldState -> Id
 getUnusedId = head . (\\) [0..] . allKeys
 
 
-sortInv :: WorldState -> Inv -> Inv
+sortInv :: WorldState -> Inv -> Inv -- TODO: Devise a means of sorting based on effective names.
 sortInv ws is = let ts         = [ (ws^.typeTbl) ! i | i <- is ]
                     pcIs       = map fst . filter ((== PCType) . snd) . zip is $ ts
-                    sortedPCIs = map fst . sortBy pcSorter . zip pcIs . names $ pcIs
+                    sortedPCIs = map fst . sortBy pcSorter . zip pcIs . sings $ pcIs
                 in (sortedPCIs ++) . sortNonPCs . deleteFirstOfEach pcIs $ is
   where
-    names is'                          = [ let e = (ws^.entTbl) ! i in e^.entName | i <- is' ]
+    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is' ]
     pcSorter (_, n) (_, n')            = n `compare` n'
     sortNonPCs is'                     = map (^._1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
+    names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
-    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is' ]
 
 
 type BothGramNos = (Sing, Plur)
