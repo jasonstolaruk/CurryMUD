@@ -40,6 +40,16 @@ class Pretty a where
   -- Pretty print.
   pp :: a -> T.Text
 
+instance Pretty Race where
+  pp Human     = "human"
+  pp Elf       = "elf"
+  pp Dwarf     = "dwarf"
+  pp Halfling  = "halfling"
+  pp Nymph     = "nymph"
+  pp Felinoid  = "felinoid"
+  pp Vulpenoid = "vulpenoid"
+  pp Lagomorph = "lagomorph"
+
 instance Pretty Slot where
   pp HeadS      = "head"
   pp REar1S     = "right ear"

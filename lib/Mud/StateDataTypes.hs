@@ -263,7 +263,7 @@ instance Eq RmLink where
                                                              i     == i'     &&
                                                              om "" == om' "" &&
                                                              dm "" == dm' ""
-  _                      == _                              = False
+  _                        == _                            = False
 
 
 -- ==================================================
@@ -333,7 +333,6 @@ type TalkAsyncTbl = M.Map ThreadId (Async ())
 
 
 type MsgQueue = TQueue Msg
-
 
 data Msg = FromServer T.Text
          | FromClient T.Text

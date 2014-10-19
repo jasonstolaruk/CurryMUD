@@ -261,10 +261,15 @@ mkIdSingList ws is = [ (i, getSing i) | i <- is ]
 
 
 getEffectiveName :: Id -> WorldState -> Id -> T.Text
-getEffectiveName _ ws i' = let t = (ws^.typeTbl) ! i'
-                           in case t of PCType -> undefined -- TODO
-                                        _      -> let e = (ws^.entTbl) ! i'
-                                                  in e^.entName
+getEffectiveName i ws i' = let t      = (ws^.typeTbl) ! i'
+                               e      = (ws^.entTbl)  ! i'
+                               s      = e^.sing
+                               p      = (ws^.pcTbl) ! i
+                               intros = p^.introduced
+                           in case t of PCType -> if s `elem` intros
+                                                    then s
+                                                    else pp $ p^.race
+                                        _      -> e^.entName
 
 
 -- ============================================================
