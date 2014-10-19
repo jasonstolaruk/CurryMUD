@@ -142,6 +142,7 @@ cmdList = -- ==================================================
           , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
           , Cmd { cmdName = prefixDebugCmd "massBoot", action = debugMassBoot, cmdDesc = "Boot all players (including yourself)." }
+          , Cmd { cmdName = prefixDebugCmd "name", action = debugName, cmdDesc = "Verify your PC name." }
           , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
           , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
           , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
@@ -1462,7 +1463,7 @@ mkIdCountBothList i ws is = let ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
 -----
 
 
-intro :: Action
+intro :: Action -- TODO: "intro xxx" (where there is no xxx) outputs an extra blank line.
 intro (i, mq, cols) [] = getWS >>= \ws ->
     let p      = (ws^.pcTbl) ! i
         intros = p^.introduced
@@ -1564,7 +1565,8 @@ whatInv i cols ws it n = let (is, gecrs, rcs) = resolveName
     ri = p^.rmId
 
 
-whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text -- TODO: Capitalization?
+-- TODO: "what human" gives interesting results...
+whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
 whatInvEnts i cols ws it r gecr is = case gecr of
   Mult _ n (Just es) _
     | n == acp  -> T.unlines . wordWrap cols . T.concat $ [ dblQuote acp, " may refer to everything ", getLocTxtForInvType it, supplement, "." ]
@@ -1960,3 +1962,15 @@ purgeTalkAsyncTbl = do
 debugMassBoot :: Action
 debugMassBoot     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "massBoot") i >> ok mq >> bootAllPla
 debugMassBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugMassBoot imc []
+
+
+----
+
+
+debugName :: Action
+debugName (i, mq, cols) [] = do
+    logPlaExec (prefixDebugCmd "name") i
+    getWS >>= \ws ->
+        let e = (ws^.entTbl) ! i
+        in send mq . nl . T.unlines . wordWrap cols $ "You are " <> e^.sing <> "."
+debugName imc@(_, mq, cols) rs = ignore mq cols rs >> debugName imc []
