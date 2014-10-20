@@ -151,7 +151,7 @@ cmdList = -- ==================================================
           -- ==================================================
           -- Player commands:
           , Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
-          , Cmd { cmdName = "about", action = about, cmdDesc = "About this game." }
+          , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD." }
           , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
           , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
           , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
@@ -276,7 +276,7 @@ adHoc mq host = do
         let pc  = PC iHill Human [] []
         let ris = i : (ws^.invTbl) ! iHill
         -----
-        let pla = Pla host 80
+        let pla = Pla host 30
         -----
         let ws'  = ws  & typeTbl.at  i     ?~ PCType
                        & entTbl.at   i     ?~ e
@@ -657,7 +657,7 @@ look (i, mq, cols) [] = getWS >>= \ws ->
         ricd    = mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
 look (i, mq, cols) rs = helper >>= \case
-  (Left  msg, _              ) -> send mq . nl . T.unlines . wordWrap cols $ msg
+  (Left  msg, _              ) -> send mq msg
   (Right msg, Nothing        ) -> send mq msg
   (Right msg, Just (pis, iss)) -> do
       let (_, s)         = head iss
@@ -679,8 +679,8 @@ look (i, mq, cols) rs = helper >>= \case
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc          = foldl' helperLookEitherCoins    "" ecs
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (pis, mkIdSingList ws $ i : extractPCIdsFromEiss ws eiss))
-          else    putTMVar t ws >> return (Left "You don't see anything here to look at.", Nothing)
-    helperLookEitherInv _  acc (Left  msg) = nl $ acc <> msg
+          else    putTMVar t ws >> return (Left . nl . T.unlines . wordWrap cols $ "You don't see anything here to look at.", Nothing)
+    helperLookEitherInv _  acc (Left  msg) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
     helperLookEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
     helperLookEitherCoins  acc (Left  msg) = nl $ acc <> msg
     helperLookEitherCoins  acc (Right c  ) = nl $ acc <> mkCoinsDesc cols c
@@ -825,7 +825,7 @@ inv (i, mq, cols) rs = getWS >>= \ws ->
            in invDesc <> coinsDesc
       else nl . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty
   where
-    helperEitherInv _  acc (Left  msg) = nl $ acc <> msg
+    helperEitherInv _  acc (Left  msg) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
     helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
     helperEitherCoins  acc (Left  msg) = nl $ acc <> msg
     helperEitherCoins  acc (Right c  ) = nl $ acc <> mkCoinsDesc cols c
@@ -851,7 +851,7 @@ equip (i, mq, cols) rs = getWS >>= \ws ->
            in invDesc <> coinsDesc
       else nl . T.unlines . wordWrap cols $ dudeYou'reNaked
   where
-    helperEitherInv _  acc (Left  msg) = nl $ acc <> msg
+    helperEitherInv _  acc (Left  msg) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
     helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
 
 
@@ -923,7 +923,7 @@ type ToId   = Id
 
 helperGetDropEitherInv :: Id -> Cols -> GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
 helperGetDropEitherInv i cols god fi ti (ws, msg, logMsgs) = \case
-  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Left  msg' -> (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
   Right is   -> let fis              = (ws^.invTbl) ! fi
                     tis              = (ws^.invTbl) ! ti
                     ws'              = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
@@ -1022,7 +1022,7 @@ putAction (i, mq, cols) rs  = do
                                        _      -> (++ [cn]) . nub . init $ rs'
           restWithoutCon = init rs''
       in if (not . null $ pis) || (pc /= mempty)
-        then if T.head cn == rmChar
+        then if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris
             then shufflePut i cols (t, ws) (T.tail cn) restWithoutCon ris rc pis pc procGecrMisRm
             else putTMVar t ws >> return (T.unlines . wordWrap cols $ "You don't see any containers here.", [])
@@ -1062,7 +1062,7 @@ type ToEnt = Ent
 
 helperPutRemEitherInv :: Id -> Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
 helperPutRemEitherInv i cols por fi ti te (ws, msg, logMsgs) = \case
-  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Left  msg' -> (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
   Right is   -> let (is', msg')       = if ti `elem` is
                                           then (filter (/= ti) is, msg <> sorry)
                                           else (is, msg)
@@ -1142,7 +1142,7 @@ remove (i, mq, cols) rs  = do
           rs''           = case rs' of [_, _] -> rs'
                                        _      -> (++ [cn]) . nub . init $ rs'
           restWithoutCon = init rs''
-      in if T.head cn == rmChar
+      in if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris
             then shuffleRem i cols (t, ws) (T.tail cn) restWithoutCon ris rc procGecrMisRm
             else putTMVar t ws >> return (T.unlines . wordWrap cols $ "You don't see any containers here.", [])
@@ -1196,7 +1196,7 @@ ready (i, mq, cols) rs = do
 
 helperReady :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> (Either T.Text Inv, Maybe RightOrLeft) -> (WorldState, T.Text, [T.Text])
 helperReady i cols (ws, msg, logMsgs) (eis, mrol) = case eis of
-  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Left  msg' -> (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
   Right is   -> foldl' (readyDispatcher i cols mrol) (ws, msg, logMsgs) is
 
 
@@ -1430,7 +1430,7 @@ unready (i, mq, cols) rs = do
 
 helperUnready :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
 helperUnready i cols (ws, msg, logMsgs) = \case
-  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Left  msg' -> (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
   Right is   -> let em   = (ws^.eqTbl)  ! i
                     pis  = (ws^.invTbl) ! i
                     ws'  = ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
@@ -1496,7 +1496,7 @@ intro (i, mq, cols) rs = do
                    (      msg', logMsgs') = foldl' helperIntroEitherCoins   (     msg, logMsgs) ecs
                in putTMVar t ws' >> return (msg', logMsgs')
           else    putTMVar t ws  >> return (T.unlines . wordWrap cols $ "You don't see anyone here to introduce yourself to.", [])
-    helperIntroEitherInv _ a@(ws, msg, logMsgs) (Left  msg')
+    helperIntroEitherInv _ a@(ws, msg, logMsgs) (Left msg')
       | T.null msg' = a
       | otherwise   = (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
     helperIntroEitherInv s a (Right is) = foldl' tryIntro a is
