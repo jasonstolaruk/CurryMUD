@@ -77,6 +77,8 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 -- Higher-level abstractions for working with STM:
 
 
+-- TODO: The "get(N)WS~" functions need to be renamed for clarity.
+-- Make sure your use of these functions is ideal throughout the existing code.
 getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
 getWSTMVar = gets (^.worldStateTMVar)
 

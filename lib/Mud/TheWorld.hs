@@ -14,6 +14,7 @@ import qualified Mud.Logging as L (logNotice)
 import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Data.Monoid (mempty)
+import Data.Time.Clock (getCurrentTime)
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
 import qualified Data.IntMap.Lazy as IM (empty, map)
@@ -31,13 +32,14 @@ logNotice = L.logNotice "Mud.TheWorld"
 
 initMudState :: IO MudState
 initMudState = do
+    start    <- getCurrentTime
     wsTMVar  <- newTMVarIO ws
     pltTMVar <- newTMVarIO IM.empty
     ttTMVar  <- newTMVarIO M.empty
     tatTMVar <- newTMVarIO M.empty
     mqtTMVar <- newTMVarIO IM.empty
     ptTMVar  <- newTMVarIO IM.empty
-    return (MudState wsTMVar . NonWorldState Nothing Nothing pltTMVar ttTMVar tatTMVar mqtTMVar $ ptTMVar)
+    return (MudState wsTMVar . NonWorldState start Nothing Nothing pltTMVar ttTMVar tatTMVar mqtTMVar $ ptTMVar)
   where
     ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
 

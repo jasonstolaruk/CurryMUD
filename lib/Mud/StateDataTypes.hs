@@ -11,6 +11,7 @@ import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
 import Data.Monoid (mappend, mempty, Monoid)
+import Data.Time.Clock (UTCTime)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
@@ -282,9 +283,11 @@ data Type = ObjType
 
 -- ==================================================
 -- Non-world state:
+-- TODO: We aren't using any strictness annotations on any of the NWS data types...
 
 
-data NonWorldState = NonWorldState { _noticeLog          :: Maybe LogService
+data NonWorldState = NonWorldState { _startTime          :: UTCTime
+                                   , _noticeLog          :: Maybe LogService
                                    , _errorLog           :: Maybe LogService
                                    , _plaLogTblTMVar     :: TMVar (IM.IntMap LogService)
                                    , _threadTblTMVar     :: TMVar ThreadTbl

@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
 
 module Mud.Cmds (listenWrapper) where
@@ -41,6 +41,7 @@ import Data.Time.Format (formatTime)
 import GHC.Conc (threadStatus, ThreadStatus(..))
 import Network (accept, HostName, listenOn, PortID(..), sClose)
 import Prelude hiding (pi)
+import System.CPUTime (getCPUTime)
 import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (BufferMode(..), Handle, hClose, hFlush, hGetBuffering, hGetLine, hIsEOF, hPutStr, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
@@ -74,6 +75,8 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --      [DONE] "(..)" instead of "(blah)" in import statements.
 --   d. [DONE] Check for superfluous exports.
 -- 7. Write tests for NameResolution and Cmds.
+
+-- TODO: Write a player uptime command based on the start time. Show the record uptime.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -134,16 +137,19 @@ cmdList = -- ==================================================
           , Cmd { cmdName = prefixWizCmd "day", action = wizDay, cmdDesc = "Display the current day of week." }
           , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the game server." }
           , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
+          , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display system uptime." }
 
           -- ==================================================
           -- Debug commands:
           , Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
           , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
+          , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
           , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
           , Cmd { cmdName = prefixDebugCmd "massBoot", action = debugMassBoot, cmdDesc = "Boot all players (including yourself)." }
           , Cmd { cmdName = prefixDebugCmd "name", action = debugName, cmdDesc = "Verify your PC name." }
           , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
+          , Cmd { cmdName = prefixDebugCmd "start", action = debugStart, cmdDesc = "Display the start time." }
           , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
           , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
           , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
@@ -175,7 +181,6 @@ cmdList = -- ==================================================
           , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
           , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
           , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
-          , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display game server uptime." }
           , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
           , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 
@@ -1681,23 +1686,6 @@ whatInvCoins cols it r rc
 -----
 
 
-uptime :: Action -- TODO: Show the record uptime.
-uptime (i, mq, cols) [] = do
-    logPlaExec "uptime" i
-    (try . send mq . parse =<< runUptime) >>= eitherRet (\e -> logIOEx "uptime" e >> sendGenericErrorMsg mq cols)
-  where
-    runUptime = liftIO . readProcess "uptime" [] $ ""
-    parse ut  = let (a, b) = span (/= ',') ut
-                    a'     = unwords . tail . words $ a
-                    b'     = dropWhile isSpace . takeWhile (/= ',') . tail $ b
-                    c      = (toUpper . head $ a') : tail a'
-                in nlnl . T.concat $ [ T.pack c, " ", T.pack b', "." ]
-uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
-
-
------
-
-
 quit :: Action
 quit (i, mq, cols) [] = do
     liftIO . atomically . writeTQueue mq . Quit . nl . T.unlines . wordWrap cols $ "Thanks for playing! See you next time."
@@ -1804,6 +1792,23 @@ wizDay (i, mq, _)    [] = do
     logPlaExec (prefixWizCmd "day") i
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 wizDay imc@(_, mq, cols) rs = ignore mq cols rs >> wizDay imc []
+
+
+-----
+
+
+wizUptime :: Action
+wizUptime (i, mq, cols) [] = do
+    logPlaExec (prefixWizCmd "uptime") i
+    (try . send mq . parse =<< runUptime) >>= eitherRet (\e -> logIOEx "wizUptime" e >> sendGenericErrorMsg mq cols)
+  where
+    runUptime = liftIO . readProcess "uptime" [] $ ""
+    parse ut  = let (a, b) = span (/= ',') ut
+                    a'     = unwords . tail . words $ a
+                    b'     = dropWhile isSpace . takeWhile (/= ',') . tail $ b
+                    c      = (toUpper . head $ a') : tail a'
+                in nlnl . T.concat $ [ T.pack c, " ", T.pack b', "." ]
+wizUptime imc@(_, mq, cols) rs = ignore mq cols rs >> wizUptime imc []
 
 
 -- ==================================================
@@ -1974,3 +1979,26 @@ debugName (i, mq, cols) [] = do
         let e = (ws^.entTbl) ! i
         in send mq . nl . T.unlines . wordWrap cols $ "You are " <> e^.sing <> "."
 debugName imc@(_, mq, cols) rs = ignore mq cols rs >> debugName imc []
+
+
+-----
+
+
+debugCPU :: Action
+debugCPU (i, mq, cols) [] = do
+    logPlaExec (prefixDebugCmd "cpu") i
+    t <- liftIO getCPUTime
+    let secs = fromIntegral t / fromIntegral (10 ^ 12)
+    send mq . nl . T.unlines . wordWrap cols $ "CPU time: " <> showText secs
+debugCPU imc@(_, mq, cols) rs = ignore mq cols rs >> debugCPU imc []
+
+
+-----
+
+
+debugStart :: Action
+debugStart (i, mq, cols) [] = do
+    logPlaExec (prefixDebugCmd "start") i
+    start <- getNWSTMVar startTime
+    send mq . nl . T.unlines . wordWrap cols . ("Start time: " <>) . showText $ start
+debugStart imc@(_, mq, cols) rs = ignore mq cols rs >> debugStart imc []
