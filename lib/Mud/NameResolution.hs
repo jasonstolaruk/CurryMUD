@@ -310,49 +310,55 @@ procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMis
 -- Processing "ReconciledCoins":
 
 
-procReconciledCoinsPCInv :: ReconciledCoins -> Either T.Text Coins -- TODO: We shouldn't "nl" here. The caller should word wrap.
-procReconciledCoinsPCInv (Left  Empty)                            = Left . nl $ "You don't have any coins."
-procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
+procReconciledCoinsPCInv :: ReconciledCoins -> Either [T.Text] Coins
+procReconciledCoinsPCInv (Left  Empty)                            = Left ["You don't have any coins."]
+procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then nl "You don't have any copper pieces." else ""
-    s = if sil /= 0 then nl "You don't have any silver pieces." else ""
-    g = if gol /= 0 then nl "You don't have any gold pieces."   else ""
+    c = if cop /= 0 then Just "You don't have any copper pieces." else Nothing
+    s = if sil /= 0 then Just "You don't have any silver pieces." else Nothing
+    g = if gol /= 0 then Just "You don't have any gold pieces."   else Nothing
 procReconciledCoinsPCInv (Right (SomeOf c                      )) = Right c
-procReconciledCoinsPCInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
+procReconciledCoinsPCInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then nl $ "You don't have " <> showText cop <> " copper pieces." else ""
-    s = if sil /= 0 then nl $ "You don't have " <> showText sil <> " silver pieces." else ""
-    g = if gol /= 0 then nl $ "You don't have " <> showText gol <> " gold pieces."   else ""
+    c = if cop /= 0 then Just $ "You don't have " <> showText cop <> " copper pieces." else Nothing
+    s = if sil /= 0 then Just $ "You don't have " <> showText sil <> " silver pieces." else Nothing
+    g = if gol /= 0 then Just $ "You don't have " <> showText gol <> " gold pieces."   else Nothing
 procReconciledCoinsPCInv rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
 
 
-procReconciledCoinsRm :: ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsRm (Left  Empty)                            = Left . nl $ "You don't see any coins here."
-procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
+extractCoinsTxt :: [Maybe T.Text] -> [T.Text]
+extractCoinsTxt []           = []
+extractCoinsTxt (Nothing:xs) =     extractCoinsTxt xs
+extractCoinsTxt (Just  x:xs) = x : extractCoinsTxt xs
+
+
+procReconciledCoinsRm :: ReconciledCoins -> Either [T.Text] Coins
+procReconciledCoinsRm (Left  Empty)                            = Left ["You don't see any coins here."]
+procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then nl "You don't see any copper pieces here." else ""
-    s = if sil /= 0 then nl "You don't see any silver pieces here." else ""
-    g = if gol /= 0 then nl "You don't see any gold pieces here."   else ""
+    c = if cop /= 0 then Just "You don't see any copper pieces here." else Nothing
+    s = if sil /= 0 then Just "You don't see any silver pieces here." else Nothing
+    g = if gol /= 0 then Just "You don't see any gold pieces here."   else Nothing
 procReconciledCoinsRm (Right (SomeOf c                      )) = Right c
-procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
+procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then nl $ "You don't see " <> showText cop <> " copper pieces here." else ""
-    s = if sil /= 0 then nl $ "You don't see " <> showText sil <> " silver pieces here." else ""
-    g = if gol /= 0 then nl $ "You don't see " <> showText gol <> " gold pieces here."   else ""
+    c = if cop /= 0 then Just $ "You don't see " <> showText cop <> " copper pieces here." else Nothing
+    s = if sil /= 0 then Just $ "You don't see " <> showText sil <> " silver pieces here." else Nothing
+    g = if gol /= 0 then Just $ "You don't see " <> showText gol <> " gold pieces here."   else Nothing
 procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
 
 
-procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either T.Text Coins
-procReconciledCoinsCon cn (Left  Empty)                            = Left . nl $ "The " <> cn <> " doesn't contain any coins."
-procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
+procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [T.Text] Coins
+procReconciledCoinsCon cn (Left  Empty)                            = Left [ "The " <> cn <> " doesn't contain any coins." ]
+procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then nl $ "The " <> cn <> " doesn't contain any copper pieces." else ""
-    s = if sil /= 0 then nl $ "The " <> cn <> " doesn't contain any silver pieces." else ""
-    g = if gol /= 0 then nl $ "The " <> cn <> " doesn't contain any gold pieces."   else ""
+    c = if cop /= 0 then Just $ "The " <> cn <> " doesn't contain any copper pieces." else Nothing
+    s = if sil /= 0 then Just $ "The " <> cn <> " doesn't contain any silver pieces." else Nothing
+    g = if gol /= 0 then Just $ "The " <> cn <> " doesn't contain any gold pieces."   else Nothing
 procReconciledCoinsCon _  (Right (SomeOf c                      )) = Right c
-procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . T.concat $ [ c, s, g ]
+procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then nl . T.concat $ [ "The ", cn, "doesn't contain ", showText cop, " copper pieces." ] else ""
-    s = if sil /= 0 then nl . T.concat $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ] else ""
-    g = if gol /= 0 then nl . T.concat $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces."   ] else ""
+    c = if cop /= 0 then Just . T.concat $ [ "The ", cn, "doesn't contain ", showText cop, " copper pieces." ] else Nothing
+    s = if sil /= 0 then Just . T.concat $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ] else Nothing
+    g = if gol /= 0 then Just . T.concat $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces."   ] else Nothing
 procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]

@@ -32,7 +32,7 @@ import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, find, foldl', intercalate, nub, nubBy, sort, zip4)
+import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort, zip4)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed)
@@ -685,10 +685,10 @@ look (i, mq, cols) rs = helper >>= \case
                    coinsDesc          = foldl' helperLookEitherCoins    "" ecs
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (pis, mkIdSingList ws $ i : extractPCIdsFromEiss ws eiss))
           else    putTMVar t ws >> return (Left . nl . T.unlines . wordWrap cols $ "You don't see anything here to look at.", Nothing)
-    helperLookEitherInv _  acc (Left  msg) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
-    helperLookEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
-    helperLookEitherCoins  acc (Left  msg) = nl $ acc <> msg
-    helperLookEitherCoins  acc (Right c  ) = nl $ acc <> mkCoinsDesc cols c
+    helperLookEitherInv _  acc (Left  msg ) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
+    helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
+    helperLookEitherCoins  acc (Left  msgs) = (acc <>) . nl . T.unlines . concatMap (wordWrap cols) . intersperse "" $ msgs
+    helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
@@ -830,10 +830,10 @@ inv (i, mq, cols) rs = readWSTMVar >>= \ws ->
            in invDesc <> coinsDesc
       else nl . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty
   where
-    helperEitherInv _  acc (Left  msg) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
-    helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
-    helperEitherCoins  acc (Left  msg) = nl $ acc <> msg
-    helperEitherCoins  acc (Right c  ) = nl $ acc <> mkCoinsDesc cols c
+    helperEitherInv _  acc (Left  msg ) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
+    helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
+    helperEitherCoins  acc (Left  msgs) = (acc <>) . nl . T.unlines . concatMap (wordWrap cols) . intersperse "" $ msgs
+    helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 
 
 -----
@@ -947,15 +947,15 @@ mkGetDropInvDesc i cols ws god is = let msgs = map helper . mkNameCountBothList 
                  Drop -> "drop"
 
 
-helperGetDropEitherCoins :: Cols -> GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either T.Text Coins -> (WorldState, T.Text, [T.Text])
+helperGetDropEitherCoins :: Cols -> GetOrDrop -> FromId -> ToId -> (WorldState, T.Text, [T.Text]) -> Either [T.Text] Coins -> (WorldState, T.Text, [T.Text])
 helperGetDropEitherCoins cols god fi ti (ws, msg, logMsgs) = \case
-  Left  msg' -> (ws, msg <> msg', logMsgs)
-  Right c   -> let fc               = (ws^.coinsTbl) ! fi
-                   tc               = (ws^.coinsTbl) ! ti
-                   ws'              = ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                                         & coinsTbl.at ti ?~ tc <> c
-                   (msg', logMsgs') = mkGetDropCoinsDesc cols god c
-               in (ws', msg <> msg', logMsgs ++ logMsgs')
+  Left  msgs -> (ws, (msg <>) . T.unlines . concatMap (wordWrap cols) $ msgs, logMsgs)
+  Right c    -> let fc               = (ws^.coinsTbl) ! fi
+                    tc               = (ws^.coinsTbl) ! ti
+                    ws'              = ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                                          & coinsTbl.at ti ?~ tc <> c
+                    (msg', logMsgs') = mkGetDropCoinsDesc cols god c
+                in (ws', msg <> msg', logMsgs ++ logMsgs')
 
 
 mkGetDropCoinsDesc :: Cols -> GetOrDrop -> Coins -> (T.Text, [T.Text])
@@ -1093,9 +1093,9 @@ mkPutRemInvDesc i cols ws por is te = let msgs = map helper . mkNameCountBothLis
                  Rem -> "from the"
 
 
-helperPutRemEitherCoins :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either T.Text Coins -> (WorldState, T.Text, [T.Text])
+helperPutRemEitherCoins :: Cols -> PutOrRem -> FromId -> ToId -> ToEnt -> (WorldState, T.Text, [T.Text]) -> Either [T.Text] Coins -> (WorldState, T.Text, [T.Text])
 helperPutRemEitherCoins cols por fi ti te (ws, msg, logMsgs) = \case
-  Left  msg' -> (ws, msg <> msg', logMsgs)
+  Left  msgs -> (ws, (msg <>) . T.unlines . concatMap (wordWrap cols) $ msgs, logMsgs)
   Right c    -> let fc               = (ws^.coinsTbl) ! fi
                     tc               = (ws^.coinsTbl) ! ti
                     ws'              = ws & coinsTbl.at fi ?~ fc <> negateCoins c
@@ -1468,6 +1468,7 @@ mkIdCountBothList i ws is = let ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
 -----
 
 
+-- TODO: Implement broadcasting.
 intro :: Action
 intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let p      = (ws^.pcTbl) ! i
@@ -1522,7 +1523,7 @@ intro (i, mq, cols) rs = do
                                in (ws', (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs ++ [msg'])
               _      -> let msg' = T.unlines . wordWrap cols $ "You can't introduce yourself to a " <> s' <> "."
                         in if msg' `T.isInfixOf` msg then (ws, msg, logMsgs) else (ws, msg <> msg', logMsgs)
-    helperIntroEitherCoins (msg, logMsgs) (Left  msg') = (msg <> msg', logMsgs)
+    helperIntroEitherCoins (msg, logMsgs) (Left  msgs) = ((msg <>) . T.unlines . concatMap (wordWrap cols) $ msgs, logMsgs)
     helperIntroEitherCoins (msg, logMsgs) (Right _   ) =
         let msg' = T.unlines . wordWrap cols $ "You can't introduce yourself to a coin."
         in if msg' `T.isInfixOf` msg then (msg, logMsgs) else (msg <> msg', logMsgs)
