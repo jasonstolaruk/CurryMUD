@@ -12,12 +12,10 @@ module Mud.StateHelpers ( allKeys
                         , getEffBothGramNos
                         , getEffName
                         , getLogAsyncs
-                        , getNWS
-                        , getNWSTMVar
+                        , getNWSRec
                         , getPlaColumns
                         , getPlaLogQueue
                         , getUnusedId
-                        , getWS
                         , getWSTMVar
                         , massBroadcast
                         , mkAssocListTxt
@@ -41,6 +39,8 @@ module Mud.StateHelpers ( allKeys
                         , putPla
                         , putRm
                         , putWpn
+                        , readTMVarInNWS
+                        , readWSTMVar
                         , send
                         , sortInv ) where
 
@@ -77,14 +77,12 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 -- Higher-level abstractions for working with STM:
 
 
--- TODO: The "get(N)WS~" functions need to be renamed for clarity.
--- Make sure your use of these functions is ideal throughout the existing code.
 getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
 getWSTMVar = gets (^.worldStateTMVar)
 
 
-getWS :: MudStack WorldState
-getWS = liftIO . atomically . readTMVar =<< getWSTMVar
+readWSTMVar :: MudStack WorldState
+readWSTMVar = liftIO . atomically . readTMVar =<< getWSTMVar
 
 
 onWS :: ((TMVar WorldState, WorldState) -> STM a) -> MudStack a
@@ -100,18 +98,18 @@ modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
     transaction t = takeTMVar t >>= putTMVar t . f
 
 
-getNWSTMVar :: forall a (m :: * -> *). MonadState MudState m => ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> m a
-getNWSTMVar lens = gets (^.nonWorldState.lens)
+getNWSRec :: forall a (m :: * -> *). MonadState MudState m => ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> m a
+getNWSRec lens = gets (^.nonWorldState.lens)
 
 
-getNWS :: forall (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> m a
-getNWS lens = liftIO . atomically . readTMVar =<< getNWSTMVar lens
+readTMVarInNWS :: forall (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> m a
+readTMVarInNWS lens = liftIO . atomically . readTMVar =<< getNWSRec lens
 
 
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
 getMqtPt = do
-    mqtTMVar <- getNWSTMVar msgQueueTblTMVar
-    ptTMVar  <- getNWSTMVar plaTblTMVar
+    mqtTMVar <- getNWSRec msgQueueTblTMVar
+    ptTMVar  <- getNWSRec plaTblTMVar
     liftIO . atomically $ do
         mqt <- readTMVar mqtTMVar
         pt  <- readTMVar ptTMVar
@@ -119,14 +117,14 @@ getMqtPt = do
 
 
 onNWS :: forall t (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) -> ((TMVar t, t) -> STM a) -> m a
-onNWS lens f = liftIO . atomically . transaction =<< getNWSTMVar lens
+onNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= \x ->
         f (t, x)
 
 
 modifyNWS :: forall a (m :: * -> *). (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> (a -> a) -> m ()
-modifyNWS lens f = liftIO . atomically . transaction =<< getNWSTMVar lens
+modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= putTMVar t . f
 
@@ -140,7 +138,7 @@ getLogAsyncs = helper <$> gets (^.nonWorldState)
 
 
 getPlaLogQueue :: Id -> MudStack LogQueue
-getPlaLogQueue i = snd . (! i) <$> getNWS plaLogTblTMVar
+getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
 
 
 -- ============================================================
@@ -196,7 +194,7 @@ putPla i p = modifyNWS plaTblTMVar $ \pt -> pt & at i ?~ p
 
 
 getPla :: Id -> MudStack Pla
-getPla i = (! i) <$> getNWS plaTblTMVar
+getPla i = (! i) <$> readTMVarInNWS plaTblTMVar
 
 
 getPlaColumns :: Id -> MudStack Int
@@ -215,7 +213,7 @@ getUnusedId :: WorldState -> Id
 getUnusedId = head . (\\) [0..] . allKeys
 
 
-sortInv :: WorldState -> Inv -> Inv -- TODO: Devise a means of sorting based on effective names.
+sortInv :: WorldState -> Inv -> Inv
 sortInv ws is = let ts         = [ (ws^.typeTbl) ! i | i <- is ]
                     pcIs       = map fst . filter ((== PCType) . snd) . zip is $ ts
                     sortedPCIs = map fst . sortBy pcSorter . zip pcIs . sings $ pcIs

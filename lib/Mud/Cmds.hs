@@ -264,8 +264,8 @@ talk h host = helper `finally` cleanUp
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = do
     wsTMVar  <- getWSTMVar
-    mqtTMVar <- getNWSTMVar msgQueueTblTMVar
-    ptTMVar  <- getNWSTMVar plaTblTMVar
+    mqtTMVar <- getNWSRec msgQueueTblTMVar
+    ptTMVar  <- getNWSRec plaTblTMVar
     liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
@@ -323,7 +323,7 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 notifyArrival :: Id -> MudStack ()
-notifyArrival i = getWS >>= \ws ->
+notifyArrival i = readWSTMVar >>= \ws ->
     let e = (ws^.entTbl) ! i
         msg = e^.sing <> " has arrived in the game."
     in broadcastOthersInRm i msg
@@ -356,20 +356,20 @@ plaThreadExHandler n i e =
 
 
 getListenThreadId :: MudStack ThreadId
-getListenThreadId = reverseLookup Listen <$> getNWS threadTblTMVar
+getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 shutDown :: MudStack ()
 shutDown = bootAllPla >> commitSuicide
   where
     commitSuicide = do
-        tas <- M.elems <$> getNWS talkAsyncTblTMVar
+        tas <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
         liftIO . void . forkIO $ mapM_ wait tas
         liftIO . killThread =<< getListenThreadId
 
 
 bootAllPla :: MudStack ()
-bootAllPla = getNWS msgQueueTblTMVar >>= \mqt ->
+bootAllPla = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
     forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue Die
 
 
@@ -412,7 +412,7 @@ dispatch i mq (cn, rest) = do
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
-findAction i cn = getWS >>= \ws ->
+findAction i cn = readWSTMVar >>= \ws ->
     let p        = (ws^.pcTbl) ! i
         r        = (ws^.rmTbl) ! (p^.rmId)
         cmdList' = mkCmdListWithNonStdRmLinks r
@@ -653,7 +653,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
 look :: Action
-look (i, mq, cols) [] = getWS >>= \ws ->
+look (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let p       = (ws^.pcTbl) ! i
         ri      = p^.rmId
         r       = (ws^.rmTbl) ! ri
@@ -795,7 +795,7 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) = T.unlines . intercalate [""] . map (w
 
 
 exits :: Action
-exits (i, mq, cols) [] = getWS >>= \ws ->
+exits (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let p = (ws^.pcTbl) ! i
         r = (ws^.rmTbl) ! (p^.rmId)
     in logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
@@ -815,10 +815,10 @@ mkExitsSummary cols r = let stdNames    = [ rl^.linkDir.to linkDirToCmdName | rl
 
 
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv (i, mq, cols) [] = getWS >>= \ws ->
+inv (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let e = (ws^.entTbl) ! i
     in send mq . nl . mkInvCoinsDesc i cols ws i $ e
-inv (i, mq, cols) rs = getWS >>= \ws ->
+inv (i, mq, cols) rs = readWSTMVar >>= \ws ->
     let is = (ws^.invTbl)   ! i
         c  = (ws^.coinsTbl) ! i
     in send mq $ if (not . null $ is) || (c /= mempty)
@@ -840,10 +840,10 @@ inv (i, mq, cols) rs = getWS >>= \ws ->
 
 
 equip :: Action
-equip (i, mq, cols) [] = getWS >>= \ws ->
+equip (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let e = (ws^.entTbl) ! i
     in send mq . nl . mkEqDesc i cols ws i e $ PCType
-equip (i, mq, cols) rs = getWS >>= \ws ->
+equip (i, mq, cols) rs = readWSTMVar >>= \ws ->
     let em = (ws^.eqTbl) ! i
         is = M.elems em
     in send mq $ if not . M.null $ em
@@ -1468,8 +1468,8 @@ mkIdCountBothList i ws is = let ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
 -----
 
 
-intro :: Action -- TODO: "intro xxx" (where there is no xxx) outputs an extra blank line.
-intro (i, mq, cols) [] = getWS >>= \ws ->
+intro :: Action
+intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let p      = (ws^.pcTbl) ! i
         intros = p^.introduced
     in if null intros
@@ -1534,7 +1534,7 @@ intro (i, mq, cols) rs = do
 -- TODO: Disambiguate player names.
 what :: Action
 what (_, mq, cols) [] = advise mq cols ["what"] $ "Please specify one or more abbreviations to disambiguate, as in " <> dblQuote "what up" <> "."
-what (i, mq, cols) rs = getWS >>= \ws ->
+what (i, mq, cols) rs = readWSTMVar >>= \ws ->
     let p  = (ws^.pcTbl) ! i
         r  = (ws^.rmTbl) ! (p^.rmId)
     in logPlaExecArgs "what" rs i >> (send mq . T.concat . map (helper ws r) . nub . map T.toLower $ rs)
@@ -1689,7 +1689,7 @@ whatInvCoins cols it r rc
 uptime :: Action
 uptime (i, mq, _) [] = do
     logPlaExec "uptime" i
-    start <- getNWSTMVar startTime
+    start <- getNWSRec startTime
     now   <- liftIO getCurrentTime
     let diff = now `diffUTCTime` start
     send mq . nlnl . T.pack . (<> ".") . ("Up " <>) . renderSecs . round $ diff
@@ -1711,8 +1711,8 @@ handleQuit :: Id -> MudStack ()
 handleQuit i = do
     notifyEgress i
     wsTMVar  <- getWSTMVar
-    mqtTMVar <- getNWSTMVar msgQueueTblTMVar
-    ptTMVar  <- getNWSTMVar plaTblTMVar
+    mqtTMVar <- getNWSRec msgQueueTblTMVar
+    ptTMVar  <- getNWSRec plaTblTMVar
     n <- liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
@@ -1742,7 +1742,7 @@ handleQuit i = do
 
 
 notifyEgress :: Id -> MudStack ()
-notifyEgress i = getWS >>= \ws ->
+notifyEgress i = readWSTMVar >>= \ws ->
     let e = (ws^.entTbl) ! i
         msg = e^.sing <> " has left the game."
     in broadcastOthersInRm i msg
@@ -1760,7 +1760,7 @@ wizDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixWizCmd "?") rs i >> disp
 
 
 wizShutdown :: Action
-wizShutdown (i, mq, _) [] = getWS >>= \ws ->
+wizShutdown (i, mq, _) [] = readWSTMVar >>= \ws ->
     let e = (ws^.entTbl) ! i
     in do
         massBroadcast "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
@@ -1768,7 +1768,7 @@ wizShutdown (i, mq, _) [] = getWS >>= \ws ->
         massLogPla "wizShutDown" $ T.concat [ "closing connection due to server shutdown initiated by ", e^.sing, " ", parensQuote "no message given", "." ]
         logNotice  "wizShutdown" $ T.concat [ "server shutdown initiated by ", e^.sing, " ", parensQuote "no message given", "." ]
         liftIO . atomically . writeTQueue mq $ Shutdown
-wizShutdown (i, mq, _) rs = getWS >>= \ws ->
+wizShutdown (i, mq, _) rs = readWSTMVar >>= \ws ->
     let e   = (ws^.entTbl) ! i
         msg = T.intercalate " " rs
     in do
@@ -1830,7 +1830,7 @@ wizUptime imc@(_, mq, cols) rs = ignore mq cols rs >> wizUptime imc []
 wizStart :: Action
 wizStart (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "start") i
-    start <- getNWSTMVar startTime
+    start <- getNWSRec startTime
     send mq . nl . T.unlines . wordWrap cols . showText $ start
 wizStart imc@(_, mq, cols) rs = ignore mq cols rs >> wizStart imc []
 
@@ -1841,7 +1841,7 @@ wizStart imc@(_, mq, cols) rs = ignore mq cols rs >> wizStart imc []
 wizName :: Action
 wizName (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "name") i
-    getWS >>= \ws ->
+    readWSTMVar >>= \ws ->
         let e = (ws^.entTbl) ! i
         in send mq . nl . T.unlines . wordWrap cols $ "You are " <> e^.sing <> "."
 wizName imc@(_, mq, cols) rs = ignore mq cols rs >> wizName imc []
@@ -1916,8 +1916,8 @@ debugThread :: Action
 debugThread (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "thread") i
     (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
-    kvs <- M.assocs <$> getNWS threadTblTMVar
-    plt <- getNWS plaLogTblTMVar
+    kvs <- M.assocs <$> readTMVarInNWS threadTblTMVar
+    plt <- readTMVarInNWS plaLogTblTMVar
     ds  <- mapM mkDesc $ head kvs : (nli, Notice) : (eli, Error) : tail kvs ++ zip (map (asyncThreadId . fst) . IM.elems $ plt) (map PlaLog . IM.keys $ plt)
     let msg = T.unlines . concatMap (wordWrap cols) $ ds
     send mq . frame cols $ msg
@@ -1936,7 +1936,7 @@ debugThread imc@(_, mq, cols) rs = ignore mq cols rs >> debugThread imc []
 debugTalk :: Action
 debugTalk (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "talk") i
-    ds <- getNWS talkAsyncTblTMVar >>= mapM mkDesc . M.elems
+    ds <- readTMVarInNWS talkAsyncTblTMVar >>= mapM mkDesc . M.elems
     let msg = T.unlines . concatMap (wordWrap cols) $ ds
     send mq . frame cols $ msg
   where
@@ -1963,7 +1963,7 @@ purge = logNotice "purge" "purging the thread tables." >> purgePlaLogTbl >> purg
 
 purgePlaLogTbl :: MudStack ()
 purgePlaLogTbl = do
-    kvs <- IM.assocs <$> getNWS plaLogTblTMVar
+    kvs <- IM.assocs <$> readTMVarInNWS plaLogTblTMVar
     let is     = [ fst kv         | kv <- kvs ]
     let asyncs = [ fst . snd $ kv | kv <- kvs ]
     ss <- liftIO . mapM poll $ asyncs
@@ -1976,7 +1976,7 @@ purgePlaLogTbl = do
 
 purgeThreadTbl :: MudStack ()
 purgeThreadTbl = do
-    tis <- M.keys <$> getNWS threadTblTMVar
+    tis <- M.keys <$> readTMVarInNWS threadTblTMVar
     ss  <- liftIO . mapM threadStatus $ tis
     let zipped = zip tis ss
     modifyNWS threadTblTMVar $ flip (foldl' helper) zipped
@@ -1988,7 +1988,7 @@ purgeThreadTbl = do
 
 purgeTalkAsyncTbl :: MudStack ()
 purgeTalkAsyncTbl = do
-    asyncs <- M.elems <$> getNWS talkAsyncTblTMVar
+    asyncs <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
     ss     <- liftIO . mapM poll $ asyncs
     let zipped = zip asyncs ss
     modifyNWS talkAsyncTblTMVar $ flip (foldl' helper) zipped

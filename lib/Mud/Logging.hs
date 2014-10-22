@@ -52,7 +52,7 @@ closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
     [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (^.nonWorldState.noticeLog), fromJust <$> gets (^.nonWorldState.errorLog) ]
-    ls <- IM.elems <$> getNWS plaLogTblTMVar
+    ls <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
     mapM_ stopLog         $ nq : eq : [ snd l | l <- ls ]
     mapM_ (liftIO . wait) $ na : ea : [ fst l | l <- ls ]
     liftIO removeAllHandlers
@@ -172,7 +172,7 @@ logPlaOut modName cn i msgs = helper =<< getPlaLogQueue i
 
 
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
-massLogPla modName funName msg = getNWS plaLogTblTMVar >>= \plt ->
+massLogPla modName funName msg = readTMVarInNWS plaLogTblTMVar >>= \plt ->
     let logQueues = [ snd logService | logService <- IM.elems plt ]
     in forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
