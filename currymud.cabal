@@ -62,6 +62,7 @@ library
                        hslogger >=1.2 && <2.0,
                        lens >=4.4 && <5.0,
                        lifted-base >=0.2 && <0.3,
+                       MissingH >=1.2 && <2.0,
                        monad-control >=0.3 && <0.4,
                        mtl >=2.2 && <3.0,
                        network >=2.6 && <3.0,
