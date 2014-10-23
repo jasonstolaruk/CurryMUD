@@ -191,15 +191,15 @@ data Slot = HeadS
 -- Has an entity and an inventory and coins and equipment.
 
 
-data Mob = Mob { _gender            :: !Gender
+data Mob = Mob { _sex               :: !Sex
                , _st, _dx, _iq, _ht :: !Int
                , _hp, _fp           :: !Int
                , _xp                :: !Int
                , _hand              :: !Hand } deriving (Eq, Show)
 
-data Gender = Male
-            | Female
-            | NoGender deriving (Eq, Show)
+data Sex = Male
+         | Female
+         | NoSex deriving (Eq, Show)
 
 data Hand   = RHand
             | LHand

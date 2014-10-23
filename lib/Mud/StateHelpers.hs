@@ -54,7 +54,7 @@ import Control.Applicative (Const)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (_1, at, each, to)
+import Control.Lens (_1, at, both, each, over, to)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -62,7 +62,7 @@ import Control.Monad.State (gets)
 import Control.Monad.State.Class (MonadState)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, sortBy)
+import Data.List ((\\), delete, foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
@@ -214,16 +214,16 @@ getUnusedId = head . (\\) [0..] . allKeys
 
 
 sortInv :: WorldState -> Inv -> Inv
-sortInv ws is = let ts         = [ (ws^.typeTbl) ! i | i <- is ]
-                    pcIs       = map fst . filter ((== PCType) . snd) . zip is $ ts
-                    sortedPCIs = map fst . sortBy pcSorter . zip pcIs . sings $ pcIs
-                in (sortedPCIs ++) . sortNonPCs . deleteFirstOfEach pcIs $ is
+sortInv ws is = let ts              = [ (ws^.typeTbl) ! i | i <- is ]
+                    (pcIs, nonPCIs) = foldl' helper ([], []) . zip is $ ts
+                in (pcIs ++) . sortNonPCs $ nonPCIs
   where
-    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is' ]
-    pcSorter (_, n) (_, n')            = n `compare` n'
+    helper (pcIs, nonPCIs) (i, t) | t == PCType = (pcIs ++ [i], nonPCIs)
+                                  | otherwise   = (pcIs, nonPCIs ++ [i])
     sortNonPCs is'                     = map (^._1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
-    names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
+    names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
+    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is' ]
 
 
 type BothGramNos = (Sing, Plur)
@@ -233,17 +233,19 @@ getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
 getEffBothGramNos i ws i' = let e  = (ws^.entTbl) ! i'
                                 mn = e^.entName
                             in case mn of
-                              Nothing -> let p      = (ws^.pcTbl) ! i
+                              Nothing -> let p      = (ws^.pcTbl)  ! i
                                              intros = p^.introduced
-                                             s      = e^.sing
-                                             p'     = (ws^.pcTbl) ! i'
+                                             n      = e^.sing
+                                             m      = (ws^.mobTbl) ! i'
+                                             sn     = pp $ m^.sex
+                                             p'     = (ws^.pcTbl)  ! i'
                                              rn     = pp $ p'^.race
-                                         in if s `elem` intros
-                                           then (s,  "")
-                                           else (rn, pluralize rn)
+                                         in if n `elem` intros
+                                           then (n,  "")
+                                           else over both ((sn <>) . (" " <>)) (rn, pluralize rn)
                               Just _ -> (e^.sing, e^.plur)
   where
-    pluralize "drawf" = "dwarves"
+    pluralize "dwarf" = "dwarves"
     pluralize "elf"   = "elves"
     pluralize rn      = rn <> "s"
 
@@ -280,12 +282,14 @@ getEffName :: Id -> WorldState -> Id -> T.Text
 getEffName i ws i' = let e = (ws^.entTbl) ! i'
                      in fromMaybe (helper e) $ e^.entName
   where
-    helper e = let p      = (ws^.pcTbl) ! i
+    helper e = let n      = e^.sing
+                   p      = (ws^.pcTbl)  ! i
                    intros = p^.introduced
-                   s      = e^.sing
-                   p'     = (ws^.pcTbl) ! i'
+                   m      = (ws^.mobTbl) ! i'
+                   s      = m^.sex
+                   p'     = (ws^.pcTbl)  ! i'
                    r      = p'^.race
-               in if s `elem` intros then uncapitalize s else pp r
+               in if n `elem` intros then uncapitalize n else T.pack [ T.head . pp $ s ] <> pp r
 
 
 -- ============================================================

@@ -40,6 +40,11 @@ class Pretty a where
   -- Pretty print.
   pp :: a -> T.Text
 
+instance Pretty Sex where
+  pp Male   = "male"
+  pp Female = "female"
+  pp NoSex  = undefined
+
 instance Pretty Race where
   pp Dwarf     = "dwarf"
   pp Elf       = "elf"

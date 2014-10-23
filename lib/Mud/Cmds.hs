@@ -606,7 +606,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                   r'          = (ws^.rmTbl)  ! ri'
                   originIs    = i `delete` ris
                   destIs      = (ws^.invTbl) ! ri'
-                  destIs'     = sortInv ws $ i : destIs
+                  destIs'     = sortInv ws $ destIs ++ [i]
                   originPis   = findPCIds ws originIs
                   destPis     = findPCIds ws destIs
                   msgAtOrigin = case mom of
@@ -728,11 +728,17 @@ mkRmInvCoinsDesc i cols ws ri =
     in if c == mempty then entDescs else entDescs <> mkCoinsSummary cols c
   where
     helper (en, c, (s, _), t)
-      | c == 1 = f s <> " " <> bracketQuote en
+      | c == 1 = mkSingTxt <> " " <> bracketQuote en
         where
-          f = case t of PCType -> id
-                        _      -> aOrAn
+          mkSingTxt = case t of PCType -> if isKnownPCSing s then s else aOrAn s
+                                _      -> aOrAn s
     helper (en, c, b, _) = T.concat [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
+
+
+isKnownPCSing :: Sing -> Bool
+isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
+                                    [ "female", _ ] -> False
+                                    _               -> True
 
 
 mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
@@ -960,7 +966,7 @@ helperGetDropEitherInv i cols god fi ti (ws, msg, logMsgs) = \case
   Right is   -> let fis              = (ws^.invTbl) ! fi
                     tis              = (ws^.invTbl) ! ti
                     ws'              = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
-                                          & invTbl.at ti ?~ (sortInv ws . (++) tis $ is)
+                                          & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is)
                     (msg', logMsgs') = mkGetDropInvDesc i cols ws' god is
                 in (ws', msg <> msg', logMsgs ++ logMsgs')
 
@@ -1102,7 +1108,7 @@ helperPutRemEitherInv i cols por fi ti te (ws, msg, logMsgs) = \case
                     fis               = (ws^.invTbl) ! fi
                     tis               = (ws^.invTbl) ! ti
                     ws'               = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
-                                           & invTbl.at ti ?~ (sortInv ws . (++) tis $ is')
+                                           & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
                     (msg'', logMsgs') = mkPutRemInvDesc i cols ws' por is' te
                 in (ws', msg' <> msg'', logMsgs ++ logMsgs')
   where
@@ -1254,10 +1260,10 @@ moveReadiedItem i cols (ws, msg, logMsgs) em s ei msg' =
 -- Helpers for the entity type-specific ready functions:
 
 
-otherGender :: Gender -> Gender
-otherGender Male     = Female
-otherGender Female   = Male
-otherGender NoGender = NoGender
+otherSex :: Sex -> Sex
+otherSex Male   = Female
+otherSex Female = Male
+otherSex NoSex  = NoSex
 
 
 otherHand :: Hand -> Hand
@@ -1333,10 +1339,10 @@ readyCloth i cols mrol (ws, msg, logMsgs) ei e =
 
 getAvailClothSlot :: Cols -> WorldState -> Id -> Cloth -> EqMap -> Either T.Text Slot
 getAvailClothSlot cols ws i c em = let m = (ws^.mobTbl) ! i
-                                       g = m^.gender
+                                       g = m^.sex
                                        h = m^.hand
                                    in procMaybe $ case c of
-                                     EarC    -> getEarSlotForGender g `mplus` (getEarSlotForGender . otherGender $ g)
+                                     EarC    -> getEarSlotForSex g `mplus` (getEarSlotForSex . otherSex $ g)
                                      NoseC   -> findAvailSlot em noseSlots
                                      NeckC   -> findAvailSlot em neckSlots
                                      WristC  -> getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
@@ -1344,10 +1350,10 @@ getAvailClothSlot cols ws i c em = let m = (ws^.mobTbl) ! i
                                      _       -> undefined -- TODO
   where
     procMaybe             = maybe (Left . T.unlines . wordWrap cols . sorryFullClothSlots $ c) Right
-    getEarSlotForGender g =
+    getEarSlotForSex g    =
         findAvailSlot em $ case g of Male   -> lEarSlots
                                      Female -> rEarSlots
-                                     _      -> patternMatchFail "getAvailClothSlot getEarSlotForGender" [ showText g ]
+                                     _      -> patternMatchFail "getAvailClothSlot getEarSlotForSex" [ showText g ]
     getWristSlotForHand h =
         findAvailSlot em $ case h of RHand  -> lWristSlots
                                      LHand  -> rWristSlots
@@ -1516,12 +1522,12 @@ intro (i, mq, cols) rs = do
     send mq . nl $ msg
   where
     helper = onWS $ \(t, ws) ->
-        let e   = (ws^.entTbl) ! i
-            s   = e^.sing
-            p   = (ws^.pcTbl)  ! i
-            ri  = p^.rmId
-            is  = delete i . (! ri) $ ws^.invTbl
-            c   = (ws^.coinsTbl) ! ri
+        let e  = (ws^.entTbl) ! i
+            s  = e^.sing
+            p  = (ws^.pcTbl)  ! i
+            ri = p^.rmId
+            is = delete i . (! ri) $ ws^.invTbl
+            c  = (ws^.coinsTbl) ! ri
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, miss, rcs)     = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is c
                    eiss                   = zipWith (curry procGecrMisRm) gecrs miss
