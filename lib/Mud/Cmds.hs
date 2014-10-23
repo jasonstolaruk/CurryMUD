@@ -42,7 +42,7 @@ import GHC.Conc (threadStatus, ThreadStatus(..))
 import Network (accept, HostName, listenOn, PortID(..), sClose)
 import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
-import System.Directory (getDirectoryContents, getTemporaryDirectory, removeFile)
+import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (BufferMode(..), Handle, hClose, hFlush, hGetBuffering, hGetLine, hIsEOF, hPutStr, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
 import System.IO.Error (isDoesNotExistError, isPermissionError)
@@ -198,7 +198,7 @@ prefixDebugCmd = prefixCmd debugCmdChar
 
 
 listenWrapper :: MudStack ()
-listenWrapper = (initAndStart `catch` listenExHandler) `finally` closeLogs
+listenWrapper = (initAndStart `catch` listenExHandler) `finally` (getUptime >>= saveUptime >> closeLogs)
   where
     initAndStart = do
         initLogging
@@ -213,6 +213,28 @@ listenExHandler e =
       Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
       Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
       _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
+
+
+saveUptime :: Integer -> MudStack ()
+saveUptime ut = getRecordUptime >>= \case
+  Nothing  -> saveIt >> logIt
+  Just rut -> case ut `compare` rut of GT -> saveIt >> logRec
+                                       _  -> logIt
+  where
+    saveIt    = (liftIO . writeFile uptimeFile . show $ ut) `catch` logIOEx "saveUptime saveIt"
+    logIt     = logHelper "."
+    logRec    = logHelper " - it's a new record!"
+    logHelper = logNotice "saveUptime" . ("the MUD was up for " <>) . (utTxt <>)
+    utTxt     = T.pack . renderSecs $ ut
+
+
+getRecordUptime :: MudStack (Maybe Integer)
+getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \doesExist ->
+    if doesExist
+      then readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
+      else return Nothing
+  where
+    readUptime = return . Just . read =<< (liftIO . readFile $ uptimeFile)
 
 
 listen :: MudStack ()
@@ -1694,13 +1716,30 @@ whatInvCoins cols it r rc
 
 
 uptime :: Action
-uptime (i, mq, _) [] = do
+uptime (i, mq, cols) [] = do
     logPlaExec "uptime" i
+    send mq . nl . T.unlines . wordWrap cols =<< uptimeHelper =<< getUptime
+uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
+
+
+uptimeHelper :: Integer -> MudStack T.Text
+uptimeHelper ut = getRecordUptime >>= return . \case
+  Nothing  -> mkUptimeTxt
+  Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
+                                       _  -> mkRecTxt rut
+  where
+    mkUptimeTxt  = mkTxtHelper "."
+    mkNewRecTxt  = mkTxtHelper " - it's a new record!"
+    mkRecTxt rut = mkTxtHelper $ " (record uptime: " <> renderIt rut <> ")."
+    mkTxtHelper  = ("Up " <>) . (renderIt ut <>)
+    renderIt     = T.pack . renderSecs
+
+
+getUptime :: MudStack Integer
+getUptime = do
     start <- getNWSRec startTime
     now   <- liftIO getCurrentTime
-    let diff = now `diffUTCTime` start
-    send mq . nlnl . T.pack . (<> ".") . ("Up " <>) . renderSecs . round $ diff
-uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
+    return . round $ now `diffUTCTime` start
 
 
 -----

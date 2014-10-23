@@ -30,12 +30,13 @@ mudDir = let home = unsafePerformIO . getEnv $ "HOME"
          in (home ++) . T.unpack $ "/CurryMUD/"
 
 
-logDir, resDir, helpDir, titleDir, miscDir :: FilePath
-logDir   = mudDir ++ "logs/"
-resDir   = mudDir ++ "res/"
-helpDir  = resDir ++ "help/"
-titleDir = resDir ++ "titles/"
-miscDir  = resDir ++ "misc/"
+logDir, resDir, helpDir, titleDir, miscDir, uptimeFile :: FilePath
+logDir     = mudDir ++ "logs/"
+resDir     = mudDir ++ "res/"
+helpDir    = resDir ++ "help/"
+titleDir   = resDir ++ "titles/"
+miscDir    = resDir ++ "misc/"
+uptimeFile = mudDir ++ "uptime"
 
 
 noOfTitles :: Int
