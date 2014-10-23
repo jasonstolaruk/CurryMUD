@@ -335,9 +335,9 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> loop
       FromClient msg -> let msg' = T.strip . T.pack . stripTelnet . T.unpack $ msg
-                        in unless (T.null msg') (handleInp i mq msg')    >> loop
-      Prompt     p   -> liftIO ((hPutStr h . T.unpack $ p) >> hFlush h)  >> loop
-      Quit       msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> handleQuit i
+                        in unless (T.null msg') (handleInp i mq msg')   >> loop
+      Prompt     p   -> liftIO ((hPutStr h . T.unpack $ p) >> hFlush h) >> loop
+      Quit           -> cowbye h >> handleQuit i
       Shutdown       -> shutDown >> loop
       Die            -> return ()
 
@@ -357,6 +357,12 @@ plaThreadExHandler n i e =
 
 getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
+
+
+cowbye :: Handle -> MudStack ()
+cowbye h = takeADump `catch` readFileExHandler "cowbye"
+  where
+    takeADump = liftIO . hPutStr h . T.unpack . injectCR =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
 
 
 shutDown :: MudStack ()
@@ -1701,9 +1707,7 @@ uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
 
 
 quit :: Action
-quit (i, mq, cols) [] = do
-    liftIO . atomically . writeTQueue mq . Quit . nl . T.unlines . wordWrap cols $ "Thanks for playing! See you next time."
-    logPlaExec "quit" i
+quit (i, mq, _   ) [] = (liftIO . atomically . writeTQueue mq $ Quit) >> logPlaExec "quit" i
 quit (_, mq, cols) _  =
     send mq . nl . T.unlines . wordWrap cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
