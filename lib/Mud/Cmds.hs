@@ -306,7 +306,7 @@ adHoc mq host = do
         let em  = M.empty
         let m   = Mob s 10 10 10 10 10 10 0 RHand
         let pc  = PC iHill r [] []
-        let ris = i : (ws^.invTbl) ! iHill
+        let ris = (ws^.invTbl) ! iHill ++ [i]
         -----
         let pla = Pla host 30
         -----
@@ -321,7 +321,7 @@ adHoc mq host = do
         let mqt' = mqt & at i ?~ mq
         let pt'  = pt  & at i ?~ pla
         -----
-        putTMVar wsTMVar  ws'
+        putTMVar wsTMVar  $ ws' & invTbl.at iHill ?~ sortInv ws' ris
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         -----
@@ -403,6 +403,7 @@ cowbye h = takeADump `catch` readFileExHandler "cowbye"
     takeADump = liftIO . hPutStr h . T.unpack . injectCR =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
 
 
+-- TODO: Make a wizard command.
 boot :: Handle -> MudStack ()
 boot h = liftIO . hPutStr h . T.unpack . injectCR . nl $ "You have been booted from CurryMUD. Goodbye!"
 
@@ -717,7 +718,7 @@ look (i, mq, cols) rs = helper >>= \case
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl) ! i
             ri  = p^.rmId
-            is  = delete i . (! ri) $ ws^.invTbl
+            is  = delete i $ (ws^.invTbl) ! ri
             pis = findPCIds ws is
             c   = (ws^.coinsTbl) ! ri
         in if (not . null $ is) || (c /= mempty)
@@ -735,18 +736,17 @@ look (i, mq, cols) rs = helper >>= \case
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
--- TODO: When 2 or more PCs are in a room, all non-PC entities are hidden...!
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
     let is         = delete i $ (ws^.invTbl) ! ri
         pis        = takeWhile (\i' -> (ws^.typeTbl) ! i' == PCType) is
         ois        = is \\ pis
-        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols) . map mkPCDesc . mkNameCountBothList i ws $ pis
-        otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols  . mkOtherDesc) . mkNameCountBothList i ws $ ois
+        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
+        otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
         c          = (ws^.coinsTbl) ! ri
-    in if not . null $ pis then pcDescs               else "" <>
-       if not . null $ ois then otherDescs            else "" <>
-       if c /= mempty      then mkCoinsSummary cols c else ""
+    in (if not . null $ pis then pcDescs               else "") <>
+       (if not . null $ ois then otherDescs            else "") <>
+       (if c /= mempty      then mkCoinsSummary cols c else "")
   where
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> bracketQuote en) . (<> " ") $ if isKnownPCSing s then s else aOrAn s
     mkPCDesc    a                        = mkOtherDesc a
