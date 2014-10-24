@@ -32,7 +32,7 @@ import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort, zip4)
+import Data.List ((\\), delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed)
@@ -76,6 +76,8 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --      [DONE] "(..)" instead of "(blah)" in import statements.
 --   d. [DONE] Check for superfluous exports.
 -- 7. Write tests for NameResolution and Cmds.
+
+-- TODO: Fix tests!
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -133,7 +135,7 @@ cmdList :: [Cmd]
 cmdList = -- ==================================================
           -- Wizard commands:
           [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
-          , Cmd { cmdName = prefixWizCmd "day", action = wizDay, cmdDesc = "Display the current day of week." }
+          , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
           , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
           , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the MUD." }
           , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
@@ -143,12 +145,13 @@ cmdList = -- ==================================================
           -- ==================================================
           -- Debug commands:
           , Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
+          , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
           , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
           , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
           , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
           , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
-          , Cmd { cmdName = prefixDebugCmd "massBoot", action = debugMassBoot, cmdDesc = "Boot all players (including yourself)." }
           , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
+          , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
           , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
           , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
           , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
@@ -288,6 +291,8 @@ adHoc mq host = do
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
+    s        <- liftIO randomSex
+    r        <- liftIO randomRace
     liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
@@ -295,12 +300,12 @@ adHoc mq host = do
         -----
         let i   = getUnusedId ws
         -----
-        let e   = Ent i Nothing ("Player" <> showText i) "" "You see an ad-hoc player character." 0
+        let e   = Ent i Nothing (showText r <> showText i) "" "You see an ad-hoc player character." 0
         let is  = []
         let co  = mempty
         let em  = M.empty
-        let m   = Mob Male 10 10 10 10 10 10 0 RHand
-        let pc  = PC iHill Human [] []
+        let m   = Mob s 10 10 10 10 10 10 0 RHand
+        let pc  = PC iHill r [] []
         let ris = i : (ws^.invTbl) ! iHill
         -----
         let pla = Pla host 30
@@ -321,6 +326,16 @@ adHoc mq host = do
         putTMVar ptTMVar  pt'
         -----
         return (i, e^.sing)
+
+
+randomSex :: IO Sex
+randomSex = newStdGen >>= \g ->
+    let (x, _) = randomR (0, 1) g in return $ [ Male, Female ] !! x
+
+
+randomRace :: IO Race
+randomRace = newStdGen >>= \g ->
+    let (x, _) = randomR (0, 7) g in return $ [ Dwarf, Elf, Felinoid, Halfling, Human, Lagomorph, Nymph, Vulpenoid ] !! x
 
 
 dumpTitle :: MsgQueue -> MudStack ()
@@ -359,9 +374,10 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
       FromClient msg -> let msg' = T.strip . T.pack . stripTelnet . T.unpack $ msg
                         in unless (T.null msg') (handleInp i mq msg')   >> loop
       Prompt     p   -> liftIO ((hPutStr h . T.unpack $ p) >> hFlush h) >> loop
-      Quit           -> cowbye h >> handleQuit i
+      Quit           -> cowbye h >> handleEgress i
+      Boot           -> boot   h >> handleEgress i
       Shutdown       -> shutDown >> loop
-      Die            -> return ()
+      StopThread     -> return ()
 
 
 serverExHandler :: Id -> SomeException -> MudStack ()
@@ -387,8 +403,12 @@ cowbye h = takeADump `catch` readFileExHandler "cowbye"
     takeADump = liftIO . hPutStr h . T.unpack . injectCR =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
 
 
+boot :: Handle -> MudStack ()
+boot h = liftIO . hPutStr h . T.unpack . injectCR . nl $ "You have been booted from CurryMUD. Goodbye!"
+
+
 shutDown :: MudStack ()
-shutDown = bootAllPla >> commitSuicide
+shutDown = msgAll StopThread >> commitSuicide
   where
     commitSuicide = do
         tas <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
@@ -396,16 +416,11 @@ shutDown = bootAllPla >> commitSuicide
         liftIO . killThread =<< getListenThreadId
 
 
-bootAllPla :: MudStack ()
-bootAllPla = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
-    forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue Die
-
-
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
 receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler i
   where
     loop = (liftIO . hIsEOF $ h) >>= \case
-      True  -> logPla "receive" i "connection dropped." >> handleQuit i
+      True  -> logPla "receive" i "connection dropped." >> handleEgress i
       False -> do
           liftIO $ atomically . writeTQueue mq . FromClient . T.pack =<< hGetLine h
           loop
@@ -720,19 +735,23 @@ look (i, mq, cols) rs = helper >>= \case
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
+-- TODO: When 2 or more PCs are in a room, all non-PC entities are hidden...!
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
-    let is       = delete i . (! ri) $ ws^.invTbl
-        c        = (ws^.coinsTbl) ! ri
-        entDescs = T.unlines . concatMap (wordWrapIndent 2 cols . helper) . mkNameCountBothTypeList i ws $ is
-    in if c == mempty then entDescs else entDescs <> mkCoinsSummary cols c
+    let is         = delete i $ (ws^.invTbl) ! ri
+        pis        = takeWhile (\i' -> (ws^.typeTbl) ! i' == PCType) is
+        ois        = is \\ pis
+        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols) . map mkPCDesc . mkNameCountBothList i ws $ pis
+        otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols  . mkOtherDesc) . mkNameCountBothList i ws $ ois
+        c          = (ws^.coinsTbl) ! ri
+    in if not . null $ pis then pcDescs               else "" <>
+       if not . null $ ois then otherDescs            else "" <>
+       if c /= mempty      then mkCoinsSummary cols c else ""
   where
-    helper (en, c, (s, _), t)
-      | c == 1 = mkSingTxt <> " " <> bracketQuote en
-        where
-          mkSingTxt = case t of PCType -> if isKnownPCSing s then s else aOrAn s
-                                _      -> aOrAn s
-    helper (en, c, b, _) = T.concat [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
+    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> bracketQuote en) . (<> " ") $ if isKnownPCSing s then s else aOrAn s
+    mkPCDesc    a                        = mkOtherDesc a
+    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAn s <> " " <> bracketQuote en
+    mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
 
 
 isKnownPCSing :: Sing -> Bool
@@ -746,14 +765,6 @@ mkNameCountBothList i ws is = let ens   = [ getEffName        i ws i' | i' <- is
                                   ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
                                   cs    = mkCountList ebgns
                               in nub . zip3 ens cs $ ebgns
-
-
-mkNameCountBothTypeList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos, Type)]
-mkNameCountBothTypeList i ws is = let ens   = [ getEffName        i ws i' | i' <- is ]
-                                      ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
-                                      cs    = mkCountList ebgns
-                                      ts    = [ (ws^.typeTbl) ! i'        | i' <- is ]
-                              in nub . zip4 ens cs ebgns $ ts
 
 
 extractPCIdsFromEiss :: WorldState -> [Either T.Text Inv] -> [Id]
@@ -1729,11 +1740,12 @@ uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
 
 
 uptimeHelper :: Integer -> MudStack T.Text
-uptimeHelper ut = getRecordUptime >>= return . \case
-  Nothing  -> mkUptimeTxt
-  Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
-                                       _  -> mkRecTxt rut
+uptimeHelper ut = helper <$> getRecordUptime
   where
+    helper = \case
+      Nothing  -> mkUptimeTxt
+      Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
+                                           _  -> mkRecTxt rut
     mkUptimeTxt  = mkTxtHelper "."
     mkNewRecTxt  = mkTxtHelper " - it's a new record!"
     mkRecTxt rut = mkTxtHelper $ " (record uptime: " <> renderIt rut <> ")."
@@ -1757,8 +1769,8 @@ quit (_, mq, cols) _  =
     send mq . nl . T.unlines . wordWrap cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
 
-handleQuit :: Id -> MudStack ()
-handleQuit i = do
+handleEgress :: Id -> MudStack ()
+handleEgress i = do
     notifyEgress i
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSRec msgQueueTblTMVar
@@ -1787,7 +1799,7 @@ handleQuit i = do
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         return $ e^.sing
-    logNotice "handleQuit" . T.concat $ [ "player ", showText i, " ", parensQuote n, " has quit." ]
+    logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote n, " has left the game." ]
     closePlaLog i
 
 
@@ -1850,11 +1862,11 @@ wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
 -----
 
 
-wizDay :: Action
-wizDay (i, mq, _)    [] = do
-    logPlaExec (prefixWizCmd "day") i
+wizDate :: Action
+wizDate (i, mq, _)    [] = do
+    logPlaExec (prefixWizCmd "date") i
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
-wizDay imc@(_, mq, cols) rs = ignore mq cols rs >> wizDay imc []
+wizDate imc@(_, mq, cols) rs = ignore mq cols rs >> wizDate imc []
 
 
 -----
@@ -2050,9 +2062,17 @@ purgeTalkAsyncTbl = do
 -----
 
 
-debugMassBoot :: Action
-debugMassBoot     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "massBoot") i >> ok mq >> bootAllPla
-debugMassBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugMassBoot imc []
+debugBoot :: Action
+debugBoot     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> msgAll Boot
+debugBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugBoot imc []
+
+
+-----
+
+
+debugStop :: Action
+debugStop     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "stop") i >> ok mq >> msgAll StopThread
+debugStop imc@(_, mq, cols) rs = ignore mq cols rs >> debugStop imc []
 
 
 ----

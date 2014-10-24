@@ -59,7 +59,7 @@ closeLogs = do
 
 
 stopLog :: LogQueue -> MudStack ()
-stopLog = liftIO . atomically . flip writeTQueue Stop
+stopLog = liftIO . atomically . flip writeTQueue StopLog
 
 
 initLogging :: MudStack ()
@@ -87,8 +87,8 @@ spawnLogger fn p ln f q = async . loop =<< initLog
         updateGlobalLogger (T.unpack ln) (setHandlers [h] . setLevel p)
         return gh
     loop gh = (atomically . readTQueue $ q) >>= \case
-      Stop  -> close gh
-      Msg m -> f (T.unpack ln) (T.unpack m) >> loop gh
+      StopLog  -> close gh
+      Msg m    -> f (T.unpack ln) (T.unpack m) >> loop gh
 
 
 -- TODO: Consider writing a function that can periodically be called to rotate logs on the fly.

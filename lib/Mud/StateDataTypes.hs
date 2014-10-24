@@ -300,7 +300,7 @@ data NonWorldState = NonWorldState { _startTime          :: UTCTime
 -- Log services:
 
 
-data LogCmd     = Stop | Msg T.Text
+data LogCmd     = StopLog | Msg T.Text
 
 type LogAsync   = Async ()
 
@@ -341,8 +341,9 @@ data Msg = FromServer T.Text
          | FromClient T.Text
          | Prompt     T.Text
          | Quit
+         | Boot
          | Shutdown
-         | Die
+         | StopThread
 
 
 -- ==================================================

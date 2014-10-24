@@ -26,6 +26,7 @@ module Mud.StateHelpers ( allKeys
                         , mkPlurFromBoth
                         , modifyNWS
                         , modifyWS
+                        , msgAll
                         , negateCoins
                         , ok
                         , onNWS
@@ -65,7 +66,7 @@ import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
-import qualified Data.IntMap.Lazy as IM (IntMap, keys)
+import qualified Data.IntMap.Lazy as IM (elems, IntMap, keys)
 import qualified Data.Text as T
 
 
@@ -338,6 +339,11 @@ mkDividerTxt = flip T.replicate "="
 
 ok :: MsgQueue -> MudStack ()
 ok mq = send mq . nlnl $ "OK!"
+
+
+msgAll :: Msg -> MudStack ()
+msgAll m = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
+    forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue m
 
 
 mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
