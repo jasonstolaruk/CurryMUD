@@ -317,11 +317,10 @@ adHoc mq host = do
                        & eqTbl.at    i     ?~ em
                        & mobTbl.at   i     ?~ m
                        & pcTbl.at    i     ?~ pc
-                       & invTbl.at   iHill ?~ ris
         let mqt' = mqt & at i ?~ mq
         let pt'  = pt  & at i ?~ pla
         -----
-        putTMVar wsTMVar  $ ws' & invTbl.at iHill ?~ sortInv ws' ris
+        putTMVar wsTMVar $ ws' & invTbl.at iHill ?~ sortInv ws' ris
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         -----
@@ -372,11 +371,11 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> loop
       FromClient msg -> let msg' = T.strip . T.pack . stripTelnet . T.unpack $ msg
-                        in unless (T.null msg') (handleInp i mq msg')   >> loop
-      Prompt     p   -> liftIO ((hPutStr h . T.unpack $ p) >> hFlush h) >> loop
-      Quit           -> cowbye h >> handleEgress i
-      Boot           -> boot   h >> handleEgress i
-      Shutdown       -> shutDown >> loop
+                        in unless (T.null msg') (handleInp i mq msg')    >> loop
+      Prompt     p   -> sendPrompt h p >> loop
+      Quit           -> cowbye h   >> handleEgress i
+      Boot           -> boot   h   >> handleEgress i
+      Shutdown       -> shutDown   >> loop
       StopThread     -> return ()
 
 
@@ -395,6 +394,11 @@ plaThreadExHandler n i e =
 
 getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
+
+
+sendPrompt :: Handle -> T.Text -> MudStack ()
+sendPrompt h p = let p' = T.unpack p ++ [ telnetIAC, telnetGA ]
+                 in liftIO $ hPutStr h p' >> hFlush h
 
 
 cowbye :: Handle -> MudStack ()

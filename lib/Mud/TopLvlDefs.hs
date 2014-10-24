@@ -19,10 +19,11 @@ port :: Int
 port = 9696
 
 
-telnetIAC, telnetSB, telnetSE :: Char
+telnetIAC, telnetSB, telnetSE, telnetGA :: Char
 telnetIAC = '\255'
 telnetSB  = '\250'
 telnetSE  = '\240'
+telnetGA  = '\249'
 
 
 mudDir :: FilePath
