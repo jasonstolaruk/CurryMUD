@@ -17,4 +17,4 @@ import qualified Data.IntMap.Lazy as IM (elems)
 prop_noDupIds :: Property
 prop_noDupIds = monadicIO $ getInvTbl >>= assert . not . any ((> 1) . length) . group . concat . IM.elems
   where
-    getInvTbl = inWorld ((^.invTbl) <$> getWS)
+    getInvTbl = inWorld ((^.invTbl) <$> readWSTMVar)

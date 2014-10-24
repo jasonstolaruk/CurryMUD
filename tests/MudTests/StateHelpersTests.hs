@@ -10,5 +10,5 @@ import Test.Tasty.QuickCheck (Property)
 
 
 prop_getUnusedId :: Property
-prop_getUnusedId = monadicIO $ inWorld getWS >>= \ws ->
+prop_getUnusedId = monadicIO $ inWorld readWSTMVar >>= \ws ->
     assert $ getUnusedId ws `notElem` allKeys ws

@@ -77,8 +77,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --   d. [DONE] Check for superfluous exports.
 -- 7. Write tests for NameResolution and Cmds.
 
--- TODO: Fix tests!
-
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.Cmds"
