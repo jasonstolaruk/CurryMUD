@@ -306,7 +306,7 @@ adHoc mq host = do
         let pc  = PC iHill r [] []
         let ris = (ws^.invTbl) ! iHill ++ [i]
         -----
-        let pla = Pla host 30
+        let pla = Pla False host 30
         -----
         let ws'  = ws  & typeTbl.at  i     ?~ PCType
                        & entTbl.at   i     ?~ e
@@ -405,7 +405,7 @@ cowbye h = takeADump `catch` readFileExHandler "cowbye"
     takeADump = liftIO . hPutStr h . T.unpack . injectCR =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
 
 
--- TODO: Make a wizard command.
+-- TODO: Make a wizard command that does this.
 boot :: Handle -> MudStack ()
 boot h = liftIO . hPutStr h . T.unpack . injectCR . nl $ "You have been booted from CurryMUD. Goodbye!"
 
@@ -458,13 +458,15 @@ dispatch i mq (cn, rest) = do
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
-findAction i cn = readWSTMVar >>= \ws ->
-    let p        = (ws^.pcTbl) ! i
-        r        = (ws^.rmTbl) ! (p^.rmId)
-        cmdList' = mkCmdListWithNonStdRmLinks r
-        cns      = map cmdName cmdList'
+findAction i cn = readWSTMVar >>= \ws -> readTMVarInNWS plaTblTMVar >>= \pt ->
+    let p         = (ws^.pcTbl) ! i
+        r         = (ws^.rmTbl) ! (p^.rmId)
+        cmdList'  = mkCmdListWithNonStdRmLinks r
+        cmdList'' | (pt ! i)^.isWiz = cmdList'
+                  | otherwise       = filter (cmdPred Nothing) $ cmdList'
+        cns       = map cmdName cmdList''
     in maybe (return Nothing)
-             (\fn -> return . Just . findActionForFullName fn $ cmdList')
+             (\fn -> return . Just . findActionForFullName fn $ cmdList'')
              (findFullNameForAbbrev (T.toLower cn) cns)
   where
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)
@@ -558,7 +560,7 @@ cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ cmdLis
 
 cmdPred :: Maybe Char -> Cmd -> Bool
 cmdPred (Just c) cmd = c == (T.head . cmdName $ cmd)
-cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [wizCmdChar, debugCmdChar]
+cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [ wizCmdChar, debugCmdChar ]
 
 
 -----
@@ -1618,7 +1620,6 @@ whatInv i cols ws it n = let (is, gecrs, rcs) = resolveName
     ri = p^.rmId
 
 
--- TODO: "what human" gives interesting results...
 whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
 whatInvEnts i cols ws it r gecr is = case gecr of
   Mult _ n (Just es) _

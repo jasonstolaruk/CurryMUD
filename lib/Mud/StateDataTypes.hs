@@ -350,8 +350,9 @@ data Msg = FromServer T.Text
 -- Player:
 
 
-data Pla = Pla { _hostName :: HostName
-               , _columns :: Int }
+data Pla = Pla { _isWiz    :: Bool
+               , _hostName :: HostName
+               , _columns  :: Int }
 
 
 -- ==================================================
