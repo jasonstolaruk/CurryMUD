@@ -15,6 +15,10 @@ ver :: T.Text
 ver = "0.1.0.0 (in development since 2013-10)"
 
 
+isDebug :: Bool
+isDebug = True
+
+
 port :: Int
 port = 9696
 

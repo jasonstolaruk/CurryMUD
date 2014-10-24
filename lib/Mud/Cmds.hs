@@ -129,61 +129,63 @@ massLogPla = L.massLogPla "Mud.Cmds"
 -- ==================================================
 
 
-cmdList :: [Cmd]
-cmdList = -- ==================================================
-          -- Wizard commands:
-          [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
-          , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
-          , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
-          , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the MUD." }
-          , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
-          , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
-          , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the server uptime." }
+wizCmdList :: [Cmd]
+wizCmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
+             , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
+             , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
+             , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the MUD." }
+             , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
+             , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
+             , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the server uptime." } ]
 
-          -- ==================================================
-          -- Debug commands:
-          , Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
-          , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
-          , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
-          , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
-          , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
-          , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
-          , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
-          , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
-          , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
-          , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
-          , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
 
-          -- ==================================================
-          -- Player commands:
-          , Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
-          , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD." }
-          , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-          , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
-          , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-          , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
-          , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
-          , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
-          , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
-          , Cmd { cmdName = "i", action = inv, cmdDesc = "Inventory." }
-          , Cmd { cmdName = "intro", action = intro, cmdDesc = "Introduce yourself." }
-          , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
-          , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
-          , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
-          , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
-          , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
-          , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
-          , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
-          , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
-          , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
-          , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
-          , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
-          , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
-          , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
-          , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
-          , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long the MUD has been running." }
-          , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
-          , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
+debugCmdList :: [Cmd]
+debugCmdList = [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
+               , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
+               , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
+               , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
+               , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
+               , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
+               , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
+               , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
+               , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
+               , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
+               , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." } ]
+
+
+plaCmdList :: [Cmd]
+plaCmdList = [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
+             , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD." }
+             , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
+             , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
+             , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
+             , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
+             , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
+             , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
+             , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
+             , Cmd { cmdName = "i", action = inv, cmdDesc = "Inventory." }
+             , Cmd { cmdName = "intro", action = intro, cmdDesc = "Introduce yourself." }
+             , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
+             , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
+             , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
+             , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
+             , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
+             , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
+             , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
+             , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
+             , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
+             , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
+             , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
+             , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
+             , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
+             , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
+             , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long the MUD has been running." }
+             , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
+             , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
+
+
+allCmdList :: [Cmd]
+allCmdList = wizCmdList ++ debugCmdList ++ plaCmdList
 
 
 prefixCmd :: Char -> CmdName -> T.Text
@@ -306,7 +308,7 @@ adHoc mq host = do
         let pc  = PC iHill r [] []
         let ris = (ws^.invTbl) ! iHill ++ [i]
         -----
-        let pla = Pla False host 30
+        let pla = Pla True host 80
         -----
         let ws'  = ws  & typeTbl.at  i     ?~ PCType
                        & entTbl.at   i     ?~ e
@@ -459,21 +461,21 @@ dispatch i mq (cn, rest) = do
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
 findAction i cn = readWSTMVar >>= \ws -> readTMVarInNWS plaTblTMVar >>= \pt ->
-    let p         = (ws^.pcTbl) ! i
-        r         = (ws^.rmTbl) ! (p^.rmId)
-        cmdList'  = mkCmdListWithNonStdRmLinks r
-        cmdList'' | (pt ! i)^.isWiz = cmdList'
-                  | otherwise       = filter (cmdPred Nothing) $ cmdList'
-        cns       = map cmdName cmdList''
+    let p        = (ws^.pcTbl) ! i
+        r        = (ws^.rmTbl) ! (p^.rmId)
+        cmdList  = mkCmdListWithNonStdRmLinks r ++
+                   (if (pt ! i)^.isWiz then wizCmdList   else []) ++
+                   (if isDebug         then debugCmdList else [])
+        cns       = map cmdName cmdList
     in maybe (return Nothing)
-             (\fn -> return . Just . findActionForFullName fn $ cmdList'')
+             (\fn -> return . Just . findActionForFullName fn $ cmdList)
              (findFullNameForAbbrev (T.toLower cn) cns)
   where
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)
 
 
 mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
-mkCmdListWithNonStdRmLinks r = cmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, isNonStdLink rl ]
+mkCmdListWithNonStdRmLinks r = plaCmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, isNonStdLink rl ]
 
 
 isNonStdLink :: RmLink -> Bool
@@ -552,7 +554,7 @@ dispCmdList p (_, mq, cols) rs = send mq . nl . T.unlines . concatMap (wordWrapI
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
-cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ cmdList
+cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmdList
   where
     helper acc c = let cmdTxt = nl $ (padOrTrunc 10 . cmdName $ c) <> cmdDesc c
                    in  cmdTxt : acc
