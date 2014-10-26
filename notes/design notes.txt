@@ -1,4 +1,4 @@
-GOALS:
+COMMUNITY:
 
 Avoid designing repetitive tasks that can be automated client-side.
 
@@ -17,13 +17,20 @@ Archives.
 
 Community participation should be entirely voluntary. Some players will prefer to remain independent.
 
-Create dependencies between communities (these usual concern resources).
+Create dependencies between communities (these usually concern resources).
 
 Do not encourage xenophobia or prejudice (it could undermine community).
+
+==========
+
+OTHER GOALS:
 
 Create a safe environment where people have freedom to explore (almost) any desired identity.
 
 Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
+
+For players who want to try out the game and start playing quickly, offer "character kits."
+Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
 
 Give players choice; give them the freedom to try anything. Let them take their own paths. This promotes immersion.
 
@@ -36,9 +43,6 @@ Spell out a code of player conduct. It should be clear to players how they are e
 Age, harassment (with special attention to sexual orientation), RP (IC) vs. OOC, PK/PvP, multi-playing, bug abuse, loss of items.
 IC communication must always be appropriate for the context of the virtual world. References to reality are not allowed.
 
-Differentiate between biological sex and gender. A character's gender is a function of the player's role-playing.
-"Which gender does your character most identify with? Male, or female?"
-
 Allow some degree of player-created content.
 
 Create a history and backstory for the virtual world.
@@ -49,12 +53,9 @@ Defeating mobs and using skills gives you exp. Exp translate to points which can
 
 There is no hard-coded notion of alignment.
 
-For players who want to try out the game and start playing quickly, offer "character kits."
-Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
-
 (Returning) players should be able to opt out of all tutorials.
 
-Make ASCII art maps available in game. New players should start with a map, along with a short welcome letter (obtainable in the tutorial).
+Make ASCII art maps available in game. New players should start with a map, along with a short welcome letter (obtainable in the tutorial). Other maps may be available for purchase.
 
 Have an in-game newspaper. There should be a way for players to read old newspapers. The newspaper could be produced automatically (as opposed to being written by players).
 
@@ -62,17 +63,15 @@ Have an in-game calendar.
 
 Have in-game mail and BBS. Have a special BBS dedicated to OOC topics.
 
+Recommend that players use an external text editor with spell checking for composing multi-line input. Specifically recommend SublimeText?
+
 Make a library or similar area where players may read, for example, the history and backstory of the virtual world.
 
 Implement a system for auctioning items.
 
 Implement systems for reporting bugs and typos.
 
-Functions register to the master timer, which calls them regularly.
-
 Logs should be sufficient to resolve disputes. Consider logging as much as is reasonably possible.
-
-Recommend that players use an external text editor with spell checking for composing multi-line input. Specifically recommend SublimeText?
 
 Intoxicants affect speech, etc.
 
@@ -85,13 +84,15 @@ Have musical instruments. PCs can sing and dance along with the music.
 Consider having cursed items that cannot be dropped or unequipped.
 Make a cursed doll.
 
-Implement, in moderation, environmental affects, such as making mobs involuntarily sneeze when in a dusty room.
+Implement, in moderation, "environmental" affects, such as making mobs involuntarily sneeze when in a dusty room.
 
 To sacrifice something (typically a corpse), a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
 
 Corpses that are not sacrificed may become undead.
 
 Avoid teleportation mechanisms, as they tend to have a devastating effect on virtual world economy.
+
+Functions register to the master timer, which calls them regularly.
 
 ==========
 
@@ -190,17 +191,15 @@ Divide the overall geography into the world, regions (large swath of territory t
 
 Where the map ends, consider creating unsurmountable physical boundaries. p275
 
-The size of the virtual world should be proportionate to the number of players. A rule of thumb is to aim for 40 rooms per player. 20 rooms per player is crowded, while 60 rooms per player in sparse. The actual number of rooms need not coincide with the perceived size of the virtual world.
+The size of the virtual world should be proportionate to the number of players. A rule of thumb is to aim for 40 rooms per player. 20 rooms per player is crowded, while 60 rooms per player is sparse. The actual number of rooms need not coincide with the perceived size of the virtual world.
 
 Provide both verbose and brief descriptions of rooms.
 
-Have "safe" zones/rooms, where PK/PvP is impossible. Ideally, PK/PvP wouldn't blatantly impossible, but there could be tough guard NPCs to enforce it.
+Have "safe" zones/rooms, where PK/PvP is impossible. Ideally, PK/PvP wouldn't be blatantly impossible, but there could be tough guard NPCs to enforce it.
 
 Have special rooms where OOC communication is allowed.
 
-Have an OOC room where players are free to try out commands on a dummy mob (or on other players) with no IC ramifications.
-
-The degree to which movement tires a character should be room specific. In this way, terrain can have an effect on the cost of movement. In addition, the physical distance between two rooms may be arbitrary; however, the distance between rooms should be kept relatively consistent so as to keep players from getting unnecessarily lost.
+The degree to which movement tires a character should be room specific (probably room-link specific). In this way, terrain can have an effect on the cost of movement. In addition, the physical distance between two rooms may be arbitrary; however, the distance between rooms should be kept relatively consistent so as to keep players from getting unnecessarily lost.
 
 Believable settlements have access to food and water, nearby building materials, a nonthreatening climate/geology/geography, and a population. Often, settlements are centers of trade and commerce.
 
@@ -222,7 +221,7 @@ Make underground settlements, perhaps with secret/hidden entrances.
 
 Make settlements built above ground, in trees.
 
-Make an area with hostile cannibals.
+Make an area with hostile cannibals (they might not be human).
 
 ==========
 
@@ -272,12 +271,14 @@ Naturally, encumbrance affects speed.
 
 Put a Beastly Fido somewhere.
 Also make a Unit Monster and a Multibeast.
+Giant Honey Badgers.
 
 ==========
 
 PCs:
 
 Ensure that a player cannot choose a name for their character that is the name of a race or mob.
+Players must choose fantasy names for their characters. Consider checking names against a dictionary of common real-world names.
 
 Make it clear that player descriptions must be written from an objective viewpoint. They must be passive.
 Emotes must also be objective (though not necessarily passive).
@@ -297,7 +298,7 @@ Create "lore provider" NPCs designed to dispense knowledge in response to the "a
 COMBAT:
 
 During combat, a PC may manually switch the opponent they attack.
-In a combat where there are multiple opponents, an NPC may automatically switch the opponent they attack.
+In a combat where there are multiple opponents, a mob may automatically switch the opponent they attack.
 
 Attempting to flee gives the opponent a free attack.
 When fighting more than one mob, there is a chance you will be unable to flee. The chance to flee could also be contingent upon the number of exits.
@@ -336,6 +337,8 @@ Boats?
 Tour duty?
 
 In what cases do PCs remain active after the player's connection drops?
+
+Doors? (When a door is opened, players on the other side would need to be informed.)
 
 ==========
 

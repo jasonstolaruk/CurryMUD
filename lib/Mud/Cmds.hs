@@ -375,6 +375,7 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
       Prompt     p   -> sendPrompt h p >> loop
       Quit           -> cowbye h   >> handleEgress i
       Boot           -> boot   h   >> handleEgress i
+      Dropped        ->               handleEgress i
       Shutdown       -> shutDown   >> loop
       StopThread     -> return ()
 
@@ -425,7 +426,9 @@ receive :: Handle -> Id -> MsgQueue -> MudStack ()
 receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler i
   where
     loop = (liftIO . hIsEOF $ h) >>= \case
-      True  -> logPla "receive" i "connection dropped." >> handleEgress i
+      True  -> do
+          logPla "receive" i "connection dropped."
+          liftIO . atomically . writeTQueue mq $ Dropped
       False -> do
           liftIO $ atomically . writeTQueue mq . FromClient . T.pack =<< hGetLine h
           loop

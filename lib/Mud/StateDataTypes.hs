@@ -342,6 +342,7 @@ data Msg = FromServer T.Text
          | Prompt     T.Text
          | Quit
          | Boot
+         | Dropped
          | Shutdown
          | StopThread
 
