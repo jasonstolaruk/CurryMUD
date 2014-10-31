@@ -41,3 +41,7 @@ genTextOfRandLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
 
 genCols :: Gen Int
 genCols = choose (minCols, maxCols)
+
+
+pids :: Int -> T.Text
+pids x = T.concat . take x . repeat $ pcIdentifierDelimiter

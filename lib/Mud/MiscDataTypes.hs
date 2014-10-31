@@ -223,4 +223,4 @@ data PCIdentifier = PCIdentifier { pcEntSing        :: Maybe T.Text
                                  , isCap            :: Bool
                                  , nonStdIdentifier :: Maybe T.Text
                                  , pcEntName        :: Maybe T.Text
-                                 , pcId             :: Maybe Id } deriving Eq
+                                 , pcId             :: Maybe Id } deriving (Eq, Show)

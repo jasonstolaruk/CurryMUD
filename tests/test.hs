@@ -1,12 +1,19 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# LANGUAGE OverloadedStrings #-}
 
+import Mud.MiscDataTypes
+import Mud.TopLvlDefs
+import MudTests.MiscDataTypesTests
 import MudTests.StateHelpersTests
+import MudTests.TestHelpers
 import MudTests.TheWorldTests
 import MudTests.UtilTests
 
+import Data.Monoid ((<>))
 import Test.Tasty (defaultMain, testGroup, TestTree)
 import Test.Tasty.HUnit ((@?=), testCase)
 import Test.Tasty.QuickCheck as QC (testProperty)
+import qualified Data.Text as T
 
 
 main :: IO ()
@@ -54,7 +61,28 @@ propTestsUtil = testGroup "property tests Util"
 -- ==================================================
 
 unitTests :: TestTree
-unitTests = testGroup "unit tests" [ unitTestsUtil ]
+unitTests = testGroup "unit tests" [ unitTestsMiscDataTypes, unitTestsUtil ]
 
 unitTestsUtil :: TestTree
 unitTestsUtil = testGroup "unit tests Util" [ testCase "stripTelnet" $ test_stripTelnet @?= "test" ]
+
+unitTestsMiscDataTypes :: TestTree
+unitTestsMiscDataTypes =
+    let pid = pcIdentifierDelimiter
+    in testGroup "unit tests MiscDataTypes"
+        [ testCase "serializePCIdentifierNothing"   $ test_serializePCIdentifierNothing   @?=
+            pids 2 <> "False" <> pids 4
+        , testCase "serializePCIdentifierJust"      $ test_serializePCIdentifierJust      @?=
+            pid <> T.intercalate pid [ "Taro", "True", "A male human", "mhuman", "50" ] <> pid
+        , testCase "deserializePCIdentifierNothing" $ test_deserializePCIdentifierNothing @?=
+            PCIdentifier { pcEntSing        = Nothing
+                         , isCap            = False
+                         , nonStdIdentifier = Nothing
+                         , pcEntName        = Nothing
+                         , pcId             = Nothing }
+        , testCase "deserializePCIdentifierJust"    $ test_deserializePCIdentifierJust    @?=
+            PCIdentifier { pcEntSing        = Just "Taro"
+                         , isCap            = True
+                         , nonStdIdentifier = Just "A male human"
+                         , pcEntName        = Just "mhuman"
+                         , pcId             = Just 50 } ]
