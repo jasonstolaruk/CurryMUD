@@ -30,6 +30,10 @@ telnetSE  = '\240'
 telnetGA  = '\249'
 
 
+pcIdentifierDelimiter :: T.Text
+pcIdentifierDelimiter = "\128"
+
+
 mudDir :: FilePath
 mudDir = let home = unsafePerformIO . getEnv $ "HOME"
          in (home ++) . T.unpack $ "/CurryMUD/"

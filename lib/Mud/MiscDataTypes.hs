@@ -6,25 +6,32 @@ module Mud.MiscDataTypes ( Action
                          , Cmd(..)
                          , CmdName
                          , Cols
-                         , ConvRol
                          , EmptyNoneSome(..)
+                         , FromRol
                          , GetEntsCoinsRes(..)
                          , GetOrDrop(..)
                          , IdMsgQueueCols
                          , Index
                          , InvType(..)
                          , NameSearchedFor
+                         , PCIdentifier(..)
                          , Pretty
                          , PutOrRem(..)
                          , Rest
+                         , RightOrLeft(..)
+                         , Serializable
+                         , deserialize
                          , fromRol
                          , pp
-                         , RightOrLeft(..) ) where
+                         , serialize ) where
 
 import Mud.StateDataTypes
+import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
+import Data.Monoid ((<>))
+import Prelude hiding (pi)
 import qualified Data.Text as T
 
 
@@ -40,10 +47,12 @@ class Pretty a where
   -- Pretty print.
   pp :: a -> T.Text
 
+
 instance Pretty Sex where
   pp Male   = "male"
   pp Female = "female"
   pp NoSex  = undefined
+
 
 instance Pretty Race where
   pp Dwarf     = "dwarf"
@@ -54,6 +63,7 @@ instance Pretty Race where
   pp Lagomorph = "lagomorph"
   pp Nymph     = "nymph"
   pp Vulpenoid = "vulpenoid"
+
 
 instance Pretty Slot where
   pp HeadS      = "head"
@@ -92,6 +102,7 @@ instance Pretty Slot where
   pp BackS      = "back"
   pp FeetS      = "feet"
 
+
 instance Pretty RightOrLeft where
   pp R   = "right"
   pp L   = "left"
@@ -101,10 +112,11 @@ instance Pretty RightOrLeft where
 -----
 
 
-class ConvRol a where
+class FromRol a where
   fromRol :: RightOrLeft -> a
 
-instance ConvRol Slot where
+
+instance FromRol Slot where
   fromRol RI = RIndexFS
   fromRol RM = RMidFS
   fromRol RR = RRingFS
@@ -116,6 +128,41 @@ instance ConvRol Slot where
   fromRol s  = patternMatchFail "fromRol" [ showText s ]
 
 
+----
+
+
+class Serializable a where
+  serialize   :: a -> T.Text
+  deserialize :: T.Text -> a
+
+
+instance Serializable PCIdentifier where
+  serialize (PCIdentifier pes ic nsi pen pi) = let fields = [ serMaybeText pes
+                                                            , showText     ic
+                                                            , serMaybeText nsi
+                                                            , serMaybeText pen
+                                                            , serMaybeId   pi ]
+                                               in pid <> T.intercalate pid fields <> pid
+    where
+      serMaybeText Nothing    = ""
+      serMaybeText (Just txt) = txt
+      serMaybeId   Nothing    = ""
+      serMaybeId   (Just i  ) = showText i
+      pid                     = pcIdentifierDelimiter
+  deserialize txt = let txt'                      = T.init . T.tail $ txt
+                        [ pes, ic, nsi, pen, pi ] = T.splitOn pcIdentifierDelimiter txt'
+                    in PCIdentifier { pcEntSing        = deserMaybeText pes
+                                    , isCap            = read . T.unpack $ ic
+                                    , nonStdIdentifier = deserMaybeText nsi
+                                    , pcEntName        = deserMaybeText pen
+                                    , pcId             = deserMaybeId   pi }
+    where
+      deserMaybeText "" = Nothing
+      deserMaybeText t  = Just t
+      deserMaybeId   "" = Nothing
+      deserMaybeId   t  = Just . read . T.unpack $ t
+
+
 -- ==================================================
 -- Data types:
 
@@ -125,6 +172,7 @@ type Action         = IdMsgQueueCols -> Rest -> MudStack ()
 type IdMsgQueueCols = (Id, MsgQueue, Cols)
 type Cols           = Int
 type Rest           = [T.Text]
+
 
 data Cmd = Cmd { cmdName :: !CmdName
                , action  :: !Action
@@ -138,10 +186,12 @@ type Amount          = Int
 type Index           = Int
 type NameSearchedFor = T.Text
 
+
 data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe (EmptyNoneSome Coins))
                      | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
                      | Sorry           !NameSearchedFor
                      | SorryIndexedCoins deriving Show
+
 
 data EmptyNoneSome a = Empty
                      | NoneOf a
@@ -153,11 +203,24 @@ data EmptyNoneSome a = Empty
 
 data GetOrDrop   = Get | Drop
 
+
 data PutOrRem    = Put | Rem deriving Show
+
 
 data RightOrLeft = R
                  | L
                  | RI | RM | RR | RP
                  | LI | LM | LR | LP deriving (Show, Read)
 
+
 data InvType     = PCInv | PCEq | RmInv deriving Eq
+
+
+-----
+
+
+data PCIdentifier = PCIdentifier { pcEntSing        :: Maybe T.Text
+                                 , isCap            :: Bool
+                                 , nonStdIdentifier :: Maybe T.Text
+                                 , pcEntName        :: Maybe T.Text
+                                 , pcId             :: Maybe Id } deriving Eq

@@ -203,6 +203,65 @@ getPlaColumns i = (^.columns) <$> getPla i
 
 
 -- ============================================================
+-- Helper functions relating to output:
+
+
+send :: MsgQueue -> T.Text -> MudStack ()
+send mq = liftIO . atomically . writeTQueue mq . FromServer
+
+
+broadcast :: [(T.Text, [Id])] -> MudStack ()
+broadcast bs = getMqtPt >>= \(mqt, pt) -> do
+    let helper msg i = let mq   = mqt ! i
+                           cols = (pt ! i)^.columns
+                       in send mq . nl . T.unlines . wordWrap cols $ msg
+    forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
+
+
+broadcastOthersInRm :: Id -> T.Text -> MudStack ()
+broadcastOthersInRm i msg = broadcast =<< helper
+  where
+    helper = onWS $ \(t, ws) ->
+        let p   = (ws^.pcTbl)  ! i
+            ris = (ws^.invTbl) ! (p^.rmId)
+            pis = findPCIds ws . delete i $ ris
+        in putTMVar t ws >> return [ (msg, pis) ]
+
+
+massBroadcast :: T.Text -> MudStack ()
+massBroadcast msg = getMqtPt >>= \(mqt, pt) -> do
+    let helper i = let mq   = mqt ! i
+                       cols = (pt ! i)^.columns
+                   in send mq . nl' . frame cols . T.unlines . wordWrap cols $ msg
+    forM_ (IM.keys pt) helper
+
+
+frame :: Cols -> T.Text -> T.Text
+frame cols = nl . (<> divider) . (divider <>)
+  where
+    divider = nl . mkDividerTxt $ cols
+
+
+mkDividerTxt :: Cols -> T.Text
+mkDividerTxt = flip T.replicate "="
+
+
+ok :: MsgQueue -> MudStack ()
+ok mq = send mq . nlnl $ "OK!"
+
+
+msgAll :: Msg -> MudStack ()
+msgAll m = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
+    forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue m
+
+
+mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
+mkAssocListTxt cols = T.concat . map helper
+  where
+    helper (a, b) = T.unlines . wordWrapIndent 2 cols $ (unquote . showText $ a) <> ": " <> showText b
+
+
+-- ============================================================
 -- Misc. helpers:
 
 
@@ -291,62 +350,3 @@ getEffName i ws i' = let e = (ws^.entTbl) ! i'
                    p'     = (ws^.pcTbl)  ! i'
                    r      = p'^.race
                in if n `elem` intros then uncapitalize n else T.pack [ T.head . pp $ s ] <> pp r
-
-
--- ============================================================
--- Helper functions relating to output:
-
-
-send :: MsgQueue -> T.Text -> MudStack ()
-send mq = liftIO . atomically . writeTQueue mq . FromServer
-
-
-broadcast :: [(T.Text, [Id])] -> MudStack ()
-broadcast bs = getMqtPt >>= \(mqt, pt) -> do
-    let helper msg i = let mq   = mqt ! i
-                           cols = (pt ! i)^.columns
-                       in send mq . nl . T.unlines . wordWrap cols $ msg
-    forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
-
-
-broadcastOthersInRm :: Id -> T.Text -> MudStack ()
-broadcastOthersInRm i msg = broadcast =<< helper
-  where
-    helper = onWS $ \(t, ws) ->
-        let p   = (ws^.pcTbl)  ! i
-            ris = (ws^.invTbl) ! (p^.rmId)
-            pis = findPCIds ws . delete i $ ris
-        in putTMVar t ws >> return [ (msg, pis) ]
-
-
-massBroadcast :: T.Text -> MudStack ()
-massBroadcast msg = getMqtPt >>= \(mqt, pt) -> do
-    let helper i = let mq   = mqt ! i
-                       cols = (pt ! i)^.columns
-                   in send mq . nl' . frame cols . T.unlines . wordWrap cols $ msg
-    forM_ (IM.keys pt) helper
-
-
-frame :: Cols -> T.Text -> T.Text
-frame cols = nl . (<> divider) . (divider <>)
-  where
-    divider = nl . mkDividerTxt $ cols
-
-
-mkDividerTxt :: Cols -> T.Text
-mkDividerTxt = flip T.replicate "="
-
-
-ok :: MsgQueue -> MudStack ()
-ok mq = send mq . nlnl $ "OK!"
-
-
-msgAll :: Msg -> MudStack ()
-msgAll m = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
-    forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue m
-
-
-mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
-mkAssocListTxt cols = T.concat . map helper
-  where
-    helper (a, b) = T.unlines . wordWrapIndent 2 cols $ (unquote . showText $ a) <> ": " <> showText b

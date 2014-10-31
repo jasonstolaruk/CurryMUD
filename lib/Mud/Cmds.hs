@@ -430,8 +430,9 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
           logPla "receive" i "connection dropped."
           liftIO . atomically . writeTQueue mq $ Dropped
       False -> do
-          liftIO $ atomically . writeTQueue mq . FromClient . T.pack =<< hGetLine h
+          liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters . T.pack =<< hGetLine h
           loop
+    remDelimiters = T.replace pcIdentifierDelimiter ""
 
 
 receiveExHandler :: Id -> SomeException -> MudStack ()

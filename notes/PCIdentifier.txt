@@ -1,0 +1,104 @@
+Commands that do not involve other PCs:
+These commands have feedback that the actor sees, and a notification that all others in the room see.
+
+The | character corresponds to some non-printable delimiter.
+Make sure incoming strings from clients don't have the delimiter character in it.
+Make a PCIdentifier data type.
+
+east
+...
+The male human leaves east. / The 2nd male human leaves east.
+Taro leaves east.
+=> |Taro|The % male human|mhuman|43| leaves east.
+-----
+A male human arrives from the west.
+Taro arrives from the west.
+=> |Taro|A male human||| arrives from the west.
+
+get sack
+You pick up the cloth sack.
+The male human picks up a cloth sack. / The 2nd male human picks up a cloth sack.
+Taro picks up a cloth sack.
+=> |Taro|The % male human|mhuman|43| picks up a cloth sack.
+
+get 2/sword
+You pick up 2 short swords.
+The male human picks up 2 short swords.
+Taro picks up 2 short swords.
+=> |Taro|The % male human|mhuman|43| picks up 2 short swords.
+
+drop
+You drop the cloth sack.
+The male human drops a cloth sack.
+Taro drops a cloth sack.
+
+drop 2/sword
+You drop 2 short swords.
+The male human drops 2 short swords.
+Taro drops 2 short swords.
+
+put ring sack
+You put the ring in the cloth sack.
+The male human puts a ring in a cloth sack.
+Taro puts a ring in a cloth sack.
+
+put ring -sack
+You put the ring in the cloth sack on the ground.
+The male human puts a ring in a cloth sack on the ground.
+Taro puts a ring in a cloth sack on the ground.
+
+remove doll sack
+You remove the kewpie doll from the cloth sack.
+The male human removes a kewpie doll from a cloth sack.
+Taro removes a kewpie doll from a cloth sack.
+
+remove doll -sack
+You remove the kewpie doll from the cloth sack on the ground.
+The male human removes a kewpie doll from a cloth sack on the ground.
+Taro removes a kewpie doll from a cloth sack on the ground.
+
+ready bracelet
+You wear the bronze bracelet on your left wrist.
+The male human wears a bronze bracelet on his left wrist.
+Taro wears a bronze bracelet on his left wrist.
+
+unready bracelet
+You take off the bronze bracelet.
+The male human takes off a bronze bracelet.
+Taro takes off a bronze bracelet.
+
+=====
+
+Commands that involve other PCs:
+These commands have feedback that the actor sees, a notification that the target of the action sees, and a notification that all others in the room see.
+
+intro mhalfling/taran
+=> You introduce yourself to |Taran|the male halfling|mhalfling|44|.
+The male human introduces himself to you as Taro.
+=> ||The % male human|mhuman|43| introduces himself to you as Taro.
+The male human introduces himself to the male halfling.
+Taro introduces himself to the male halfling. ...
+|Taro|The % male human|mhuman|43| introduces himself to |Taran|the % male halfling|mhalfling|44|.
+
+look mhalfling
+...
+The male human looks at you.
+Taro looks at you.
+The male human looks at the male halfling.
+Taro looks at the male halfling. ...
+=> |Taro|The % male human|mhuman|43| looks at |Taran|the % male halfling|mhalfling|44|.
+
+give sword mhalfling
+You give your sword to the male halfling.
+The male human gives you a sword.
+Taro gives you a sword.
+The male human gives a sword to the male halfling.
+Taro gives a sword to the male halfling. ...
+
+show sword mhalfling
+You show the sword to the male halfling.
+The male human shows you his sword. ...
+Taro shows you his sword. ...
+The male human shows his sword to the male halfling.
+Taro shows his sword to the male halfling. ...
+
