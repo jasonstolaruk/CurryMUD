@@ -32,7 +32,7 @@ import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
+import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed)
@@ -310,13 +310,13 @@ adHoc mq host = do
         -----
         let pla = Pla True host 80
         -----
-        let ws'  = ws  & typeTbl.at  i     ?~ PCType
-                       & entTbl.at   i     ?~ e
-                       & invTbl.at   i     ?~ is
-                       & coinsTbl.at i     ?~ co
-                       & eqTbl.at    i     ?~ em
-                       & mobTbl.at   i     ?~ m
-                       & pcTbl.at    i     ?~ pc
+        let ws'  = ws  & typeTbl.at  i ?~ PCType
+                       & entTbl.at   i ?~ e
+                       & invTbl.at   i ?~ is
+                       & coinsTbl.at i ?~ co
+                       & eqTbl.at    i ?~ em
+                       & mobTbl.at   i ?~ m
+                       & pcTbl.at    i ?~ pc
         let mqt' = mqt & at i ?~ mq
         let pt'  = pt  & at i ?~ pla
         -----
@@ -432,7 +432,8 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
       False -> do
           liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters . T.pack =<< hGetLine h
           loop
-    remDelimiters = T.replace pcIdentifierDelimiter ""
+    remDelimiters = T.replace pid ""
+    pid           = T.pack [pcIdentifierDelimiter]
 
 
 receiveExHandler :: Id -> SomeException -> MudStack ()
@@ -749,8 +750,7 @@ look (i, mq, cols) rs = helper >>= \case
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
     let is         = delete i $ (ws^.invTbl) ! ri
-        pis        = takeWhile (\i' -> (ws^.typeTbl) ! i' == PCType) is
-        ois        = is \\ pis
+        (pis, ois) = span (\i' -> (ws^.typeTbl) ! i' == PCType) is
         pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
         otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
         c          = (ws^.coinsTbl) ! ri

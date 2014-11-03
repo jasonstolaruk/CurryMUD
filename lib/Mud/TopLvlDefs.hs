@@ -30,8 +30,8 @@ telnetSE  = '\240'
 telnetGA  = '\249'
 
 
-pcIdentifierDelimiter :: T.Text
-pcIdentifierDelimiter = "\128"
+pcIdentifierDelimiter :: Char
+pcIdentifierDelimiter = '\128'
 
 
 mudDir :: FilePath

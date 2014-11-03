@@ -44,4 +44,4 @@ genCols = choose (minCols, maxCols)
 
 
 pids :: Int -> T.Text
-pids x = T.concat . take x . repeat $ pcIdentifierDelimiter
+pids x = T.concat . take x . repeat . T.pack $ [pcIdentifierDelimiter]

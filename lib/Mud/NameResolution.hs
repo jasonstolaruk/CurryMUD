@@ -56,9 +56,8 @@ mkGecr i ws is c n
   | n == T.pack [allChar] = let es = [ (ws^.entTbl) ! i' | i' <- is ]
                             in Mult (length is) n (Just es) (Just . SomeOf $ c)
   | T.head n == allChar   = mkGecrMult i ws (maxBound :: Int) (T.tail n) is c
-  | isDigit (T.head n)    = let numText = T.takeWhile isDigit n
+  | isDigit (T.head n)    = let (numText, rest) = T.span isDigit n
                                 numInt  = either (oops numText) fst $ decimal numText
-                                rest    = T.drop (T.length numText) n
                             in if numText /= "0" then parse rest numInt else Sorry n
   | otherwise             = mkGecrMult i ws 1 n is c
   where

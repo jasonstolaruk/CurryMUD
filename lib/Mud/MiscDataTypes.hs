@@ -148,9 +148,9 @@ instance Serializable PCIdentifier where
       serMaybeText (Just txt) = txt
       serMaybeId   Nothing    = ""
       serMaybeId   (Just i  ) = showText i
-      pid                     = pcIdentifierDelimiter
+      pid                     = T.pack [pcIdentifierDelimiter]
   deserialize txt = let txt'                      = T.init . T.tail $ txt
-                        [ pes, ic, nsi, pen, pi ] = T.splitOn pcIdentifierDelimiter txt'
+                        [ pes, ic, nsi, pen, pi ] = T.splitOn pid txt'
                     in PCIdentifier { pcEntSing        = deserMaybeText pes
                                     , isCap            = read . T.unpack $ ic
                                     , nonStdIdentifier = deserMaybeText nsi
@@ -161,6 +161,7 @@ instance Serializable PCIdentifier where
       deserMaybeText t  = Just t
       deserMaybeId   "" = Nothing
       deserMaybeId   t  = Just . read . T.unpack $ t
+      pid               = T.pack [pcIdentifierDelimiter]
 
 
 -- ==================================================

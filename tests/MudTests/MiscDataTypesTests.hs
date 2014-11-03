@@ -35,5 +35,5 @@ test_deserializePCIdentifierNothing = deserialize $ pids 2 <> "False" <> pids 4
 
 
 test_deserializePCIdentifierJust :: PCIdentifier
-test_deserializePCIdentifierJust = let pid = pcIdentifierDelimiter
+test_deserializePCIdentifierJust = let pid = T.pack [pcIdentifierDelimiter]
                                    in deserialize $ pid <> T.intercalate pid [ "Taro", "True", "A male human", "mhuman", "50" ] <> pid
