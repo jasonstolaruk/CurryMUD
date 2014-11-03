@@ -24,6 +24,7 @@ module Mud.StateHelpers ( allKeys
                         , mkIdSingList
                         , mkListFromCoins
                         , mkPlurFromBoth
+                        , mkUnknownPCEntName
                         , modifyNWS
                         , modifyWS
                         , msgAll
@@ -343,10 +344,14 @@ getEffName i ws i' = let e = (ws^.entTbl) ! i'
                      in fromMaybe (helper e) $ e^.entName
   where
     helper e = let n      = e^.sing
-                   p      = (ws^.pcTbl)  ! i
+                   p      = (ws^.pcTbl) ! i
                    intros = p^.introduced
-                   m      = (ws^.mobTbl) ! i'
-                   s      = m^.sex
-                   p'     = (ws^.pcTbl)  ! i'
-                   r      = p'^.race
-               in if n `elem` intros then uncapitalize n else T.pack [ T.head . pp $ s ] <> pp r
+               in if n `elem` intros then uncapitalize n else mkUnknownPCEntName i' ws
+
+
+mkUnknownPCEntName :: Id -> WorldState -> T.Text
+mkUnknownPCEntName i ws = let m = (ws^.mobTbl) ! i
+                              s = m^.sex
+                              p = (ws^.pcTbl)  ! i
+                              r = p^.race
+                          in T.pack [ T.head . pp $ s ] <> pp r

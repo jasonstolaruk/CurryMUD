@@ -623,6 +623,9 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
     helper dir' = onWS $ \(t, ws) ->
         let e   = (ws^.entTbl) ! i
             p   = (ws^.pcTbl)  ! i
+            ra  = p^.race
+            m   = (ws^.mobTbl) ! i
+            s   = m^.sex
             ri  = p^.rmId
             r   = (ws^.rmTbl)  ! ri
             ris = (ws^.invTbl) ! ri
@@ -637,11 +640,21 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                   originPis   = findPCIds ws originIs
                   destPis     = findPCIds ws destIs
                   msgAtOrigin = case mom of
-                                  Nothing -> T.concat [ e^.sing, " ", verb dir', " ", expandLinkName dir', "." ]
-                                  Just f  -> f $ e^.sing
+                                  Nothing -> let pi = PCIdentifier { pcEntSing        = Just $ e^.sing
+                                                                   , isCap            = True
+                                                                   , nonStdIdentifier = Nothing
+                                                                   , pcEntName        = Just . mkUnknownPCEntName i $ ws
+                                                                   , pcId             = Just i }
+                                             in T.concat [ serialize pi, " ", verb dir', " ", expandLinkName dir', "." ]
+                                  Just f  -> f $ e^.sing -- TODO: Use PCIdentifier.
                   msgAtDest   = case mdm of
-                                  Nothing -> T.concat [ e^.sing, " arrives from ", expandOppLinkName dir', "." ]
-                                  Just f  -> f $ e^.sing
+                                  Nothing -> let pi = PCIdentifier { pcEntSing        = Just $ e^.sing
+                                                                   , isCap            = True
+                                                                   , nonStdIdentifier = Just . mkNonStdIdentifier s $ ra
+                                                                   , pcEntName        = Nothing
+                                                                   , pcId             = Nothing }
+                                             in T.concat [ serialize pi, " arrives from ", expandOppLinkName dir', "." ]
+                                  Just f  -> f $ e^.sing -- TODO: Use PCIdentifier.
                   logMsg      = T.concat [ "moved ", linkTxt, " from room ", showRm ri r, " to room ", showRm ri' r', "." ]
               in do
                   putTMVar t (ws & pcTbl.at  i   ?~ p'
@@ -656,13 +669,14 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
       | dir' == "d"              = "heads"
       | dir' `elem` stdLinkNames = "leaves"
       | otherwise                = "enters"
+    mkNonStdIdentifier s r       = "A " <> pp s <> " " <> pp r
     showRm ri r                  = showText ri <> " " <> parensQuote (r^.rmName)
 
 
 findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
 findExit r ln = case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- r^.rmLinks, isValid rl ] of
-                  [] -> Nothing
-                  xs -> Just . head $ xs
+  [] -> Nothing
+  xs -> Just . head $ xs
   where
     isValid      (StdLink    dir _    ) = ln == linkDirToCmdName dir
     isValid      (NonStdLink ln' _ _ _) = ln `T.isInfixOf` ln'
