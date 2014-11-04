@@ -14,7 +14,7 @@ module Mud.MiscDataTypes ( Action
                          , Index
                          , InvType(..)
                          , NameSearchedFor
-                         , PCIdentifier(..)
+                         , PCDesig(..)
                          , Pretty
                          , PutOrRem(..)
                          , Rest
@@ -136,32 +136,36 @@ class Serializable a where
   deserialize :: T.Text -> a
 
 
-instance Serializable PCIdentifier where
-  serialize (PCIdentifier pes ic nsi pen pi) = let fields = [ serMaybeText pes
-                                                            , showText     ic
-                                                            , serMaybeText nsi
-                                                            , serMaybeText pen
-                                                            , serMaybeId   pi ]
-                                               in pid <> T.intercalate pid fields <> pid
+instance Serializable PCDesig where
+  serialize (StdDesig pes ic pen pi) = let fields = [ serMaybeText pes
+                                                    , showText ic
+                                                    , pen
+                                                    , showText pi ]
+                                       in d <> T.intercalate d' fields <> d
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
-      serMaybeId   Nothing    = ""
-      serMaybeId   (Just i  ) = showText i
-      pid                     = T.pack [pcIdentifierDelimiter]
-  deserialize txt = let txt'                      = T.init . T.tail $ txt
-                        [ pes, ic, nsi, pen, pi ] = T.splitOn pid txt'
-                    in PCIdentifier { pcEntSing        = deserMaybeText pes
-                                    , isCap            = read . T.unpack $ ic
-                                    , nonStdIdentifier = deserMaybeText nsi
-                                    , pcEntName        = deserMaybeText pen
-                                    , pcId             = deserMaybeId   pi }
+      d                       = T.pack [stdDesigDelimiter]
+      d'                      = T.pack [desigDelimiter]
+  serialize (NonStdDesig pes nsd) = T.concat [ d, pes, d', nsd, d ]
+    where
+      d  = T.pack [nonStdDesigDelimiter]
+      d' = T.pack [desigDelimiter]
+  deserialize txt =
+      let txt' = T.init . T.tail $ txt
+      in if T.head txt == stdDesigDelimiter
+        then let [ pes, ic, pen, pi ] = T.splitOn d txt'
+             in StdDesig { stdPCEntSing = deserMaybeText pes
+                         , isCap        = read . T.unpack $ ic
+                         , pcEntName    = pen
+                         , pcId         = read . T.unpack $ pi }
+        else let [ pes, nsd ] = T.splitOn d txt'
+             in NonStdDesig { nonStdPCEntSing = pes
+                            , nonStdDesc      = nsd }
     where
       deserMaybeText "" = Nothing
       deserMaybeText t  = Just t
-      deserMaybeId   "" = Nothing
-      deserMaybeId   t  = Just . read . T.unpack $ t
-      pid               = T.pack [pcIdentifierDelimiter]
+      d                 = T.pack [desigDelimiter]
 
 
 -- ==================================================
@@ -220,8 +224,9 @@ data InvType     = PCInv | PCEq | RmInv deriving Eq
 -----
 
 
-data PCIdentifier = PCIdentifier { pcEntSing        :: Maybe T.Text
-                                 , isCap            :: Bool
-                                 , nonStdIdentifier :: Maybe T.Text
-                                 , pcEntName        :: Maybe T.Text
-                                 , pcId             :: Maybe Id } deriving (Eq, Show)
+data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
+                           , isCap           :: Bool
+                           , pcEntName       :: T.Text
+                           , pcId            :: Id }
+             | NonStdDesig { nonStdPCEntSing :: T.Text
+                           , nonStdDesc      :: T.Text } deriving (Eq, Show)

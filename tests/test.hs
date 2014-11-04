@@ -5,7 +5,6 @@ import Mud.MiscDataTypes
 import Mud.TopLvlDefs
 import MudTests.MiscDataTypesTests
 import MudTests.StateHelpersTests
-import MudTests.TestHelpers
 import MudTests.TheWorldTests
 import MudTests.UtilTests
 
@@ -71,22 +70,16 @@ unitTestsUtil = testGroup "unit tests Util" [ testCase "stripTelnet" $ test_stri
 -- --------------------------------------------------
 
 unitTestsMiscDataTypes :: TestTree
-unitTestsMiscDataTypes =
-    let pid = T.pack [pcIdentifierDelimiter]
-    in testGroup "unit tests MiscDataTypes"
-        [ testCase "serializePCIdentifierNothing"   $ test_serializePCIdentifierNothing   @?=
-            pids 2 <> "False" <> pids 4
-        , testCase "serializePCIdentifierJust"      $ test_serializePCIdentifierJust      @?=
-            pid <> T.intercalate pid [ "Taro", "True", "A male human", "mhuman", "50" ] <> pid
-        , testCase "deserializePCIdentifierNothing" $ test_deserializePCIdentifierNothing @?=
-            PCIdentifier { pcEntSing        = Nothing
-                         , isCap            = False
-                         , nonStdIdentifier = Nothing
-                         , pcEntName        = Nothing
-                         , pcId             = Nothing }
-        , testCase "deserializePCIdentifierJust"    $ test_deserializePCIdentifierJust    @?=
-            PCIdentifier { pcEntSing        = Just "Taro"
-                         , isCap            = True
-                         , nonStdIdentifier = Just "A male human"
-                         , pcEntName        = Just "mhuman"
-                         , pcId             = Just 50 } ]
+unitTestsMiscDataTypes = testGroup "unit tests MiscDataTypes"
+    [ testCase "serializeStdDesig"      $ test_serializeStdDesig      @?=
+        std <> T.intercalate d [ "Taro", "False", "mhuman", "50" ] <> std
+    , testCase "serializeNonStdDesig"   $ test_serializeNonStdDesig   @?=
+        T.concat [ non, "Taro", d, "A male human", non ]
+    , testCase "deserializeStdDesig"    $ test_deserializeStdDesig    @?=
+        StdDesig Nothing True "fhuman" 55
+    , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=
+        NonStdDesig "Hanako" "A female human" ]
+  where
+    std = T.pack [stdDesigDelimiter]
+    non = T.pack [nonStdDesigDelimiter]
+    d   = T.pack [desigDelimiter]

@@ -432,8 +432,8 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
       False -> do
           liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters . T.pack =<< hGetLine h
           loop
-    remDelimiters = T.replace pid ""
-    pid           = T.pack [pcIdentifierDelimiter]
+    remDelimiters txt = let fs = map (flip T.replace "" . T.pack) [ [stdDesigDelimiter], [nonStdDesigDelimiter], [desigDelimiter] ]
+                        in foldr id txt fs
 
 
 receiveExHandler :: Id -> SomeException -> MudStack ()
@@ -639,22 +639,18 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                   destIs'     = sortInv ws $ destIs ++ [i]
                   originPis   = findPCIds ws originIs
                   destPis     = findPCIds ws destIs
-                  msgAtOrigin = case mom of
-                                  Nothing -> let pi = PCIdentifier { pcEntSing        = Just $ e^.sing
-                                                                   , isCap            = True
-                                                                   , nonStdIdentifier = Nothing
-                                                                   , pcEntName        = Just . mkUnknownPCEntName i $ ws
-                                                                   , pcId             = Just i }
-                                             in T.concat [ serialize pi, " ", verb dir', " ", expandLinkName dir', "." ]
-                                  Just f  -> f $ e^.sing -- TODO: Use PCIdentifier.
-                  msgAtDest   = case mdm of
-                                  Nothing -> let pi = PCIdentifier { pcEntSing        = Just $ e^.sing
-                                                                   , isCap            = True
-                                                                   , nonStdIdentifier = Just . mkNonStdIdentifier s $ ra
-                                                                   , pcEntName        = Nothing
-                                                                   , pcId             = Nothing }
-                                             in T.concat [ serialize pi, " arrives from ", expandOppLinkName dir', "." ]
-                                  Just f  -> f $ e^.sing -- TODO: Use PCIdentifier.
+                  msgAtOrigin = let d = serialize StdDesig { stdPCEntSing = Just $ e^.sing
+                                                           , isCap        = True
+                                                           , pcEntName    = mkUnknownPCEntName i ws
+                                                           , pcId         = i }
+                                in case mom of
+                                  Nothing -> T.concat [ d, " ", verb dir', " ", expandLinkName dir', "." ]
+                                  Just f  -> f d
+                  msgAtDest   = let d = serialize NonStdDesig { nonStdPCEntSing = e^.sing
+                                                              , nonStdDesc      = mkNonStdDesc s ra }
+                                in case mdm of
+                                  Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir', "." ]
+                                  Just f  -> f d
                   logMsg      = T.concat [ "moved ", linkTxt, " from room ", showRm ri r, " to room ", showRm ri' r', "." ]
               in do
                   putTMVar t (ws & pcTbl.at  i   ?~ p'
@@ -669,7 +665,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
       | dir' == "d"              = "heads"
       | dir' `elem` stdLinkNames = "leaves"
       | otherwise                = "enters"
-    mkNonStdIdentifier s r       = "A " <> pp s <> " " <> pp r
+    mkNonStdDesc s r             = "A " <> pp s <> " " <> pp r
     showRm ri r                  = showText ri <> " " <> parensQuote (r^.rmName)
 
 

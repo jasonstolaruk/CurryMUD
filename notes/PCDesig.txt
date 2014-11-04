@@ -3,7 +3,6 @@ These commands have feedback that the actor sees, and a notification that all ot
 
 The | character corresponds to some non-printable delimiter.
 Make sure incoming strings from clients don't have the delimiter character in it.
-Make a PCIdentifier data type.
 
 east
 ...
