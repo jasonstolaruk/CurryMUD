@@ -49,6 +49,7 @@ module Mud.StateHelpers ( allKeys
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.StateInIORefT
+import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
@@ -215,8 +216,42 @@ broadcast :: [(T.Text, [Id])] -> MudStack ()
 broadcast bs = getMqtPt >>= \(mqt, pt) -> do
     let helper msg i = let mq   = mqt ! i
                            cols = (pt ! i)^.columns
-                       in send mq . nl . T.unlines . wordWrap cols $ msg
+                       in send mq . nl . T.unlines . wordWrap cols . parsePCDesig msg i =<< readWSTMVar
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
+
+
+parsePCDesig :: T.Text -> Id -> WorldState -> T.Text
+parsePCDesig msg i ws =
+    let p      = (ws^.pcTbl) ! i
+        intros = p^.introduced
+    in helper intros msg
+  where
+    helper intros msg'
+      | std `T.isInfixOf` msg' =
+          let (left,   rest ) = T.span (/= stdDesigDelimiter) msg'
+              (pcdTxt, rest') = T.span (/= stdDesigDelimiter) . T.tail $ rest
+              rest''          = T.tail rest'
+              pcd             = deserialize $ std <> pcdTxt <> std
+          in case pcd of
+            (StdDesig (Just pes) ic pen _)
+              | pes `elem` intros -> left <> pes                    <> helper intros rest''
+              | otherwise         -> left <> expandPCEntName ic pen <> helper intros rest''
+            (StdDesig Nothing    ic pen _) -> left <> expandPCEntName ic pen <> helper intros rest''
+            _                              -> patternMatchFail "parsePCDesig helper" [ showText (pcd :: PCDesig) ]
+      | non `T.isInfixOf` msg' = undefined
+      | otherwise              = msg'
+    std = T.pack [stdDesigDelimiter]
+    non = T.pack [nonStdDesigDelimiter]
+
+
+expandPCEntName :: Bool -> T.Text -> T.Text
+expandPCEntName ic pen = T.concat [ leading <> "he X ", expandSex . T.head $ pen, " ", T.tail pen ]
+  where
+    leading | ic        = "T"
+            | otherwise = "t"
+    expandSex 'm' = "male"
+    expandSex 'f' = "female"
+    expandSex x   = patternMatchFail "expandPCEntName expandSex" [ T.pack [x] ]
 
 
 broadcastOthersInRm :: Id -> T.Text -> MudStack ()

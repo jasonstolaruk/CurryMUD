@@ -432,8 +432,10 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
       False -> do
           liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters . T.pack =<< hGetLine h
           loop
-    remDelimiters txt = let fs = map (flip T.replace "" . T.pack) [ [stdDesigDelimiter], [nonStdDesigDelimiter], [desigDelimiter] ]
-                        in foldr id txt fs
+    remDelimiters                         = T.foldr helper ""
+    helper c acc | c `notElem` delimiters = T.pack [c] <> acc
+                 | otherwise              = acc
+    delimiters                            = [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
 
 receiveExHandler :: Id -> SomeException -> MudStack ()
