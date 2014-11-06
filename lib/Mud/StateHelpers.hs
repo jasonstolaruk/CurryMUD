@@ -21,7 +21,6 @@ module Mud.StateHelpers ( allKeys
                         , mkAssocListTxt
                         , mkCoinsFromList
                         , mkDividerTxt
-                        , mkIdSingList
                         , mkListFromCoins
                         , mkPlurFromBoth
                         , mkUnknownPCEntName
@@ -378,12 +377,6 @@ negateCoins (Coins c) = Coins (each %~ negate $ c)
 
 findPCIds :: WorldState -> [Id] -> [Id]
 findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
-
-
-mkIdSingList :: WorldState -> [Id] -> [(Id, Sing)]
-mkIdSingList ws is = [ (i, getSing i) | i <- is ]
-  where
-    getSing = (^.sing) . ((ws^.entTbl) !)
 
 
 getEffName :: Id -> WorldState -> Id -> T.Text

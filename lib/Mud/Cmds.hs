@@ -26,7 +26,7 @@ import Control.Exception (ArithException(..), AsyncException(..), fromException,
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
 import Control.Lens (at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
-import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
+import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
@@ -742,28 +742,41 @@ look (i, mq, cols) [] = readWSTMVar >>= \ws ->
         ricd    = mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
 look (i, mq, cols) rs = helper >>= \case
-  (Left  msg, _              ) -> send mq msg
-  (Right msg, Nothing        ) -> send mq msg
-  (Right msg, Just (pis, iss)) -> do
-      let (_, s)         = head iss
-      let f acc (pi, ps) = (s <> " looks at you.", [pi]) : (T.concat [ s, " looks at ", ps, "." ], pi `delete` pis) : acc
-      broadcast . foldl' f [] . tail $ iss
-      send mq msg
-      forM_ (tail iss) $ \(_, ps) -> logPla "look" i ("looked at " <> ps <> ".")
+  (Left  msg, _           ) -> send mq msg
+  (Right msg, Nothing     ) -> send mq msg
+  (Right msg, Just (d, ds)) ->
+      let pis               = i `delete` pcIds d -- TODO: Use lenses.
+          d'                = serialize d
+          f acc targetDesig = let targetId = pcId targetDesig -- TODO: Use lenses.
+                              in (d' <> " looks at you.", [targetId]) :
+                                 (T.concat [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
+                                 acc
+      in do
+          broadcast . foldl' f [] $ ds
+          send mq msg
+          --forM_ () $ \(_, ps) -> logPla "look" i ("looked at " <> ps <> ".") -- TODO
   where
     helper = onWS $ \(t, ws) ->
-        let p   = (ws^.pcTbl) ! i
-            ri  = p^.rmId
-            is  = delete i $ (ws^.invTbl) ! ri
-            pis = findPCIds ws is
-            c   = (ws^.coinsTbl) ! ri
-        in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is c
+        let e    = (ws^.entTbl) ! i
+            p    = (ws^.pcTbl)  ! i
+            ri   = p^.rmId
+            ris  = (ws^.invTbl) ! ri
+            ris' = i `delete` ris
+            pis  = findPCIds ws ris
+            c    = (ws^.coinsTbl) ! ri
+            d    = StdDesig { stdPCEntSing = Just $ e^.sing
+                            , isCap        = True
+                            , pcEntName    = mkUnknownPCEntName i ws
+                            , pcId         = i
+                            , pcIds        = pis }
+        in if (not . null $ ris') || (c /= mempty)
+          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris' c
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                = map procReconciledCoinsRm rcs
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-               in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (pis, mkIdSingList ws $ i : extractPCIdsFromEiss ws eiss))
+                   ds                 = [ let e' = (ws^.entTbl) ! pi in StdDesig (Just $ e'^.sing) False (mkUnknownPCEntName pi ws) pi pis | pi <- extractPCIdsFromEiss ws eiss ]
+               in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
           else    putTMVar t ws >> return (Left . nl . T.unlines . wordWrap cols $ "You don't see anything here to look at.", Nothing)
     helperLookEitherInv _  acc (Left  msg ) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
     helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
