@@ -44,7 +44,8 @@ module Mud.StateHelpers ( allKeys
                         , readTMVarInNWS
                         , readWSTMVar
                         , send
-                        , sortInv ) where
+                        , sortInv
+                        , splitRmInv ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -65,9 +66,10 @@ import Control.Monad.State (gets)
 import Control.Monad.State.Class (MonadState)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, foldl', sortBy)
+import Data.List ((\\), delete, elemIndex, foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
+import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, IntMap, keys)
 import qualified Data.Text as T
 
@@ -227,28 +229,38 @@ parsePCDesig msg i ws =
     in helper intros msg
   where
     helper intros msg'
-      | std `T.isInfixOf` msg' =
-          let (left,   rest ) = T.span (/= stdDesigDelimiter) msg'
-              (pcdTxt, rest') = T.span (/= stdDesigDelimiter) . T.tail $ rest
-              rest''          = T.tail rest'
-              pcd             = deserialize $ std <> pcdTxt <> std
+      | T.pack [stdDesigDelimiter] `T.isInfixOf` msg' =
+          let (left, pcd, rest) = extractPCDesigTxt stdDesigDelimiter msg'
           in case pcd of
-            (StdDesig (Just pes) ic pen _)
-              | pes `elem` intros -> left <> pes                    <> helper intros rest''
-              | otherwise         -> left <> expandPCEntName ic pen <> helper intros rest''
-            (StdDesig Nothing    ic pen _) -> left <> expandPCEntName ic pen <> helper intros rest''
-            _                              -> patternMatchFail "parsePCDesig helper" [ showText (pcd :: PCDesig) ]
-      | non `T.isInfixOf` msg' = undefined
+            (StdDesig (Just pes) ic pen pi pis)
+              | pes `elem` intros -> left <> pes <> helper intros rest
+              | otherwise         -> left <> expandPCEntName i ws ic pen pi pis <> helper intros rest
+            (StdDesig Nothing    ic pen pi pis) -> left <> expandPCEntName i ws ic pen pi pis <> helper intros rest
+            _                                   -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
+      | T.pack [nonStdDesigDelimiter] `T.isInfixOf` msg' =
+          let (left, NonStdDesig pes desc, rest) = extractPCDesigTxt nonStdDesigDelimiter msg'
+          in if pes `elem` intros
+            then left <> pes  <> helper intros rest
+            else left <> desc <> helper intros rest
       | otherwise              = msg'
-    std = T.pack [stdDesigDelimiter]
-    non = T.pack [nonStdDesigDelimiter]
+    extractPCDesigTxt c txt = let (left,   rest ) = T.span (/= c) txt
+                                  (pcdTxt, rest') = T.span (/= c) . T.tail $ rest
+                                  rest''          = T.tail rest'
+                                  pcd             = deserialize $ packedDelim <> pcdTxt <> packedDelim :: PCDesig
+                                  packedDelim     = T.pack [c]
+                              in (left, pcd, rest'')
 
 
-expandPCEntName :: Bool -> T.Text -> T.Text
-expandPCEntName ic pen = T.concat [ leading <> "he X ", expandSex . T.head $ pen, " ", T.tail pen ]
+expandPCEntName :: Id -> WorldState -> Bool -> T.Text -> Id -> Inv -> T.Text
+expandPCEntName i ws ic pen pi pis = T.concat [ leading, "he ", xth, expandSex . T.head $ pen, " ", T.tail pen ]
   where
     leading | ic        = "T"
             | otherwise = "t"
+    xth = let pis'    = i `delete` pis
+              matches = foldr (\i' acc -> if mkUnknownPCEntName i' ws == pen then i' : acc else acc) [] pis'
+              x       = fromJust . elemIndex pi $ matches
+          in case matches of [_] -> ""
+                             _   -> (<> " ") . mkOrdinal . (+ 1) $ x
     expandSex 'm' = "male"
     expandSex 'f' = "female"
     expandSex x   = patternMatchFail "expandPCEntName expandSex" [ T.pack [x] ]
@@ -390,3 +402,7 @@ mkUnknownPCEntName i ws = let m = (ws^.mobTbl) ! i
                               p = (ws^.pcTbl)  ! i
                               r = p^.race
                           in T.pack [ T.head . pp $ s ] <> pp r
+
+
+splitRmInv :: WorldState -> Inv -> (Inv, Inv)
+splitRmInv ws = span (\i -> (ws^.typeTbl) ! i == PCType)

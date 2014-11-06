@@ -292,7 +292,8 @@ adHoc mq host = do
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
     s        <- liftIO randomSex
-    r        <- liftIO randomRace
+    --r        <- liftIO randomRace -- TODO
+    let r = Human
     liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
@@ -332,9 +333,11 @@ randomSex = newStdGen >>= \g ->
     let (x, _) = randomR (0, 1) g in return $ [ Male, Female ] !! x
 
 
+{-
 randomRace :: IO Race
 randomRace = newStdGen >>= \g ->
     let (x, _) = randomR (0, 7) g in return $ [ Dwarf, Elf, Felinoid, Halfling, Human, Lagomorph, Nymph, Vulpenoid ] !! x
+-}
 
 
 dumpTitle :: MsgQueue -> MudStack ()
@@ -360,9 +363,19 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 notifyArrival :: Id -> MudStack ()
 notifyArrival i = readWSTMVar >>= \ws ->
-    let e = (ws^.entTbl) ! i
-        msg = e^.sing <> " has arrived in the game."
+    let e   = (ws^.entTbl) ! i
+        m   = (ws^.mobTbl) ! i
+        s   = m^.sex
+        p   = (ws^.pcTbl)  ! i
+        r   = p^.race
+        d   = serialize NonStdDesig { nonStdPCEntSing = e^.sing
+                                    , nonStdDesc      = mkNonStdDesc s r }
+        msg = d <> " has arrived in the game."
     in broadcastOthersInRm i msg
+
+
+mkNonStdDesc :: Sex -> Race -> T.Text
+mkNonStdDesc s r = "A " <> pp s <> " " <> pp r
 
 
 server :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -644,7 +657,8 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                   msgAtOrigin = let d = serialize StdDesig { stdPCEntSing = Just $ e^.sing
                                                            , isCap        = True
                                                            , pcEntName    = mkUnknownPCEntName i ws
-                                                           , pcId         = i }
+                                                           , pcId         = i
+                                                           , pcIds        = fst . splitRmInv ws $ ris }
                                 in case mom of
                                   Nothing -> T.concat [ d, " ", verb dir', " ", expandLinkName dir', "." ]
                                   Just f  -> f d
@@ -667,7 +681,6 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
       | dir' == "d"              = "heads"
       | dir' `elem` stdLinkNames = "leaves"
       | otherwise                = "enters"
-    mkNonStdDesc s r             = "A " <> pp s <> " " <> pp r
     showRm ri r                  = showText ri <> " " <> parensQuote (r^.rmName)
 
 

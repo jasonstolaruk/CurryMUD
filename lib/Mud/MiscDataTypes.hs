@@ -137,11 +137,12 @@ class Serializable a where
 
 
 instance Serializable PCDesig where
-  serialize (StdDesig pes ic pen pi) = let fields = [ serMaybeText pes
-                                                    , showText ic
-                                                    , pen
-                                                    , showText pi ]
-                                       in d <> T.intercalate d' fields <> d
+  serialize (StdDesig pes ic pen pi pis) = let fields = [ serMaybeText pes
+                                                        , showText ic
+                                                        , pen
+                                                        , showText pi
+                                                        , showText pis ]
+                                           in d <> T.intercalate d' fields <> d
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
@@ -154,11 +155,12 @@ instance Serializable PCDesig where
   deserialize txt =
       let txt' = T.init . T.tail $ txt
       in if T.head txt == stdDesigDelimiter
-        then let [ pes, ic, pen, pi ] = T.splitOn d txt'
+        then let [ pes, ic, pen, pi, pis ] = T.splitOn d txt'
              in StdDesig { stdPCEntSing = deserMaybeText pes
                          , isCap        = read . T.unpack $ ic
                          , pcEntName    = pen
-                         , pcId         = read . T.unpack $ pi }
+                         , pcId         = read . T.unpack $ pi
+                         , pcIds        = read . T.unpack $ pis }
         else let [ pes, nsd ] = T.splitOn d txt'
              in NonStdDesig { nonStdPCEntSing = pes
                             , nonStdDesc      = nsd }
@@ -227,6 +229,7 @@ data InvType     = PCInv | PCEq | RmInv deriving Eq
 data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
                            , isCap           :: Bool
                            , pcEntName       :: T.Text
-                           , pcId            :: Id }
+                           , pcId            :: Id
+                           , pcIds           :: Inv }
              | NonStdDesig { nonStdPCEntSing :: T.Text
                            , nonStdDesc      :: T.Text } deriving (Eq, Show)
