@@ -1952,7 +1952,11 @@ wizName (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "name") i
     readWSTMVar >>= \ws ->
         let e = (ws^.entTbl) ! i
-        in send mq . nl . T.unlines . wordWrap cols $ "You are " <> e^.sing <> "."
+            m = (ws^.mobTbl) ! i
+            p = (ws^.pcTbl)  ! i
+            r = p^.race
+            s = m^.sex
+        in send mq . nl . T.unlines . wordWrap cols . T.concat $ [ "You are ", e^.sing, " (a ", pp s, " ", pp r, ")." ]
 wizName imc@(_, mq, cols) rs = ignore mq cols rs >> wizName imc []
 
 
