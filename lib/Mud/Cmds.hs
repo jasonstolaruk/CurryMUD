@@ -1561,7 +1561,6 @@ mkIdCountBothList i ws is = let ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
 -----
 
 
--- TODO: Implement broadcasting.
 intro :: Action
 intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let p      = (ws^.pcTbl) ! i
@@ -1575,51 +1574,72 @@ intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
           let introsTxt = T.intercalate ", " intros
           send mq . nl . T.unlines . concatMap (wordWrap cols) $ [ "You know the following names:", introsTxt ]
           logPlaOut "intro" i [introsTxt]
-intro (i, mq, cols) rs = do
-    (msg, logMsgs) <- helper
+intro (i, _, _) rs = do
+    (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "intro" i logMsgs
-    send mq . nl $ msg
+    broadcast bs
   where
     helper = onWS $ \(t, ws) ->
-        let e  = (ws^.entTbl) ! i
-            s  = e^.sing
-            p  = (ws^.pcTbl)  ! i
-            ri = p^.rmId
-            is = delete i . (! ri) $ ws^.invTbl
-            c  = (ws^.coinsTbl) ! ri
-        in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, miss, rcs)     = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is c
-                   eiss                   = zipWith (curry procGecrMisRm) gecrs miss
-                   ecs                    = map procReconciledCoinsRm rcs
-                   (ws',  msg,  logMsgs ) = foldl' (helperIntroEitherInv s) (ws,  "",  []     ) eiss
-                   (      msg', logMsgs') = foldl' helperIntroEitherCoins   (     msg, logMsgs) ecs
-               in putTMVar t ws' >> return (msg', logMsgs')
-          else    putTMVar t ws  >> return (T.unlines . wordWrap cols $ "You don't see anyone here to introduce yourself to.", [])
-    helperIntroEitherInv _ a@(ws, msg, logMsgs) (Left msg')
-      | T.null msg' = a
-      | otherwise   = (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
-    helperIntroEitherInv s a (Right is) = foldl' tryIntro a is
+        let e   = (ws^.entTbl) ! i
+            s   = e^.sing
+            p   = (ws^.pcTbl)  ! i
+            ri  = p^.rmId
+            is  = (ws^.invTbl) ! ri
+            is' = i `delete` is
+            c   = (ws^.coinsTbl) ! ri
+        in if (not . null $ is') || (c /= mempty)
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is' c
+                   eiss                  = zipWith (curry procGecrMisRm) gecrs miss
+                   ecs                   = map procReconciledCoinsRm rcs
+                   (ws',  bs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws,  [], []     ) eiss
+                   (      bs', logMsgs') = foldl' helperIntroEitherCoins      (     bs, logMsgs) ecs
+               in putTMVar t ws' >> return (bs', logMsgs')
+          else    putTMVar t ws  >> return ([("You don't see anyone here to introduce yourself to.", [i])], [])
+    helperIntroEitherInv _ _ a@(ws, bs, logMsgs) (Left msg)
+      | T.null msg = a
+      | otherwise  = (ws, bs ++ [(msg, [i])], logMsgs)
+    helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
-        tryIntro (ws, msg, logMsgs) i' =
+        tryIntro (ws, bs, logMsgs) i' =
             let t  = (ws^.typeTbl) ! i'
                 e  = (ws^.entTbl)  ! i'
                 s' = e^.sing
             in case t of
-              PCType -> let p      = (ws^.pcTbl) ! i'
+              PCType -> let p      = (ws^.pcTbl)  ! i'
                             intros = p^.introduced
+                            pis    = findPCIds ws ris
+                            m      = (ws^.mobTbl) ! i
+                            mobSex = m^.sex
                         in if s `elem` intros
-                          then let msg' = "You've already introduced yourself to " <> s' <> "."
-                               in (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
-                          else let p'     = p & introduced .~ sort (s : intros)
-                                   ws'    = ws & pcTbl.at i' ?~ p'
-                                   msg'   = "You introduce yourself to " <> s' <> "."
-                               in (ws', (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs ++ [msg'])
-              _      -> let msg' = T.unlines . wordWrap cols $ "You can't introduce yourself to a " <> s' <> "."
-                        in if msg' `T.isInfixOf` msg then (ws, msg, logMsgs) else (ws, msg <> msg', logMsgs)
-    helperIntroEitherCoins (msg, logMsgs) (Left  msgs) = ((msg <>) . T.unlines . concatMap (wordWrap cols) $ msgs, logMsgs)
-    helperIntroEitherCoins (msg, logMsgs) (Right _   ) =
-        let msg' = T.unlines . wordWrap cols $ "You can't introduce yourself to a coin."
-        in if msg' `T.isInfixOf` msg then (msg, logMsgs) else (msg <> msg', logMsgs)
+                          then let msg = "You've already introduced yourself to " <> s' <> "."
+                               in (ws, bs ++ [(msg, [i])], logMsgs)
+                          else let p'   = p  & introduced  .~ sort (s : intros)
+                                   ws'  = ws & pcTbl.at i' ?~ p'
+                                   d    = serialize StdDesig { _stdPCEntSing = Just $ e^.sing
+                                                             , _isCap        = False
+                                                             , _pcEntName    = mkUnknownPCEntName i' ws
+                                                             , _pcId         = i'
+                                                             , _pcIds        = pis }
+                                   msg  = "You introduce yourself to " <> d <> "."
+                                   d'   = serialize StdDesig { _stdPCEntSing = Nothing
+                                                             , _isCap        = True
+                                                             , _pcEntName    = mkUnknownPCEntName i ws
+                                                             , _pcId         = i
+                                                             , _pcIds        = pis }
+                                   msg' = T.concat [ d', " introduces ", himHerself mobSex, " to you as ", s, "." ]
+                               in (ws', bs ++ [(msg, [i]), (msg', [i'])], logMsgs ++ [msg])
+              _      -> let msg = "You can't introduce yourself to a " <> s' <> "."
+                        in (ws, bs ++ [(msg, [i])], logMsgs) --if msg' `T.isInfixOf` msg then (ws, msg, logMsgs) else (ws, msg <> msg', logMsgs) -- TODO
+    helperIntroEitherCoins (bs, logMsgs) (Left  msgs) = (bs ++ [(T.unlines msgs, [i])], logMsgs) --((msg <>) . T.unlines . concatMap (wordWrap cols) $ msgs, logMsgs)
+    helperIntroEitherCoins (bs, logMsgs) (Right _   ) =
+        let msg = "You can't introduce yourself to a coin."
+        in {-if msg' `T.isInfixOf` msg then (bs, logMsgs) else-} (bs ++ [(msg, [i])], logMsgs) -- TODO
+
+
+himHerself :: Sex -> T.Text
+himHerself Male   = "himself"
+himHerself Female = "herself"
+himHerself s      = patternMatchFail "himHerself" [ showText s ]
 
 
 -----
