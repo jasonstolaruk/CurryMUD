@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 
 module Mud.MiscDataTypes ( Action
                          , Amount
@@ -22,14 +22,22 @@ module Mud.MiscDataTypes ( Action
                          , Serializable
                          , deserialize
                          , fromRol
+                         , isCap
+                         , nonStdDesc
+                         , nonStdPCEntSing
+                         , pcEntName
+                         , pcId
+                         , pcIds
                          , pp
-                         , serialize ) where
+                         , serialize
+                         , stdPCEntSing ) where
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
+import Control.Lens (makeLenses)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
 import qualified Data.Text as T
@@ -156,14 +164,14 @@ instance Serializable PCDesig where
       let txt' = T.init . T.tail $ txt
       in if T.head txt == stdDesigDelimiter
         then let [ pes, ic, pen, pi, pis ] = T.splitOn d txt'
-             in StdDesig { stdPCEntSing = deserMaybeText pes
-                         , isCap        = read . T.unpack $ ic
-                         , pcEntName    = pen
-                         , pcId         = read . T.unpack $ pi
-                         , pcIds        = read . T.unpack $ pis }
+             in StdDesig { _stdPCEntSing = deserMaybeText pes
+                         , _isCap        = read . T.unpack $ ic
+                         , _pcEntName    = pen
+                         , _pcId         = read . T.unpack $ pi
+                         , _pcIds        = read . T.unpack $ pis }
         else let [ pes, nsd ] = T.splitOn d txt'
-             in NonStdDesig { nonStdPCEntSing = pes
-                            , nonStdDesc      = nsd }
+             in NonStdDesig { _nonStdPCEntSing = pes
+                            , _nonStdDesc      = nsd }
     where
       deserMaybeText "" = Nothing
       deserMaybeText t  = Just t
@@ -226,10 +234,17 @@ data InvType     = PCInv | PCEq | RmInv deriving Eq
 -----
 
 
-data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
-                           , isCap           :: Bool
-                           , pcEntName       :: T.Text
-                           , pcId            :: Id
-                           , pcIds           :: Inv }
-             | NonStdDesig { nonStdPCEntSing :: T.Text
-                           , nonStdDesc      :: T.Text } deriving (Eq, Show)
+data PCDesig = StdDesig    { _stdPCEntSing    :: !(Maybe T.Text)
+                           , _isCap           :: !Bool
+                           , _pcEntName       :: !T.Text
+                           , _pcId            :: !Id
+                           , _pcIds           :: !Inv }
+             | NonStdDesig { _nonStdPCEntSing :: !T.Text
+                           , _nonStdDesc      :: !T.Text } deriving (Eq, Show)
+
+
+-- ==================================================
+-- Template Haskell for creating lenses:
+
+
+makeLenses ''PCDesig

@@ -26,7 +26,7 @@ import Control.Exception (ArithException(..), AsyncException(..), fromException,
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
 import Control.Lens (at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
-import Control.Monad (forever, guard, mplus, replicateM_, unless, void)
+import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
@@ -368,8 +368,8 @@ notifyArrival i = readWSTMVar >>= \ws ->
         s   = m^.sex
         p   = (ws^.pcTbl)  ! i
         r   = p^.race
-        d   = serialize NonStdDesig { nonStdPCEntSing = e^.sing
-                                    , nonStdDesc      = mkNonStdDesc s r }
+        d   = serialize NonStdDesig { _nonStdPCEntSing = e^.sing
+                                    , _nonStdDesc      = mkNonStdDesc s r }
         msg = d <> " has arrived in the game."
     in broadcastOthersInRm i msg
 
@@ -654,16 +654,16 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                   destIs'     = sortInv ws $ destIs ++ [i]
                   originPis   = findPCIds ws originIs
                   destPis     = findPCIds ws destIs
-                  msgAtOrigin = let d = serialize StdDesig { stdPCEntSing = Just $ e^.sing
-                                                           , isCap        = True
-                                                           , pcEntName    = mkUnknownPCEntName i ws
-                                                           , pcId         = i
-                                                           , pcIds        = fst . splitRmInv ws $ ris }
+                  msgAtOrigin = let d = serialize StdDesig { _stdPCEntSing = Just $ e^.sing
+                                                           , _isCap        = True
+                                                           , _pcEntName    = mkUnknownPCEntName i ws
+                                                           , _pcId         = i
+                                                           , _pcIds        = fst . splitRmInv ws $ ris }
                                 in case mom of
                                   Nothing -> T.concat [ d, " ", verb dir', " ", expandLinkName dir', "." ]
                                   Just f  -> f d
-                  msgAtDest   = let d = serialize NonStdDesig { nonStdPCEntSing = e^.sing
-                                                              , nonStdDesc      = mkNonStdDesc s ra }
+                  msgAtDest   = let d = serialize NonStdDesig { _nonStdPCEntSing = e^.sing
+                                                              , _nonStdDesc      = mkNonStdDesc s ra }
                                 in case mdm of
                                   Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir', "." ]
                                   Just f  -> f d
@@ -745,16 +745,16 @@ look (i, mq, cols) rs = helper >>= \case
   (Left  msg, _           ) -> send mq msg
   (Right msg, Nothing     ) -> send mq msg
   (Right msg, Just (d, ds)) ->
-      let pis               = i `delete` pcIds d -- TODO: Use lenses.
+      let pis               = i `delete` (d^.pcIds)
           d'                = serialize d
-          f acc targetDesig = let targetId = pcId targetDesig -- TODO: Use lenses.
+          f acc targetDesig = let targetId = _pcId targetDesig
                               in (d' <> " looks at you.", [targetId]) :
                                  (T.concat [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
                                  acc
       in do
           broadcast . foldl' f [] $ ds
           send mq msg
-          --forM_ () $ \(_, ps) -> logPla "look" i ("looked at " <> ps <> ".") -- TODO
+          forM_ [ fromJust $ targetDesig^.stdPCEntSing | targetDesig <- ds ] $ \es -> logPla "look" i ("looked at " <> es <> ".")
   where
     helper = onWS $ \(t, ws) ->
         let e    = (ws^.entTbl) ! i
@@ -764,11 +764,11 @@ look (i, mq, cols) rs = helper >>= \case
             ris' = i `delete` ris
             pis  = findPCIds ws ris
             c    = (ws^.coinsTbl) ! ri
-            d    = StdDesig { stdPCEntSing = Just $ e^.sing
-                            , isCap        = True
-                            , pcEntName    = mkUnknownPCEntName i ws
-                            , pcId         = i
-                            , pcIds        = pis }
+            d    = StdDesig { _stdPCEntSing = Just $ e^.sing
+                            , _isCap        = True
+                            , _pcEntName    = mkUnknownPCEntName i ws
+                            , _pcId         = i
+                            , _pcIds        = pis }
         in if (not . null $ ris') || (c /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris' c
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
