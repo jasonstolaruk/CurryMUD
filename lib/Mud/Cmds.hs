@@ -368,8 +368,8 @@ notifyArrival i = readWSTMVar >>= \ws ->
         s   = m^.sex
         p   = (ws^.pcTbl)  ! i
         r   = p^.race
-        d   = serialize NonStdDesig { _nonStdPCEntSing = e^.sing
-                                    , _nonStdDesc      = mkNonStdDesc s r }
+        d   = serialize NonStdDesig { nonStdPCEntSing = e^.sing
+                                    , nonStdDesc      = mkNonStdDesc s r }
         msg = d <> " has arrived in the game."
     in broadcastOthersInRm i msg
 
@@ -654,16 +654,16 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                   destIs'     = sortInv ws $ destIs ++ [i]
                   originPis   = findPCIds ws originIs
                   destPis     = findPCIds ws destIs
-                  msgAtOrigin = let d = serialize StdDesig { _stdPCEntSing = Just $ e^.sing
-                                                           , _isCap        = True
-                                                           , _pcEntName    = mkUnknownPCEntName i ws
-                                                           , _pcId         = i
-                                                           , _pcIds        = fst . splitRmInv ws $ ris }
+                  msgAtOrigin = let d = serialize StdDesig { stdPCEntSing = Just $ e^.sing
+                                                           , isCap        = True
+                                                           , pcEntName    = mkUnknownPCEntName i ws
+                                                           , pcId         = i
+                                                           , pcIds        = fst . splitRmInv ws $ ris }
                                 in case mom of
                                   Nothing -> T.concat [ d, " ", verb dir', " ", expandLinkName dir', "." ]
                                   Just f  -> f d
-                  msgAtDest   = let d = serialize NonStdDesig { _nonStdPCEntSing = e^.sing
-                                                              , _nonStdDesc      = mkNonStdDesc s ra }
+                  msgAtDest   = let d = serialize NonStdDesig { nonStdPCEntSing = e^.sing
+                                                              , nonStdDesc      = mkNonStdDesc s ra }
                                 in case mdm of
                                   Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir', "." ]
                                   Just f  -> f d
@@ -745,16 +745,17 @@ look (i, mq, cols) rs = helper >>= \case
   (Left  msg, _           ) -> send mq msg
   (Right msg, Nothing     ) -> send mq msg
   (Right msg, Just (d, ds)) ->
-      let pis               = i `delete` (d^.pcIds)
+      let pis               = i `delete` pcIds d
           d'                = serialize d
-          f acc targetDesig = let targetId = _pcId targetDesig
+          f acc targetDesig = let targetId = pcId targetDesig
                               in (d' <> " looks at you.", [targetId]) :
                                  (T.concat [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
                                  acc
       in do
           broadcast . foldl' f [] $ ds
           send mq msg
-          forM_ [ fromJust $ targetDesig^.stdPCEntSing | targetDesig <- ds ] $ \es -> logPla "look" i ("looked at " <> es <> ".")
+          forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
+              logPla "look" i ("looked at " <> es <> ".")
   where
     helper = onWS $ \(t, ws) ->
         let e    = (ws^.entTbl) ! i
@@ -764,11 +765,11 @@ look (i, mq, cols) rs = helper >>= \case
             ris' = i `delete` ris
             pis  = findPCIds ws ris
             c    = (ws^.coinsTbl) ! ri
-            d    = StdDesig { _stdPCEntSing = Just $ e^.sing
-                            , _isCap        = True
-                            , _pcEntName    = mkUnknownPCEntName i ws
-                            , _pcId         = i
-                            , _pcIds        = pis }
+            d    = StdDesig { stdPCEntSing = Just $ e^.sing
+                            , isCap        = True
+                            , pcEntName    = mkUnknownPCEntName i ws
+                            , pcId         = i
+                            , pcIds        = pis }
         in if (not . null $ ris') || (c /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris' c
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
@@ -1220,6 +1221,11 @@ mkPutRemCoinsDescs cols por (Coins (cop, sil, gol)) te = (T.concat . mkPlaMsgs $
 -----
 
 
+{-
+TODO:
+> rem 'coin s
+You don't have a s. <-- Needs another CR.
+-}
 remove :: Action
 remove (_, mq, cols) []  = advise mq cols ["remove"] $ "Please specify one or more things to remove, followed by the container you want to remove them from, as in " <> dblQuote "remove doll sack" <> "."
 remove (_, mq, cols) [r] = advise mq cols ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
@@ -1574,72 +1580,80 @@ intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
           let introsTxt = T.intercalate ", " intros
           send mq . nl . T.unlines . concatMap (wordWrap cols) $ [ "You know the following names:", introsTxt ]
           logPlaOut "intro" i [introsTxt]
-intro (i, _, _) rs = do
+intro (i, _, _) rs = do -- TODO: Test with 30 width.
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "intro" i logMsgs
     broadcast bs
   where
     helper = onWS $ \(t, ws) ->
-        let e   = (ws^.entTbl) ! i
+        let e   = (ws^.entTbl)   ! i
             s   = e^.sing
-            p   = (ws^.pcTbl)  ! i
+            p   = (ws^.pcTbl)    ! i
             ri  = p^.rmId
-            is  = (ws^.invTbl) ! ri
+            is  = (ws^.invTbl)   ! ri
             is' = i `delete` is
             c   = (ws^.coinsTbl) ! ri
         in if (not . null $ is') || (c /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is' c
-                   eiss                  = zipWith (curry procGecrMisRm) gecrs miss
-                   ecs                   = map procReconciledCoinsRm rcs
-                   (ws',  bs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws,  [], []     ) eiss
-                   (      bs', logMsgs') = foldl' helperIntroEitherCoins      (     bs, logMsgs) ecs
+          then let (gecrs, miss, rcs)   = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is' c
+                   eiss                 = zipWith (curry procGecrMisRm) gecrs miss
+                   ecs                  = map procReconciledCoinsRm rcs
+                   (ws', bs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [], []     ) eiss
+                   (     bs', logMsgs') = foldl' helperIntroEitherCoins      (    bs, logMsgs) ecs
                in putTMVar t ws' >> return (bs', logMsgs')
           else    putTMVar t ws  >> return ([("You don't see anyone here to introduce yourself to.", [i])], [])
-    helperIntroEitherInv _ _ a@(ws, bs, logMsgs) (Left msg)
+    helperIntroEitherInv _ _   a@(ws, bs, logMsgs) (Left msg)
       | T.null msg = a
       | otherwise  = (ws, bs ++ [(msg, [i])], logMsgs)
-    helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
+    helperIntroEitherInv s ris a                   (Right is) = foldl' tryIntro a is
       where
-        tryIntro (ws, bs, logMsgs) i' =
-            let t  = (ws^.typeTbl) ! i'
-                e  = (ws^.entTbl)  ! i'
-                s' = e^.sing
-            in case t of
-              PCType -> let p      = (ws^.pcTbl)  ! i'
-                            intros = p^.introduced
-                            pis    = findPCIds ws ris
-                            m      = (ws^.mobTbl) ! i
-                            mobSex = m^.sex
+        tryIntro (ws, bs, logMsgs) targetId =
+            let targetType = (ws^.typeTbl) ! targetId
+                targetEnt  = (ws^.entTbl)  ! targetId
+                targetSing = targetEnt^.sing
+            in case targetType of
+              PCType -> let targetPC    = (ws^.pcTbl) ! targetId
+                            intros      = targetPC^.introduced
+                            pis         = findPCIds ws ris
+                            targetDesig = serialize StdDesig { stdPCEntSing = Just targetSing
+                                                             , isCap        = False
+                                                             , pcEntName    = mkUnknownPCEntName targetId ws
+                                                             , pcId         = targetId
+                                                             , pcIds        = pis }
+                            m           = (ws^.mobTbl) ! i
+                            himHerself  = mkReflexive $ m^.sex
                         in if s `elem` intros
-                          then let msg = "You've already introduced yourself to " <> s' <> "."
+                          then let msg = "You've already introduced yourself to " <> targetDesig <> "."
                                in (ws, bs ++ [(msg, [i])], logMsgs)
-                          else let p'   = p  & introduced  .~ sort (s : intros)
-                                   ws'  = ws & pcTbl.at i' ?~ p'
-                                   d    = serialize StdDesig { _stdPCEntSing = Just $ e^.sing
-                                                             , _isCap        = False
-                                                             , _pcEntName    = mkUnknownPCEntName i' ws
-                                                             , _pcId         = i'
-                                                             , _pcIds        = pis }
-                                   msg  = "You introduce yourself to " <> d <> "."
-                                   d'   = serialize StdDesig { _stdPCEntSing = Nothing
-                                                             , _isCap        = True
-                                                             , _pcEntName    = mkUnknownPCEntName i ws
-                                                             , _pcId         = i
-                                                             , _pcIds        = pis }
-                                   msg' = T.concat [ d', " introduces ", himHerself mobSex, " to you as ", s, "." ]
-                               in (ws', bs ++ [(msg, [i]), (msg', [i'])], logMsgs ++ [msg])
-              _      -> let msg = "You can't introduce yourself to a " <> s' <> "."
-                        in (ws, bs ++ [(msg, [i])], logMsgs) --if msg' `T.isInfixOf` msg then (ws, msg, logMsgs) else (ws, msg <> msg', logMsgs) -- TODO
-    helperIntroEitherCoins (bs, logMsgs) (Left  msgs) = (bs ++ [(T.unlines msgs, [i])], logMsgs) --((msg <>) . T.unlines . concatMap (wordWrap cols) $ msgs, logMsgs)
+                          else let p         = targetPC & introduced  .~ sort (s : intros)
+                                   ws'       = ws & pcTbl.at targetId ?~ p
+                                   srcMsg    = "You introduce yourself to " <> targetDesig <> "."
+                                   srcDesig  = serialize StdDesig { stdPCEntSing = Nothing
+                                                                  , isCap        = True
+                                                                  , pcEntName    = mkUnknownPCEntName i ws
+                                                                  , pcId         = i
+                                                                  , pcIds        = pis }
+                                   targetMsg = T.concat [ srcDesig, " introduces ", himHerself, " to you as ", s, "." ]
+                               in (ws', bs ++ [(srcMsg, [i]), (targetMsg, [targetId])], logMsgs ++ [srcMsg])
+              _      -> let b = ("You can't introduce yourself to a " <> targetSing <> ".", [i])
+                        in (ws, bs `appendIfUnique` b, logMsgs)
+    helperIntroEitherCoins (bs, logMsgs) (Left  msgs) = -- TODO: Huh?
+        --(bs ++ [(T.unlines msgs, [i])], logMsgs)
+        let bs' = foldl' appendIfUnique bs [ (msg, [i]) | msg <- msgs ]
+        in (bs', logMsgs)
     helperIntroEitherCoins (bs, logMsgs) (Right _   ) =
-        let msg = "You can't introduce yourself to a coin."
-        in {-if msg' `T.isInfixOf` msg then (bs, logMsgs) else-} (bs ++ [(msg, [i])], logMsgs) -- TODO
+        let b = ("You can't introduce yourself to a coin.", [i])
+        in (bs `appendIfUnique` b, logMsgs)
 
 
-himHerself :: Sex -> T.Text
-himHerself Male   = "himself"
-himHerself Female = "herself"
-himHerself s      = patternMatchFail "himHerself" [ showText s ]
+mkReflexive :: Sex -> T.Text
+mkReflexive Male   = "himself"
+mkReflexive Female = "herself"
+mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
+
+
+appendIfUnique :: [(T.Text, Inv)] -> (T.Text, Inv) -> [(T.Text, Inv)]
+bs `appendIfUnique` b | b `elem` bs = bs
+                      | otherwise   = bs ++ [b]
 
 
 -----
