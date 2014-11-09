@@ -3,6 +3,7 @@
 
 module Mud.MiscDataTypes ( Action
                          , Amount
+                         , ClassifiedBroadcast(..)
                          , Cmd(..)
                          , CmdName
                          , Cols
@@ -128,7 +129,7 @@ instance FromRol Slot where
   fromRol s  = patternMatchFail "fromRol" [ showText s ]
 
 
-----
+-----
 
 
 class Serializable a where
@@ -168,6 +169,15 @@ instance Serializable PCDesig where
       deserMaybeText "" = Nothing
       deserMaybeText t  = Just t
       d                 = T.pack [desigDelimiter]
+
+
+-----
+
+
+instance Ord ClassifiedBroadcast where
+  TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
+  NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
+  _                    `compare` _                    = EQ
 
 
 -- ==================================================
@@ -233,3 +243,13 @@ data PCDesig = StdDesig    { stdPCEntSing    :: !(Maybe T.Text)
                            , pcIds           :: !Inv }
              | NonStdDesig { nonStdPCEntSing :: !T.Text
                            , nonStdDesc      :: !T.Text } deriving (Eq, Show)
+
+
+-----
+
+
+type Broadcast = (T.Text, Inv)
+
+
+data ClassifiedBroadcast = TargetBroadcast    Broadcast
+                         | NonTargetBroadcast Broadcast deriving Eq

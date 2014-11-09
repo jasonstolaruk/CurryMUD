@@ -5,6 +5,7 @@
 
 module Mud.Util ( adjustIndent
                 , aOrAn
+                , appendIfUnique
                 , blowUp
                 , bracketPad
                 , bracketQuote
@@ -303,6 +304,11 @@ dropBlanks :: [T.Text] -> [T.Text]
 dropBlanks []      = []
 dropBlanks ("":xs) =     dropBlanks xs
 dropBlanks ( x:xs) = x : dropBlanks xs
+
+
+appendIfUnique :: (Eq a) => [a] -> a -> [a]
+xs `appendIfUnique` x | x `elem` xs = xs
+                      | otherwise   = xs ++ [x]
 
 
 mkOrdinal :: Int -> T.Text
