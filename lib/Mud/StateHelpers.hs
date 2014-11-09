@@ -217,7 +217,7 @@ broadcast :: [(T.Text, [Id])] -> MudStack ()
 broadcast bs = getMqtPt >>= \(mqt, pt) -> do
     let helper msg i = let mq   = mqt ! i
                            cols = (pt ! i)^.columns
-                       in send mq . nl . T.unlines . wordWrap cols . parsePCDesig msg i =<< readWSTMVar
+                       in send mq . nl . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig msg i =<< readWSTMVar
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 

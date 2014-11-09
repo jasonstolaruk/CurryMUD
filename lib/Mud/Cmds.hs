@@ -142,6 +142,7 @@ wizCmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDes
 debugCmdList :: [Cmd]
 debugCmdList = [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
                , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
+               , Cmd { cmdName = prefixDebugCmd "broad", action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line message." }
                , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
                , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
                , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
@@ -301,7 +302,7 @@ adHoc mq host = do
         -----
         let i   = getUnusedId ws
         -----
-        let e   = Ent i Nothing (showText r <> showText i) "" "You see an ad-hoc player character." 0
+        let e   = Ent i Nothing (showText r <> showText i) "" "(Player-generated description here.)" 0
         let is  = []
         let co  = mempty
         let em  = M.empty
@@ -309,7 +310,7 @@ adHoc mq host = do
         let pc  = PC iHill r [] []
         let ris = (ws^.invTbl) ! iHill ++ [i]
         -----
-        let pla = Pla True host 80
+        let pla = Pla True host 30
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
@@ -369,13 +370,13 @@ notifyArrival i = readWSTMVar >>= \ws ->
         p   = (ws^.pcTbl)  ! i
         r   = p^.race
         d   = serialize NonStdDesig { nonStdPCEntSing = e^.sing
-                                    , nonStdDesc      = mkNonStdDesc s r }
+                                    , nonStdDesc      = mkNonStdDesc A s r }
         msg = d <> " has arrived in the game."
     in broadcastOthersInRm i msg
 
 
-mkNonStdDesc :: Sex -> Race -> T.Text
-mkNonStdDesc s r = "A " <> pp s <> " " <> pp r
+mkNonStdDesc :: AOrThe -> Sex -> Race -> T.Text
+mkNonStdDesc aot s r = T.concat [ capitalize . pp $ aot, " ", pp s, " ", pp r ]
 
 
 server :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -663,7 +664,7 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                                   Nothing -> T.concat [ d, " ", verb dir', " ", expandLinkName dir', "." ]
                                   Just f  -> f d
                   msgAtDest   = let d = serialize NonStdDesig { nonStdPCEntSing = e^.sing
-                                                              , nonStdDesc      = mkNonStdDesc s ra }
+                                                              , nonStdDesc      = mkNonStdDesc A s ra }
                                 in case mdm of
                                   Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir', "." ]
                                   Just f  -> f d
@@ -747,12 +748,12 @@ look (i, mq, cols) rs = helper >>= \case
   (Right msg, Just (d, ds)) ->
       let pis               = i `delete` pcIds d
           d'                = serialize d
-          f acc targetDesig = let targetId = pcId targetDesig
+          f targetDesig acc = let targetId = pcId targetDesig
                               in (d' <> " looks at you.", [targetId]) :
                                  (T.concat [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
                                  acc
       in do
-          broadcast . foldl' f [] $ ds
+          broadcast . foldr f [] $ ds
           send mq msg
           forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
               logPla "look" i ("looked at " <> es <> ".")
@@ -788,14 +789,15 @@ look (i, mq, cols) rs = helper >>= \case
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
-    let is         = delete i $ (ws^.invTbl) ! ri
-        (pis, ois) = span (\i' -> (ws^.typeTbl) ! i' == PCType) is
-        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
+    let is         = (ws^.invTbl) ! ri
+        (pis, ois) = splitRmInv ws is
+        pis'       = i `delete` pis
+        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis'
         otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
         c          = (ws^.coinsTbl) ! ri
-    in (if not . null $ pis then pcDescs               else "") <>
-       (if not . null $ ois then otherDescs            else "") <>
-       (if c /= mempty      then mkCoinsSummary cols c else "")
+    in (if not . null $ pis' then pcDescs               else "") <>
+       (if not . null $ ois  then otherDescs            else "") <>
+       (if c /= mempty       then mkCoinsSummary cols c else "")
   where
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> bracketQuote en) . (<> " ") $ if isKnownPCSing s then s else aOrAn s
     mkPCDesc    a                        = mkOtherDesc a
@@ -829,13 +831,22 @@ mkEntDescs i cols ws is = let boths = [ (ei, (ws^.entTbl) ! ei) | ei <- is ]
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
-mkEntDesc i cols ws (ei, e) = let t       = (ws^.typeTbl) ! ei
-                                  primary = T.unlines . wordWrap cols $ e^.entDesc
-                                  suppl   = case t of ConType -> mkInvCoinsDesc i cols ws ei e
-                                                      MobType -> mkEqDesc       i cols ws ei e t
-                                                      PCType  -> mkEqDesc       i cols ws ei e t
-                                                      _       -> ""
-                              in primary <> suppl
+mkEntDesc i cols ws (ei, e) = let t  = (ws^.typeTbl) ! ei
+                                  ed = T.unlines . wordWrap cols $ e^.entDesc
+                              in case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws ei $ e
+                                           MobType ->                 (ed <>) . mkEqDesc       i cols ws ei   e $ t
+                                           PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws ei   e $ t
+                                           _       -> ed
+  where
+    pcHeader = T.unlines . wordWrap cols . mkPCDescHeader ei $ ws
+
+
+mkPCDescHeader :: Id -> WorldState -> T.Text
+mkPCDescHeader i ws = let m = (ws^.mobTbl) ! i
+                          s = m^.sex
+                          p = (ws^.pcTbl)  ! i
+                          r = p^.race
+                      in T.concat [ "You see a ", pp s, " ", pp r, "." ]
 
 
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
@@ -969,12 +980,18 @@ mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
                        in sn' <> e'^.sing <> en
     none   = T.unlines . wordWrap cols $ if
       | ei == i      -> dudeYou'reNaked
-      | t  == PCType -> e^.sing <> " doesn't have anything readied."
+      | t  == PCType -> d <> " doesn't have anything readied."
       | otherwise    -> "The " <> e^.sing <> " doesn't have anything readied."
     header = T.unlines . wordWrap cols $ if
       | ei == i      -> "You have readied the following equipment:"
-      | t  == PCType -> e^.sing <> " has readied the following equipment:"
+      | t  == PCType -> d <> " has readied the following equipment:"
       | otherwise    -> "The " <> e^.sing <> " has readied the following equipment:"
+    d      = let m = (ws^.mobTbl) ! ei -- TODO: Needs to be broadcasted.
+                 s = m^.sex
+                 p = (ws^.pcTbl)  ! ei
+                 r = p^.race
+             in serialize NonStdDesig { nonStdPCEntSing = e^.sing
+                                      , nonStdDesc      = mkNonStdDesc The s r }
 
 
 dudeYou'reNaked :: T.Text
@@ -2181,7 +2198,7 @@ debugStop     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "stop") i >> ok mq >
 debugStop imc@(_, mq, cols) rs = ignore mq cols rs >> debugStop imc []
 
 
-----
+-----
 
 
 debugCPU :: Action
@@ -2191,3 +2208,24 @@ debugCPU (i, mq, cols) [] = do
     let secs = fromIntegral t / fromIntegral (10 ^ 12)
     send mq . nl . T.unlines . wordWrap cols $ "CPU time: " <> showText secs
 debugCPU imc@(_, mq, cols) rs = ignore mq cols rs >> debugCPU imc []
+
+
+-----
+
+
+debugBroad :: Action
+debugBroad (i, _, _) [] = do
+    logPlaExec (prefixDebugCmd "broad") i
+    broadcast [(msg, [i])]
+  where
+    msg = "[1] abcdefghij\n\
+          \[2] abcdefghij abcdefghij\n\
+          \[3] abcdefghij abcdefghij abcdefghij\n\
+          \[4] abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[5] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[6] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[7] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[8] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[9] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
+debugBroad imc@(_, mq, cols) rs = ignore mq cols rs >> debugBroad imc []

@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 
-module Mud.MiscDataTypes ( Action
+module Mud.MiscDataTypes ( AOrThe(..)
+                         , Action
                          , Amount
                          , ClassifiedBroadcast(..)
                          , Cmd(..)
@@ -102,6 +103,11 @@ instance Pretty Slot where
   pp FullBodyAS = "full body"
   pp BackS      = "back"
   pp FeetS      = "feet"
+
+
+instance Pretty AOrThe where
+  pp A   = "a"
+  pp The = "the"
 
 
 instance Pretty RightOrLeft where
@@ -216,6 +222,9 @@ data EmptyNoneSome a = Empty
 
 
 -----
+
+
+data AOrThe      = A   | The
 
 
 data GetOrDrop   = Get | Drop
