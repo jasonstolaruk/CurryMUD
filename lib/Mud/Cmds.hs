@@ -978,20 +978,20 @@ mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
                            e'            = (ws^.entTbl) ! i'
                            en            = if ei == i then (" " <>) . bracketQuote . fromJust $ e'^.entName else ""
                        in sn' <> e'^.sing <> en
-    none   = T.unlines . wordWrap cols $ if
+    none = T.unlines . wordWrap cols $ if
       | ei == i      -> dudeYou'reNaked
-      | t  == PCType -> d <> " doesn't have anything readied."
+      | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
       | otherwise    -> "The " <> e^.sing <> " doesn't have anything readied."
     header = T.unlines . wordWrap cols $ if
       | ei == i      -> "You have readied the following equipment:"
-      | t  == PCType -> d <> " has readied the following equipment:"
+      | t  == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
       | otherwise    -> "The " <> e^.sing <> " has readied the following equipment:"
-    d      = let m = (ws^.mobTbl) ! ei -- TODO: Needs to be broadcasted.
-                 s = m^.sex
-                 p = (ws^.pcTbl)  ! ei
-                 r = p^.race
-             in serialize NonStdDesig { nonStdPCEntSing = e^.sing
-                                      , nonStdDesc      = mkNonStdDesc The s r }
+    d = let m = (ws^.mobTbl) ! ei
+            s = m^.sex
+            p = (ws^.pcTbl)  ! ei
+            r = p^.race
+        in serialize NonStdDesig { nonStdPCEntSing = e^.sing
+                                 , nonStdDesc      = mkNonStdDesc The s r }
 
 
 dudeYou'reNaked :: T.Text
@@ -1158,7 +1158,7 @@ shufflePut i cols (t, ws) cn rs is c pis pc f =
     in if null miss && (not . null $ rcs)
       then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't put something inside a coin.", [])
       else case f . head . zip gecrs $ miss of
-        Left  msg  -> putTMVar t ws >> return (msg, [])
+        Left  msg  -> putTMVar t ws >> return (T.unlines . wordWrap cols $ msg, [])
         Right [ci] ->
             let e  = (ws^.entTbl)  ! ci
                 t' = (ws^.typeTbl) ! ci
@@ -1238,11 +1238,6 @@ mkPutRemCoinsDescs cols por (Coins (cop, sil, gol)) te = (T.concat . mkPlaMsgs $
 -----
 
 
-{-
-TODO:
-> rem 'coin s
-You don't have a s. <-- Needs another CR.
--}
 remove :: Action
 remove (_, mq, cols) []  = advise mq cols ["remove"] $ "Please specify one or more things to remove, followed by the container you want to remove them from, as in " <> dblQuote "remove doll sack" <> "."
 remove (_, mq, cols) [r] = advise mq cols ["remove"] $ "Please also specify the container you want to remove it from, as in " <> dblQuote ("remove " <> r <> " sack") <> "."
@@ -1276,7 +1271,7 @@ shuffleRem i cols (t, ws) cn rs is c f =
     in if null miss && (not . null $ rcs)
       then putTMVar t ws >> return (T.unlines . wordWrap cols $ "You can't remove something from a coin.", [])
       else case f . head . zip gecrs $ miss of
-        Left  msg  -> putTMVar t ws >> return (msg, [])
+        Left  msg  -> putTMVar t ws >> return (T.unlines . wordWrap cols $ msg, [])
         Right [ci] ->
             let e  = (ws^.entTbl)  ! ci
                 t' = (ws^.typeTbl) ! ci

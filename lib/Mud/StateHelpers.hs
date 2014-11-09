@@ -31,6 +31,7 @@ module Mud.StateHelpers ( allKeys
                         , ok
                         , onNWS
                         , onWS
+                        , parsePCDesig
                         , putArm
                         , putCloth
                         , putCon
@@ -217,12 +218,13 @@ broadcast :: [(T.Text, [Id])] -> MudStack ()
 broadcast bs = getMqtPt >>= \(mqt, pt) -> do
     let helper msg i = let mq   = mqt ! i
                            cols = (pt ! i)^.columns
-                       in send mq . nl . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig msg i =<< readWSTMVar
+                       in readWSTMVar >>= \ws ->
+                           send mq . nl . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 
-parsePCDesig :: T.Text -> Id -> WorldState -> T.Text
-parsePCDesig msg i ws =
+parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
+parsePCDesig i ws msg =
     let p      = (ws^.pcTbl) ! i
         intros = p^.introduced
     in helper intros msg
