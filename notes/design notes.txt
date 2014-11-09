@@ -29,10 +29,23 @@ Create a safe environment where people have freedom to explore (almost) any desi
 
 Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
 
-For players who want to try out the game and start playing quickly, offer "character kits."
-Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
-
 Give players choice; give them the freedom to try anything. Let them take their own paths. This promotes immersion.
+
+==========
+
+SKILLS:
+
+Classless/skill based. Use an attribute and point system based on GURPS.
+
+Nevertheless, consider implementing a system of ranking, based perhaps on the total number of points accumulated. This will give players incremental goals to shoot for.
+
+Defeating mobs and using skills gives you exp. Exp translates to points which can be spent on skills. p.367-9
+
+Players must seek out "trainer" NPCs to learn (specialized?) skills.
+
+Ideally, the same skill system will be applicable for all conceivable skills (crafting, weapon use, spells, etc.).
+
+The skills you implement, and the complexity you assign to each "skill tree," sends a message to players regarding what is most important in your world.
 
 ==========
 
@@ -47,13 +60,11 @@ Allow some degree of player-created content.
 
 Create a history and backstory for the virtual world.
 
-Classless/skill based. Use an attribute and point system based on GURPS.
-
-Defeating mobs and using skills gives you exp. Exp translate to points which can be spent on skills. Players must seek out "trainer" NPCs to learn skills.
-
 There is no hard-coded notion of alignment.
 
 (Returning) players should be able to opt out of all tutorials.
+
+When a player creates a new character, ask them to describe how they discovered CurryMUD (if it's their first time).
 
 Make ASCII art maps available in game. New players should start with a map, along with a short welcome letter (obtainable in the tutorial). Other maps may be available for purchase.
 
@@ -106,6 +117,8 @@ You should be able to use "smell" and "listen" with no arguments. "smell air" co
 "link" to establish a telepathic link. PCs must link with each other before "tell" can be used.
 "intro" and "link" should award exp.
 "block" to block tells from a PC. "unblock"
+
+When a PC dies, all those who have linked with him/her should be notified.
 
 Encourage players to use emotes to interact with tangible features of a room, within reason (when their actions would have no permanent affects), and when there are no commands available to describe such interaction. For example, to sit in a chair, a player can use emotes.
 
@@ -183,7 +196,7 @@ Have designated places where objects can be destroyed (trash bins).
 
 If you implement "a bunch of flowers" as an object, and "a tulip" as another object, players will want a means to put the tulip in the bunch, and so on.
 
-In a garden, where players can pick flowers, consider implementing a flower generator, which will generate a flower every time the player picks one. When a player drops a flower while still in the garden, you might just have the flower dissappear.
+In a garden, where players can pick flowers, consider implementing a flower generator, which will generate a flower every time the player picks one. When a player drops a flower while still in the garden, you might just have the flower disappear.
 
 Players should be able to empty out containers that have liquid inside of them.
 
@@ -287,11 +300,20 @@ Giant Honey Badgers.
 
 PCs:
 
+For players who want to try out the game and start playing quickly, offer "character kits."
+Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
+
+Normal character generation can employ a "pick point" system similar to that of Hero's Quest. p.373-4
+
 Ensure that a player cannot choose a name for their character that is the name of a race or mob. A player should not be allowed to name their character "Mhuman".
 Players must choose fantasy names for their characters. Consider checking names against a dictionary of common real-world names.
 
 Make it clear that player descriptions must be written from an objective viewpoint. They must be passive.
 Emotes must also be objective (though not necessarily passive).
+
+Consider giving players the ability to change their character's description at any time.
+
+Perhaps make the composing of a background story/"character essay" an optional endeavor that awards exp.
 
 Racial languages. PCs can spend points to (magically?) learn extra languages, though it should be difficult to find NPC "trainers" who teach them.
 
@@ -301,7 +323,7 @@ NPCs:
 
 Even rudimentary AI is better than none.
 
-NPCs act even when there are no PCs around. Make it so that this behavior can be disabled.
+NPCs act even when there are no PCs around. Make it so that this behavior can be disabled (to relieve server load).
 
 Create "lore provider" NPCs designed to dispense knowledge in response to the "ask" command.
 
@@ -353,6 +375,12 @@ Tour duty?
 In what cases do PCs remain active after the player's connection drops?
 
 Doors? (When a door is opened, players on the other side would need to be informed.)
+
+==========
+
+PD?
+
+PD is the only alternative to capping skills/levels.
 
 ==========
 
