@@ -219,6 +219,8 @@ Make weather specific to zones. Weather must be appropriate for the given geogra
 
 PCs may own property and residences. The construction of a house should take some time, so as to be realistic; however, if it takes too long, players will become impatient.
 
+Make one or more cemeteries. If a PC's body is recovered and taken to a cemetery, it can be buried there, and a gravestone will be generated. (This assumes PD.)
+
 Provide special venues for storytelling.
 
 Make a sewer and/or catacombs beneath a city.
