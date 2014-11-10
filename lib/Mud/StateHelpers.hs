@@ -219,7 +219,7 @@ broadcast bs = getMqtPt >>= \(mqt, pt) -> do
     let helper msg i = let mq   = mqt ! i
                            cols = (pt ! i)^.columns
                        in readWSTMVar >>= \ws ->
-                           send mq . nl . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg
+                           send mq . {-nl .-} T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg -- TODO: Wut?
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 

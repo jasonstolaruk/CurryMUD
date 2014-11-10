@@ -4,6 +4,7 @@
 module Mud.MiscDataTypes ( AOrThe(..)
                          , Action
                          , Amount
+                         , Broadcast
                          , ClassifiedBroadcast(..)
                          , Cmd(..)
                          , CmdName
@@ -25,7 +26,8 @@ module Mud.MiscDataTypes ( AOrThe(..)
                          , deserialize
                          , fromRol
                          , pp
-                         , serialize ) where
+                         , serialize
+                         , Verb(..) ) where
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
@@ -224,13 +226,16 @@ data EmptyNoneSome a = Empty
 -----
 
 
-data AOrThe      = A   | The
+data AOrThe = A | The
 
 
-data GetOrDrop   = Get | Drop
+data Verb = SndPer | ThrPer
 
 
-data PutOrRem    = Put | Rem deriving Show
+data GetOrDrop = Get | Drop
+
+
+data PutOrRem = Put | Rem deriving Show
 
 
 data RightOrLeft = R
@@ -239,7 +244,7 @@ data RightOrLeft = R
                  | LI | LM | LR | LP deriving (Show, Read)
 
 
-data InvType     = PCInv | PCEq | RmInv deriving Eq
+data InvType = PCInv | PCEq | RmInv deriving Eq
 
 
 -----
