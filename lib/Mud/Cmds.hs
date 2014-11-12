@@ -33,7 +33,7 @@ import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
-import Data.Maybe (fromJust, isJust, isNothing)
+import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed)
 import Data.Time (diffUTCTime, getCurrentTime, getZonedTime)
@@ -373,7 +373,7 @@ notifyArrival i = readWSTMVar >>= \ws ->
         d   = serialize NonStdDesig { nonStdPCEntSing = e^.sing
                                     , nonStdDesc      = mkNonStdDesc A s r }
         msg = d <> " has arrived in the game."
-    in broadcastOthersInRm i msg
+    in broadcastOthersInRm i . nlnl $ msg
 
 
 mkNonStdDesc :: AOrThe -> Sex -> Race -> T.Text
@@ -661,12 +661,12 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                                                            , pcEntName    = mkUnknownPCEntName i ws
                                                            , pcId         = i
                                                            , pcIds        = findPCIds ws ris }
-                                in case mom of
+                                in nlnl $ case mom of
                                   Nothing -> T.concat [ d, " ", verb dir', " ", expandLinkName dir', "." ]
                                   Just f  -> f d
                   msgAtDest   = let d = serialize NonStdDesig { nonStdPCEntSing = e^.sing
                                                               , nonStdDesc      = mkNonStdDesc A s ra }
-                                in case mdm of
+                                in nlnl $ case mdm of
                                   Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir', "." ]
                                   Just f  -> f d
                   logMsg      = T.concat [ "moved ", linkTxt, " from room ", showRm ri r, " to room ", showRm ri' r', "." ]
@@ -750,8 +750,8 @@ look (i, mq, cols) rs = helper >>= \case
       let pis               = i `delete` pcIds d
           d'                = serialize d
           f targetDesig acc = let targetId = pcId targetDesig
-                              in (d' <> " looks at you.", [targetId]) :
-                                 (T.concat [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
+                              in (nlnl $ d' <> " looks at you.", [targetId]) :
+                                 (nlnl . T.concat $ [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
                                  acc
       in do
           broadcast . foldr f [] $ ds
@@ -1008,7 +1008,7 @@ getAction (_, mq, cols) [] = advise mq cols ["get"] $ "Please specify one or mor
 getAction (i, _, _) rs = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "get" i logMsgs
-    broadcast bs
+    broadcastNl bs
   where
     helper = onWS $ \(t, ws) ->
         let e    = (ws^.entTbl)   ! i
@@ -1058,7 +1058,7 @@ helperGetDropEitherInv i d god fi ti (ws, bs, logMsgs) = \case
 
 
 mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
-mkGetDropInvDesc i ws d god is = let bs = concat . map helper . mkNameCountBothList i ws $ is
+mkGetDropInvDesc i ws d god is = let bs = concatMap helper . mkNameCountBothList i ws $ is
                                  in (bs, [ fst b | b <- bs, snd b == [i] ])
   where
     helper (_, c, (s, _))
@@ -1089,7 +1089,7 @@ helperGetDropEitherCoins i d god fi ti (ws, bs, logMsgs) = \case
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
-mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) = let bs = concat . map fromJust . filter isJust $ [ c, s, g ]
+mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) = let bs = concat . catMaybes $ [ c, s, g ]
                                                      in (bs, [ fst b | b <- bs, snd b == [i] ])
   where
     c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
@@ -1110,7 +1110,7 @@ dropAction (_, mq, cols) [] = advise mq cols ["drop"] $ "Please specify one or m
 dropAction (i, _, _) rs = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "drop" i logMsgs
-    broadcast bs
+    broadcastNl bs
   where
     helper = onWS $ \(t, ws) ->
         let e   = (ws^.entTbl)   ! i
@@ -1636,10 +1636,10 @@ intro (i, _, _) rs = do
                in putTMVar t ws' >> return (cbs', logMsgs')
           else do
               putTMVar t ws
-              return ([NonTargetBroadcast ("You don't see anyone here to introduce yourself to.", [i])], [])
+              return ([NonTargetBroadcast (nlnl "You don't see anyone here to introduce yourself to.", [i])], [])
     helperIntroEitherInv _ _   a@(ws, cbs, logMsgs) (Left msg)
       | T.null msg = a
-      | otherwise  = (ws, cbs ++ [NonTargetBroadcast (msg, [i])], logMsgs)
+      | otherwise  = (ws, cbs ++ [NonTargetBroadcast (nlnl msg, [i])], logMsgs)
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
         tryIntro (ws, cbs, logMsgs) targetId =
@@ -1658,39 +1658,39 @@ intro (i, _, _) rs = do
                             m           = (ws^.mobTbl) ! i
                             himHerself  = mkReflexive $ m^.sex
                         in if s `elem` intros
-                          then let msg = "You've already introduced yourself to " <> targetDesig <> "."
+                          then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
                                in (ws, cbs ++ [NonTargetBroadcast (msg, [i])], logMsgs)
                           else let p         = targetPC & introduced .~ sort (s : intros)
                                    ws'       = ws & pcTbl.at targetId ?~ p
-                                   srcMsg    = "You introduce yourself to " <> targetDesig <> "."
+                                   srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
                                    srcDesig  = StdDesig { stdPCEntSing = Nothing
                                                         , isCap        = True
                                                         , pcEntName    = mkUnknownPCEntName i ws
                                                         , pcId         = i
                                                         , pcIds        = pis }
-                                   targetMsg = T.concat [ serialize srcDesig
-                                                        , " introduces "
-                                                        , himHerself
-                                                        , " to you as "
-                                                        , s
-                                                        , "." ]
+                                   targetMsg = nlnl . T.concat $ [ serialize srcDesig
+                                                                 , " introduces "
+                                                                 , himHerself
+                                                                 , " to you as "
+                                                                 , s
+                                                                 , "." ]
                                    srcDesig' = srcDesig { stdPCEntSing = Just s }
-                                   othersMsg = T.concat [ serialize srcDesig'
-                                                        , " introduces "
-                                                        , himHerself
-                                                        , " to "
-                                                        , targetDesig
-                                                        , "." ]
+                                   othersMsg = nlnl . T.concat $ [ serialize srcDesig'
+                                                                 , " introduces "
+                                                                 , himHerself
+                                                                 , " to "
+                                                                 , targetDesig
+                                                                 , "." ]
                                in ( ws'
                                   , cbs ++ [ NonTargetBroadcast (srcMsg,    [i])
                                            , TargetBroadcast    (targetMsg, [targetId])
                                            , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
                                   , logMsgs ++ [srcMsg] )
-              _      -> let b = NonTargetBroadcast ("You can't introduce yourself to a " <> targetSing <> ".", [i])
+              _      -> let b = NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
                         in (ws, cbs `appendIfUnique` b, logMsgs)
-    helperIntroEitherCoins (cbs, logMsgs) (Left  msgs) = (cbs ++ [ NonTargetBroadcast (msg, [i]) | msg <- msgs ], logMsgs)
+    helperIntroEitherCoins (cbs, logMsgs) (Left  msgs) = (cbs ++ [ NonTargetBroadcast (nlnl msg, [i]) | msg <- msgs ], logMsgs)
     helperIntroEitherCoins (cbs, logMsgs) (Right _   ) =
-        let b = NonTargetBroadcast ("You can't introduce yourself to a coin.", [i])
+        let b = NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])
         in (cbs `appendIfUnique` b, logMsgs)
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
@@ -1942,7 +1942,7 @@ notifyEgress i = readWSTMVar >>= \ws ->
                                  , pcEntName    = mkUnknownPCEntName i ws
                                  , pcId         = i
                                  , pcIds        = pis }
-        msg = d <> " has left the game."
+        msg = nlnl $ d <> " has left the game."
     in broadcast [(msg, i `delete` pis)]
 
 

@@ -6,6 +6,7 @@
 module Mud.StateHelpers ( allKeys
                         , BothGramNos
                         , broadcast
+                        , broadcastNl
                         , broadcastOthersInRm
                         , findPCIds
                         , frame
@@ -66,7 +67,7 @@ import Control.Monad.State (gets)
 import Control.Monad.State.Class (MonadState)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, elemIndex, foldl', sortBy)
+import Data.List ((\\), delete, elemIndex, foldl', nub, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
@@ -219,7 +220,7 @@ broadcast bs = getMqtPt >>= \(mqt, pt) -> do
     let helper msg i = let mq   = mqt ! i
                            cols = (pt ! i)^.columns
                        in readWSTMVar >>= \ws ->
-                           send mq . {-nl .-} T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg -- TODO: Wut?
+                           send mq . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 
@@ -293,6 +294,10 @@ frame cols = nl . (<> divider) . (divider <>)
 
 mkDividerTxt :: Cols -> T.Text
 mkDividerTxt = flip T.replicate "="
+
+
+broadcastNl :: [Broadcast] -> MudStack ()
+broadcastNl bs = broadcast $ bs ++ [ ("\n", [i']) | i' <- nub . concatMap snd $ bs ]
 
 
 ok :: MsgQueue -> MudStack ()
