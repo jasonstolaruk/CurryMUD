@@ -5,9 +5,9 @@
 
 module Mud.StateHelpers ( allKeys
                         , BothGramNos
-                        , broadcast
-                        , broadcastNl
-                        , broadcastOthersInRm
+                        , bcast
+                        , bcastNl
+                        , bcastOthersInRm
                         , findPCIds
                         , frame
                         , getEffBothGramNos
@@ -18,16 +18,18 @@ module Mud.StateHelpers ( allKeys
                         , getPlaLogQueue
                         , getUnusedId
                         , getWSTMVar
-                        , massBroadcast
+                        , massMsg
+                        , massSend
                         , mkAssocListTxt
+                        , mkBroadcast
                         , mkCoinsFromList
                         , mkDividerTxt
                         , mkListFromCoins
+                        , mkNTBroadcast
                         , mkPlurFromBoth
                         , mkUnknownPCEntName
                         , modifyNWS
                         , modifyWS
-                        , msgAll
                         , negateCoins
                         , ok
                         , onNWS
@@ -215,8 +217,8 @@ send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
-broadcast :: [(T.Text, [Id])] -> MudStack ()
-broadcast bs = getMqtPt >>= \(mqt, pt) -> do
+bcast :: [Broadcast] -> MudStack ()
+bcast bs = getMqtPt >>= \(mqt, pt) -> do
     let helper msg i = let mq   = mqt ! i
                            cols = (pt ! i)^.columns
                        in readWSTMVar >>= \ws ->
@@ -268,18 +270,30 @@ expandPCEntName i ws ic pen pi pis = T.concat [ leading, "he ", xth, expandSex .
     expandSex x   = patternMatchFail "expandPCEntName expandSex" [ T.pack [x] ]
 
 
-broadcastOthersInRm :: Id -> T.Text -> MudStack ()
-broadcastOthersInRm i msg = broadcast =<< helper
+bcastNl :: [Broadcast] -> MudStack ()
+bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nub . concatMap snd $ bs ]
+
+
+mkBroadcast :: Id -> T.Text -> [Broadcast]
+mkBroadcast i msg = [(msg, [i])]
+
+
+mkNTBroadcast :: Id -> T.Text -> [ClassifiedBroadcast]
+mkNTBroadcast i msg = [NonTargetBroadcast (msg, [i])]
+
+
+bcastOthersInRm :: Id -> T.Text -> MudStack ()
+bcastOthersInRm i msg = bcast =<< helper
   where
     helper = onWS $ \(t, ws) ->
         let p   = (ws^.pcTbl)  ! i
             ris = (ws^.invTbl) ! (p^.rmId)
-            pis = findPCIds ws . delete i $ ris
-        in putTMVar t ws >> return [ (msg, pis) ]
+            pis = findPCIds ws $ i `delete` ris
+        in putTMVar t ws >> return [(msg, pis)]
 
 
-massBroadcast :: T.Text -> MudStack ()
-massBroadcast msg = getMqtPt >>= \(mqt, pt) -> do
+massSend :: T.Text -> MudStack ()
+massSend msg = getMqtPt >>= \(mqt, pt) -> do
     let helper i = let mq   = mqt ! i
                        cols = (pt ! i)^.columns
                    in send mq . nl' . frame cols . T.unlines . wordWrap cols $ msg
@@ -296,16 +310,12 @@ mkDividerTxt :: Cols -> T.Text
 mkDividerTxt = flip T.replicate "="
 
 
-broadcastNl :: [Broadcast] -> MudStack ()
-broadcastNl bs = broadcast $ bs ++ [ ("\n", [i']) | i' <- nub . concatMap snd $ bs ]
-
-
 ok :: MsgQueue -> MudStack ()
 ok mq = send mq . nlnl $ "OK!"
 
 
-msgAll :: Msg -> MudStack ()
-msgAll m = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
+massMsg :: Msg -> MudStack () -- TODO: Should really use a "Broadcast Chan".
+massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
     forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue m
 
 

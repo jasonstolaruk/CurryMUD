@@ -372,7 +372,7 @@ notifyArrival i = readWSTMVar >>= \ws ->
         d   = serialize NonStdDesig { nonStdPCEntSing = e^.sing
                                     , nonStdDesc      = mkNonStdDesc A s r }
         msg = d <> " has arrived in the game."
-    in broadcastOthersInRm i . nlnl $ msg
+    in bcastOthersInRm i . nlnl $ msg
 
 
 mkNonStdDesc :: AOrThe -> Sex -> Race -> T.Text
@@ -428,7 +428,7 @@ boot h = liftIO . hPutStr h . T.unpack . injectCR . nl $ "You have been booted f
 
 
 shutDown :: MudStack ()
-shutDown = msgAll StopThread >> commitSuicide
+shutDown = massMsg StopThread >> commitSuicide
   where
     commitSuicide = do
         tas <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
@@ -634,7 +634,7 @@ tryMove :: IdMsgQueueCols -> T.Text -> MudStack ()
 tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                                 in helper dir' >>= \case
                                   Left  msg          -> send mq . nl . T.unlines . wordWrap cols $ msg
-                                  Right (logMsg, bs) -> broadcast bs >> logPla "tryMove" i logMsg >> look imc []
+                                  Right (logMsg, bs) -> bcast bs >> logPla "tryMove" i logMsg >> look imc []
   where
     helper dir' = onWS $ \(t, ws) ->
         let e   = (ws^.entTbl) ! i
@@ -753,7 +753,7 @@ look (i, mq, cols) rs = helper >>= \case
                                  (nlnl . T.concat $ [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
                                  acc
       in do
-          broadcast . foldr f [] $ ds
+          bcast . foldr f [] $ ds
           send mq msg
           forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
               logPla "look" i ("looked at " <> es <> ".")
@@ -1006,7 +1006,7 @@ getAction (_, mq, cols) [] = advise mq cols ["get"] $ "Please specify one or mor
 getAction (i, _, _) rs = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "get" i logMsgs
-    broadcastNl bs
+    bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
         let e    = (ws^.entTbl)   ! i
@@ -1029,7 +1029,7 @@ getAction (i, _, _) rs = do
                in putTMVar t ws'' >> return (bs', logMsgs')
           else do
               putTMVar t ws
-              return ([("You don't see anything here to pick up.", [i])], [])
+              return (mkBroadcast i "You don't see anything here to pick up.", [])
 
 
 advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
@@ -1053,7 +1053,7 @@ helperGetDropEitherInv :: Id                                  ->
                           Either T.Text Inv                   ->
                           (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherInv i d god fi ti (ws, bs, logMsgs) = \case
-  Left  msg -> (ws, bs ++ [(msg, [i])], logMsgs)
+  Left  msg -> (ws, bs ++ mkBroadcast i msg, logMsgs)
   Right is  -> let fis             = (ws^.invTbl) ! fi
                    tis             = (ws^.invTbl) ! ti
                    ws'             = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
@@ -1126,7 +1126,7 @@ dropAction (_, mq, cols) [] = advise mq cols ["drop"] $ "Please specify one or m
 dropAction (i, _, _) rs = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "drop" i logMsgs
-    broadcastNl bs
+    bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
         let e   = (ws^.entTbl)   ! i
@@ -1149,7 +1149,7 @@ dropAction (i, _, _) rs = do
                in putTMVar t ws'' >> return (bs', logMsgs')
           else do
               putTMVar t ws
-              return ([(dudeYourHandsAreEmpty, [i])], [])
+              return (mkBroadcast i dudeYourHandsAreEmpty, [])
 
 
 -----
@@ -1161,7 +1161,7 @@ putAction (_, mq, cols) [r] = advise mq cols ["put"] $ "Please also specify wher
 putAction (i, _, _) rs  = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "put" i logMsgs
-    broadcastNl bs
+    bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
       let p              = (ws^.pcTbl)    ! i
@@ -1179,9 +1179,9 @@ putAction (i, _, _) rs  = do
         then if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris
             then shufflePut i (t, ws) (T.tail cn) restWithoutCon ris rc pis pc procGecrMisRm
-            else putTMVar t ws >> return ([("You don't see any containers here.", [i])], [])
+            else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
           else shufflePut i (t, ws) cn restWithoutCon pis pc pis pc procGecrMisPCInv
-      else putTMVar t ws >> return ([(dudeYourHandsAreEmpty, [i])], [])
+      else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 
 
 type InvWithCon   = Inv
@@ -1203,21 +1203,21 @@ shufflePut :: Id                                                  ->
 shufflePut i (t, ws) cn rs is c pis pc f =
     let (gecrs, miss, rcs) = resolveEntCoinNames i ws [cn] is c
     in if null miss && (not . null $ rcs)
-      then putTMVar t ws >> return ([("You can't put something inside a coin.", [i])], [])
+      then putTMVar t ws >> return (mkBroadcast i "You can't put something inside a coin.", [])
       else case f . head . zip gecrs $ miss of
-        Left  msg  -> putTMVar t ws >> return ([(msg, [i])], [])
+        Left  msg  -> putTMVar t ws >> return (mkBroadcast i msg, [])
         Right [ci] ->
             let e  = (ws^.entTbl)  ! ci
                 t' = (ws^.typeTbl) ! ci
             in if t' /= ConType
-              then putTMVar t ws >> return ([("The " <> e^.sing <> " isn't a container.", [i])], [])
+              then putTMVar t ws >> return (mkBroadcast i $ "The " <> e^.sing <> " isn't a container.", [])
               else let (gecrs', miss', rcs') = resolveEntCoinNames i ws rs pis pc
                        eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
                        ecs                   = map procReconciledCoinsPCInv rcs'
                        (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i Put i ci e) (ws,  [], []     ) eiss
                        (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i Put i ci e) (ws', bs, logMsgs) ecs
                    in putTMVar t ws'' >> return (bs', logMsgs')
-        Right _    -> putTMVar t ws   >> return ([("You can only put things into one container at a time.", [i])], [])
+        Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only put things into one container at a time.", [])
 
 
 type ToEnt = Ent
@@ -1232,7 +1232,7 @@ helperPutRemEitherInv :: Id                                  ->
                          Either T.Text Inv                   ->
                          (WorldState, [Broadcast], [T.Text])
 helperPutRemEitherInv i por fi ti te (ws, bs, logMsgs) = \case
-  Left  msg -> (ws, bs ++ [(msg, [i])], logMsgs)
+  Left  msg -> (ws, bs ++ mkBroadcast i msg, logMsgs)
   Right is  -> let (is', bs')       = if ti `elem` is
                                         then (filter (/= ti) is, bs ++ [sorry])
                                         else (is, bs)
@@ -1251,9 +1251,9 @@ mkPutRemInvDesc i ws por is te = let bs = concatMap helper . mkNameCountBothList
                                  in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _))
-      | c == 1 = [(T.concat [ "You ", verb por, " the ", s, " ", prep por, " ", te^.sing, "." ], [i])]
+      | c == 1 = mkBroadcast i . T.concat $ [ "You ", verb por, " the ", s, " ", prep por, " ", te^.sing, "." ]
     helper (_, c, b) =
-        [(T.concat [ "You ", verb por, " ", showText c, " ", mkPlurFromBoth b, " ", prep por, " ", te^.sing, "." ], [i])]
+        mkBroadcast i . T.concat $ [ "You ", verb por, " ", showText c, " ", mkPlurFromBoth b, " ", prep por, " ", te^.sing, "." ]
     --otherPCIds = i `delete` pcIds d
     verb = \case Put -> "put"
                  Rem -> "remove"
@@ -1287,9 +1287,9 @@ mkPutRemCoinsDescs i por (Coins (cop, sil, gol)) te = let bs = concat . catMaybe
     s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
     g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
     helper a cn
-      | a == 1 = [(T.concat [ "You ", verb por, " a ", cn, " ", prep por, " ", te^.sing, "." ], [i])]
+      | a == 1 = mkBroadcast i . T.concat $ [ "You ", verb por, " a ", cn, " ", prep por, " ", te^.sing, "." ]
     helper a cn =
-        [(T.concat [ "You ", verb por, " ", showText a, " ", cn, "s ", prep por, " ", te^.sing, "." ], [i])]
+        mkBroadcast i . T.concat $ [ "You ", verb por, " ", showText a, " ", cn, "s ", prep por, " ", te^.sing, "." ]
     --otherPCIds = i `delete` pcIds d
     verb = \case Put -> "put"
                  Rem -> "remove"
@@ -1306,7 +1306,7 @@ remove (_, mq, cols) [r] = advise mq cols ["remove"] $ "Please also specify the 
 remove (i, _, _) rs  = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "remove" i logMsgs
-    broadcastNl bs
+    bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
       let p              = (ws^.pcTbl)    ! i
@@ -1323,7 +1323,7 @@ remove (i, _, _) rs  = do
       in if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris
             then shuffleRem i (t, ws) (T.tail cn) restWithoutCon ris rc procGecrMisRm
-            else putTMVar t ws >> return ([("You don't see any containers here.", [i])], [])
+            else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
           else shuffleRem i (t, ws) cn restWithoutCon pis pc procGecrMisPCInv
 
 
@@ -1338,14 +1338,14 @@ shuffleRem :: Id                                                  ->
 shuffleRem i (t, ws) cn rs is c f =
     let (gecrs, miss, rcs) = resolveEntCoinNames i ws [cn] is c
     in if null miss && (not . null $ rcs)
-      then putTMVar t ws >> return ([("You can't remove something from a coin.", [i])], [])
+      then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
       else case f . head . zip gecrs $ miss of
-        Left  msg  -> putTMVar t ws >> return ([(msg, [i])], [])
+        Left  msg  -> putTMVar t ws >> return (mkBroadcast i msg, [])
         Right [ci] ->
             let e  = (ws^.entTbl)  ! ci
                 t' = (ws^.typeTbl) ! ci
             in if t' /= ConType
-              then putTMVar t ws >> return ([("The " <> e^.sing <> " isn't a container.", [i])], [])
+              then putTMVar t ws >> return (mkBroadcast i $ "The " <> e^.sing <> " isn't a container.", [])
               else let cis                   = (ws^.invTbl)   ! ci
                        cc                    = (ws^.coinsTbl) ! ci
                        (gecrs', miss', rcs') = resolveEntCoinNames i ws rs cis cc
@@ -1354,7 +1354,7 @@ shuffleRem i (t, ws) cn rs is c f =
                        (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i Rem ci i e) (ws,  [],  []     ) eiss
                        (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i Rem ci i e) (ws', bs, logMsgs) ecs
                    in putTMVar t ws'' >> return (bs', logMsgs')
-        Right _    -> putTMVar t ws   >> return ([("You can only remove things from one container at a time.", [i])], [])
+        Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only remove things from one container at a time.", [])
 
 
 -----
@@ -1664,7 +1664,7 @@ intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
 intro (i, _, _) rs = do
     (cbs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "intro" i logMsgs
-    broadcast . map fromClassifiedBroadcast . sort $ cbs
+    bcast . map fromClassifiedBroadcast . sort $ cbs
   where
     helper = onWS $ \(t, ws) ->
         let e   = (ws^.entTbl)   ! i
@@ -1683,10 +1683,10 @@ intro (i, _, _) rs = do
                in putTMVar t ws' >> return (cbs', logMsgs')
           else do
               putTMVar t ws
-              return ([NonTargetBroadcast (nlnl "You don't see anyone here to introduce yourself to.", [i])], [])
+              return (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])
     helperIntroEitherInv _ _   a@(ws, cbs, logMsgs) (Left msg)
       | T.null msg = a
-      | otherwise  = (ws, cbs ++ [NonTargetBroadcast (nlnl msg, [i])], logMsgs)
+      | otherwise  = (ws, (cbs ++) . mkNTBroadcast i . nlnl $ msg, logMsgs)
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
         tryIntro (ws, cbs, logMsgs) targetId =
@@ -1706,7 +1706,7 @@ intro (i, _, _) rs = do
                             himHerself  = mkReflexive $ m^.sex
                         in if s `elem` intros
                           then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                               in (ws, cbs ++ [NonTargetBroadcast (msg, [i])], logMsgs)
+                               in (ws, (cbs ++) . mkNTBroadcast i $ msg, logMsgs)
                           else let p         = targetPC & introduced .~ sort (s : intros)
                                    ws'       = ws & pcTbl.at targetId ?~ p
                                    srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
@@ -1735,7 +1735,8 @@ intro (i, _, _) rs = do
                                   , logMsgs ++ [srcMsg] )
               _      -> let b = NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
                         in (ws, cbs `appendIfUnique` b, logMsgs)
-    helperIntroEitherCoins (cbs, logMsgs) (Left  msgs) = (cbs ++ [ NonTargetBroadcast (nlnl msg, [i]) | msg <- msgs ], logMsgs)
+    helperIntroEitherCoins (cbs, logMsgs) (Left  msgs) = ( (cbs ++) . concat $ [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]
+                                                         , logMsgs )
     helperIntroEitherCoins (cbs, logMsgs) (Right _   ) =
         let b = NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])
         in (cbs `appendIfUnique` b, logMsgs)
@@ -1990,7 +1991,7 @@ notifyEgress i = readWSTMVar >>= \ws ->
                                  , pcId         = i
                                  , pcIds        = pis }
         msg = nlnl $ d <> " has left the game."
-    in broadcast [(msg, i `delete` pis)]
+    in bcast [(msg, i `delete` pis)]
 
 
 -- ==================================================
@@ -2008,7 +2009,7 @@ wizShutdown :: Action
 wizShutdown (i, mq, _) [] = readWSTMVar >>= \ws ->
     let e = (ws^.entTbl) ! i
     in do
-        massBroadcast "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
+        massSend "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
         logPlaExecArgs (prefixWizCmd "shutdown") [] i
         massLogPla "wizShutDown" $ T.concat [ "closing connection due to server shutdown initiated by ", e^.sing, " ", parensQuote "no message given", "." ]
         logNotice  "wizShutdown" $ T.concat [ "server shutdown initiated by ", e^.sing, " ", parensQuote "no message given", "." ]
@@ -2017,7 +2018,7 @@ wizShutdown (i, mq, _) rs = readWSTMVar >>= \ws ->
     let e   = (ws^.entTbl) ! i
         msg = T.intercalate " " rs
     in do
-        massBroadcast msg
+        massSend msg
         logPlaExecArgs (prefixWizCmd "shutdown") rs i
         massLogPla "wizShutDown" . T.concat $ [ "closing connection due to server shutdown initiated by ", e^.sing, "; reason: ", msg, "." ]
         logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", e^.sing, "; reason: ", msg, "." ]
@@ -2250,7 +2251,7 @@ purgeTalkAsyncTbl = do
 
 
 debugBoot :: Action
-debugBoot     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> msgAll Boot
+debugBoot     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> massMsg Boot
 debugBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugBoot imc []
 
 
@@ -2258,7 +2259,7 @@ debugBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugBoot imc []
 
 
 debugStop :: Action
-debugStop     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "stop") i >> ok mq >> msgAll StopThread
+debugStop     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "stop") i >> ok mq >> massMsg StopThread
 debugStop imc@(_, mq, cols) rs = ignore mq cols rs >> debugStop imc []
 
 
@@ -2280,7 +2281,7 @@ debugCPU imc@(_, mq, cols) rs = ignore mq cols rs >> debugCPU imc []
 debugBroad :: Action
 debugBroad (i, _, _) [] = do
     logPlaExec (prefixDebugCmd "broad") i
-    broadcast [(msg, [i])]
+    bcast . mkBroadcast i $ msg
   where
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\
