@@ -1070,8 +1070,10 @@ mkGetDropInvDesc i ws d god is = let bs = concatMap helper . mkNameCountBothList
       | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s, "." ], [i])
                  , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ",   s, "." ], otherPCIds) ]
     helper (_, c, b) =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText c, " ", mkPlurFromBoth b, "." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ], otherPCIds) ]
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
+      where
+        rest = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
     otherPCIds = i `delete` pcIds d
 
 
@@ -1164,26 +1166,34 @@ putAction (i, _, _) rs  = do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let p              = (ws^.pcTbl)    ! i
+      let e              = (ws^.entTbl)   ! i
+          p              = (ws^.pcTbl)    ! i
           pis            = (ws^.invTbl)   ! i
           pc             = (ws^.coinsTbl) ! i
           ri             = p^.rmId
-          ris            = delete i . (! ri) $ ws^.invTbl
+          ris            = (ws^.invTbl)   ! ri
+          ris'           = i `delete` ris
           rc             = (ws^.coinsTbl) ! ri
           rs'            = map T.toLower rs
           cn             = last rs'
           rs''           = case rs' of [_, _] -> rs'
                                        _      -> (++ [cn]) . nub . init $ rs'
           restWithoutCon = init rs''
+          d              = StdDesig { stdPCEntSing = Just $ e^.sing
+                                    , isCap        = True
+                                    , pcEntName    = mkUnknownPCEntName i ws
+                                    , pcId         = i
+                                    , pcIds        = findPCIds ws ris }
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar && cn /= T.pack [rmChar]
-          then if not . null $ ris
-            then shufflePut i (t, ws) (T.tail cn) restWithoutCon ris rc pis pc procGecrMisRm
+          then if not . null $ ris'
+            then shufflePut i (t, ws) d (T.tail cn) True restWithoutCon ris' rc pis pc procGecrMisRm
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
-          else shufflePut i (t, ws) cn restWithoutCon pis pc pis pc procGecrMisPCInv
+          else shufflePut i (t, ws) d cn False restWithoutCon pis pc pis pc procGecrMisPCInv
       else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 
 
+type IsConInRm    = Bool
 type InvWithCon   = Inv
 type CoinsWithCon = Coins
 type PCInv        = Inv
@@ -1192,7 +1202,9 @@ type PCCoins      = Coins
 
 shufflePut :: Id                                                  ->
               (TMVar WorldState, WorldState)                      ->
+              PCDesig                                             ->
               ConName                                             ->
+              IsConInRm                                           ->
               Rest                                                ->
               InvWithCon                                          ->
               CoinsWithCon                                        ->
@@ -1200,7 +1212,7 @@ shufflePut :: Id                                                  ->
               PCCoins                                             ->
               ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
               STM ([Broadcast], [T.Text])
-shufflePut i (t, ws) cn rs is c pis pc f =
+shufflePut i (t, ws) d cn icir rs is c pis pc f =
     let (gecrs, miss, rcs) = resolveEntCoinNames i ws [cn] is c
     in if null miss && (not . null $ rcs)
       then putTMVar t ws >> return (mkBroadcast i "You can't put something inside a coin.", [])
@@ -1214,8 +1226,8 @@ shufflePut i (t, ws) cn rs is c pis pc f =
               else let (gecrs', miss', rcs') = resolveEntCoinNames i ws rs pis pc
                        eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
                        ecs                   = map procReconciledCoinsPCInv rcs'
-                       (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i Put i ci e) (ws,  [], []     ) eiss
-                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i Put i ci e) (ws', bs, logMsgs) ecs
+                       (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put icir i ci e) (ws,  [], []     ) eiss
+                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put icir i ci e) (ws', bs, logMsgs) ecs
                    in putTMVar t ws'' >> return (bs', logMsgs')
         Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only put things into one container at a time.", [])
 
@@ -1224,14 +1236,16 @@ type ToEnt = Ent
 
 
 helperPutRemEitherInv :: Id                                  ->
+                         PCDesig                             ->
                          PutOrRem                            ->
+                         IsConInRm                           ->
                          FromId                              ->
                          ToId                                ->
                          ToEnt                               ->
                          (WorldState, [Broadcast], [T.Text]) ->
                          Either T.Text Inv                   ->
                          (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherInv i por fi ti te (ws, bs, logMsgs) = \case
+helperPutRemEitherInv i d por icir fi ti te (ws, bs, logMsgs) = \case
   Left  msg -> (ws, bs ++ mkBroadcast i msg, logMsgs)
   Right is  -> let (is', bs')       = if ti `elem` is
                                         then (filter (/= ti) is, bs ++ [sorry])
@@ -1240,61 +1254,116 @@ helperPutRemEitherInv i por fi ti te (ws, bs, logMsgs) = \case
                    tis              = (ws^.invTbl) ! ti
                    ws'              = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
                                          & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
-                   (bs'', logMsgs') = mkPutRemInvDesc i ws' por is' te
+                   (bs'', logMsgs') = mkPutRemInvDesc i ws' d por icir is' te
                in (ws', bs' ++ bs'', logMsgs ++ logMsgs')
   where
     sorry = ("You can't put the " <> te^.sing <> " inside itself.", [i])
 
 
-mkPutRemInvDesc :: Id -> WorldState -> PutOrRem -> Inv -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i ws por is te = let bs = concatMap helper . mkNameCountBothList i ws $ is
-                                 in (bs, extractLogMsgs i bs)
+mkPutRemInvDesc :: Id -> WorldState -> PCDesig -> PutOrRem -> IsConInRm -> Inv -> ToEnt -> ([Broadcast], [T.Text])
+mkPutRemInvDesc i ws d por icir is te = let bs = concatMap helper . mkNameCountBothList i ws $ is
+                                        in (bs, extractLogMsgs i bs)
   where
-    helper (_, c, (s, _))
-      | c == 1 = mkBroadcast i . T.concat $ [ "You ", verb por, " the ", s, " ", prep por, " ", te^.sing, "." ]
+    helper (_, c, (s, _)) | c == 1 =
+        [ (T.concat [ "You ",           mkPorVerb por SndPer, " the ", s, " ", mkPorPrep por SndPer icir, rest ], [i])
+        , (T.concat [ serialize d, " ", mkPorVerb por ThrPer, " a ",   s, " ", mkPorPrep por ThrPer icir, rest ], otherPCIds) ]
     helper (_, c, b) =
-        mkBroadcast i . T.concat $ [ "You ", verb por, " ", showText c, " ", mkPlurFromBoth b, " ", prep por, " ", te^.sing, "." ]
-    --otherPCIds = i `delete` pcIds d
-    verb = \case Put -> "put"
-                 Rem -> "remove"
-    prep = \case Put -> "in the"
-                 Rem -> "from the"
+        [ (T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , " "
+                    , showText c
+                    , " "
+                    , mkPlurFromBoth b
+                    , " "
+                    , mkPorPrep por SndPer icir
+                    , rest ], [i])
+        , (T.concat [ serialize d
+                    , " "
+                    , mkPorVerb por ThrPer
+                    , " "
+                    , showText c
+                    , " "
+                    , mkPlurFromBoth b
+                    , " "
+                    , mkPorPrep por ThrPer icir
+                    , rest ], otherPCIds) ]
+    rest                    = T.concat [ " ", te^.sing, onTheGround, "." ]
+    onTheGround | icir      = " on the ground"
+                | otherwise = ""
+    otherPCIds              = i `delete` pcIds d
+
+
+mkPorVerb :: PutOrRem -> Verb -> T.Text
+mkPorVerb Put SndPer = "put"
+mkPorVerb Put ThrPer = "puts"
+mkPorVerb Rem SndPer = "remove"
+mkPorVerb Rem ThrPer = "removes"
+
+
+mkPorPrep :: PutOrRem -> Verb -> IsConInRm -> T.Text
+mkPorPrep Put SndPer _     = "in the"
+mkPorPrep Rem SndPer _     = "from the"
+mkPorPrep Put ThrPer False = "in a"
+mkPorPrep Put ThrPer True  = "in the"
+mkPorPrep Rem ThrPer False = "from a"
+mkPorPrep Rem ThrPer True  = "from the"
 
 
 helperPutRemEitherCoins :: Id                                  ->
+                           PCDesig                             ->
                            PutOrRem                            ->
+                           IsConInRm                           ->
                            FromId                              ->
                            ToId                                ->
                            ToEnt                               ->
                            (WorldState, [Broadcast], [T.Text]) ->
                            Either [T.Text] Coins               ->
                            (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherCoins i por fi ti te (ws, bs, logMsgs) = \case
+helperPutRemEitherCoins i d por icir fi ti te (ws, bs, logMsgs) = \case
   Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
   Right c    -> let fc              = (ws^.coinsTbl) ! fi
                     tc              = (ws^.coinsTbl) ! ti
                     ws'             = ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                          & coinsTbl.at ti ?~ tc <> c
-                    (bs', logMsgs') = mkPutRemCoinsDescs i por c te
+                    (bs', logMsgs') = mkPutRemCoinsDescs i d por icir c te
                 in (ws', bs ++ bs', logMsgs ++ logMsgs')
 
 
-mkPutRemCoinsDescs :: Id -> PutOrRem -> Coins -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescs i por (Coins (cop, sil, gol)) te = let bs = concat . catMaybes $ [ c, s, g ]
-                                                      in (bs, extractLogMsgs i bs)
+mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> IsConInRm -> Coins -> ToEnt -> ([Broadcast], [T.Text])
+mkPutRemCoinsDescs i d por icir (Coins (cop, sil, gol)) te = let bs = concat . catMaybes $ [ c, s, g ]
+                                                             in (bs, extractLogMsgs i bs)
   where
     c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
     s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
     g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
-    helper a cn
-      | a == 1 = mkBroadcast i . T.concat $ [ "You ", verb por, " a ", cn, " ", prep por, " ", te^.sing, "." ]
+    helper a cn | a == 1 =
+        [ (T.concat [ "You ",           mkPorVerb por SndPer, " a ", cn, " ", mkPorPrep por SndPer icir, rest ], [i])
+        , (T.concat [ serialize d, " ", mkPorVerb por ThrPer, " a ", cn, " ", mkPorPrep por ThrPer icir, rest ], otherPCIds) ]
     helper a cn =
-        mkBroadcast i . T.concat $ [ "You ", verb por, " ", showText a, " ", cn, "s ", prep por, " ", te^.sing, "." ]
-    --otherPCIds = i `delete` pcIds d
-    verb = \case Put -> "put"
-                 Rem -> "remove"
-    prep = \case Put -> "in the"
-                 Rem -> "from the"
+        [ (T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , " "
+                    , showText a
+                    , " "
+                    , cn
+                    , "s "
+                    , mkPorPrep por SndPer icir
+                    , rest ], [i])
+        , (T.concat [ serialize d
+                    , " "
+                    , mkPorVerb por ThrPer
+                    , " "
+                    , showText a
+                    , " "
+                    , cn
+                    , "s "
+                    , mkPorPrep por ThrPer icir
+                    , rest ], otherPCIds) ]
+    rest                    = T.concat [ " ", te^.sing, onTheGround, "." ]
+    onTheGround | icir      = " on the ground"
+                | otherwise = ""
+    otherPCIds              = i `delete` pcIds d
+
 
 
 -----
@@ -1309,33 +1378,42 @@ remove (i, _, _) rs  = do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let p              = (ws^.pcTbl)    ! i
+      let e              = (ws^.entTbl)   ! i
+          p              = (ws^.pcTbl)    ! i
           pis            = (ws^.invTbl)   ! i
           pc             = (ws^.coinsTbl) ! i
           ri             = p^.rmId
-          ris            = delete i . (! ri) $ ws^.invTbl
+          ris            = (ws^.invTbl)   ! ri
+          ris'           = i `delete` ris
           rc             = (ws^.coinsTbl) ! ri
           rs'            = map T.toLower rs
           cn             = last rs'
           rs''           = case rs' of [_, _] -> rs'
                                        _      -> (++ [cn]) . nub . init $ rs'
           restWithoutCon = init rs''
+          d              = StdDesig { stdPCEntSing = Just $ e^.sing
+                                    , isCap        = True
+                                    , pcEntName    = mkUnknownPCEntName i ws
+                                    , pcId         = i
+                                    , pcIds        = findPCIds ws ris }
       in if T.head cn == rmChar && cn /= T.pack [rmChar]
-          then if not . null $ ris
-            then shuffleRem i (t, ws) (T.tail cn) restWithoutCon ris rc procGecrMisRm
+          then if not . null $ ris'
+            then shuffleRem i (t, ws) d (T.tail cn) True restWithoutCon ris' rc procGecrMisRm
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
-          else shuffleRem i (t, ws) cn restWithoutCon pis pc procGecrMisPCInv
+          else shuffleRem i (t, ws) d cn False restWithoutCon pis pc procGecrMisPCInv
 
 
 shuffleRem :: Id                                                  ->
               (TMVar WorldState, WorldState)                      ->
+              PCDesig                                             ->
               ConName                                             ->
+              IsConInRm                                           ->
               Rest                                                ->
               InvWithCon                                          ->
               CoinsWithCon                                        ->
               ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
               STM ([Broadcast], [T.Text])
-shuffleRem i (t, ws) cn rs is c f =
+shuffleRem i (t, ws) d cn icir rs is c f =
     let (gecrs, miss, rcs) = resolveEntCoinNames i ws [cn] is c
     in if null miss && (not . null $ rcs)
       then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
@@ -1351,8 +1429,8 @@ shuffleRem i (t, ws) cn rs is c f =
                        (gecrs', miss', rcs') = resolveEntCoinNames i ws rs cis cc
                        eiss                  = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
                        ecs                   = map (procReconciledCoinsCon (e^.sing)) rcs'
-                       (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i Rem ci i e) (ws,  [],  []     ) eiss
-                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i Rem ci i e) (ws', bs, logMsgs) ecs
+                       (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem icir ci i e) (ws,  [], []     ) eiss
+                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem icir ci i e) (ws', bs, logMsgs) ecs
                    in putTMVar t ws'' >> return (bs', logMsgs')
         Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only remove things from one container at a time.", [])
 
