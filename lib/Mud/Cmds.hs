@@ -130,13 +130,14 @@ massLogPla = L.massLogPla "Mud.Cmds"
 
 
 wizCmdList :: [Cmd]
-wizCmdList = [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
-             , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
-             , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
-             , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the MUD." }
-             , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
-             , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
-             , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the server uptime." } ]
+wizCmdList =
+    [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
+    , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
+    , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
+    , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the MUD." }
+    , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
+    , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
+    , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the server uptime." } ]
 
 
 debugCmdList :: [Cmd]
@@ -156,34 +157,35 @@ debugCmdList =
 
 
 plaCmdList :: [Cmd]
-plaCmdList = [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
-             , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD." }
-             , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-             , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
-             , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-             , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
-             , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
-             , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
-             , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
-             , Cmd { cmdName = "i", action = inv, cmdDesc = "Inventory." }
-             , Cmd { cmdName = "intro", action = intro, cmdDesc = "Introduce yourself." }
-             , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
-             , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
-             , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
-             , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
-             , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
-             , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
-             , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
-             , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
-             , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
-             , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
-             , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
-             , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
-             , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
-             , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
-             , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long the MUD has been running." }
-             , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
-             , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
+plaCmdList =
+    [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
+    , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD." }
+    , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
+    , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
+    , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
+    , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
+    , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
+    , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
+    , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
+    , Cmd { cmdName = "i", action = inv, cmdDesc = "Inventory." }
+    , Cmd { cmdName = "intro", action = intro, cmdDesc = "Introduce yourself." }
+    , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
+    , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
+    , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
+    , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
+    , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
+    , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
+    , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
+    , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
+    , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
+    , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
+    , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
+    , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
+    , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
+    , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
+    , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long the MUD has been running." }
+    , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
+    , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 
 
 allCmdList :: [Cmd]
@@ -294,8 +296,7 @@ adHoc mq host = do
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
     s        <- liftIO randomSex
-    --r        <- liftIO randomRace -- TODO
-    let r = Human
+    r        <- liftIO randomRace
     liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
@@ -311,7 +312,7 @@ adHoc mq host = do
         let pc  = PC iHill r [] []
         let ris = (ws^.invTbl) ! iHill ++ [i]
         -----
-        let pla = Pla True host 30
+        let pla = Pla True host 80
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
@@ -335,11 +336,9 @@ randomSex = newStdGen >>= \g ->
     let (x, _) = randomR (0, 1) g in return $ [ Male, Female ] !! x
 
 
-{-
 randomRace :: IO Race
 randomRace = newStdGen >>= \g ->
     let (x, _) = randomR (0, 7) g in return $ [ Dwarf, Elf, Felinoid, Halfling, Human, Lagomorph, Nymph, Vulpenoid ] !! x
--}
 
 
 dumpTitle :: MsgQueue -> MudStack ()
@@ -1002,7 +1001,6 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 -----
 
 
--- TODO: Double-check the changes you've made.
 getAction :: Action
 getAction (_, mq, cols) [] = advise mq cols ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction (i, _, _) rs = do
@@ -1046,13 +1044,20 @@ type FromId = Id
 type ToId   = Id
 
 
-helperGetDropEitherInv :: Id -> PCDesig -> GetOrDrop -> FromId -> ToId -> (WorldState, [Broadcast], [T.Text]) -> Either T.Text Inv -> (WorldState, [Broadcast], [T.Text])
+helperGetDropEitherInv :: Id                                  ->
+                          PCDesig                             ->
+                          GetOrDrop                           ->
+                          FromId                              ->
+                          ToId                                ->
+                          (WorldState, [Broadcast], [T.Text]) ->
+                          Either T.Text Inv                   ->
+                          (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherInv i d god fi ti (ws, bs, logMsgs) = \case
   Left  msg -> (ws, bs ++ [(msg, [i])], logMsgs)
   Right is  -> let fis             = (ws^.invTbl) ! fi
                    tis             = (ws^.invTbl) ! ti
                    ws'             = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
-                                        & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is)
+                                        & invTbl.at ti ?~ sortInv ws (tis ++ is)
                    (bs', logMsgs') = mkGetDropInvDesc i ws' d god is
                in (ws', bs ++ bs', logMsgs ++ logMsgs')
 
@@ -1062,22 +1067,29 @@ mkGetDropInvDesc i ws d god is = let bs = concatMap helper . mkNameCountBothList
                                  in (bs, [ fst b | b <- bs, snd b == [i] ])
   where
     helper (_, c, (s, _))
-      | c == 1 = [ (T.concat [ "You ",           godVerb god SndPer, " the ", s, "." ], [i])
-                 , (T.concat [ serialize d, " ", godVerb god ThrPer, " a ",   s, "." ], ris) ]
+      | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s, "." ], [i])
+                 , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ",   s, "." ], otherPCIds) ]
     helper (_, c, b) =
-        [ (T.concat [ "You ",           godVerb god SndPer, " ", showText c, " ", mkPlurFromBoth b, "." ], [i])
-        , (T.concat [ serialize d, " ", godVerb god ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ], ris) ]
-    ris = i `delete` pcIds d
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText c, " ", mkPlurFromBoth b, "." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ], otherPCIds) ]
+    otherPCIds = i `delete` pcIds d
 
 
-godVerb :: GetOrDrop -> Verb -> T.Text
-godVerb Get  SndPer = "pick up"
-godVerb Get  ThrPer = "picks up"
-godVerb Drop SndPer = "drop"
-godVerb Drop ThrPer = "drops"
+mkGodVerb :: GetOrDrop -> Verb -> T.Text
+mkGodVerb Get  SndPer = "pick up"
+mkGodVerb Get  ThrPer = "picks up"
+mkGodVerb Drop SndPer = "drop"
+mkGodVerb Drop ThrPer = "drops"
 
 
-helperGetDropEitherCoins :: Id -> PCDesig -> GetOrDrop -> FromId -> ToId -> (WorldState, [Broadcast], [T.Text]) -> Either [T.Text] Coins -> (WorldState, [Broadcast], [T.Text])
+helperGetDropEitherCoins :: Id                                  ->
+                            PCDesig                             ->
+                            GetOrDrop                           ->
+                            FromId                              ->
+                            ToId                                ->
+                            (WorldState, [Broadcast], [T.Text]) ->
+                            Either [T.Text] Coins               ->
+                            (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherCoins i d god fi ti (ws, bs, logMsgs) = \case
   Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
   Right c    -> let fc              = (ws^.coinsTbl) ! fi
@@ -1095,11 +1107,11 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) = let bs = concat . catMaybes
     c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
     s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
     g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
-    helper a cn | a == 1 = [ (T.concat [ "You ",           godVerb god SndPer, " a ", cn, "." ], [i])
-                           , (T.concat [ serialize d, " ", godVerb god ThrPer, " a ", cn, "." ], ris) ]
-    helper a cn          = [ (T.concat [ "You ",           godVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
-                           , (T.concat [ serialize d, " ", godVerb god ThrPer, " ", showText a, " ", cn, "s." ], ris) ]
-    ris                  = i `delete` pcIds d
+    helper a cn | a == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " a ", cn, "." ], [i])
+                           , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ", cn, "." ], otherPCIds) ]
+    helper a cn          = [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
+                           , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
+    otherPCIds           = i `delete` pcIds d
 
 
 -----
