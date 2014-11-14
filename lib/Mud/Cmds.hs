@@ -44,7 +44,7 @@ import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
 import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
-import System.IO (BufferMode(..), Handle, hClose, hFlush, hGetBuffering, hGetLine, hIsEOF, hPutStr, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
+import System.IO (BufferMode(..), Handle, hClose, hFlush, hGetBuffering, hGetLine, hIsEOF, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
 import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
@@ -53,7 +53,7 @@ import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile)
+import qualified Data.Text.IO as T (hPutStr, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
@@ -383,9 +383,9 @@ server :: Handle -> Id -> MsgQueue -> MudStack ()
 server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      FromServer msg -> (liftIO . hPutStr h . T.unpack . injectCR $ msg) >> loop
+      FromServer msg -> (liftIO . T.hPutStr h . injectCR $ msg) >> (liftIO . hFlush $ h) >> loop
       FromClient msg -> let msg' = T.strip . T.pack . stripTelnet . T.unpack $ msg
-                        in unless (T.null msg') (handleInp i mq msg')    >> loop
+                        in unless (T.null msg') (handleInp i mq msg') >> loop
       Prompt     p   -> sendPrompt h p >> loop
       Quit           -> cowbye h   >> handleEgress i
       Boot           -> boot   h   >> handleEgress i
@@ -412,19 +412,19 @@ getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()
-sendPrompt h p = let p' = T.unpack p ++ [ telnetIAC, telnetGA ]
-                 in liftIO $ hPutStr h p' >> hFlush h
+sendPrompt h p = let p' = p <> T.pack [ telnetIAC, telnetGA ]
+                 in liftIO $ T.hPutStr h p' >> hFlush h
 
 
 cowbye :: Handle -> MudStack ()
 cowbye h = takeADump `catch` readFileExHandler "cowbye"
   where
-    takeADump = liftIO . hPutStr h . T.unpack . injectCR =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
+    takeADump = liftIO . T.hPutStr h . injectCR =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
 
 
 -- TODO: Make a wizard command that does this.
 boot :: Handle -> MudStack ()
-boot h = liftIO . hPutStr h . T.unpack . injectCR . nl $ "You have been booted from CurryMUD. Goodbye!"
+boot h = liftIO . T.hPutStr h . injectCR . nl $ "You have been booted from CurryMUD. Goodbye!"
 
 
 shutDown :: MudStack ()
@@ -630,6 +630,7 @@ goDispatcher _   [] = return ()
 goDispatcher imc rs = mapM_ (tryMove imc) rs
 
 
+-- TODO: Why does "u" move you into the hut?
 tryMove :: IdMsgQueueCols -> T.Text -> MudStack ()
 tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                                 in helper dir' >>= \case

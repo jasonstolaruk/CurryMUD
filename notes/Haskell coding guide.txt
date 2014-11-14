@@ -2,6 +2,7 @@ Haskell coding guide
 by Jason Stolaruk (jasonstolaruk@gmail.com)
 Note that page numbers labeled "LYAH" and "RWH" refer to the Japanese translations of LYAH and RWH.
 "PaCP" refers to the original English version of Parallel and Concurrent Programming in Haskell.
+"BH" refers to the 2014 edition of Beginning Haskell: A Project-Based Approach.
 
 
 STYLE
@@ -372,9 +373,7 @@ dumpFile . (helpDir ++) . T.unpack
 ...over...
 dumpFile . (helpDir ++) . (^.unpacked)
 
-Prefer "_1" and "_2" over "fst" and "snd". (See also TUPLES.)
-
-Use "to" with "(^.)" when you can:
+Consider using "to" with "(^.)" when you can:
 obj^.name.to T.toUpper
 maybeString^.to fromJust.packed
 
@@ -428,7 +427,7 @@ To avoid space leaks, prefer "foldr" and "foldl'" over "foldl". (RWH p.113)
 As a rule of thumb, use "foldr" on lists that might be infinite, or when building up a data
 structure. Use "foldl'" on finite lists, and when the fold comes down to a single value.
 
-Always prefer "Double" over "Float".
+In most cases, it's a good idea to prefer "Double" over "Float".
 
 Prefer types that have simple raw machine representations over more complex types that must be
 stored on the heap (for example, prefer "Int" over "Integer").
@@ -553,3 +552,9 @@ a = 'a'
 ...instead of...
 a = "a"
 (When using "Text", just pack your "Char" as necessary.)
+
+Be wary of approximation when comparing floating-point numbers: (BH p.20)
+λ> 4.0 == 4.0000000000000001
+True
+λ> 4.0 `compare` 4.0000000000000001
+EQ
