@@ -17,7 +17,8 @@ test_serializeStdDesig :: T.Text
 test_serializeStdDesig = serialize StdDesig { stdPCEntSing = Just "Taro"
                                             , isCap        = False
                                             , pcEntName    = "mhuman"
-                                            , pcId         = 50 }
+                                            , pcId         = 50
+                                            , pcIds        = [50..55] }
 
 
 test_serializeNonStdDesig :: T.Text
@@ -25,7 +26,7 @@ test_serializeNonStdDesig = serialize NonStdDesig { nonStdPCEntSing = "Taro"
                                                   , nonStdDesc      = "A male human" }
 
 test_deserializeStdDesig :: PCDesig
-test_deserializeStdDesig = deserialize $ std <> T.intercalate d [ "", "True", "fhuman", "55" ] <> std
+test_deserializeStdDesig = deserialize $ std <> T.intercalate d [ "", "True", "fhuman", "55", "[55,54,53,52,51,50]" ] <> std
   where
     std = T.pack [stdDesigDelimiter]
     d   = T.pack [desigDelimiter]

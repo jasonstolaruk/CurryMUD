@@ -72,11 +72,11 @@ unitTestsUtil = testGroup "unit tests Util" [ testCase "stripTelnet" $ test_stri
 unitTestsMiscDataTypes :: TestTree
 unitTestsMiscDataTypes = testGroup "unit tests MiscDataTypes"
     [ testCase "serializeStdDesig"      $ test_serializeStdDesig      @?=
-        std <> T.intercalate d [ "Taro", "False", "mhuman", "50" ] <> std
+        std <> T.intercalate d [ "Taro", "False", "mhuman", "50", "[50,51,52,53,54,55]" ] <> std
     , testCase "serializeNonStdDesig"   $ test_serializeNonStdDesig   @?=
         T.concat [ non, "Taro", d, "A male human", non ]
     , testCase "deserializeStdDesig"    $ test_deserializeStdDesig    @?=
-        StdDesig Nothing True "fhuman" 55
+        StdDesig Nothing True "fhuman" 55 [55,54..50]
     , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=
         NonStdDesig "Hanako" "A female human" ]
   where

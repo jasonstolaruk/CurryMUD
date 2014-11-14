@@ -129,8 +129,8 @@ massLogPla = L.massLogPla "Mud.Cmds"
 -- ==================================================
 
 
-wizCmdList :: [Cmd]
-wizCmdList =
+wizCmds :: [Cmd]
+wizCmds =
     [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
     , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
     , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
@@ -140,8 +140,8 @@ wizCmdList =
     , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the server uptime." } ]
 
 
-debugCmdList :: [Cmd]
-debugCmdList =
+debugCmds :: [Cmd]
+debugCmds =
     [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
     , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
     , Cmd { cmdName = prefixDebugCmd "broad", action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line message." }
@@ -156,8 +156,8 @@ debugCmdList =
     , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." } ]
 
 
-plaCmdList :: [Cmd]
-plaCmdList =
+plaCmds :: [Cmd]
+plaCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD." }
     , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
@@ -189,7 +189,7 @@ plaCmdList =
 
 
 allCmdList :: [Cmd]
-allCmdList = wizCmdList ++ debugCmdList ++ plaCmdList
+allCmdList = wizCmds ++ debugCmds ++ plaCmds
 
 
 prefixCmd :: Char -> CmdName -> T.Text
@@ -485,8 +485,8 @@ findAction i cn = readWSTMVar >>= \ws -> readTMVarInNWS plaTblTMVar >>= \pt ->
     let p        = (ws^.pcTbl) ! i
         r        = (ws^.rmTbl) ! (p^.rmId)
         cmdList  = mkCmdListWithNonStdRmLinks r ++
-                   (if (pt ! i)^.isWiz then wizCmdList   else []) ++
-                   (if isDebug         then debugCmdList else [])
+                   (if (pt ! i)^.isWiz then wizCmds   else []) ++
+                   (if isDebug         then debugCmds else [])
         cns       = map cmdName cmdList
     in maybe (return Nothing)
              (\fn -> return . Just . findActionForFullName fn $ cmdList)
@@ -496,7 +496,7 @@ findAction i cn = readWSTMVar >>= \ws -> readTMVarInNWS plaTblTMVar >>= \pt ->
 
 
 mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
-mkCmdListWithNonStdRmLinks r = plaCmdList ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, isNonStdLink rl ]
+mkCmdListWithNonStdRmLinks r = plaCmds ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, isNonStdLink rl ]
 
 
 isNonStdLink :: RmLink -> Bool
