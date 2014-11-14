@@ -32,7 +32,7 @@ import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, find, foldl', intercalate, intersperse, nub, nubBy, sort)
+import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed)
@@ -1226,26 +1226,36 @@ shufflePut i (t, ws) d cn icir rs is c pis pc f =
               else let (gecrs', miss', rcs') = resolveEntCoinNames i ws rs pis pc
                        eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
                        ecs                   = map procReconciledCoinsPCInv rcs'
-                       (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put icir i ci e) (ws,  [], []     ) eiss
-                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put icir i ci e) (ws', bs, logMsgs) ecs
+                       mnom                  = mkMaybeNthOfM icir ws ci e is
+                       (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put mnom i ci e) (ws,  [], []     ) eiss
+                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i ci e) (ws', bs, logMsgs) ecs
                    in putTMVar t ws'' >> return (bs', logMsgs')
         Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only put things into one container at a time.", [])
 
 
-type ToEnt = Ent
+type NthOfM = (Int, Int)
+
+
+mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe NthOfM
+mkMaybeNthOfM False _  _ _ _  = Nothing
+mkMaybeNthOfM True  ws i e is = let matches = filter (\i' -> let e' = (ws^.entTbl) ! i' in e'^.sing == e^.sing) is
+                                in Just ((+ 1) . fromJust . elemIndex i $ matches, length matches)
+
+
+type ToEnt  = Ent
 
 
 helperPutRemEitherInv :: Id                                  ->
                          PCDesig                             ->
                          PutOrRem                            ->
-                         IsConInRm                           ->
+                         Maybe NthOfM                        ->
                          FromId                              ->
                          ToId                                ->
                          ToEnt                               ->
                          (WorldState, [Broadcast], [T.Text]) ->
                          Either T.Text Inv                   ->
                          (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherInv i d por icir fi ti te (ws, bs, logMsgs) = \case
+helperPutRemEitherInv i d por mnom fi ti te (ws, bs, logMsgs) = \case
   Left  msg -> (ws, bs ++ mkBroadcast i msg, logMsgs)
   Right is  -> let (is', bs')       = if ti `elem` is
                                         then (filter (/= ti) is, bs ++ [sorry])
@@ -1254,19 +1264,35 @@ helperPutRemEitherInv i d por icir fi ti te (ws, bs, logMsgs) = \case
                    tis              = (ws^.invTbl) ! ti
                    ws'              = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
                                          & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
-                   (bs'', logMsgs') = mkPutRemInvDesc i ws' d por icir is' te
+                   (bs'', logMsgs') = mkPutRemInvDesc i ws' d por mnom is' te
                in (ws', bs' ++ bs'', logMsgs ++ logMsgs')
   where
     sorry = ("You can't put the " <> te^.sing <> " inside itself.", [i])
 
 
-mkPutRemInvDesc :: Id -> WorldState -> PCDesig -> PutOrRem -> IsConInRm -> Inv -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i ws d por icir is te = let bs = concatMap helper . mkNameCountBothList i ws $ is
+mkPutRemInvDesc :: Id -> WorldState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToEnt -> ([Broadcast], [T.Text])
+mkPutRemInvDesc i ws d por mnom is te = let bs = concatMap helper . mkNameCountBothList i ws $ is
                                         in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
-        [ (T.concat [ "You ",           mkPorVerb por SndPer, " the ", s, " ", mkPorPrep por SndPer icir, rest ], [i])
-        , (T.concat [ serialize d, " ", mkPorVerb por ThrPer, " a ",   s, " ", mkPorPrep por ThrPer icir, rest ], otherPCIds) ]
+        [ (T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , mkArticle
+                    , s
+                    , " "
+                    , mkPorPrep por SndPer mnom
+                    , rest ], [i])
+        , (T.concat [ serialize d
+                    , " "
+                    , mkPorVerb por ThrPer
+                    , " a "
+                    , s
+                    , " "
+                    , mkPorPrep por ThrPer mnom
+                    , rest ], otherPCIds) ]
+      where
+        mkArticle | por == Put = " the "
+                  | otherwise  = " a "
     helper (_, c, b) =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
@@ -1275,7 +1301,7 @@ mkPutRemInvDesc i ws d por icir is te = let bs = concatMap helper . mkNameCountB
                     , " "
                     , mkPlurFromBoth b
                     , " "
-                    , mkPorPrep por SndPer icir
+                    , mkPorPrep por SndPer mnom
                     , rest ], [i])
         , (T.concat [ serialize d
                     , " "
@@ -1285,12 +1311,10 @@ mkPutRemInvDesc i ws d por icir is te = let bs = concatMap helper . mkNameCountB
                     , " "
                     , mkPlurFromBoth b
                     , " "
-                    , mkPorPrep por ThrPer icir
+                    , mkPorPrep por ThrPer mnom
                     , rest ], otherPCIds) ]
-    rest                    = T.concat [ " ", te^.sing, onTheGround, "." ]
-    onTheGround | icir      = " on the ground"
-                | otherwise = ""
-    otherPCIds              = i `delete` pcIds d
+    rest       = T.concat [ " ", te^.sing, onTheGround mnom, "."  ]
+    otherPCIds = i `delete` pcIds d
 
 
 mkPorVerb :: PutOrRem -> Verb -> T.Text
@@ -1300,45 +1324,70 @@ mkPorVerb Rem SndPer = "remove"
 mkPorVerb Rem ThrPer = "removes"
 
 
-mkPorPrep :: PutOrRem -> Verb -> IsConInRm -> T.Text
-mkPorPrep Put SndPer _     = "in the"
-mkPorPrep Rem SndPer _     = "from the"
-mkPorPrep Put ThrPer False = "in a"
-mkPorPrep Put ThrPer True  = "in the"
-mkPorPrep Rem ThrPer False = "from a"
-mkPorPrep Rem ThrPer True  = "from the"
+mkPorPrep :: PutOrRem -> Verb -> Maybe NthOfM -> T.Text
+mkPorPrep Put SndPer Nothing       = "in the"
+mkPorPrep Put SndPer (Just (n, m)) = "in the"   <> descNthOfM n m
+mkPorPrep Rem SndPer Nothing       = "from the"
+mkPorPrep Rem SndPer (Just (n, m)) = "from the" <> descNthOfM n m
+mkPorPrep Put ThrPer Nothing       = "in a"
+mkPorPrep Put ThrPer (Just (n, m)) = "in the"   <> descNthOfM n m
+mkPorPrep Rem ThrPer Nothing       = "from a"
+mkPorPrep Rem ThrPer (Just (n, m)) = "from the" <> descNthOfM n m
+
+
+descNthOfM :: Int -> Int -> T.Text
+descNthOfM 1 1 = ""
+descNthOfM n _ = " " <> mkOrdinal n
+
+
+onTheGround :: Maybe NthOfM -> T.Text
+onTheGround Nothing = ""
+onTheGround _       = " on the ground"
 
 
 helperPutRemEitherCoins :: Id                                  ->
                            PCDesig                             ->
                            PutOrRem                            ->
-                           IsConInRm                           ->
+                           Maybe NthOfM                        ->
                            FromId                              ->
                            ToId                                ->
                            ToEnt                               ->
                            (WorldState, [Broadcast], [T.Text]) ->
                            Either [T.Text] Coins               ->
                            (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherCoins i d por icir fi ti te (ws, bs, logMsgs) = \case
+helperPutRemEitherCoins i d por mnom fi ti te (ws, bs, logMsgs) = \case
   Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
   Right c    -> let fc              = (ws^.coinsTbl) ! fi
                     tc              = (ws^.coinsTbl) ! ti
                     ws'             = ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                          & coinsTbl.at ti ?~ tc <> c
-                    (bs', logMsgs') = mkPutRemCoinsDescs i d por icir c te
+                    (bs', logMsgs') = mkPutRemCoinsDescs i d por mnom c te
                 in (ws', bs ++ bs', logMsgs ++ logMsgs')
 
 
-mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> IsConInRm -> Coins -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescs i d por icir (Coins (cop, sil, gol)) te = let bs = concat . catMaybes $ [ c, s, g ]
+mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
+mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) te = let bs = concat . catMaybes $ [ c, s, g ]
                                                              in (bs, extractLogMsgs i bs)
   where
     c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
     s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
     g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
     helper a cn | a == 1 =
-        [ (T.concat [ "You ",           mkPorVerb por SndPer, " a ", cn, " ", mkPorPrep por SndPer icir, rest ], [i])
-        , (T.concat [ serialize d, " ", mkPorVerb por ThrPer, " a ", cn, " ", mkPorPrep por ThrPer icir, rest ], otherPCIds) ]
+        [ (T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , " a "
+                    , cn
+                    , " "
+                    , mkPorPrep por SndPer mnom
+                    , rest ], [i])
+        , (T.concat [ serialize d
+                    , " "
+                    , mkPorVerb por ThrPer
+                    , " a "
+                    , cn
+                    , " "
+                    , mkPorPrep por ThrPer mnom
+                    , rest ], otherPCIds) ]
     helper a cn =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
@@ -1347,7 +1396,7 @@ mkPutRemCoinsDescs i d por icir (Coins (cop, sil, gol)) te = let bs = concat . c
                     , " "
                     , cn
                     , "s "
-                    , mkPorPrep por SndPer icir
+                    , mkPorPrep por SndPer mnom
                     , rest ], [i])
         , (T.concat [ serialize d
                     , " "
@@ -1357,13 +1406,10 @@ mkPutRemCoinsDescs i d por icir (Coins (cop, sil, gol)) te = let bs = concat . c
                     , " "
                     , cn
                     , "s "
-                    , mkPorPrep por ThrPer icir
+                    , mkPorPrep por ThrPer mnom
                     , rest ], otherPCIds) ]
-    rest                    = T.concat [ " ", te^.sing, onTheGround, "." ]
-    onTheGround | icir      = " on the ground"
-                | otherwise = ""
-    otherPCIds              = i `delete` pcIds d
-
+    rest       = T.concat [ " ", te^.sing, onTheGround mnom, "." ]
+    otherPCIds = i `delete` pcIds d
 
 
 -----
@@ -1429,8 +1475,9 @@ shuffleRem i (t, ws) d cn icir rs is c f =
                        (gecrs', miss', rcs') = resolveEntCoinNames i ws rs cis cc
                        eiss                  = map (procGecrMisCon (e^.sing)) . zip gecrs' $ miss'
                        ecs                   = map (procReconciledCoinsCon (e^.sing)) rcs'
-                       (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem icir ci i e) (ws,  [], []     ) eiss
-                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem icir ci i e) (ws', bs, logMsgs) ecs
+                       mnom                  = mkMaybeNthOfM icir ws ci e is
+                       (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem mnom ci i e) (ws,  [], []     ) eiss
+                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem mnom ci i e) (ws', bs, logMsgs) ecs
                    in putTMVar t ws'' >> return (bs', logMsgs')
         Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only remove things from one container at a time.", [])
 

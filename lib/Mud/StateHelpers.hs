@@ -26,6 +26,7 @@ module Mud.StateHelpers ( allKeys
                         , mkDividerTxt
                         , mkListFromCoins
                         , mkNTBroadcast
+                        , mkPlur
                         , mkPlurFromBoth
                         , mkUnknownPCEntName
                         , modifyNWS
@@ -372,6 +373,11 @@ getEffBothGramNos i ws i' = let e  = (ws^.entTbl) ! i'
     pluralize "dwarf" = "dwarves"
     pluralize "elf"   = "elves"
     pluralize rn      = rn <> "s"
+
+
+mkPlur :: Ent -> Plur
+mkPlur e | T.null $ e^.plur = e^.sing <> "s"
+         | otherwise        = e^.plur
 
 
 mkPlurFromBoth :: BothGramNos -> Plur

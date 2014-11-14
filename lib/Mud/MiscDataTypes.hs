@@ -235,7 +235,7 @@ data Verb = SndPer | ThrPer
 data GetOrDrop = Get | Drop
 
 
-data PutOrRem = Put | Rem deriving Show
+data PutOrRem = Put | Rem deriving (Eq, Show)
 
 
 data RightOrLeft = R
