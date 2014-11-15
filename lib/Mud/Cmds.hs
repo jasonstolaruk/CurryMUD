@@ -150,7 +150,7 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
-    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove and put coins from/into a sack on the ground." }
+    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and put into a sack on the ground." }
     , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
@@ -2431,8 +2431,9 @@ debugRemPut (i, mq, _) [] = do
     logPlaExec (prefixDebugCmd "remput") i
     mapM_ (fakeClientInput mq) . take 10 . cycle $ [ remCmd, putCmd ]
   where
-    remCmd = T.concat [ "remove ", T.pack [allChar], "coins ", T.pack [rmChar], "sack" ]
-    putCmd = T.concat [ "put ",    T.pack [allChar], "coins ", T.pack [rmChar], "sack" ]
+    remCmd = "remove" <> rest
+    putCmd = "put"    <> rest
+    rest   = T.concat [ " ", T.pack [allChar], " ", T.pack [rmChar], "sack" ]
 debugRemPut imc@(_, mq, cols) rs = ignore mq cols rs >> debugRemPut imc []
 
 
