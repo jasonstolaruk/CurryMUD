@@ -19,7 +19,6 @@ module Mud.Util ( adjustIndent
                 , eitherRet
                 , findFullNameForAbbrev
                 , grepTextList
-                , injectCR
                 , isVowel
                 , maybeRet
                 , maybeVoid
@@ -243,10 +242,6 @@ nlnl = nl . nl
 
 nl' :: T.Text -> T.Text
 nl' = ("\n" <>)
-
-
-injectCR :: T.Text -> T.Text
-injectCR = T.replace "\n" "\r\n"
 
 
 stripTelnet :: String -> String

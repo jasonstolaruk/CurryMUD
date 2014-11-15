@@ -44,7 +44,7 @@ import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
 import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
-import System.IO (BufferMode(..), Handle, hClose, hFlush, hGetBuffering, hGetLine, hIsEOF, hSetBuffering, hSetNewlineMode, openTempFile, universalNewlineMode)
+import System.IO (BufferMode(..), Handle, hClose, hGetBuffering, hGetLine, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1, Newline(..), NewlineMode(..), openTempFile)
 import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
@@ -150,6 +150,7 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
+    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove and put coins from/into a sack on the ground." }
     , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
@@ -286,7 +287,8 @@ talk h host = helper `finally` cleanUp
         s <- get
         liftIO $ race_ (runStateInIORefT (server  h i mq) s)
                        (runStateInIORefT (receive h i mq) s)
-    configBuffer = hSetNewlineMode h universalNewlineMode >> hSetBuffering h LineBuffering
+    configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
+    nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
 
 
@@ -383,7 +385,7 @@ server :: Handle -> Id -> MsgQueue -> MudStack ()
 server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      FromServer msg -> (liftIO . T.hPutStr h . injectCR $ msg) >> (liftIO . hFlush $ h) >> loop
+      FromServer msg -> (liftIO . T.hPutStr h $ msg) >> loop
       FromClient msg -> let msg' = T.strip . T.pack . stripTelnet . T.unpack $ msg
                         in unless (T.null msg') (handleInp i mq msg') >> loop
       Prompt     p   -> sendPrompt h p >> loop
@@ -412,19 +414,18 @@ getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()
-sendPrompt h p = let p' = p <> T.pack [ telnetIAC, telnetGA ]
-                 in liftIO $ T.hPutStr h p' >> hFlush h
+sendPrompt h p = liftIO . T.hPutStr h . nl $ p
 
 
 cowbye :: Handle -> MudStack ()
 cowbye h = takeADump `catch` readFileExHandler "cowbye"
   where
-    takeADump = liftIO . T.hPutStr h . injectCR =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
+    takeADump = liftIO . T.hPutStr h =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
 
 
 -- TODO: Make a wizard command that does this.
 boot :: Handle -> MudStack ()
-boot h = liftIO . T.hPutStr h . injectCR . nl $ "You have been booted from CurryMUD. Goodbye!"
+boot h = liftIO . T.hPutStr h . nl $ "You have been booted from CurryMUD. Goodbye!"
 
 
 shutDown :: MudStack ()
@@ -2420,3 +2421,20 @@ debugBroad (i, _, _) [] = do
           \[9] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
           \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
 debugBroad imc@(_, mq, cols) rs = ignore mq cols rs >> debugBroad imc []
+
+
+-----
+
+
+debugRemPut :: Action
+debugRemPut (i, mq, _) [] = do
+    logPlaExec (prefixDebugCmd "remput") i
+    mapM_ (fakeClientInput mq) . take 10 . cycle $ [ remCmd, putCmd ]
+  where
+    remCmd = T.concat [ "remove ", T.pack [allChar], "coins ", T.pack [rmChar], "sack" ]
+    putCmd = T.concat [ "put ",    T.pack [allChar], "coins ", T.pack [rmChar], "sack" ]
+debugRemPut imc@(_, mq, cols) rs = ignore mq cols rs >> debugRemPut imc []
+
+
+fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
+fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
