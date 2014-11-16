@@ -150,7 +150,8 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
-    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and put into a sack on the ground." }
+    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and put into\
+                                                                               \ a sack on the ground." }
     , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
@@ -401,12 +402,11 @@ serverExHandler = plaThreadExHandler "server"
 
 
 plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
-plaThreadExHandler n i e =
-    if fromException e == Just ThreadKilled
-      then closePlaLog i
-      else do
-          logExMsg (n <> "ExHandler") ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
-          liftIO . flip throwTo e =<< getListenThreadId
+plaThreadExHandler n i e
+  | fromException e == Just ThreadKilled = closePlaLog i
+  | otherwise                            = do
+      logExMsg (n <> "ExHandler") ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
+      liftIO . flip throwTo e =<< getListenThreadId
 
 
 getListenThreadId :: MudStack ThreadId

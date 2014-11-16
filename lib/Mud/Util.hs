@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE KindSignatures, LambdaCase, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE KindSignatures, LambdaCase, OverloadedStrings, RankNTypes, ViewPatterns #-}
 
 -- This module is considered to have sufficient test coverage as of 2014-10-13.
 
@@ -86,8 +86,7 @@ wordWrap cols t
 
 
 breakEnd :: T.Text -> (T.Text, T.Text)
-breakEnd t = over both T.reverse (before, after)
-  where (after, before) = T.break isSpace . T.reverse $ t
+breakEnd (T.break isSpace . T.reverse -> (after, before)) = over both T.reverse (before, after)
 
 
 wordWrapIndent :: Int -> Int -> T.Text -> [T.Text]
@@ -113,9 +112,7 @@ leadingNullsToSpcs = xformLeading '\NUL' ' '
 
 xformLeading :: Char -> Char -> T.Text -> T.Text
 xformLeading _ _ "" = ""
-xformLeading a b t  = let (as, t') = T.break (/= a) t
-                          n        = T.length as
-                      in T.replicate n (T.pack [b]) <> t'
+xformLeading a b (T.break (/= a) -> (T.length -> n, rest)) = T.replicate n (T.pack [b]) <> rest
 
 
 adjustIndent :: Int -> Int -> Int
@@ -124,21 +121,18 @@ adjustIndent n cols = if n >= cols then cols - 1 else n
 
 wordWrapLines :: Int -> [T.Text] -> [[T.Text]]
 wordWrapLines _    []  = []
-wordWrapLines cols [t] = let nolst = numOfLeadingSpcs t
-                         in [ wordWrapIndent nolst cols t ]
-wordWrapLines cols (a:b:rest) = if T.null a
-  then [""]     : wrapNext
-  else helper a : wrapNext
-    where
-      wrapNext = wordWrapLines cols $ b : rest
-      helper
-        | hasIndentTag = wrapLineWithIndentTag cols
-        | nolsa > 0    = wordWrapIndent nolsa  cols
-        | nolsb > 0    = wordWrapIndent nolsb  cols
-        | otherwise    = wordWrap cols
-      hasIndentTag = T.last a == indentTagChar
-      nolsa        = numOfLeadingSpcs a
-      nolsb        = numOfLeadingSpcs b
+wordWrapLines cols [t] = [ wordWrapIndent (numOfLeadingSpcs t) cols t ]
+wordWrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
+                              | otherwise = helper a : wrapNext
+  where
+    wrapNext         = wordWrapLines cols $ b : rest
+    helper
+      | hasIndentTag = wrapLineWithIndentTag cols
+      | nolsa > 0    = wordWrapIndent nolsa  cols
+      | nolsb > 0    = wordWrapIndent nolsb  cols
+      | otherwise    = wordWrap cols
+    hasIndentTag     = T.last a == indentTagChar
+    (nolsa, nolsb)   = over both numOfLeadingSpcs (a, b)
 
 
 numOfLeadingSpcs :: T.Text -> Int
@@ -146,25 +140,22 @@ numOfLeadingSpcs = T.length . T.takeWhile isSpace
 
 
 wrapLineWithIndentTag :: Int -> T.Text -> [T.Text]
-wrapLineWithIndentTag cols t = wordWrapIndent n' cols t'
+wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wordWrapIndent i cols t
   where
-    parseIndentTag = T.break (not . isDigit) . T.reverse . T.init $ t
-    (numText, t')  = over both T.reverse parseIndentTag
-    readsRes       = reads . T.unpack $ numText :: [(Int, String)]
-    n              = \case []       -> 0
-                           [(x, _)] -> x
-                           xs       -> patternMatchFail "Mud.Util" "wrapLineWithIndentTag n" [ showText xs ]
-    n'             = if n readsRes == 0 then calcIndent t' else adjustIndent (n readsRes) cols
+    (numTxt, t) = over both T.reverse broken
+    readsRes    = reads . T.unpack $ numTxt :: [(Int, String)]
+    extractInt []               = 0
+    extractInt [(x, _)] | x > 0 = x
+    extractInt xs               = patternMatchFail "Mud.Util" "wrapLineWithIndentTag extractInt" [ showText xs ]
+    indent          = extractInt readsRes
+    i | indent == 0 = calcIndent t
+      | otherwise   = adjustIndent indent cols
 
 
 calcIndent :: T.Text -> Int
-calcIndent t
-  | T.null b  = 0
-  | otherwise = lenOfFirstWord + numOfFollowingSpcs
-  where
-    (a, b)             = T.break isSpace t
-    lenOfFirstWord     = T.length a
-    numOfFollowingSpcs = numOfLeadingSpcs b
+calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
+  | T.null rest = 0
+  | otherwise   = lenOfFirstWord + numOfLeadingSpcs rest
 
 
 -- ==================================================
@@ -220,12 +211,10 @@ parensPad = quoteWithAndPad ("(", ")")
 
 
 padOrTrunc :: Int -> T.Text -> T.Text
-padOrTrunc x t
-  | x < 0 = ""
-  | otherwise = let l = T.length t
-                in case l `compare` x of EQ -> t
-                                         LT -> let diff = x - l in t <> T.replicate diff " "
-                                         GT -> T.take x t
+padOrTrunc x _                 | x < 0      = ""
+padOrTrunc x t@(T.length -> l) | l `compare` x == LT = t <> T.replicate (x - l) " "
+                               | l `compare` x == GT = T.take x t
+padOrTrunc _ t = t
 
 
 -- ==================================================
@@ -246,10 +235,9 @@ nl' = ("\n" <>)
 
 stripTelnet :: String -> String
 stripTelnet msg@(x:y:_:rest)
-  | x == telnetIAC = if y == telnetSB
-                       then tail . dropWhile (/= telnetSE) $ rest
-                       else stripTelnet rest
-  | otherwise      = msg
+  | x == telnetIAC, y == telnetSB = tail . dropWhile (/= telnetSE) $ rest
+  | x == telnetIAC                = stripTelnet rest
+  | otherwise                     = msg
 stripTelnet msg = msg
 
 
@@ -266,9 +254,9 @@ uncapitalize txt = T.pack [ toLower . T.head $ txt ] <> T.tail txt
 
 
 aOrAn :: T.Text -> T.Text
-aOrAn t | T.null t' = ""
+aOrAn t | T.null t'             = ""
         | isVowel . T.head $ t' = "an " <> t'
-        | otherwise = "a " <> t'
+        | otherwise             = "a "  <> t'
   where
     t' = T.strip t
 
@@ -310,11 +298,10 @@ mkOrdinal :: Int -> T.Text
 mkOrdinal 11 = "11th"
 mkOrdinal 12 = "12th"
 mkOrdinal 13 = "13th"
-mkOrdinal x  = let t = showText x
-               in t <> case T.last t of '1' -> "st"
-                                        '2' -> "nd"
-                                        '3' -> "rd"
-                                        _   -> "th"
+mkOrdinal (T.last . showText -> c) | c == '1' = "st"
+                                   | c == '2' = "nd"
+                                   | c == '3' = "rd"
+mkOrdinal _ = "th"
 
 
 grepTextList :: T.Text -> [T.Text] -> [T.Text]
@@ -322,7 +309,7 @@ grepTextList needle = filter (needle `T.isInfixOf`)
 
 
 reverseLookup :: (Eq v) => v -> M.Map k v -> k
-reverseLookup v = fst . head . filter (\(_, v') -> v' == v) . M.assocs
+reverseLookup v = fst . head . filter ((== v) . snd) . M.assocs
 
 
 maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
