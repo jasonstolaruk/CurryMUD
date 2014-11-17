@@ -614,8 +614,7 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns
              (findFullNameForAbbrev r tns)
   where
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
-    getHelpTopic tn = do
-        (try . helper $ tn) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . T.unlines . wordWrap cols $ "Unfortunately, the " <> dblQuote tn <> " help file could not be retrieved."))
+    getHelpTopic tn = (try . helper $ tn) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . T.unlines . wordWrap cols $ "Unfortunately, the " <> dblQuote tn <> " help file could not be retrieved."))
     helper       tn = liftIO . T.readFile . (helpDir ++) . T.unpack $ tn
 
 

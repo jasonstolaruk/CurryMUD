@@ -343,20 +343,16 @@ type BothGramNos = (Sing, Plur)
 
 
 getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
-getEffBothGramNos i ws i' = let e  = (ws^.entTbl) ! i'
-                                mn = e^.entName
-                            in case mn of
-                              Nothing -> let p      = (ws^.pcTbl)  ! i
-                                             intros = p^.introduced
-                                             n      = e^.sing
-                                             m      = (ws^.mobTbl) ! i'
-                                             sn     = pp $ m^.sex
-                                             p'     = (ws^.pcTbl)  ! i'
-                                             rn     = pp $ p'^.race
-                                         in if n `elem` intros
-                                           then (n,  "")
-                                           else over both ((sn <>) . (" " <>)) (rn, pluralize rn)
-                              Just _ -> (e^.sing, e^.plur)
+getEffBothGramNos i ws i'
+  | e <- (ws^.entTbl) ! i', mn <- e^.entName = case mn of
+    Nothing -> let ((^.introduced) -> intros) = (ws^.pcTbl)  ! i
+                   n                          = e^.sing
+                   (pp . (^.sex)  -> sn)      = (ws^.mobTbl) ! i'
+                   (pp . (^.race) -> rn)      = (ws^.pcTbl)  ! i'
+               in if n `elem` intros
+                 then (n,  "")
+                 else over both ((sn <>) . (" " <>)) (rn, pluralize rn)
+    Just _  -> (e^.sing, e^.plur)
   where
     pluralize "dwarf" = "dwarves"
     pluralize "elf"   = "elves"

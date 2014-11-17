@@ -218,8 +218,8 @@ parensPad = quoteWithAndPad ("(", ")")
 
 padOrTrunc :: Int -> T.Text -> T.Text
 padOrTrunc x _                 | x < 0      = ""
-padOrTrunc x t@(T.length -> l) | l `compare` x == LT = t <> T.replicate (x - l) " "
-                               | l `compare` x == GT = T.take x t
+padOrTrunc x t@(T.length -> l) | l < x = t <> T.replicate (x - l) " "
+                               | l > x = T.take x t
 padOrTrunc _ t = t
 
 
