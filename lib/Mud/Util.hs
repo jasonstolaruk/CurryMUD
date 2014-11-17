@@ -48,6 +48,7 @@ module Mud.Util ( adjustIndent
 
 import Mud.TopLvlDefs
 
+import Control.Applicative (pure)
 import Control.Lens (both, folded, over, to)
 import Control.Lens.Operators ((^..))
 import Control.Monad (guard)
@@ -63,10 +64,8 @@ import qualified Data.Text as T
 
 
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
-blowUp modName funName msg vals = error . T.unpack $ errorMsg
-  where
-    errorMsg = T.concat [ modName, " ", funName, ": ", msg, ". ", valsText ]
-    valsText = bracketQuote . T.intercalate ", " . map singleQuote $ vals
+blowUp modName funName msg (bracketQuote . T.intercalate ", " . map singleQuote -> vals) =
+    error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, ". ", vals ]
 
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a
@@ -79,12 +78,12 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 
 wordWrap :: Int -> T.Text -> [T.Text]
 wordWrap cols t
-  | T.null afterMax         = [t]
-  | T.any isSpace beforeMax = beforeSpace : wordWrap cols (afterSpace <> afterMax)
-  | otherwise               = beforeMax   : wordWrap cols afterMax
+  | T.null afterMax                                 = [t]
+  | T.any isSpace beforeMax
+  , (beforeSpace, afterSpace) <- breakEnd beforeMax = beforeSpace : wordWrap cols (afterSpace <> afterMax)
+  | otherwise                                       = beforeMax   : wordWrap cols afterMax
   where
-    (beforeMax, afterMax)     = T.splitAt cols t
-    (beforeSpace, afterSpace) = breakEnd beforeMax
+    (beforeMax, afterMax) = T.splitAt cols t
 
 
 breakEnd :: T.Text -> (T.Text, T.Text)
@@ -95,13 +94,13 @@ wordWrapIndent :: Int -> Int -> T.Text -> [T.Text]
 wordWrapIndent n cols = map leadingNullsToSpcs . wrapIt . leadingSpcsToNulls
   where
     wrapIt t
-      | T.null afterMax         = [t]
-      | T.any isSpace beforeMax = beforeSpace : wordWrapIndent n cols (leadingIndent <> afterSpace <> afterMax)
-      | otherwise               = beforeMax   : wordWrapIndent n cols (leadingIndent <> afterMax)
+      | T.null afterMax = [t]
+      | T.any isSpace beforeMax, (beforeSpace, afterSpace) <- breakEnd beforeMax =
+                    beforeSpace : wordWrapIndent n cols (leadingIndent <> afterSpace <> afterMax)
+      | otherwise = beforeMax   : wordWrapIndent n cols (leadingIndent <> afterMax)
       where
-        leadingIndent             = T.replicate (adjustIndent n cols) "\NUL"
-        (beforeMax,   afterMax)   = T.splitAt cols t
-        (beforeSpace, afterSpace) = breakEnd beforeMax
+        (beforeMax, afterMax) = T.splitAt cols t
+        leadingIndent         = T.replicate (adjustIndent n cols) "\NUL"
 
 
 leadingSpcsToNulls :: T.Text -> T.Text
@@ -113,8 +112,8 @@ leadingNullsToSpcs = xformLeading '\NUL' ' '
 
 
 xformLeading :: Char -> Char -> T.Text -> T.Text
-xformLeading _ _ "" = ""
-xformLeading a b (T.break (/= a) -> (T.length -> n, rest)) = T.replicate n (T.pack [b]) <> rest
+xformLeading _ _                    ""                                        = ""
+xformLeading a (T.pack . pure -> b) (T.break (/= a) -> (T.length -> n, rest)) = T.replicate n b <> rest
 
 
 adjustIndent :: Int -> Int -> Int
@@ -122,8 +121,8 @@ adjustIndent n cols = if n >= cols then cols - 1 else n
 
 
 wordWrapLines :: Int -> [T.Text] -> [[T.Text]]
-wordWrapLines _    []  = []
-wordWrapLines cols [t] = [ wordWrapIndent (numOfLeadingSpcs t) cols t ]
+wordWrapLines _    []                     = []
+wordWrapLines cols [t]                    = [ wordWrapIndent (numOfLeadingSpcs t) cols t ]
 wordWrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
                               | otherwise = helper a : wrapNext
   where
@@ -142,7 +141,7 @@ numOfLeadingSpcs = T.length . T.takeWhile isSpace
 
 
 wrapLineWithIndentTag :: Int -> T.Text -> [T.Text]
-wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wordWrapIndent i cols t
+wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wordWrapIndent n cols t
   where
     (numTxt, t) = over both T.reverse broken
     readsRes    = reads . T.unpack $ numTxt :: [(Int, String)]
@@ -150,7 +149,7 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
     extractInt [(x, _)] | x > 0 = x
     extractInt xs               = patternMatchFail "Mud.Util" "wrapLineWithIndentTag extractInt" [ showText xs ]
     indent          = extractInt readsRes
-    i | indent == 0 = calcIndent t
+    n | indent == 0 = calcIndent t
       | otherwise   = adjustIndent indent cols
 
 
@@ -165,7 +164,7 @@ calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
 
 
 quoteWith :: T.Text -> T.Text -> T.Text
-quoteWith q t = T.concat [ q, t, q ]
+quoteWith q = quoteWith' (q, q)
 
 
 quoteWith' :: (T.Text, T.Text) -> T.Text -> T.Text
@@ -201,11 +200,10 @@ unquote = T.init . T.tail
 
 
 quoteWithAndPad :: (T.Text, T.Text) -> Int -> T.Text -> T.Text
-quoteWithAndPad q x t = quoteWith' q t' <> T.replicate p " "
+quoteWithAndPad q x t = quoteWith' q t' <> T.replicate (x - T.length t' - 2) " "
   where
     t' = T.take (x - l - 1) t
     l  = sum $ [ fst q, snd q ]^..folded.to T.length
-    p  = x - T.length t' - 2
 
 
 bracketPad :: Int -> T.Text -> T.Text
@@ -217,7 +215,7 @@ parensPad = quoteWithAndPad ("(", ")")
 
 
 padOrTrunc :: Int -> T.Text -> T.Text
-padOrTrunc x _                 | x < 0      = ""
+padOrTrunc x _                 | x < 0 = ""
 padOrTrunc x t@(T.length -> l) | l < x = t <> T.replicate (x - l) " "
                                | l > x = T.take x t
 padOrTrunc _ t = t
@@ -240,11 +238,10 @@ nl' = ("\n" <>)
 
 
 stripTelnet :: String -> String
-stripTelnet msg@(x:y:_:rest)
+stripTelnet (x:y:_:rest)
   | x == telnetIAC, y == telnetSB = tail . dropWhile (/= telnetSE) $ rest
   | x == telnetIAC                = stripTelnet rest
-  | otherwise                     = msg
-stripTelnet msg = msg
+stripTelnet msg                   = msg
 
 
 showText :: (Show a) => a -> T.Text
@@ -252,19 +249,21 @@ showText = T.pack . show
 
 
 capitalize :: T.Text -> T.Text
-capitalize txt = T.pack [ toUpper . T.head $ txt ] <> T.tail txt
+capitalize = caseHelper toUpper
 
 
 uncapitalize :: T.Text -> T.Text
-uncapitalize txt = T.pack [ toLower . T.head $ txt ] <> T.tail txt
+uncapitalize = caseHelper toLower
+
+
+caseHelper :: (Char -> Char) -> T.Text -> T.Text
+caseHelper f txt = T.pack [ f . T.head $ txt ] <> T.tail txt
 
 
 aOrAn :: T.Text -> T.Text
-aOrAn t | T.null t'             = ""
-        | isVowel . T.head $ t' = "an " <> t'
-        | otherwise             = "a "  <> t'
-  where
-    t' = T.strip t
+aOrAn (T.strip -> t) | T.null t             = ""
+                     | isVowel . T.head $ t = "an " <> t
+                     | otherwise            = "a "  <> t
 
 
 isVowel :: Char -> Bool
