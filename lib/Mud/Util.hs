@@ -31,6 +31,8 @@ module Mud.Util ( adjustIndent
                 , parensPad
                 , parensQuote
                 , patternMatchFail
+                , quoteWith
+                , quoteWith'
                 , quoteWithAndPad
                 , reverseLookup
                 , showText
@@ -162,16 +164,20 @@ calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
 -- Quoting:
 
 
-quoteWith :: (T.Text, T.Text) -> T.Text -> T.Text
-quoteWith (a, b) t = T.concat [ a, t, b ]
+quoteWith :: T.Text -> T.Text -> T.Text
+quoteWith q t = T.concat [ q, t, q ]
+
+
+quoteWith' :: (T.Text, T.Text) -> T.Text -> T.Text
+quoteWith' (a, b) t = T.concat [ a, t, b ]
 
 
 singleQuote :: T.Text -> T.Text
-singleQuote = quoteWith ("'", "'")
+singleQuote = quoteWith "'"
 
 
 dblQuote :: T.Text -> T.Text
-dblQuote = quoteWith ("\"", "\"")
+dblQuote = quoteWith "\""
 
 
 dblQuoteStr :: String -> String
@@ -179,11 +185,11 @@ dblQuoteStr = T.unpack . dblQuote . T.pack
 
 
 bracketQuote :: T.Text -> T.Text
-bracketQuote = quoteWith ("[", "]")
+bracketQuote = quoteWith' ("[", "]")
 
 
 parensQuote :: T.Text -> T.Text
-parensQuote = quoteWith ("(", ")")
+parensQuote = quoteWith' ("(", ")")
 
 
 unquote :: T.Text -> T.Text
@@ -195,7 +201,7 @@ unquote = T.init . T.tail
 
 
 quoteWithAndPad :: (T.Text, T.Text) -> Int -> T.Text -> T.Text
-quoteWithAndPad q x t = quoteWith q t' <> T.replicate p " "
+quoteWithAndPad q x t = quoteWith' q t' <> T.replicate p " "
   where
     t' = T.take (x - l - 1) t
     l  = sum $ [ fst q, snd q ]^..folded.to T.length

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes, ViewPatterns #-}
 
 -- This module is considered to have sufficient test coverage as of 2014-10-13.
 
@@ -228,41 +228,31 @@ bcast bs = getMqtPt >>= \(mqt, pt) -> do
 
 
 parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
-parsePCDesig i ws msg =
-    let p      = (ws^.pcTbl) ! i
-        intros = p^.introduced
-    in helper intros msg
+parsePCDesig i ws msg = let ((^.introduced) -> intros) = (ws^.pcTbl) ! i
+                        in helper intros msg
   where
     helper intros msg'
-      | T.pack [stdDesigDelimiter] `T.isInfixOf` msg' =
-          let (left, pcd, rest) = extractPCDesigTxt stdDesigDelimiter msg'
-          in case pcd of
-            (StdDesig (Just pes) ic pen pi pis)
-              | pes `elem` intros -> left <> pes <> helper intros rest
-              | otherwise         -> left <> expandPCEntName i ws ic pen pi pis <> helper intros rest
-            (StdDesig Nothing    ic pen pi pis) -> left <> expandPCEntName i ws ic pen pi pis <> helper intros rest
-            _                                   -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
-      | T.pack [nonStdDesigDelimiter] `T.isInfixOf` msg' =
-          let (left, NonStdDesig pes desc, rest) = extractPCDesigTxt nonStdDesigDelimiter msg'
-          in if pes `elem` intros
-            then left <> pes  <> helper intros rest
-            else left <> desc <> helper intros rest
-      | otherwise              = msg'
-    extractPCDesigTxt c txt = let (left,   rest ) = T.span (/= c) txt
-                                  (pcdTxt, rest') = T.span (/= c) . T.tail $ rest
-                                  rest''          = T.tail rest'
-                                  pcd             = deserialize $ packedDelim <> pcdTxt <> packedDelim :: PCDesig
-                                  packedDelim     = T.pack [c]
-                              in (left, pcd, rest'')
+      | T.pack [stdDesigDelimiter] `T.isInfixOf` msg'
+      , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter msg' = case pcd of
+        (StdDesig (Just pes) ic pen pi pis) ->
+            left <> if pes `elem` intros then pes else expandPCEntName i ws ic pen pi pis <> helper intros rest
+        (StdDesig Nothing    ic pen pi pis) -> left <> expandPCEntName i ws ic pen pi pis <> helper intros rest
+        _                                   -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
+      | T.pack [nonStdDesigDelimiter] `T.isInfixOf` msg'
+      , (left, NonStdDesig pes desc, rest) <- extractPCDesigTxt nonStdDesigDelimiter msg' =
+          left <> if pes `elem` intros then pes else desc <> helper intros rest
+      | otherwise = msg'
+    extractPCDesigTxt c (T.span (/= c) -> (left, T.span (/= c) . T.tail -> (pcdTxt, T.tail -> rest)))
+      | pcd <- deserialize . quoteWith (T.pack [c]) $ pcdTxt :: PCDesig = (left, pcd, rest)
 
 
 expandPCEntName :: Id -> WorldState -> Bool -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ws ic pen pi pis = T.concat [ leading, "he ", xth, expandSex . T.head $ pen, " ", T.tail pen ]
+expandPCEntName i ws ic pen pi ((i `delete`) -> pis) =
+    T.concat [ leading, "he ", xth, expandSex . T.head $ pen, " ", T.tail pen ]
   where
     leading | ic        = "T"
             | otherwise = "t"
-    xth = let pis'    = i `delete` pis
-              matches = foldr (\i' acc -> if mkUnknownPCEntName i' ws == pen then i' : acc else acc) [] pis'
+    xth = let matches = foldr (\i' acc -> if mkUnknownPCEntName i' ws == pen then i' : acc else acc) [] pis
               x       = fromJust . elemIndex pi $ matches
           in case matches of [_] -> ""
                              _   -> (<> " ") . mkOrdinal . (+ 1) $ x
@@ -287,10 +277,9 @@ bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = bcast =<< helper
   where
     helper = onWS $ \(t, ws) ->
-        let p   = (ws^.pcTbl)  ! i
-            ris = (ws^.invTbl) ! (p^.rmId)
-            pis = findPCIds ws $ i `delete` ris
-        in putTMVar t ws >> return [(msg, pis)]
+        let ((^.rmId)     -> ri)  = (ws^.pcTbl) ! i
+            ((i `delete`) -> ris) = (ws^.invTbl) ! ri
+        in putTMVar t ws >> return [(msg, findPCIds ws ris)]
 
 
 massSend :: T.Text -> MudStack ()
@@ -323,7 +312,7 @@ massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
 mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
 mkAssocListTxt cols = T.concat . map helper
   where
-    helper (a, b) = T.unlines . wordWrapIndent 2 cols $ (unquote . showText $ a) <> ": " <> showText b
+    helper (unquote . showText -> a, showText -> b) = T.unlines . wordWrapIndent 2 cols $ a <> ": " <> b
 
 
 -- ============================================================
@@ -339,8 +328,7 @@ getUnusedId = head . (\\) [0..] . allKeys
 
 
 sortInv :: WorldState -> Inv -> Inv
-sortInv ws is = let ts              = [ (ws^.typeTbl) ! i | i <- is ]
-                    (pcIs, nonPCIs) = foldl' helper ([], []) . zip is $ ts
+sortInv ws is = let (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) = [ (ws^.typeTbl) ! i | i <- is ]
                 in (pcIs ++) . sortNonPCs $ nonPCIs
   where
     helper (pcIs, nonPCIs) (i, t) | t == PCType = (pcIs ++ [i], nonPCIs)
@@ -413,10 +401,8 @@ getEffName i ws i' = let e = (ws^.entTbl) ! i'
 
 
 mkUnknownPCEntName :: Id -> WorldState -> T.Text
-mkUnknownPCEntName i ws = let m = (ws^.mobTbl) ! i
-                              s = m^.sex
-                              p = (ws^.pcTbl)  ! i
-                              r = p^.race
+mkUnknownPCEntName i ws = let ((^.sex)  -> s) = (ws^.mobTbl) ! i
+                              ((^.race) -> r) = (ws^.pcTbl)  ! i
                           in T.pack [ T.head . pp $ s ] <> pp r
 
 
