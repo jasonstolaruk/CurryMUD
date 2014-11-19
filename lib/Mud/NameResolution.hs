@@ -61,9 +61,9 @@ mkGecr i ws is c n
   , numInt <- either (oops numText) fst . decimal $ numText = if numText /= "0" then parse rest numInt else Sorry n
   | otherwise                                               = mkGecrMult i ws 1 n is c
   where
-    oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
+    oops numText             = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
-      | T.length rest < 2 = Sorry n
+      | T.length rest < 2    = Sorry n
       | delim <- T.head rest
       , rest' <- T.tail rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' is c
                                   | delim == indexChar  -> mkGecrIndexed i ws numInt rest' is
@@ -112,7 +112,7 @@ mkGecrMultForEnts i ws a n is | ens <- [ getEffName i ws i' | i' <- is ] =
 
 mkGecrIndexed :: Id -> WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrIndexed i ws x n is
-  | n `elem` allCoinNames = SorryIndexedCoins
+  | n `elem` allCoinNames                    = SorryIndexedCoins
   | ens <- [ getEffName i ws i' | i' <- is ] = maybe notFound (found ens) . findFullNameForAbbrev n $ ens
   where
     notFound                                                               = Indexed x n . Left $ ""
