@@ -58,7 +58,7 @@ import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Applicative (Const)
+import Control.Applicative (Const, pure)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -199,7 +199,8 @@ putRm i is c r = modifyWS $ \ws ->
 
 
 putPla :: Id -> Pla -> MudStack () -- TODO: Currently not used.
-putPla i p = modifyNWS plaTblTMVar $ \pt -> pt & at i ?~ p
+putPla i p = modifyNWS plaTblTMVar $ \pt ->
+    pt & at i ?~ p
 
 
 getPla :: Id -> MudStack Pla
@@ -220,16 +221,13 @@ send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 bcast :: [Broadcast] -> MudStack ()
 bcast bs = getMqtPt >>= \(mqt, pt) -> do
-    let helper msg i = let mq   = mqt ! i
-                           cols = (pt ! i)^.columns
-                       in readWSTMVar >>= \ws ->
-                           send mq . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg
+    let helper msg i | mq <- mqt ! i, cols <- (pt ! i)^.columns = readWSTMVar >>= \ws ->
+          send mq . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg
     forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
 
 
 parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
-parsePCDesig i ws msg = let ((^.introduced) -> intros) = (ws^.pcTbl) ! i
-                        in helper intros msg
+parsePCDesig i ws msg | ((^.introduced) -> intros) <- (ws^.pcTbl) ! i = helper intros msg
   where
     helper intros msg'
       | T.pack [stdDesigDelimiter] `T.isInfixOf` msg'
@@ -253,12 +251,11 @@ expandPCEntName i ws ic pen pi ((i `delete`) -> pis) =
     leading | ic        = "T"
             | otherwise = "t"
     xth = let matches = foldr (\i' acc -> if mkUnknownPCEntName i' ws == pen then i' : acc else acc) [] pis
-              x       = fromJust . elemIndex pi $ matches
           in case matches of [_] -> ""
-                             _   -> (<> " ") . mkOrdinal . (+ 1) $ x
-    expandSex 'm' = "male"
-    expandSex 'f' = "female"
-    expandSex x   = patternMatchFail "expandPCEntName expandSex" [ T.pack [x] ]
+                             _   -> (<> " ") . mkOrdinal . (+ 1) . fromJust . elemIndex pi $ matches
+    expandSex 'm'                  = "male"
+    expandSex 'f'                  = "female"
+    expandSex (T.pack . pure -> x) = patternMatchFail "expandPCEntName expandSex" [x]
 
 
 bcastNl :: [Broadcast] -> MudStack ()
@@ -277,7 +274,7 @@ bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = bcast =<< helper
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.rmId)     -> ri)  = (ws^.pcTbl) ! i
+        let ((^.rmId)     -> ri)  = (ws^.pcTbl)  ! i
             ((i `delete`) -> ris) = (ws^.invTbl) ! ri
         in putTMVar t ws >> return [(msg, findPCIds ws ris)]
 
@@ -291,9 +288,7 @@ massSend msg = getMqtPt >>= \(mqt, pt) -> do
 
 
 frame :: Cols -> T.Text -> T.Text
-frame cols = nl . (<> divider) . (divider <>)
-  where
-    divider = nl . mkDividerTxt $ cols
+frame cols | divider <- nl . mkDividerTxt $ cols = nl . (<> divider) . (divider <>)
 
 
 mkDividerTxt :: Cols -> T.Text
@@ -305,8 +300,8 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 massMsg :: Msg -> MudStack () -- TODO: Should really use a "Broadcast Chan".
-massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \mqt ->
-    forM_ (IM.elems mqt) $ liftIO . atomically . flip writeTQueue m
+massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
+    forM_ is $ liftIO . atomically . flip writeTQueue m
 
 
 mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
@@ -324,7 +319,7 @@ allKeys = (^.typeTbl.to IM.keys)
 
 
 getUnusedId :: WorldState -> Id
-getUnusedId = head . (\\) [0..] . allKeys
+getUnusedId = head . (\\ [0..]) . allKeys
 
 
 sortInv :: WorldState -> Inv -> Inv
@@ -336,7 +331,7 @@ sortInv ws is = let (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) = [ (ws
     sortNonPCs is'                     = map (^._1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
-    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing | i <- is' ]
+    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing               | i <- is' ]
 
 
 type BothGramNos = (Sing, Plur)
@@ -350,7 +345,7 @@ getEffBothGramNos i ws i'
                    (pp . (^.sex)  -> sn)      = (ws^.mobTbl) ! i'
                    (pp . (^.race) -> rn)      = (ws^.pcTbl)  ! i'
                in if n `elem` intros
-                 then (n,  "")
+                 then (n, "")
                  else over both ((sn <>) . (" " <>)) (rn, pluralize rn)
     Just _  -> (e^.sing, e^.plur)
   where
@@ -360,8 +355,8 @@ getEffBothGramNos i ws i'
 
 
 mkPlur :: Ent -> Plur
-mkPlur e | T.null $ e^.plur = e^.sing <> "s"
-         | otherwise        = e^.plur
+mkPlur e@((^.plur) -> p) | T.null p  = e^.sing <> "s"
+                         | otherwise = p
 
 
 mkPlurFromBoth :: BothGramNos -> Plur
@@ -374,12 +369,12 @@ mkListFromCoins (Coins (c, g, s)) = [ c, g, s ]
 
 
 mkCoinsFromList :: [Int] -> Coins
-mkCoinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
-mkCoinsFromList xs                = patternMatchFail "mkCoinsFromList" [ showText xs ]
+mkCoinsFromList [ cop, sil, gol ]       = Coins (cop, sil, gol)
+mkCoinsFromList (pure . showText -> xs) = patternMatchFail "mkCoinsFromList" xs
 
 
 negateCoins :: Coins -> Coins
-negateCoins (Coins c) = Coins (each %~ negate $ c)
+negateCoins (Coins (each %~ negate -> c)) = Coins c
 
 
 findPCIds :: WorldState -> [Id] -> [Id]
@@ -387,19 +382,17 @@ findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
 
 
 getEffName :: Id -> WorldState -> Id -> T.Text
-getEffName i ws i' = let e = (ws^.entTbl) ! i'
-                     in fromMaybe (helper e) $ e^.entName
+getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
   where
-    helper e = let n      = e^.sing
-                   p      = (ws^.pcTbl) ! i
-                   intros = p^.introduced
-               in if n `elem` intros then uncapitalize n else mkUnknownPCEntName i' ws
+    helper | n `elem` intros   = uncapitalize n
+           | otherwise         = mkUnknownPCEntName i' ws
+    n                          = e^.sing
+    ((^.introduced) -> intros) = (ws^.pcTbl) ! i
 
 
 mkUnknownPCEntName :: Id -> WorldState -> T.Text
-mkUnknownPCEntName i ws = let ((^.sex)  -> s) = (ws^.mobTbl) ! i
-                              ((^.race) -> r) = (ws^.pcTbl)  ! i
-                          in T.pack [ T.head . pp $ s ] <> pp r
+mkUnknownPCEntName i ws | ((^.sex) -> s)  <- ((ws^.mobTbl) ! i)
+                        , ((^.race) -> r) <- ((ws^.pcTbl)  ! i) = T.pack [ T.head . pp $ s ] <> pp r
 
 
 splitRmInv :: WorldState -> Inv -> (Inv, Inv)
