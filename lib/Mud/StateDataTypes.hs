@@ -122,9 +122,9 @@ instance Monoid Coins where
 -- Has an object (and an entity) and an inventory and coins.
 
 
-type Cap     = Int
+type Cap = Int
 
-newtype Con  = Con Cap deriving (Eq, Show)
+newtype Con = Con Cap deriving (Eq, Show)
 
 type ConName = T.Text
 
@@ -201,9 +201,9 @@ data Sex = Male
          | Female
          | NoSex deriving (Eq, Show)
 
-data Hand   = RHand
-            | LHand
-            | NoHand deriving (Eq, Show)
+data Hand = RHand
+          | LHand
+          | NoHand deriving (Eq, Show)
 
 
 -- ======================================================================
@@ -236,34 +236,34 @@ data Rm = Rm { _rmName  :: !T.Text
              , _rmFlags :: !Int
              , _rmLinks :: ![RmLink] } deriving Eq
 
-data LinkDir  = North
-              | Northeast
-              | East
-              | Southeast
-              | South
-              | Southwest
-              | West
-              | Northwest
-              | Up
-              | Down deriving (Eq, Show)
+data LinkDir = North
+             | Northeast
+             | East
+             | Southeast
+             | South
+             | Southwest
+             | West
+             | Northwest
+             | Up
+             | Down deriving (Eq, Show)
 
 type LinkName = T.Text
 
-data RmLink   = StdLink    { _linkDir      :: !LinkDir
-                           , _stdDestId    :: !Id }
-              | NonStdLink { _linkName     :: !LinkName
-                           , _nonStdDestId :: !Id
-                           , _originMsg    :: !(T.Text -> T.Text)
-                           , _destMsg      :: !(T.Text -> T.Text) }
+data RmLink = StdLink    { _linkDir      :: !LinkDir
+                         , _stdDestId    :: !Id }
+            | NonStdLink { _linkName     :: !LinkName
+                         , _nonStdDestId :: !Id
+                         , _originMsg    :: !(T.Text -> T.Text)
+                         , _destMsg      :: !(T.Text -> T.Text) }
 
 
 instance Eq RmLink where
-  (StdLink    dir i      ) == (StdLink    dir' i'        ) = dir   == dir'   &&
-                                                             i     == i'
-  (NonStdLink ln  i om dm) == (NonStdLink ln'  i' om' dm') = ln    == ln'    &&
-                                                             i     == i'     &&
-                                                             om "" == om' "" &&
-                                                             dm "" == dm' ""
+  (StdLink    dir i      ) == (StdLink    dir' i'        ) | dir   == dir'
+                                                           , i     == i'     = True
+  (NonStdLink ln  i om dm) == (NonStdLink ln'  i' om' dm') | ln    == ln'
+                                                           , i     == i'
+                                                           , om "" == om' ""
+                                                           , dm "" == dm' "" = True
   _                        == _                            = False
 
 
@@ -283,28 +283,27 @@ data Type = ObjType
 
 -- ==================================================
 -- Non-world state:
--- TODO: We aren't using any strictness annotations on any of the NWS data types...
 
 
-data NonWorldState = NonWorldState { _startTime          :: UTCTime
-                                   , _noticeLog          :: Maybe LogService
-                                   , _errorLog           :: Maybe LogService
-                                   , _plaLogTblTMVar     :: TMVar (IM.IntMap LogService)
-                                   , _threadTblTMVar     :: TMVar ThreadTbl
-                                   , _talkAsyncTblTMVar  :: TMVar TalkAsyncTbl
-                                   , _msgQueueTblTMVar   :: TMVar (IM.IntMap MsgQueue)
-                                   , _plaTblTMVar        :: TMVar (IM.IntMap Pla) }
+data NonWorldState = NonWorldState { _startTime         :: !UTCTime
+                                   , _noticeLog         :: !(Maybe LogService)
+                                   , _errorLog          :: !(Maybe LogService)
+                                   , _plaLogTblTMVar    :: !(TMVar (IM.IntMap LogService))
+                                   , _threadTblTMVar    :: !(TMVar ThreadTbl)
+                                   , _talkAsyncTblTMVar :: !(TMVar TalkAsyncTbl)
+                                   , _msgQueueTblTMVar  :: !(TMVar (IM.IntMap MsgQueue))
+                                   , _plaTblTMVar       :: !(TMVar (IM.IntMap Pla)) }
 
 
 -- ==================================================
 -- Log services:
 
 
-data LogCmd     = StopLog | Msg T.Text
+data LogCmd = StopLog | Msg T.Text
 
-type LogAsync   = Async ()
+type LogAsync = Async ()
 
-type LogQueue   = TQueue LogCmd
+type LogQueue = TQueue LogCmd
 
 type LogService = (LogAsync, LogQueue)
 
@@ -313,7 +312,7 @@ type LogService = (LogAsync, LogQueue)
 -- Thread table:
 
 
-type ThreadTbl  = M.Map ThreadId ThreadType
+type ThreadTbl = M.Map ThreadId ThreadType
 
 data ThreadType = Notice
                 | Error
@@ -351,9 +350,9 @@ data Msg = FromServer T.Text
 -- Player:
 
 
-data Pla = Pla { _isWiz    :: Bool
-               , _hostName :: HostName
-               , _columns  :: Int }
+data Pla = Pla { _isWiz    :: !Bool
+               , _hostName :: !HostName
+               , _columns  :: !Int }
 
 
 -- ==================================================

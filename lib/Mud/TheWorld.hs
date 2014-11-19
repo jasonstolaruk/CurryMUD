@@ -53,10 +53,8 @@ createWorld = do
     logNotice "createWorld" "creating the world."
 
     putRm iHill [ iGP1, iLongSword, iKewpie1, iBag1, iClub, iSword1, iSword2 ] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." 0 [ StdLink East iCliff ])
-    putRm iCliff [ iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4 ] mempty (Rm "The cliff" "You have reached the edge of a cliff. \
-        \There is a sizeable hole in the ground. Next to the hole is a small hut." 0 [ StdLink West iHill, StdLink Down iHole, NonStdLink "hut" iHut (sformat $ stext % " enters the hut.") (sformat $ stext % " enters the hut.") ])
-    putRm iHole [ iNeck1, iNeck2, iNeck3, iNeck4, iHelm ] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. \
-        \It's damp and smells of soil." 0 [ StdLink West iVoid, StdLink Up iCliff ])
+    putRm iCliff [ iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4 ] mempty (Rm "The cliff" "You have reached the edge of a cliff. There is a sizeable hole in the ground. Next to the hole is a small hut." 0 [ StdLink West iHill, StdLink Down iHole, NonStdLink "hut" iHut (sformat $ stext % " enters the hut.") (sformat $ stext % " enters the hut.") ])
+    putRm iHole [ iNeck1, iNeck2, iNeck3, iNeck4, iHelm ] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. It's damp and smells of soil." 0 [ StdLink West iVoid, StdLink Up iCliff ])
     putRm iVoid [ iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3 ] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." 0 [ StdLink East iHole ])
     putRm iHut [ iLongName1, iLongName2, iPaper ] (Coins (0, 5, 0)) (Rm "The hut" "The tiny hut is dusty and smells of mold." 0 [ NonStdLink "out" iCliff (sformat $ stext % " exits the hut.") (sformat $ stext % " exits the hut.") ])
 
@@ -101,8 +99,7 @@ createWorld = do
 
     putArm iHelm (Ent iHelm (Just "helmet") "leather helmet" "" "Nothing to write home about. But it's better than nothing." 0) (Obj 1 1) (Arm HeadA 1)
 
-    putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig. \
-        \You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." 0) [] mempty M.empty (Mob Male 10 10 10 10 10 10 25 NoHand)
+    putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig. You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." 0) [] mempty M.empty (Mob Male 10 10 10 10 10 10 25 NoHand)
 
     putCloth iNoseRing1 (Ent iNoseRing1 (Just "nose") "nose ring" "" "It's a plain silver stud, intended to be worn on the nose." 0) (Obj 1 1) NoseC
     putCloth iNoseRing2 (Ent iNoseRing2 (Just "nose") "nose ring" "" "It's a plain silver stud, intended to be worn on the nose." 0) (Obj 1 1) NoseC

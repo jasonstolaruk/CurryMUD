@@ -48,7 +48,6 @@ patternMatchFail = U.patternMatchFail "Mud.MiscDataTypes"
 
 
 class Pretty a where
-  -- Pretty print.
   pp :: a -> T.Text
 
 
@@ -146,12 +145,8 @@ class Serializable a where
 
 
 instance Serializable PCDesig where
-  serialize (StdDesig pes ic pen pi pis) = let fields = [ serMaybeText pes
-                                                        , showText ic
-                                                        , pen
-                                                        , showText pi
-                                                        , showText pis ]
-                                           in d <> T.intercalate d' fields <> d
+  serialize (StdDesig pes ic pen pi pis)
+    | fields <- [ serMaybeText pes, showText ic, pen, showText pi, showText pis ] = d <> T.intercalate d' fields <> d
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
@@ -161,18 +156,16 @@ instance Serializable PCDesig where
     where
       d  = T.pack [nonStdDesigDelimiter]
       d' = T.pack [desigDelimiter]
-  deserialize txt =
-      let txt' = T.init . T.tail $ txt
-      in if T.head txt == stdDesigDelimiter
-        then let [ pes, ic, pen, pi, pis ] = T.splitOn d txt'
-             in StdDesig { stdPCEntSing = deserMaybeText pes
-                         , isCap        = read . T.unpack $ ic
-                         , pcEntName    = pen
-                         , pcId         = read . T.unpack $ pi
-                         , pcIds        = read . T.unpack $ pis }
-        else let [ pes, nsd ] = T.splitOn d txt'
-             in NonStdDesig { nonStdPCEntSing = pes
-                            , nonStdDesc      = nsd }
+  deserialize txt | (c, t) <- (T.head txt, T.init . T.tail $ txt) = if c == stdDesigDelimiter
+      then let [ pes, ic, pen, pi, pis ] = T.splitOn d t
+            in StdDesig { stdPCEntSing = deserMaybeText pes
+                        , isCap        = read . T.unpack $ ic
+                        , pcEntName    = pen
+                        , pcId         = read . T.unpack $ pi
+                        , pcIds        = read . T.unpack $ pis }
+      else let [ pes, nsd ] = T.splitOn d t
+           in NonStdDesig { nonStdPCEntSing = pes
+                          , nonStdDesc      = nsd }
     where
       deserMaybeText "" = Nothing
       deserMaybeText t  = Just t
