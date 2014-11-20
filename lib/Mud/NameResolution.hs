@@ -52,22 +52,22 @@ resolveEntCoinNames i ws (map T.toLower -> rs) is c = expandGecrs c [ mkGecr i w
 
 
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
-mkGecr i ws is c n
-  | n == T.pack [allChar]
-  , es <- [ (ws^.entTbl) ! i' | i' <- is ]                  = Mult (length is) n (Just es) (Just . SomeOf $ c)
-  | T.head n == allChar                                     = mkGecrMult i ws (maxBound :: Int) (T.tail n) is c
-  | isDigit . T.head $ n
+mkGecr i ws is c n@(headTail -> (h, t))
+  | n == T.pack [allChar], es <- [ (ws^.entTbl) ! i' | i' <- is ] =
+      Mult (length is) n (Just es) (Just . SomeOf $ c)
+  | h == allChar = mkGecrMult i ws (maxBound :: Int) t is c
+  | isDigit h
   , (numText, rest) <- T.span isDigit n
-  , numInt <- either (oops numText) fst . decimal $ numText = if numText /= "0" then parse rest numInt else Sorry n
-  | otherwise                                               = mkGecrMult i ws 1 n is c
+  , numInt <- either (oops numText) fst . decimal $ numText =
+      if numText /= "0" then parse rest numInt else Sorry n
+  | otherwise = mkGecrMult i ws 1 n is c
   where
-    oops numText             = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
+    oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
-      | T.length rest < 2    = Sorry n
-      | delim <- T.head rest
-      , rest' <- T.tail rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' is c
-                                  | delim == indexChar  -> mkGecrIndexed i ws numInt rest' is
-                                  | otherwise           -> Sorry n
+      | T.length rest < 2               = Sorry n
+      | (delim, rest') <- headTail rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' is c
+                                             | delim == indexChar  -> mkGecrIndexed i ws numInt rest' is
+                                             | otherwise           -> Sorry n
 
 
 mkGecrMult :: Id -> WorldState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
