@@ -102,31 +102,30 @@ distributeAmt amt (c:cs) | diff <- amt - c, diff >= 0 = c   : distributeAmt diff
 
 mkGecrMultForEnts :: Id -> WorldState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrMultForEnts i ws a n is | ens <- [ getEffName i ws i' | i' <- is ] =
-    maybe notFound (found ens) . findFullNameForAbbrev n $ ens
+    uncurry (Mult a n) . maybe notFound (found ens) . findFullNameForAbbrev n $ ens
   where
-    notFound                    = Mult a n Nothing Nothing
-    found (zip is -> zipped) fn = Mult a n (Just . takeMatchingEnts zipped $ fn) Nothing
-    takeMatchingEnts zipped  fn = let matches = filter (\(_, en) -> en == fn) zipped
-                                  in take a [ (ws^.entTbl) ! i' | (i', _) <- matches ]
+    notFound                    = (Nothing, Nothing)
+    found (zip is -> zipped) fn = (Just . takeMatchingEnts zipped $ fn, Nothing)
+    takeMatchingEnts zipped  fn | matches <- filter (\(_, en) -> en == fn) zipped
+                                = take a [ (ws^.entTbl) ! i' | (i', _) <- matches ]
 
 
 mkGecrIndexed :: Id -> WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrIndexed i ws x n is
-  | n `elem` allCoinNames                    = SorryIndexedCoins
-  | ens <- [ getEffName i ws i' | i' <- is ] = maybe notFound (found ens) . findFullNameForAbbrev n $ ens
+  | n `elem` allCoinNames = SorryIndexedCoins
+  | ens <- [ getEffName i ws i' | i' <- is ] = Indexed x n . maybe notFound (found ens) . findFullNameForAbbrev n $ ens
   where
-    notFound                                                               = Indexed x n . Left $ ""
-    found ens fn | matches <- filter (\(_, en) -> en == fn) . zip is $ ens = Indexed x n $ if length matches < x
+    notFound = Left ""
+    found ens fn | matches <- filter (\(_, en) -> en == fn) . zip is $ ens = if length matches < x
       then Left . mkPlurFromBoth . getEffBothGramNos i ws . fst . head $ matches
       else Right . ((ws^.entTbl) !) . fst $ matches !! (x - 1)
 
 
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs)) =
-    let mess = map extractMesFromGecr gecrs
-        miss = pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
-        rcs  = reconcileCoins c . distillEnscs $ enscs
-    in (gecrs, miss, rcs)
+expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
+  | mess <- map extractMesFromGecr gecrs
+  , miss <- pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
+  , rcs  <- reconcileCoins c . distillEnscs $ enscs = (gecrs, miss, rcs)
 
 
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
