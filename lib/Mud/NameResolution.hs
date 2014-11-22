@@ -157,12 +157,12 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
                    | someOfs <- filter isSomeOf enscs
                    , noneOfs <- filter isNoneOf enscs = distill SomeOf someOfs ++ distill NoneOf noneOfs
   where
-    isSomeOf (SomeOf _)     = True
-    isSomeOf _              = False
-    isNoneOf (NoneOf _)     = True
-    isNoneOf _              = False
-    distill _ []            = []
-    distill f enscs'        = [ f . foldr ((<>) . fromEnsCoins) mempty $ enscs' ]
+    isSomeOf (SomeOf _) = True
+    isSomeOf _          = False
+    isNoneOf (NoneOf _) = True
+    isNoneOf _          = False
+    distill  _ []                                         = []
+    distill  f (foldr ((<>) . fromEnsCoins) mempty -> cs) = [ f cs ]
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
@@ -190,21 +190,25 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
 -- Resolving entity and coin names with right/left indicators:
 
 
-resolveEntCoinNamesWithRols :: Id -> WorldState -> Rest -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNamesWithRols :: Id         ->
+                               WorldState ->
+                               Rest       ->
+                               Inv        ->
+                               Coins      ->
+                               ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNamesWithRols i ws (map T.toLower -> rs) is c
   | gecrMrols           <- map (mkGecrWithRol i ws is c) rs
-  , (gecrs, mrols)      <- (,) (gecrMrols^..folded._1) (gecrMrols^..folded._2)
+  , (gecrs, mrols)      <- (gecrMrols^..folded._1, gecrMrols^..folded._2)
   , (gecrs', miss, rcs) <- expandGecrs c gecrs = (gecrs', mrols, miss, rcs)
 
 
 mkGecrWithRol :: Id -> WorldState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
-mkGecrWithRol i ws is c n
-  | (a, b) <- T.break (== slotChar) n
-  , parsed <- reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [ (RightOrLeft, String) ] =
-      if | T.null b        -> (mkGecr i ws is c n, Nothing)
-         | T.length b == 1 -> sorry
-         | otherwise       -> case parsed of [(rol, _)] -> (mkGecr i ws is c a, Just rol)
-                                             _          -> sorry
+mkGecrWithRol i ws is c n@(T.break (== slotChar) -> (a, b))
+  | T.null b        = (mkGecr i ws is c n, Nothing)
+  | T.length b == 1 = sorry
+  | parsed <- reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [ (RightOrLeft, String) ] =
+      case parsed of [(rol, _)] -> (mkGecr i ws is c a, Just rol)
+                     _          -> sorry
   where
     sorry = (Sorry n, Nothing)
 
@@ -231,8 +235,8 @@ procGecrMisPCInv gecrMis                          = patternMatchFail "procGecrMi
 
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisReady (Sorry n, Nothing) = Left . sorryBadSlot $ n
-procGecrMisReady gecrMis            = procGecrMisPCInv gecrMis
+procGecrMisReady (Sorry (sorryBadSlot -> txt), Nothing) = Left txt
+procGecrMisReady gecrMis                                = procGecrMisPCInv gecrMis
 
 
 sorryBadSlot :: T.Text -> T.Text
@@ -300,15 +304,15 @@ procReconciledCoinsPCInv :: ReconciledCoins -> Either [T.Text] Coins
 procReconciledCoinsPCInv (Left  Empty)                            = Left ["You don't have any coins."]
 procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then Just "You don't have any copper pieces." else Nothing
-    s = if sil /= 0 then Just "You don't have any silver pieces." else Nothing
-    g = if gol /= 0 then Just "You don't have any gold pieces."   else Nothing
+    c = msgOnNonzero cop "You don't have any copper pieces."
+    s = msgOnNonzero sil "You don't have any silver pieces."
+    g = msgOnNonzero gol "You don't have any gold pieces."
 procReconciledCoinsPCInv (Right (SomeOf c                      )) = Right c
 procReconciledCoinsPCInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then Just $ "You don't have " <> showText cop <> " copper pieces." else Nothing
-    s = if sil /= 0 then Just $ "You don't have " <> showText sil <> " silver pieces." else Nothing
-    g = if gol /= 0 then Just $ "You don't have " <> showText gol <> " gold pieces."   else Nothing
+    c = msgOnNonzero cop $ "You don't have " <> showText cop <> " copper pieces."
+    s = msgOnNonzero sil $ "You don't have " <> showText sil <> " silver pieces."
+    g = msgOnNonzero gol $ "You don't have " <> showText gol <> " gold pieces."
 procReconciledCoinsPCInv rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
 
 
@@ -318,19 +322,23 @@ extractCoinsTxt (Nothing:xs) =     extractCoinsTxt xs
 extractCoinsTxt (Just  x:xs) = x : extractCoinsTxt xs
 
 
+msgOnNonzero :: Int -> T.Text -> Maybe T.Text
+msgOnNonzero x msg = if x /= 0 then Just msg else Nothing
+
+
 procReconciledCoinsRm :: ReconciledCoins -> Either [T.Text] Coins
 procReconciledCoinsRm (Left  Empty)                            = Left ["You don't see any coins here."]
 procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then Just "You don't see any copper pieces here." else Nothing
-    s = if sil /= 0 then Just "You don't see any silver pieces here." else Nothing
-    g = if gol /= 0 then Just "You don't see any gold pieces here."   else Nothing
+    c = msgOnNonzero cop "You don't see any copper pieces here."
+    s = msgOnNonzero sil "You don't see any silver pieces here."
+    g = msgOnNonzero gol "You don't see any gold pieces here."
 procReconciledCoinsRm (Right (SomeOf c                      )) = Right c
 procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then Just $ "You don't see " <> showText cop <> " copper pieces here." else Nothing
-    s = if sil /= 0 then Just $ "You don't see " <> showText sil <> " silver pieces here." else Nothing
-    g = if gol /= 0 then Just $ "You don't see " <> showText gol <> " gold pieces here."   else Nothing
+    c = msgOnNonzero cop $ "You don't see " <> showText cop <> " copper pieces here."
+    s = msgOnNonzero sil $ "You don't see " <> showText sil <> " silver pieces here."
+    g = msgOnNonzero gol $ "You don't see " <> showText gol <> " gold pieces here."
 procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
 
 
@@ -338,13 +346,13 @@ procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [T.Text] Coins
 procReconciledCoinsCon cn (Left  Empty)                            = Left [ "The " <> cn <> " doesn't contain any coins." ]
 procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then Just $ "The " <> cn <> " doesn't contain any copper pieces." else Nothing
-    s = if sil /= 0 then Just $ "The " <> cn <> " doesn't contain any silver pieces." else Nothing
-    g = if gol /= 0 then Just $ "The " <> cn <> " doesn't contain any gold pieces."   else Nothing
+    c = msgOnNonzero cop $ "The " <> cn <> " doesn't contain any copper pieces."
+    s = msgOnNonzero sil $ "The " <> cn <> " doesn't contain any silver pieces."
+    g = msgOnNonzero gol $ "The " <> cn <> " doesn't contain any gold pieces."
 procReconciledCoinsCon _  (Right (SomeOf c                      )) = Right c
 procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = if cop /= 0 then Just . T.concat $ [ "The ", cn, "doesn't contain ", showText cop, " copper pieces." ] else Nothing
-    s = if sil /= 0 then Just . T.concat $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ] else Nothing
-    g = if gol /= 0 then Just . T.concat $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces."   ] else Nothing
+    c = msgOnNonzero cop . T.concat $ [ "The ", cn, "doesn't contain ", showText cop, " copper pieces." ]
+    s = msgOnNonzero sil . T.concat $ [ "The ", cn, "doesn't contain ", showText sil, " silver pieces." ]
+    g = msgOnNonzero gol . T.concat $ [ "The ", cn, "doesn't contain ", showText gol, " gold pieces."   ]
 procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]
