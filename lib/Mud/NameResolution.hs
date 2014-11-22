@@ -147,10 +147,9 @@ extractMesFromGecr = \case (Mult    _ _ (Just es) _) -> Just es
 
 
 pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
-pruneDupIds _       []               = []
-pruneDupIds uniques (Nothing : rest) = Nothing : pruneDupIds uniques rest
-pruneDupIds uniques (Just is : rest) = let is' = deleteFirstOfEach uniques is
-                                       in Just is' : pruneDupIds (is' ++ uniques) rest
+pruneDupIds _       []                                              = []
+pruneDupIds uniques (Nothing : rest)                                = Nothing : pruneDupIds uniques rest
+pruneDupIds uniques (Just (deleteFirstOfEach uniques -> is) : rest) = Just is : pruneDupIds (is ++ uniques) rest
 
 
 distillEnscs :: [EmptyNoneSome Coins] -> [EmptyNoneSome Coins]
