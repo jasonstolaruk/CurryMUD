@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RankNTypes, ViewPatterns #-}
 
 module Mud.Logging ( closeLogs
                    , closePlaLog
@@ -51,10 +51,11 @@ import qualified Data.Text as T
 closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (^.nonWorldState.noticeLog), fromJust <$> gets (^.nonWorldState.errorLog) ]
-    ls <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
-    mapM_ stopLog         $ nq : eq : [ snd l | l <- ls ]
-    mapM_ (liftIO . wait) $ na : ea : [ fst l | l <- ls ]
+    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (^.nonWorldState.noticeLog)
+                                       , fromJust <$> gets (^.nonWorldState.errorLog) ]
+    (unzip -> (as, qs)) <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
+    mapM_ stopLog         $ nq : eq : qs
+    mapM_ (liftIO . wait) $ na : ea : as
     liftIO removeAllHandlers
 
 
