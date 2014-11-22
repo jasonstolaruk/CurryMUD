@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.MiscDataTypes ( AOrThe(..)
                          , Action
@@ -156,20 +156,20 @@ instance Serializable PCDesig where
     where
       d  = T.pack [nonStdDesigDelimiter]
       d' = T.pack [desigDelimiter]
-  deserialize txt | (c, t) <- (T.head txt, T.init . T.tail $ txt) = if c == stdDesigDelimiter
+  deserialize (headTail -> (c, (T.init -> t))) = if c == stdDesigDelimiter
       then let [ pes, ic, pen, pi, pis ] = T.splitOn d t
-            in StdDesig { stdPCEntSing = deserMaybeText pes
-                        , isCap        = read . T.unpack $ ic
-                        , pcEntName    = pen
-                        , pcId         = read . T.unpack $ pi
-                        , pcIds        = read . T.unpack $ pis }
+           in StdDesig { stdPCEntSing = deserMaybeText pes
+                       , isCap        = read . T.unpack $ ic
+                       , pcEntName    = pen
+                       , pcId         = read . T.unpack $ pi
+                       , pcIds        = read . T.unpack $ pis }
       else let [ pes, nsd ] = T.splitOn d t
            in NonStdDesig { nonStdPCEntSing = pes
                           , nonStdDesc      = nsd }
     where
-      deserMaybeText "" = Nothing
-      deserMaybeText t  = Just t
-      d                 = T.pack [desigDelimiter]
+      deserMaybeText ""  = Nothing
+      deserMaybeText txt = Just txt
+      d                  = T.pack [desigDelimiter]
 
 
 -----

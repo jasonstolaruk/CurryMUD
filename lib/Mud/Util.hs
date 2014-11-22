@@ -249,9 +249,8 @@ showText :: (Show a) => a -> T.Text
 showText = T.pack . show
 
 
-headTail :: T.Text -> (Char, T.Text) -- TODO: Use this.
-headTail txt | T.null txt = undefined
-headTail txt              = (T.head txt, T.tail txt)
+headTail :: T.Text -> (Char, T.Text)
+headTail txt = (T.head txt, T.tail txt)
 
 
 capitalize :: T.Text -> T.Text
@@ -263,7 +262,7 @@ uncapitalize = capsHelper toLower
 
 
 capsHelper :: (Char -> Char) -> T.Text -> T.Text
-capsHelper f txt = T.pack [ f . T.head $ txt ] <> T.tail txt
+capsHelper f (headTail -> (h, t)) = T.pack [ f h ] <> t
 
 
 aOrAn :: T.Text -> T.Text
