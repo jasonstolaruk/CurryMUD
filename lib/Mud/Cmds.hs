@@ -1668,8 +1668,8 @@ getAvailClothSlot cols ws i c em = let m = (ws^.mobTbl) ! i
 getDesigClothSlot :: Cols -> WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigClothSlot cols ws e c em rol
   | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCantWearThere
-  | isRingRol rol && c /= FingerC           = Left sorryCantWearThere
-  | c == FingerC && (not . isRingRol $ rol) = Left . T.unlines . wordWrap cols $ ringHelp
+  | isRingRol rol, c /= FingerC           = Left sorryCantWearThere
+  | c == FingerC, (not . isRingRol $ rol) = Left . T.unlines . wordWrap cols $ ringHelp
   | otherwise = case c of EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
                           WristC  -> maybe (Left sorryFullWrist) Right (findSlotFromList rWristSlots lWristSlots)
                           FingerC -> maybe (Right slotFromRol)

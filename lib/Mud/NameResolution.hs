@@ -53,14 +53,13 @@ resolveEntCoinNames i ws (map T.toLower -> rs) is c = expandGecrs c [ mkGecr i w
 
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
 mkGecr i ws is c n@(headTail -> (h, t))
-  | n == T.pack [allChar], es <- [ (ws^.entTbl) ! i' | i' <- is ] =
-      Mult (length is) n (Just es) (Just . SomeOf $ c)
-  | h == allChar = mkGecrMult i ws (maxBound :: Int) t is c
+  | n == T.pack [allChar]
+  , es <- [ (ws^.entTbl) ! i' | i' <- is ]                  = Mult (length is) n (Just es) (Just . SomeOf $ c)
+  | h == allChar                                            = mkGecrMult i ws (maxBound :: Int) t is c
   | isDigit h
   , (numText, rest) <- T.span isDigit n
-  , numInt <- either (oops numText) fst . decimal $ numText =
-      if numText /= "0" then parse rest numInt else Sorry n
-  | otherwise = mkGecrMult i ws 1 n is c
+  , numInt <- either (oops numText) fst . decimal $ numText = if numText /= "0" then parse rest numInt else Sorry n
+  | otherwise                                               = mkGecrMult i ws 1 n is c
   where
     oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
@@ -79,8 +78,10 @@ mkGecrMultForCoins :: Amount -> T.Text -> Coins -> GetEntsCoinsRes
 mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult a n Nothing . Just $ helper
   where
     helper | c == mempty                 = Empty
-           | n `elem` aggregateCoinNames = SomeOf $ if a == (maxBound :: Int) then c else c'
-           | otherwise                   = case n of
+           | n `elem` aggregateCoinNames = SomeOf $ if a == (maxBound :: Int)
+             then c
+             else mkCoinsFromList . distributeAmt a . mkListFromCoins $ c
+           | otherwise = case n of
              "cp" | cop == 0               -> NoneOf . Coins $ (a,   0,   0  )
                   | a == (maxBound :: Int) -> SomeOf . Coins $ (cop, 0,   0  )
                   | otherwise              -> SomeOf . Coins $ (a,   0,   0  )
@@ -91,7 +92,6 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult a n Nothing . Just $ hel
                   | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   0,   gol)
                   | otherwise              -> SomeOf . Coins $ (0,   0,   a  )
              _                             -> patternMatchFail "mkGecrMultForCoins helper" [n]
-    c' = mkCoinsFromList . distributeAmt a . mkListFromCoins $ c
 
 
 distributeAmt :: Int -> [Int] -> [Int]
