@@ -34,6 +34,8 @@ import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
+import Control.Applicative (pure)
+import Control.Lens (both, over)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
 import qualified Data.Text as T
@@ -145,27 +147,25 @@ class Serializable a where
 
 
 instance Serializable PCDesig where
-  serialize (StdDesig pes ic pen pi pis)
-    | fields <- [ serMaybeText pes, showText ic, pen, showText pi, showText pis ] = d <> T.intercalate d' fields <> d
+  serialize (StdDesig pes ic pen pi pis) | fields <- [ serMaybeText pes, showText ic, pen, showText pi, showText pis ] =
+      quoteWith d . T.intercalate d' $ fields
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
-      d                       = T.pack [stdDesigDelimiter]
-      d'                      = T.pack [desigDelimiter]
-  serialize (NonStdDesig pes nsd) = T.concat [ d, pes, d', nsd, d ]
+      (d, d')                 = over both (T.pack . pure) (stdDesigDelimiter, desigDelimiter)
+  serialize (NonStdDesig pes nsd) = quoteWith d $ pes <> d' <> nsd
     where
-      d  = T.pack [nonStdDesigDelimiter]
-      d' = T.pack [desigDelimiter]
-  deserialize (headTail -> (c, T.init -> t)) = if c == stdDesigDelimiter
-      then let [ pes, ic, pen, pi, pis ] = T.splitOn d t
-           in StdDesig { stdPCEntSing = deserMaybeText pes
-                       , isCap        = read . T.unpack $ ic
-                       , pcEntName    = pen
-                       , pcId         = read . T.unpack $ pi
-                       , pcIds        = read . T.unpack $ pis }
-      else let [ pes, nsd ] = T.splitOn d t
-           in NonStdDesig { nonStdPCEntSing = pes
-                          , nonStdDesc      = nsd }
+      (d, d') = over both (T.pack . pure) (nonStdDesigDelimiter, desigDelimiter)
+  deserialize a@(headTail -> (c, T.init -> t))
+    | c == stdDesigDelimiter, [ pes, ic, pen, pi, pis ] <- T.splitOn d t =
+        StdDesig { stdPCEntSing = deserMaybeText pes
+                 , isCap        = read . T.unpack $ ic
+                 , pcEntName    = pen
+                 , pcId         = read . T.unpack $ pi
+                 , pcIds        = read . T.unpack $ pis }
+    | [ pes, nsd ] <- T.splitOn d t = NonStdDesig { nonStdPCEntSing = pes
+                                                  , nonStdDesc      = nsd }
+    | otherwise = patternMatchFail "deserialize" [ showText a ]
     where
       deserMaybeText ""  = Nothing
       deserMaybeText txt = Just txt
