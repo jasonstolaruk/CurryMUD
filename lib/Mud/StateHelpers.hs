@@ -391,8 +391,8 @@ getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
 
 
 mkUnknownPCEntName :: Id -> WorldState -> T.Text
-mkUnknownPCEntName i ws | ((^.sex) -> s)  <- ((ws^.mobTbl) ! i)
-                        , ((^.race) -> r) <- ((ws^.pcTbl)  ! i) = T.pack [ T.head . pp $ s ] <> pp r
+mkUnknownPCEntName i ws | ((^.sex) -> s)  <- (ws^.mobTbl) ! i
+                        , ((^.race) -> r) <- (ws^.pcTbl)  ! i = T.pack [ T.head . pp $ s ] <> pp r
 
 
 splitRmInv :: WorldState -> Inv -> (Inv, Inv)

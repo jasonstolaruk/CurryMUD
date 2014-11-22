@@ -156,7 +156,7 @@ instance Serializable PCDesig where
     where
       d  = T.pack [nonStdDesigDelimiter]
       d' = T.pack [desigDelimiter]
-  deserialize (headTail -> (c, (T.init -> t))) = if c == stdDesigDelimiter
+  deserialize (headTail -> (c, T.init -> t)) = if c == stdDesigDelimiter
       then let [ pes, ic, pen, pi, pis ] = T.splitOn d t
            in StdDesig { stdPCEntSing = deserMaybeText pes
                        , isCap        = read . T.unpack $ ic
