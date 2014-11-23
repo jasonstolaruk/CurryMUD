@@ -688,7 +688,7 @@ findExit r ln = case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg r
   xs -> Just . head $ xs
   where
     isValid      (StdLink    dir _    ) = ln == linkDirToCmdName dir
-    isValid      (NonStdLink ln' _ _ _) = ln `T.isInfixOf` ln'
+    isValid      (NonStdLink ln' _ _ _) = ln `T.isPrefixOf` ln'
     showLink     (StdLink    dir _    ) = showText dir
     showLink     (NonStdLink ln' _ _ _) = ln'
     getDestId    (StdLink    _   i    ) = i
