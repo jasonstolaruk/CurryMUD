@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module MudTests.UtilTests where
 
@@ -34,14 +34,14 @@ patternMatchFail = U.patternMatchFail "UtilTests"
 prop_wordWrap :: Property
 prop_wordWrap = forAll genCols               $ \c ->
                 forAll (genTextLongerThan c) $ \t ->
-    all (\l -> T.length l <= c) . wordWrap c $ t
+    all (\(T.length -> l) -> l <= c) . wordWrap c $ t
 
 
 prop_wordWrapIndent_wraps :: Property
 prop_wordWrapIndent_wraps = forAll (choose (0, maxCols + 10)) $ \n ->
                             forAll genCols                    $ \c ->
                             forAll (genTextLongerThan c)      $ \t ->
-    all (\l -> T.length l <= c) . wordWrapIndent n c $ t
+    all (\(T.length -> l) -> l <= c) . wordWrapIndent n c $ t
 
 
 prop_wordWrapIndent_indents :: Property
@@ -55,8 +55,7 @@ prop_wordWrapIndent_indents = forAll (choose (0, maxCols + 10)) $ \n ->
 resIsIndented :: Int -> [T.Text] -> Bool
 resIsIndented n (t:wrapped) = (not . T.null $ t) && all lineIsIndented wrapped
   where
-    lineIsIndented l = let (indent, rest) = T.splitAt n l
-                       in T.all isSpace indent && (not . T.null $ rest)
+    lineIsIndented (T.splitAt n -> (indent, rest)) = T.all isSpace indent && (not . T.null $ rest)
 resIsIndented _ ls = patternMatchFail "resIsIndented" ls
 
 
@@ -78,11 +77,10 @@ prop_wrapLineWithIndentTag = forAll genCols                       $ \c ->
                              forAll (genTextOfRandLen (0, c * 2)) $ \t ->
                              forAll (choose (1, maxCols + 10))    $ \n ->
                              T.null t || (not . isDigit . T.last $ t) ==>
-    let t'  = t <> showText n <> T.pack [indentTagChar]
-        res = wrapLineWithIndentTag c t'
+    let res = wrapLineWithIndentTag c $ t <> showText n <> T.pack [indentTagChar]
     in if T.length t <= c
-         then res == [t]
-         else resIsIndented (adjustIndent n c) res
+      then res == [t]
+      else resIsIndented (adjustIndent n c) res
 
 
 prop_calcIndent :: Property
@@ -128,20 +126,18 @@ prop_padOrTrunc_truncates (NonNegative x) t = T.length t > x ==>
 
 
 prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [T.Text] -> Property
-prop_findFullNameForAbbrev_findsNothing (NonEmpty needle) hay = let needle' = T.pack needle
-                                                                in any (not . T.null) hay &&
-                                                                   all (not . (needle' `T.isInfixOf`)) hay ==>
-  isNothing . findFullNameForAbbrev needle' $ hay
+prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any (not . T.null) hay &&
+                                                                            all (not . (needle `T.isInfixOf`)) hay ==>
+  isNothing . findFullNameForAbbrev needle $ hay
 
 
 prop_findFullNameForAbbrev_findsMatch :: NonEmptyList Char -> [T.Text] -> Property
-prop_findFullNameForAbbrev_findsMatch (NonEmpty needle) hay = let needle' = T.pack needle
-                                                              in any (not . T.null) hay &&
-                                                                 all (not . (needle' `T.isInfixOf`)) hay ==>
+prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (not . T.null) hay &&
+                                                                          all (not . (needle `T.isInfixOf`)) hay ==>
   let nonNull = head . filter (not . T.null) $ hay
-      match   = needle' <> nonNull
+      match   = needle <> nonNull
       hay'    = match : hay
-  in findFullNameForAbbrev needle' hay' == Just match
+  in findFullNameForAbbrev needle hay' == Just match
 
 
 prop_countOcc :: Int -> [Int] -> Bool
@@ -153,11 +149,9 @@ prop_countOcc needle hay = countOcc needle hay == matches
 prop_mkCountList :: [Int] -> Bool
 prop_mkCountList xs = mkCountList xs == mkCountList' xs
   where
-    mkCountList' xs' = let grouped           = group . sort $ xs'
-                           mkPair            = (,) <$> head <*> length
-                           elemCountList     = map mkPair grouped
-                           getCountForElem x = (head . filter (^._1.to (== x)) $ elemCountList)^._2
-                       in map getCountForElem xs'
+    mkCountList' xs'@(group . sort -> grouped) | ((`map` grouped) -> elemCountList) <- (,) <$> head <*> length =
+      let getCountForElem x = (head . filter (^._1.to (== x)) $ elemCountList)^._2
+      in map getCountForElem xs'
 
 
 prop_deleteFirstOfEach :: [Int] -> [Int] -> Property

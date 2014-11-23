@@ -3,6 +3,7 @@
 
 import Mud.MiscDataTypes
 import Mud.TopLvlDefs
+import Mud.Util
 import MudTests.MiscDataTypesTests
 import MudTests.StateHelpersTests
 import MudTests.TheWorldTests
@@ -72,9 +73,9 @@ unitTestsUtil = testGroup "unit tests Util" [ testCase "stripTelnet" $ test_stri
 unitTestsMiscDataTypes :: TestTree
 unitTestsMiscDataTypes = testGroup "unit tests MiscDataTypes"
     [ testCase "serializeStdDesig"      $ test_serializeStdDesig      @?=
-        std <> T.intercalate d [ "Taro", "False", "mhuman", "50", "[50,51,52,53,54,55]" ] <> std
+        quoteWith std (T.intercalate d [ "Taro", "False", "mhuman", "50", "[50,51,52,53,54,55]" ])
     , testCase "serializeNonStdDesig"   $ test_serializeNonStdDesig   @?=
-        T.concat [ non, "Taro", d, "A male human", non ]
+        quoteWith non ("Taro" <> d <> "A male human")
     , testCase "deserializeStdDesig"    $ test_deserializeStdDesig    @?=
         StdDesig Nothing True "fhuman" 55 [55,54..50]
     , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=

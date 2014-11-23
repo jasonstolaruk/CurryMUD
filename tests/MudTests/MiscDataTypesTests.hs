@@ -5,6 +5,7 @@ module MudTests.MiscDataTypesTests where
 
 import Mud.MiscDataTypes
 import Mud.TopLvlDefs
+import Mud.Util
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -25,15 +26,17 @@ test_serializeNonStdDesig :: T.Text
 test_serializeNonStdDesig = serialize NonStdDesig { nonStdPCEntSing = "Taro"
                                                   , nonStdDesc      = "A male human" }
 
+
 test_deserializeStdDesig :: PCDesig
-test_deserializeStdDesig = deserialize $ std <> T.intercalate d [ "", "True", "fhuman", "55", "[55,54,53,52,51,50]" ] <> std
+test_deserializeStdDesig =
+    deserialize . quoteWith std . T.intercalate d $ [ "", "True", "fhuman", "55", "[55,54,53,52,51,50]" ]
   where
     std = T.pack [stdDesigDelimiter]
     d   = T.pack [desigDelimiter]
 
 
 test_deserializeNonStdDesig :: PCDesig
-test_deserializeNonStdDesig = deserialize . T.concat $ [ non, "Hanako", d, "A female human", non ]
+test_deserializeNonStdDesig = deserialize . quoteWith non $ "Hanako" <> d <> "A female human"
   where
     non = T.pack [nonStdDesigDelimiter]
     d   = T.pack [desigDelimiter]
