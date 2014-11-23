@@ -626,24 +626,21 @@ goDispatcher _   [] = return ()
 goDispatcher imc rs = mapM_ (tryMove imc) rs
 
 
--- TODO: Why does "u" move you into the hut?
 tryMove :: IdMsgQueueCols -> T.Text -> MudStack ()
-tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
-                                in helper dir' >>= \case
-                                  Left  msg          -> send mq . nl . T.unlines . wordWrap cols $ msg
-                                  Right (logMsg, bs) -> bcast bs >> logPla "tryMove" i logMsg >> look imc []
+tryMove imc@(i, mq, cols) (T.toLower -> dir) = helper >>= \case
+  Left  msg          -> send mq . nl . T.unlines . wordWrap cols $ msg
+  Right (logMsg, bs) -> bcast bs >> logPla "tryMove" i logMsg >> look imc []
   where
-    helper dir' = onWS $ \(t, ws) ->
-        let e   = (ws^.entTbl) ! i
-            p   = (ws^.pcTbl)  ! i
-            ra  = p^.race
-            m   = (ws^.mobTbl) ! i
-            s   = m^.sex
-            ri  = p^.rmId
-            r   = (ws^.rmTbl)  ! ri
-            ris = (ws^.invTbl) ! ri
-        in case findExit r dir' of
-          Nothing                       -> putTMVar t ws >> (return . Left . sorry $ dir')
+    helper = onWS $ \(t, ws) ->
+        let e              = (ws^.entTbl) ! i
+            p              = (ws^.pcTbl)  ! i
+            ra             = p^.race
+            ((^.sex) -> s) = (ws^.mobTbl) ! i
+            ri             = p^.rmId
+            r              = (ws^.rmTbl)  ! ri
+            ris            = (ws^.invTbl) ! ri
+        in case findExit r dir of
+          Nothing                       -> putTMVar t ws >> (return . Left $ sorry)
           Just (linkTxt, ri', mom, mdm) ->
               let p'          = p & rmId .~ ri'
                   r'          = (ws^.rmTbl)  ! ri'
@@ -658,28 +655,33 @@ tryMove imc@(i, mq, cols) dir = let dir' = T.toLower dir
                                                            , pcId         = i
                                                            , pcIds        = findPCIds ws ris }
                                 in nlnl $ case mom of
-                                  Nothing -> T.concat [ d, " ", verb dir', " ", expandLinkName dir', "." ]
+                                  Nothing -> T.concat [ d, " ", verb, " ", expandLinkName dir, "." ]
                                   Just f  -> f d
                   msgAtDest   = let d = serialize NonStdDesig { nonStdPCEntSing = e^.sing
                                                               , nonStdDesc      = mkNonStdDesc A s ra }
                                 in nlnl $ case mdm of
-                                  Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir', "." ]
+                                  Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir, "." ]
                                   Just f  -> f d
-                  logMsg      = T.concat [ "moved ", linkTxt, " from room ", showRm ri r, " to room ", showRm ri' r', "." ]
+                  logMsg      = T.concat [ "moved "
+                                         , linkTxt
+                                         , " from room "
+                                         , showRm ri r
+                                         , " to room "
+                                         , showRm ri' r'
+                                         , "." ]
               in do
                   putTMVar t (ws & pcTbl.at  i   ?~ p'
                                  & invTbl.at ri  ?~ originIs
                                  & invTbl.at ri' ?~ destIs')
                   return . Right $ (logMsg, [ (msgAtOrigin, originPis), (msgAtDest, destPis) ])
-    sorry dir'                   = if dir' `elem` stdLinkNames
-                                     then "You can't go that way."
-                                     else dblQuote dir <> " is not a valid exit."
-    verb  dir'
-      | dir' == "u"              = "goes"
-      | dir' == "d"              = "heads"
-      | dir' `elem` stdLinkNames = "leaves"
-      | otherwise                = "enters"
-    showRm ri r                  = showText ri <> " " <> parensQuote (r^.rmName)
+    sorry | dir `elem` stdLinkNames = "You can't go that way."
+          | otherwise               = dblQuote dir <> " is not a valid exit."
+    verb
+      | dir == "u"              = "goes"
+      | dir == "d"              = "heads"
+      | dir `elem` stdLinkNames = "leaves"
+      | otherwise               = "enters"
+    showRm ri (parensQuote . (^.rmName) -> rn) = showText ri <> " " <> rn
 
 
 findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
