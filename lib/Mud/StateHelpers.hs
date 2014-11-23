@@ -319,7 +319,7 @@ allKeys = (^.typeTbl.to IM.keys)
 
 
 getUnusedId :: WorldState -> Id
-getUnusedId = head . (\\ [0..]) . allKeys
+getUnusedId = head . (\\) [0..] . allKeys
 
 
 sortInv :: WorldState -> Inv -> Inv
