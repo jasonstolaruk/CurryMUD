@@ -11,6 +11,7 @@ import Mud.StateDataTypes
 import Mud.StateHelpers
 import qualified Mud.Logging as L (logNotice)
 
+import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Data.Monoid (mempty)
@@ -32,16 +33,16 @@ logNotice = L.logNotice "Mud.TheWorld"
 
 initMudState :: IO MudState
 initMudState = do
-    start    <- getCurrentTime
-    wsTMVar  <- newTMVarIO ws
-    pltTMVar <- newTMVarIO IM.empty
-    ttTMVar  <- newTMVarIO M.empty
-    tatTMVar <- newTMVarIO M.empty
-    mqtTMVar <- newTMVarIO IM.empty
-    ptTMVar  <- newTMVarIO IM.empty
+    start <- getCurrentTime
+    (wsTMVar, pltTMVar, ttTMVar, tatTMVar, mqtTMVar, ptTMVar) <- (,,,,,) <$> newTMVarIO ws
+                                                                         <*> newTMVarIO IM.empty
+                                                                         <*> newTMVarIO M.empty
+                                                                         <*> newTMVarIO M.empty
+                                                                         <*> newTMVarIO IM.empty
+                                                                         <*> newTMVarIO IM.empty
     return (MudState wsTMVar . NonWorldState start Nothing Nothing pltTMVar ttTMVar tatTMVar mqtTMVar $ ptTMVar)
   where
-    ws  = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
+    ws = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
 
 
 initWorld :: MudStack ()

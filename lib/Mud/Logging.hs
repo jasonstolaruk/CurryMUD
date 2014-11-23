@@ -23,6 +23,7 @@ import Mud.StateHelpers
 import Mud.TopLvlDefs
 import Mud.Util
 
+import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
@@ -33,7 +34,6 @@ import Control.Monad (forM_, when, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
-import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
@@ -65,10 +65,9 @@ stopLog = liftIO . atomically . flip writeTQueue StopLog
 
 initLogging :: MudStack ()
 initLogging = do
-    nq <- liftIO newTQueueIO
-    eq <- liftIO newTQueueIO
-    na <- liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM $ nq
-    ea <- liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  $ eq
+    (nq, eq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
+    (na, ea) <- (,) <$> (liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM $ nq)
+                    <*> (liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  $ eq)
     nonWorldState.noticeLog .= Just (na, nq)
     nonWorldState.errorLog  .= Just (ea, eq)
 
@@ -78,18 +77,17 @@ type LoggingFun = String -> String -> IO ()
 
 
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
-spawnLogger fn p ln f q = async . loop =<< initLog
+spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . loop =<< initLog
   where
-    fn'     = logDir ++ fn
     initLog = do
-        rotateLog fn'
-        gh <- fileHandler fn' p
+        rotateLog fn
+        gh <- fileHandler fn p
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
-        updateGlobalLogger (T.unpack ln) (setHandlers [h] . setLevel p)
+        updateGlobalLogger ln (setHandlers [h] . setLevel p)
         return gh
     loop gh = (atomically . readTQueue $ q) >>= \case
-      StopLog  -> close gh
-      Msg m    -> f (T.unpack ln) (T.unpack m) >> loop gh
+      StopLog             -> close gh
+      Msg (T.unpack -> m) -> f ln m >> loop gh
 
 
 -- TODO: Consider writing a function that can periodically be called to rotate logs on the fly.
@@ -124,16 +122,17 @@ logError msg = maybeVoid (registerMsg msg . snd) =<< gets (^.nonWorldState.error
 
 
 logExMsg :: T.Text -> T.Text -> T.Text -> SomeException -> MudStack ()
-logExMsg modName funName msg e = logError . T.concat $ [ modName, " ", funName, ": ", msg, ". ", dblQuote . showText $ e ]
+logExMsg modName funName msg (dblQuote . showText -> e) =
+    logError . T.concat $ [ modName, " ", funName, ": ", msg, ". ", e ]
 
 
 logIOEx :: T.Text -> T.Text -> IOException -> MudStack ()
-logIOEx modName funName e = logError . T.concat $ [ modName, " ", funName, ": ", dblQuote . showText $ e ]
+logIOEx modName funName (dblQuote . showText -> e) = logError . T.concat $ [ modName, " ", funName, ": ", e ]
 
 
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> T.Text -> IOException -> MudStack ()
-logAndDispIOEx mq cols modName funName e = let msg = T.concat [ modName, " ", funName, ": ", dblQuote . showText $ e ]
-                                           in logError msg >> (send mq . nl . T.unlines . wordWrap cols $ msg)
+logAndDispIOEx mq cols modName funName (dblQuote . showText -> e)
+  | msg <- T.concat [ modName, " ", funName, ": ", e ] = logError msg >> (send mq . nl . T.unlines . wordWrap cols $ msg)
 
 
 logIOExRethrow :: T.Text -> T.Text -> IOException -> MudStack ()
@@ -143,10 +142,11 @@ logIOExRethrow modName funName e = do
 
 
 initPlaLog :: Id -> Sing -> MudStack ()
-initPlaLog i n = do
+initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
     q <- liftIO newTQueueIO
-    a <- liftIO . spawnLogger (T.unpack $ n <> ".log") INFO ("currymud." <> n) infoM $ q
-    modifyNWS plaLogTblTMVar $ \plt -> plt & at i ?~ (a, q)
+    a <- liftIO . spawnLogger fn INFO ("currymud." <> n) infoM $ q
+    modifyNWS plaLogTblTMVar $ \plt ->
+        plt & at i ?~ (a, q)
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
@@ -156,26 +156,27 @@ logPla modName funName i msg = helper =<< getPlaLogQueue i
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
-logPlaExec modName cn i = logPla modName (dblQuote cn) i $ "executed " <> dblQuote cn <> "."
+logPlaExec modName (dblQuote -> cn) i = logPla modName cn i $ "executed " <> cn <> "."
 
 
 logPlaExecArgs :: T.Text -> CmdName -> Rest -> Id -> MudStack ()
-logPlaExecArgs modName cn rs i = logPla modName (dblQuote cn) i $ "executed " <> helper <> "."
+logPlaExecArgs modName cn@(dblQuote -> cn') rs i = logPla modName cn' i $ "executed " <> helper <> "."
   where
-    helper = case rs of [] -> dblQuote cn <> " with no arguments"
+    helper = case rs of [] -> cn' <> " with no arguments"
                         _  -> dblQuote . T.intercalate " " $ cn : rs
 
 
 logPlaOut :: T.Text -> CmdName -> Id -> [T.Text] -> MudStack ()
-logPlaOut modName cn i msgs = helper =<< getPlaLogQueue i
+logPlaOut modName cn i (T.intercalate " / " -> msgs) = helper =<< getPlaLogQueue i
   where
-    helper = registerMsg (T.concat [ modName, " ", cn, " (output): ", T.intercalate " / " msgs ])
+    helper = registerMsg (T.concat [ modName, " ", cn, " (output): ", msgs ])
 
 
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
-massLogPla modName funName msg = readTMVarInNWS plaLogTblTMVar >>= \plt ->
-    let logQueues = [ snd logService | logService <- IM.elems plt ]
-    in forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
+massLogPla modName funName msg = readTMVarInNWS plaLogTblTMVar >>= helper
+  where
+    helper (map snd . IM.elems -> logQueues) =
+        forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
 
 closePlaLog :: Id -> MudStack ()
