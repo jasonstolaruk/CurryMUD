@@ -190,8 +190,8 @@ plaCmds =
     , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 
 
-allCmdList :: [Cmd]
-allCmdList = wizCmds ++ debugCmds ++ plaCmds
+allCmds :: [Cmd]
+allCmds = wizCmds ++ debugCmds ++ plaCmds
 
 
 prefixCmd :: Char -> CmdName -> T.Text
@@ -539,8 +539,8 @@ sendGenericErrorMsg mq cols = send mq . nl . T.unlines . wordWrap cols $ generic
 
 
 ignore :: MsgQueue -> Cols -> Rest -> MudStack ()
-ignore mq cols rs = let ignored = dblQuote . T.unwords $ rs
-                    in send mq . T.unlines . wordWrap cols . parensQuote $ "Ignoring " <> ignored <> "..."
+ignore mq cols (dblQuote . T.unwords -> ignored) =
+    send mq . T.unlines . wordWrap cols . parensQuote $ "Ignoring " <> ignored <> "..."
 
 
 -----
@@ -567,19 +567,19 @@ plaDispCmdList imc@(i, _, _) rs = logPlaExecArgs "?" rs i >> dispCmdList (cmdPre
 
 dispCmdList :: (Cmd -> Bool) -> Action
 dispCmdList p (_, mq, cols) [] = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . cmdListText $ p
-dispCmdList p (_, mq, cols) rs = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ [ grepTextList r . cmdListText $ p | r <- nub . map T.toLower $ rs ]
+dispCmdList p (_, mq, cols) (nub . map T.toLower -> rs) | matches <- [ grepTextList r . cmdListText $ p | r <- rs ] =
+    send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ matches
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
-cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmdList
+cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmds
   where
-    helper acc c = let cmdTxt = nl $ (padOrTrunc 10 . cmdName $ c) <> cmdDesc c
-                   in  cmdTxt : acc
+    helper acc c | cmdTxt <- nl $ (padOrTrunc 10 . cmdName $ c) <> cmdDesc c = cmdTxt : acc
 
 
 cmdPred :: Maybe Char -> Cmd -> Bool
-cmdPred (Just c) cmd = c == (T.head . cmdName $ cmd)
-cmdPred Nothing  cmd = (T.head . cmdName $ cmd) `notElem` [ wizCmdChar, debugCmdChar ]
+cmdPred mc (T.head . cmdName -> p) = case mc of (Just c) -> c == p
+                                                Nothing  -> p `notElem` [ wizCmdChar, debugCmdChar ]
 
 
 -----
@@ -592,25 +592,25 @@ help (i, mq, cols) [] = do
   where
     helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
-help (i, mq, cols) rs = send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
+help (i, mq, cols) (nub . map T.toLower -> rs) =
+    send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
   where
-    getTopics = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols r) (nub . map T.toLower $ rs)
+    getTopics = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols r) rs
 
 
 type HelpTopic = T.Text
 
 
 getHelpTopicByName :: Id -> Cols -> HelpTopic -> MudStack T.Text
-getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \fns ->
-    let fns' = tail . tail . sort . delete "root" $ fns
-        tns  = fns'^..folded.packed
-    in maybe sorry
-             (\tn -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote tn <> ".") >> getHelpTopic tn)
-             (findFullNameForAbbrev r tns)
+getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(getTopics -> topics) ->
+    maybe sorry
+          (\t -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote t <> ".") >> getHelpTopic t)
+          (findFullNameForAbbrev r topics)
   where
+    getTopics       = (^..folded.packed) . drop 2 . sort . delete "root"
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
-    getHelpTopic tn = (try . helper $ tn) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . T.unlines . wordWrap cols $ "Unfortunately, the " <> dblQuote tn <> " help file could not be retrieved."))
-    helper       tn = liftIO . T.readFile . (helpDir ++) . T.unpack $ tn
+    getHelpTopic t  = (try . helper $ t) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . T.unlines . wordWrap cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."))
+    helper          = liftIO . T.readFile . (helpDir ++) . T.unpack
 
 
 -----
