@@ -52,7 +52,7 @@ resolveEntCoinNames i ws (map T.toLower -> rs) is c = expandGecrs c [ mkGecr i w
 
 
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
-mkGecr i ws is c n@(headTail -> (h, t))
+mkGecr i ws is c n@(headTail' -> (h, t))
   | n == T.pack [allChar]
   , es <- [ (ws^.entTbl) ! i' | i' <- is ]                  = Mult (length is) n (Just es) (Just . SomeOf $ c)
   | h == allChar                                            = mkGecrMult i ws (maxBound :: Int) t is c
@@ -63,10 +63,10 @@ mkGecr i ws is c n@(headTail -> (h, t))
   where
     oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
-      | T.length rest < 2               = Sorry n
-      | (delim, rest') <- headTail rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' is c
-                                             | delim == indexChar  -> mkGecrIndexed i ws numInt rest' is
-                                             | otherwise           -> Sorry n
+      | T.length rest < 2                = Sorry n
+      | (delim, rest') <- headTail' rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' is c
+                                              | delim == indexChar  -> mkGecrIndexed i ws numInt rest' is
+                                              | otherwise           -> Sorry n
 
 
 mkGecrMult :: Id -> WorldState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes

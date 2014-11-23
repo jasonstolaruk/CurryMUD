@@ -440,10 +440,10 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
           logPla "receive" i "connection dropped."
           liftIO . atomically . writeTQueue mq $ Dropped
       False -> do
-          liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters . T.pack =<< hGetLine h
+          liftIO $ atomically . writeTQueue mq . FromClient . T.pack . remDelimiters =<< hGetLine h
           loop
-    remDelimiters                         = T.foldr helper ""
-    helper c acc | c `notElem` delimiters = T.pack [c] <> acc
+    remDelimiters                         = foldr helper ""
+    helper c acc | c `notElem` delimiters = c : acc
                  | otherwise              = acc
     delimiters                            = [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
@@ -460,11 +460,10 @@ type Input = (CmdName, Rest)
 
 
 splitInp :: T.Text -> Maybe Input
-splitInp = splitUp . T.words
+splitInp = splitIt . T.words
   where
-    splitUp []     = Nothing
-    splitUp [t]    = Just (t, [])
-    splitUp (t:ts) = Just (t, ts)
+    splitIt [] = Nothing
+    splitIt xs = Just . headTail $ xs
 
 
 dispatch :: Id -> MsgQueue -> Input -> MudStack ()
@@ -477,22 +476,22 @@ dispatch i mq (cn, rest) = do
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
-findAction i cn = readWSTMVar >>= \ws -> readTMVarInNWS plaTblTMVar >>= \pt ->
-    let p        = (ws^.pcTbl) ! i
-        r        = (ws^.rmTbl) ! (p^.rmId)
-        cmdList  = mkCmdListWithNonStdRmLinks r ++
-                   (if (pt ! i)^.isWiz then wizCmds   else []) ++
-                   (if isDebug         then debugCmds else [])
-        cns       = map cmdName cmdList
-    in maybe (return Nothing)
-             (\fn -> return . Just . findActionForFullName fn $ cmdList)
-             (findFullNameForAbbrev (T.toLower cn) cns)
+findAction i (T.toLower -> cn) = readWSTMVar >>= \ws ->
+    readTMVarInNWS plaTblTMVar >>= \((! i) -> p) ->
+        let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
+            r                = (ws^.rmTbl) ! ri
+            cmds             = mkCmdListWithNonStdRmLinks r ++
+                               (if p^.isWiz then wizCmds   else []) ++
+                               (if isDebug  then debugCmds else [])
+        in maybe (return Nothing)
+                 (\fn -> return . Just . findActionForFullName fn $ cmds)
+                 (findFullNameForAbbrev cn [ cmdName cmd | cmd <- cmds ])
   where
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)
 
 
-mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
-mkCmdListWithNonStdRmLinks r = plaCmds ++ [ mkCmdForRmLink rl | rl <- r^.rmLinks, isNonStdLink rl ]
+mkCmdListWithNonStdRmLinks :: Rm -> [Cmd] -- TODO: Should these be sorted?
+mkCmdListWithNonStdRmLinks ((^.rmLinks) -> rls) = plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
 
 
 isNonStdLink :: RmLink -> Bool
@@ -501,11 +500,12 @@ isNonStdLink _               = False
 
 
 mkCmdForRmLink :: RmLink -> Cmd
-mkCmdForRmLink rl = let cn = T.toLower . mkCmdNameForRmLink $ rl
-                    in Cmd { cmdName = cn, action = go cn, cmdDesc = "" }
-  where
-    mkCmdNameForRmLink (StdLink    dir _    ) = linkDirToCmdName dir
-    mkCmdNameForRmLink (NonStdLink ln  _ _ _) = ln
+mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) = Cmd { cmdName = cn, action = go cn, cmdDesc = "" }
+
+
+mkCmdNameForRmLink :: RmLink -> T.Text
+mkCmdNameForRmLink rl = T.toLower $ case rl of (StdLink    dir _    ) -> linkDirToCmdName dir
+                                               (NonStdLink ln  _ _ _) -> ln
 
 
 linkDirToCmdName :: LinkDir -> CmdName

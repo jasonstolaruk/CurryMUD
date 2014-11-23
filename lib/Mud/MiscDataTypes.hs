@@ -156,7 +156,7 @@ instance Serializable PCDesig where
   serialize (NonStdDesig pes nsd) = quoteWith d $ pes <> d' <> nsd
     where
       (d, d') = over both (T.pack . pure) (nonStdDesigDelimiter, desigDelimiter)
-  deserialize a@(headTail -> (c, T.init -> t))
+  deserialize a@(headTail' -> (c, T.init -> t))
     | c == stdDesigDelimiter, [ pes, ic, pen, pi, pis ] <- T.splitOn d t =
         StdDesig { stdPCEntSing = deserMaybeText pes
                  , isCap        = read . T.unpack $ ic

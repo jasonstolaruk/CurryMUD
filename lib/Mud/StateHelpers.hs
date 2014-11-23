@@ -239,7 +239,7 @@ parsePCDesig i ws msg | ((^.introduced) -> intros) <- (ws^.pcTbl) ! i = helper i
 
 
 expandPCEntName :: Id -> WorldState -> Bool -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ws ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
+expandPCEntName i ws ic pen@(headTail' -> (h, t)) pi ((i `delete`) -> pis) =
     T.concat [ leading, "he ", xth, expandSex h, " ", t ]
   where
     leading | ic        = "T"

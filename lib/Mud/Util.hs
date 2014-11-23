@@ -20,6 +20,7 @@ module Mud.Util ( adjustIndent
                 , findFullNameForAbbrev
                 , grepTextList
                 , headTail
+                , headTail'
                 , isVowel
                 , maybeRet
                 , maybeVoid
@@ -49,7 +50,7 @@ module Mud.Util ( adjustIndent
 
 import Mud.TopLvlDefs
 
-import Control.Applicative (pure)
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Lens (both, folded, over, to)
 import Control.Lens.Operators ((^..))
 import Control.Monad (guard)
@@ -249,8 +250,12 @@ showText :: (Show a) => a -> T.Text
 showText = T.pack . show
 
 
-headTail :: T.Text -> (Char, T.Text)
-headTail txt = (T.head txt, T.tail txt)
+headTail :: [a] -> (a, [a])
+headTail = (,) <$> head <*> tail
+
+
+headTail' :: T.Text -> (Char, T.Text)
+headTail' txt = (T.head txt, T.tail txt)
 
 
 capitalize :: T.Text -> T.Text
@@ -262,7 +267,7 @@ uncapitalize = capsHelper toLower
 
 
 capsHelper :: (Char -> Char) -> T.Text -> T.Text
-capsHelper f (headTail -> (h, t)) = T.pack [ f h ] <> t
+capsHelper f (headTail' -> (h, t)) = T.pack [ f h ] <> t
 
 
 aOrAn :: T.Text -> T.Text
