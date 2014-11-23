@@ -685,9 +685,10 @@ tryMove imc@(i, mq, cols) (T.toLower -> dir) = helper >>= \case
 
 
 findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
-findExit r ln = case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- r^.rmLinks, isValid rl ] of
-  [] -> Nothing
-  xs -> Just . head $ xs
+findExit ((^.rmLinks) -> rls) ln =
+    case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- rls, isValid rl ] of
+      [] -> Nothing
+      xs -> Just . head $ xs
   where
     isValid      (StdLink    dir _    ) = ln == linkDirToCmdName dir
     isValid      (NonStdLink ln' _ _ _) = ln `T.isPrefixOf` ln'
@@ -734,23 +735,21 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 look :: Action
 look (i, mq, cols) [] = readWSTMVar >>= \ws ->
-    let p       = (ws^.pcTbl) ! i
-        ri      = p^.rmId
-        r       = (ws^.rmTbl) ! ri
-        primary = T.unlines . concatMap (wordWrap cols) $ [ r^.rmName, r^.rmDesc ]
-        suppl   = mkExitsSummary cols r <> ricd
-        ricd    = mkRmInvCoinsDesc i cols ws ri
+    let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
+        r                = (ws^.rmTbl) ! ri
+        primary          = T.unlines . concatMap (wordWrap cols) $ [ r^.rmName, r^.rmDesc ]
+        suppl            = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
-look (i, mq, cols) rs = helper >>= \case
+look (i, mq, cols) (nub . map T.toLower -> rs) = helper >>= \case
   (Left  msg, _           ) -> send mq msg
   (Right msg, Nothing     ) -> send mq msg
   (Right msg, Just (d, ds)) ->
-      let pis               = i `delete` pcIds d
-          d'                = serialize d
-          f targetDesig acc = let targetId = pcId targetDesig
-                              in (nlnl $ d' <> " looks at you.", [targetId]) :
-                                 (nlnl . T.concat $ [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
-                                 acc
+      let pis = i `delete` pcIds d
+          d'  = serialize d
+          f targetDesig acc | targetId <- pcId targetDesig =
+              (nlnl $ d' <> " looks at you.", [targetId]) :
+              (nlnl . T.concat $ [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
+              acc
       in do
           bcast . foldr f [] $ ds
           send mq msg
@@ -758,27 +757,32 @@ look (i, mq, cols) rs = helper >>= \case
               logPla "look" i ("looked at " <> es <> ".")
   where
     helper = onWS $ \(t, ws) ->
-        let e    = (ws^.entTbl) ! i
-            p    = (ws^.pcTbl)  ! i
-            ri   = p^.rmId
-            ris  = (ws^.invTbl) ! ri
-            ris' = i `delete` ris
-            pis  = findPCIds ws ris
-            c    = (ws^.coinsTbl) ! ri
-            d    = StdDesig { stdPCEntSing = Just $ e^.sing
-                            , isCap        = True
-                            , pcEntName    = mkUnknownPCEntName i ws
-                            , pcId         = i
-                            , pcIds        = pis }
+        let e                = (ws^.entTbl)   ! i
+            ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
+            ris              = (ws^.invTbl)   ! ri
+            ris'             = i `delete` ris
+            pis              = findPCIds ws ris
+            c                = (ws^.coinsTbl) ! ri
+            d                = StdDesig { stdPCEntSing = Just $ e^.sing
+                                        , isCap        = True
+                                        , pcEntName    = mkUnknownPCEntName i ws
+                                        , pcId         = i
+                                        , pcIds        = pis }
         in if (not . null $ ris') || (c /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris' c
+          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws rs ris' c
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                = map procReconciledCoinsRm rcs
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-                   ds                 = [ let e' = (ws^.entTbl) ! pi in StdDesig (Just $ e'^.sing) False (mkUnknownPCEntName pi ws) pi pis | pi <- extractPCIdsFromEiss ws eiss ]
+                   ds                 = [ let e' = (ws^.entTbl) ! pi
+                                          in StdDesig { stdPCEntSing = Just $ e'^.sing
+                                                      , isCap        = False
+                                                      , pcEntName    = mkUnknownPCEntName pi ws
+                                                      , pcId         = pi
+                                                      , pcIds        = pis } | pi <- extractPCIdsFromEiss ws eiss ]
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
-          else    putTMVar t ws >> return ( Left . nl . T.unlines . wordWrap cols $ "You don't see anything here to look at."
+          else    putTMVar t ws >> return ( Left . nl . T.unlines . wordWrap cols $ "You don't see anything here to \
+                                                                                    \look at."
                                           , Nothing )
     helperLookEitherInv _  acc (Left  msg ) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
     helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
