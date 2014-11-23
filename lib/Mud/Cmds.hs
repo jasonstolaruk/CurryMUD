@@ -428,8 +428,7 @@ shutDown :: MudStack ()
 shutDown = massMsg StopThread >> commitSuicide
   where
     commitSuicide = do
-        tas <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
-        liftIO . void . forkIO $ mapM_ wait tas
+        liftIO . void . forkIO . mapM_ wait =<< M.elems <$> readTMVarInNWS talkAsyncTblTMVar
         liftIO . killThread =<< getListenThreadId
 
 
