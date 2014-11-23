@@ -58,7 +58,7 @@ import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Applicative (Const, pure)
+import Control.Applicative ((<$>), (<*>), Const, pure)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -68,7 +68,6 @@ import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.State (gets)
 import Control.Monad.State.Class (MonadState)
-import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, foldl', nub, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
@@ -117,12 +116,8 @@ readTMVarInNWS lens = liftIO . atomically . readTMVar =<< getNWSRec lens
 
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
 getMqtPt = do
-    mqtTMVar <- getNWSRec msgQueueTblTMVar
-    ptTMVar  <- getNWSRec plaTblTMVar
-    liftIO . atomically $ do
-        mqt <- readTMVar mqtTMVar
-        pt  <- readTMVar ptTMVar
-        return (mqt, pt)
+    (mqtTMVar, ptTMVar) <- (,) <$> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
+    liftIO . atomically $ (,) <$> readTMVar mqtTMVar <*> readTMVar ptTMVar
 
 
 onNWS :: forall t (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) -> ((TMVar t, t) -> STM a) -> m a
@@ -141,9 +136,8 @@ modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
 getLogAsyncs :: MudStack (LogAsync, LogAsync)
 getLogAsyncs = helper <$> gets (^.nonWorldState)
   where
-    helper nws = let Just (nla, _) = nws^.noticeLog
-                     Just (ela, _) = nws^.errorLog
-                 in (nla, ela)
+    helper nws | Just (nla, _) <- nws^.noticeLog, Just (ela, _) <- nws^.errorLog = (nla, ela)
+    helper _ = patternMatchFail "getLogAsyncs helper" [ bracketQuote "elided" ]
 
 
 getPlaLogQueue :: Id -> MudStack LogQueue
