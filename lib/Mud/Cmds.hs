@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.Cmds (listenWrapper) where
 
@@ -16,6 +16,7 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow (first)
 import Control.Concurrent (forkIO, killThread, myThreadId, ThreadId)
 import Control.Concurrent.Async (async, asyncThreadId, poll, race_, wait)
@@ -30,7 +31,6 @@ import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Char (isSpace, toUpper)
-import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort)
 import Data.Maybe (catMaybes, fromJust, isNothing)
@@ -195,7 +195,7 @@ allCmdList = wizCmds ++ debugCmds ++ plaCmds
 
 
 prefixCmd :: Char -> CmdName -> T.Text
-prefixCmd c cn = T.pack [c] <> cn
+prefixCmd (T.pack . pure -> prefix) cn = prefix <> cn
 
 
 prefixWizCmd :: CmdName -> T.Text
@@ -225,7 +225,7 @@ listenExHandler e =
 
 
 saveUptime :: Integer -> MudStack ()
-saveUptime ut = getRecordUptime >>= \case
+saveUptime ut@(T.pack . renderSecs -> utTxt) = getRecordUptime >>= \case
   Nothing  -> saveIt >> logIt
   Just rut -> case ut `compare` rut of GT -> saveIt >> logRec
                                        _  -> logIt
@@ -234,14 +234,12 @@ saveUptime ut = getRecordUptime >>= \case
     logIt     = logHelper "."
     logRec    = logHelper " - it's a new record!"
     logHelper = logNotice "saveUptime" . ("the MUD was up for " <>) . (utTxt <>)
-    utTxt     = T.pack . renderSecs $ ut
 
 
 getRecordUptime :: MudStack (Maybe Integer)
-getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \doesExist ->
-    if doesExist
-      then readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
-      else return Nothing
+getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
+  True  -> readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
+  False -> return Nothing
   where
     readUptime = return . Just . read =<< (liftIO . readFile $ uptimeFile)
 
@@ -255,13 +253,16 @@ listen = do
     (forever . loop $ sock) `finally` cleanUp sock
   where
     listInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
-        let ifList = T.intercalate ", " [ T.concat [ "[", showText . NI.name $ n, ": ", showText . NI.ipv4 $ n, "]" ] | n <- ns ]
+        let ifList = T.intercalate ", " [ T.concat [ "["
+                                                   , showText . NI.name $ n
+                                                   , ": "
+                                                   , showText . NI.ipv4 $ n
+                                                   , "]" ] | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
     loop sock = do
         (h, host, port') <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
-        a <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
-        let ti = asyncThreadId a
+        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
         modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
@@ -272,16 +273,19 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
 
 
 talk :: Handle -> HostName -> MudStack ()
-talk h host = helper `finally` cleanUp
+talk h host@(T.pack -> host') = helper `finally` cleanUp
   where
     helper = do
         registerThread Talk
         liftIO configBuffer
         mq     <- liftIO newTQueueIO
         (i, n) <- adHoc mq host
-        logNotice "talk" . T.concat $ [ n, " has logged on ", parensQuote $ "new ID for incoming player: " <> showText i, "." ]
+        logNotice "talk" . T.concat $ [ n
+                                      , " has logged on "
+                                      , parensQuote $ "new ID for incoming player: " <> showText i
+                                      , "." ]
         initPlaLog i n
-        logPla "talk" i $ "logged on from " <> T.pack host <> "."
+        logPla "talk" i $ "logged on from " <> host' <> "."
         dumpTitle mq
         prompt mq "> "
         notifyArrival i
@@ -290,20 +294,15 @@ talk h host = helper `finally` cleanUp
                        (runStateInIORefT (receive h i mq) s)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
-    cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
+    cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> host' <> ".") >> (liftIO . hClose $ h)
 
 
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = do
-    wsTMVar  <- getWSTMVar
-    mqtTMVar <- getNWSRec msgQueueTblTMVar
-    ptTMVar  <- getNWSRec plaTblTMVar
-    s        <- liftIO randomSex
-    r        <- liftIO randomRace
+    (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar       <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
+    (s, r)                       <- (,)  <$> liftIO randomSex <*> liftIO randomRace
     liftIO . atomically $ do
-        ws  <- takeTMVar wsTMVar
-        mqt <- takeTMVar mqtTMVar
-        pt  <- takeTMVar ptTMVar
+        (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
         -----
         let i   = getUnusedId ws
         -----
@@ -341,14 +340,14 @@ randomSex = newStdGen >>= \g ->
 
 randomRace :: IO Race
 randomRace = newStdGen >>= \g ->
-    let (x, _) = randomR (0, 7) g in return $ [ Dwarf, Elf, Felinoid, Halfling, Human, Lagomorph, Nymph, Vulpenoid ] !! x
+    let (x, _) = randomR (0, 7) g
+    in return $ [ Dwarf, Elf, Felinoid, Halfling, Human, Lagomorph, Nymph, Vulpenoid ] !! x
 
 
 dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO newStdGen >>= \g ->
-    let range  = (1, noOfTitles)
-        (n, _) = randomR range g
-        fn     = T.unpack "title" ++ show n
+    let range                                     = (1, noOfTitles)
+        ((T.unpack "title" ++) . show -> fn, _) = randomR range g
     in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
   where
     takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
@@ -356,8 +355,8 @@ dumpTitle mq = liftIO newStdGen >>= \g ->
 
 readFileExHandler :: T.Text -> IOException -> MudStack ()
 readFileExHandler fn e
-  | isDoesNotExistError e = logIOEx fn e
-  | isPermissionError   e = logIOEx fn e
+  | isDoesNotExistError e = logIOEx        fn e
+  | isPermissionError   e = logIOEx        fn e
   | otherwise             = logIOExRethrow fn e
 
 
@@ -367,19 +366,16 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 notifyArrival :: Id -> MudStack ()
 notifyArrival i = readWSTMVar >>= \ws ->
-    let e   = (ws^.entTbl) ! i
-        m   = (ws^.mobTbl) ! i
-        s   = m^.sex
-        p   = (ws^.pcTbl)  ! i
-        r   = p^.race
-        d   = serialize NonStdDesig { nonStdPCEntSing = e^.sing
-                                    , nonStdDesc      = mkNonStdDesc A s r }
-        msg = d <> " has arrived in the game."
-    in bcastOthersInRm i . nlnl $ msg
+    let e               = (ws^.entTbl) ! i
+        ((^.sex)  -> s) = (ws^.mobTbl) ! i
+        ((^.race) -> r) = (ws^.pcTbl)  ! i
+        d               = serialize NonStdDesig { nonStdPCEntSing = e^.sing
+                                                , nonStdDesc      = mkNonStdDesc A s r }
+    in bcastOthersInRm i . nlnl $ d <> " has arrived in the game."
 
 
 mkNonStdDesc :: AOrThe -> Sex -> Race -> T.Text
-mkNonStdDesc aot s r = T.concat [ capitalize . pp $ aot, " ", pp s, " ", pp r ]
+mkNonStdDesc (capitalize . pp -> aot) (pp -> s) (pp -> r) = T.concat [ aot, " ", s, " ", r ]
 
 
 server :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -390,10 +386,10 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
       FromClient msg -> let msg' = T.strip . T.pack . stripTelnet . T.unpack $ msg
                         in unless (T.null msg') (handleInp i mq msg') >> loop
       Prompt     p   -> sendPrompt h p >> loop
-      Quit           -> cowbye h   >> handleEgress i
-      Boot           -> boot   h   >> handleEgress i
-      Dropped        ->               handleEgress i
-      Shutdown       -> shutDown   >> loop
+      Quit           -> cowbye h       >> handleEgress i
+      Boot           -> boot   h       >> handleEgress i
+      Dropped        ->                   handleEgress i
+      Shutdown       -> shutDown       >> loop
       StopThread     -> return ()
 
 
@@ -403,7 +399,7 @@ serverExHandler = plaThreadExHandler "server"
 
 plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
 plaThreadExHandler n i e
-  | fromException e == Just ThreadKilled = closePlaLog i
+  | Just ThreadKilled <- fromException e = closePlaLog i
   | otherwise                            = do
       logExMsg (n <> "ExHandler") ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
       liftIO . flip throwTo e =<< getListenThreadId
@@ -414,7 +410,7 @@ getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()
-sendPrompt h p = liftIO . T.hPutStr h . nl $ p
+sendPrompt h = liftIO . T.hPutStr h . nl
 
 
 cowbye :: Handle -> MudStack ()
