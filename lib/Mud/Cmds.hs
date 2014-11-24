@@ -793,26 +793,24 @@ look (i, mq, cols) (nub . map T.toLower -> rs) = helper >>= \case
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
-    let is         = (ws^.invTbl) ! ri
-        (pis, ois) = splitRmInv ws is
-        pis'       = i `delete` pis
-        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis'
+    let (splitRmInv ws -> ((i `delete`) -> pis, ois)) = (ws^.invTbl) ! ri
+        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
         otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
         c          = (ws^.coinsTbl) ! ri
-    in (if not . null $ pis' then pcDescs               else "") <>
-       (if not . null $ ois  then otherDescs            else "") <>
-       (if c /= mempty       then mkCoinsSummary cols c else "")
+    in (if not . null $ pis then pcDescs               else "") <>
+       (if not . null $ ois then otherDescs            else "") <>
+       (if c /= mempty      then mkCoinsSummary cols c else "")
   where
-    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> bracketQuote en) . (<> " ") $ if isKnownPCSing s then s else aOrAn s
-    mkPCDesc    a                        = mkOtherDesc a
-    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAn s <> " " <> bracketQuote en
-    mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", bracketQuote en ]
+    mkPCDesc    (bracketQuote -> en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s then s else aOrAn s
+    mkPCDesc    a                                        = mkOtherDesc a
+    mkOtherDesc (bracketQuote -> en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
+    mkOtherDesc (bracketQuote -> en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
 
 
 isKnownPCSing :: Sing -> Bool
-isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
-                                    [ "female", _ ] -> False
-                                    _               -> True
+isKnownPCSing (T.words -> ss) = case ss of [ "male",   _ ] -> False
+                                           [ "female", _ ] -> False
+                                           _               -> True
 
 
 mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
@@ -830,8 +828,7 @@ extractPCIdsFromEiss ws = foldl' helper []
 
 
 mkEntDescs :: Id -> Cols -> WorldState -> Inv -> T.Text
-mkEntDescs i cols ws is = let boths = [ (ei, (ws^.entTbl) ! ei) | ei <- is ]
-                          in T.intercalate "\n" . map (mkEntDesc i cols ws) $ boths
+mkEntDescs i cols ws is = T.intercalate "\n" . map (mkEntDesc i cols ws) $ [ (ei, (ws^.entTbl) ! ei) | ei <- is ]
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
