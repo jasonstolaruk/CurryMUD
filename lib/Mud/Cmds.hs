@@ -832,40 +832,30 @@ mkEntDescs i cols ws is = T.intercalate "\n" . map (mkEntDesc i cols ws) $ [ (ei
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
-mkEntDesc i cols ws (ei, e) = let t  = (ws^.typeTbl) ! ei
-                                  ed = T.unlines . wordWrap cols $ e^.entDesc
-                              in case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws ei $ e
-                                           MobType ->                 (ed <>) . mkEqDesc       i cols ws ei   e $ t
-                                           PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws ei   e $ t
-                                           _       -> ed
+mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(T.unlines . wordWrap cols . (^.entDesc) -> ed)) =
+    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws ei $ e
+              MobType ->                 (ed <>) . mkEqDesc       i cols ws ei   e $ t
+              PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws ei   e $ t
+              _       -> ed
   where
     pcHeader = T.unlines . wordWrap cols . mkPCDescHeader ei $ ws
 
 
 mkPCDescHeader :: Id -> WorldState -> T.Text
-mkPCDescHeader i ws = let m = (ws^.mobTbl) ! i
-                          s = m^.sex
-                          p = (ws^.pcTbl)  ! i
-                          r = p^.race
-                      in T.concat [ "You see a ", pp s, " ", pp r, "." ]
+mkPCDescHeader i ws | (pp . (^.sex)  -> s) <- (ws^.mobTbl) ! i
+                    , (pp . (^.race) -> r) <- (ws^.pcTbl)  ! i = T.concat [ "You see a ", s, " ", r, "." ]
 
 
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
-mkInvCoinsDesc i cols ws ei e = let is       = (ws^.invTbl)   ! ei
-                                    c        = (ws^.coinsTbl) ! ei
-                                    hasInv   = not . null $ is
-                                    hasCoins = c /= mempty
-                                in case (hasInv, hasCoins) of
-                                  (False, False) -> T.unlines . wordWrap cols $ if ei == i
-                                                      then dudeYourHandsAreEmpty
-                                                      else "The " <> e^.sing <> " is empty."
-                                  (True,  False) -> header <> mkEntsInInvDesc i cols ws is
-                                  (False, True ) -> header <> mkCoinsSummary    cols c
-                                  (True,  True ) -> header <> mkEntsInInvDesc i cols ws is <> mkCoinsSummary cols c
+mkInvCoinsDesc i cols ws ei ((^.sing) -> s) | is <- (ws^.invTbl)   ! ei
+                                            , c  <- (ws^.coinsTbl) ! ei = case (not . null $ is, c /= mempty) of
+  (False, False) -> T.unlines . wordWrap cols $ if ei == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
+  (True,  False) -> header <> mkEntsInInvDesc i cols ws is
+  (False, True ) -> header <>                                 mkCoinsSummary cols c
+  (True,  True ) -> header <> mkEntsInInvDesc i cols ws is <> mkCoinsSummary cols c
   where
-    header
-      | ei == i   = nl "You are carrying:"
-      | otherwise = T.unlines . wordWrap cols $ "The " <> e^.sing <> " contains:"
+    header | ei == i   = nl "You are carrying:"
+           | otherwise = T.unlines . wordWrap cols $ "The " <> s <> " contains:"
 
 
 dudeYourHandsAreEmpty :: T.Text
@@ -875,24 +865,22 @@ dudeYourHandsAreEmpty = "You aren't carrying anything."
 mkEntsInInvDesc :: Id -> Cols -> WorldState -> Inv -> T.Text
 mkEntsInInvDesc i cols ws = T.unlines . concatMap (wordWrapIndent ind cols . helper) . mkNameCountBothList i ws
   where
-    helper (en, c, (s, _)) | c == 1 = nameCol en <> "1 " <> s
-    helper (en, c, b     )          = T.concat [ nameCol en, showText c, " ", mkPlurFromBoth b ]
-    ind     = 11
-    nameCol = bracketPad ind
+    helper (bracketPad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
+    helper (bracketPad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
+    ind = 11
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
-mkCoinsSummary cols c = helper mkCoinsWithNamesList
+mkCoinsSummary cols (zip coinNames . mkListFromCoins -> coinsWithNames) = helper coinsWithNames
   where
-    helper               = T.unlines . wordWrapIndent 2 cols . T.intercalate ", " . filter (not . T.null) . map mkNameAmt
-    mkNameAmt (cn, a)    = if a == 0 then "" else showText a <> " " <> bracketQuote cn
-    mkCoinsWithNamesList = zip coinNames . mkListFromCoins $ c
+    helper = T.unlines . wordWrapIndent 2 cols . T.intercalate ", " . filter (not . T.null) . map mkNameAmt
+    mkNameAmt (bracketQuote -> cn, a) = if a == 0 then "" else showText a <> " " <> cn
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
-mkCoinsDesc cols (Coins (cop, sil, gol)) = T.unlines . intercalate [""] . map (wordWrap cols) . filter (not . T.null) $ descs
+mkCoinsDesc cols (Coins (cop, sil, gol)) =
+    T.unlines . intercalate [""] . map (wordWrap cols) . filter (not . T.null) $ [ copDesc, silDesc, golDesc ]
   where -- TODO: Come up with good descriptions.
-    descs   = [ copDesc, silDesc, golDesc ]
     copDesc = if cop /= 0 then "The copper piece is round and shiny." else ""
     silDesc = if sil /= 0 then "The silver piece is round and shiny." else ""
     golDesc = if gol /= 0 then "The gold piece is round and shiny."   else ""
