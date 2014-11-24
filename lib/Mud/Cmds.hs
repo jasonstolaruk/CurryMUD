@@ -938,17 +938,15 @@ equip :: Action
 equip (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let e = (ws^.entTbl) ! i
     in send mq . nl . mkEqDesc i cols ws i e $ PCType
-equip (i, mq, cols) rs = readWSTMVar >>= \ws ->
-    let em = (ws^.eqTbl) ! i
-        is = M.elems em
+equip (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
+    let em@(M.elems -> is) = (ws^.eqTbl) ! i
     in send mq $ if not . M.null $ em
-      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is mempty
-               eiss               = zipWith (curry procGecrMisPCEq) gecrs miss
-               invDesc            = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc          = if not . null $ rcs
-                                      then nl . T.unlines . wordWrap cols $ "You don't have any coins among your readied \
-                                                                            \equipment."
-                                      else ""
+      then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws rs is mempty
+               eiss                         = zipWith (curry procGecrMisPCEq) gecrs miss
+               invDesc                      = foldl' (helperEitherInv ws) "" eiss
+               coinsDesc | not . null $ rcs = nl . T.unlines . wordWrap cols $ "You don't have any coins among your \
+                                                                               \readied equipment."
+                         | otherwise        = ""
            in invDesc <> coinsDesc
       else nl . T.unlines . wordWrap cols $ dudeYou'reNaked
   where
@@ -957,32 +955,26 @@ equip (i, mq, cols) rs = readWSTMVar >>= \ws ->
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ws ei e t = let em    = (ws^.eqTbl) ! ei
-                                descs = map mkDesc . mkSlotNameIdList . M.toList $ em
-                            in if null descs
-                              then none
-                              else (header <>) . T.unlines . concat $ [ wordWrapIndent 15 cols l | l <- descs ]
+mkEqDesc i cols ws ei ((^.sing) -> s) t | descs <- map mkDesc . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei =
+    case descs of [] -> none
+                  _  -> (header <>) . T.unlines . concatMap (wordWrapIndent 15 cols) $ descs
   where
     mkSlotNameIdList = map (first pp)
-    mkDesc (sn, i')  = let sn'           = parensPad 15 noFinger
-                           (noFinger, _) = T.breakOn " finger" sn
-                           e'            = (ws^.entTbl) ! i'
-                           en            = if ei == i then (" " <>) . bracketQuote . fromJust $ e'^.entName else ""
-                       in sn' <> e'^.sing <> en
+    mkDesc (T.breakOn " finger" -> (sn, _), i')
+      | e' <- (ws^.entTbl) ! i'
+      , en <- if ei == i then (" " <>) . bracketQuote . fromJust $ e'^.entName else ""
+      = parensPad 15 sn <> e'^.sing <> en
     none = T.unlines . wordWrap cols $ if
       | ei == i      -> dudeYou'reNaked
       | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
-      | otherwise    -> "The " <> e^.sing <> " doesn't have anything readied."
+      | otherwise    -> "The " <> s <> " doesn't have anything readied."
     header = T.unlines . wordWrap cols $ if
       | ei == i      -> "You have readied the following equipment:"
       | t  == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
-      | otherwise    -> "The " <> e^.sing <> " has readied the following equipment:"
-    d = let m = (ws^.mobTbl) ! ei
-            s = m^.sex
-            p = (ws^.pcTbl)  ! ei
-            r = p^.race
-        in serialize NonStdDesig { nonStdPCEntSing = e^.sing
-                                 , nonStdDesc      = mkNonStdDesc The s r }
+      | otherwise    -> "The " <> s <> " has readied the following equipment:"
+    d | ((^.sex)  -> s') <- (ws^.mobTbl) ! ei -- TODO: Why not just make a util function for this already.
+      , ((^.race) -> r ) <- (ws^.pcTbl)  ! ei = serialize NonStdDesig { nonStdPCEntSing = s
+                                                                      , nonStdDesc      = mkNonStdDesc The s' r }
 
 
 dudeYou'reNaked :: T.Text
