@@ -912,13 +912,12 @@ mkExitsSummary cols ((^.rmLinks) -> rls)
 
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv (i, mq, cols) [] = readWSTMVar >>= \ws ->
-    let e = (ws^.entTbl) ! i
-    in send mq . nl . mkInvCoinsDesc i cols ws i $ e
-inv (i, mq, cols) rs = readWSTMVar >>= \ws ->
+    send mq . nl . mkInvCoinsDesc i cols ws i $ (ws^.entTbl) ! i
+inv (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
     let is = (ws^.invTbl)   ! i
         c  = (ws^.coinsTbl) ! i
     in send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is c
+      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws rs is c
                eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                ecs                = map procReconciledCoinsPCInv rcs
                invDesc            = foldl' (helperEitherInv ws) "" eiss
