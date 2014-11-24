@@ -891,16 +891,17 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
 
 exits :: Action
 exits (i, mq, cols) [] = readWSTMVar >>= \ws ->
-    let p = (ws^.pcTbl) ! i
-        r = (ws^.rmTbl) ! (p^.rmId)
+    let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
+        r                = (ws^.rmTbl) ! ri
     in logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
 exits imc@(_, mq, cols) rs = ignore mq cols rs >> exits imc []
 
 
 mkExitsSummary :: Cols -> Rm -> T.Text
-mkExitsSummary cols r = let stdNames    = [ rl^.linkDir.to linkDirToCmdName | rl <- r^.rmLinks, not . isNonStdLink $ rl ]
-                            customNames = [ rl^.linkName | rl <- r^.rmLinks, isNonStdLink rl ]
-                        in T.unlines . wordWrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
+mkExitsSummary cols ((^.rmLinks) -> rls)
+  | stdNames    <- [ rl^.linkDir.to linkDirToCmdName | rl <- rls, not . isNonStdLink $ rl ]
+  , customNames <- [ rl^.linkName                    | rl <- rls,       isNonStdLink   rl ]
+  = T.unlines . wordWrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"
     summarize std cus = T.intercalate ", " . (std ++) $ cus
