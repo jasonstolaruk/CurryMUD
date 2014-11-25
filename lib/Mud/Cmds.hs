@@ -370,7 +370,7 @@ notifyArrival i = readWSTMVar >>= \ws ->
     in bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
 
 
-mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text -- TODO: Move?
+mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
 mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <- getSexRace i ws =
     serialize NonStdDesig { nonStdPCEntSing = s
                           , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
