@@ -310,13 +310,13 @@ xs `appendIfUnique` x | x `elem` xs = xs
 
 
 mkOrdinal :: Int -> T.Text
-mkOrdinal 11 = "11th"
-mkOrdinal 12 = "12th"
-mkOrdinal 13 = "13th"
-mkOrdinal (T.last . showText -> c) | c == '1' = "st"
-                                   | c == '2' = "nd"
-                                   | c == '3' = "rd"
-mkOrdinal _ = "th"
+mkOrdinal 11              = "11th"
+mkOrdinal 12              = "12th"
+mkOrdinal 13              = "13th"
+mkOrdinal (showText -> n) = n <> case T.last n of '1' -> "st"
+                                                  '2' -> "nd"
+                                                  '3' -> "rd"
+                                                  _   -> "th"
 
 
 grepTextList :: T.Text -> [T.Text] -> [T.Text]
