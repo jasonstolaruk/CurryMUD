@@ -32,6 +32,7 @@ module Mud.StateHelpers ( allKeys
                         , mkUnknownPCEntName
                         , modifyNWS
                         , modifyWS
+                        , multiWrapSend
                         , negateCoins
                         , ok
                         , onNWS
@@ -50,7 +51,8 @@ module Mud.StateHelpers ( allKeys
                         , readWSTMVar
                         , send
                         , sortInv
-                        , splitRmInv ) where
+                        , splitRmInv
+                        , wrapSend ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
@@ -212,6 +214,14 @@ getPlaColumns i = (^.columns) <$> getPla i
 
 send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
+
+
+wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
+wrapSend mq cols = send mq . nl . T.unlines . wordWrap cols
+
+
+multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
+multiWrapSend mq cols = send mq . nl . multiWrap cols
 
 
 bcast :: [Broadcast] -> MudStack ()

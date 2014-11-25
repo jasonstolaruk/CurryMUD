@@ -529,12 +529,12 @@ about (i, mq, cols) [] = do
     logPlaExec "about" i
     try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
-    helper = send mq . nl . T.unlines . concatMap (wordWrap cols) . T.lines =<< (liftIO . T.readFile . (miscDir ++) $ "about")
+    helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile . (miscDir ++) $ "about")
 about mic@(_, mq, cols) rs = ignore mq cols rs >> about mic []
 
 
 sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
-sendGenericErrorMsg mq cols = send mq . nl . T.unlines . wordWrap cols $ genericErrorMsg
+sendGenericErrorMsg mq cols = wrapSend mq cols $ genericErrorMsg
 
 
 ignore :: MsgQueue -> Cols -> Rest -> MudStack ()
@@ -554,7 +554,7 @@ motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
 getMotdTxt :: Cols -> MudStack T.Text
 getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler "getMotdTxt" e >> (return . nl . T.unlines . wordWrap cols $ "Unfortunately, the message of the day could not be retrieved."))
   where
-    helper  = return . frame cols . T.unlines . concatMap (wordWrap cols) . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
+    helper  = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
 
 
 -----
@@ -627,7 +627,7 @@ goDispatcher imc rs = mapM_ (tryMove imc) rs
 
 tryMove :: IdMsgQueueCols -> T.Text -> MudStack ()
 tryMove imc@(i, mq, cols) (T.toLower -> dir) = helper >>= \case
-  Left  msg          -> send mq . nl . T.unlines . wordWrap cols $ msg
+  Left  msg          -> wrapSend mq cols $ msg
   Right (logMsg, bs) -> bcast bs >> logPla "tryMove" i logMsg >> look imc []
   where
     helper = onWS $ \(t, ws) ->
@@ -646,11 +646,7 @@ tryMove imc@(i, mq, cols) (T.toLower -> dir) = helper >>= \case
                   destIs'     = sortInv ws $ destIs ++ [i]
                   originPis   = findPCIds ws originIs
                   destPis     = findPCIds ws destIs
-                  msgAtOrigin = let d = serialize StdDesig { stdPCEntSing = Just s
-                                                           , isCap        = True
-                                                           , pcEntName    = mkUnknownPCEntName i ws
-                                                           , pcId         = i
-                                                           , pcIds        = findPCIds ws ris }
+                  msgAtOrigin = let d = serialize . mkStdDesig i ws s True $ ris
                                 in nlnl $ case mom of
                                   Nothing -> T.concat [ d, " ", verb, " ", expandLinkName dir, "." ]
                                   Just f  -> f d
@@ -698,6 +694,14 @@ findExit ((^.rmLinks) -> rls) ln =
     getDestMsg   _                      = Nothing
 
 
+mkStdDesig :: Id -> WorldState -> Sing -> Bool -> Inv -> PCDesig
+mkStdDesig i ws s ic ris = StdDesig { stdPCEntSing = Just s
+                                    , isCap        = ic
+                                    , pcEntName    = mkUnknownPCEntName i ws
+                                    , pcId         = i
+                                    , pcIds        = findPCIds ws ris }
+
+
 expandLinkName :: T.Text -> T.Text
 expandLinkName "n"  = "north"
 expandLinkName "ne" = "northeast"
@@ -733,7 +737,7 @@ look :: Action
 look (i, mq, cols) [] = readWSTMVar >>= \ws ->
     let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
         r                = (ws^.rmTbl) ! ri
-        primary          = T.unlines . concatMap (wordWrap cols) $ [ r^.rmName, r^.rmDesc ]
+        primary          = multiWrap cols [ r^.rmName, r^.rmDesc ]
         suppl            = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
 look (i, mq, cols) (nub . map T.toLower -> rs) = helper >>= \case
@@ -757,13 +761,8 @@ look (i, mq, cols) (nub . map T.toLower -> rs) = helper >>= \case
             ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
             ris              = (ws^.invTbl)   ! ri
             ris'             = i `delete` ris
-            pis              = findPCIds ws ris
             c                = (ws^.coinsTbl) ! ri
-            d                = StdDesig { stdPCEntSing = Just s
-                                        , isCap        = True
-                                        , pcEntName    = mkUnknownPCEntName i ws
-                                        , pcId         = i
-                                        , pcIds        = pis }
+            d                = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (c /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames i ws rs ris' c
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
@@ -771,18 +770,14 @@ look (i, mq, cols) (nub . map T.toLower -> rs) = helper >>= \case
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc          = foldl' helperLookEitherCoins    "" ecs
                    ds                 = [ let ((^.sing) -> s') = (ws^.entTbl) ! pi
-                                          in StdDesig { stdPCEntSing = Just s'
-                                                      , isCap        = False
-                                                      , pcEntName    = mkUnknownPCEntName pi ws
-                                                      , pcId         = pi
-                                                      , pcIds        = pis } | pi <- extractPCIdsFromEiss ws eiss ]
+                                          in mkStdDesig pi ws s' False ris | pi <- extractPCIdsFromEiss ws eiss ]
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
           else    putTMVar t ws >> return ( Left . nl . T.unlines . wordWrap cols $ "You don't see anything here to \
                                                                                     \look at."
                                           , Nothing )
     helperLookEitherInv _  acc (Left  msg ) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
     helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
-    helperLookEitherCoins  acc (Left  msgs) = (acc <>) . nl . T.unlines . concatMap (wordWrap cols) . intersperse "" $ msgs
+    helperLookEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 
 
@@ -922,7 +917,7 @@ inv (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
   where
     helperEitherInv _  acc (Left  msg ) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
     helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
-    helperEitherCoins  acc (Left  msgs) = (acc <>) . nl . T.unlines . concatMap (wordWrap cols) . intersperse "" $ msgs
+    helperEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 
 
@@ -993,11 +988,7 @@ getAction (i, _, _) rs = do
             ris             = (ws^.invTbl)   ! ri
             ris'            = i `delete` ris
             rc              = (ws^.coinsTbl) ! ri
-            d               = StdDesig { stdPCEntSing = Just s
-                                       , isCap        = True
-                                       , pcEntName    = mkUnknownPCEntName i ws
-                                       , pcId         = i
-                                       , pcIds        = findPCIds ws ris }
+            d               = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (rc /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris' rc
                    eiss                  = zipWith (curry procGecrMisRm) gecrs miss
@@ -1009,9 +1000,9 @@ getAction (i, _, _) rs = do
 
 
 advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
-advise mq cols []  msg = send mq . nl . T.unlines . wordWrap cols $ msg
-advise mq cols [h] msg = send mq . nl . T.unlines . concatMap (wordWrap cols) $ [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ]
-advise mq cols hs  msg = send mq . nl . T.unlines . concatMap (wordWrap cols) $ [ msg, "See also the following help topics: " <> helpTopics <> "." ]
+advise mq cols []  msg = wrapSend mq cols msg
+advise mq cols [h] msg = multiWrapSend mq cols [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ]
+advise mq cols hs  msg = multiWrapSend mq cols [ msg, "See also the following help topics: " <> helpTopics <> "." ]
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
@@ -1114,11 +1105,7 @@ dropAction (i, _, _) rs = do
             pc              = (ws^.coinsTbl) ! i
             ri              = p^.rmId
             ris             = (ws^.invTbl)   ! ri
-            d               = StdDesig { stdPCEntSing = Just s
-                                       , isCap        = True
-                                       , pcEntName    = mkUnknownPCEntName i ws
-                                       , pcId         = i
-                                       , pcIds        = findPCIds ws ris }
+            d               = mkStdDesig i ws s True ris
         in if (not . null $ pis) || (pc /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) pis pc
                    eiss                  = zipWith (curry procGecrMisPCInv) gecrs miss
@@ -1158,11 +1145,7 @@ putAction (i, _, _) rs  = do
           rs''            = case rs' of [_, _] -> rs'
                                         _      -> (++ [cn]) . nub . init $ rs'
           restWithoutCon  = init rs''
-          d               = StdDesig { stdPCEntSing = Just s
-                                     , isCap        = True
-                                     , pcEntName    = mkUnknownPCEntName i ws
-                                     , pcId         = i
-                                     , pcIds        = findPCIds ws ris }
+          d               = mkStdDesig i ws s True ris
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris'
@@ -1420,11 +1403,7 @@ remove (i, _, _) rs  = do
           rs''            = case rs' of [_, _] -> rs'
                                         _      -> (++ [cn]) . nub . init $ rs'
           restWithoutCon  = init rs''
-          d               = StdDesig { stdPCEntSing = Just s
-                                     , isCap        = True
-                                     , pcEntName    = mkUnknownPCEntName i ws
-                                     , pcId         = i
-                                     , pcIds        = findPCIds ws ris }
+          d               = mkStdDesig i ws s True ris
       in if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris'
             then shuffleRem i (t, ws) d (T.tail cn) True restWithoutCon ris' rc procGecrMisRm
@@ -1784,11 +1763,11 @@ intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
     in if null intros
       then do
           let introsTxt = "No one has introduced themselves to you yet."
-          send mq . nl . T.unlines . wordWrap cols $ introsTxt
+          wrapSend mq cols introsTxt
           logPlaOut "intro" i [introsTxt]
       else do
           let introsTxt = T.intercalate ", " intros
-          send mq . nl . T.unlines . concatMap (wordWrap cols) $ [ "You know the following names:", introsTxt ]
+          multiWrapSend mq cols [ "You know the following names:", introsTxt ]
           logPlaOut "intro" i [introsTxt]
 intro (i, _, _) rs = do
     (cbs, logMsgs) <- helper
@@ -1825,11 +1804,7 @@ intro (i, _, _) rs = do
               PCType -> let targetPC    = (ws^.pcTbl) ! targetId
                             intros      = targetPC^.introduced
                             pis         = findPCIds ws ris
-                            targetDesig = serialize StdDesig { stdPCEntSing = Just targetSing
-                                                             , isCap        = False
-                                                             , pcEntName    = mkUnknownPCEntName targetId ws
-                                                             , pcId         = targetId
-                                                             , pcIds        = pis }
+                            targetDesig = serialize . mkStdDesig targetId ws targetSing False $ ris
                             (mkReflexive . (^.sex) -> himHerself) = (ws^.mobTbl) ! i
                         in if s `elem` intros
                           then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
@@ -2042,7 +2017,7 @@ whatInvCoins cols it r rc
 uptime :: Action
 uptime (i, mq, cols) [] = do
     logPlaExec "uptime" i
-    send mq . nl . T.unlines . wordWrap cols =<< uptimeHelper =<< getUptime
+    wrapSend mq cols =<< uptimeHelper =<< getUptime
 uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
 
 
@@ -2072,8 +2047,7 @@ getUptime = do
 
 quit :: Action
 quit (i, mq, _   ) [] = (liftIO . atomically . writeTQueue mq $ Quit) >> logPlaExec "quit" i
-quit (_, mq, cols) _  =
-    send mq . nl . T.unlines . wordWrap cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
+quit (_, mq, cols) _  = wrapSend mq cols $ "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
 
 handleEgress :: Id -> MudStack ()
@@ -2115,13 +2089,9 @@ notifyEgress i = readWSTMVar >>= \ws ->
     let ((^.sing) -> s) = (ws^.entTbl) ! i
         p               = (ws^.pcTbl)  ! i
         ri              = p^.rmId
-        is              = (ws^.invTbl) ! ri
-        pis             = findPCIds ws is
-        d               = serialize StdDesig { stdPCEntSing = Just s
-                                             , isCap        = True
-                                             , pcEntName    = mkUnknownPCEntName i ws
-                                             , pcId         = i
-                                             , pcIds        = pis }
+        ris             = (ws^.invTbl) ! ri
+        pis             = findPCIds ws ris
+        d               = serialize . mkStdDesig i ws s True $ ris
         msg = nlnl $ d <> " has left the game."
     in bcast [(msg, i `delete` pis)]
 
@@ -2177,7 +2147,7 @@ wizTime (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "time") i
     ct <- liftIO getCurrentTime
     zt <- liftIO getZonedTime
-    send mq . T.unlines . concatMap (wordWrap cols) $ [ "At the tone, the time will be...", formatThat ct, formatThat zt, "" ]
+    send mq . multiWrap cols $ [ "At the tone, the time will be...", formatThat ct, formatThat zt, "" ]
   where
     formatThat t = let wordy = T.words . showText $ t
                        zone  = last wordy
@@ -2220,8 +2190,8 @@ wizUptime imc@(_, mq, cols) rs = ignore mq cols rs >> wizUptime imc []
 wizStart :: Action
 wizStart (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "start") i
-    start <- getNWSRec startTime
-    send mq . nl . T.unlines . wordWrap cols . showText $ start
+    (showText -> start) <- getNWSRec startTime
+    wrapSend mq cols start
 wizStart imc@(_, mq, cols) rs = ignore mq cols rs >> wizStart imc []
 
 
@@ -2234,7 +2204,7 @@ wizName (i, mq, cols) [] = do
     readWSTMVar >>= \ws ->
         let ((^.sing) -> s)     = (ws^.entTbl) ! i
             (pp -> s', pp -> r) = getSexRace i ws
-        in send mq . nl . T.unlines . wordWrap cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
+        in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
 wizName imc@(_, mq, cols) rs = ignore mq cols rs >> wizName imc []
 
 
@@ -2321,7 +2291,7 @@ debugThread (i, mq, cols) [] = do
                          (nli, Notice) :
                          (eli, Error)  :
                          tail kvs ++ zipped
-    let msg = T.unlines . concatMap (wordWrap cols) $ ds
+    let msg = multiWrap cols ds
     send mq . frame cols $ msg
   where
     mkDesc (k, v) = (liftIO . threadStatus $ k) >>= \s ->
@@ -2339,7 +2309,7 @@ debugTalk :: Action
 debugTalk (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "talk") i
     ds <- readTMVarInNWS talkAsyncTblTMVar >>= mapM mkDesc . M.elems
-    let msg = T.unlines . concatMap (wordWrap cols) $ ds
+    let msg = multiWrap cols ds
     send mq . frame cols $ msg
   where
     mkDesc a = (liftIO . poll $ a) >>= \status ->
@@ -2422,8 +2392,8 @@ debugCPU :: Action
 debugCPU (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "cpu") i
     t <- liftIO getCPUTime
-    let secs = fromIntegral t / fromIntegral (10 ^ 12)
-    send mq . nl . T.unlines . wordWrap cols $ "CPU time: " <> showText secs
+    let (showText -> secs) = fromIntegral t / fromIntegral (10 ^ 12)
+    wrapSend mq cols $ "CPU time: " <> secs
 debugCPU imc@(_, mq, cols) rs = ignore mq cols rs >> debugCPU imc []
 
 

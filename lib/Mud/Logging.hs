@@ -132,7 +132,7 @@ logIOEx modName funName (dblQuote . showText -> e) = logError . T.concat $ [ mod
 
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> T.Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols modName funName (dblQuote . showText -> e)
-  | msg <- T.concat [ modName, " ", funName, ": ", e ] = logError msg >> (send mq . nl . T.unlines . wordWrap cols $ msg)
+  | msg <- T.concat [ modName, " ", funName, ": ", e ] = logError msg >> wrapSend mq cols msg
 
 
 logIOExRethrow :: T.Text -> T.Text -> IOException -> MudStack ()

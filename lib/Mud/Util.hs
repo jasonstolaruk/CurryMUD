@@ -26,6 +26,7 @@ module Mud.Util ( adjustIndent
                 , maybeVoid
                 , mkCountList
                 , mkOrdinal
+                , multiWrap
                 , nl
                 , nl'
                 , nlnl
@@ -90,6 +91,10 @@ wordWrap cols t
 
 breakEnd :: T.Text -> (T.Text, T.Text)
 breakEnd (T.break isSpace . T.reverse -> (after, before)) = over both T.reverse (before, after)
+
+
+multiWrap :: Int -> [T.Text] -> T.Text
+multiWrap cols = T.unlines . concatMap (wordWrap cols)
 
 
 wordWrapIndent :: Int -> Int -> T.Text -> [T.Text]
