@@ -76,6 +76,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --      [DONE] "(..)" instead of "(blah)" in import statements.
 --   d. [DONE] Check for superfluous exports.
 -- 7. Write tests for NameResolution and Cmds.
+-- 8. Refactor for ViewPatterns and pattern guards.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -976,6 +977,7 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 -----
 
 
+-- TODO: Continue refactoring from here.
 getAction :: Action
 getAction (_, mq, cols) [] = advise mq cols ["get"] $ "Please specify one or more items to pick up, as \
                                                       \in " <> dblQuote "get sword" <> "."
@@ -1003,9 +1005,7 @@ getAction (i, _, _) rs = do
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
-          else do
-              putTMVar t ws
-              return (mkBroadcast i "You don't see anything here to pick up.", [])
+          else putTMVar t ws >> return (mkBroadcast i "You don't see anything here to pick up.", [])
 
 
 advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
