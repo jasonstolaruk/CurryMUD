@@ -342,7 +342,7 @@ randomSex = newStdGen >>= \g ->
 randomRace :: IO Race
 randomRace = newStdGen >>= \g ->
     let (x, _) = randomR (0, 7) g
-    in return $ [ Dwarf, Elf, Felinoid, Halfling, Human, Lagomorph, Nymph, Vulpenoid ] !! x
+    in return $ [ Dwarf .. Vulpenoid ] !! x
 
 
 dumpTitle :: MsgQueue -> MudStack ()

@@ -223,7 +223,7 @@ data Race = Dwarf
           | Human
           | Lagomorph
           | Nymph
-          | Vulpenoid deriving (Eq, Show)
+          | Vulpenoid deriving (Eq, Show, Enum)
 
 
 -- ==================================================
