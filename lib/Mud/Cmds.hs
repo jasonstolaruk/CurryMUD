@@ -534,7 +534,7 @@ about mic@(_, mq, cols) rs = ignore mq cols rs >> about mic []
 
 
 sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
-sendGenericErrorMsg mq cols = wrapSend mq cols $ genericErrorMsg
+sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 
 
 ignore :: MsgQueue -> Cols -> Rest -> MudStack ()
@@ -627,7 +627,7 @@ goDispatcher imc rs = mapM_ (tryMove imc) rs
 
 tryMove :: IdMsgQueueCols -> T.Text -> MudStack ()
 tryMove imc@(i, mq, cols) (T.toLower -> dir) = helper >>= \case
-  Left  msg          -> wrapSend mq cols $ msg
+  Left  msg          -> wrapSend mq cols msg
   Right (logMsg, bs) -> bcast bs >> logPla "tryMove" i logMsg >> look imc []
   where
     helper = onWS $ \(t, ws) ->
@@ -972,23 +972,21 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 -----
 
 
--- TODO: Continue refactoring from here.
 getAction :: Action
 getAction (_, mq, cols) [] = advise mq cols ["get"] $ "Please specify one or more items to pick up, as \
                                                       \in " <> dblQuote "get sword" <> "."
-getAction (i, _, _) rs = do
+getAction (i, _,  _   ) rs = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "get" i logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.sing) -> s) = (ws^.entTbl)   ! i
-            p               = (ws^.pcTbl)    ! i
-            ri              = p^.rmId
-            ris             = (ws^.invTbl)   ! ri
-            ris'            = i `delete` ris
-            rc              = (ws^.coinsTbl) ! ri
-            d               = mkStdDesig i ws s True ris
+        let ((^.sing) -> s)  = (ws^.entTbl)   ! i
+            ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
+            ris              = (ws^.invTbl)   ! ri
+            ris'             = i `delete` ris
+            rc               = (ws^.coinsTbl) ! ri
+            d                = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (rc /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris' rc
                    eiss                  = zipWith (curry procGecrMisRm) gecrs miss
@@ -1001,8 +999,10 @@ getAction (i, _, _) rs = do
 
 advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
 advise mq cols []  msg = wrapSend mq cols msg
-advise mq cols [h] msg = multiWrapSend mq cols [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ]
-advise mq cols hs  msg = multiWrapSend mq cols [ msg, "See also the following help topics: " <> helpTopics <> "." ]
+advise mq cols [h] msg | msgs <- [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ]
+                       = multiWrapSend mq cols msgs
+advise mq cols hs  msg | msgs <- [ msg, "See also the following help topics: " <> helpTopics <> "." ]
+                       = multiWrapSend mq cols msgs
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
@@ -1020,18 +1020,16 @@ helperGetDropEitherInv :: Id                                  ->
                           Either T.Text Inv                   ->
                           (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherInv i d god fi ti (ws, bs, logMsgs) = \case
-  Left  msg -> (ws, bs ++ mkBroadcast i msg, logMsgs)
-  Right is  -> let fis             = (ws^.invTbl) ! fi
-                   tis             = (ws^.invTbl) ! ti
-                   ws'             = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
-                                        & invTbl.at ti ?~ sortInv ws (tis ++ is)
-                   (bs', logMsgs') = mkGetDropInvDesc i ws' d god is
-               in (ws', bs ++ bs', logMsgs ++ logMsgs')
+  Left  (mkBroadcast i -> b) -> (ws, bs ++ b, logMsgs)
+  Right is                   -> let (fis, tis)      = over both ((ws^.invTbl) !) (fi, ti)
+                                    ws'             = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
+                                                         & invTbl.at ti ?~ sortInv ws (tis ++ is)
+                                    (bs', logMsgs') = mkGetDropInvDesc i ws' d god is
+                                in (ws', bs ++ bs', logMsgs ++ logMsgs')
 
 
 mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
-mkGetDropInvDesc i ws d god is = let bs = concatMap helper . mkNameCountBothList i ws $ is
-                                 in (bs, extractLogMsgs i bs)
+mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap helper ncbs = (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _))
       | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s, "." ], [i])
@@ -1065,8 +1063,7 @@ helperGetDropEitherCoins :: Id                                  ->
                             (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherCoins i d god fi ti (ws, bs, logMsgs) = \case
   Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
-  Right c    -> let fc              = (ws^.coinsTbl) ! fi
-                    tc              = (ws^.coinsTbl) ! ti
+  Right c    -> let (fc, tc)        = over both ((ws^.coinsTbl) !) (fi, ti)
                     ws'             = ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                          & coinsTbl.at ti ?~ tc <> c
                     (bs', logMsgs') = mkGetDropCoinsDesc i d god c
@@ -1074,17 +1071,18 @@ helperGetDropEitherCoins i d god fi ti (ws, bs, logMsgs) = \case
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
-mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) = let bs = concat . catMaybes $ [ c, s, g ]
-                                                     in (bs, extractLogMsgs i bs)
+mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ [ c, s, g ] = (bs, extractLogMsgs i bs)
   where
     c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
     s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
     g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
-    helper a cn | a == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " a ", cn, "." ], [i])
-                           , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ", cn, "." ], otherPCIds) ]
-    helper a cn          = [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
-                           , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
-    otherPCIds           = i `delete` pcIds d
+    helper a cn | a == 1 =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " a ", cn, "." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ", cn, "." ], otherPCIds) ]
+    helper a cn =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
+    otherPCIds = i `delete` pcIds d
 
 
 -----
