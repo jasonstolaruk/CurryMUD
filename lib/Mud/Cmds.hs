@@ -77,6 +77,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --   d. [DONE] Check for superfluous exports.
 -- 7. Write tests for NameResolution and Cmds.
 -- 8. Refactor for ViewPatterns and pattern guards.
+-- 9. See if you can keep your lines at 120 characters or less.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -1091,19 +1092,17 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 dropAction :: Action
 dropAction (_, mq, cols) [] = advise mq cols ["drop"] $ "Please specify one or more things to drop, as \
                                                         \in " <> dblQuote "drop sword" <> "."
-dropAction (i, _, _) rs = do
+dropAction (i, _,  _   ) rs = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "drop" i logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.sing) -> s) = (ws^.entTbl)   ! i
-            p               = (ws^.pcTbl)    ! i
-            pis             = (ws^.invTbl)   ! i
-            pc              = (ws^.coinsTbl) ! i
-            ri              = p^.rmId
-            ris             = (ws^.invTbl)   ! ri
-            d               = mkStdDesig i ws s True ris
+        let ((^.sing) -> s)  = (ws^.entTbl)   ! i
+            ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
+            (pis, ris)       = over both ((ws^.invTbl) !) (i, ri)
+            pc               = (ws^.coinsTbl) ! i
+            d                = mkStdDesig i ws s True ris
         in if (not . null $ pis) || (pc /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) pis pc
                    eiss                  = zipWith (curry procGecrMisPCInv) gecrs miss
@@ -1111,39 +1110,34 @@ dropAction (i, _, _) rs = do
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
-          else do
-              putTMVar t ws
-              return (mkBroadcast i dudeYourHandsAreEmpty, [])
+          else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 
 
 -----
 
 
+-- TODO: Continue refactoring from here.
 putAction :: Action
-putAction (_, mq, cols) []  = advise mq cols ["put"] $ "Please specify one or more things you want to put, followed by where \
-                                                       \you want to put them, as in " <> dblQuote "put doll sack" <> "."
+putAction (_, mq, cols) []  = advise mq cols ["put"] $ "Please specify one or more things you want to put, followed by \
+                                                       \where you want to put them, as in " <> dblQuote "put doll \
+                                                       \sack" <> "."
 putAction (_, mq, cols) [r] = advise mq cols ["put"] $ "Please also specify where you want to put it, as \
                                                        \in " <> dblQuote ("put " <> r <> " sack") <> "."
-putAction (i, _, _) rs  = do
+putAction (i, _,  _   ) (map T.toLower -> rs)  = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "put" i logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let ((^.sing) -> s) = (ws^.entTbl)   ! i
-          p               = (ws^.pcTbl)    ! i
-          pis             = (ws^.invTbl)   ! i
-          pc              = (ws^.coinsTbl) ! i
-          ri              = p^.rmId
-          ris             = (ws^.invTbl)   ! ri
-          ris'            = i `delete` ris
-          rc              = (ws^.coinsTbl) ! ri
-          rs'             = map T.toLower rs
-          cn              = last rs'
-          rs''            = case rs' of [_, _] -> rs'
-                                        _      -> (++ [cn]) . nub . init $ rs'
-          restWithoutCon  = init rs''
-          d               = mkStdDesig i ws s True ris
+      let ((^.sing) -> s)          = (ws^.entTbl)   ! i
+          ((^.rmId) -> ri)         = (ws^.pcTbl)    ! i
+          (pis, ris)               = over both ((ws^.invTbl)   !) (i, ri)
+          ris'                     = i `delete` ris
+          (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
+          cn                       = last rs
+          (init -> restWithoutCon) = case rs of [_, _] -> rs
+                                                _      -> (++ [cn]) . nub . init $ rs
+          d                        = mkStdDesig i ws s True ris
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris'
@@ -1221,8 +1215,7 @@ helperPutRemEitherInv i d por mnom fi ti te (ws, bs, logMsgs) = \case
   Right is  -> let (is', bs')       = if ti `elem` is
                                         then (filter (/= ti) is, bs ++ [sorry])
                                         else (is, bs)
-                   fis              = (ws^.invTbl) ! fi
-                   tis              = (ws^.invTbl) ! ti
+                   (fis, tis)       = over both ((ws^.invTbl) !) (fi, ti)
                    ws'              = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
                                          & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
                    (bs'', logMsgs') = mkPutRemInvDesc i ws' d por mnom is' te
@@ -1318,8 +1311,7 @@ helperPutRemEitherCoins :: Id                                  ->
                            (WorldState, [Broadcast], [T.Text])
 helperPutRemEitherCoins i d por mnom fi ti te (ws, bs, logMsgs) = \case
   Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
-  Right c    -> let fc              = (ws^.coinsTbl) ! fi
-                    tc              = (ws^.coinsTbl) ! ti
+  Right c    -> let (fc, tc)        = over both ((ws^.coinsTbl) !) (fi, ti)
                     ws'             = ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                          & coinsTbl.at ti ?~ tc <> c
                     (bs', logMsgs') = mkPutRemCoinsDescs i d por mnom c te
@@ -1382,26 +1374,21 @@ remove (_, mq, cols) []  = advise mq cols ["remove"] $ "Please specify one or mo
                                                        \doll sack" <> "."
 remove (_, mq, cols) [r] = advise mq cols ["remove"] $ "Please also specify the container you want to remove it from, as \
                                                        \in " <> dblQuote ("remove " <> r <> " sack") <> "."
-remove (i, _, _) rs  = do
+remove (i, _,  _   ) (map T.toLower -> rs)  = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "remove" i logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let ((^.sing) -> s) = (ws^.entTbl)   ! i
-          p               = (ws^.pcTbl)    ! i
-          pis             = (ws^.invTbl)   ! i
-          pc              = (ws^.coinsTbl) ! i
-          ri              = p^.rmId
-          ris             = (ws^.invTbl)   ! ri
-          ris'            = i `delete` ris
-          rc              = (ws^.coinsTbl) ! ri
-          rs'             = map T.toLower rs
-          cn              = last rs'
-          rs''            = case rs' of [_, _] -> rs'
-                                        _      -> (++ [cn]) . nub . init $ rs'
-          restWithoutCon  = init rs''
-          d               = mkStdDesig i ws s True ris
+      let ((^.sing) -> s)          = (ws^.entTbl)   ! i
+          ((^.rmId) -> ri)         = (ws^.pcTbl)    ! i
+          (pis, ris)               = over both ((ws^.invTbl)   !) (i, ri)
+          (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
+          ris'                     = i `delete` ris
+          cn                       = last rs
+          (init -> restWithoutCon) = case rs of [_, _] -> rs
+                                                _      -> (++ [cn]) . nub . init $ rs
+          d                        = mkStdDesig i ws s True ris
       in if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris'
             then shuffleRem i (t, ws) d (T.tail cn) True restWithoutCon ris' rc procGecrMisRm
@@ -2123,8 +2110,8 @@ wizShutdown (i, mq, _) [] = readWSTMVar >>= \ws ->
                                             , "." ]
         liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown (i, mq, _) rs = readWSTMVar >>= \ws ->
-    let ((^.sing) -> s)   = (ws^.entTbl) ! i
-        msg               = T.intercalate " " rs
+    let ((^.sing) -> s) = (ws^.entTbl) ! i
+        msg             = T.intercalate " " rs
     in do
         massSend msg
         logPlaExecArgs (prefixWizCmd "shutdown") rs i
