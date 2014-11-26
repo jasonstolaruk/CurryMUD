@@ -382,14 +382,14 @@ server :: Handle -> Id -> MsgQueue -> MudStack ()
 server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      FromServer msg -> (liftIO . T.hPutStr h $ msg) >> loop
-      FromClient msg -> let msg' = T.strip . T.pack . stripTelnet . T.unpack $ msg
-                        in unless (T.null msg') (handleInp i mq msg') >> loop
-      Prompt     p   -> sendPrompt h p >> loop
-      Quit           -> cowbye h       >> handleEgress i
-      Boot           -> boot   h       >> handleEgress i
-      Dropped        ->                   handleEgress i
-      Shutdown       -> shutDown       >> loop
+      FromServer msg -> (liftIO . T.hPutStr h $ msg)             >> loop
+      FromClient (T.strip . T.pack . stripTelnet . T.unpack -> msg)
+                     -> unless (T.null msg) (handleInp i mq msg) >> loop
+      Prompt     p   -> sendPrompt h p                           >> loop
+      Quit           -> cowbye h                                 >> handleEgress i
+      Boot           -> boot   h                                 >> handleEgress i
+      Dropped        ->                                             handleEgress i
+      Shutdown       -> shutDown                                 >> loop
       StopThread     -> return ()
 
 
@@ -638,35 +638,35 @@ tryMove imc@(i, mq, cols) (T.toLower -> dir) = helper >>= \case
             r               = (ws^.rmTbl)  ! ri
             ris             = (ws^.invTbl) ! ri
         in case findExit r dir of
-          Nothing                       -> putTMVar t ws >> (return . Left $ sorry)
-          Just (linkTxt, ri', mom, mdm) ->
-              let p'          = p & rmId .~ ri'
-                  r'          = (ws^.rmTbl)  ! ri'
-                  originIs    = i `delete` ris
-                  destIs      = (ws^.invTbl) ! ri'
-                  destIs'     = sortInv ws $ destIs ++ [i]
-                  originPis   = findPCIds ws originIs
-                  destPis     = findPCIds ws destIs
-                  msgAtOrigin = let d = serialize . mkStdDesig i ws s True $ ris
-                                in nlnl $ case mom of
-                                  Nothing -> T.concat [ d, " ", verb, " ", expandLinkName dir, "." ]
-                                  Just f  -> f d
-                  msgAtDest   = let d = mkSerializedNonStdDesig i ws s A
-                                in nlnl $ case mdm of
-                                  Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir, "." ]
-                                  Just f  -> f d
-                  logMsg      = T.concat [ "moved "
-                                         , linkTxt
-                                         , " from room "
-                                         , showRm ri r
-                                         , " to room "
-                                         , showRm ri' r'
-                                         , "." ]
-              in do
-                  putTMVar t (ws & pcTbl.at  i   ?~ p'
-                                 & invTbl.at ri  ?~ originIs
-                                 & invTbl.at ri' ?~ destIs')
-                  return . Right $ (logMsg, [ (msgAtOrigin, originPis), (msgAtDest, destPis) ])
+          Nothing -> putTMVar t ws >> (return . Left $ sorry)
+          Just (linkTxt, ri', mom, mdm)
+            | p'          <- p & rmId .~ ri'
+            , r'          <- (ws^.rmTbl)  ! ri'
+            , originIs    <- i `delete` ris
+            , destIs      <- (ws^.invTbl) ! ri'
+            , destIs'     <- sortInv ws $ destIs ++ [i]
+            , originPis   <- findPCIds ws originIs
+            , destPis     <- findPCIds ws destIs
+            , msgAtOrigin <- let d = serialize . mkStdDesig i ws s True $ ris
+                             in nlnl $ case mom of
+                               Nothing -> T.concat [ d, " ", verb, " ", expandLinkName dir, "." ]
+                               Just f  -> f d
+            , msgAtDest   <- let d = mkSerializedNonStdDesig i ws s A
+                             in nlnl $ case mdm of
+                               Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir, "." ]
+                               Just f  -> f d
+            , logMsg      <- T.concat [ "moved "
+                                      , linkTxt
+                                      , " from room "
+                                      , showRm ri r
+                                      , " to room "
+                                      , showRm ri' r'
+                                      , "." ]
+            -> do
+                putTMVar t (ws & pcTbl.at  i   ?~ p'
+                               & invTbl.at ri  ?~ originIs
+                               & invTbl.at ri' ?~ destIs')
+                return . Right $ (logMsg, [ (msgAtOrigin, originPis), (msgAtDest, destPis) ])
     sorry | dir `elem` stdLinkNames = "You can't go that way."
           | otherwise               = dblQuote dir <> " is not a valid exit."
     verb
@@ -1022,11 +1022,11 @@ helperGetDropEitherInv :: Id                                  ->
                           (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherInv i d god fi ti (ws, bs, logMsgs) = \case
   Left  (mkBroadcast i -> b) -> (ws, bs ++ b, logMsgs)
-  Right is                   -> let (fis, tis)      = over both ((ws^.invTbl) !) (fi, ti)
-                                    ws'             = ws & invTbl.at fi ?~ deleteFirstOfEach is fis
-                                                         & invTbl.at ti ?~ sortInv ws (tis ++ is)
-                                    (bs', logMsgs') = mkGetDropInvDesc i ws' d god is
-                                in (ws', bs ++ bs', logMsgs ++ logMsgs')
+  Right is | (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
+           , ws'             <- ws & invTbl.at fi ?~ deleteFirstOfEach is fis
+                                   & invTbl.at ti ?~ sortInv ws (tis ++ is)
+           , (bs', logMsgs') <- mkGetDropInvDesc i ws' d god is
+           -> (ws', bs ++ bs', logMsgs ++ logMsgs')
 
 
 mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
@@ -1064,11 +1064,11 @@ helperGetDropEitherCoins :: Id                                  ->
                             (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherCoins i d god fi ti (ws, bs, logMsgs) = \case
   Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
-  Right c    -> let (fc, tc)        = over both ((ws^.coinsTbl) !) (fi, ti)
-                    ws'             = ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                                         & coinsTbl.at ti ?~ tc <> c
-                    (bs', logMsgs') = mkGetDropCoinsDesc i d god c
-                in (ws', bs ++ bs', logMsgs ++ logMsgs')
+  Right c | (fc, tc)        <- over both ((ws^.coinsTbl) !) (fi, ti)
+          , ws'             <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                                  & coinsTbl.at ti ?~ tc <> c
+          , (bs', logMsgs') <- mkGetDropCoinsDesc i d god c
+          -> (ws', bs ++ bs', logMsgs ++ logMsgs')
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
@@ -1179,14 +1179,14 @@ shufflePut i (t, ws) d cn icir rs is c pis pc f | (gecrs, miss, rcs) <- resolveE
                    (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put mnom i ci e) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i ci e) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
-        Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only put things into one container at a time.", [])
+        Right _ -> putTMVar t ws   >> return (mkBroadcast i "You can only put things into one container at a time.", [])
 
 
 type NthOfM = (Int, Int)
 
 
 mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM False _  _ _ _  = Nothing
+mkMaybeNthOfM False _  _ _               _  = Nothing
 mkMaybeNthOfM True  ws i ((^.sing) -> s) is = Just ((+ 1) . fromJust . elemIndex i $ matches, length matches)
   where
     matches = filter (\i' -> let ((^.sing) -> s') = (ws^.entTbl) ! i' in s' == s) is
@@ -1195,6 +1195,7 @@ mkMaybeNthOfM True  ws i ((^.sing) -> s) is = Just ((+ 1) . fromJust . elemIndex
 type ToEnt  = Ent
 
 
+-- TODO: Continue refactoring from here.
 helperPutRemEitherInv :: Id                                  ->
                          PCDesig                             ->
                          PutOrRem                            ->
@@ -1206,15 +1207,15 @@ helperPutRemEitherInv :: Id                                  ->
                          Either T.Text Inv                   ->
                          (WorldState, [Broadcast], [T.Text])
 helperPutRemEitherInv i d por mnom fi ti te (ws, bs, logMsgs) = \case
-  Left  msg -> (ws, bs ++ mkBroadcast i msg, logMsgs)
-  Right is  -> let (is', bs')       = if ti `elem` is
-                                        then (filter (/= ti) is, bs ++ [sorry])
-                                        else (is, bs)
-                   (fis, tis)       = over both ((ws^.invTbl) !) (fi, ti)
-                   ws'              = ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
-                                         & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
-                   (bs'', logMsgs') = mkPutRemInvDesc i ws' d por mnom is' te
-               in (ws', bs' ++ bs'', logMsgs ++ logMsgs')
+  Left  (mkBroadcast i -> b) -> (ws, bs ++ b, logMsgs)
+  Right is | (is', bs')       <- if ti `elem` is
+                                   then (filter (/= ti) is, bs ++ [sorry])
+                                   else (is, bs)
+           , (fis, tis)       <- over both ((ws^.invTbl) !) (fi, ti)
+           , ws'              <- ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
+                                    & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
+           , (bs'', logMsgs') <- mkPutRemInvDesc i ws' d por mnom is' te
+           -> (ws', bs' ++ bs'', logMsgs ++ logMsgs')
   where
     sorry = ("You can't put the " <> te^.sing <> " inside itself.", [i])
 
@@ -1306,11 +1307,11 @@ helperPutRemEitherCoins :: Id                                  ->
                            (WorldState, [Broadcast], [T.Text])
 helperPutRemEitherCoins i d por mnom fi ti te (ws, bs, logMsgs) = \case
   Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
-  Right c    -> let (fc, tc)        = over both ((ws^.coinsTbl) !) (fi, ti)
-                    ws'             = ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                                         & coinsTbl.at ti ?~ tc <> c
-                    (bs', logMsgs') = mkPutRemCoinsDescs i d por mnom c te
-                in (ws', bs ++ bs', logMsgs ++ logMsgs')
+  Right c | (fc, tc)        <- over both ((ws^.coinsTbl) !) (fi, ti)
+          , ws'             <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                                  & coinsTbl.at ti ?~ tc <> c
+          , (bs', logMsgs') <- mkPutRemCoinsDescs i d por mnom c te
+          -> (ws', bs ++ bs', logMsgs ++ logMsgs')
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
@@ -1407,21 +1408,20 @@ shuffleRem i (t, ws) d cn icir rs is c f =
       then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
       else case f . head . zip gecrs $ miss of
         Left  msg  -> putTMVar t ws >> return (mkBroadcast i msg, [])
-        Right [ci] ->
-            let e@((^.sing) -> s)  = (ws^.entTbl)  ! ci
-                t'                 = (ws^.typeTbl) ! ci
-            in if t' /= ConType
-              then putTMVar t ws >> return (mkBroadcast i $ "The " <> s <> " isn't a container.", [])
-              else let cis                   = (ws^.invTbl)   ! ci
-                       cc                    = (ws^.coinsTbl) ! ci
-                       (gecrs', miss', rcs') = resolveEntCoinNames i ws rs cis cc
-                       eiss                  = map (procGecrMisCon s) . zip gecrs' $ miss'
-                       ecs                   = map (procReconciledCoinsCon s) rcs'
-                       mnom                  = mkMaybeNthOfM icir ws ci e is
-                       (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem mnom ci i e) (ws,  [], []     ) eiss
-                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem mnom ci i e) (ws', bs, logMsgs) ecs
-                   in putTMVar t ws'' >> return (bs', logMsgs')
-        Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only remove things from one container at a time.", [])
+        Right [ci]
+          | e@((^.sing) -> s) <- (ws^.entTbl)  ! ci
+          , t'                <- (ws^.typeTbl) ! ci -> if t' /= ConType
+            then putTMVar t ws >> return (mkBroadcast i $ "The " <> s <> " isn't a container.", [])
+            else let cis                   = (ws^.invTbl)   ! ci
+                     cc                    = (ws^.coinsTbl) ! ci
+                     (gecrs', miss', rcs') = resolveEntCoinNames i ws rs cis cc
+                     eiss                  = map (procGecrMisCon s) . zip gecrs' $ miss'
+                     ecs                   = map (procReconciledCoinsCon s) rcs'
+                     mnom                  = mkMaybeNthOfM icir ws ci e is
+                     (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem mnom ci i e) (ws,  [], []     ) eiss
+                     (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem mnom ci i e) (ws', bs, logMsgs) ecs
+                 in putTMVar t ws'' >> return (bs', logMsgs')
+        Right _ -> putTMVar t ws   >> return (mkBroadcast i "You can only remove things from one container at a time.", [])
 
 
 -----
@@ -1704,12 +1704,12 @@ unready (i, mq, cols) rs = do
 helperUnready :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
 helperUnready i cols (ws, msg, logMsgs) = \case
   Left  msg' -> (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
-  Right is   -> let em   = (ws^.eqTbl)  ! i
-                    pis  = (ws^.invTbl) ! i
-                    ws'  = ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
-                              & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
-                    msgs = mkUnreadyDescs i ws' is
-                in (ws', (msg <>) . T.concat . map (T.unlines . wordWrap cols) $ msgs, logMsgs ++ msgs)
+  Right is | em   <- (ws^.eqTbl)  ! i
+           , pis  <- (ws^.invTbl) ! i
+           , ws'  <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
+                        & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
+           , msgs <- mkUnreadyDescs i ws' is
+           -> (ws', (msg <>) . T.concat . map (T.unlines . wordWrap cols) $ msgs, logMsgs ++ msgs)
 
 
 mkUnreadyDescs :: Id -> WorldState -> Inv -> [T.Text]
@@ -1781,42 +1781,42 @@ intro (i, _, _) rs = do
                 targetEnt  = (ws^.entTbl)  ! targetId
                 targetSing = targetEnt^.sing
             in case targetType of
-              PCType -> let targetPC    = (ws^.pcTbl) ! targetId
-                            intros      = targetPC^.introduced
-                            pis         = findPCIds ws ris
-                            targetDesig = serialize . mkStdDesig targetId ws targetSing False $ ris
-                            (mkReflexive . (^.sex) -> himHerself) = (ws^.mobTbl) ! i
-                        in if s `elem` intros
-                          then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                               in (ws, (cbs ++) . mkNTBroadcast i $ msg, logMsgs)
-                          else let p         = targetPC & introduced .~ sort (s : intros)
-                                   ws'       = ws & pcTbl.at targetId ?~ p
-                                   srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
-                                   srcDesig  = StdDesig { stdPCEntSing = Nothing
-                                                        , isCap        = True
-                                                        , pcEntName    = mkUnknownPCEntName i ws
-                                                        , pcId         = i
-                                                        , pcIds        = pis }
-                                   targetMsg = nlnl . T.concat $ [ serialize srcDesig
-                                                                 , " introduces "
-                                                                 , himHerself
-                                                                 , " to you as "
-                                                                 , s
-                                                                 , "." ]
-                                   srcDesig' = srcDesig { stdPCEntSing = Just s }
-                                   othersMsg = nlnl . T.concat $ [ serialize srcDesig'
-                                                                 , " introduces "
-                                                                 , himHerself
-                                                                 , " to "
-                                                                 , targetDesig
-                                                                 , "." ]
-                               in ( ws'
-                                  , cbs ++ [ NonTargetBroadcast (srcMsg,    [i])
-                                           , TargetBroadcast    (targetMsg, [targetId])
-                                           , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
-                                  , logMsgs ++ [srcMsg] )
-              _      -> let b = NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
-                        in (ws, cbs `appendIfUnique` b, logMsgs)
+              PCType | targetPC    <- (ws^.pcTbl) ! targetId
+                     , intros      <- targetPC^.introduced
+                     , pis         <- findPCIds ws ris
+                     , targetDesig <- serialize . mkStdDesig targetId ws targetSing False $ ris
+                     , (mkReflexive . (^.sex) -> himHerself) <- (ws^.mobTbl) ! i
+                     -> if s `elem` intros
+                       then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
+                            in (ws, (cbs ++) . mkNTBroadcast i $ msg, logMsgs)
+                       else let p         = targetPC & introduced .~ sort (s : intros)
+                                ws'       = ws & pcTbl.at targetId ?~ p
+                                srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
+                                srcDesig  = StdDesig { stdPCEntSing = Nothing
+                                                     , isCap        = True
+                                                     , pcEntName    = mkUnknownPCEntName i ws
+                                                     , pcId         = i
+                                                     , pcIds        = pis }
+                                targetMsg = nlnl . T.concat $ [ serialize srcDesig
+                                                              , " introduces "
+                                                              , himHerself
+                                                              , " to you as "
+                                                              , s
+                                                              , "." ]
+                                srcDesig' = srcDesig { stdPCEntSing = Just s }
+                                othersMsg = nlnl . T.concat $ [ serialize srcDesig'
+                                                              , " introduces "
+                                                              , himHerself
+                                                              , " to "
+                                                              , targetDesig
+                                                              , "." ]
+                            in ( ws'
+                               , cbs ++ [ NonTargetBroadcast (srcMsg,    [i])
+                                        , TargetBroadcast    (targetMsg, [targetId])
+                                        , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
+                               , logMsgs ++ [srcMsg] )
+              _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
+                     -> (ws, cbs `appendIfUnique` b, logMsgs)
     helperIntroEitherCoins (cbs, logMsgs) (Left  msgs) = ( (cbs ++) . concat $ [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]
                                                          , logMsgs )
     helperIntroEitherCoins (cbs, logMsgs) (Right _   ) =
@@ -1883,29 +1883,26 @@ whatInvEnts i cols ws it r gecr is = case gecr of
                                                           , getLocTxtForInvType it
                                                           , supplement
                                                           , "." ]
-    | otherwise ->
-        let e   = head es
-            len = length es
-        in if len > 1
-          then let ebgns  = take len [ getEffBothGramNos i ws (e'^.entId) | e' <- es ]
-                   h      = head ebgns
-                   target = if all (== h) ebgns then mkPlurFromBoth h else bracketQuote . (<> "s") . getEffName i ws $ e^.entId
-               in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                         , " may refer to the "
-                                                         , showText len
-                                                         , " "
-                                                         , target
-                                                         , " "
-                                                         , getLocTxtForInvType it
-                                                         , "." ]
-          else let ens = [ getEffName i ws i' | i' <- is ]
-               in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                         , " may refer to the "
-                                                         , T.pack . checkFirst e $ ens
-                                                         , e^.sing
-                                                         , " "
-                                                         , getLocTxtForInvType it
-                                                         , "." ]
+    | e <- head es, len <- length es -> if len > 1
+      then let ebgns  = take len [ getEffBothGramNos i ws (e'^.entId) | e' <- es ]
+               h      = head ebgns
+               target = if all (== h) ebgns then mkPlurFromBoth h else bracketQuote . (<> "s") . getEffName i ws $ e^.entId
+           in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                     , " may refer to the "
+                                                     , showText len
+                                                     , " "
+                                                     , target
+                                                     , " "
+                                                     , getLocTxtForInvType it
+                                                     , "." ]
+      else let ens = [ getEffName i ws i' | i' <- is ]
+           in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                     , " may refer to the "
+                                                     , T.pack . checkFirst e $ ens
+                                                     , e^.sing
+                                                     , " "
+                                                     , getLocTxtForInvType it
+                                                     , "." ]
   Indexed x _ (Right e) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
                                                                   , " may refer to the "
                                                                   , mkOrdinal x
@@ -1939,34 +1936,34 @@ whatInvCoins :: Cols -> InvType -> T.Text -> ReconciledCoins -> T.Text
 whatInvCoins cols it r rc
   | it == PCEq = ""
   | otherwise = case rc of
-    Left  Empty      -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                               , " doesn't refer to any coins "
-                                                               , getLocTxtForInvType it
-                                                               , " "
-                                                               , supplementNone "coins" it
-                                                               , "." ]
-    Left  (NoneOf c) -> let cn = mkTxtForCoins c in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                                                           , " doesn't refer to any "
-                                                                                           , cn
-                                                                                           , " "
-                                                                                           , getLocTxtForInvType it
-                                                                                           , " "
-                                                                                           , supplementNone cn it
-                                                                                           , "." ]
-    Left  (SomeOf c) -> let cn = mkTxtForCoins c in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                                                           , " doesn't refer to any "
-                                                                                           , cn
-                                                                                           , " "
-                                                                                           , getLocTxtForInvType it
-                                                                                           , " "
-                                                                                           , supplementNotEnough cn it
-                                                                                           , "." ]
-    Right (SomeOf c) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                               , " may refer to the "
-                                                               , mkTxtForCoinsWithAmt c
-                                                               , " "
-                                                               , getLocTxtForInvType it
-                                                               , "." ]
+    Left  Empty                              -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                                                       , " doesn't refer to any coins "
+                                                                                       , getLocTxtForInvType it
+                                                                                       , " "
+                                                                                       , supplementNone "coins" it
+                                                                                       , "." ]
+    Left  (NoneOf c) | cn <- mkTxtForCoins c -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                                                       , " doesn't refer to any "
+                                                                                       , cn
+                                                                                       , " "
+                                                                                       , getLocTxtForInvType it
+                                                                                       , " "
+                                                                                       , supplementNone cn it
+                                                                                       , "." ]
+    Left  (SomeOf c) | cn <- mkTxtForCoins c -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                                                       , " doesn't refer to any "
+                                                                                       , cn
+                                                                                       , " "
+                                                                                       , getLocTxtForInvType it
+                                                                                       , " "
+                                                                                       , supplementNotEnough cn it
+                                                                                       , "." ]
+    Right (SomeOf c)                         -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
+                                                                                       , " may refer to the "
+                                                                                       , mkTxtForCoinsWithAmt c
+                                                                                       , " "
+                                                                                       , getLocTxtForInvType it
+                                                                                       , "." ]
     _                -> patternMatchFail "whatInvCoins" [ showText rc ]
   where
     supplementNone cn      = \case PCInv -> parensQuote $ "you don't have any "       <> cn

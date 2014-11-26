@@ -346,10 +346,10 @@ type BothGramNos = (Sing, Plur)
 getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
 getEffBothGramNos i ws i'
   | e <- (ws^.entTbl) ! i', mn <- e^.entName = case mn of
-    Nothing -> let ((^.introduced) -> intros) = (ws^.pcTbl)  ! i
-                   n                          = e^.sing
-                   (pp -> s, pp -> r)         = getSexRace i' ws
-               in if n `elem` intros
+    Nothing | ((^.introduced) -> intros) <- (ws^.pcTbl)  ! i
+            , n                          <- e^.sing
+            , (pp -> s, pp -> r)         <- getSexRace i' ws
+            -> if n `elem` intros
                  then (n, "")
                  else over both ((s <>) . (" " <>)) (r, pluralize r)
     Just _  -> (e^.sing, e^.plur)
