@@ -1116,7 +1116,6 @@ dropAction (i, _,  _   ) rs = do
 -----
 
 
--- TODO: Continue refactoring from here.
 putAction :: Action
 putAction (_, mq, cols) []  = advise mq cols ["put"] $ "Please specify one or more things you want to put, followed by \
                                                        \where you want to put them, as in " <> dblQuote "put doll \
@@ -1144,7 +1143,7 @@ putAction (i, _,  _   ) (map T.toLower -> rs)  = do
             then shufflePut i (t, ws) d (T.tail cn) True restWithoutCon ris' rc pis pc procGecrMisRm
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
           else shufflePut i (t, ws) d cn False restWithoutCon pis pc pis pc procGecrMisPCInv
-      else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+        else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 
 
 type IsConInRm    = Bool
@@ -1166,24 +1165,20 @@ shufflePut :: Id                                                  ->
               PCCoins                                             ->
               ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
               STM ([Broadcast], [T.Text])
-shufflePut i (t, ws) d cn icir rs is c pis pc f =
-    let (gecrs, miss, rcs) = resolveEntCoinNames i ws [cn] is c
-    in if null miss && (not . null $ rcs)
+shufflePut i (t, ws) d cn icir rs is c pis pc f | (gecrs, miss, rcs) <- resolveEntCoinNames i ws [cn] is c =
+    if null miss && (not . null $ rcs)
       then putTMVar t ws >> return (mkBroadcast i "You can't put something inside a coin.", [])
       else case f . head . zip gecrs $ miss of
-        Left  msg  -> putTMVar t ws >> return (mkBroadcast i msg, [])
-        Right [ci] ->
-            let e  = (ws^.entTbl)  ! ci
-                t' = (ws^.typeTbl) ! ci
-            in if t' /= ConType
-              then putTMVar t ws >> return (mkBroadcast i $ "The " <> e^.sing <> " isn't a container.", [])
-              else let (gecrs', miss', rcs') = resolveEntCoinNames i ws rs pis pc
-                       eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
-                       ecs                   = map procReconciledCoinsPCInv rcs'
-                       mnom                  = mkMaybeNthOfM icir ws ci e is
-                       (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put mnom i ci e) (ws,  [], []     ) eiss
-                       (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i ci e) (ws', bs, logMsgs) ecs
-                   in putTMVar t ws'' >> return (bs', logMsgs')
+        Left  (mkBroadcast i -> bc)                                   -> putTMVar t ws >> return (bc, [])
+        Right [ci] | e <- (ws^.entTbl) ! ci, t' <- (ws^.typeTbl) ! ci -> if t' /= ConType
+          then putTMVar t ws >> return (mkBroadcast i $ "The " <> e^.sing <> " isn't a container.", [])
+          else let (gecrs', miss', rcs') = resolveEntCoinNames i ws rs pis pc
+                   eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
+                   ecs                   = map procReconciledCoinsPCInv rcs'
+                   mnom                  = mkMaybeNthOfM icir ws ci e is
+                   (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put mnom i ci e) (ws,  [], []     ) eiss
+                   (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i ci e) (ws', bs, logMsgs) ecs
+               in putTMVar t ws'' >> return (bs', logMsgs')
         Right _    -> putTMVar t ws   >> return (mkBroadcast i "You can only put things into one container at a time.", [])
 
 
