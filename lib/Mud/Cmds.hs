@@ -1464,7 +1464,6 @@ readyDispatcher i cols mrol a@(ws, _, _) ei =
       _         -> over _2 (<> (wrapUnlines cols $ "You can't ready a " <> e^.sing <> ".")) a
 
 
--- TODO: Continue refactoring from here.
 moveReadiedItem :: Id                             ->
                    Cols                           ->
                    (WorldState, T.Text, [T.Text]) ->
@@ -1473,11 +1472,11 @@ moveReadiedItem :: Id                             ->
                    Id                             ->
                    T.Text                         ->
                    (WorldState, T.Text, [T.Text])
-moveReadiedItem i cols a@(ws, _, _) em s ei msg =
-    let is  = (ws^.invTbl) ! i
-        ws' = ws & invTbl.at i ?~ filter (/= ei) is
-                 & eqTbl.at  i ?~ (em & at s ?~ ei)
-    in set _1 ws' . over _2 (<> wrapUnlines cols msg) . over _3 (++ [msg]) $ a
+moveReadiedItem i cols a@(ws, _, _) em s ei msg
+  | is  <- (ws^.invTbl) ! i
+  , ws' <- ws & invTbl.at i ?~ filter (/= ei) is
+              & eqTbl.at  i ?~ (em & at s ?~ ei)
+  = set _1 ws' . over _2 (<> wrapUnlines cols msg) . over _3 (++ [msg]) $ a
 
 
 -- Helpers for the entity type-specific ready functions:
@@ -1537,13 +1536,19 @@ sorryFullClothSlots c = "You can't wear any more " <> whatWhere c
 
 
 sorryFullClothSlotsOneSide :: Slot -> T.Text
-sorryFullClothSlotsOneSide s = "You can't wear any more on your " <> pp s <> "."
+sorryFullClothSlotsOneSide (pp -> s) = "You can't wear any more on your " <> s <> "."
 
 
 -- Ready clothing:
 
 
-readyCloth :: Id -> Cols -> Maybe RightOrLeft -> (WorldState, T.Text, [T.Text]) -> Id -> Ent -> (WorldState, T.Text, [T.Text])
+readyCloth :: Id                             ->
+              Cols                           ->
+              Maybe RightOrLeft              ->
+              (WorldState, T.Text, [T.Text]) ->
+              Id                             ->
+              Ent                            ->
+              (WorldState, T.Text, [T.Text])
 readyCloth i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) =
     let em = (ws^.eqTbl)    ! i
         c  = (ws^.clothTbl) ! ei
