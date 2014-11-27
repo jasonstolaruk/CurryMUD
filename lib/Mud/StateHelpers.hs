@@ -217,7 +217,7 @@ send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
-wrapSend mq cols = send mq . nl . T.unlines . wordWrap cols
+wrapSend mq cols = send mq . wrapUnlinesNl cols
 
 
 multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
@@ -289,7 +289,7 @@ massSend :: T.Text -> MudStack ()
 massSend msg = getMqtPt >>= \(mqt, pt) -> do
     let helper i = let mq   = mqt ! i
                        cols = (pt ! i)^.columns
-                   in send mq . nl' . frame cols . T.unlines . wordWrap cols $ msg
+                   in send mq . nl' . frame cols . wrapUnlines cols $ msg
     forM_ (IM.keys pt) helper
 
 

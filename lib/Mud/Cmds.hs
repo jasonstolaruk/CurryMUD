@@ -540,7 +540,7 @@ sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 
 ignore :: MsgQueue -> Cols -> Rest -> MudStack ()
 ignore mq cols (dblQuote . T.unwords -> ignored) =
-    send mq . T.unlines . wordWrap cols . parensQuote $ "Ignoring " <> ignored <> "..."
+    send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> ignored <> "..."
 
 
 -----
@@ -553,7 +553,7 @@ motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
 
 
 getMotdTxt :: Cols -> MudStack T.Text
-getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler "getMotdTxt" e >> (return . nl . T.unlines . wordWrap cols $ "Unfortunately, the message of the day could not be retrieved."))
+getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler "getMotdTxt" e >> (return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."))
   where
     helper  = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
 
@@ -609,7 +609,7 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(ge
   where
     getTopics       = (^..folded.packed) . drop 2 . sort . delete "root"
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
-    getHelpTopic t  = (try . helper $ t) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . T.unlines . wordWrap cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."))
+    getHelpTopic t  = (try . helper $ t) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."))
     helper          = liftIO . T.readFile . (helpDir ++) . T.unpack
 
 
@@ -773,10 +773,9 @@ look (i, mq, cols) (nub . map T.toLower -> rs) = helper >>= \case
                    ds                 = [ let ((^.sing) -> s') = (ws^.entTbl) ! pi
                                           in mkStdDesig pi ws s' False ris | pi <- extractPCIdsFromEiss ws eiss ]
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
-          else    putTMVar t ws >> return ( Left . nl . T.unlines . wordWrap cols $ "You don't see anything here to \
-                                                                                    \look at."
+          else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
                                           , Nothing )
-    helperLookEitherInv _  acc (Left  msg ) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
+    helperLookEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
     helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
@@ -824,13 +823,13 @@ mkEntDescs i cols ws is = T.intercalate "\n" . map (mkEntDesc i cols ws) $ [ (ei
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
-mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(T.unlines . wordWrap cols . (^.entDesc) -> ed)) =
+mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(wrapUnlines cols . (^.entDesc) -> ed)) =
     case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws ei $ e
               MobType ->                 (ed <>) . mkEqDesc       i cols ws ei   e $ t
               PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws ei   e $ t
               _       -> ed
   where
-    pcHeader = T.unlines . wordWrap cols . mkPCDescHeader ei $ ws
+    pcHeader = wrapUnlines cols . mkPCDescHeader ei $ ws
 
 
 mkPCDescHeader :: Id -> WorldState -> T.Text
@@ -840,13 +839,13 @@ mkPCDescHeader i ws | (pp -> s, pp -> r) <- getSexRace i ws = T.concat [ "You se
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
 mkInvCoinsDesc i cols ws ei ((^.sing) -> s) | is <- (ws^.invTbl)   ! ei
                                             , c  <- (ws^.coinsTbl) ! ei = case (not . null $ is, c /= mempty) of
-  (False, False) -> T.unlines . wordWrap cols $ if ei == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
+  (False, False) -> wrapUnlines cols $ if ei == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
   (True,  False) -> header <> mkEntsInInvDesc i cols ws is
   (False, True ) -> header <>                                 mkCoinsSummary cols c
   (True,  True ) -> header <> mkEntsInInvDesc i cols ws is <> mkCoinsSummary cols c
   where
     header | ei == i   = nl "You are carrying:"
-           | otherwise = T.unlines . wordWrap cols $ "The " <> s <> " contains:"
+           | otherwise = wrapUnlines cols $ "The " <> s <> " contains:"
 
 
 dudeYourHandsAreEmpty :: T.Text
@@ -914,9 +913,9 @@ inv (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
                invDesc            = foldl' (helperEitherInv ws) "" eiss
                coinsDesc          = foldl' helperEitherCoins    "" ecs
            in invDesc <> coinsDesc
-      else nl . T.unlines . wordWrap cols $ dudeYourHandsAreEmpty
+      else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
-    helperEitherInv _  acc (Left  msg ) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
+    helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
     helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
     helperEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
@@ -935,13 +934,13 @@ equip (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
       then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws rs is mempty
                eiss                         = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                      = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc | not . null $ rcs = nl . T.unlines . wordWrap cols $ "You don't have any coins among your \
-                                                                               \readied equipment."
+               coinsDesc | not . null $ rcs = wrapUnlinesNl cols $ "You don't have any coins among your readied \
+                                                                   \equipment."
                          | otherwise        = ""
            in invDesc <> coinsDesc
-      else nl . T.unlines . wordWrap cols $ dudeYou'reNaked
+      else wrapUnlinesNl cols dudeYou'reNaked
   where
-    helperEitherInv _  acc (Left  msg) = (acc <>) . nl . T.unlines . wordWrap cols $ msg
+    helperEitherInv _  acc (Left  msg) = (acc <>) . wrapUnlinesNl cols $ msg
     helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
 
 
@@ -955,11 +954,11 @@ mkEqDesc i cols ws ei ((^.sing) -> s) t | descs <- map mkDesc . mkSlotNameIdList
       | e' <- (ws^.entTbl) ! i'
       , en <- if ei == i then (" " <>) . bracketQuote . fromJust $ e'^.entName else ""
       = parensPad 15 sn <> e'^.sing <> en
-    none = T.unlines . wordWrap cols $ if
+    none = wrapUnlines cols $ if
       | ei == i      -> dudeYou'reNaked
       | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
       | otherwise    -> "The " <> s <> " doesn't have anything readied."
-    header = T.unlines . wordWrap cols $ if
+    header = wrapUnlines cols $ if
       | ei == i      -> "You have readied the following equipment:"
       | t  == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
       | otherwise    -> "The " <> s <> " has readied the following equipment:"
@@ -1363,7 +1362,6 @@ mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) ((^.sing) -> ts) | bs <-
 -----
 
 
--- TODO: Continue refactoring from here.
 remove :: Action
 remove (_, mq, cols) []  = advise mq cols ["remove"] $ "Please specify one or more things to remove, followed by the \
                                                        \container you want to remove them from, as \
@@ -1426,9 +1424,9 @@ shuffleRem i (t, ws) d cn icir rs is c f
 
 
 ready :: Action
-ready (_, mq, cols) [] = advise mq cols ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready \
-                                                    \sword" <> "."
-ready (i, mq, cols) rs = do
+ready (_, mq, cols) [] = advise mq cols ["ready"] $ "Please specify one or more things to ready, as \
+                                                    \in " <> dblQuote "ready sword" <> "."
+ready (i, mq, cols) (nub . map T.toLower -> rs) = do
     (msg, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "ready" i logMsgs
     send mq . nl $ msg
@@ -1437,12 +1435,12 @@ ready (i, mq, cols) rs = do
         let is = (ws^.invTbl)   ! i
             c  = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws (nub . map T.toLower $ rs) is mempty
+          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws rs is mempty
                    eiss                      = zipWith (curry procGecrMisReady) gecrs miss
                    msg                       = if null rcs then "" else nl "You can't ready coins."
                    (ws',  msg', logMsgs)     = foldl' (helperReady i cols) (ws, msg, []) . zip eiss $ mrols
                in putTMVar t ws' >> return (msg', logMsgs)
-          else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYourHandsAreEmpty, [])
+          else putTMVar t ws >> return (wrapUnlines cols dudeYourHandsAreEmpty, [])
 
 
 helperReady :: Id                                     ->
@@ -1451,7 +1449,7 @@ helperReady :: Id                                     ->
                (Either T.Text Inv, Maybe RightOrLeft) ->
                (WorldState, T.Text, [T.Text])
 helperReady i cols (ws, msg, logMsgs) (eis, mrol) = case eis of
-  Left  msg' -> (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
+  Left  msg' -> (ws, (msg <>) . wrapUnlines cols $ msg', logMsgs)
   Right is   -> foldl' (readyDispatcher i cols mrol) (ws, msg, logMsgs) is
 
 
@@ -1462,7 +1460,7 @@ readyDispatcher i cols mrol (ws, msg, logMsgs) ei =
     in case t of
       ClothType -> readyCloth i cols mrol (ws, msg, logMsgs) ei e
       WpnType   -> readyWpn   i cols mrol (ws, msg, logMsgs) ei e
-      _         -> (ws, (msg <>) . T.unlines . wordWrap cols $ "You can't ready a " <> e^.sing <> ".", logMsgs)
+      _         -> (ws, (msg <>) . wrapUnlines cols $ "You can't ready a " <> e^.sing <> ".", logMsgs)
 
 
 moveReadiedItem :: Id                             ->
@@ -1477,7 +1475,7 @@ moveReadiedItem i cols (ws, msg, logMsgs) em s ei msg' =
     let is  = (ws^.invTbl) ! i
         ws' = ws & invTbl.at i ?~ filter (/= ei) is
                  & eqTbl.at  i ?~ (em & at s ?~ ei)
-    in (ws', (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs ++ [msg'])
+    in (ws', (msg <>) . wrapUnlines cols $ msg', logMsgs ++ [msg'])
 
 
 -- Helpers for the entity type-specific ready functions:
@@ -1572,7 +1570,7 @@ getAvailClothSlot cols ws i c em = let m = (ws^.mobTbl) ! i
                                      FingerC -> getRingSlot s h
                                      _       -> undefined -- TODO
   where
-    procMaybe             = maybe (Left . T.unlines . wordWrap cols . sorryFullClothSlots $ c) Right
+    procMaybe             = maybe (Left . wrapUnlines cols . sorryFullClothSlots $ c) Right
     getEarSlotForSex s    =
         findAvailSlot em $ case s of Male   -> lEarSlots
                                      Female -> rEarSlots
@@ -1597,7 +1595,7 @@ getDesigClothSlot :: Cols -> WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft 
 getDesigClothSlot cols ws ((^.sing) -> s) c em rol
   | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCantWearThere
   | isRingRol rol, c /= FingerC         = Left sorryCantWearThere
-  | c == FingerC, not . isRingRol $ rol = Left . T.unlines . wordWrap cols $ ringHelp
+  | c == FingerC, not . isRingRol $ rol = Left . wrapUnlines cols $ ringHelp
   | otherwise = case c of EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
                           WristC  -> maybe (Left sorryFullWrist) Right (findSlotFromList rWristSlots lWristSlots)
                           FingerC -> maybe (Right slotFromRol)
@@ -1605,7 +1603,7 @@ getDesigClothSlot cols ws ((^.sing) -> s) c em rol
                                            (em^.at slotFromRol)
                           _       -> undefined -- TODO
   where
-    sorryCantWearThere     = T.unlines . wordWrap cols . T.concat $ [ "You can't wear a ", s, " on your ", pp rol, "." ]
+    sorryCantWearThere     = wrapUnlines cols . T.concat $ [ "You can't wear a ", s, " on your ", pp rol, "." ]
     findSlotFromList rs ls =
         findAvailSlot em $ case rol of R -> rs
                                        L -> ls
@@ -1614,10 +1612,10 @@ getDesigClothSlot cols ws ((^.sing) -> s) c em rol
         head $ case rol of R -> rs
                            L -> ls
                            _ -> patternMatchFail "getDesigClothSlot getSlotFromList" [ showText rol ]
-    sorryFullEar   = T.unlines . wordWrap cols . sorryFullClothSlotsOneSide . getSlotFromList rEarSlots   $ lEarSlots
-    sorryFullWrist = T.unlines . wordWrap cols . sorryFullClothSlotsOneSide . getSlotFromList rWristSlots $ lWristSlots
+    sorryFullEar   = wrapUnlines cols . sorryFullClothSlotsOneSide . getSlotFromList rEarSlots   $ lEarSlots
+    sorryFullWrist = wrapUnlines cols . sorryFullClothSlotsOneSide . getSlotFromList rWristSlots $ lWristSlots
     slotFromRol    = fromRol rol :: Slot
-    sorry (pp -> slot) ((^.sing) -> s') = T.unlines . wordWrap cols . T.concat $ [ "You're already wearing a ", s', " on your ", slot, "." ]
+    sorry (pp -> slot) ((^.sing) -> s') = wrapUnlines cols . T.concat $ [ "You're already wearing a ", s', " on your ", slot, "." ]
 
 
 -- Ready weapons:
@@ -1629,7 +1627,7 @@ readyWpn i cols mrol (ws, msg, logMsgs) ei e@((^.sing) -> s) =
         w   = (ws^.wpnTbl) ! ei
         sub = w^.wpnSub
     in if not . isSlotAvail em $ BothHandsS
-      then (ws, (msg <>) . T.unlines . wordWrap cols $ "You're already wielding a two-handed weapon.", logMsgs)
+      then (ws, (msg <>) . wrapUnlines cols $ "You're already wielding a two-handed weapon.", logMsgs)
       else case maybe (getAvailWpnSlot cols ws i em) (getDesigWpnSlot cols ws e em) mrol of
         Left  msg'  -> (ws, msg <> msg', logMsgs)
         Right slot  -> case sub of
@@ -1640,13 +1638,13 @@ readyWpn i cols mrol (ws, msg, logMsgs) ei e@((^.sing) -> s) =
                                                                                          , "." ]
           TwoHanded -> if all (isSlotAvail em) [ RHandS, LHandS ]
             then moveReadiedItem i cols (ws, msg, logMsgs) em BothHandsS ei $ "You wield the " <> s <> " with both hands."
-            else (ws, (msg <>) . T.unlines . wordWrap cols $ "Both hands are required to wield the " <> s <> ".", logMsgs)
+            else (ws, (msg <>) . wrapUnlines cols $ "Both hands are required to wield the " <> s <> ".", logMsgs)
 
 
 getAvailWpnSlot :: Cols -> WorldState -> Id -> EqMap -> Either T.Text Slot
 getAvailWpnSlot cols ws i em = let m = (ws^.mobTbl) ! i
                                    h = m^.hand
-                               in maybe (Left . T.unlines . wordWrap cols $ "You're already wielding two weapons.")
+                               in maybe (Left . wrapUnlines cols $ "You're already wielding two weapons.")
                                         Right
                                         (findAvailSlot em . map getSlotForHand $ [ h, otherHand h ])
   where
@@ -1662,12 +1660,12 @@ getDesigWpnSlot cols ws ((^.sing) -> s) em rol
                           (\i -> let e = (ws^.entTbl) ! i in Left . sorry $ e)
                           (em^.at desigSlot)
   where
-    sorryNotRing = T.unlines . wordWrap cols $ "You can't wield a " <> s <> " with your finger!"
-    sorry ((^.sing) -> s') = T.unlines . wordWrap cols . T.concat $ [ "You're already wielding a "
-                                                                    , s'
-                                                                    , " with your "
-                                                                    , pp desigSlot
-                                                                    , "." ]
+    sorryNotRing = wrapUnlines cols $ "You can't wield a " <> s <> " with your finger!"
+    sorry ((^.sing) -> s') = wrapUnlines cols . T.concat $ [ "You're already wielding a "
+                                                           , s'
+                                                           , " with your "
+                                                           , pp desigSlot
+                                                           , "." ]
     desigSlot    = case rol of R -> RHandS
                                L -> LHandS
                                _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
@@ -1696,18 +1694,18 @@ unready (i, mq, cols) rs = do
                    msg                   = if null rcs then "" else nl "You can't unready coins."
                    (ws',  msg', logMsgs) = foldl' (helperUnready i cols) (ws, msg, []) eiss
                in putTMVar t ws' >> return (msg', logMsgs)
-          else putTMVar t ws >> return (T.unlines . wordWrap cols $ dudeYou'reNaked, [])
+          else putTMVar t ws >> return (wrapUnlines cols $ dudeYou'reNaked, [])
 
 
 helperUnready :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
 helperUnready i cols (ws, msg, logMsgs) = \case
-  Left  msg' -> (ws, (msg <>) . T.unlines . wordWrap cols $ msg', logMsgs)
+  Left  msg' -> (ws, (msg <>) . wrapUnlines cols $ msg', logMsgs)
   Right is | em   <- (ws^.eqTbl)  ! i
            , pis  <- (ws^.invTbl) ! i
            , ws'  <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
                         & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
            , msgs <- mkUnreadyDescs i ws' is
-           -> (ws', (msg <>) . T.concat . map (T.unlines . wordWrap cols) $ msgs, logMsgs ++ msgs)
+           -> (ws', (msg <>) . T.concat . map (wrapUnlines cols) $ msgs, logMsgs ++ msgs)
 
 
 mkUnreadyDescs :: Id -> WorldState -> Inv -> [T.Text]
@@ -1853,8 +1851,8 @@ whatCmd cols r n = maybe notFound found . findFullNameForAbbrev (T.toLower n) $ 
   where
     cs       = filter isPlaCmd . map cmdName . mkCmdListWithNonStdRmLinks $ r
     isPlaCmd = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
-    notFound = T.unlines . wordWrap cols $ dblQuote n <> " doesn't refer to any commands."
-    found cn = T.unlines . wordWrap cols . T.concat $ [ dblQuote n, " may refer to the ", dblQuote cn, " command." ]
+    notFound = wrapUnlines cols $ dblQuote n <> " doesn't refer to any commands."
+    found cn = wrapUnlines cols . T.concat $ [ dblQuote n, " may refer to the ", dblQuote cn, " command." ]
 
 
 whatInv :: Id -> Cols -> WorldState -> InvType -> T.Text -> T.Text
@@ -1876,45 +1874,45 @@ whatInv i cols ws it n = let (is, gecrs, rcs) = resolveName
 whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
 whatInvEnts i cols ws it r gecr is = case gecr of
   Mult _ n (Just es) _
-    | n == acp  -> T.unlines . wordWrap cols . T.concat $ [ dblQuote acp
-                                                          , " may refer to everything "
-                                                          , getLocTxtForInvType it
-                                                          , supplement
-                                                          , "." ]
+    | n == acp  -> wrapUnlines cols . T.concat $ [ dblQuote acp
+                                                 , " may refer to everything "
+                                                 , getLocTxtForInvType it
+                                                 , supplement
+                                                 , "." ]
     | e <- head es, len <- length es -> if len > 1
       then let ebgns  = take len [ getEffBothGramNos i ws (e'^.entId) | e' <- es ]
                h      = head ebgns
                target = if all (== h) ebgns then mkPlurFromBoth h else bracketQuote . (<> "s") . getEffName i ws $ e^.entId
-           in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                     , " may refer to the "
-                                                     , showText len
-                                                     , " "
-                                                     , target
-                                                     , " "
-                                                     , getLocTxtForInvType it
-                                                     , "." ]
+           in wrapUnlines cols . T.concat $ [ dblQuote r
+                                            , " may refer to the "
+                                            , showText len
+                                            , " "
+                                            , target
+                                            , " "
+                                            , getLocTxtForInvType it
+                                            , "." ]
       else let ens = [ getEffName i ws i' | i' <- is ]
-           in T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                     , " may refer to the "
-                                                     , T.pack . checkFirst e $ ens
-                                                     , e^.sing
-                                                     , " "
-                                                     , getLocTxtForInvType it
-                                                     , "." ]
-  Indexed x _ (Right e) -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                                  , " may refer to the "
-                                                                  , mkOrdinal x
-                                                                  , " "
-                                                                  , bracketQuote . getEffName i ws $ e^.entId
-                                                                  , " "
-                                                                  , e^.sing.to parensQuote
-                                                                  , " "
-                                                                  , getLocTxtForInvType it
-                                                                  , "." ]
-  _                     -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                                  , " doesn't refer to anything "
-                                                                  , getLocTxtForInvType it
-                                                                  , "." ]
+           in wrapUnlines cols . T.concat $ [ dblQuote r
+                                            , " may refer to the "
+                                            , T.pack . checkFirst e $ ens
+                                            , e^.sing
+                                            , " "
+                                            , getLocTxtForInvType it
+                                            , "." ]
+  Indexed x _ (Right e) -> wrapUnlines cols . T.concat $ [ dblQuote r
+                                                         , " may refer to the "
+                                                         , mkOrdinal x
+                                                         , " "
+                                                         , bracketQuote . getEffName i ws $ e^.entId
+                                                         , " "
+                                                         , e^.sing.to parensQuote
+                                                         , " "
+                                                         , getLocTxtForInvType it
+                                                         , "." ]
+  _                     -> wrapUnlines cols . T.concat $ [ dblQuote r
+                                                         , " doesn't refer to anything "
+                                                         , getLocTxtForInvType it
+                                                         , "." ]
   where
     acp                                     = T.pack [allChar]
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
@@ -1934,34 +1932,34 @@ whatInvCoins :: Cols -> InvType -> T.Text -> ReconciledCoins -> T.Text
 whatInvCoins cols it r rc
   | it == PCEq = ""
   | otherwise = case rc of
-    Left  Empty                              -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                                                       , " doesn't refer to any coins "
-                                                                                       , getLocTxtForInvType it
-                                                                                       , " "
-                                                                                       , supplementNone "coins" it
-                                                                                       , "." ]
-    Left  (NoneOf c) | cn <- mkTxtForCoins c -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                                                       , " doesn't refer to any "
-                                                                                       , cn
-                                                                                       , " "
-                                                                                       , getLocTxtForInvType it
-                                                                                       , " "
-                                                                                       , supplementNone cn it
-                                                                                       , "." ]
-    Left  (SomeOf c) | cn <- mkTxtForCoins c -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                                                       , " doesn't refer to any "
-                                                                                       , cn
-                                                                                       , " "
-                                                                                       , getLocTxtForInvType it
-                                                                                       , " "
-                                                                                       , supplementNotEnough cn it
-                                                                                       , "." ]
-    Right (SomeOf c)                         -> T.unlines . wordWrap cols . T.concat $ [ dblQuote r
-                                                                                       , " may refer to the "
-                                                                                       , mkTxtForCoinsWithAmt c
-                                                                                       , " "
-                                                                                       , getLocTxtForInvType it
-                                                                                       , "." ]
+    Left  Empty                              -> wrapUnlines cols . T.concat $ [ dblQuote r
+                                                                              , " doesn't refer to any coins "
+                                                                              , getLocTxtForInvType it
+                                                                              , " "
+                                                                              , supplementNone "coins" it
+                                                                              , "." ]
+    Left  (NoneOf c) | cn <- mkTxtForCoins c -> wrapUnlines cols . T.concat $ [ dblQuote r
+                                                                              , " doesn't refer to any "
+                                                                              , cn
+                                                                              , " "
+                                                                              , getLocTxtForInvType it
+                                                                              , " "
+                                                                              , supplementNone cn it
+                                                                              , "." ]
+    Left  (SomeOf c) | cn <- mkTxtForCoins c -> wrapUnlines cols . T.concat $ [ dblQuote r
+                                                                              , " doesn't refer to any "
+                                                                              , cn
+                                                                              , " "
+                                                                              , getLocTxtForInvType it
+                                                                              , " "
+                                                                              , supplementNotEnough cn it
+                                                                              , "." ]
+    Right (SomeOf c)                         -> wrapUnlines cols . T.concat $ [ dblQuote r
+                                                                              , " may refer to the "
+                                                                              , mkTxtForCoinsWithAmt c
+                                                                              , " "
+                                                                              , getLocTxtForInvType it
+                                                                              , "." ]
     _                -> patternMatchFail "whatInvCoins" [ showText rc ]
   where
     supplementNone cn      = \case PCInv -> parensQuote $ "you don't have any "       <> cn

@@ -47,6 +47,8 @@ module Mud.Util ( adjustIndent
                 , wordWrapIndent
                 , wordWrapLines
                 , wrapLineWithIndentTag
+                , wrapUnlines
+                , wrapUnlinesNl
                 , xformLeading ) where
 
 import Mud.TopLvlDefs
@@ -91,6 +93,14 @@ wordWrap cols t
 
 breakEnd :: T.Text -> (T.Text, T.Text)
 breakEnd (T.break isSpace . T.reverse -> (after, before)) = over both T.reverse (before, after)
+
+
+wrapUnlines :: Int -> T.Text -> T.Text
+wrapUnlines cols = T.unlines . wordWrap cols
+
+
+wrapUnlinesNl :: Int -> T.Text -> T.Text
+wrapUnlinesNl cols = nl . wrapUnlines cols
 
 
 multiWrap :: Int -> [T.Text] -> T.Text
