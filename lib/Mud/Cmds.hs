@@ -25,8 +25,9 @@ import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
-import Control.Lens (_2, _3, at, both, folded, over, to)
+import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
+import Control.Lens.Setter (set)
 import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
@@ -1025,7 +1026,7 @@ helperGetDropEitherInv i d god fi ti a@(ws, _, _) = \case
            , ws'             <- ws & invTbl.at fi ?~ deleteFirstOfEach is fis
                                    & invTbl.at ti ?~ sortInv ws (tis ++ is)
            , (bs', logMsgs') <- mkGetDropInvDesc i ws' d god is
-           -> over _2 (++ bs') . over _3 (++ logMsgs') $ a
+           -> set _1 ws' . over _2 (++ bs') . over _3 (++ logMsgs') $ a
 
 
 mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
@@ -1061,13 +1062,13 @@ helperGetDropEitherCoins :: Id                                  ->
                             (WorldState, [Broadcast], [T.Text]) ->
                             Either [T.Text] Coins               ->
                             (WorldState, [Broadcast], [T.Text])
-helperGetDropEitherCoins i d god fi ti a@(ws, bs, logMsgs) = \case
+helperGetDropEitherCoins i d god fi ti a@(ws, _, _) = \case
   Left  msgs -> over _2 (++ [ (msg, [i]) | msg <- msgs ]) a
-  Right c | (fc, tc)        <- over both ((ws^.coinsTbl) !) (fi, ti)
-          , ws'             <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                                  & coinsTbl.at ti ?~ tc <> c
-          , (bs', logMsgs') <- mkGetDropCoinsDesc i d god c
-          -> (ws', bs ++ bs', logMsgs ++ logMsgs')
+  Right c | (fc, tc)      <- over both ((ws^.coinsTbl) !) (fi, ti)
+          , ws'           <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                                & coinsTbl.at ti ?~ tc <> c
+          , (bs, logMsgs) <- mkGetDropCoinsDesc i d god c
+          -> set _1 ws' . over _2 (++ bs) . over _3 (++ logMsgs) $ a
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
@@ -1204,16 +1205,16 @@ helperPutRemEitherInv :: Id                                  ->
                          (WorldState, [Broadcast], [T.Text]) ->
                          Either T.Text Inv                   ->
                          (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, logMsgs) = \case
+helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
   Left  (mkBroadcast i -> b) -> over _2 (++ b) a
-  Right is | (is', bs')       <- if ti `elem` is
-                                   then (filter (/= ti) is, bs ++ [sorry])
-                                   else (is, bs)
-           , (fis, tis)       <- over both ((ws^.invTbl) !) (fi, ti)
-           , ws'              <- ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
-                                    & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
-           , (bs'', logMsgs') <- mkPutRemInvDesc i ws' d por mnom is' te
-           -> (ws', bs' ++ bs'', logMsgs ++ logMsgs')
+  Right is | (is', bs')      <- if ti `elem` is
+                                  then (filter (/= ti) is, bs ++ [sorry])
+                                  else (is, bs)
+           , (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
+           , ws'             <- ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
+                                   & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
+           , (bs'', logMsgs) <- mkPutRemInvDesc i ws' d por mnom is' te
+           -> set _1 ws' . set _2 (bs' ++ bs'') . over _3 (++ logMsgs) $ a
   where
     sorry = ("You can't put the " <> te^.sing <> " inside itself.", [i])
 
@@ -1303,13 +1304,13 @@ helperPutRemEitherCoins :: Id                                  ->
                            (WorldState, [Broadcast], [T.Text]) ->
                            Either [T.Text] Coins               ->
                            (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherCoins i d por mnom fi ti te a@(ws, bs, logMsgs) = \case
+helperPutRemEitherCoins i d por mnom fi ti te a@(ws, _, _) = \case
   Left  msgs -> over _2 (++ [ (msg, [i]) | msg <- msgs ]) a
-  Right c | (fc, tc)        <- over both ((ws^.coinsTbl) !) (fi, ti)
-          , ws'             <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                                  & coinsTbl.at ti ?~ tc <> c
-          , (bs', logMsgs') <- mkPutRemCoinsDescs i d por mnom c te
-          -> (ws', bs ++ bs', logMsgs ++ logMsgs')
+  Right c | (fc, tc)      <- over both ((ws^.coinsTbl) !) (fi, ti)
+          , ws'           <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
+                                & coinsTbl.at ti ?~ tc <> c
+          , (bs, logMsgs) <- mkPutRemCoinsDescs i d por mnom c te
+          -> set _1 ws' . over _2 (++ bs) . over _3 (++ logMsgs) $ a
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
@@ -1472,11 +1473,11 @@ moveReadiedItem :: Id                             ->
                    Id                             ->
                    T.Text                         ->
                    (WorldState, T.Text, [T.Text])
-moveReadiedItem i cols (ws, msg, logMsgs) em s ei msg' =
+moveReadiedItem i cols a@(ws, _, _) em s ei msg =
     let is  = (ws^.invTbl) ! i
         ws' = ws & invTbl.at i ?~ filter (/= ei) is
                  & eqTbl.at  i ?~ (em & at s ?~ ei)
-    in (ws', (msg <>) . wrapUnlines cols $ msg', logMsgs ++ [msg'])
+    in set _1 ws' . over _2 (<> wrapUnlines cols msg) . over _3 (++ [msg]) $ a
 
 
 -- Helpers for the entity type-specific ready functions:
@@ -1699,14 +1700,14 @@ unready (i, mq, cols) rs = do
 
 
 helperUnready :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
-helperUnready i cols a@(ws, msg, logMsgs) = \case
+helperUnready i cols a@(ws, _, _) = \case
   Left  msg' -> over _2 (<> wrapUnlines cols msg') a
   Right is | em   <- (ws^.eqTbl)  ! i
            , pis  <- (ws^.invTbl) ! i
            , ws'  <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
                         & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
            , msgs <- mkUnreadyDescs i ws' is
-           -> (ws', (msg <>) . T.concat . map (wrapUnlines cols) $ msgs, logMsgs ++ msgs)
+           -> set _1 ws' . over _2 (<> (T.concat . map (wrapUnlines cols) $ msgs)) . over _3 (++ msgs) $ a
 
 
 mkUnreadyDescs :: Id -> WorldState -> Inv -> [T.Text]
@@ -1773,7 +1774,7 @@ intro (i, _, _) rs = do
       | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
-        tryIntro a'@(ws, cbs, logMsgs) targetId =
+        tryIntro a'@(ws, _, _) targetId =
             let targetType = (ws^.typeTbl) ! targetId
                 targetEnt  = (ws^.entTbl)  ! targetId
                 targetSing = targetEnt^.sing
@@ -1807,11 +1808,10 @@ intro (i, _, _) rs = do
                                                               , " to "
                                                               , targetDesig
                                                               , "." ]
-                            in ( ws'
-                               , cbs ++ [ NonTargetBroadcast (srcMsg,    [i])
-                                        , TargetBroadcast    (targetMsg, [targetId])
-                                        , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
-                               , logMsgs ++ [srcMsg] )
+                                cbs = [ NonTargetBroadcast (srcMsg,    [i])
+                                      , TargetBroadcast    (targetMsg, [targetId])
+                                      , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
+                            in set _1 ws' . over _2 (++ cbs) . over _3 (++ [srcMsg]) $ a'
               _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
                      -> over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins (cbs, logMsgs) (Left  msgs) = ( (cbs ++) . concat $ [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]
