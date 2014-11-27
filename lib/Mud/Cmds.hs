@@ -1195,7 +1195,6 @@ mkMaybeNthOfM True  ws i ((^.sing) -> s) is = Just ((+ 1) . fromJust . elemIndex
 type ToEnt  = Ent
 
 
--- TODO: Continue refactoring from here.
 helperPutRemEitherInv :: Id                                  ->
                          PCDesig                             ->
                          PutOrRem                            ->
@@ -1221,8 +1220,8 @@ helperPutRemEitherInv i d por mnom fi ti te (ws, bs, logMsgs) = \case
 
 
 mkPutRemInvDesc :: Id -> WorldState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i ws d por mnom is ((^.sing) -> ts) = let bs = concatMap helper . mkNameCountBothList i ws $ is
-                                                      in (bs, extractLogMsgs i bs)
+mkPutRemInvDesc i ws d por mnom is ((^.sing) -> ts) | bs <- concatMap helper . mkNameCountBothList i ws $ is
+                                                    = (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
         [ (T.concat [ "You "
@@ -1315,8 +1314,8 @@ helperPutRemEitherCoins i d por mnom fi ti te (ws, bs, logMsgs) = \case
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) ((^.sing) -> ts) = let bs = concat . catMaybes $ [ c, s, g ]
-                                                                           in (bs, extractLogMsgs i bs)
+mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) ((^.sing) -> ts) | bs <- concat . catMaybes $ [ c, s, g ]
+                                                                         = (bs, extractLogMsgs i bs)
   where
     c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
     s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
