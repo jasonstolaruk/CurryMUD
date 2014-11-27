@@ -125,7 +125,8 @@ expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [R
 expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
   | mess <- map extractMesFromGecr gecrs
   , miss <- pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
-  , rcs  <- reconcileCoins c . distillEnscs $ enscs = (gecrs, miss, rcs)
+  , rcs  <- reconcileCoins c . distillEnscs $ enscs
+  = (gecrs, miss, rcs)
 
 
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
@@ -199,7 +200,8 @@ resolveEntCoinNamesWithRols :: Id         ->
 resolveEntCoinNamesWithRols i ws (map T.toLower -> rs) is c
   | gecrMrols           <- map (mkGecrWithRol i ws is c) rs
   , (gecrs, mrols)      <- (gecrMrols^..folded._1, gecrMrols^..folded._2)
-  , (gecrs', miss, rcs) <- expandGecrs c gecrs = (gecrs', mrols, miss, rcs)
+  , (gecrs', miss, rcs) <- expandGecrs c gecrs
+  = (gecrs', mrols, miss, rcs)
 
 
 mkGecrWithRol :: Id -> WorldState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)

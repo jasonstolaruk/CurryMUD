@@ -25,7 +25,7 @@ import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), fromException, IOException, SomeException)
 import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
-import Control.Lens (at, both, folded, over, to)
+import Control.Lens (_2, _3, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -1019,13 +1019,13 @@ helperGetDropEitherInv :: Id                                  ->
                           (WorldState, [Broadcast], [T.Text]) ->
                           Either T.Text Inv                   ->
                           (WorldState, [Broadcast], [T.Text])
-helperGetDropEitherInv i d god fi ti (ws, bs, logMsgs) = \case
-  Left  (mkBroadcast i -> b) -> (ws, bs ++ b, logMsgs)
+helperGetDropEitherInv i d god fi ti a@(ws, _, _) = \case
+  Left  (mkBroadcast i -> b) -> over _2 (++ b) a
   Right is | (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
            , ws'             <- ws & invTbl.at fi ?~ deleteFirstOfEach is fis
                                    & invTbl.at ti ?~ sortInv ws (tis ++ is)
            , (bs', logMsgs') <- mkGetDropInvDesc i ws' d god is
-           -> (ws', bs ++ bs', logMsgs ++ logMsgs')
+           -> over _2 (++ bs') . over _3 (++ logMsgs') $ a
 
 
 mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
@@ -1061,8 +1061,8 @@ helperGetDropEitherCoins :: Id                                  ->
                             (WorldState, [Broadcast], [T.Text]) ->
                             Either [T.Text] Coins               ->
                             (WorldState, [Broadcast], [T.Text])
-helperGetDropEitherCoins i d god fi ti (ws, bs, logMsgs) = \case
-  Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
+helperGetDropEitherCoins i d god fi ti a@(ws, bs, logMsgs) = \case
+  Left  msgs -> over _2 (++ [ (msg, [i]) | msg <- msgs ]) a
   Right c | (fc, tc)        <- over both ((ws^.coinsTbl) !) (fi, ti)
           , ws'             <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                   & coinsTbl.at ti ?~ tc <> c
@@ -1204,8 +1204,8 @@ helperPutRemEitherInv :: Id                                  ->
                          (WorldState, [Broadcast], [T.Text]) ->
                          Either T.Text Inv                   ->
                          (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherInv i d por mnom fi ti te (ws, bs, logMsgs) = \case
-  Left  (mkBroadcast i -> b) -> (ws, bs ++ b, logMsgs)
+helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, logMsgs) = \case
+  Left  (mkBroadcast i -> b) -> over _2 (++ b) a
   Right is | (is', bs')       <- if ti `elem` is
                                    then (filter (/= ti) is, bs ++ [sorry])
                                    else (is, bs)
@@ -1303,8 +1303,8 @@ helperPutRemEitherCoins :: Id                                  ->
                            (WorldState, [Broadcast], [T.Text]) ->
                            Either [T.Text] Coins               ->
                            (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherCoins i d por mnom fi ti te (ws, bs, logMsgs) = \case
-  Left  msgs -> (ws, bs ++ [ (msg, [i]) | msg <- msgs ], logMsgs)
+helperPutRemEitherCoins i d por mnom fi ti te a@(ws, bs, logMsgs) = \case
+  Left  msgs -> over _2 (++ [ (msg, [i]) | msg <- msgs ]) a
   Right c | (fc, tc)        <- over both ((ws^.coinsTbl) !) (fi, ti)
           , ws'             <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                   & coinsTbl.at ti ?~ tc <> c
@@ -1438,7 +1438,7 @@ ready (i, mq, cols) (nub . map T.toLower -> rs) = do
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws rs is mempty
                    eiss                      = zipWith (curry procGecrMisReady) gecrs miss
                    msg                       = if null rcs then "" else nl "You can't ready coins."
-                   (ws',  msg', logMsgs)     = foldl' (helperReady i cols) (ws, msg, []) . zip eiss $ mrols
+                   (ws', msg', logMsgs)      = foldl' (helperReady i cols) (ws, msg, []) . zip eiss $ mrols
                in putTMVar t ws' >> return (msg', logMsgs)
           else putTMVar t ws >> return (wrapUnlines cols dudeYourHandsAreEmpty, [])
 
@@ -1448,21 +1448,22 @@ helperReady :: Id                                     ->
                (WorldState, T.Text, [T.Text])         ->
                (Either T.Text Inv, Maybe RightOrLeft) ->
                (WorldState, T.Text, [T.Text])
-helperReady i cols (ws, msg, logMsgs) (eis, mrol) = case eis of
-  Left  msg' -> (ws, (msg <>) . wrapUnlines cols $ msg', logMsgs)
-  Right is   -> foldl' (readyDispatcher i cols mrol) (ws, msg, logMsgs) is
+helperReady i cols a (eis, mrol) = case eis of
+  Left  (wrapUnlines cols -> msg') -> over _2 (<> msg') a
+  Right is                         -> foldl' (readyDispatcher i cols mrol) a is
 
 
 readyDispatcher :: Id -> Cols -> Maybe RightOrLeft -> (WorldState, T.Text, [T.Text]) -> Id -> (WorldState, T.Text, [T.Text])
-readyDispatcher i cols mrol (ws, msg, logMsgs) ei =
+readyDispatcher i cols mrol a@(ws, _, _) ei =
     let e = (ws^.entTbl)  ! ei
         t = (ws^.typeTbl) ! ei
     in case t of
-      ClothType -> readyCloth i cols mrol (ws, msg, logMsgs) ei e
-      WpnType   -> readyWpn   i cols mrol (ws, msg, logMsgs) ei e
-      _         -> (ws, (msg <>) . wrapUnlines cols $ "You can't ready a " <> e^.sing <> ".", logMsgs)
+      ClothType -> readyCloth i cols mrol a ei e
+      WpnType   -> readyWpn   i cols mrol a ei e
+      _         -> over _2 (<> (wrapUnlines cols $ "You can't ready a " <> e^.sing <> ".")) a
 
 
+-- TODO: Continue refactoring from here.
 moveReadiedItem :: Id                             ->
                    Cols                           ->
                    (WorldState, T.Text, [T.Text]) ->
@@ -1542,12 +1543,12 @@ sorryFullClothSlotsOneSide s = "You can't wear any more on your " <> pp s <> "."
 
 
 readyCloth :: Id -> Cols -> Maybe RightOrLeft -> (WorldState, T.Text, [T.Text]) -> Id -> Ent -> (WorldState, T.Text, [T.Text])
-readyCloth i cols mrol (ws, msg, logMsgs) ei e@((^.sing) -> s) =
+readyCloth i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) =
     let em = (ws^.eqTbl)    ! i
         c  = (ws^.clothTbl) ! ei
     in case maybe (getAvailClothSlot cols ws i c em) (getDesigClothSlot cols ws e c em) mrol of
-      Left  msg' -> (ws, msg <> msg', logMsgs)
-      Right slot -> moveReadiedItem i cols (ws, msg, logMsgs) em slot ei . mkReadyMsg slot $ c
+      Left  msg  -> over _2 (<> msg) a
+      Right slot -> moveReadiedItem i cols a em slot ei . mkReadyMsg slot $ c
   where
     mkReadyMsg (pp -> slot) = \case NoseC   -> putOnMsg
                                     NeckC   -> putOnMsg
@@ -1622,23 +1623,23 @@ getDesigClothSlot cols ws ((^.sing) -> s) c em rol
 
 
 readyWpn :: Id -> Cols -> Maybe RightOrLeft -> (WorldState, T.Text, [T.Text]) -> Id -> Ent -> (WorldState, T.Text, [T.Text])
-readyWpn i cols mrol (ws, msg, logMsgs) ei e@((^.sing) -> s) =
+readyWpn i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) =
     let em  = (ws^.eqTbl)  ! i
         w   = (ws^.wpnTbl) ! ei
         sub = w^.wpnSub
     in if not . isSlotAvail em $ BothHandsS
-      then (ws, (msg <>) . wrapUnlines cols $ "You're already wielding a two-handed weapon.", logMsgs)
+      then over _2 (<> wrapUnlines cols "You're already wielding a two-handed weapon.") a
       else case maybe (getAvailWpnSlot cols ws i em) (getDesigWpnSlot cols ws e em) mrol of
-        Left  msg'  -> (ws, msg <> msg', logMsgs)
+        Left  msg   -> over _2 (<> msg) a
         Right slot  -> case sub of
-          OneHanded -> moveReadiedItem i cols (ws, msg, logMsgs) em slot ei . T.concat $ [ "You wield the "
-                                                                                         , s
-                                                                                         , " with your "
-                                                                                         , pp slot
-                                                                                         , "." ]
+          OneHanded -> moveReadiedItem i cols a em slot ei . T.concat $ [ "You wield the "
+                                                                        , s
+                                                                        , " with your "
+                                                                        , pp slot
+                                                                        , "." ]
           TwoHanded -> if all (isSlotAvail em) [ RHandS, LHandS ]
-            then moveReadiedItem i cols (ws, msg, logMsgs) em BothHandsS ei $ "You wield the " <> s <> " with both hands."
-            else (ws, (msg <>) . wrapUnlines cols $ "Both hands are required to wield the " <> s <> ".", logMsgs)
+            then moveReadiedItem i cols a em BothHandsS ei $ "You wield the " <> s <> " with both hands."
+            else over _2 (<> (wrapUnlines cols $ "Both hands are required to wield the " <> s <> ".")) a
 
 
 getAvailWpnSlot :: Cols -> WorldState -> Id -> EqMap -> Either T.Text Slot
@@ -1692,14 +1693,14 @@ unready (i, mq, cols) rs = do
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is mempty
                    eiss                  = zipWith (curry procGecrMisPCEq) gecrs miss
                    msg                   = if null rcs then "" else nl "You can't unready coins."
-                   (ws',  msg', logMsgs) = foldl' (helperUnready i cols) (ws, msg, []) eiss
+                   (ws', msg', logMsgs)  = foldl' (helperUnready i cols) (ws, msg, []) eiss
                in putTMVar t ws' >> return (msg', logMsgs)
           else putTMVar t ws >> return (wrapUnlines cols $ dudeYou'reNaked, [])
 
 
 helperUnready :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
-helperUnready i cols (ws, msg, logMsgs) = \case
-  Left  msg' -> (ws, (msg <>) . wrapUnlines cols $ msg', logMsgs)
+helperUnready i cols a@(ws, msg, logMsgs) = \case
+  Left  msg' -> over _2 (<> wrapUnlines cols msg') a
   Right is | em   <- (ws^.eqTbl)  ! i
            , pis  <- (ws^.invTbl) ! i
            , ws'  <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
@@ -1767,12 +1768,12 @@ intro (i, _, _) rs = do
           else do
               putTMVar t ws
               return (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])
-    helperIntroEitherInv _ _   a@(ws, cbs, logMsgs) (Left msg)
+    helperIntroEitherInv _ _   a (Left msg)
       | T.null msg = a
-      | otherwise  = (ws, (cbs ++) . mkNTBroadcast i . nlnl $ msg, logMsgs)
+      | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
-        tryIntro (ws, cbs, logMsgs) targetId =
+        tryIntro a'@(ws, cbs, logMsgs) targetId =
             let targetType = (ws^.typeTbl) ! targetId
                 targetEnt  = (ws^.entTbl)  ! targetId
                 targetSing = targetEnt^.sing
@@ -1784,7 +1785,7 @@ intro (i, _, _) rs = do
                      , (mkReflexive . (^.sex) -> himHerself) <- (ws^.mobTbl) ! i
                      -> if s `elem` intros
                        then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                            in (ws, (cbs ++) . mkNTBroadcast i $ msg, logMsgs)
+                            in over _2 (++ mkNTBroadcast i msg) a'
                        else let p         = targetPC & introduced .~ sort (s : intros)
                                 ws'       = ws & pcTbl.at targetId ?~ p
                                 srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
@@ -1812,7 +1813,7 @@ intro (i, _, _) rs = do
                                         , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
                                , logMsgs ++ [srcMsg] )
               _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
-                     -> (ws, cbs `appendIfUnique` b, logMsgs)
+                     -> over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins (cbs, logMsgs) (Left  msgs) = ( (cbs ++) . concat $ [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]
                                                          , logMsgs )
     helperIntroEitherCoins (cbs, logMsgs) (Right _   ) =

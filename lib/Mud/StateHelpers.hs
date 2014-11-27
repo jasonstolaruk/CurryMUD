@@ -65,7 +65,7 @@ import Control.Applicative ((<$>), (<*>), Const, pure)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (_1, at, both, each, over, to)
+import Control.Lens (_1, _2, at, both, each, over, to)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -329,11 +329,11 @@ getUnusedId = head . (\\) [0..] . allKeys
 
 
 sortInv :: WorldState -> Inv -> Inv
-sortInv ws is = let (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) = [ (ws^.typeTbl) ! i | i <- is ]
-                in (pcIs ++) . sortNonPCs $ nonPCIs
+sortInv ws is | (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) <- [ (ws^.typeTbl) ! i | i <- is ]
+              = (pcIs ++) . sortNonPCs $ nonPCIs
   where
-    helper (pcIs, nonPCIs) (i, t) | t == PCType = (pcIs ++ [i], nonPCIs)
-                                  | otherwise   = (pcIs, nonPCIs ++ [i])
+    helper a (i, t) | t == PCType      = over _1 (++ [i]) a
+                    | otherwise        = over _2 (++ [i]) a
     sortNonPCs is'                     = map (^._1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
