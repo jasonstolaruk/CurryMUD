@@ -1839,91 +1839,83 @@ mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
 what :: Action
 what (_, mq, cols) [] = advise mq cols ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
                                                   \in " <> dblQuote "what up" <> "."
-what (i, mq, cols) rs = readWSTMVar >>= \ws ->
-    let p  = (ws^.pcTbl) ! i
-        r  = (ws^.rmTbl) ! (p^.rmId)
-    in logPlaExecArgs "what" rs i >> (send mq . T.concat . map (helper ws r) . nub . map T.toLower $ rs)
+what (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
+    let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
+        r                = (ws^.rmTbl) ! ri
+    in logPlaExecArgs "what" rs i >> (send mq . T.concat . map (helper ws r) $ rs)
   where
-    helper ws r n = nl . T.concat $ [ whatCmd   cols r        n
-                                    , whatInv i cols ws PCInv n
-                                    , whatInv i cols ws PCEq  n
-                                    , whatInv i cols ws RmInv n ]
+    helper ws r n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ws it n | it <- [ PCInv, PCEq, RmInv ] ]
 
 
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
-whatCmd cols r n = maybe notFound found . findFullNameForAbbrev (T.toLower n) $ cs
+whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(dblQuote -> n')) =
+    wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n . filter isPlaCmd . map cmdName $ cmds
   where
-    cs       = filter isPlaCmd . map cmdName . mkCmdListWithNonStdRmLinks $ r
-    isPlaCmd = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
-    notFound = wrapUnlines cols $ dblQuote n <> " doesn't refer to any commands."
-    found cn = wrapUnlines cols . T.concat $ [ dblQuote n, " may refer to the ", dblQuote cn, " command." ]
+    isPlaCmd               = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
+    notFound               = n' <> " doesn't refer to any commands."
+    found (dblQuote -> cn) = T.concat $ [ n', " may refer to the ", cn, " command." ]
 
 
 whatInv :: Id -> Cols -> WorldState -> InvType -> T.Text -> T.Text
-whatInv i cols ws it n = let (is, gecrs, rcs) = resolveName
-                         in if not . null $ gecrs
-                           then whatInvEnts i cols ws it n (head gecrs) is
-                           else T.concat . map (whatInvCoins cols it n) $ rcs
+whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
+  then whatInvEnts i cols ws it n (head gecrs) is
+  else T.concat . map (whatInvCoins cols it n) $ rcs
   where
-    resolveName = let (is, c)         = getLocInvCoins
-                      (gecrs, _, rcs) = resolveEntCoinNames i ws [n] is c
-                  in (is, gecrs, rcs)
-    getLocInvCoins = case it of PCInv -> ((ws^.invTbl) ! i,          (ws^.coinsTbl) ! i )
-                                PCEq  -> (M.elems $ (ws^.eqTbl) ! i, mempty             )
-                                RmInv -> ((ws^.invTbl) ! ri,         (ws^.coinsTbl) ! ri)
-    p  = (ws^.pcTbl) ! i
-    ri = p^.rmId
+    resolveName | (is, c) <- getLocInvCoins, (gecrs, _, rcs) <- resolveEntCoinNames i ws [n] is c = (is, gecrs, rcs)
+    getLocInvCoins   = case it of PCInv -> ((ws^.invTbl)          ! i,  (ws^.coinsTbl) ! i )
+                                  PCEq  -> (M.elems $ (ws^.eqTbl) ! i,  mempty             )
+                                  RmInv -> ((ws^.invTbl)          ! ri, (ws^.coinsTbl) ! ri)
+    ((^.rmId) -> ri) = (ws^.pcTbl) ! i
 
 
 whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
-whatInvEnts i cols ws it r gecr is = case gecr of
+whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is = wrapUnlines cols $ case gecr of
   Mult _ n (Just es) _
-    | n == acp  -> wrapUnlines cols . T.concat $ [ dblQuote acp
-                                                 , " may refer to everything "
-                                                 , getLocTxtForInvType it
-                                                 , supplement
-                                                 , "." ]
-    | e <- head es, len <- length es -> if len > 1
-      then let ebgns  = take len [ getEffBothGramNos i ws (e'^.entId) | e' <- es ]
-               h      = head ebgns
-               target = if all (== h) ebgns then mkPlurFromBoth h else bracketQuote . (<> "s") . getEffName i ws $ e^.entId
-           in wrapUnlines cols . T.concat $ [ dblQuote r
-                                            , " may refer to the "
-                                            , showText len
-                                            , " "
-                                            , target
-                                            , " "
-                                            , getLocTxtForInvType it
-                                            , "." ]
+    | n == acp -> T.concat [ dblQuote acp
+                           , " may refer to everything "
+                           , locTxt
+                           , supplement
+                           , "." ]
+    | e@((^.sing) -> s) <- head es, len <- length es -> if len > 1
+      then let ebgns@(head -> h)         = take len [ getEffBothGramNos i ws i' | ((^.entId) -> i') <- es ]
+               target | all (== h) ebgns = mkPlurFromBoth h
+                      | otherwise        = (<> "s") . bracketQuote . getEffName i ws $ e^.entId
+           in T.concat [ r
+                       , " may refer to the "
+                       , showText len
+                       , " "
+                       , target
+                       , " "
+                       , locTxt
+                       , "." ]
       else let ens = [ getEffName i ws i' | i' <- is ]
-           in wrapUnlines cols . T.concat $ [ dblQuote r
-                                            , " may refer to the "
-                                            , T.pack . checkFirst e $ ens
-                                            , e^.sing
-                                            , " "
-                                            , getLocTxtForInvType it
-                                            , "." ]
-  Indexed x _ (Right e) -> wrapUnlines cols . T.concat $ [ dblQuote r
-                                                         , " may refer to the "
-                                                         , mkOrdinal x
-                                                         , " "
-                                                         , bracketQuote . getEffName i ws $ e^.entId
-                                                         , " "
-                                                         , e^.sing.to parensQuote
-                                                         , " "
-                                                         , getLocTxtForInvType it
-                                                         , "." ]
-  _                     -> wrapUnlines cols . T.concat $ [ dblQuote r
-                                                         , " doesn't refer to anything "
-                                                         , getLocTxtForInvType it
-                                                         , "." ]
+           in T.concat [ r
+                       , " may refer to the "
+                       , T.pack . checkFirst e $ ens
+                       , s
+                       , " "
+                       , locTxt
+                       , "." ]
+  Indexed x _ (Right e@((^.sing) -> s)) -> T.concat [ r
+                                                    , " may refer to the "
+                                                    , mkOrdinal x
+                                                    , " "
+                                                    , bracketQuote . getEffName i ws $ e^.entId
+                                                    , " "
+                                                    , parensQuote s
+                                                    , " "
+                                                    , locTxt
+                                                    , "." ]
+  _                                     -> T.concat [ r
+                                                    , " doesn't refer to anything "
+                                                    , locTxt
+                                                    , "." ]
   where
     acp                                     = T.pack [allChar]
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
                | otherwise                  = ""
-    checkFirst e ens                        = let en      = getEffName i ws $ e^.entId
-                                                  matches = filter (== en) ens
-                                              in guard (length matches > 1) >> T.unpack "first "
+    checkFirst e ens | en <- getEffName i ws $ e^.entId, matches <- filter (== en) ens =
+        guard (length matches > 1) >> "first "
 
 
 getLocTxtForInvType :: InvType -> T.Text
@@ -1933,45 +1925,45 @@ getLocTxtForInvType = \case PCInv -> "in your inventory"
 
 
 whatInvCoins :: Cols -> InvType -> T.Text -> ReconciledCoins -> T.Text
-whatInvCoins cols it r rc
+whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) rc
   | it == PCEq = ""
-  | otherwise = case rc of
-    Left  Empty                              -> wrapUnlines cols . T.concat $ [ dblQuote r
-                                                                              , " doesn't refer to any coins "
-                                                                              , getLocTxtForInvType it
-                                                                              , " "
-                                                                              , supplementNone "coins" it
-                                                                              , "." ]
-    Left  (NoneOf c) | cn <- mkTxtForCoins c -> wrapUnlines cols . T.concat $ [ dblQuote r
-                                                                              , " doesn't refer to any "
-                                                                              , cn
-                                                                              , " "
-                                                                              , getLocTxtForInvType it
-                                                                              , " "
-                                                                              , supplementNone cn it
-                                                                              , "." ]
-    Left  (SomeOf c) | cn <- mkTxtForCoins c -> wrapUnlines cols . T.concat $ [ dblQuote r
-                                                                              , " doesn't refer to any "
-                                                                              , cn
-                                                                              , " "
-                                                                              , getLocTxtForInvType it
-                                                                              , " "
-                                                                              , supplementNotEnough cn it
-                                                                              , "." ]
-    Right (SomeOf c)                         -> wrapUnlines cols . T.concat $ [ dblQuote r
-                                                                              , " may refer to the "
-                                                                              , mkTxtForCoinsWithAmt c
-                                                                              , " "
-                                                                              , getLocTxtForInvType it
-                                                                              , "." ]
-    _                -> patternMatchFail "whatInvCoins" [ showText rc ]
+  | otherwise  = wrapUnlines cols $ case rc of
+    Left  Empty                                 -> T.concat [ r
+                                                            , " doesn't refer to any coins "
+                                                            , locTxt
+                                                            , " "
+                                                            , supplementNone "coins"
+                                                            , "." ]
+    Left  (NoneOf (mkTxtForCoins -> cn))        -> T.concat [ r
+                                                            , " doesn't refer to any "
+                                                            , cn
+                                                            , " "
+                                                            , locTxt
+                                                            , " "
+                                                            , supplementNone cn
+                                                            , "." ]
+    Left  (SomeOf (mkTxtForCoins -> cn))        -> T.concat [ r
+                                                            , " doesn't refer to any "
+                                                            , cn
+                                                            , " "
+                                                            , locTxt
+                                                            , " "
+                                                            , supplementNotEnough cn
+                                                            , "." ]
+    Right (SomeOf (mkTxtForCoinsWithAmt -> cn)) -> T.concat [ r
+                                                            , " may refer to the "
+                                                            , cn
+                                                            , " "
+                                                            , locTxt
+                                                            , "." ]
+    _                                           -> patternMatchFail "whatInvCoins" [ showText rc ]
   where
-    supplementNone cn      = \case PCInv -> parensQuote $ "you don't have any "       <> cn
-                                   RmInv -> parensQuote $ "there aren't any "         <> cn <> " here"
-                                   PCEq  -> oops "supplementNone"
-    supplementNotEnough cn = \case PCInv -> parensQuote $ "you don't have that many " <> cn
-                                   RmInv -> parensQuote $ "there aren't that many "   <> cn <> " here"
-                                   PCEq  -> oops "supplementNotEnough"
+    supplementNone cn      = case it of PCInv -> parensQuote $ "you don't have any "       <> cn
+                                        RmInv -> parensQuote $ "there aren't any "         <> cn <> " here"
+                                        PCEq  -> oops "supplementNone"
+    supplementNotEnough cn = case it of PCInv -> parensQuote $ "you don't have that many " <> cn
+                                        RmInv -> parensQuote $ "there aren't that many "   <> cn <> " here"
+                                        PCEq  -> oops "supplementNotEnough"
     oops fn                = blowUp ("whatInvCoins " <> fn) "called for InvType of PCEq" []
     mkTxtForCoins c@(Coins (cop, sil, gol))
       | cop /= 0  = "copper pieces"
