@@ -935,8 +935,8 @@ equip (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
       then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws rs is mempty
                eiss                         = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                      = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc | not . null $ rcs = wrapUnlinesNl cols $ "You don't have any coins among your readied \
-                                                                   \equipment."
+               coinsDesc | not . null $ rcs = wrapUnlinesNl cols "You don't have any coins among your readied \
+                                                               \equipment."
                          | otherwise        = ""
            in invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYou'reNaked
@@ -1566,36 +1566,33 @@ readyCloth i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) =
 
 
 getAvailClothSlot :: Cols -> WorldState -> Id -> Cloth -> EqMap -> Either T.Text Slot
-getAvailClothSlot cols ws i c em = let m = (ws^.mobTbl) ! i
-                                       s = m^.sex
-                                       h = m^.hand
-                                   in procMaybe $ case c of
-                                     EarC    -> getEarSlotForSex s `mplus` (getEarSlotForSex . otherSex $ s)
-                                     NoseC   -> findAvailSlot em noseSlots
-                                     NeckC   -> findAvailSlot em neckSlots
-                                     WristC  -> getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
-                                     FingerC -> getRingSlot s h
-                                     _       -> undefined -- TODO
+getAvailClothSlot cols ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.hand = procMaybe $ case c of
+  EarC    -> getEarSlotForSex s `mplus` (getEarSlotForSex . otherSex $ s)
+  NoseC   -> findAvailSlot em noseSlots
+  NeckC   -> findAvailSlot em neckSlots
+  WristC  -> getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
+  FingerC -> getRingSlot s h
+  _       -> undefined -- TODO
   where
     procMaybe             = maybe (Left . wrapUnlines cols . sorryFullClothSlots $ c) Right
-    getEarSlotForSex s    =
-        findAvailSlot em $ case s of Male   -> lEarSlots
-                                     Female -> rEarSlots
-                                     _      -> patternMatchFail "getAvailClothSlot getEarSlotForSex" [ showText s ]
-    getWristSlotForHand h =
-        findAvailSlot em $ case h of RHand  -> lWristSlots
-                                     LHand  -> rWristSlots
-                                     _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
-    getRingSlot s h       =
-        findAvailSlot em $ case s of Male    -> case h of
-                                       RHand -> [ LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS ]
-                                       LHand -> [ RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS ]
-                                       _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
-                                     Female  -> case h of
-                                       RHand -> [ LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS ]
-                                       LHand -> [ RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS ]
-                                       _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
-                                     _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText s ]
+    getEarSlotForSex s    = findAvailSlot em $ case s of
+      Male   -> lEarSlots
+      Female -> rEarSlots
+      _      -> patternMatchFail "getAvailClothSlot getEarSlotForSex"    [ showText s ]
+    getWristSlotForHand h = findAvailSlot em $ case h of
+      RHand  -> lWristSlots
+      LHand  -> rWristSlots
+      _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
+    getRingSlot s h       = findAvailSlot em $ case s of
+      Male    -> case h of
+        RHand -> [ LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS ]
+        LHand -> [ RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS ]
+        _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
+      Female  -> case h of
+        RHand -> [ LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS ]
+        LHand -> [ RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS ]
+        _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
+      _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText s ]
 
 
 getDesigClothSlot :: Cols -> WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
@@ -1701,7 +1698,7 @@ unready (i, mq, cols) rs = do
                    msg                   = if null rcs then "" else nl "You can't unready coins."
                    (ws', msg', logMsgs)  = foldl' (helperUnready i cols) (ws, msg, []) eiss
                in putTMVar t ws' >> return (msg', logMsgs)
-          else putTMVar t ws >> return (wrapUnlines cols $ dudeYou'reNaked, [])
+          else putTMVar t ws >> return (wrapUnlines cols dudeYou'reNaked, [])
 
 
 helperUnready :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
