@@ -1750,31 +1750,27 @@ mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i ws i' | i' <- is ], c
 
 intro :: Action
 intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
-    let p      = (ws^.pcTbl) ! i
-        intros = p^.introduced
+    let ((^.introduced) -> intros) = (ws^.pcTbl) ! i
     in if null intros
-      then do
-          let introsTxt = "No one has introduced themselves to you yet."
+      then let introsTxt = "No one has introduced themselves to you yet." in do
           wrapSend mq cols introsTxt
           logPlaOut "intro" i [introsTxt]
-      else do
-          let introsTxt = T.intercalate ", " intros
+      else let introsTxt = T.intercalate ", " intros in do
           multiWrapSend mq cols [ "You know the following names:", introsTxt ]
           logPlaOut "intro" i [introsTxt]
-intro (i, _, _) rs = do
+intro (i, _, _) (nub . map T.toLower -> rs) = do
     (cbs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "intro" i logMsgs
     bcast . map fromClassifiedBroadcast . sort $ cbs
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.sing) -> s) = (ws^.entTbl)   ! i
-            p               = (ws^.pcTbl)    ! i
-            ri              = p^.rmId
-            is              = (ws^.invTbl)   ! ri
-            is'             = i `delete` is
-            c               = (ws^.coinsTbl) ! ri
+        let ((^.sing) -> s)  = (ws^.entTbl)   ! i
+            ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
+            is               = (ws^.invTbl)   ! ri
+            is'              = i `delete` is
+            c                = (ws^.coinsTbl) ! ri
         in if (not . null $ is') || (c /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is' c
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws rs is' c
                    eiss                  = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                   = map procReconciledCoinsRm rcs
                    (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
@@ -1783,56 +1779,49 @@ intro (i, _, _) rs = do
           else do
               putTMVar t ws
               return (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])
-    helperIntroEitherInv _ _   a (Left msg)
-      | T.null msg = a
-      | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
+    helperIntroEitherInv _ _   a (Left msg) | T.null msg = a
+                                            | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
-        tryIntro a'@(ws, _, _) targetId =
-            let targetType = (ws^.typeTbl) ! targetId
-                targetEnt  = (ws^.entTbl)  ! targetId
-                targetSing = targetEnt^.sing
-            in case targetType of
-              PCType | targetPC    <- (ws^.pcTbl) ! targetId
-                     , intros      <- targetPC^.introduced
-                     , pis         <- findPCIds ws ris
-                     , targetDesig <- serialize . mkStdDesig targetId ws targetSing False $ ris
-                     , (mkReflexive . (^.sex) -> himHerself) <- (ws^.mobTbl) ! i
-                     -> if s `elem` intros
-                       then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                            in over _2 (++ mkNTBroadcast i msg) a'
-                       else let p         = targetPC & introduced .~ sort (s : intros)
-                                ws'       = ws & pcTbl.at targetId ?~ p
-                                srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
-                                srcDesig  = StdDesig { stdPCEntSing = Nothing
-                                                     , isCap        = True
-                                                     , pcEntName    = mkUnknownPCEntName i ws
-                                                     , pcId         = i
-                                                     , pcIds        = pis }
-                                targetMsg = nlnl . T.concat $ [ serialize srcDesig
-                                                              , " introduces "
-                                                              , himHerself
-                                                              , " to you as "
-                                                              , s
-                                                              , "." ]
-                                srcDesig' = srcDesig { stdPCEntSing = Just s }
-                                othersMsg = nlnl . T.concat $ [ serialize srcDesig'
-                                                              , " introduces "
-                                                              , himHerself
-                                                              , " to "
-                                                              , targetDesig
-                                                              , "." ]
-                                cbs = [ NonTargetBroadcast (srcMsg,    [i])
-                                      , TargetBroadcast    (targetMsg, [targetId])
-                                      , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
-                            in set _1 ws' . over _2 (++ cbs) . over _3 (++ [srcMsg]) $ a'
-              _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
-                     -> over _2 (`appendIfUnique` b) a'
-    helperIntroEitherCoins (cbs, logMsgs) (Left  msgs) = ( (cbs ++) . concat $ [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]
-                                                         , logMsgs )
-    helperIntroEitherCoins (cbs, logMsgs) (Right _   ) =
-        let b = NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])
-        in (cbs `appendIfUnique` b, logMsgs)
+        tryIntro a'@(ws, _, _) targetId | targetType               <- (ws^.typeTbl) ! targetId
+                                        , ((^.sing) -> targetSing) <- (ws^.entTbl)  ! targetId = case targetType of
+          PCType | targetPC@((^.introduced) -> intros)   <- (ws^.pcTbl) ! targetId
+                 , pis                                   <- findPCIds ws ris
+                 , targetDesig                           <- serialize . mkStdDesig targetId ws targetSing False $ ris
+                 , (mkReflexive . (^.sex) -> himHerself) <- (ws^.mobTbl) ! i
+                 -> if s `elem` intros
+                   then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
+                        in over _2 (++ mkNTBroadcast i msg) a'
+                   else let p         = targetPC & introduced .~ sort (s : intros)
+                            ws'       = ws & pcTbl.at targetId ?~ p
+                            srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
+                            srcDesig  = StdDesig { stdPCEntSing = Nothing
+                                                 , isCap        = True
+                                                 , pcEntName    = mkUnknownPCEntName i ws
+                                                 , pcId         = i
+                                                 , pcIds        = pis }
+                            targetMsg = nlnl . T.concat $ [ serialize srcDesig
+                                                          , " introduces "
+                                                          , himHerself
+                                                          , " to you as "
+                                                          , s
+                                                          , "." ]
+                            othersMsg = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
+                                                          , " introduces "
+                                                          , himHerself
+                                                          , " to "
+                                                          , targetDesig
+                                                          , "." ]
+                            cbs = [ NonTargetBroadcast (srcMsg,    [i])
+                                  , TargetBroadcast    (targetMsg, [targetId])
+                                  , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
+                        in set _1 ws' . over _2 (++ cbs) . over _3 (++ [srcMsg]) $ a'
+          _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
+                 -> over _2 (`appendIfUnique` b) a'
+    helperIntroEitherCoins a (Left  msgs) =
+        over _1 (++ (concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ])) a
+    helperIntroEitherCoins a (Right _   ) =
+        over _1 (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
 
