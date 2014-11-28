@@ -79,6 +79,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- 7. Write tests for NameResolution and Cmds.
 -- 8. Refactor for ViewPatterns and pattern guards.
 -- 9. See if you can keep your lines at 120 characters or less.
+-- 10. Are there places where I can use IO as a Functor or Applicative?
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -1983,6 +1984,7 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) rc
 -----
 
 
+-- TODO: Continue refactoring from here.
 uptime :: Action
 uptime (i, mq, cols) [] = do
     logPlaExec "uptime" i

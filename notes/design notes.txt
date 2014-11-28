@@ -77,6 +77,7 @@ Have in-game mail and BBS. Have a special BBS dedicated to OOC topics.
 Recommend that players use an external text editor with spell checking for composing multi-line input. Specifically recommend SublimeText?
 
 Make a library or similar area where players may read, for example, the history and backstory of the virtual world.
+A museum-like facility could fill this role. There could be a statue for each race and god, along with a description on a placard. Refer to the Pantheon in "City Sites."
 
 Implement a system for auctioning items.
 
@@ -239,6 +240,8 @@ Provide special venues for storytelling.
 Make a sewer and/or catacombs beneath a city.
 
 Make an area with ancient reptilian monuments.
+
+Make a divine tree, shaped like a woman (similar to the one in HQ1).
 
 Make a forest where players can forage for mushrooms.
 
