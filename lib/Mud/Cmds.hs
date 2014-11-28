@@ -1598,59 +1598,68 @@ getAvailClothSlot cols ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.h
 getDesigClothSlot :: Cols -> WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigClothSlot cols ws ((^.sing) -> s) c em rol
   | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCantWearThere
-  | isRingRol rol, c /= FingerC         = Left sorryCantWearThere
-  | c == FingerC, not . isRingRol $ rol = Left . wrapUnlines cols $ ringHelp
-  | otherwise = case c of EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
-                          WristC  -> maybe (Left sorryFullWrist) Right (findSlotFromList rWristSlots lWristSlots)
-                          FingerC -> maybe (Right slotFromRol)
-                                           (\i -> let e = (ws^.entTbl) ! i in Left . sorry slotFromRol $ e)
-                                           (em^.at slotFromRol)
-                          _       -> undefined -- TODO
+  | isRingRol rol, c /= FingerC                                           = Left sorryCantWearThere
+  | c == FingerC, not . isRingRol $ rol                                   = Left . wrapUnlines cols $ ringHelp
+  | otherwise                                                             = case c of
+    EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
+    WristC  -> maybe (Left sorryFullWrist) Right (findSlotFromList rWristSlots lWristSlots)
+    FingerC -> maybe (Right slotFromRol)
+                     (\i -> let e = (ws^.entTbl) ! i in Left . sorry slotFromRol $ e)
+                     (em^.at slotFromRol)
+    _       -> undefined -- TODO
   where
     sorryCantWearThere     = wrapUnlines cols . T.concat $ [ "You can't wear a ", s, " on your ", pp rol, "." ]
-    findSlotFromList rs ls =
-        findAvailSlot em $ case rol of R -> rs
-                                       L -> ls
-                                       _ -> patternMatchFail "getDesigClothSlot findSlotFromList" [ showText rol ]
-    getSlotFromList  rs ls =
-        head $ case rol of R -> rs
-                           L -> ls
-                           _ -> patternMatchFail "getDesigClothSlot getSlotFromList" [ showText rol ]
+    findSlotFromList rs ls = findAvailSlot em $ case rol of
+      R -> rs
+      L -> ls
+      _ -> patternMatchFail "getDesigClothSlot findSlotFromList" [ showText rol ]
+    getSlotFromList  rs ls = head $ case rol of
+      R -> rs
+      L -> ls
+      _ -> patternMatchFail "getDesigClothSlot getSlotFromList"  [ showText rol ]
     sorryFullEar   = wrapUnlines cols . sorryFullClothSlotsOneSide . getSlotFromList rEarSlots   $ lEarSlots
     sorryFullWrist = wrapUnlines cols . sorryFullClothSlotsOneSide . getSlotFromList rWristSlots $ lWristSlots
     slotFromRol    = fromRol rol :: Slot
-    sorry (pp -> slot) ((^.sing) -> s') = wrapUnlines cols . T.concat $ [ "You're already wearing a ", s', " on your ", slot, "." ]
+    sorry (pp -> slot) ((^.sing) -> s') = wrapUnlines cols . T.concat $ [ "You're already wearing a "
+                                                                        , s'
+                                                                        , " on your "
+                                                                        , slot
+                                                                        , "." ]
 
 
 -- Ready weapons:
 
 
-readyWpn :: Id -> Cols -> Maybe RightOrLeft -> (WorldState, T.Text, [T.Text]) -> Id -> Ent -> (WorldState, T.Text, [T.Text])
-readyWpn i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) =
-    let em  = (ws^.eqTbl)  ! i
-        w   = (ws^.wpnTbl) ! ei
-        sub = w^.wpnSub
-    in if not . isSlotAvail em $ BothHandsS
-      then over _2 (<> wrapUnlines cols "You're already wielding a two-handed weapon.") a
-      else case maybe (getAvailWpnSlot cols ws i em) (getDesigWpnSlot cols ws e em) mrol of
-        Left  msg   -> over _2 (<> msg) a
-        Right slot  -> case sub of
-          OneHanded -> moveReadiedItem i cols a em slot ei . T.concat $ [ "You wield the "
-                                                                        , s
-                                                                        , " with your "
-                                                                        , pp slot
-                                                                        , "." ]
-          TwoHanded -> if all (isSlotAvail em) [ RHandS, LHandS ]
-            then moveReadiedItem i cols a em BothHandsS ei $ "You wield the " <> s <> " with both hands."
-            else over _2 (<> (wrapUnlines cols $ "Both hands are required to wield the " <> s <> ".")) a
+readyWpn :: Id                             ->
+            Cols                           ->
+            Maybe RightOrLeft              ->
+            (WorldState, T.Text, [T.Text]) ->
+            Id                             ->
+            Ent                            ->
+            (WorldState, T.Text, [T.Text])
+readyWpn i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) | em  <- (ws^.eqTbl)  ! i
+                                                       , w   <- (ws^.wpnTbl) ! ei
+                                                       , sub <- w^.wpnSub = if not . isSlotAvail em $ BothHandsS
+  then over _2 (<> wrapUnlines cols "You're already wielding a two-handed weapon.") a
+  else case maybe (getAvailWpnSlot cols ws i em) (getDesigWpnSlot cols ws e em) mrol of
+    Left  msg   -> over _2 (<> msg) a
+    Right slot  -> case sub of
+      OneHanded -> moveReadiedItem i cols a em slot ei . T.concat $ [ "You wield the "
+                                                                    , s
+                                                                    , " with your "
+                                                                    , pp slot
+                                                                    , "." ]
+      TwoHanded
+        | all (isSlotAvail em) [ RHandS, LHandS ] ->
+            moveReadiedItem i cols a em BothHandsS ei $ "You wield the " <> s <> " with both hands."
+        | otherwise -> over _2 (<> (wrapUnlines cols $ "Both hands are required to wield the " <> s <> ".")) a
 
 
 getAvailWpnSlot :: Cols -> WorldState -> Id -> EqMap -> Either T.Text Slot
-getAvailWpnSlot cols ws i em = let m = (ws^.mobTbl) ! i
-                                   h = m^.hand
-                               in maybe (Left . wrapUnlines cols $ "You're already wielding two weapons.")
-                                        Right
-                                        (findAvailSlot em . map getSlotForHand $ [ h, otherHand h ])
+getAvailWpnSlot cols ws i em | ((^.hand) -> h) <- (ws^.mobTbl) ! i =
+    maybe (Left . wrapUnlines cols $ "You're already wielding two weapons.")
+          Right
+          (findAvailSlot em . map getSlotForHand $ [ h, otherHand h ])
   where
     getSlotForHand h = case h of RHand -> RHandS
                                  LHand -> LHandS
@@ -1664,15 +1673,15 @@ getDesigWpnSlot cols ws ((^.sing) -> s) em rol
                           (\i -> let e = (ws^.entTbl) ! i in Left . sorry $ e)
                           (em^.at desigSlot)
   where
-    sorryNotRing = wrapUnlines cols $ "You can't wield a " <> s <> " with your finger!"
+    sorryNotRing           = wrapUnlines cols $ "You can't wield a " <> s <> " with your finger!"
     sorry ((^.sing) -> s') = wrapUnlines cols . T.concat $ [ "You're already wielding a "
                                                            , s'
                                                            , " with your "
                                                            , pp desigSlot
                                                            , "." ]
-    desigSlot    = case rol of R -> RHandS
-                               L -> LHandS
-                               _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
+    desigSlot              = case rol of R -> RHandS
+                                         L -> LHandS
+                                         _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
 
 
 -- Ready armor:
