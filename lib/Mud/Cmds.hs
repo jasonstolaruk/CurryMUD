@@ -1693,7 +1693,7 @@ getDesigWpnSlot cols ws ((^.sing) -> s) em rol
 unready :: Action
 unready (_, mq, cols) [] = advise mq cols ["unready"] $ "Please specify one or more things to unready, as \
                                                         \in " <> dblQuote "unready sword" <> "."
-unready (i, mq, cols) rs = do
+unready (i, mq, cols) (nub . map T.toLower -> rs) = do
     (msg, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "unready" i logMsgs
     send mq . nl $ msg
@@ -1702,19 +1702,23 @@ unready (i, mq, cols) rs = do
         let em = (ws^.eqTbl) ! i
             is = M.elems em
         in if not . null $ is
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) is mempty
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws rs is mempty
                    eiss                  = zipWith (curry procGecrMisPCEq) gecrs miss
                    msg                   = if null rcs then "" else nl "You can't unready coins."
-                   (ws', msg', logMsgs)  = foldl' (helperUnready i cols) (ws, msg, []) eiss
+                   (ws', msg', logMsgs)  = foldl' (helperUnready i cols em) (ws, msg, []) eiss
                in putTMVar t ws' >> return (msg', logMsgs)
           else putTMVar t ws >> return (wrapUnlines cols dudeYou'reNaked, [])
 
 
-helperUnready :: Id -> Cols -> (WorldState, T.Text, [T.Text]) -> Either T.Text Inv -> (WorldState, T.Text, [T.Text])
-helperUnready i cols a@(ws, _, _) = \case
-  Left  msg' -> over _2 (<> wrapUnlines cols msg') a
-  Right is | em   <- (ws^.eqTbl)  ! i
-           , pis  <- (ws^.invTbl) ! i
+helperUnready :: Id                             ->
+                 Cols                           ->
+                 EqMap                          ->
+                 (WorldState, T.Text, [T.Text]) ->
+                 Either T.Text Inv              ->
+                 (WorldState, T.Text, [T.Text])
+helperUnready i cols em a@(ws, _, _) = \case
+  Left  msg -> over _2 (<> wrapUnlines cols msg) a
+  Right is | pis  <- (ws^.invTbl) ! i
            , ws'  <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
                         & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
            , msgs <- mkUnreadyDescs i ws' is
@@ -1724,10 +1728,10 @@ helperUnready i cols a@(ws, _, _) = \case
 mkUnreadyDescs :: Id -> WorldState -> Inv -> [T.Text]
 mkUnreadyDescs i ws is = [ helper icb | icb <- mkIdCountBothList i ws is ]
   where
-    helper (i', c, b@(s, _)) = let v = verb i' in T.concat $ if c == 1
+    helper ((verb -> v), c, b@(s, _)) = T.concat $ if c == 1
       then [ "You ", v, " the ", s, "." ]
       else [ "You ", v, " ", showText c, " ", mkPlurFromBoth b, "." ]
-    verb i' = case (ws^.typeTbl) ! i' of
+    verb (((ws^.typeTbl) !) -> t) = case t of
       ClothType -> unwearGenericVerb -- TODO
       WpnType   -> "stop wielding"
       _         -> undefined -- TODO
@@ -1735,9 +1739,8 @@ mkUnreadyDescs i ws is = [ helper icb | icb <- mkIdCountBothList i ws is ]
 
 
 mkIdCountBothList :: Id -> WorldState -> Inv -> [(Id, Int, BothGramNos)]
-mkIdCountBothList i ws is = let ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
-                                cs    = mkCountList ebgns
-                            in nubBy equalCountsAndBoths . zip3 is cs $ ebgns
+mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i ws i' | i' <- is ], cs <- mkCountList ebgns =
+    nubBy equalCountsAndBoths . zip3 is cs $ ebgns
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
 
