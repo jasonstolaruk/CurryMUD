@@ -2151,7 +2151,7 @@ wizUptime imc@(_, mq, cols) rs = ignore mq cols rs >> wizUptime imc []
 wizStart :: Action
 wizStart (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "start") i
-    getNWSRec startTime >>= wrapSend mq cols . showText
+    wrapSend mq cols . showText =<< getNWSRec startTime
 wizStart imc@(_, mq, cols) rs = ignore mq cols rs >> wizStart imc []
 
 
@@ -2190,13 +2190,13 @@ debugBuffCheck (i, mq, cols) [] = do
         td                                 <- liftIO getTemporaryDirectory
         (fn@(dblQuote . T.pack -> fn'), h) <- liftIO . openTempFile td $ "temp"
         (dblQuote . showText -> mode)      <- liftIO . hGetBuffering $ h
-        liftIO $ hClose h >> removeFile fn
         send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ parensQuote "Default"
                                                                       , " buffering mode for temp file "
                                                                       , fn'
-                                                                      , " was "
+                                                                      , " is "
                                                                       , mode
                                                                       , "." ]
+        liftIO $ hClose h >> removeFile fn
 debugBuffCheck imc@(_, mq, cols) rs = ignore mq cols rs >> debugBuffCheck imc []
 
 
