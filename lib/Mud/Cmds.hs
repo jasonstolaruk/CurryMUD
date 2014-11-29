@@ -31,7 +31,7 @@ import Control.Lens.Setter (set)
 import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
-import Data.Char (isSpace, toUpper)
+import Data.Char (isSpace)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort)
 import Data.Maybe (catMaybes, fromJust, isNothing)
@@ -564,7 +564,7 @@ getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler
 
 
 plaDispCmdList :: Action
-plaDispCmdList imc@(i, _, _) rs = logPlaExecArgs "?" rs i >> dispCmdList (cmdPred Nothing) imc rs
+plaDispCmdList imc@(i, _, _) rs = logPlaExecArgs "?" rs i >> dispCmdList (mkCmdPred Nothing) imc rs
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
@@ -579,9 +579,9 @@ cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmd
     helper acc c | cmdTxt <- nl $ (padOrTrunc 10 . cmdName $ c) <> cmdDesc c = cmdTxt : acc
 
 
-cmdPred :: Maybe Char -> Cmd -> Bool
-cmdPred mc (T.head . cmdName -> p) = case mc of (Just c) -> c == p
-                                                Nothing  -> p `notElem` [ wizCmdChar, debugCmdChar ]
+mkCmdPred :: Maybe Char -> Cmd -> Bool
+mkCmdPred mc (T.head . cmdName -> p) = case mc of (Just c) -> c == p
+                                                  Nothing  -> p `notElem` [ wizCmdChar, debugCmdChar ]
 
 
 -----
@@ -2069,7 +2069,7 @@ notifyEgress i = readWSTMVar >>= \ws ->
 wizDispCmdList :: Action
 wizDispCmdList imc@(i, _, _) rs = do
     logPlaExecArgs (prefixWizCmd "?") rs i
-    dispCmdList (cmdPred . Just $ wizCmdChar) imc rs
+    dispCmdList (mkCmdPred . Just $ wizCmdChar) imc rs
 
 
 -----
@@ -2077,8 +2077,7 @@ wizDispCmdList imc@(i, _, _) rs = do
 
 wizShutdown :: Action
 wizShutdown (i, mq, _) [] = readWSTMVar >>= \ws ->
-    let ((^.sing) -> s) = (ws^.entTbl) ! i
-    in do
+    let ((^.sing) -> s) = (ws^.entTbl) ! i in do
         massSend "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
         logPlaExecArgs (prefixWizCmd "shutdown") [] i
         massLogPla "wizShutDown" $ T.concat [ "closing connection due to server shutdown initiated by "
@@ -2113,15 +2112,13 @@ wizShutdown (i, mq, _) rs = readWSTMVar >>= \ws ->
 wizTime :: Action
 wizTime (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "time") i
-    ct <- liftIO getCurrentTime
-    zt <- liftIO getZonedTime
-    send mq . multiWrap cols $ [ "At the tone, the time will be...", formatThat ct, formatThat zt, "" ]
+    (ct, zt) <- (,) <$> (formatThat' getCurrentTime) <*> (formatThat' getZonedTime)
+    send mq . multiWrap cols $ [ "At the tone, the time will be...", ct, zt, "" ]
   where
-    formatThat t = let wordy = T.words . showText $ t
-                       zone  = last wordy
-                       date  = head wordy
-                       time  = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
-                   in T.concat [ zone, ": ", date, " ", time, "\b" ]
+    formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
+      | time <- T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
+      = T.concat [ zone, ": ", date, " ", time ]
+    formatThat' = liftIO . fmap formatThat
 wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
 
 
@@ -2129,7 +2126,7 @@ wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
 
 
 wizDate :: Action
-wizDate (i, mq, _)    [] = do
+wizDate (i, mq, _) [] = do
     logPlaExec (prefixWizCmd "date") i
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 wizDate imc@(_, mq, cols) rs = ignore mq cols rs >> wizDate imc []
@@ -2144,11 +2141,8 @@ wizUptime (i, mq, cols) [] = do
     (try . send mq . parse =<< runUptime) >>= eitherRet (\e -> logIOEx "wizUptime" e >> sendGenericErrorMsg mq cols)
   where
     runUptime = liftIO . readProcess "uptime" [] $ ""
-    parse ut  = let (a, b) = span (/= ',') ut
-                    a'     = unwords . tail . words $ a
-                    b'     = dropWhile isSpace . takeWhile (/= ',') . tail $ b
-                    c      = (toUpper . head $ a') : tail a'
-                in nlnl . T.concat $ [ T.pack c, " ", T.pack b', "." ]
+    parse (span (/= ',') -> (unwords . tail . words -> a, dropWhile isSpace . takeWhile (/= ',') . tail -> b)) =
+        nlnl . T.concat $ [ capitalize . T.pack $ a, " ", T.pack b, "." ]
 wizUptime imc@(_, mq, cols) rs = ignore mq cols rs >> wizUptime imc []
 
 
@@ -2158,8 +2152,7 @@ wizUptime imc@(_, mq, cols) rs = ignore mq cols rs >> wizUptime imc []
 wizStart :: Action
 wizStart (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "start") i
-    (showText -> start) <- getNWSRec startTime
-    wrapSend mq cols start
+    getNWSRec startTime >>= wrapSend mq cols . showText
 wizStart imc@(_, mq, cols) rs = ignore mq cols rs >> wizStart imc []
 
 
@@ -2183,7 +2176,7 @@ wizName imc@(_, mq, cols) rs = ignore mq cols rs >> wizName imc []
 debugDispCmdList :: Action
 debugDispCmdList imc@(i, _, _) rs = do
     logPlaExecArgs (prefixDebugCmd "?") rs i
-    dispCmdList (cmdPred . Just $ debugCmdChar) imc rs
+    dispCmdList (mkCmdPred . Just $ debugCmdChar) imc rs
 
 
 -----
@@ -2195,15 +2188,15 @@ debugBuffCheck (i, mq, cols) [] = do
     try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
   where
     helper = do
-        td      <- liftIO getTemporaryDirectory
-        (fn, h) <- liftIO . openTempFile td $ "temp"
-        bm      <- liftIO . hGetBuffering $ h
+        td                                 <- liftIO getTemporaryDirectory
+        (fn@(dblQuote . T.pack -> fn'), h) <- liftIO . openTempFile td $ "temp"
+        (dblQuote . showText -> mode)      <- liftIO . hGetBuffering $ h
         liftIO $ hClose h >> removeFile fn
         send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ parensQuote "Default"
                                                                       , " buffering mode for temp file "
-                                                                      , dblQuote . T.pack $ fn
-                                                                      , " is "
-                                                                      , dblQuote . showText $ bm
+                                                                      , fn'
+                                                                      , " was "
+                                                                      , mode
                                                                       , "." ]
 debugBuffCheck imc@(_, mq, cols) rs = ignore mq cols rs >> debugBuffCheck imc []
 
@@ -2211,6 +2204,7 @@ debugBuffCheck imc@(_, mq, cols) rs = ignore mq cols rs >> debugBuffCheck imc []
 -----
 
 
+-- TODO: Continue refactoring from here.
 debugDispEnv :: Action
 debugDispEnv (i, mq, cols) [] = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
