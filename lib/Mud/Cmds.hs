@@ -1984,7 +1984,6 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) rc
 -----
 
 
--- TODO: Continue refactoring from here.
 uptime :: Action
 uptime (i, mq, cols) [] = do
     logPlaExec "uptime" i
@@ -1995,15 +1994,14 @@ uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
 uptimeHelper :: Integer -> MudStack T.Text
 uptimeHelper ut = helper <$> getRecordUptime
   where
-    helper = \case
-      Nothing  -> mkUptimeTxt
-      Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
-                                           _  -> mkRecTxt rut
-    mkUptimeTxt  = mkTxtHelper "."
-    mkNewRecTxt  = mkTxtHelper " - it's a new record!"
-    mkRecTxt rut = mkTxtHelper $ " (record uptime: " <> renderIt rut <> ")."
-    mkTxtHelper  = ("Up " <>) . (renderIt ut <>)
-    renderIt     = T.pack . renderSecs
+    helper = \case Nothing  -> mkUptimeTxt
+                   Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
+                                                        _  -> mkRecTxt rut
+    mkUptimeTxt                = mkTxtHelper "."
+    mkNewRecTxt                = mkTxtHelper " - it's a new record!"
+    mkRecTxt (renderIt -> rut) = mkTxtHelper $ " (record uptime: " <> rut <> ")."
+    mkTxtHelper                = ("Up " <>) . (renderIt ut <>)
+    renderIt                   = T.pack . renderSecs
 
 
 getUptime :: MudStack Integer
@@ -2027,44 +2025,41 @@ handleEgress i = do
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
-    n <- liftIO . atomically $ do
+    (parensQuote -> n) <- liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
         pt  <- takeTMVar ptTMVar
         -----
-        let ((^.sing) -> s) = (ws^.entTbl) ! i
-        let p               = (ws^.pcTbl)  ! i
-        let ri              = p^.rmId
-        let ris             = (ws^.invTbl) ! ri
-        let ws'             = ws  & typeTbl.at  i  .~ Nothing
-                                  & entTbl.at   i  .~ Nothing
-                                  & invTbl.at   i  .~ Nothing
-                                  & coinsTbl.at i  .~ Nothing
-                                  & eqTbl.at    i  .~ Nothing
-                                  & mobTbl.at   i  .~ Nothing
-                                  & pcTbl.at    i  .~ Nothing
-                                  & invTbl.at   ri ?~ i `delete` ris
-        let mqt' = mqt & at i .~ Nothing
-        let pt'  = pt  & at i .~ Nothing
+        let ((^.sing)     -> s)   = (ws^.entTbl) ! i
+        let ((^.rmId)     -> ri)  = (ws^.pcTbl)  ! i
+        let ((i `delete`) -> ris) = (ws^.invTbl) ! ri
+        let ws'                   = ws  & typeTbl.at  i  .~ Nothing
+                                        & entTbl.at   i  .~ Nothing
+                                        & invTbl.at   i  .~ Nothing
+                                        & coinsTbl.at i  .~ Nothing
+                                        & eqTbl.at    i  .~ Nothing
+                                        & mobTbl.at   i  .~ Nothing
+                                        & pcTbl.at    i  .~ Nothing
+                                        & invTbl.at   ri ?~ ris
+        let mqt'                  = mqt & at i .~ Nothing
+        let pt'                   = pt  & at i .~ Nothing
         -----
         putTMVar wsTMVar  ws'
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         return s
-    logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote n, " has left the game." ]
+    logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", n, " has left the game." ]
     closePlaLog i
 
 
 notifyEgress :: Id -> MudStack ()
 notifyEgress i = readWSTMVar >>= \ws ->
-    let ((^.sing) -> s) = (ws^.entTbl) ! i
-        p               = (ws^.pcTbl)  ! i
-        ri              = p^.rmId
-        ris             = (ws^.invTbl) ! ri
-        pis             = findPCIds ws ris
-        d               = serialize . mkStdDesig i ws s True $ ris
-        msg = nlnl $ d <> " has left the game."
-    in bcast [(msg, i `delete` pis)]
+    let ((^.sing)     -> s)   = (ws^.entTbl) ! i
+        ((^.rmId)     -> ri)  = (ws^.pcTbl)  ! i
+        ris                   = (ws^.invTbl) ! ri
+        ((i `delete`) -> pis) = findPCIds ws ris
+        d                     = serialize . mkStdDesig i ws s True $ ris
+    in bcast [(nlnl $ d <> " has left the game.", pis)]
 
 
 -- ==================================================
@@ -2072,7 +2067,9 @@ notifyEgress i = readWSTMVar >>= \ws ->
 
 
 wizDispCmdList :: Action
-wizDispCmdList imc@(i, _, _) rs = logPlaExecArgs (prefixWizCmd "?") rs i >> dispCmdList (cmdPred . Just $ wizCmdChar) imc rs
+wizDispCmdList imc@(i, _, _) rs = do
+    logPlaExecArgs (prefixWizCmd "?") rs i
+    dispCmdList (cmdPred . Just $ wizCmdChar) imc rs
 
 
 -----
