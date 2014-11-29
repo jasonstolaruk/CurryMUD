@@ -2112,13 +2112,12 @@ wizShutdown (i, mq, _) rs = readWSTMVar >>= \ws ->
 wizTime :: Action
 wizTime (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "time") i
-    (ct, zt) <- (,) <$> (formatThat' getCurrentTime) <*> (formatThat' getZonedTime)
-    send mq . multiWrap cols $ [ "At the tone, the time will be...", ct, zt, "" ]
+    (ct, zt) <- (,) <$> (liftIO $ formatThat `fmap` getCurrentTime) <*> (liftIO $ formatThat `fmap` getZonedTime)
+    multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
     formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
       | time <- T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
       = T.concat [ zone, ": ", date, " ", time ]
-    formatThat' = liftIO . fmap formatThat
 wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
 
 
@@ -2204,20 +2203,18 @@ debugBuffCheck imc@(_, mq, cols) rs = ignore mq cols rs >> debugBuffCheck imc []
 -----
 
 
--- TODO: Continue refactoring from here.
 debugDispEnv :: Action
 debugDispEnv (i, mq, cols) [] = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
     send mq . nl =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
-debugDispEnv (i, mq, cols) rs = do
+debugDispEnv (i, mq, cols) (nub -> rs) = do
     logPlaExecArgs (prefixDebugCmd "env") rs i
     env <- liftIO getEnvironment
-    send mq . T.unlines . map (helper env) . nub $ rs
+    send mq . T.unlines $ [ helper env r | r <- rs ]
   where
     helper env r = mkAssocListTxt cols . filter grepPair $ env
       where
-        grepPair = uncurry (||) . over both (grep . T.pack)
-        grep     = (r `T.isInfixOf`)
+        grepPair = uncurry (||) . over both ((r `T.isInfixOf`) . T.pack)
 
 
 -----
