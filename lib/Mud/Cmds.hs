@@ -2224,7 +2224,8 @@ debugLog :: Action
 debugLog (i, mq, _) [] = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
     helper       = replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get
-    heavyLogging = replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText =<< liftIO myThreadId
+    heavyLogging = liftIO myThreadId >>=
+        replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText
 debugLog imc@(_, mq, cols) rs = ignore mq cols rs >> debugLog imc []
 
 
@@ -2243,21 +2244,19 @@ debugThread :: Action
 debugThread (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "thread") i
     (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
-    kvs <- M.assocs <$> readTMVarInNWS threadTblTMVar
-    plt <- readTMVarInNWS plaLogTblTMVar
-    let zipped = zip (map (asyncThreadId . fst) . IM.elems $ plt) (map PlaLog . IM.keys $ plt)
-    ds  <- mapM mkDesc $ head kvs      :
-                         (nli, Notice) :
-                         (eli, Error)  :
-                         tail kvs ++ zipped
-    let msg = multiWrap cols ds
-    send mq . frame cols $ msg
+    kvs        <- M.assocs <$> readTMVarInNWS threadTblTMVar
+    (es, ks)   <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
+    ds         <- mapM mkDesc $ head kvs      :
+                                (nli, Notice) :
+                                (eli, Error)  :
+                                tail kvs ++ zip (map (asyncThreadId . fst) es) (map PlaLog ks)
+    send mq . frame cols . multiWrap cols $ ds
   where
-    mkDesc (k, v) = (liftIO . threadStatus $ k) >>= \s ->
-        return . T.concat $ [ showText k, " ", bracketPad 15 . mkTypeName $ v, showText s ]
-    mkTypeName (Server ti) = padOrTrunc 8 "Server" <> showText ti
-    mkTypeName (PlaLog ti) = padOrTrunc 8 "PlaLog" <> showText ti
-    mkTypeName t           = showText t
+    mkDesc (ti, bracketPad 15 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \ts ->
+        return . T.concat $ [ showText ti, " ", tn, showText ts ]
+    mkTypeName (Server (showText -> i')) = padOrTrunc 8 "Server" <> i'
+    mkTypeName (PlaLog (showText -> i')) = padOrTrunc 8 "PlaLog" <> i'
+    mkTypeName (showText -> tt)          = tt
 debugThread imc@(_, mq, cols) rs = ignore mq cols rs >> debugThread imc []
 
 
