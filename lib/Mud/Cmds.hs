@@ -1729,7 +1729,7 @@ helperUnready i cols em a@(ws, _, _) = \case
 mkUnreadyDescs :: Id -> WorldState -> Inv -> [T.Text]
 mkUnreadyDescs i ws is = [ helper icb | icb <- mkIdCountBothList i ws is ]
   where
-    helper ((verb -> v), c, b@(s, _)) = T.concat $ if c == 1
+    helper (verb -> v, c, b@(s, _)) = T.concat $ if c == 1
       then [ "You ", v, " the ", s, "." ]
       else [ "You ", v, " ", showText c, " ", mkPlurFromBoth b, "." ]
     verb (((ws^.typeTbl) !) -> t) = case t of
@@ -1820,7 +1820,7 @@ intro (i, _, _) (nub . map T.toLower -> rs) = do
           _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
                  -> over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) =
-        over _1 (++ (concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ])) a
+        over _1 (++ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]) a
     helperIntroEitherCoins a (Right _   ) =
         over _1 (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
@@ -1854,7 +1854,7 @@ whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(dblQuote -> n
   where
     isPlaCmd               = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
     notFound               = n' <> " doesn't refer to any commands."
-    found (dblQuote -> cn) = T.concat $ [ n', " may refer to the ", cn, " command." ]
+    found (dblQuote -> cn) = T.concat [ n', " may refer to the ", cn, " command." ]
 
 
 whatInv :: Id -> Cols -> WorldState -> InvType -> T.Text -> T.Text
@@ -2112,7 +2112,7 @@ wizShutdown (i, mq, _) rs = readWSTMVar >>= \ws ->
 wizTime :: Action
 wizTime (i, mq, cols) [] = do
     logPlaExec (prefixWizCmd "time") i
-    (ct, zt) <- (,) <$> (liftIO $ formatThat `fmap` getCurrentTime) <*> (liftIO $ formatThat `fmap` getZonedTime)
+    (ct, zt) <- (,) <$> liftIO (formatThat `fmap` getCurrentTime) <*> liftIO (formatThat `fmap` getZonedTime)
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
     formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
@@ -2290,13 +2290,10 @@ purge = logNotice "purge" "purging the thread tables." >> purgePlaLogTbl >> purg
 
 
 purgePlaLogTbl :: MudStack ()
-purgePlaLogTbl = do
-    kvs <- IM.assocs <$> readTMVarInNWS plaLogTblTMVar
+purgePlaLogTbl = IM.assocs <$> readTMVarInNWS plaLogTblTMVar >>= \kvs -> do
     let is     = [ fst kv         | kv <- kvs ]
     let asyncs = [ fst . snd $ kv | kv <- kvs ]
-    ss <- liftIO . mapM poll $ asyncs
-    let zipped = zip is ss
-    modifyNWS plaLogTblTMVar $ flip (foldl' helper) zipped
+    modifyNWS plaLogTblTMVar . flip (foldl' helper) . zip is =<< (liftIO . mapM poll $ asyncs)
   where
     helper m (_, Nothing) = m
     helper m (i, _      ) = IM.delete i m
@@ -2306,20 +2303,17 @@ purgeThreadTbl :: MudStack ()
 purgeThreadTbl = do
     tis <- M.keys <$> readTMVarInNWS threadTblTMVar
     ss  <- liftIO . mapM threadStatus $ tis
-    let zipped = zip tis ss
-    modifyNWS threadTblTMVar $ flip (foldl' helper) zipped
+    modifyNWS threadTblTMVar . flip (foldl' helper) . zip tis $ ss
   where
-    helper m (ti, s)
-      | s == ThreadFinished = M.delete ti m
-      | otherwise           = m
+    helper m (ti, s) | s == ThreadFinished = M.delete ti m
+                     | otherwise           = m
 
 
 purgeTalkAsyncTbl :: MudStack ()
 purgeTalkAsyncTbl = do
     asyncs <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
     ss     <- liftIO . mapM poll $ asyncs
-    let zipped = zip asyncs ss
-    modifyNWS talkAsyncTblTMVar $ flip (foldl' helper) zipped
+    modifyNWS talkAsyncTblTMVar . flip (foldl' helper) . zip asyncs $ ss
   where
     helper m (_, Nothing) = m
     helper m (a, _      ) = M.delete (asyncThreadId a) m
@@ -2348,8 +2342,7 @@ debugCPU :: Action
 debugCPU (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "cpu") i
     t <- liftIO getCPUTime
-    let (showText -> secs) = fromIntegral t / fromIntegral (10 ^ 12)
-    wrapSend mq cols $ "CPU time: " <> secs
+    wrapSend mq cols $ "CPU time: " <> showText (fromIntegral t / fromIntegral (10 ^ 12))
 debugCPU imc@(_, mq, cols) rs = ignore mq cols rs >> debugCPU imc []
 
 
