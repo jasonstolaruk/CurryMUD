@@ -201,14 +201,20 @@ data Cmd = Cmd { cmdName :: !CmdName
 -----
 
 
+-- TODO: Are these synonyms needed?
 type Amount          = Int
 type Index           = Int
 type NameSearchedFor = T.Text
 
 
-data GetEntsCoinsRes = Mult    !Amount !NameSearchedFor !(Maybe [Ent]) !(Maybe (EmptyNoneSome Coins))
-                     | Indexed !Index  !NameSearchedFor !(Either Plur Ent)
-                     | Sorry           !NameSearchedFor
+data GetEntsCoinsRes = Mult    { amount          :: !Amount
+                               , nameSearchedFor :: !NameSearchedFor
+                               , entsRes         :: !(Maybe [Ent])
+                               , coinsRes        :: !(Maybe (EmptyNoneSome Coins)) }
+                     | Indexed { index           :: !Index
+                               , nameSearchedFor :: !NameSearchedFor
+                               , entRes          :: !(Either Plur Ent) }
+                     | Sorry   { nameSearchedFor :: !NameSearchedFor }
                      | SorryIndexedCoins deriving Show
 
 
