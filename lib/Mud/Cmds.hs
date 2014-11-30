@@ -2266,14 +2266,12 @@ debugThread imc@(_, mq, cols) rs = ignore mq cols rs >> debugThread imc []
 debugTalk :: Action
 debugTalk (i, mq, cols) [] = do
     logPlaExec (prefixDebugCmd "talk") i
-    ds <- readTMVarInNWS talkAsyncTblTMVar >>= mapM mkDesc . M.elems
-    let msg = multiWrap cols ds
-    send mq . frame cols $ msg
+    send mq . frame cols . multiWrap cols =<< mapM mkDesc . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
   where
     mkDesc a = (liftIO . poll $ a) >>= \status ->
-        let statusTxt = case status of Nothing         -> "running"
-                                       Just (Left  e ) -> ("exception " <>) . parensQuote . showText $ e
-                                       Just (Right ()) -> "finished"
+        let statusTxt = case status of Nothing                                    -> "running"
+                                       Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
+                                       Just (Right ())                            -> "finished"
         in return . T.concat $ [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
 debugTalk imc@(_, mq, cols) rs = ignore mq cols rs >> debugTalk imc []
 
