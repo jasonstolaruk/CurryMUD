@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.Cmds (listenWrapper) where
 
@@ -77,9 +77,10 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --      [DONE] "(..)" instead of "(blah)" in import statements.
 --   d. [DONE] Check for superfluous exports.
 -- 7. Write tests for NameResolution and Cmds.
--- 8. Refactor for ViewPatterns and pattern guards.
--- 9. See if you can keep your lines at 120 characters or less.
--- 10. Are there places where I can use IO as a Functor or Applicative?
+-- [DONE] 8. Refactor for ViewPatterns and pattern guards.
+-- 9. Refactor for NamedFieldPuns and RecordWildCards.
+-- 10. See if you can keep your lines at 120 characters or less.
+-- 11. Are there places where I can use IO as a Functor or Applicative?
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -576,7 +577,7 @@ dispCmdList p (_, mq, cols) (nub . map T.toLower -> rs) | matches <- [ grepTextL
 cmdListText :: (Cmd -> Bool) -> [T.Text]
 cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmds
   where
-    helper acc c | cmdTxt <- nl $ (padOrTrunc 10 . cmdName $ c) <> cmdDesc c = cmdTxt : acc
+    helper acc Cmd { .. } | cmdTxt <- nl $ (padOrTrunc 10 cmdName) <> cmdDesc = cmdTxt : acc
 
 
 mkCmdPred :: Maybe Char -> Cmd -> Bool
@@ -1850,7 +1851,7 @@ what (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
 
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
 whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(dblQuote -> n')) =
-    wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n . filter isPlaCmd . map cmdName $ cmds
+    wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n . filter isPlaCmd $ [ cmdName cmd | cmd <- cmds ]
   where
     isPlaCmd               = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
     notFound               = n' <> " doesn't refer to any commands."
