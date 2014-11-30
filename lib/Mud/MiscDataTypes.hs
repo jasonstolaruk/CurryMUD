@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.MiscDataTypes ( AOrThe(..)
                          , Action
@@ -147,13 +147,14 @@ class Serializable a where
 
 
 instance Serializable PCDesig where
-  serialize (StdDesig pes ic pen pi pis) | fields <- [ serMaybeText pes, showText ic, pen, showText pi, showText pis ] =
-      quoteWith d . T.intercalate d' $ fields
+  serialize StdDesig { .. }
+    | fields <- [ serMaybeText stdPCEntSing, showText isCap, pcEntName, showText pcId, showText pcIds ]
+    = quoteWith d . T.intercalate d' $ fields
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
       (d, d')                 = over both (T.pack . pure) (stdDesigDelimiter, desigDelimiter)
-  serialize (NonStdDesig pes nsd) = quoteWith d $ pes <> d' <> nsd
+  serialize NonStdDesig { .. } = quoteWith d $ nonStdPCEntSing <> d' <> nonStdDesc
     where
       (d, d') = over both (T.pack . pure) (nonStdDesigDelimiter, desigDelimiter)
   deserialize a@(headTail' -> (c, T.init -> t))

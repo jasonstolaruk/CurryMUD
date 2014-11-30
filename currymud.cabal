@@ -49,6 +49,7 @@ library
                        MultiWayIf,
                        OverloadedStrings,
                        RankNTypes,
+                       RecordWildCards,
                        ScopedTypeVariables,
                        TemplateHaskell,
                        TypeFamilies,
