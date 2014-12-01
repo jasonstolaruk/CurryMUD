@@ -230,13 +230,13 @@ sorryIndexedCoins = nl $ "Sorry, but " <> (dblQuote . T.pack $ [indexChar]) <> "
 
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisPCInv (_,                                                       Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCInv (Mult { amount = 1, nameSearchedFor, entsRes = Nothing }, Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> "."
-procGecrMisPCInv (Mult {             nameSearchedFor, entsRes = Nothing }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s."
-procGecrMisPCInv (Mult {                              entsRes = Just _  }, Just is) = Right is
-procGecrMisPCInv (Indexed {          nameSearchedFor, entRes  = Left "" }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s."
-procGecrMisPCInv (Indexed { index,                    entRes  = Left p  }, Nothing) = Left . T.concat $ [ "You don't have ", showText index, " ", p, "." ]
-procGecrMisPCInv (Indexed {                           entRes  = Right _ }, Just is) = Right is
+procGecrMisPCInv (_,                                          Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
+procGecrMisPCInv (Mult { amount = 1, entsRes = Nothing, .. }, Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> "."
+procGecrMisPCInv (Mult {             entsRes = Nothing, .. }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s."
+procGecrMisPCInv (Mult {             entsRes = Just _      }, Just is) = Right is
+procGecrMisPCInv (Indexed {          entRes  = Left "", .. }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s."
+procGecrMisPCInv (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "You don't have ", showText index, " ", p, "." ]
+procGecrMisPCInv (Indexed {          entRes  = Right _     }, Just is) = Right is
 procGecrMisPCInv (SorryIndexedCoins, Nothing) = Left sorryIndexedCoins
 procGecrMisPCInv (Sorry { .. },      Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> "."
 procGecrMisPCInv gecrMis                      = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
@@ -266,39 +266,39 @@ ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l
 
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisRm (_,                                                       Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisRm (Mult { amount = 1, nameSearchedFor, entsRes = Nothing }, Nothing) = Left $ "You don't see " <> aOrAn nameSearchedFor <> " here."
-procGecrMisRm (Mult {             nameSearchedFor, entsRes = Nothing }, Nothing) = Left $ "You don't see any " <> nameSearchedFor <> "s here."
-procGecrMisRm (Mult {                              entsRes = Just _  }, Just is) = Right is
-procGecrMisRm (Indexed {          nameSearchedFor, entRes  = Left "" }, Nothing) = Left $ "You don't see any " <> nameSearchedFor <> "s here."
-procGecrMisRm (Indexed { index,                    entRes  = Left p  }, Nothing) = Left . T.concat $ [ "You don't see ", showText index, " ", p, " here." ]
-procGecrMisRm (Indexed {                           entRes  = Right _ }, Just is) = Right is
+procGecrMisRm (_,                                          Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
+procGecrMisRm (Mult { amount = 1, entsRes = Nothing, .. }, Nothing) = Left $ "You don't see " <> aOrAn nameSearchedFor <> " here."
+procGecrMisRm (Mult {             entsRes = Nothing, .. }, Nothing) = Left $ "You don't see any " <> nameSearchedFor <> "s here."
+procGecrMisRm (Mult {             entsRes = Just _      }, Just is) = Right is
+procGecrMisRm (Indexed {          entRes  = Left "", .. }, Nothing) = Left $ "You don't see any " <> nameSearchedFor <> "s here."
+procGecrMisRm (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "You don't see ", showText index, " ", p, " here." ]
+procGecrMisRm (Indexed {          entRes  = Right _     }, Just is) = Right is
 procGecrMisRm (SorryIndexedCoins, Nothing) = Left sorryIndexedCoins
 procGecrMisRm (Sorry { .. },      Nothing) = Left $ "You don't see " <> aOrAn nameSearchedFor <> " here."
 procGecrMisRm gecrMis                      = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisCon _  (_,                                                       Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisCon cn (Mult { amount = 1, nameSearchedFor, entsRes = Nothing }, Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn nameSearchedFor, "." ]
-procGecrMisCon cn (Mult {             nameSearchedFor, entsRes = Nothing }, Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain any ", nameSearchedFor, "s."  ]
-procGecrMisCon _  (Mult {                              entsRes = Just _  }, Just is) = Right is
-procGecrMisCon cn (Indexed {          nameSearchedFor, entRes  = Left "" }, Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain any ", nameSearchedFor, "s."  ]
-procGecrMisCon cn (Indexed { index,                    entRes  = Left p  }, Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", showText index, " ", p, "." ]
-procGecrMisCon _  (Indexed {                           entRes  = Right _ }, Just is) = Right is
-procGecrMisCon _  (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
-procGecrMisCon cn (Sorry { .. },          Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn nameSearchedFor, "." ]
-procGecrMisCon _  gecrMis                          = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
+procGecrMisCon _  (_,                                          Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
+procGecrMisCon cn (Mult { amount = 1, entsRes = Nothing, .. }, Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn nameSearchedFor, "." ]
+procGecrMisCon cn (Mult {             entsRes = Nothing, .. }, Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain any ", nameSearchedFor, "s."  ]
+procGecrMisCon _  (Mult {             entsRes = Just _      }, Just is) = Right is
+procGecrMisCon cn (Indexed {          entRes  = Left "", .. }, Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain any ", nameSearchedFor, "s."  ]
+procGecrMisCon cn (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", showText index, " ", p, "." ]
+procGecrMisCon _  (Indexed {          entRes  = Right _     }, Just is) = Right is
+procGecrMisCon _  (SorryIndexedCoins, Nothing) = Left sorryIndexedCoins
+procGecrMisCon cn (Sorry { .. },      Nothing) = Left . T.concat $ [ "The ", cn, " doesn't contain ", aOrAn nameSearchedFor, "." ]
+procGecrMisCon _  gecrMis                      = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
 
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisPCEq (_,                                                       Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCEq (Mult { amount = 1, nameSearchedFor, entsRes = Nothing }, Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> " among your readied equipment."
-procGecrMisPCEq (Mult {             nameSearchedFor, entsRes = Nothing }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s among your readied equipment."
-procGecrMisPCEq (Mult {                              entsRes = Just _  }, Just is) = Right is
-procGecrMisPCEq (Indexed {          nameSearchedFor, entRes  = Left "" }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s among your readied equipment."
-procGecrMisPCEq (Indexed { index,                    entRes  = Left p  }, Nothing) = Left . T.concat $ [ "You don't have ", showText index, " ", p, " among your readied equipment." ]
-procGecrMisPCEq (Indexed {                           entRes  = Right _ }, Just is) = Right is
+procGecrMisPCEq (_,                                          Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
+procGecrMisPCEq (Mult { amount = 1, entsRes = Nothing, .. }, Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> " among your readied equipment."
+procGecrMisPCEq (Mult {             entsRes = Nothing, .. }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s among your readied equipment."
+procGecrMisPCEq (Mult {             entsRes = Just _      }, Just is) = Right is
+procGecrMisPCEq (Indexed {          entRes  = Left "", .. }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s among your readied equipment."
+procGecrMisPCEq (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "You don't have ", showText index, " ", p, " among your readied equipment." ]
+procGecrMisPCEq (Indexed {          entRes  = Right _     }, Just is) = Right is
 procGecrMisPCEq (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
 procGecrMisPCEq (Sorry { .. },          Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> " among your readied equipment."
 procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]

@@ -1872,7 +1872,7 @@ whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
 
 whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
 whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is = wrapUnlines cols $ case gecr of
-  Mult { nameSearchedFor, entsRes = (Just es) }
+  Mult { entsRes = (Just es), .. }
     | nameSearchedFor == acp -> T.concat [ dblQuote acp
                                          , " may refer to everything "
                                          , locTxt
@@ -1898,20 +1898,20 @@ whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is
                        , " "
                        , locTxt
                        , "." ]
-  Indexed { index, entRes = (Right e@((^.sing) -> s)) } -> T.concat [ r
-                                                                    , " may refer to the "
-                                                                    , mkOrdinal index
-                                                                    , " "
-                                                                    , bracketQuote . getEffName i ws $ e^.entId
-                                                                    , " "
-                                                                    , parensQuote s
-                                                                    , " "
-                                                                    , locTxt
-                                                                    , "." ]
-  _                                                     -> T.concat [ r
-                                                                    , " doesn't refer to anything "
-                                                                    , locTxt
-                                                                    , "." ]
+  Indexed { entRes = (Right e@((^.sing) -> s)), .. } -> T.concat [ r
+                                                                 , " may refer to the "
+                                                                 , mkOrdinal index
+                                                                 , " "
+                                                                 , bracketQuote . getEffName i ws $ e^.entId
+                                                                 , " "
+                                                                 , parensQuote s
+                                                                 , " "
+                                                                 , locTxt
+                                                                 , "." ]
+  _                                                  -> T.concat [ r
+                                                                 , " doesn't refer to anything "
+                                                                 , locTxt
+                                                                 , "." ]
   where
     acp                                     = T.pack [allChar]
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"

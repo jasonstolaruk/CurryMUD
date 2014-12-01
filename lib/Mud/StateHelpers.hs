@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes, RecordWildCards, ViewPatterns #-}
 
 -- This module is considered to have sufficient test coverage as of 2014-10-13.
 
@@ -238,8 +238,8 @@ parsePCDesig i ws msg | ((^.introduced) -> intros) <- (ws^.pcTbl) ! i = helper i
       | T.pack [stdDesigDelimiter] `T.isInfixOf` msg'
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter msg'
       = case pcd of
-        (StdDesig (Just pes) ic pen pi pis) ->
-            left <> (if pes `elem` intros then pes else expandPCEntName i ws ic pen pi pis) <> helper intros rest
+        StdDesig { stdPCEntSing = (Just pes), .. } ->
+            left <> (if pes `elem` intros then pes else expandPCEntName i ws isCap pcEntName pcId pcIds) <> helper intros rest
         (StdDesig Nothing    ic pen pi pis) -> left <> expandPCEntName i ws ic pen pi pis <> helper intros rest
         _                                   -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
       | T.pack [nonStdDesigDelimiter] `T.isInfixOf` msg'
