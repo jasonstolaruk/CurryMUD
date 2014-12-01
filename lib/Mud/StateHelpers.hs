@@ -238,13 +238,16 @@ parsePCDesig i ws msg | ((^.introduced) -> intros) <- (ws^.pcTbl) ! i = helper i
       | T.pack [stdDesigDelimiter] `T.isInfixOf` msg'
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter msg'
       = case pcd of
-        StdDesig { stdPCEntSing = (Just pes), .. } ->
-            left <> (if pes `elem` intros then pes else expandPCEntName i ws isCap pcEntName pcId pcIds) <> helper intros rest
-        (StdDesig Nothing    ic pen pi pis) -> left <> expandPCEntName i ws ic pen pi pis <> helper intros rest
-        _                                   -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
+        StdDesig { stdPCEntSing = Just pes, .. } ->
+          left <>
+          (if pes `elem` intros then pes else expandPCEntName i ws isCap pcEntName pcId pcIds) <>
+          helper intros rest
+        StdDesig { stdPCEntSing = Nothing,  .. } ->
+          left <> expandPCEntName i ws isCap pcEntName pcId pcIds <> helper intros rest
+        _                                        -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
       | T.pack [nonStdDesigDelimiter] `T.isInfixOf` msg'
-      , (left, NonStdDesig pes desc, rest) <- extractPCDesigTxt nonStdDesigDelimiter msg'
-      = left <> (if pes `elem` intros then pes else desc) <> helper intros rest
+      , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter msg'
+      = left <> (if nonStdPCEntSing `elem` intros then nonStdPCEntSing else nonStdDesc) <> helper intros rest
       | otherwise = msg'
     extractPCDesigTxt c (T.span (/= c) -> (left, T.span (/= c) . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith (T.pack [c]) $ pcdTxt :: PCDesig = (left, pcd, rest)
