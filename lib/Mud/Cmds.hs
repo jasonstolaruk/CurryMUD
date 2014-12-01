@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.Cmds (listenWrapper) where
 
@@ -577,7 +577,7 @@ dispCmdList p (_, mq, cols) (nub . map T.toLower -> rs) | matches <- [ grepTextL
 cmdListText :: (Cmd -> Bool) -> [T.Text]
 cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmds
   where
-    helper acc Cmd { .. } | cmdTxt <- nl $ (padOrTrunc 10 cmdName) <> cmdDesc = cmdTxt : acc
+    helper acc Cmd { .. } | cmdTxt <- nl $ padOrTrunc 10 cmdName <> cmdDesc = cmdTxt : acc
 
 
 mkCmdPred :: Maybe Char -> Cmd -> Bool
@@ -1872,12 +1872,12 @@ whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
 
 whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
 whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is = wrapUnlines cols $ case gecr of
-  Mult _ n (Just es) _
-    | n == acp -> T.concat [ dblQuote acp
-                           , " may refer to everything "
-                           , locTxt
-                           , supplement
-                           , "." ]
+  Mult { nameSearchedFor, entsRes = (Just es) }
+    | nameSearchedFor == acp -> T.concat [ dblQuote acp
+                                         , " may refer to everything "
+                                         , locTxt
+                                         , supplement
+                                         , "." ]
     | e@((^.sing) -> s) <- head es, len <- length es -> if len > 1
       then let ebgns@(head -> h)         = take len [ getEffBothGramNos i ws i' | ((^.entId) -> i') <- es ]
                target | all (== h) ebgns = mkPlurFromBoth h
@@ -1898,20 +1898,20 @@ whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is
                        , " "
                        , locTxt
                        , "." ]
-  Indexed x _ (Right e@((^.sing) -> s)) -> T.concat [ r
-                                                    , " may refer to the "
-                                                    , mkOrdinal x
-                                                    , " "
-                                                    , bracketQuote . getEffName i ws $ e^.entId
-                                                    , " "
-                                                    , parensQuote s
-                                                    , " "
-                                                    , locTxt
-                                                    , "." ]
-  _                                     -> T.concat [ r
-                                                    , " doesn't refer to anything "
-                                                    , locTxt
-                                                    , "." ]
+  Indexed { index, entRes = (Right e@((^.sing) -> s)) } -> T.concat [ r
+                                                                    , " may refer to the "
+                                                                    , mkOrdinal index
+                                                                    , " "
+                                                                    , bracketQuote . getEffName i ws $ e^.entId
+                                                                    , " "
+                                                                    , parensQuote s
+                                                                    , " "
+                                                                    , locTxt
+                                                                    , "." ]
+  _                                                     -> T.concat [ r
+                                                                    , " doesn't refer to anything "
+                                                                    , locTxt
+                                                                    , "." ]
   where
     acp                                     = T.pack [allChar]
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"

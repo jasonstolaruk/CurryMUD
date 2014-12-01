@@ -47,6 +47,7 @@ library
                        LambdaCase,
                        MultiParamTypeClasses,
                        MultiWayIf,
+                       NamedFieldPuns,
                        OverloadedStrings,
                        RankNTypes,
                        RecordWildCards,

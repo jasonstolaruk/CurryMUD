@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.NameResolution ( ReconciledCoins
                           , procGecrMisCon
@@ -54,7 +54,10 @@ resolveEntCoinNames i ws (map T.toLower -> rs) is c = expandGecrs c [ mkGecr i w
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
 mkGecr i ws is c n@(headTail' -> (h, t))
   | n == T.pack [allChar]
-  , es <- [ (ws^.entTbl) ! i' | i' <- is ]                  = Mult (length is) n (Just es) (Just . SomeOf $ c)
+  , es <- [ (ws^.entTbl) ! i' | i' <- is ]                  = Mult { amount          = length is
+                                                                   , nameSearchedFor = n
+                                                                   , entsRes         = Just es
+                                                                   , coinsRes        = Just . SomeOf $ c }
   | h == allChar                                            = mkGecrMult i ws (maxBound :: Int) t is c
   | isDigit h
   , (numText, rest) <- T.span isDigit n
@@ -75,7 +78,10 @@ mkGecrMult i ws a n is c | n `elem` allCoinNames = mkGecrMultForCoins     a n c
 
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> GetEntsCoinsRes
-mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult a n Nothing . Just $ helper
+mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
+                                                        , nameSearchedFor = n
+                                                        , entsRes         = Nothing
+                                                        , coinsRes        = Just helper }
   where
     helper | c == mempty                 = Empty
            | n `elem` aggregateCoinNames = SomeOf $ if a == (maxBound :: Int)
@@ -132,19 +138,19 @@ expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
 extractEnscsFromGecrs = over _1 reverse . foldl' helper ([], [])
   where
-    helper (gecrs, enscs) gecr@(Mult    _ _ (Just _) (Just ensc)) = (gecr : gecrs, ensc : enscs)
-    helper (gecrs, enscs) gecr@(Mult    _ _ (Just _) Nothing    ) = (gecr : gecrs, enscs)
-    helper (gecrs, enscs)      (Mult    _ _ Nothing  (Just ensc)) = (gecrs, ensc : enscs)
-    helper (gecrs, enscs) gecr@(Mult    _ _ Nothing  Nothing    ) = (gecr : gecrs, enscs)
+    helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Just ensc } = (gecr : gecrs, ensc : enscs)
+    helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Nothing   } = (gecr : gecrs, enscs)
+    helper (gecrs, enscs)      Mult { entsRes = Nothing, coinsRes = Just ensc } = (gecrs, ensc : enscs)
+    helper (gecrs, enscs) gecr@Mult { entsRes = Nothing, coinsRes = Nothing   } = (gecr : gecrs, enscs)
     helper (gecrs, enscs) gecr@Indexed {}                         = (gecr : gecrs, enscs)
-    helper (gecrs, enscs) gecr@(Sorry   _                       ) = (gecr : gecrs, enscs)
+    helper (gecrs, enscs) gecr@Sorry   {}                         = (gecr : gecrs, enscs)
     helper (gecrs, enscs) gecr@SorryIndexedCoins                  = (gecr : gecrs, enscs)
 
 
 extractMesFromGecr :: GetEntsCoinsRes -> Maybe [Ent]
-extractMesFromGecr = \case (Mult    _ _ (Just es) _) -> Just es
-                           (Indexed _ _ (Right e)  ) -> Just [e]
-                           _                         -> Nothing
+extractMesFromGecr = \case Mult    { entsRes = Just es } -> Just es
+                           Indexed { entRes  = Right e } -> Just [e]
+                           _                             -> Nothing
 
 
 pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
@@ -225,15 +231,15 @@ sorryIndexedCoins = nl $ "Sorry, but " <> (dblQuote . T.pack $ [indexChar]) <> "
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisPCInv (_,                     Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCInv (Mult 1 n Nothing  _,   Nothing) = Left $ "You don't have " <> aOrAn n <> "."
-procGecrMisPCInv (Mult _ n Nothing  _,   Nothing) = Left $ "You don't have any " <> n <> "s."
-procGecrMisPCInv (Mult _ _ (Just _) _,   Just is) = Right is
-procGecrMisPCInv (Indexed _ n (Left ""), Nothing) = Left $ "You don't have any " <> n <> "s."
-procGecrMisPCInv (Indexed x _ (Left p),  Nothing) = Left . T.concat $ [ "You don't have ", showText x, " ", p, "." ]
-procGecrMisPCInv (Indexed _ _ (Right _), Just is) = Right is
-procGecrMisPCInv (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
-procGecrMisPCInv (Sorry n,               Nothing) = Left $ "You don't have " <> aOrAn n <> "."
-procGecrMisPCInv gecrMis                          = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
+procGecrMisPCInv (Mult { amount = 1, nameSearchedFor, entsRes = Nothing }, Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> "."
+procGecrMisPCInv (Mult {             nameSearchedFor, entsRes = Nothing }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s."
+procGecrMisPCInv (Mult {                              entsRes = Just _  }, Just is) = Right is
+procGecrMisPCInv (Indexed {          nameSearchedFor, entRes  = Left "" }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s."
+procGecrMisPCInv (Indexed { index,                    entRes  = Left p  }, Nothing) = Left . T.concat $ [ "You don't have ", showText index, " ", p, "." ]
+procGecrMisPCInv (Indexed {                           entRes  = Right _ }, Just is) = Right is
+procGecrMisPCInv (SorryIndexedCoins, Nothing) = Left sorryIndexedCoins
+procGecrMisPCInv (Sorry { .. },      Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> "."
+procGecrMisPCInv gecrMis                      = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
