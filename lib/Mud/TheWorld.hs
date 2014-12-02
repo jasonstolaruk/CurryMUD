@@ -40,7 +40,15 @@ initMudState = do
                                                                          <*> newTMVarIO M.empty
                                                                          <*> newTMVarIO IM.empty
                                                                          <*> newTMVarIO IM.empty
-    return (MudState wsTMVar . NonWorldState start Nothing Nothing pltTMVar ttTMVar tatTMVar mqtTMVar $ ptTMVar)
+    return MudState { _worldStateTMVar = wsTMVar
+                    , _nonWorldState   = NonWorldState { _startTime         = start
+                                                       , _noticeLog         = Nothing
+                                                       , _errorLog          = Nothing
+                                                       , _plaLogTblTMVar    = pltTMVar
+                                                       , _threadTblTMVar    = ttTMVar
+                                                       , _talkAsyncTblTMVar = tatTMVar
+                                                       , _msgQueueTblTMVar  = mqtTMVar
+                                                       , _plaTblTMVar       = ptTMVar } }
   where
     ws = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
 

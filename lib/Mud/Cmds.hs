@@ -345,13 +345,12 @@ randomSex = newStdGen >>= \g ->
 
 randomRace :: IO Race
 randomRace = newStdGen >>= \g ->
-    let (x, _) = randomR (0, 7) g
-    in return $ [ Dwarf .. Vulpenoid ] !! x
+    let (x, _) = randomR (0, 7) g in return $ [ Dwarf .. Vulpenoid ] !! x
 
 
 dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO newStdGen >>= \g ->
-    let range                                     = (1, noOfTitles)
+    let range                                   = (1, noOfTitles)
         ((T.unpack "title" ++) . show -> fn, _) = randomR range g
     in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
   where
@@ -507,8 +506,8 @@ mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) = Cmd { cmdName = cn, acti
 
 
 mkCmdNameForRmLink :: RmLink -> T.Text
-mkCmdNameForRmLink rl = T.toLower $ case rl of (StdLink    dir _    ) -> linkDirToCmdName dir
-                                               (NonStdLink ln  _ _ _) -> ln
+mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _linkDir
+                                               NonStdLink { .. } -> _linkName
 
 
 linkDirToCmdName :: LinkDir -> CmdName
