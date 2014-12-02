@@ -78,7 +78,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --   d. [DONE] Check for superfluous exports.
 -- 7. Write tests for NameResolution and Cmds.
 -- [DONE] 8. Refactor for ViewPatterns and pattern guards.
--- 9. Refactor for NamedFieldPuns and RecordWildCards.
+-- [DONE] 9. Refactor for NamedFieldPuns and RecordWildCards.
 -- 10. See if you can keep your lines at 120 characters or less.
 -- 11. Are there places where I can use IO as a Functor or Applicative?
 
@@ -676,7 +676,7 @@ tryMove imc@(i, mq, cols) (T.toLower -> dir) = helper >>= \case
       | dir == "d"              = "heads"
       | dir `elem` stdLinkNames = "leaves"
       | otherwise               = "enters"
-    showRm ri (parensQuote . (^.rmName) -> rn) = showText ri <> " " <> rn
+    showRm (showText -> ri) (parensQuote . (^.rmName) -> rn) = ri <> " " <> rn
 
 
 findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
@@ -685,16 +685,16 @@ findExit ((^.rmLinks) -> rls) ln =
       [] -> Nothing
       xs -> Just . head $ xs
   where
-    isValid      (StdLink    dir _    ) = ln == linkDirToCmdName dir
-    isValid      (NonStdLink ln' _ _ _) = ln `T.isPrefixOf` ln'
-    showLink     (StdLink    dir _    ) = showText dir
-    showLink     (NonStdLink ln' _ _ _) = ln'
-    getDestId    (StdLink    _   i    ) = i
-    getDestId    (NonStdLink _   i _ _) = i
-    getOriginMsg (NonStdLink _   _ f _) = Just f
-    getOriginMsg _                      = Nothing
-    getDestMsg   (NonStdLink _   _ _ f) = Just f
-    getDestMsg   _                      = Nothing
+    isValid      StdLink    { .. } = ln == linkDirToCmdName _linkDir
+    isValid      NonStdLink { .. } = ln `T.isPrefixOf` _linkName
+    showLink     StdLink    { .. } = showText _linkDir
+    showLink     NonStdLink { .. } = _linkName
+    getDestId    StdLink    { .. } = _stdDestId
+    getDestId    NonStdLink { .. } = _nonStdDestId
+    getOriginMsg NonStdLink { .. } = Just _originMsg
+    getOriginMsg _                 = Nothing
+    getDestMsg   NonStdLink { .. } = Just _destMsg
+    getDestMsg   _                 = Nothing
 
 
 mkStdDesig :: Id -> WorldState -> Sing -> Bool -> Inv -> PCDesig
