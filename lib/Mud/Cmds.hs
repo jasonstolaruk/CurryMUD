@@ -33,7 +33,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Char (isSpace)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort)
+import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort, sortBy)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed)
@@ -492,8 +492,11 @@ findAction i (T.toLower -> cn) = readWSTMVar >>= \ws ->
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)
 
 
-mkCmdListWithNonStdRmLinks :: Rm -> [Cmd] -- TODO: Should these be sorted?
-mkCmdListWithNonStdRmLinks ((^.rmLinks) -> rls) = plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
+mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
+mkCmdListWithNonStdRmLinks ((^.rmLinks) -> rls) =
+    sortBy sorter $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
+  where
+    sorter c c' = cmdName c `compare` cmdName c'
 
 
 isNonStdLink :: RmLink -> Bool

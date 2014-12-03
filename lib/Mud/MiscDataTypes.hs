@@ -200,7 +200,6 @@ data Cmd = Cmd { cmdName :: !CmdName
 -----
 
 
--- TODO: Are these synonyms needed?
 type Amount          = Int
 type Index           = Int
 
