@@ -331,15 +331,28 @@ doesn'tContainAny cn n = Left . T.concat $ [ "The ", cn, " doesn't contain any "
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisPCEq (_,                                          Just []) = Left "" -- Nothing left after eliminating duplicate IDs.
-procGecrMisPCEq (Mult { amount = 1, entsRes = Nothing, .. }, Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> " among your readied equipment."
-procGecrMisPCEq (Mult {             entsRes = Nothing, .. }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s among your readied equipment."
+procGecrMisPCEq (Mult { amount = 1, entsRes = Nothing, .. }, Nothing) = Left $ "You don't have "     <>
+                                                                               aOrAn nameSearchedFor <>
+                                                                               " among your readied equipment."
+procGecrMisPCEq (Mult {             entsRes = Nothing, .. }, Nothing) = don'tHaveAny nameSearchedFor
 procGecrMisPCEq (Mult {             entsRes = Just _      }, Just is) = Right is
-procGecrMisPCEq (Indexed {          entRes  = Left "", .. }, Nothing) = Left $ "You don't have any " <> nameSearchedFor <> "s among your readied equipment."
-procGecrMisPCEq (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "You don't have ", showText index, " ", p, " among your readied equipment." ]
+procGecrMisPCEq (Indexed {          entRes  = Left "", .. }, Nothing) = don'tHaveAny nameSearchedFor
+procGecrMisPCEq (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "You don't have "
+                                                                                          , showText index
+                                                                                          , " "
+                                                                                          , p
+                                                                                          , " among your readied \
+                                                                                            \equipment." ]
 procGecrMisPCEq (Indexed {          entRes  = Right _     }, Just is) = Right is
-procGecrMisPCEq (SorryIndexedCoins,     Nothing) = Left sorryIndexedCoins
-procGecrMisPCEq (Sorry { .. },          Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> " among your readied equipment."
-procGecrMisPCEq gecrMis                          = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
+procGecrMisPCEq (SorryIndexedCoins, Nothing) = Left sorryIndexedCoins
+procGecrMisPCEq (Sorry { .. },      Nothing) = Left $ "You don't have "     <>
+                                                      aOrAn nameSearchedFor <>
+                                                      " among your readied equipment."
+procGecrMisPCEq gecrMis                      = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
+
+
+don'tHaveAny :: T.Text -> Either T.Text Inv
+don'tHaveAny n = Left $ "You don't have any " <> n <> "s among your readied equipment."
 
 
 -- ==================================================
@@ -389,7 +402,8 @@ procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm" [ showText r
 
 
 procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [T.Text] Coins
-procReconciledCoinsCon cn (Left  Empty)                            = Left [ "The " <> cn <> " doesn't contain any coins." ]
+procReconciledCoinsCon cn (Left  Empty)                            = Left [ "The " <> cn <> " doesn't contain any \
+                                                                                            \coins." ]
 procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
     c = msgOnNonzero cop $ "The " <> cn <> " doesn't contain any copper pieces."

@@ -163,7 +163,12 @@ putCloth i e o c = modifyWS $ \ws ->
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
 putCon i e o is coi con = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ ConType & entTbl.at i ?~ e & objTbl.at i ?~ o & invTbl.at i ?~ is & coinsTbl.at i ?~ coi & conTbl.at i ?~ con
+    ws & typeTbl.at i  ?~ ConType
+       & entTbl.at i   ?~ e
+       & objTbl.at i   ?~ o
+       & invTbl.at i   ?~ is
+       & coinsTbl.at i ?~ coi
+       & conTbl.at i   ?~ con
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
@@ -178,12 +183,23 @@ putArm i e o a = modifyWS $ \ws ->
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
 putMob i e is c em m = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ MobType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ c & eqTbl.at i ?~ em & mobTbl.at i ?~ m
+    ws & typeTbl.at i  ?~ MobType
+       & entTbl.at i   ?~ e
+       & invTbl.at i   ?~ is
+       & coinsTbl.at i ?~ c
+       & eqTbl.at i    ?~ em
+       & mobTbl.at i   ?~ m
 
 
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
 putPC i e is c em m p = modifyWS $ \ws ->
-    ws & typeTbl.at i ?~ PCType & entTbl.at i ?~ e & invTbl.at i ?~ is & coinsTbl.at i ?~ c & eqTbl.at i ?~ em & mobTbl.at i ?~ m & pcTbl.at i ?~ p
+    ws & typeTbl.at i  ?~ PCType
+       & entTbl.at i   ?~ e
+       & invTbl.at i   ?~ is
+       & coinsTbl.at i ?~ c
+       & eqTbl.at i    ?~ em
+       & mobTbl.at i   ?~ m
+       & pcTbl.at i    ?~ p
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
