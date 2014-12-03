@@ -149,14 +149,16 @@ debugCmds :: [Cmd]
 debugCmds =
     [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
     , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
-    , Cmd { cmdName = prefixDebugCmd "broad", action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line message." }
-    , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode." }
+    , Cmd { cmdName = prefixDebugCmd "broad", action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line \
+                                                                             \message." }
+    , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering \
+                                                                                  \mode." }
     , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
     , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
-    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and put into \
-                                                                               \a sack on the ground." }
+    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
+                                                                               \put into a sack on the ground." }
     , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
@@ -496,7 +498,7 @@ mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
 mkCmdListWithNonStdRmLinks ((^.rmLinks) -> rls) =
     sortBy sorter $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
   where
-    sorter c c' = cmdName c `compare` cmdName c'
+    sorter c = uncurry compare . over both cmdName . (,) c
 
 
 isNonStdLink :: RmLink -> Bool
@@ -558,9 +560,12 @@ motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
 
 
 getMotdTxt :: Cols -> MudStack T.Text
-getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet (\e -> readFileExHandler "getMotdTxt" e >> (return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."))
+getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet handler
   where
-    helper  = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
+    helper    = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
+    handler e = do
+        readFileExHandler "getMotdTxt" e
+        return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
 
 
 -----
@@ -614,8 +619,12 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(ge
   where
     getTopics       = (^..folded.packed) . drop 2 . sort . delete "root"
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
-    getHelpTopic t  = (try . helper $ t) >>= eitherRet (\e -> readFileExHandler "getHelpTopicByName" e >> (return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."))
     helper          = liftIO . T.readFile . (helpDir ++) . T.unpack
+    getHelpTopic t  = (try . helper $ t) >>= eitherRet handler
+      where
+        handler e = do
+            readFileExHandler "getHelpTopicByName" e
+            return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."
 
 
 -----
@@ -1422,7 +1431,9 @@ shuffleRem i (t, ws) d cn icir rs is c f
                    (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem mnom ci i e) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem mnom ci i e) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
-      Right _ ->  putTMVar t ws   >> return (mkBroadcast i "You can only remove things from one container at a time.", [])
+      Right _ -> do
+          putTMVar t ws
+          return (mkBroadcast i "You can only remove things from one container at a time.", [])
 
 
 -----
@@ -1458,7 +1469,12 @@ helperReady i cols a (eis, mrol) = case eis of
   Right is                         -> foldl' (readyDispatcher i cols mrol) a is
 
 
-readyDispatcher :: Id -> Cols -> Maybe RightOrLeft -> (WorldState, T.Text, [T.Text]) -> Id -> (WorldState, T.Text, [T.Text])
+readyDispatcher :: Id                             ->
+                   Cols                           ->
+                   Maybe RightOrLeft              ->
+                   (WorldState, T.Text, [T.Text]) ->
+                   Id                             ->
+                   (WorldState, T.Text, [T.Text])
 readyDispatcher i cols mrol a@(ws, _, _) ei =
     let e = (ws^.entTbl)  ! ei
         t = (ws^.typeTbl) ! ei
