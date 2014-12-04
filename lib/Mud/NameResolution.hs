@@ -27,8 +27,12 @@ import Data.Char (isDigit, toUpper)
 import Data.IntMap.Lazy ((!))
 import Data.List (foldl')
 import Data.Monoid ((<>), mempty)
+-- import Data.Text.Internal.Builder (Builder) -- TODO
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (unpacked)
+import Formatting ((%), sformat)
+import Formatting.Formatters (stext)
+-- import Formatting.Holey (Holey) -- TODO
 import qualified Data.Text as T
 
 
@@ -234,32 +238,30 @@ mkGecrWithRol i ws is c n@(T.break (== slotChar) -> (a, b))
 sorryIndexedCoins :: T.Text
 sorryIndexedCoins = nl $ "Sorry, but " <> (dblQuote . T.pack $ [indexChar]) <> " cannot be used with coins."
 
+
 pattern DupIdsNull <- (_, Just []) -- Nothing left after having eliminated duplicate IDs.
 pattern SorryOne n <- (Mult { amount = 1, nameSearchedFor = (aOrAn -> n), entsRes = Nothing }, Nothing)
 pattern NoneMult n <- (Mult { nameSearchedFor = n, entsRes = Nothing }, Nothing)
 pattern FoundMult res <- (Mult { entsRes = Just _ }, Just (Right -> res))
 pattern NoneIndexed n <- (Indexed { nameSearchedFor = n, entRes = Left "" }, Nothing)
+pattern SorryIndexed x p <- (Indexed { index = (showText -> x), entRes = Left p }, Nothing)
 
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisPCInv DupIdsNull = Left ""
-procGecrMisPCInv (SorryOne n) = Left $ "You don't have " <> n <> "."
-procGecrMisPCInv (NoneMult (don'tHaveAnyInv -> res)) = res
+procGecrMisPCInv (SorryOne (Left . (sformat $ "You don't have " % stext % ".") -> res)) = res
+procGecrMisPCInv (NoneMult (Left . don'tHaveAnyInv -> res)) = res
 procGecrMisPCInv (FoundMult res) = res
-procGecrMisPCInv (NoneIndexed (don'tHaveAnyInv -> res)) = res
-procGecrMisPCInv (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "You don't have "
-                                                                                           , showText index
-                                                                                           , " "
-                                                                                           , p
-                                                                                           , "." ]
+procGecrMisPCInv (NoneIndexed (Left . don'tHaveAnyInv -> res)) = res
+procGecrMisPCInv (SorryIndexed x p) = Left . (sformat $ "You don't have " % stext % " " % stext % ".") x $ p
 procGecrMisPCInv (Indexed {          entRes  = Right _     }, Just is) = Right is
 procGecrMisPCInv (SorryIndexedCoins, Nothing) = Left sorryIndexedCoins
 procGecrMisPCInv (Sorry { .. },      Nothing) = Left $ "You don't have " <> aOrAn nameSearchedFor <> "."
 procGecrMisPCInv gecrMis                      = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
 
 
-don'tHaveAnyInv :: T.Text -> Either T.Text Inv
-don'tHaveAnyInv n = Left $ "You don't have any " <> n <> "s."
+don'tHaveAnyInv :: T.Text -> T.Text
+don'tHaveAnyInv = sformat $ "You don't have any " % stext % "s."
 
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
