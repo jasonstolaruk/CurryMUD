@@ -49,6 +49,7 @@ library
                        MultiWayIf,
                        NamedFieldPuns,
                        OverloadedStrings,
+                       PatternSynonyms,
                        RankNTypes,
                        RecordWildCards,
                        ScopedTypeVariables,
