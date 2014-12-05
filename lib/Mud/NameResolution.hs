@@ -293,7 +293,7 @@ ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l
 
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisRm DupIdsNull = Left ""
+procGecrMisRm DupIdsNull                          = Left ""
 procGecrMisRm (SorryOne     (don'tSee    -> res)) = res
 procGecrMisRm (NoneMult     (don'tSeeAny -> res)) = res
 procGecrMisRm (FoundMult                    res)  = res
@@ -314,7 +314,7 @@ don'tSeeAny = Left . sformat ("You don't see any " % stext % "s here.")
 
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisCon _  DupIdsNull                               = Left ""
+procGecrMisCon _  DupIdsNull                                   = Left ""
 procGecrMisCon cn (SorryOne     (doesn'tContain    cn -> res)) = res
 procGecrMisCon cn (NoneMult     (doesn'tContainAny cn -> res)) = res
 procGecrMisCon _  (FoundMult                             res)  = res
@@ -335,27 +335,24 @@ doesn'tContainAny cn = Left . sformat ("The " % stext % " doesn't contain any " 
 
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisPCEq DupIdsNull = Left ""
-procGecrMisPCEq (SorryOne n) = Left $ "You don't have " <> n <> " among your readied equipment."
-procGecrMisPCEq (NoneMult (don'tHaveAnyEq -> res)) = res
-procGecrMisPCEq (FoundMult res) = res
-procGecrMisPCEq (NoneIndexed (don'tHaveAnyEq -> res)) = res
-procGecrMisPCEq (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "You don't have "
-                                                                                          , showText index
-                                                                                          , " "
-                                                                                          , p
-                                                                                          , " among your readied \
-                                                                                            \equipment." ]
-procGecrMisPCEq (Indexed {          entRes  = Right _     }, Just is) = Right is
-procGecrMisPCEq (SorryIndexedCoins, Nothing) = sorryIndexedCoins
-procGecrMisPCEq (Sorry { .. },      Nothing) = Left $ "You don't have "     <>
-                                                      aOrAn nameSearchedFor <>
-                                                      " among your readied equipment."
-procGecrMisPCEq gecrMis                      = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
+procGecrMisPCEq DupIdsNull                             = Left ""
+procGecrMisPCEq (SorryOne     (don'tHaveEq    -> res)) = res
+procGecrMisPCEq (NoneMult     (don'tHaveAnyEq -> res)) = res
+procGecrMisPCEq (FoundMult                       res)  = res
+procGecrMisPCEq (NoneIndexed  (don'tHaveAnyEq -> res)) = res
+procGecrMisPCEq (SorryIndexed x p)                     = Left . sformat ("You don't have " % stext % " " % stext % " among your readied equipment.") x $ p
+procGecrMisPCEq (FoundIndexed                    res)  = res
+procGecrMisPCEq SorryCoins                             = sorryIndexedCoins
+procGecrMisPCEq (GenericSorry (don'tHaveEq    -> res)) = res
+procGecrMisPCEq gecrMis                                = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
+
+
+don'tHaveEq :: T.Text -> Either T.Text Inv
+don'tHaveEq = Left . sformat ("You don't have " % stext % " among your readied equipment.")
 
 
 don'tHaveAnyEq :: T.Text -> Either T.Text Inv
-don'tHaveAnyEq n = Left $ "You don't have any " <> n <> "s among your readied equipment."
+don'tHaveAnyEq = Left . sformat ("You don't have any " % stext % "s among your readied equipment.")
 
 
 -- ==================================================
