@@ -268,6 +268,7 @@ don'tHaveAnyInv = Left . sformat ("You don't have any " % stext % "s.")
 sorryIndexedCoins :: Either T.Text Inv
 sorryIndexedCoins = Left . nl . sformat ("Sorry, but " % stext % " cannot be used with coins.") . dblQuote . T.pack $ [indexChar]
 
+
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisReady (Sorry (sorryBadSlot -> txt), Nothing) = Left txt
 procGecrMisReady gecrMis                                = procGecrMisPCInv gecrMis
@@ -313,30 +314,24 @@ don'tSeeAny = Left . sformat ("You don't see any " % stext % "s here.")
 
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisCon _  DupIdsNull = Left ""
-procGecrMisCon cn (SorryOne n) = Left . T.concat $ [ "The ", cn, " doesn't contain ", n, "." ]
-procGecrMisCon cn (NoneMult (doesn'tContainAny cn -> res)) = res
-procGecrMisCon _  (FoundMult res) = res
-procGecrMisCon cn (NoneIndexed (doesn'tContainAny cn -> res)) = res
-procGecrMisCon cn (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "The "
-                                                                                            , cn
-                                                                                            , " doesn't contain "
-                                                                                            , showText index
-                                                                                            , " "
-                                                                                            , p
-                                                                                            , "." ]
-procGecrMisCon _  (Indexed {          entRes  = Right _     }, Just is) = Right is
-procGecrMisCon _  (SorryIndexedCoins, Nothing) = sorryIndexedCoins
-procGecrMisCon cn (Sorry { .. },      Nothing) = Left . T.concat $ [ "The "
-                                                                   , cn
-                                                                   , " doesn't contain "
-                                                                   , aOrAn nameSearchedFor
-                                                                   , "." ]
-procGecrMisCon _  gecrMis                      = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
+procGecrMisCon _  DupIdsNull                               = Left ""
+procGecrMisCon cn (SorryOne     (doesn'tContain    cn -> res)) = res
+procGecrMisCon cn (NoneMult     (doesn'tContainAny cn -> res)) = res
+procGecrMisCon _  (FoundMult                             res)  = res
+procGecrMisCon cn (NoneIndexed  (doesn'tContainAny cn -> res)) = res
+procGecrMisCon cn (SorryIndexed x p)                           = Left . sformat ("The " % stext % " doesn't contain " % stext % " " % stext % ".") cn x $ p
+procGecrMisCon _  (FoundIndexed                          res)  = res
+procGecrMisCon _  SorryCoins                                   = sorryIndexedCoins
+procGecrMisCon cn (GenericSorry (doesn'tContain    cn -> res)) = res
+procGecrMisCon _  gecrMis                                      = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
+
+
+doesn'tContain :: T.Text -> T.Text -> Either T.Text Inv
+doesn'tContain cn = Left . sformat ("The " % stext % " doesn't contain " % stext % ".") cn
 
 
 doesn'tContainAny :: T.Text -> T.Text -> Either T.Text Inv
-doesn'tContainAny cn n = Left . T.concat $ [ "The ", cn, " doesn't contain any ", n, "s." ]
+doesn'tContainAny cn = Left . sformat ("The " % stext % " doesn't contain any " % stext % "s.") cn
 
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
