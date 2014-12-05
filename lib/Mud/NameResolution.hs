@@ -250,7 +250,7 @@ procGecrMisPCInv (SorryOne     (don'tHaveInv    -> res)) = res
 procGecrMisPCInv (NoneMult     (don'tHaveAnyInv -> res)) = res
 procGecrMisPCInv (FoundMult                        res)  = res
 procGecrMisPCInv (NoneIndexed  (don'tHaveAnyInv -> res)) = res
-procGecrMisPCInv (SorryIndexed x p)                      = Left . (sformat $ "You don't have " % stext % " " % stext % ".") x $ p
+procGecrMisPCInv (SorryIndexed x p)                      = Left . sformat ("You don't have " % stext % " " % stext % ".") x $ p
 procGecrMisPCInv (FoundIndexed                     res)  = res
 procGecrMisPCInv SorryCoins                              = sorryIndexedCoins
 procGecrMisPCInv (GenericSorry (don'tHaveInv    -> res)) = res
@@ -266,7 +266,7 @@ don'tHaveAnyInv = Left . sformat ("You don't have any " % stext % "s.")
 
 
 sorryIndexedCoins :: Either T.Text Inv
-sorryIndexedCoins = Left . nl . (sformat $ "Sorry, but " % stext % " cannot be used with coins.") . dblQuote . T.pack $ [indexChar]
+sorryIndexedCoins = Left . nl . sformat ("Sorry, but " % stext % " cannot be used with coins.") . dblQuote . T.pack $ [indexChar]
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisReady (Sorry (sorryBadSlot -> txt), Nothing) = Left txt
@@ -276,7 +276,7 @@ procGecrMisReady gecrMis                                = procGecrMisPCInv gecrM
 sorryBadSlot :: T.Text -> T.Text
 sorryBadSlot n
   | slotChar `elem` T.unpack n = sformat ("Please specify " % stext % " or " % stext % "." % stext) (mkSlotTxt "r") (mkSlotTxt "l") (nl' ringHelp)
-  | otherwise                  = (sformat $ "You don't have " % stext % ".") . aOrAn $ n
+  | otherwise                  = sformat ("You don't have " % stext % ".") . aOrAn $ n
 
 
 mkSlotTxt :: T.Text -> T.Text
@@ -293,23 +293,23 @@ ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisRm DupIdsNull = Left ""
-procGecrMisRm (SorryOne n) = Left . (sformat $ "You don't see " % stext % " here.") $ n
-procGecrMisRm (NoneMult (don'tSeeAny -> res)) = res
-procGecrMisRm (FoundMult res) = res
-procGecrMisRm (NoneIndexed (don'tSeeAny -> res)) = res
-procGecrMisRm (Indexed {          entRes  = Left p,  .. }, Nothing) = Left . T.concat $ [ "You don't see "
-                                                                                        , showText index
-                                                                                        , " "
-                                                                                        , p
-                                                                                        , " here." ]
-procGecrMisRm (Indexed {          entRes  = Right _     }, Just is) = Right is
-procGecrMisRm (SorryIndexedCoins, Nothing) = sorryIndexedCoins
-procGecrMisRm (Sorry { .. },      Nothing) = Left . (sformat $ "You don't see " % stext % " here.") . aOrAn $ nameSearchedFor
-procGecrMisRm gecrMis                      = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
+procGecrMisRm (SorryOne     (don'tSee    -> res)) = res
+procGecrMisRm (NoneMult     (don'tSeeAny -> res)) = res
+procGecrMisRm (FoundMult                    res)  = res
+procGecrMisRm (NoneIndexed  (don'tSeeAny -> res)) = res
+procGecrMisRm (SorryIndexed x p)                  = Left . sformat ("You don't see " % stext % " " % stext % " here.") x $ p
+procGecrMisRm (FoundIndexed                 res)  = res
+procGecrMisRm SorryCoins                          = sorryIndexedCoins
+procGecrMisRm (GenericSorry (don'tSee    -> res)) = res
+procGecrMisRm gecrMis                             = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
+
+
+don'tSee :: T.Text -> Either T.Text Inv
+don'tSee = Left . sformat ("You don't see " % stext % " here.")
 
 
 don'tSeeAny :: T.Text -> Either T.Text Inv
-don'tSeeAny = Left . (sformat $ "You don't see any " % stext % "s here.")
+don'tSeeAny = Left . sformat ("You don't see any " % stext % "s here.")
 
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
@@ -377,9 +377,9 @@ procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extra
 procReconciledCoinsPCInv (Right (SomeOf c                      )) = Right c
 procReconciledCoinsPCInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = msgOnNonzero cop . (sformat $ "You don't have " % stext % " copper pieces.") . showText $ cop
-    s = msgOnNonzero sil . (sformat $ "You don't have " % stext % " silver pieces.") . showText $ sil
-    g = msgOnNonzero gol . (sformat $ "You don't have " % stext % " gold pieces."  ) . showText $ gol
+    c = msgOnNonzero cop . sformat ("You don't have " % stext % " copper pieces.") . showText $ cop
+    s = msgOnNonzero sil . sformat ("You don't have " % stext % " silver pieces.") . showText $ sil
+    g = msgOnNonzero gol . sformat ("You don't have " % stext % " gold pieces."  ) . showText $ gol
 procReconciledCoinsPCInv rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
 
 
@@ -403,9 +403,9 @@ procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractC
 procReconciledCoinsRm (Right (SomeOf c                      )) = Right c
 procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = msgOnNonzero cop . (sformat $ "You don't see " % stext % " copper pieces here.") . showText $ cop
-    s = msgOnNonzero sil . (sformat $ "You don't see " % stext % " silver pieces here.") . showText $ sil
-    g = msgOnNonzero gol . (sformat $ "You don't see " % stext % " gold pieces here."  ) . showText $ gol
+    c = msgOnNonzero cop . sformat ("You don't see " % stext % " copper pieces here.") . showText $ cop
+    s = msgOnNonzero sil . sformat ("You don't see " % stext % " silver pieces here.") . showText $ sil
+    g = msgOnNonzero gol . sformat ("You don't see " % stext % " gold pieces here."  ) . showText $ gol
 procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
 
 
@@ -413,13 +413,13 @@ procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [T.Text] Coins
 procReconciledCoinsCon cn (Left  Empty)                            = Left [ sformat ("The " % stext % " doesn't contain any coins.") cn ]
 procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = msgOnNonzero cop . (sformat $ "The " % stext % " doesn't contain any copper pieces.") $ cn
-    s = msgOnNonzero sil . (sformat $ "The " % stext % " doesn't contain any silver pieces.") $ cn
-    g = msgOnNonzero gol . (sformat $ "The " % stext % " doesn't contain any gold pieces."  ) $ cn
+    c = msgOnNonzero cop . sformat ("The " % stext % " doesn't contain any copper pieces.") $ cn
+    s = msgOnNonzero sil . sformat ("The " % stext % " doesn't contain any silver pieces.") $ cn
+    g = msgOnNonzero gol . sformat ("The " % stext % " doesn't contain any gold pieces."  ) $ cn
 procReconciledCoinsCon _  (Right (SomeOf c                      )) = Right c
 procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = msgOnNonzero cop . (sformat $ "The " % stext % "doesn't contain " % stext % " copper pieces." ) cn . showText $ cop
-    s = msgOnNonzero sil . (sformat $ "The " % stext % "doesn't contain " % stext % " silver pieces." ) cn . showText $ sil
-    g = msgOnNonzero gol . (sformat $ "The " % stext % "doesn't contain " % stext % " gold pieces."   ) cn . showText $ gol
+    c = msgOnNonzero cop . sformat ("The " % stext % "doesn't contain " % stext % " copper pieces." ) cn . showText $ cop
+    s = msgOnNonzero sil . sformat ("The " % stext % "doesn't contain " % stext % " silver pieces." ) cn . showText $ sil
+    g = msgOnNonzero gol . sformat ("The " % stext % "doesn't contain " % stext % " gold pieces."   ) cn . showText $ gol
 procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]
