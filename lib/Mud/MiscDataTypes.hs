@@ -3,7 +3,9 @@
 
 module Mud.MiscDataTypes ( AOrThe(..)
                          , Action
+                         , ActionParams(..)
                          , Amount
+                         , Args
                          , Broadcast
                          , ClassifiedBroadcast(..)
                          , Cmd(..)
@@ -13,20 +15,18 @@ module Mud.MiscDataTypes ( AOrThe(..)
                          , FromRol
                          , GetEntsCoinsRes(..)
                          , GetOrDrop(..)
-                         , IdMsgQueueCols
                          , Index
                          , InvType(..)
                          , PCDesig(..)
                          , Pretty
                          , PutOrRem(..)
-                         , Rest
                          , RightOrLeft(..)
                          , Serializable
+                         , Verb(..)
                          , deserialize
                          , fromRol
                          , pp
-                         , serialize
-                         , Verb(..) ) where
+                         , serialize ) where
 
 import Mud.StateDataTypes
 import Mud.TopLvlDefs
@@ -185,11 +185,18 @@ instance Ord ClassifiedBroadcast where
 -- Data types:
 
 
-type CmdName        = T.Text
-type Action         = IdMsgQueueCols -> Rest -> MudStack ()
-type IdMsgQueueCols = (Id, MsgQueue, Cols)
-type Cols           = Int
-type Rest           = [T.Text]
+type Cols = Int
+type Args = [T.Text]
+
+
+data ActionParams = ActionParams { plaId       :: !Id
+                                 , plaMsgQueue :: !MsgQueue
+                                 , plaCols     :: !Cols
+                                 , args        :: !Args }
+
+
+type CmdName = T.Text
+type Action  = ActionParams -> MudStack ()
 
 
 data Cmd = Cmd { cmdName :: !CmdName
@@ -200,8 +207,8 @@ data Cmd = Cmd { cmdName :: !CmdName
 -----
 
 
-type Amount          = Int
-type Index           = Int
+type Amount = Int
+type Index  = Int
 
 
 data GetEntsCoinsRes = Mult    { amount          :: !Amount

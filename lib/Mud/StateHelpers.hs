@@ -120,7 +120,7 @@ readTMVarInNWS lens = liftIO . atomically . readTMVar =<< getNWSRec lens
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
 getMqtPt = do
     (mqtTMVar, ptTMVar) <- (,) <$> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    liftIO . atomically $ (,) <$> readTMVar mqtTMVar <*> readTMVar ptTMVar
+    liftIO . atomically $  (,) <$> readTMVar mqtTMVar <*> readTMVar ptTMVar
 
 
 onNWS :: forall t (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) -> ((TMVar t, t) -> STM a) -> m a

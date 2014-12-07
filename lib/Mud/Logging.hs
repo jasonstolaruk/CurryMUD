@@ -159,7 +159,7 @@ logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
 logPlaExec modName (dblQuote -> cn) i = logPla modName cn i $ "executed " <> cn <> "."
 
 
-logPlaExecArgs :: T.Text -> CmdName -> Rest -> Id -> MudStack ()
+logPlaExecArgs :: T.Text -> CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs modName cn@(dblQuote -> cn') rs i = logPla modName cn' i $ "executed " <> helper <> "."
   where
     helper = case rs of [] -> cn' <> " with no arguments"

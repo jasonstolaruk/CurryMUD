@@ -52,7 +52,7 @@ patternMatchFail = U.patternMatchFail "Mud.NameResolution"
 type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 
-resolveEntCoinNames :: Id -> WorldState -> Rest -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNames :: Id -> WorldState -> Args -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNames i ws (map T.toLower -> rs) is c = expandGecrs c [ mkGecr i ws is c r | r <- rs ]
 
 
@@ -204,7 +204,7 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
 
 resolveEntCoinNamesWithRols :: Id         ->
                                WorldState ->
-                               Rest       ->
+                               Args       ->
                                Inv        ->
                                Coins      ->
                                ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])

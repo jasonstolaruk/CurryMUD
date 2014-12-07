@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.Cmds (listenWrapper) where
 
@@ -81,6 +81,8 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 9. Refactor for NamedFieldPuns and RecordWildCards.
 -- 10. See if you can keep your lines at 120 characters or less.
 -- 11. Are there places where I can use IO as a Functor or Applicative?
+-- 12. Make sure you are using "as" and "a" for "args" insteaf of "rs" and "r".
+-- 13. Make sure that all your export lists are properly sorted.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -119,7 +121,7 @@ logPlaExec :: CmdName -> Id -> MudStack ()
 logPlaExec = L.logPlaExec "Mud.Cmds"
 
 
-logPlaExecArgs :: CmdName -> Rest -> Id -> MudStack ()
+logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds"
 
 
@@ -460,7 +462,7 @@ handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
 handleInp i mq = maybeVoid (dispatch i mq) . splitInp
 
 
-type Input = (CmdName, Rest)
+type Input = (CmdName, Args)
 
 
 splitInp :: T.Text -> Maybe Input
@@ -473,7 +475,7 @@ splitInp = splitIt . T.words
 dispatch :: Id -> MsgQueue -> Input -> MudStack ()
 dispatch i mq (cn, rest) = do
     cols <- getPlaColumns i
-    findAction i cn >>= maybe sorry (\act -> act (i, mq, cols) rest)
+    findAction i cn >>= maybe sorry (\act -> act (WithArgs i mq cols rest))
     prompt mq "> "
   where
     sorry = send mq . nlnl $ "What?"
@@ -532,22 +534,41 @@ linkDirToCmdName Down      = "d"
 -- Player commands:
 
 
+-- TODO: Put patterns in their own section?
+pattern WithArgs i mq cols as = ActionParams { plaId       = i
+                                             , plaMsgQueue = mq
+                                             , plaCols     = cols
+                                             , args        = as }
+
+
+pattern NoArgs i mq cols = WithArgs i mq cols []
+
+
+pattern LowerNub i mq cols as <- WithArgs i mq cols (nub . map T.toLower -> as)
+
+
 about :: Action
-about (i, mq, cols) [] = do
+about (NoArgs i mq cols) = do
     logPlaExec "about" i
     try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
     helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile . (miscDir ++) $ "about")
-about mic@(_, mq, cols) rs = ignore mq cols rs >> about mic []
+about params = withoutArgs about params
 
 
 sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 
 
-ignore :: MsgQueue -> Cols -> Rest -> MudStack ()
-ignore mq cols (dblQuote . T.unwords -> ignored) =
-    send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> ignored <> "..."
+withoutArgs :: Action -> ActionParams -> MudStack ()
+withoutArgs a params = ignore params >> a params { args = [] }
+
+
+pattern Ignoring mq cols ignored <- WithArgs _ mq cols (dblQuote . T.unwords -> ignored)
+
+
+ignore :: Action
+ignore (Ignoring mq cols ignored) = send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> ignored <> "..."
 
 
 -----
@@ -555,8 +576,8 @@ ignore mq cols (dblQuote . T.unwords -> ignored) =
 
 -- TODO: Automatically execute this cmd after a user authenticates. (We won't want to log anything in that case.)
 motd :: Action
-motd     (i, mq, cols) [] = logPlaExec "motd" i >> (send mq =<< getMotdTxt cols)
-motd mic@(_, mq, cols) rs = ignore mq cols rs >> motd mic []
+motd (NoArgs i mq cols) = logPlaExec "motd" i >> (send mq =<< getMotdTxt cols)
+motd params             = withoutArgs motd params
 
 
 getMotdTxt :: Cols -> MudStack T.Text
@@ -571,13 +592,14 @@ getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet handler
 -----
 
 
+-- TODO: We should probably make a new pattern for "WithArgs i _ _ as"...
 plaDispCmdList :: Action
-plaDispCmdList imc@(i, _, _) rs = logPlaExecArgs "?" rs i >> dispCmdList (mkCmdPred Nothing) imc rs
+plaDispCmdList params@(WithArgs i _ _ as) = logPlaExecArgs "?" as i >> dispCmdList (mkCmdPred Nothing) params
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
-dispCmdList p (_, mq, cols) [] = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . cmdListText $ p
-dispCmdList p (_, mq, cols) (nub . map T.toLower -> rs) | matches <- [ grepTextList r . cmdListText $ p | r <- rs ] =
+dispCmdList p (NoArgs   _ mq cols) = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . cmdListText $ p
+dispCmdList p (LowerNub _ mq cols as) | matches <- [ grepTextList a . cmdListText $ p | a <- as ] =
     send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ matches
 
 
@@ -596,16 +618,16 @@ mkCmdPred mc (T.head . cmdName -> p) = case mc of (Just c) -> c == p
 
 
 help :: Action
-help (i, mq, cols) [] = do
+help (NoArgs i mq cols) = do
     try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
     logPla "help" i "read the root help file."
   where
     helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
-help (i, mq, cols) (nub . map T.toLower -> rs) =
+help (LowerNub i mq cols as) =
     send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
   where
-    getTopics = mapM (\r -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols r) rs
+    getTopics = mapM (\a -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols a) as
 
 
 type HelpTopic = T.Text
@@ -640,7 +662,7 @@ goDispatcher _   [] = return ()
 goDispatcher imc rs = mapM_ (tryMove imc) rs
 
 
-tryMove :: IdMsgQueueCols -> T.Text -> MudStack ()
+tryMove :: (Id, MsgQueue, Cols) -> T.Text -> MudStack () -- TODO: Use some pattern on "ActionParams"?
 tryMove imc@(i, mq, cols) (T.toLower -> dir) = helper >>= \case
   Left  msg          -> wrapSend mq cols msg
   Right (logMsg, bs) -> bcast bs >> logPla "tryMove" i logMsg >> look imc []
@@ -749,13 +771,13 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
 look :: Action
-look (i, mq, cols) [] = readWSTMVar >>= \ws ->
+look (NoArgs i mq cols) = readWSTMVar >>= \ws ->
     let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
         r                = (ws^.rmTbl) ! ri
         primary          = multiWrap cols [ r^.rmName, r^.rmDesc ]
         suppl            = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
-look (i, mq, cols) (nub . map T.toLower -> rs) = helper >>= \case
+look (LowerNub i mq cols as) = helper >>= \case
   (Left  msg, _           ) -> send mq msg
   (Right msg, Nothing     ) -> send mq msg
   (Right msg, Just (d, ds)) ->
@@ -779,7 +801,7 @@ look (i, mq, cols) (nub . map T.toLower -> rs) = helper >>= \case
             c                = (ws^.coinsTbl) ! ri
             d                = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (c /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws rs ris' c
+          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as ris' c
                    eiss               = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                = map procReconciledCoinsRm rcs
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
@@ -894,11 +916,11 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
 
 
 exits :: Action
-exits (i, mq, cols) [] = readWSTMVar >>= \ws ->
+exits (NoArgs i mq cols) = readWSTMVar >>= \ws ->
     let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
         r                = (ws^.rmTbl) ! ri
     in logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
-exits imc@(_, mq, cols) rs = ignore mq cols rs >> exits imc []
+exits params = withoutArgs exits params
 
 
 mkExitsSummary :: Cols -> Rm -> T.Text
@@ -915,13 +937,13 @@ mkExitsSummary cols ((^.rmLinks) -> rls)
 
 
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv (i, mq, cols) [] = readWSTMVar >>= \ws ->
+inv (NoArgs i mq cols) = readWSTMVar >>= \ws ->
     send mq . nl . mkInvCoinsDesc i cols ws i $ (ws^.entTbl) ! i
-inv (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
+inv (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
     let is = (ws^.invTbl)   ! i
         c  = (ws^.coinsTbl) ! i
     in send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws rs is c
+      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
                eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
                ecs                = map procReconciledCoinsPCInv rcs
                invDesc            = foldl' (helperEitherInv ws) "" eiss
@@ -939,13 +961,13 @@ inv (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
 
 
 equip :: Action
-equip (i, mq, cols) [] = readWSTMVar >>= \ws ->
+equip (NoArgs i mq cols) = readWSTMVar >>= \ws ->
     let e = (ws^.entTbl) ! i
     in send mq . nl . mkEqDesc i cols ws i e $ PCType
-equip (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
+equip (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
     let em@(M.elems -> is) = (ws^.eqTbl) ! i
     in send mq $ if not . M.null $ em
-      then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws rs is mempty
+      then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws as is mempty
                eiss                         = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                      = foldl' (helperEitherInv ws) "" eiss
                coinsDesc | not . null $ rcs = wrapUnlinesNl cols "You don't have any coins among your readied \
@@ -987,9 +1009,10 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 
 getAction :: Action
-getAction (_, mq, cols) [] = advise mq cols ["get"] $ "Please specify one or more items to pick up, as \
-                                                      \in " <> dblQuote "get sword" <> "."
-getAction (i, _,  _   ) rs = do
+-- TODO: To eliminate underscores, perhaps make "AdviseNoArgs" and "AdviseOneArg" patterns.
+getAction params@(NoArgs _ _ _) = advise params ["get"] $ "Please specify one or more items to pick up, as \
+                                                          \in " <> dblQuote "get sword" <> "."
+getAction (i, _,  _   ) rs = do -- TODO: Here is a use case of a new pattern for "WithArgs i _ _ as".
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "get" i logMsgs
     bcastNl bs
@@ -1002,7 +1025,7 @@ getAction (i, _,  _   ) rs = do
             rc               = (ws^.coinsTbl) ! ri
             d                = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (rc /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris' rc
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws (nub . map T.toLower $ rs) ris' rc -- TODO: Use the "LowerNub" pattern, or something like it...
                    eiss                  = zipWith (curry procGecrMisRm) gecrs miss
                    ecs                   = map procReconciledCoinsRm rcs
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
@@ -1011,12 +1034,15 @@ getAction (i, _,  _   ) rs = do
           else putTMVar t ws >> return (mkBroadcast i "You don't see anything here to pick up.", [])
 
 
-advise :: MsgQueue -> Cols -> [HelpTopic] -> T.Text -> MudStack ()
-advise mq cols []  msg = wrapSend mq cols msg
-advise mq cols [h] msg | msgs <- [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ]
-                       = multiWrapSend mq cols msgs
-advise mq cols hs  msg | msgs <- [ msg, "See also the following help topics: " <> helpTopics <> "." ]
-                       = multiWrapSend mq cols msgs
+pattern Advising mq cols <- WithArgs _ mq cols _
+
+
+advise :: ActionParams -> [HelpTopic] -> T.Text -> MudStack ()
+advise (Advising mq cols) []  msg = wrapSend mq cols msg
+advise (Advising mq cols) [h] msg
+  | msgs <- [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ] = multiWrapSend mq cols msgs
+advise (Advising mq cols) hs  msg
+  | msgs <- [ msg, "See also the following help topics: " <> helpTopics <> "." ]           = multiWrapSend mq cols msgs
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 
@@ -1103,8 +1129,8 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 
 
 dropAction :: Action
-dropAction (_, mq, cols) [] = advise mq cols ["drop"] $ "Please specify one or more things to drop, as \
-                                                        \in " <> dblQuote "drop sword" <> "."
+dropAction params@(NoArgs _ _ _) = advise params ["drop"] $ "Please specify one or more things to drop, as \
+                                                            \in " <> dblQuote "drop sword" <> "."
 dropAction (i, _,  _   ) rs = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "drop" i logMsgs
@@ -1130,9 +1156,9 @@ dropAction (i, _,  _   ) rs = do
 
 
 putAction :: Action
-putAction (_, mq, cols) []  = advise mq cols ["put"] $ "Please specify one or more things you want to put, followed by \
-                                                       \where you want to put them, as in " <> dblQuote "put doll \
-                                                       \sack" <> "."
+putAction params@(NoArgs _ _ _) = advise params ["put"] $ "Please specify one or more things you want to put, \
+                                                          \followed by where you want to put them, as \
+                                                          \in " <> dblQuote "put doll sack" <> "."
 putAction (_, mq, cols) [r] = advise mq cols ["put"] $ "Please also specify where you want to put it, as \
                                                        \in " <> dblQuote ("put " <> r <> " sack") <> "."
 putAction (i, _,  _   ) (map T.toLower -> rs)  = do
@@ -1171,7 +1197,7 @@ shufflePut :: Id                                                  ->
               PCDesig                                             ->
               ConName                                             ->
               IsConInRm                                           ->
-              Rest                                                ->
+              Args                                                ->
               InvWithCon                                          ->
               CoinsWithCon                                        ->
               PCInv                                               ->
@@ -1377,9 +1403,9 @@ mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) ((^.sing) -> ts) | bs <-
 
 
 remove :: Action
-remove (_, mq, cols) []  = advise mq cols ["remove"] $ "Please specify one or more things to remove, followed by the \
-                                                       \container you want to remove them from, as \
-                                                       \in " <> dblQuote "remove doll sack" <> "."
+remove params@(NoArgs _ _ _) = advise params ["remove"] $ "Please specify one or more things to remove, followed by \
+                                                          \the container you want to remove them from, as \
+                                                          \in " <> dblQuote "remove doll sack" <> "."
 remove (_, mq, cols) [r] = advise mq cols ["remove"] $ "Please also specify the container you want to remove it from, \
                                                        \as in " <> dblQuote ("remove " <> r <> " sack") <> "."
 remove (i, _,  _   ) (map T.toLower -> rs)  = do
@@ -1409,7 +1435,7 @@ shuffleRem :: Id                                                  ->
               PCDesig                                             ->
               ConName                                             ->
               IsConInRm                                           ->
-              Rest                                                ->
+              Args                                                ->
               InvWithCon                                          ->
               CoinsWithCon                                        ->
               ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
@@ -1440,9 +1466,9 @@ shuffleRem i (t, ws) d cn icir rs is c f
 
 
 ready :: Action
-ready (_, mq, cols) [] = advise mq cols ["ready"] $ "Please specify one or more things to ready, as \
-                                                    \in " <> dblQuote "ready sword" <> "."
-ready (i, mq, cols) (nub . map T.toLower -> rs) = do
+ready params@(NoArgs _ _ _) = advise params ["ready"] $ "Please specify one or more things to ready, as \
+                                                        \in " <> dblQuote "ready sword" <> "."
+ready (LowerNub i mq cols as) = do
     (msg, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "ready" i logMsgs
     send mq . nl $ msg
@@ -1451,7 +1477,7 @@ ready (i, mq, cols) (nub . map T.toLower -> rs) = do
         let is = (ws^.invTbl)   ! i
             c  = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws rs is mempty
+          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
                    eiss                      = zipWith (curry procGecrMisReady) gecrs miss
                    msg                       = if null rcs then "" else nl "You can't ready coins."
                    (ws', msg', logMsgs)      = foldl' (helperReady i cols) (ws, msg, []) . zip eiss $ mrols
@@ -1711,9 +1737,9 @@ getDesigWpnSlot cols ws ((^.sing) -> s) em rol
 
 
 unready :: Action
-unready (_, mq, cols) [] = advise mq cols ["unready"] $ "Please specify one or more things to unready, as \
-                                                        \in " <> dblQuote "unready sword" <> "."
-unready (i, mq, cols) (nub . map T.toLower -> rs) = do
+unready params@(NoArgs _ _ _) = advise params ["unready"] $ "Please specify one or more things to unready, as \
+                                                            \in " <> dblQuote "unready sword" <> "."
+unready (LowerNub i mq cols as) = do
     (msg, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "unready" i logMsgs
     send mq . nl $ msg
@@ -1722,7 +1748,7 @@ unready (i, mq, cols) (nub . map T.toLower -> rs) = do
         let em = (ws^.eqTbl) ! i
             is = M.elems em
         in if not . null $ is
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws rs is mempty
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is mempty
                    eiss                  = zipWith (curry procGecrMisPCEq) gecrs miss
                    msg                   = if null rcs then "" else nl "You can't unready coins."
                    (ws', msg', logMsgs)  = foldl' (helperUnready i cols em) (ws, msg, []) eiss
@@ -1769,7 +1795,7 @@ mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i ws i' | i' <- is ], c
 
 
 intro :: Action
-intro (i, mq, cols) [] = readWSTMVar >>= \ws ->
+intro (NoArgs i mq cols) = readWSTMVar >>= \ws ->
     let ((^.introduced) -> intros) = (ws^.pcTbl) ! i
     in if null intros
       then let introsTxt = "No one has introduced themselves to you yet." in do
@@ -1857,12 +1883,12 @@ mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
 
 -- TODO: Disambiguate player names.
 what :: Action
-what (_, mq, cols) [] = advise mq cols ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
-                                                  \in " <> dblQuote "what up" <> "."
-what (i, mq, cols) (nub . map T.toLower -> rs) = readWSTMVar >>= \ws ->
+what params@(NoArgs _ _ _) = advise params ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
+                                                      \in " <> dblQuote "what up" <> "."
+what (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
     let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
         r                = (ws^.rmTbl) ! ri
-    in logPlaExecArgs "what" rs i >> (send mq . T.concat . map (helper ws r) $ rs)
+    in logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
   where
     helper ws r n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ws it n | it <- [ PCInv, PCEq, RmInv ] ]
 
@@ -2004,10 +2030,10 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) rc
 
 
 uptime :: Action
-uptime (i, mq, cols) [] = do
+uptime (NoArgs i mq cols) = do
     logPlaExec "uptime" i
     wrapSend mq cols =<< uptimeHelper =<< getUptime
-uptime imc@(_, mq, cols) rs = ignore mq cols rs >> uptime imc []
+uptime params = withoutArgs uptime params
 
 
 uptimeHelper :: Integer -> MudStack T.Text
@@ -2129,7 +2155,7 @@ wizShutdown (i, mq, _) rs = readWSTMVar >>= \ws ->
 
 
 wizTime :: Action
-wizTime (i, mq, cols) [] = do
+wizTime (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "time") i
     (ct, zt) <- (,) <$> liftIO (formatThat `fmap` getCurrentTime) <*> liftIO (formatThat `fmap` getZonedTime)
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
@@ -2137,7 +2163,7 @@ wizTime (i, mq, cols) [] = do
     formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
       | time <- T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
       = T.concat [ zone, ": ", date, " ", time ]
-wizTime imc@(_, mq, cols) rs = ignore mq cols rs >> wizTime imc []
+wizTime params = withoutArgs wizTime params
 
 
 -----
@@ -2147,44 +2173,44 @@ wizDate :: Action
 wizDate (i, mq, _) [] = do
     logPlaExec (prefixWizCmd "date") i
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
-wizDate imc@(_, mq, cols) rs = ignore mq cols rs >> wizDate imc []
+wizDate params = withoutArgs wizDate params
 
 
 -----
 
 
 wizUptime :: Action
-wizUptime (i, mq, cols) [] = do
+wizUptime (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "uptime") i
     (try . send mq . parse =<< runUptime) >>= eitherRet (\e -> logIOEx "wizUptime" e >> sendGenericErrorMsg mq cols)
   where
     runUptime = liftIO . readProcess "uptime" [] $ ""
     parse (span (/= ',') -> (unwords . tail . words -> a, dropWhile isSpace . takeWhile (/= ',') . tail -> b)) =
         nlnl . T.concat $ [ capitalize . T.pack $ a, " ", T.pack b, "." ]
-wizUptime imc@(_, mq, cols) rs = ignore mq cols rs >> wizUptime imc []
+wizUptime params = withoutArgs wizUptime params
 
 
 -----
 
 
 wizStart :: Action
-wizStart (i, mq, cols) [] = do
+wizStart (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "start") i
     wrapSend mq cols . showText =<< getNWSRec startTime
-wizStart imc@(_, mq, cols) rs = ignore mq cols rs >> wizStart imc []
+wizStart params = withoutArgs wizStart params
 
 
 -----
 
 
 wizName :: Action
-wizName (i, mq, cols) [] = do
+wizName (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "name") i
     readWSTMVar >>= \ws ->
         let ((^.sing) -> s)     = (ws^.entTbl) ! i
             (pp -> s', pp -> r) = getSexRace i ws
         in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
-wizName imc@(_, mq, cols) rs = ignore mq cols rs >> wizName imc []
+wizName params = withoutArgs wizName params
 
 
 -- ==================================================
@@ -2201,7 +2227,7 @@ debugDispCmdList imc@(i, _, _) rs = do
 
 
 debugBuffCheck :: Action
-debugBuffCheck (i, mq, cols) [] = do
+debugBuffCheck (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "buffer") i
     try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
   where
@@ -2216,24 +2242,24 @@ debugBuffCheck (i, mq, cols) [] = do
                                                                       , mode
                                                                       , "." ]
         liftIO $ hClose h >> removeFile fn
-debugBuffCheck imc@(_, mq, cols) rs = ignore mq cols rs >> debugBuffCheck imc []
+debugBuffCheck params = withoutArgs debugBuffCheck params
 
 
 -----
 
 
 debugDispEnv :: Action
-debugDispEnv (i, mq, cols) [] = do
+debugDispEnv (NoArgs i mq cols) = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
     send mq . nl =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
-debugDispEnv (i, mq, cols) (nub -> rs) = do
-    logPlaExecArgs (prefixDebugCmd "env") rs i
+debugDispEnv (WithArgs i mq cols (nub -> as)) = do
+    logPlaExecArgs (prefixDebugCmd "env") as i
     env <- liftIO getEnvironment
-    send mq . T.unlines $ [ helper env r | r <- rs ]
+    send mq . T.unlines $ [ helper env a | a <- as ]
   where
-    helper env r = mkAssocListTxt cols . filter grepPair $ env
+    helper env a = mkAssocListTxt cols . filter grepPair $ env
       where
-        grepPair = uncurry (||) . over both ((r `T.isInfixOf`) . T.pack)
+        grepPair = uncurry (||) . over both ((a `T.isInfixOf`) . T.pack)
 
 
 -----
@@ -2245,7 +2271,7 @@ debugLog (i, mq, _) [] = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
     helper       = replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get
     heavyLogging = liftIO myThreadId >>=
         replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText
-debugLog imc@(_, mq, cols) rs = ignore mq cols rs >> debugLog imc []
+debugLog params = withoutArgs debugLog params
 
 
 ------
@@ -2253,14 +2279,14 @@ debugLog imc@(_, mq, cols) rs = ignore mq cols rs >> debugLog imc []
 
 debugThrow :: Action
 debugThrow     (i, _,  _   ) [] = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
-debugThrow imc@(_, mq, cols) rs = ignore mq cols rs >> debugThrow imc []
+debugThrow params = withoutArgs debugThrow params
 
 
 -----
 
 
 debugThread :: Action
-debugThread (i, mq, cols) [] = do
+debugThread (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "thread") i
     (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
     kvs        <- M.assocs <$> readTMVarInNWS threadTblTMVar
@@ -2276,14 +2302,14 @@ debugThread (i, mq, cols) [] = do
     mkTypeName (Server (showText -> i')) = padOrTrunc 8 "Server" <> i'
     mkTypeName (PlaLog (showText -> i')) = padOrTrunc 8 "PlaLog" <> i'
     mkTypeName (showText -> tt)          = tt
-debugThread imc@(_, mq, cols) rs = ignore mq cols rs >> debugThread imc []
+debugThread params = withoutArgs debugThread params
 
 
 -----
 
 
 debugTalk :: Action
-debugTalk (i, mq, cols) [] = do
+debugTalk (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "talk") i
     send mq . frame cols . multiWrap cols =<< mapM mkDesc . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
   where
@@ -2292,7 +2318,7 @@ debugTalk (i, mq, cols) [] = do
                                        Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
                                        Just (Right ())                            -> "finished"
         in return . T.concat $ [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
-debugTalk imc@(_, mq, cols) rs = ignore mq cols rs >> debugTalk imc []
+debugTalk params = withoutArgs debugTalk params
 
 
 -----
@@ -2300,7 +2326,7 @@ debugTalk imc@(_, mq, cols) rs = ignore mq cols rs >> debugTalk imc []
 
 debugPurge :: Action
 debugPurge     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "purge") i >> purge >> ok mq
-debugPurge imc@(_, mq, cols) rs = ignore mq cols rs >> debugPurge imc []
+debugPurge params = withoutArgs debugPurge params
 
 
 -- TODO: This function could be automatically run at certain intervals.
@@ -2343,7 +2369,7 @@ purgeTalkAsyncTbl = do
 
 debugBoot :: Action
 debugBoot     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> massMsg Boot
-debugBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugBoot imc []
+debugBoot params = withoutArgs debugBoot params
 
 
 -----
@@ -2351,18 +2377,18 @@ debugBoot imc@(_, mq, cols) rs = ignore mq cols rs >> debugBoot imc []
 
 debugStop :: Action
 debugStop     (i, mq, _   ) [] = logPlaExec (prefixDebugCmd "stop") i >> ok mq >> massMsg StopThread
-debugStop imc@(_, mq, cols) rs = ignore mq cols rs >> debugStop imc []
+debugStop params = withoutArgs debugStop params
 
 
 -----
 
 
 debugCPU :: Action
-debugCPU (i, mq, cols) [] = do
+debugCPU (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "cpu") i
     t <- liftIO getCPUTime
     wrapSend mq cols $ "CPU time: " <> showText (fromIntegral t / fromIntegral (10 ^ 12))
-debugCPU imc@(_, mq, cols) rs = ignore mq cols rs >> debugCPU imc []
+debugCPU params = withoutArgs debugCPU params
 
 
 -----
@@ -2383,7 +2409,7 @@ debugBroad (i, _, _) [] = do
           \[8] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
           \[9] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
           \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
-debugBroad imc@(_, mq, cols) rs = ignore mq cols rs >> debugBroad imc []
+debugBroad params = withoutArgs debugBroad params
 
 
 -----
@@ -2397,7 +2423,7 @@ debugRemPut (i, mq, _) [] = do
     remCmd = "remove" <> rest
     putCmd = "put"    <> rest
     rest   = T.concat [ " ", T.pack [allChar], " ", T.pack [rmChar], "sack" ]
-debugRemPut imc@(_, mq, cols) rs = ignore mq cols rs >> debugRemPut imc []
+debugRemPut params = withoutArgs debugRemPut params
 
 
 fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
