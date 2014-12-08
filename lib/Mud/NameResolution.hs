@@ -1,5 +1,5 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RebindableSyntax, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.NameResolution ( ReconciledCoins
                           , procGecrMisCon
@@ -26,15 +26,21 @@ import Control.Lens.Operators ((^.), (^..))
 import Data.Char (isDigit, toUpper)
 import Data.IntMap.Lazy ((!))
 import Data.List (foldl')
-import Data.Monoid ((<>), mempty)
+import Data.Monoid ((<>), Monoid, mempty)
+import Data.String (fromString)
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (unpacked)
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
+import Prelude hiding ((>>))
 import qualified Data.Text as T
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+(>>) :: (Monoid m) => m -> m -> m
+(>>) = (<>)
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -186,9 +192,10 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
   where
     helper Empty                               = [ Left Empty        ]
     helper (NoneOf c)                          = [ Left . NoneOf $ c ]
-    helper (SomeOf (Coins (cop', sil', gol'))) = concat [ [ mkEitherCop | cop' /= 0 ]
-                                                        , [ mkEitherSil | sil' /= 0 ]
-                                                        , [ mkEitherGol | gol' /= 0 ] ]
+    helper (SomeOf (Coins (cop', sil', gol'))) = do
+        [ mkEitherCop | cop' /= 0 ]
+        [ mkEitherSil | sil' /= 0 ]
+        [ mkEitherGol | gol' /= 0 ]
       where
         mkEitherCop | cop' <= cop = Right . SomeOf . Coins $ (cop', 0,    0   )
                     | otherwise   = Left  . SomeOf . Coins $ (cop', 0,    0   )
@@ -293,11 +300,20 @@ mkSlotTxt = dblQuote . (T.pack [slotChar] <>)
 
 
 ringHelp :: T.Text
-ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", nl " immediately followed by:"
-                    , dblQuote "i", nl " for index finger,"
-                    , dblQuote "m", nl " for middle finger,"
-                    , dblQuote "r", nl " for ring finger, or"
-                    , dblQuote "p", nl " for pinky finger." ]
+ringHelp = do
+    "For rings, specify "
+    mkSlotTxt "r"
+    " or "
+    mkSlotTxt "l"
+    nl " immediately followed by:"
+    dblQuote "i"
+    nl " for index finger,"
+    dblQuote "m"
+    nl " for middle finger,"
+    dblQuote "r"
+    nl " for ring finger, or"
+    dblQuote "p"
+    nl " for pinky finger."
 
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv

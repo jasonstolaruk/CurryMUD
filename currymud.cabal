@@ -51,6 +51,7 @@ library
                        OverloadedStrings,
                        PatternSynonyms,
                        RankNTypes,
+                       RebindableSyntax,
                        RecordWildCards,
                        ScopedTypeVariables,
                        TemplateHaskell,

@@ -21,6 +21,7 @@ module Mud.Util ( aOrAn
                 , grepTextList
                 , headTail
                 , headTail'
+                , ifThenElse
                 , isVowel
                 , maybeRet
                 , maybeVoid
@@ -240,6 +241,11 @@ padOrTrunc _ t = t
 
 -- ==================================================
 -- Misc.:
+
+
+ifThenElse :: Bool -> a -> a -> a
+ifThenElse True  x _ = x
+ifThenElse False _ y = y
 
 
 nl :: T.Text -> T.Text

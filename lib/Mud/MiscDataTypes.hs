@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.MiscDataTypes ( Action
                          , ActionParams(..)
@@ -35,11 +35,16 @@ import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative (pure)
 import Control.Lens (both, over)
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), Monoid)
+import Data.String (fromString)
 import Formatting ((%), sformat)
 import Formatting.Formatters (string)
-import Prelude hiding (pi)
+import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
+
+
+(>>) :: (Monoid m) => m -> m -> m
+(>>) = (<>)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -155,7 +160,10 @@ instance Serializable PCDesig where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
       (d, d')                 = over both (T.pack . pure) (stdDesigDelimiter, desigDelimiter)
-  serialize NonStdDesig { .. } = quoteWith d $ nonStdPCEntSing <> d' <> nonStdDesc
+  serialize NonStdDesig { .. } = quoteWith d $ do
+      nonStdPCEntSing
+      d'
+      nonStdDesc
     where
       (d, d') = over both (T.pack . pure) (nonStdDesigDelimiter, desigDelimiter)
   deserialize a@(headTail' -> (c, T.init -> t))
