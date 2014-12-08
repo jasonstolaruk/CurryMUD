@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.Cmds (listenWrapper) where
 
@@ -836,7 +836,7 @@ look (LowerNub i mq cols as) = helper >>= \case
             d                = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (c /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as ris' c
-                   eiss               = zipWith (curry procGecrMisRm) gecrs miss
+                   eiss               = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
                    ecs                = map procReconciledCoinsRm rcs
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc          = foldl' helperLookEitherCoins    "" ecs
@@ -932,10 +932,10 @@ mkEntsInInvDesc i cols ws = T.unlines . concatMap (wordWrapIndent ind cols . hel
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
-mkCoinsSummary cols (zip coinNames . mkListFromCoins -> coinsWithNames) = helper coinsWithNames
+mkCoinsSummary cols c = helper [ mkNameAmt cn c' | cn <- coinNames | c' <- mkListFromCoins c ]
   where
-    helper = T.unlines . wordWrapIndent 2 cols . T.intercalate ", " . filter (not . T.null) . map mkNameAmt
-    mkNameAmt (bracketQuote -> cn, a) = if a == 0 then "" else showText a <> " " <> cn
+    helper                           = T.unlines . wordWrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
+    mkNameAmt (bracketQuote -> cn) a = if a == 0 then "" else showText a <> " " <> cn
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
@@ -979,7 +979,7 @@ inv (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
         c  = (ws^.coinsTbl) ! i
     in send mq $ if (not . null $ is) || (c /= mempty)
       then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
-               eiss               = zipWith (curry procGecrMisPCInv) gecrs miss
+               eiss               = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
                ecs                = map procReconciledCoinsPCInv rcs
                invDesc            = foldl' (helperEitherInv ws) "" eiss
                coinsDesc          = foldl' helperEitherCoins    "" ecs
@@ -1004,7 +1004,7 @@ equip (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
     let em@(M.elems -> is) = (ws^.eqTbl) ! i
     in send mq $ if not . M.null $ em
       then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws as is mempty
-               eiss                         = zipWith (curry procGecrMisPCEq) gecrs miss
+               eiss                         = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
                invDesc                      = foldl' (helperEitherInv ws) "" eiss
                coinsDesc | not . null $ rcs = wrapUnlinesNl cols "You don't have any coins among your readied \
                                                                  \equipment."
@@ -1062,7 +1062,7 @@ getAction   (LowerNub' i as) = do
             d                = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (rc /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as ris' rc
-                   eiss                  = zipWith (curry procGecrMisRm) gecrs miss
+                   eiss                  = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
                    ecs                   = map procReconciledCoinsRm rcs
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ws', bs, logMsgs) ecs
@@ -1179,7 +1179,7 @@ dropAction   (LowerNub' i as) = do
             d                = mkStdDesig i ws s True ris
         in if (not . null $ pis) || (pc /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as pis pc
-                   eiss                  = zipWith (curry procGecrMisPCInv) gecrs miss
+                   eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
                    ecs                   = map procReconciledCoinsPCInv rcs
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
@@ -1249,7 +1249,7 @@ shufflePut i (t, ws) d cn icir rs is c pis pc f | (gecrs, miss, rcs) <- resolveE
         Right [ci] | e <- (ws^.entTbl) ! ci, t' <- (ws^.typeTbl) ! ci -> if t' /= ConType
           then putTMVar t ws >> return (mkBroadcast i $ "The " <> e^.sing <> " isn't a container.", [])
           else let (gecrs', miss', rcs') = resolveEntCoinNames i ws rs pis pc
-                   eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
+                   eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs' | mis <- miss' ]
                    ecs                   = map procReconciledCoinsPCInv rcs'
                    mnom                  = mkMaybeNthOfM icir ws ci e is
                    (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put mnom i ci e) (ws,  [], []     ) eiss
@@ -1489,7 +1489,7 @@ shuffleRem i (t, ws) d cn icir rs is c f
           else let cis                   = (ws^.invTbl)   ! ci
                    cc                    = (ws^.coinsTbl) ! ci
                    (gecrs', miss', rcs') = resolveEntCoinNames i ws rs cis cc
-                   eiss                  = map (procGecrMisCon s) . zip gecrs' $ miss'
+                   eiss                  = [ curry (procGecrMisCon s) gecr mis | gecr <- gecrs' | mis <- miss' ]
                    ecs                   = map (procReconciledCoinsCon s) rcs'
                    mnom                  = mkMaybeNthOfM icir ws ci e is
                    (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem mnom ci i e) (ws,  [], []     ) eiss
@@ -1516,7 +1516,7 @@ ready   (LowerNub i mq cols as) = do
             c  = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
-                   eiss                      = zipWith (curry procGecrMisReady) gecrs miss
+                   eiss                      = [ curry procGecrMisReady gecr mis | gecr <- gecrs | mis <- miss ]
                    msg                       = if null rcs then "" else nl "You can't ready coins."
                    (ws', msg', logMsgs)      = foldl' (helperReady i cols) (ws, msg, []) . zip eiss $ mrols
                in putTMVar t ws' >> return (msg', logMsgs)
@@ -1788,7 +1788,7 @@ unready   (LowerNub i mq cols as) = do
             is = M.elems em
         in if not . null $ is
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is mempty
-                   eiss                  = zipWith (curry procGecrMisPCEq) gecrs miss
+                   eiss                  = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
                    msg                   = if null rcs then "" else nl "You can't unready coins."
                    (ws', msg', logMsgs)  = foldl' (helperUnready i cols em) (ws, msg, []) eiss
                in putTMVar t ws' >> return (msg', logMsgs)
@@ -1857,7 +1857,7 @@ intro (LowerNub' i as) = do
             c                = (ws^.coinsTbl) ! ri
         in if (not . null $ is') || (c /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is' c
-                   eiss                  = zipWith (curry procGecrMisRm) gecrs miss
+                   eiss                  = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
                    ecs                   = map procReconciledCoinsRm rcs
                    (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
                    (     cbs', logMsgs') = foldl' helperIntroEitherCoins      (    cbs, logMsgs) ecs

@@ -49,6 +49,7 @@ library
                        MultiWayIf,
                        NamedFieldPuns,
                        OverloadedStrings,
+                       ParallelListComp,
                        PatternSynonyms,
                        RankNTypes,
                        RebindableSyntax,
