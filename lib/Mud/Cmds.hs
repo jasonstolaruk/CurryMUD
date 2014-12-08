@@ -546,6 +546,9 @@ pattern NoArgs i mq cols = WithArgs i mq cols []
 pattern NoArgs' i mq <- NoArgs i mq _
 
 
+pattern NoArgs'' i <- NoArgs' i _
+
+
 pattern Lower i mq cols as <- WithArgs i mq cols (map T.toLower -> as)
 
 
@@ -558,7 +561,7 @@ pattern LowerNub i mq cols as <- WithArgs i mq cols (nub . map T.toLower -> as)
 pattern LowerNub' i as <- LowerNub i _ _ as
 
 
-pattern Ignoring mq cols ignored <- WithArgs _ mq cols (dblQuote . T.unwords -> ignored)
+pattern Ignoring mq cols as <- WithArgs _ mq cols (dblQuote . T.unwords -> as)
 
 
 pattern AdviseNoArgs <- NoArgs' _ _
@@ -587,12 +590,12 @@ sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 
 
 withoutArgs :: Action -> ActionParams -> MudStack ()
-withoutArgs a p = ignore p >> a p { args = [] }
+withoutArgs act p = ignore p >> act p { args = [] }
 
 
 ignore :: Action
-ignore (Ignoring mq cols ignored) = send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> ignored <> "..."
-ignore _ = patternMatchFail "ignore" [] -- TODO
+ignore (Ignoring mq cols as) = send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> as <> "..."
+ignore _                     = patternMatchFail "ignore" [] -- TODO
 
 
 -----
@@ -618,12 +621,12 @@ getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet handler
 
 plaDispCmdList :: Action
 plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList (mkCmdPred Nothing) p
-plaDispCmdList _ = patternMatchFail "plaDispCmdList" [] -- TODO
+plaDispCmdList _                  = patternMatchFail "plaDispCmdList" [] -- TODO
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
 dispCmdList p (NoArgs   _ mq cols   ) = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . cmdListText $ p
-dispCmdList p (WithArgs _ mq cols as) | matches <- [ grepTextList a . cmdListText $ p | a <- as ] =
+dispCmdList p (LowerNub _ mq cols as) | matches <- [ grepTextList a . cmdListText $ p | a <- as ] =
     send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ matches
 dispCmdList _ _ = patternMatchFail "dispCmdList" [] -- TODO
 
@@ -680,13 +683,13 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(ge
 
 go :: T.Text -> Action
 go dir p@(ActionParams { args = [], .. }) = goDispatcher p { args = [dir] }
-go dir p@(ActionParams { args = as, .. }) = goDispatcher p { args = dir : as }
+go dir p@(ActionParams { args,      .. }) = goDispatcher p { args = dir : args }
 
 
 goDispatcher :: Action
 goDispatcher (ActionParams { args = [], .. }) = return ()
 goDispatcher (Lower i mq cols as)             = mapM_ (tryMove i mq cols) as
-goDispatcher _ = patternMatchFail "goDispatcher" [] -- TODO
+goDispatcher _                                = patternMatchFail "goDispatcher" [] -- TODO
 
 
 tryMove :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
@@ -1003,7 +1006,7 @@ equip (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
                eiss                         = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                      = foldl' (helperEitherInv ws) "" eiss
                coinsDesc | not . null $ rcs = wrapUnlinesNl cols "You don't have any coins among your readied \
-                                                               \equipment."
+                                                                 \equipment."
                          | otherwise        = ""
            in invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYou'reNaked
@@ -1042,9 +1045,9 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 
 getAction :: Action
-getAction p@AdviseNoArgs = advise p ["get"] $ "Please specify one or more items to pick up, as in " <> dblQuote "get \
-                                              \sword" <> "."
-getAction (LowerNub' i as) = do
+getAction p@AdviseNoArgs     = advise p ["get"] $ "Please specify one or more items to pick up, as \
+                                                  \in " <> dblQuote "get sword" <> "."
+getAction   (LowerNub' i as) = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "get" i logMsgs
     bcastNl bs
@@ -1160,9 +1163,9 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 
 
 dropAction :: Action
-dropAction p@AdviseNoArgs = advise p ["drop"] $ "Please specify one or more things to drop, as in " <> dblQuote "drop \
-                                                \sword" <> "."
-dropAction (LowerNub' i as) = do
+dropAction p@AdviseNoArgs     = advise p ["drop"] $ "Please specify one or more things to drop, as \
+                                                    \in " <> dblQuote "drop sword" <> "."
+dropAction   (LowerNub' i as) = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "drop" i logMsgs
     bcastNl bs
@@ -1192,8 +1195,8 @@ putAction p@AdviseNoArgs     = advise p ["put"] $ "Please specify one or more th
                                                   \where you want to put them, as in " <> dblQuote "put doll \
                                                   \sack" <> "."
 putAction p@(AdviseOneArg a) = advise p ["put"] $ "Please also specify where you want to put it, as \
-                                                   \in " <> dblQuote ("put " <> a <> " sack") <> "."
-putAction (Lower' i as) = do
+                                                  \in " <> dblQuote ("put " <> a <> " sack") <> "."
+putAction   (Lower' i as)    = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "put" i logMsgs
     bcastNl bs
@@ -1440,8 +1443,8 @@ remove p@AdviseNoArgs     = advise p ["remove"] $ "Please specify one or more th
                                                   \container you want to remove them from, as in " <> dblQuote "remove \
                                                   \doll sack" <> "."
 remove p@(AdviseOneArg a) = advise p ["remove"] $ "Please also specify the container you want to remove it from, as \
-                                              \in " <> dblQuote ("remove " <> a <> " sack") <> "."
-remove (Lower' i as) = do
+                                                  \in " <> dblQuote ("remove " <> a <> " sack") <> "."
+remove   (Lower' i as)    = do
     (bs, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "remove" i logMsgs
     bcastNl bs
@@ -1500,9 +1503,9 @@ shuffleRem i (t, ws) d cn icir rs is c f
 
 
 ready :: Action
-ready p@AdviseNoArgs = advise p ["ready"] $ "Please specify one or more things to ready, as in " <> dblQuote "ready \
-                                            \sword" <> "."
-ready (LowerNub i mq cols as) = do
+ready p@AdviseNoArgs            = advise p ["ready"] $ "Please specify one or more things to ready, as \
+                                                       \in " <> dblQuote "ready sword" <> "."
+ready   (LowerNub i mq cols as) = do
     (msg, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "ready" i logMsgs
     send mq . nl $ msg
@@ -1772,9 +1775,9 @@ getDesigWpnSlot cols ws ((^.sing) -> s) em rol
 
 
 unready :: Action
-unready p@AdviseNoArgs = advise p ["unready"] $ "Please specify one or more things to unready, as \
-                                                \in " <> dblQuote "unready sword" <> "."
-unready (LowerNub i mq cols as) = do
+unready p@AdviseNoArgs            = advise p ["unready"] $ "Please specify one or more things to unready, as \
+                                                           \in " <> dblQuote "unready sword" <> "."
+unready   (LowerNub i mq cols as) = do
     (msg, logMsgs) <- helper
     unless (null logMsgs) $ logPlaOut "unready" i logMsgs
     send mq . nl $ msg
@@ -1920,9 +1923,9 @@ mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
 
 -- TODO: Disambiguate player names.
 what :: Action
-what p@AdviseNoArgs = advise p ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
-                                          \in " <> dblQuote "what up" <> "."
-what (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
+what p@AdviseNoArgs            = advise p ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
+                                                     \in " <> dblQuote "what up" <> "."
+what   (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
     let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
         r                = (ws^.rmTbl) ! ri
     in logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
@@ -2322,8 +2325,8 @@ debugLog p = withoutArgs debugLog p
 
 
 debugThrow :: Action
-debugThrow (NoArgs' i _) = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
-debugThrow p             = withoutArgs debugThrow p
+debugThrow (NoArgs'' i) = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
+debugThrow p            = withoutArgs debugThrow p
 
 
 -----
@@ -2439,7 +2442,7 @@ debugCPU p = withoutArgs debugCPU p
 
 
 debugBroad :: Action
-debugBroad (NoArgs' i _) = do
+debugBroad (NoArgs'' i) = do
     logPlaExec (prefixDebugCmd "broad") i
     bcast . mkBroadcast i $ msg
   where
