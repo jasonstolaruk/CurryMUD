@@ -3,8 +3,8 @@
 
 -- This module is considered to have sufficient test coverage as of 2014-10-13.
 
-module Mud.Util ( adjustIndent
-                , aOrAn
+module Mud.Util ( aOrAn
+                , adjustIndent
                 , appendIfUnique
                 , blowUp
                 , bracketPad

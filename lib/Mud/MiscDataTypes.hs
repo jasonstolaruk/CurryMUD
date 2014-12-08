@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
-module Mud.MiscDataTypes ( AOrThe(..)
-                         , Action
+module Mud.MiscDataTypes ( Action
                          , ActionParams(..)
+                         , AOrThe(..)
                          , Amount
                          , Args
                          , Broadcast

@@ -10,9 +10,9 @@ module Mud.NameResolution ( ReconciledCoins
                           , procReconciledCoinsCon
                           , procReconciledCoinsPCInv
                           , procReconciledCoinsRm
-                          , ringHelp
                           , resolveEntCoinNames
-                          , resolveEntCoinNamesWithRols ) where
+                          , resolveEntCoinNamesWithRols
+                          , ringHelp ) where
 
 import Mud.MiscDataTypes
 import Mud.StateDataTypes

@@ -3,8 +3,8 @@
 
 -- This module is considered to have sufficient test coverage as of 2014-10-13.
 
-module Mud.StateHelpers ( allKeys
-                        , BothGramNos
+module Mud.StateHelpers ( BothGramNos
+                        , allKeys
                         , bcast
                         , bcastNl
                         , bcastOthersInRm

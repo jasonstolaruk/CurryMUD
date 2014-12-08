@@ -79,10 +79,10 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- 7. Write tests for NameResolution and Cmds.
 -- [DONE] 8. Refactor for ViewPatterns and pattern guards.
 -- [DONE] 9. Refactor for NamedFieldPuns and RecordWildCards.
--- 10. See if you can keep your lines at 120 characters or less.
+-- [DONE] 10. See if you can keep your lines at 120 characters or less.
 -- 11. Are there places where I can use IO as a Functor or Applicative?
 -- 12. Make sure you are using "as" and "a" for "args" insteaf of "rs" and "r".
--- 13. Make sure that all your export lists are properly sorted.
+-- [DONE] 13. Make sure that all your export lists are properly sorted.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
