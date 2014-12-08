@@ -934,8 +934,8 @@ mkEntsInInvDesc i cols ws = T.unlines . concatMap (wordWrapIndent ind cols . hel
 mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper [ mkNameAmt cn c' | cn <- coinNames | c' <- mkListFromCoins c ]
   where
-    helper                           = T.unlines . wordWrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
     mkNameAmt (bracketQuote -> cn) a = if a == 0 then "" else showText a <> " " <> cn
+    helper                           = T.unlines . wordWrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
@@ -2342,7 +2342,7 @@ debugThread (NoArgs i mq cols) = do
     ds         <- mapM mkDesc $ head kvs      :
                                 (nli, Notice) :
                                 (eli, Error)  :
-                                tail kvs ++ zip (map (asyncThreadId . fst) es) (map PlaLog ks)
+                                tail kvs ++ [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
     send mq . frame cols . multiWrap cols $ ds
   where
     mkDesc (ti, bracketPad 15 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \ts ->
