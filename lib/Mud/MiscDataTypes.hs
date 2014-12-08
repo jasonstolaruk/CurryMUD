@@ -36,6 +36,8 @@ import qualified Mud.Util as U (patternMatchFail)
 import Control.Applicative (pure)
 import Control.Lens (both, over)
 import Data.Monoid ((<>))
+import Formatting ((%), sformat)
+import Formatting.Formatters (string)
 import Prelude hiding (pi)
 import qualified Data.Text as T
 
@@ -179,6 +181,18 @@ instance Ord ClassifiedBroadcast where
   TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
   NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
   _                    `compare` _                    = EQ
+
+
+----
+
+
+instance Show ActionParams where
+  show ActionParams { .. } = showIt (show plaId) (show plaCols) (show args)
+    where
+      showIt i cols = T.unpack . sformat ("ActionParams {plaId = "             % string %
+                                          ", plaMsgQueue = elided, plaCols = " % string %
+                                          ", args = "                          % string %
+                                          "}") i cols
 
 
 -- ==================================================

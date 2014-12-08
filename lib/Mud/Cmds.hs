@@ -161,6 +161,7 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
     , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
                                                                                \put into a sack on the ground." }
+    , Cmd { cmdName = prefixDebugCmd "showparams", action = debugShowParams, cmdDesc = "Show \"ActionParams\"." }
     , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
@@ -595,7 +596,7 @@ withoutArgs act p = ignore p >> act p { args = [] }
 
 ignore :: Action
 ignore (Ignoring mq cols as) = send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> as <> "..."
-ignore _                     = patternMatchFail "ignore" [] -- TODO
+ignore p                     = patternMatchFail "ignore" [ showText p ]
 
 
 -----
@@ -621,20 +622,20 @@ getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet handler
 
 plaDispCmdList :: Action
 plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList (mkCmdPred Nothing) p
-plaDispCmdList _                  = patternMatchFail "plaDispCmdList" [] -- TODO
+plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
-dispCmdList p (NoArgs   _ mq cols   ) = send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . cmdListText $ p
+dispCmdList p (NoArgs   _ mq cols   ) = send mq . nl . T.unlines . concatMap (wordWrapIndent 12 cols) . cmdListText $ p
 dispCmdList p (LowerNub _ mq cols as) | matches <- [ grepTextList a . cmdListText $ p | a <- as ] =
-    send mq . nl . T.unlines . concatMap (wordWrapIndent 10 cols) . intercalate [""] $ matches
-dispCmdList _ _ = patternMatchFail "dispCmdList" [] -- TODO
+    send mq . nl . T.unlines . concatMap (wordWrapIndent 12 cols) . intercalate [""] $ matches
+dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
 cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmds
   where
-    helper acc Cmd { .. } | cmdTxt <- nl $ padOrTrunc 10 cmdName <> cmdDesc = cmdTxt : acc
+    helper acc Cmd { .. } | cmdTxt <- nl $ padOrTrunc 12 cmdName <> cmdDesc = cmdTxt : acc
 
 
 mkCmdPred :: Maybe Char -> Cmd -> Bool
@@ -656,7 +657,7 @@ help (LowerNub i mq cols as) =
     send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
   where
     getTopics = mapM (\a -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols a) as
-help _ = patternMatchFail "help" [] -- TODO
+help p = patternMatchFail "help" [ showText p ]
 
 
 type HelpTopic = T.Text
@@ -689,7 +690,7 @@ go dir p@(ActionParams { args,      .. }) = goDispatcher p { args = dir : args }
 goDispatcher :: Action
 goDispatcher (ActionParams { args = [], .. }) = return ()
 goDispatcher (Lower i mq cols as)             = mapM_ (tryMove i mq cols) as
-goDispatcher _                                = patternMatchFail "goDispatcher" [] -- TODO
+goDispatcher p                                = patternMatchFail "goDispatcher" [ showText p ]
 
 
 tryMove :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
@@ -848,7 +849,7 @@ look (LowerNub i mq cols as) = helper >>= \case
     helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
-look _ = patternMatchFail "look" [] -- TODO
+look p = patternMatchFail "look" [ showText p ]
 
 
 -- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
@@ -989,7 +990,7 @@ inv (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
     helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
     helperEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
-inv _ = patternMatchFail "inv" [] -- TODO
+inv p = patternMatchFail "inv" [ showText p ]
 
 
 -----
@@ -1078,7 +1079,7 @@ advise (Advising mq cols) hs  msg
   | msgs <- [ msg, "See also the following help topics: " <> helpTopics <> "." ]           = multiWrapSend mq cols msgs
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
-advise _ _ _ = patternMatchFail "advise" [] -- TODO
+advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 
 type FromId = Id
@@ -1184,7 +1185,7 @@ dropAction   (LowerNub' i as) = do
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
           else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
-dropAction _ = patternMatchFail "dropAction" [] -- TODO
+dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 -----
@@ -1218,7 +1219,7 @@ putAction   (Lower' i as)    = do
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
           else shufflePut i (t, ws) d cn False restWithoutCon pis pc pis pc procGecrMisPCInv
         else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
-putAction _ = patternMatchFail "putAction" [] -- TODO
+putAction p = patternMatchFail "putAction" [ showText p ]
 
 
 type IsConInRm    = Bool
@@ -1464,7 +1465,7 @@ remove   (Lower' i as)    = do
           then shuffleRem i (t, ws) d (T.tail cn) True restWithoutCon ris' rc procGecrMisRm
           else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
         else shuffleRem i (t, ws) d cn False restWithoutCon pis pc procGecrMisPCInv
-remove _ = patternMatchFail "remove" [] -- TODO
+remove p = patternMatchFail "remove" [ showText p ]
 
 
 shuffleRem :: Id                                                  ->
@@ -1520,7 +1521,7 @@ ready   (LowerNub i mq cols as) = do
                    (ws', msg', logMsgs)      = foldl' (helperReady i cols) (ws, msg, []) . zip eiss $ mrols
                in putTMVar t ws' >> return (msg', logMsgs)
           else putTMVar t ws >> return (wrapUnlines cols dudeYourHandsAreEmpty, [])
-ready _ = patternMatchFail "ready" [] -- TODO
+ready p = patternMatchFail "ready" [ showText p ]
 
 
 helperReady :: Id                                     ->
@@ -1792,7 +1793,7 @@ unready   (LowerNub i mq cols as) = do
                    (ws', msg', logMsgs)  = foldl' (helperUnready i cols em) (ws, msg, []) eiss
                in putTMVar t ws' >> return (msg', logMsgs)
           else putTMVar t ws >> return (wrapUnlines cols dudeYou'reNaked, [])
-unready _ = patternMatchFail "unready" [] -- TODO
+unready p = patternMatchFail "unready" [ showText p ]
 
 
 helperUnready :: Id                             ->
@@ -1909,7 +1910,7 @@ intro (LowerNub' i as) = do
         over _1 (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
-intro _ = patternMatchFail "intro" [] -- TODO
+intro p = patternMatchFail "intro" [ showText p ]
 
 
 mkReflexive :: Sex -> T.Text
@@ -1931,7 +1932,7 @@ what   (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
     in logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
   where
     helper ws r n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ws it n | it <- [ PCInv, PCEq, RmInv ] ]
-what _ = patternMatchFail "what" [] -- TODO
+what p = patternMatchFail "what" [ showText p ]
 
 
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
@@ -2158,7 +2159,7 @@ wizDispCmdList :: Action
 wizDispCmdList p@(LowerNub' i as) = do
     logPlaExecArgs (prefixWizCmd "?") as i
     dispCmdList (mkCmdPred . Just $ wizCmdChar) p
-wizDispCmdList _ = patternMatchFail "wizDispCmdList" [] -- TODO
+wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
 
 
 -----
@@ -2266,7 +2267,7 @@ debugDispCmdList :: Action
 debugDispCmdList p@(LowerNub' i as) = do
     logPlaExecArgs (prefixDebugCmd "?") as i
     dispCmdList (mkCmdPred . Just $ debugCmdChar) p
-debugDispCmdList _ = patternMatchFail "debugDispCmdList" [] -- TODO
+debugDispCmdList p = patternMatchFail "debugDispCmdList" [ showText p ]
 
 
 -----
@@ -2306,7 +2307,7 @@ debugDispEnv (WithArgs i mq cols (nub -> as)) = do
     helper env a = mkAssocListTxt cols . filter grepPair $ env
       where
         grepPair = uncurry (||) . over both ((a `T.isInfixOf`) . T.pack)
-debugDispEnv _ = patternMatchFail "debugDispEnv" [] -- TODO
+debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 
 
 -----
@@ -2475,3 +2476,13 @@ debugRemPut p = withoutArgs debugRemPut p
 
 fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
 fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
+
+
+-----
+
+
+debugShowParams :: Action
+debugShowParams p@(WithArgs i mq cols _) = do
+    logPlaExec (prefixDebugCmd "showparams") i
+    wrapSend mq cols . showText $ p
+debugShowParams p = patternMatchFail "debugShowParams" [ showText p ]
