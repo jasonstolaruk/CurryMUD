@@ -83,6 +83,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- 11. Are there places where I can use IO as a Functor or Applicative?
 -- 12. Make sure you are using "as" and "a" for "args" insteaf of "rs" and "r".
 -- [DONE] 13. Make sure that all your export lists are properly sorted.
+-- 14. forall ?
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a

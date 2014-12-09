@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
 {-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.MiscDataTypes ( Action
@@ -35,16 +35,12 @@ import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative (pure)
 import Control.Lens (both, over)
-import Data.Monoid ((<>), Monoid)
+import Data.Monoid ((<>))
 import Data.String (fromString)
 import Formatting ((%), sformat)
 import Formatting.Formatters (string)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
-
-
-(>>) :: (Monoid m) => m -> m -> m
-(>>) = (<>)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -165,6 +161,7 @@ instance Serializable PCDesig where
       d'
       nonStdDesc
     where
+      (>>)    = (<>)
       (d, d') = over both (T.pack . pure) (nonStdDesigDelimiter, desigDelimiter)
   deserialize a@(headTail' -> (c, T.init -> t))
     | c == stdDesigDelimiter, [ pes, ic, pen, pi, pis ] <- T.splitOn d t =
@@ -197,10 +194,13 @@ instance Ord ClassifiedBroadcast where
 instance Show ActionParams where
   show ActionParams { .. } = showIt (show plaId) (show plaCols) (show args)
     where
-      showIt i cols = T.unpack . sformat ("ActionParams {plaId = "             % string %
-                                          ", plaMsgQueue = elided, plaCols = " % string %
-                                          ", args = "                          % string %
-                                          "}") i cols
+      showIt i cols = T.unpack . sformat builder i cols
+      builder = do
+          "ActionParams {plaId = "
+          ", plaMsgQueue = elided, plaCols = "
+          ", args = "
+          "}"
+      a >> b = a % string % b
 
 
 -- ==================================================
