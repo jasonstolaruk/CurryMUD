@@ -1015,7 +1015,7 @@ equip (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
   where
     helperEitherInv _  acc (Left  msg) = (acc <>) . wrapUnlinesNl cols $ msg
     helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
-equip _ = patternMatchFail "equip" [] -- TODO
+equip p = patternMatchFail "equip" [ showText p ]
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
@@ -1069,7 +1069,7 @@ getAction   (LowerNub' i as) = do
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
           else putTMVar t ws >> return (mkBroadcast i "You don't see anything here to pick up.", [])
-getAction _ = patternMatchFail "getAction" [] -- TODO
+getAction p = patternMatchFail "getAction" [ showText p ]
 
 
 advise :: ActionParams -> [HelpTopic] -> T.Text -> MudStack ()
