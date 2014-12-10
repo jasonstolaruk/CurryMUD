@@ -61,7 +61,7 @@ type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 
 resolveEntCoinNames :: Id -> WorldState -> Args -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNames i ws (map T.toLower -> rs) is c = expandGecrs c [ mkGecr i ws is c r | r <- rs ]
+resolveEntCoinNames i ws (map T.toLower -> as) is c = expandGecrs c [ mkGecr i ws is c a | a <- as ]
 
 
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
@@ -216,8 +216,8 @@ resolveEntCoinNamesWithRols :: Id         ->
                                Inv        ->
                                Coins      ->
                                ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNamesWithRols i ws (map T.toLower -> rs) is c
-  | gecrMrols           <- map (mkGecrWithRol i ws is c) rs
+resolveEntCoinNamesWithRols i ws (map T.toLower -> as) is c
+  | gecrMrols           <- map (mkGecrWithRol i ws is c) as
   , (gecrs, mrols)      <- (gecrMrols^..folded._1, gecrMrols^..folded._2)
   , (gecrs', miss, rcs) <- expandGecrs c gecrs
   = (gecrs', mrols, miss, rcs)

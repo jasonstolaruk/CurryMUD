@@ -160,10 +160,10 @@ logPlaExec modName (dblQuote -> cn) i = logPla modName cn i $ "executed " <> cn 
 
 
 logPlaExecArgs :: T.Text -> CmdName -> Args -> Id -> MudStack ()
-logPlaExecArgs modName cn@(dblQuote -> cn') rs i = logPla modName cn' i $ "executed " <> helper <> "."
+logPlaExecArgs modName cn@(dblQuote -> cn') as i = logPla modName cn' i $ "executed " <> helper <> "."
   where
-    helper = case rs of [] -> cn' <> " with no arguments"
-                        _  -> dblQuote . T.intercalate " " $ cn : rs
+    helper = case as of [] -> cn' <> " with no arguments"
+                        _  -> dblQuote . T.intercalate " " $ cn : as
 
 
 logPlaOut :: T.Text -> CmdName -> Id -> [T.Text] -> MudStack ()

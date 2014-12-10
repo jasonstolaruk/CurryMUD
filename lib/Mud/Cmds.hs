@@ -81,7 +81,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 9. Refactor for NamedFieldPuns and RecordWildCards.
 -- [DONE] 10. See if you can keep your lines at 120 characters or less.
 -- 11. Are there places where I can use IO as a Functor or Applicative?
--- 12. Make sure you are using "as" and "a" for "args" insteaf of "rs" and "r".
+-- [DONE] 12. Make sure you are using "as" and "a" for "args" instead of "rs" and "r".
 -- [DONE] 13. Make sure that all your export lists are properly sorted.
 -- [DONE] 14. "forall"?
 
@@ -475,9 +475,9 @@ splitInp = splitIt . T.words
 
 
 dispatch :: Id -> MsgQueue -> Input -> MudStack ()
-dispatch i mq (cn, rest) = do
+dispatch i mq (cn, as) = do
     cols <- getPlaColumns i
-    findAction i cn >>= maybe sorry (\act -> act (WithArgs i mq cols rest))
+    findAction i cn >>= maybe sorry (\act -> act (WithArgs i mq cols as))
     prompt mq "> "
   where
     sorry = send mq . nlnl $ "What?"
@@ -1210,15 +1210,15 @@ putAction   (Lower' i as)    = do
           ris'                     = i `delete` ris
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
           cn                       = last as
-          (init -> restWithoutCon) = case as of [_, _] -> as
+          (init -> argsWithoutCon) = case as of [_, _] -> as
                                                 _      -> (++ [cn]) . nub . init $ as
           d                        = mkStdDesig i ws s True ris
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar && cn /= T.pack [rmChar]
           then if not . null $ ris'
-            then shufflePut i (t, ws) d (T.tail cn) True restWithoutCon ris' rc pis pc procGecrMisRm
+            then shufflePut i (t, ws) d (T.tail cn) True argsWithoutCon ris' rc pis pc procGecrMisRm
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
-          else shufflePut i (t, ws) d cn False restWithoutCon pis pc pis pc procGecrMisPCInv
+          else shufflePut i (t, ws) d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
         else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 putAction p = patternMatchFail "putAction" [ showText p ]
 
@@ -1242,14 +1242,14 @@ shufflePut :: Id                                                  ->
               PCCoins                                             ->
               ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
               STM ([Broadcast], [T.Text])
-shufflePut i (t, ws) d cn icir rs is c pis pc f | (gecrs, miss, rcs) <- resolveEntCoinNames i ws [cn] is c =
+shufflePut i (t, ws) d cn icir as is c pis pc f | (gecrs, miss, rcs) <- resolveEntCoinNames i ws [cn] is c =
     if null miss && (not . null $ rcs)
       then putTMVar t ws >> return (mkBroadcast i "You can't put something inside a coin.", [])
       else case f . head . zip gecrs $ miss of
         Left  (mkBroadcast i -> bc)                                   -> putTMVar t ws >> return (bc, [])
         Right [ci] | e <- (ws^.entTbl) ! ci, t' <- (ws^.typeTbl) ! ci -> if t' /= ConType
           then putTMVar t ws >> return (mkBroadcast i $ "The " <> e^.sing <> " isn't a container.", [])
-          else let (gecrs', miss', rcs') = resolveEntCoinNames i ws rs pis pc
+          else let (gecrs', miss', rcs') = resolveEntCoinNames i ws as pis pc
                    eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs' | mis <- miss' ]
                    ecs                   = map procReconciledCoinsPCInv rcs'
                    mnom                  = mkMaybeNthOfM icir ws ci e is
@@ -1458,14 +1458,14 @@ remove   (Lower' i as)    = do
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
           ris'                     = i `delete` ris
           cn                       = last as
-          (init -> restWithoutCon) = case as of [_, _] -> as
+          (init -> argsWithoutCon) = case as of [_, _] -> as
                                                 _      -> (++ [cn]) . nub . init $ as
           d                        = mkStdDesig i ws s True ris
       in if T.head cn == rmChar && cn /= T.pack [rmChar]
         then if not . null $ ris'
-          then shuffleRem i (t, ws) d (T.tail cn) True restWithoutCon ris' rc procGecrMisRm
+          then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris' rc procGecrMisRm
           else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
-        else shuffleRem i (t, ws) d cn False restWithoutCon pis pc procGecrMisPCInv
+        else shuffleRem i (t, ws) d cn False argsWithoutCon pis pc procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 
 
@@ -1479,7 +1479,7 @@ shuffleRem :: Id                                                  ->
               CoinsWithCon                                        ->
               ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
               STM ([Broadcast], [T.Text])
-shuffleRem i (t, ws) d cn icir rs is c f
+shuffleRem i (t, ws) d cn icir as is c f
   | (gecrs, miss, rcs) <- resolveEntCoinNames i ws [cn] is c = if null miss && (not . null $ rcs)
     then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
     else case f . head . zip gecrs $ miss of
@@ -1489,7 +1489,7 @@ shuffleRem i (t, ws) d cn icir rs is c f
           then putTMVar t ws >> return (mkBroadcast i $ "The " <> s <> " isn't a container.", [])
           else let cis                   = (ws^.invTbl)   ! ci
                    cc                    = (ws^.coinsTbl) ! ci
-                   (gecrs', miss', rcs') = resolveEntCoinNames i ws rs cis cc
+                   (gecrs', miss', rcs') = resolveEntCoinNames i ws as cis cc
                    eiss                  = [ curry (procGecrMisCon s) gecr mis | gecr <- gecrs' | mis <- miss' ]
                    ecs                   = map (procReconciledCoinsCon s) rcs'
                    mnom                  = mkMaybeNthOfM icir ws ci e is
