@@ -109,11 +109,11 @@ modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
     transaction t = takeTMVar t >>= putTMVar t . f
 
 
-getNWSRec :: forall a (m :: * -> *). MonadState MudState m => ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> m a
+getNWSRec :: MonadState MudState m => ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> m a
 getNWSRec lens = gets (^.nonWorldState.lens)
 
 
-readTMVarInNWS :: forall (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> m a
+readTMVarInNWS :: (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> m a
 readTMVarInNWS lens = liftIO . atomically . readTMVar =<< getNWSRec lens
 
 
@@ -123,14 +123,14 @@ getMqtPt = do
     liftIO . atomically $  (,) <$> readTMVar mqtTMVar <*> readTMVar ptTMVar
 
 
-onNWS :: forall t (m :: * -> *) a. (MonadIO m, MonadState MudState m) => ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) -> ((TMVar t, t) -> STM a) -> m a
+onNWS :: (MonadIO m, MonadState MudState m) => ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) -> ((TMVar t, t) -> STM a) -> m a
 onNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= \x ->
         f (t, x)
 
 
-modifyNWS :: forall a (m :: * -> *). (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> (a -> a) -> m ()
+modifyNWS :: (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> (a -> a) -> m ()
 modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= putTMVar t . f
