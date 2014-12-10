@@ -56,6 +56,7 @@ library
                        RecordWildCards,
                        ScopedTypeVariables,
                        TemplateHaskell,
+                       TupleSections,
                        TypeFamilies,
                        UndecidableInstances,
                        ViewPatterns

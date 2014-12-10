@@ -194,8 +194,8 @@ instance Ord ClassifiedBroadcast where
 instance Show ActionParams where
   show ActionParams { .. } = showIt (show plaId) (show plaCols) (show args)
     where
-      showIt i cols = T.unpack . sformat builder i cols
-      builder = do
+      showIt i cols = T.unpack . sformat m i cols
+      m = do
           "ActionParams {plaId = "
           ", plaMsgQueue = elided, plaCols = "
           ", args = "

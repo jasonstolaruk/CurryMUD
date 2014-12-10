@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, ScopedTypeVariables, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds (listenWrapper) where
 
@@ -502,7 +502,7 @@ mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
 mkCmdListWithNonStdRmLinks ((^.rmLinks) -> rls) =
     sortBy sorter $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
   where
-    sorter c = uncurry compare . over both cmdName . (,) c
+    sorter c = uncurry compare . over both cmdName . (c,)
 
 
 isNonStdLink :: RmLink -> Bool
