@@ -249,10 +249,10 @@ saveUptime ut@(T.pack . renderSecs -> utTxt) = getRecordUptime >>= \case
 
 getRecordUptime :: MudStack (Maybe Integer)
 getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
-  True  -> readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
+  True  -> liftIO readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
   False -> return Nothing
   where
-    readUptime = return . Just . read =<< (liftIO . readFile $ uptimeFile)
+    readUptime = Just . read <$> readFile uptimeFile
 
 
 listen :: MudStack ()
@@ -355,11 +355,9 @@ randomRace = newStdGen >>= \g ->
 
 
 dumpTitle :: MsgQueue -> MudStack ()
-dumpTitle mq = liftIO newStdGen >>= \g ->
-    let range                                   = (1, noOfTitles)
-        ((T.unpack "title" ++) . show -> fn, _) = randomR range g
-    in (try . takeADump $ fn) >>= eitherRet (readFileExHandler "dumpTitle")
+dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExHandler "dumpTitle")
   where
+    getFilename  = (T.unpack "title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
     takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
 
 
