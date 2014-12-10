@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, KindSignatures, OverloadedStrings, RankNTypes, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, RankNTypes, RecordWildCards, ViewPatterns #-}
 
 -- This module is considered to have sufficient test coverage as of 2014-10-13.
 
@@ -52,6 +52,7 @@ module Mud.StateHelpers ( BothGramNos
                         , send
                         , sortInv
                         , splitRmInv
+                        , statefulFork
                         , wrapSend ) where
 
 import Mud.MiscDataTypes
@@ -62,14 +63,15 @@ import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), Const, pure)
+import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (_1, _2, at, both, each, over, to)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.))
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.State (gets)
+import Control.Monad.State (get, gets)
 import Control.Monad.State.Class (MonadState)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, foldl', nub, sortBy)
@@ -78,6 +80,9 @@ import Data.Monoid ((<>))
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, IntMap, keys)
 import qualified Data.Text as T
+
+
+-- TODO: Eliminate type variables where you can explicitly provide types for them.
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -324,7 +329,7 @@ ok :: MsgQueue -> MudStack ()
 ok mq = send mq . nlnl $ "OK!"
 
 
-massMsg :: Msg -> MudStack () -- TODO: Should really use a "Broadcast Chan".
+massMsg :: Msg -> MudStack ()
 massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
     forM_ is $ liftIO . atomically . flip writeTQueue m
 
@@ -337,6 +342,10 @@ mkAssocListTxt cols = T.concat . map helper
 
 -- ============================================================
 -- Misc. helpers:
+
+
+statefulFork :: StateInIORefT MudState IO a -> MudStack ()
+statefulFork f = liftIO . void . forkIO . void . runStateInIORefT f =<< get
 
 
 allKeys :: WorldState -> Inv

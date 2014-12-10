@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE KindSignatures, LambdaCase, OverloadedStrings, RankNTypes, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, RankNTypes, ViewPatterns #-}
 
 -- This module is considered to have sufficient test coverage as of 2014-10-13.
 

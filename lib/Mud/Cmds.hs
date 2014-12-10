@@ -18,7 +18,7 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow (first)
-import Control.Concurrent (forkIO, killThread, myThreadId, ThreadId)
+import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, poll, race_, wait)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
@@ -28,7 +28,7 @@ import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
-import Control.Monad (forever, forM_, guard, mplus, replicateM_, unless, void)
+import Control.Monad (forever, forM_, guard, mplus, replicateM, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Char (isSpace)
@@ -43,6 +43,7 @@ import GHC.Conc (threadStatus, ThreadStatus(..))
 import Network (accept, HostName, listenOn, PortID(..), sClose)
 import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
+import System.Console.ANSI (setTitle)
 import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (BufferMode(..), Handle, hClose, hGetBuffering, hGetLine, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1, Newline(..), NewlineMode(..), openTempFile)
@@ -84,6 +85,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 12. Make sure you are using "as" and "a" for "args" instead of "rs" and "r".
 -- [DONE] 13. Make sure that all your export lists are properly sorted.
 -- [DONE] 14. "forall"?
+-- 15. Lists of imported functions should be loaded.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -218,12 +220,13 @@ prefixDebugCmd = prefixCmd debugCmdChar
 
 
 listenWrapper :: MudStack ()
-listenWrapper = (initAndStart `catch` listenExHandler) `finally` (getUptime >>= saveUptime >> closeLogs)
+listenWrapper = (initAndStart `catch` listenExHandler) `finally` graceful
   where
     initAndStart = do
         initLogging
         logNotice "listenWrapper initAndStart" "server started."
         initWorld
+        statefulFork dynamicTitle
         listen
 
 
@@ -233,6 +236,10 @@ listenExHandler e =
       Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
       Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
       _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
+
+
+graceful :: MudStack ()
+graceful = getUptime >>= saveUptime >> closeLogs
 
 
 saveUptime :: Integer -> MudStack ()
@@ -253,6 +260,18 @@ getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
   False -> return Nothing
   where
     readUptime = Just . read <$> readFile uptimeFile
+
+
+-- TODO: Thread needs to be cancelled on exit.
+-- TODO: Loggers shouldn't print to screen.
+dynamicTitle :: MudStack ()
+dynamicTitle = registerThread Title >> forever loop `finally` (liftIO . setTitle $ "")
+  where
+    loop = do
+        ut <- renderSecs <$> getUptime
+        p  <- show . length . IM.keys <$> readTMVarInNWS plaTblTMVar
+        liftIO . setTitle . concat $ [ "Uptime: ", ut, " / Players: ", p ] -- TODO: Pad fields?
+        liftIO . threadDelay $ 10 ^ 6
 
 
 listen :: MudStack ()
@@ -2313,9 +2332,9 @@ debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 debugLog :: Action
 debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
-    helper       = replicateM_ 100 . liftIO . forkIO . void . runStateInIORefT heavyLogging =<< get
+    helper       = replicateM 100 . statefulFork $ heavyLogging
     heavyLogging = liftIO myThreadId >>=
-        replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText
+        replicateM 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText
 debugLog p = withoutArgs debugLog p
 
 

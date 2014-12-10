@@ -43,7 +43,6 @@ library
   other-extensions:    FlexibleContexts,
                        FlexibleInstances,
                        GeneralizedNewtypeDeriving,
-                       KindSignatures,
                        LambdaCase,
                        MultiParamTypeClasses,
                        MultiWayIf,
@@ -60,7 +59,8 @@ library
                        TypeFamilies,
                        UndecidableInstances,
                        ViewPatterns
-  build-depends:       async >=2.0 && <3.0,
+  build-depends:       ansi-terminal >=0.6 && <0.7,
+                       async >=2.0 && <3.0,
                        base >=4.7 && <5.0,
                        containers >=0.5 && <0.6,
                        directory >=1.2 && <2.0,
