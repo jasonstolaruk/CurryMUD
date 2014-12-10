@@ -391,7 +391,7 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
       FromServer msg -> (liftIO . T.hPutStr h $ msg)             >> loop
       FromClient (T.strip . T.pack . stripTelnet . T.unpack -> msg)
                      -> unless (T.null msg) (handleInp i mq msg) >> loop
-      Prompt     p   -> sendPrompt h p                           >> loop
+      Prompt p       -> sendPrompt h p                           >> loop
       Quit           -> cowbye h                                 >> handleEgress i
       Boot           -> boot   h                                 >> handleEgress i
       Dropped        ->                                             handleEgress i
@@ -420,9 +420,9 @@ sendPrompt h = liftIO . T.hPutStr h . nl
 
 
 cowbye :: Handle -> MudStack ()
-cowbye h = takeADump `catch` readFileExHandler "cowbye"
+cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
   where
-    takeADump = liftIO . T.hPutStr h =<< nl <$> (liftIO . T.readFile . (miscDir ++) $ "cowbye")
+    takeADump = T.hPutStr h . nl =<< (T.readFile . (miscDir ++) $ "cowbye")
 
 
 -- TODO: Make a wizard command that does this.
@@ -434,7 +434,7 @@ shutDown :: MudStack ()
 shutDown = massMsg StopThread >> commitSuicide
   where
     commitSuicide = do
-        liftIO . void . forkIO . mapM_ wait =<< M.elems <$> readTMVarInNWS talkAsyncTblTMVar
+        liftIO . void . forkIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
         liftIO . killThread =<< getListenThreadId
 
 
@@ -2091,10 +2091,9 @@ uptimeHelper ut = helper <$> getRecordUptime
 
 
 getUptime :: MudStack Integer
-getUptime = do
-    start <- getNWSRec startTime
-    now   <- liftIO getCurrentTime
-    return . round $ now `diffUTCTime` start
+getUptime = round <$> diff
+  where
+    diff = diffUTCTime <$> liftIO getCurrentTime <*> getNWSRec startTime
 
 
 -----
@@ -2278,8 +2277,7 @@ debugBuffCheck (NoArgs i mq cols) = do
     try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
   where
     helper = do
-        td                                 <- liftIO getTemporaryDirectory
-        (fn@(dblQuote . T.pack -> fn'), h) <- liftIO . openTempFile td $ "temp"
+        (fn@(dblQuote . T.pack -> fn'), h) <- liftIO $ flip openTempFile "temp" =<< getTemporaryDirectory
         (dblQuote . showText -> mode)      <- liftIO . hGetBuffering $ h
         send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ parensQuote "Default"
                                                                       , " buffering mode for temp file "
