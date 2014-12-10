@@ -80,7 +80,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 8. Refactor for ViewPatterns and pattern guards.
 -- [DONE] 9. Refactor for NamedFieldPuns and RecordWildCards.
 -- [DONE] 10. See if you can keep your lines at 120 characters or less.
--- 11. Are there places where I can use IO as a Functor or Applicative?
+-- [DONE] 11. Are there places where I can use IO as a Functor or Applicative?
 -- [DONE] 12. Make sure you are using "as" and "a" for "args" instead of "rs" and "r".
 -- [DONE] 13. Make sure that all your export lists are properly sorted.
 -- [DONE] 14. "forall"?
@@ -2431,8 +2431,9 @@ debugStop p              = withoutArgs debugStop p
 debugCPU :: Action
 debugCPU (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "cpu") i
-    t <- liftIO getCPUTime
-    wrapSend mq cols $ "CPU time: " <> showText (fromIntegral t / fromIntegral (10 ^ 12))
+    wrapSend mq cols . ("CPU time: " <>) =<< liftIO cpuTime
+  where
+    cpuTime = showText . (/ fromIntegral (10 ^ 12)) . fromIntegral <$> getCPUTime
 debugCPU p = withoutArgs debugCPU p
 
 
