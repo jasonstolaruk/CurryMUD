@@ -18,7 +18,7 @@ import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow (first)
-import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId, threadDelay)
+import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId)
 import Control.Concurrent.Async (async, asyncThreadId, poll, race_, wait)
 import Control.Concurrent.STM (atomically, STM)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar, TMVar)
@@ -43,7 +43,7 @@ import GHC.Conc (threadStatus, ThreadStatus(..))
 import Network (accept, HostName, listenOn, PortID(..), sClose)
 import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
-import System.Console.ANSI (setTitle)
+import System.Console.ANSI -- TODO
 import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (BufferMode(..), Handle, hClose, hGetBuffering, hGetLine, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1, Newline(..), NewlineMode(..), openTempFile)
@@ -86,6 +86,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 13. Make sure that all your export lists are properly sorted.
 -- [DONE] 14. "forall"?
 -- 15. Lists of imported functions should be sorted.
+-- 16. Loggers shouldn't print to screen.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -158,6 +159,7 @@ debugCmds =
                                                                              \message." }
     , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering \
                                                                                   \mode." }
+    , Cmd { cmdName = prefixDebugCmd "color", action = debugColor, cmdDesc = "Perform a color test." }
     , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
     , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
@@ -226,7 +228,6 @@ listenWrapper = (initAndStart `catch` listenExHandler) `finally` graceful
         initLogging
         logNotice "listenWrapper initAndStart" "server started."
         initWorld
-        statefulFork dynamicTitle
         listen
 
 
@@ -260,18 +261,6 @@ getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
   False -> return Nothing
   where
     readUptime = Just . read <$> readFile uptimeFile
-
-
--- TODO: Thread needs to be cancelled on exit.
--- TODO: Loggers shouldn't print to screen.
-dynamicTitle :: MudStack ()
-dynamicTitle = registerThread Title >> forever loop `finally` (liftIO . setTitle $ "")
-  where
-    loop = do
-        ut <- renderSecs <$> getUptime
-        p  <- show . length . IM.keys <$> readTMVarInNWS plaTblTMVar
-        liftIO . setTitle . concat $ [ "Uptime: ", ut, " / Players: ", p ] -- TODO: Pad fields?
-        liftIO . threadDelay $ 10 ^ 6
 
 
 listen :: MudStack ()
@@ -2503,3 +2492,28 @@ debugShowParams p@(WithArgs i mq cols _) = do
     logPlaExec (prefixDebugCmd "showparams") i
     wrapSend mq cols . showText $ p
 debugShowParams p = patternMatchFail "debugShowParams" [ showText p ]
+
+
+-----
+
+
+debugColor :: Action
+debugColor (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "color") i
+    send mq . nl $ colorTestTxt
+  where
+    colorTestTxt = T.concat $ do
+        fgi <- intensities
+        fgc <- colors
+        bgi <- intensities
+        bgc <- colors
+        let fg = (fgi, fgc)
+        let bg = (bgi, bgc)
+        return . nl . T.concat $ [ mkColorDesc fg bg, mkColorCodes fg bg, " CurryMUD ", reset ]
+    intensities = [ Dull, Vivid ]
+    colors      = [ Black .. White ]
+    mkColorDesc (mkColorName -> fg) (mkColorName -> bg)                                  = fg <> "on " <> bg
+    mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
+    mkColorCodes fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
+    reset              = mkColorCodes (Dull, White) (Dull, Black)
+debugColor p = withoutArgs debugColor p

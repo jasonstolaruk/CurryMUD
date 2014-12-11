@@ -316,7 +316,6 @@ type ThreadTbl = M.Map ThreadId ThreadType
 
 data ThreadType = Notice
                 | Error
-                | Title
                 | Listen
                 | Talk
                 | Server  Id
