@@ -87,6 +87,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 14. "forall"?
 -- 15. Lists of imported functions should be sorted.
 -- 16. Loggers shouldn't print to screen.
+-- 17. Use "T.singleton".
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -159,7 +160,10 @@ debugCmds =
                                                                              \message." }
     , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering \
                                                                                   \mode." }
-    , Cmd { cmdName = prefixDebugCmd "color", action = debugColor, cmdDesc = "Perform a color test." }
+    , Cmd { cmdName = prefixDebugCmd "colorcode", action = debugColorCode, cmdDesc = "Perform a color test using \
+                                                                                     \\"setSGRCode\"." }
+    , Cmd { cmdName = prefixDebugCmd "colorhandle", action = debugColorHandle, cmdDesc = "Perform a color test using \
+                                                                                         \\"hSetSGR\"." }
     , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
     , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
@@ -396,7 +400,7 @@ server :: Handle -> Id -> MsgQueue -> MudStack ()
 server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      FromServer msg -> (liftIO . T.hPutStr h $ msg)             >> loop
+      FromServer msg -> (liftIO . output h $ msg)                >> loop
       FromClient (T.strip . T.pack . stripTelnet . T.unpack -> msg)
                      -> unless (T.null msg) (handleInp i mq msg) >> loop
       Prompt p       -> sendPrompt h p                           >> loop
@@ -421,6 +425,20 @@ plaThreadExHandler n i e
 
 getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
+
+
+output :: Handle -> T.Text -> IO ()
+output h msg
+  | T.pack [colorEsc] `T.isInfixOf` msg, (left, colorTxt, right) <- parse msg
+  = T.hPutStr h left >> (setColor h . T.unpack $ colorTxt) >> output h right
+  | otherwise = T.hPutStr h msg
+  where
+    parse (T.span (/= colorEsc) -> (left, right)) = (left, T.tail . T.take 5 $ right, T.drop 5 right)
+
+
+setColor :: Handle -> String -> IO ()
+setColor h [ fgi, fgc, bgi, bgc ] = hSetSGR h [ SetColor Foreground (toEnum (read [fgi]) :: ColorIntensity) (toEnum (read [fgc]) :: Color), SetColor Background (toEnum (read [bgi]) :: ColorIntensity) (toEnum (read [bgc]) :: Color) ]
+setColor _ colorTxt = patternMatchFail "setColor" [ T.pack colorTxt ]
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()
@@ -2497,9 +2515,9 @@ debugShowParams p = patternMatchFail "debugShowParams" [ showText p ]
 -----
 
 
-debugColor :: Action
-debugColor (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "color") i
+debugColorCode :: Action
+debugColorCode (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "colorcode") i
     send mq . nl $ colorTestTxt
   where
     colorTestTxt = T.concat $ do
@@ -2509,11 +2527,43 @@ debugColor (NoArgs' i mq) = do
         bgc <- colors
         let fg = (fgi, fgc)
         let bg = (bgi, bgc)
-        return . nl . T.concat $ [ mkColorDesc fg bg, mkColorCodes fg bg, " CurryMUD ", reset ]
+        return . nl . T.concat $ [ mkColorDesc fg bg, mkColorANSI fg bg, " CurryMUD ", reset ]
     intensities = [ Dull, Vivid ]
     colors      = [ Black .. White ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg)                                  = fg <> "on " <> bg
     mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
-    mkColorCodes fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
-    reset              = mkColorCodes (Dull, White) (Dull, Black)
-debugColor p = withoutArgs debugColor p
+    mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
+    reset             = mkColorANSI (Dull, White) (Dull, Black)
+debugColorCode p = withoutArgs debugColorCode p
+
+
+-----
+
+
+debugColorHandle :: Action
+debugColorHandle (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "colorhandle") i -- TODO: Padding in command list.
+    send mq . nl $ colorTestTxt
+  where
+    colorTestTxt = T.concat $ do
+        fgi <- intensities
+        fgc <- colors
+        bgi <- intensities
+        bgc <- colors
+        let fg = (fgi, fgc)
+        let bg = (bgi, bgc)
+        return . nl . T.concat $ [ mkColorDesc fg bg, mkColorCode fg bg, " CurryMUD ", reset ]
+    intensities = [ Dull, Vivid ]
+    colors      = [ Black .. White ]
+    mkColorDesc (mkColorName -> fg) (mkColorName -> bg)                                  = fg <> "on " <> bg
+    mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
+    reset             = mkColorCode (Dull, White) (Dull, Black)
+debugColorHandle p = withoutArgs debugColorHandle p
+
+
+mkColorCode :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> T.Text
+mkColorCode (mkColorTxt -> fg) (mkColorTxt -> bg) = T.pack [colorEsc] <> fg <> bg
+
+
+mkColorTxt :: (ColorIntensity, Color) -> T.Text
+mkColorTxt (showText . fromEnum -> i, showText . fromEnum -> c) = i <> c

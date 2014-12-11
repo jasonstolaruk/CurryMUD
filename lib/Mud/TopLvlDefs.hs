@@ -30,10 +30,18 @@ telnetSE  = '\240'
 telnetGA  = '\249'
 
 
+indentFiller :: Char
+indentFiller = '\128'
+
+
+colorEsc :: Char
+colorEsc = '\129'
+
+
 stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter :: Char
-stdDesigDelimiter    = '\128'
-nonStdDesigDelimiter = '\129'
-desigDelimiter       = '\130'
+stdDesigDelimiter    = '\130'
+nonStdDesigDelimiter = '\131'
+desigDelimiter       = '\132'
 
 
 mudDir :: FilePath

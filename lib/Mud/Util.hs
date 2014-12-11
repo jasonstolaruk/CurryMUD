@@ -109,7 +109,7 @@ multiWrap cols = T.unlines . concatMap (wordWrap cols)
 
 
 wordWrapIndent :: Int -> Int -> T.Text -> [T.Text]
-wordWrapIndent n cols = map leadingNullsToSpcs . wrapIt . leadingSpcsToNulls
+wordWrapIndent n cols = map leadingFillerToSpcs . wrapIt . leadingSpcsToFiller
   where
     wrapIt t
       | T.null afterMax = [t]
@@ -118,15 +118,15 @@ wordWrapIndent n cols = map leadingNullsToSpcs . wrapIt . leadingSpcsToNulls
       | otherwise = beforeMax   : wordWrapIndent n cols (leadingIndent <> afterMax)
       where
         (beforeMax, afterMax) = T.splitAt cols t
-        leadingIndent         = T.replicate (adjustIndent n cols) "\NUL"
+        leadingIndent         = T.replicate (adjustIndent n cols) . T.pack $ [indentFiller]
 
 
-leadingSpcsToNulls :: T.Text -> T.Text
-leadingSpcsToNulls = xformLeading ' ' '\NUL'
+leadingSpcsToFiller :: T.Text -> T.Text
+leadingSpcsToFiller = xformLeading ' ' indentFiller
 
 
-leadingNullsToSpcs :: T.Text -> T.Text
-leadingNullsToSpcs = xformLeading '\NUL' ' '
+leadingFillerToSpcs :: T.Text -> T.Text
+leadingFillerToSpcs = xformLeading indentFiller ' '
 
 
 xformLeading :: Char -> Char -> T.Text -> T.Text
