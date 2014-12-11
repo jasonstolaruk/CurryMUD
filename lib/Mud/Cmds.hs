@@ -3,6 +3,7 @@
 
 module Mud.Cmds (listenWrapper) where
 
+import Mud.Color
 import Mud.Ids
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import Mud.MiscDataTypes
@@ -43,7 +44,6 @@ import GHC.Conc (threadStatus, ThreadStatus(..))
 import Network (accept, HostName, listenOn, PortID(..), sClose)
 import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
-import System.Console.ANSI -- TODO
 import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (BufferMode(..), Handle, hClose, hGetBuffering, hGetLine, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1, Newline(..), NewlineMode(..), openTempFile)
@@ -306,6 +306,7 @@ talk h host@(T.pack -> host') = helper `finally` cleanUp
                                       , "." ]
         initPlaLog i n
         logPla "talk" i $ "logged on from " <> host' <> "."
+        setDfltColor mq
         dumpTitle mq
         prompt mq "> "
         notifyArrival i
@@ -361,6 +362,10 @@ randomSex = newStdGen >>= \g ->
 randomRace :: IO Race
 randomRace = newStdGen >>= \g ->
     let (x, _) = randomR (0, 7) g in return $ [ Dwarf .. Vulpenoid ] !! x
+
+
+setDfltColor :: MsgQueue -> MudStack ()
+setDfltColor = flip send dfltColorANSI
 
 
 dumpTitle :: MsgQueue -> MudStack ()
@@ -422,17 +427,6 @@ plaThreadExHandler n i e
 
 getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
-
-
-{-
-output :: Handle -> T.Text -> IO () -- TODO: Delete?
-output h msg
-  | T.pack [colorEsc] `T.isInfixOf` msg, (left, colorTxt, right) <- parse msg
-  = T.hPutStr h left >> (setColor h . T.unpack $ colorTxt) >> output h right
-  | otherwise = T.hPutStr h msg
-  where
-    parse (T.span (/= colorEsc) -> (left, right)) = (left, T.tail . T.take 5 $ right, T.drop 5 right)
--}
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()
@@ -2513,11 +2507,7 @@ debugParams p = patternMatchFail "debugParams" [ showText p ]
 debugColor :: Action
 debugColor (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "color") i
-    send mq . nl $ colorTestTxt
-  where
-    intensities  = [ Dull, Vivid ]
-    colors       = [ Black .. White ]
-    colorTestTxt = T.concat $ do
+    send mq . nl . T.concat $ do
         fgi <- intensities
         fgc <- colors
         bgi <- intensities
@@ -2525,10 +2515,9 @@ debugColor (NoArgs' i mq) = do
         let fg   = (fgi, fgc)
         let bg   = (bgi, bgc)
         let ansi = mkColorANSI fg bg
-        return . nl . T.concat $ [ mkANSICodeList ansi, mkColorDesc fg bg, ansi, " CurryMUD ", reset ]
+        return . nl . T.concat $ [ mkANSICodeList ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColorANSI ]
+  where
     mkANSICodeList = padOrTrunc 28 . T.pack . concatMap ((++ " ") . show . ord) . T.unpack
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
-    mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
-    reset             = mkColorANSI (Dull, White) (Dull, Black)
 debugColor p = withoutArgs debugColor p
