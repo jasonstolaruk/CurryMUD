@@ -70,9 +70,8 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (_1, _2, at, both, each, over, to)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.))
 import Control.Monad (forM_, void)
-import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
-import Control.Monad.State.Class (MonadState)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, foldl', nub, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
@@ -80,9 +79,6 @@ import Data.Monoid ((<>))
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, IntMap, keys)
 import qualified Data.Text as T
-
-
--- TODO: Eliminate type variables where you can explicitly provide types for them.
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -114,11 +110,14 @@ modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
     transaction t = takeTMVar t >>= putTMVar t . f
 
 
-getNWSRec :: MonadState MudState m => ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> m a
+getNWSRec :: ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> MudStack a
 getNWSRec lens = gets (^.nonWorldState.lens)
 
 
-readTMVarInNWS :: (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> m a
+readTMVarInNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) ->
+                  NonWorldState                           ->
+                  Const (TMVar a) NonWorldState)          ->
+                  MudStack a
 readTMVarInNWS lens = liftIO . atomically . readTMVar =<< getNWSRec lens
 
 
@@ -128,14 +127,18 @@ getMqtPt = do
     liftIO . atomically $  (,) <$> readTMVar mqtTMVar <*> readTMVar ptTMVar
 
 
-onNWS :: (MonadIO m, MonadState MudState m) => ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) -> ((TMVar t, t) -> STM a) -> m a
+onNWS :: ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) ->
+         ((TMVar t, t) -> STM a)                                                                    ->
+         MudStack a
 onNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= \x ->
         f (t, x)
 
 
-modifyNWS :: (MonadIO m, MonadState MudState m) => ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) -> (a -> a) -> m ()
+modifyNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) ->
+             (a -> a)                                                                                   ->
+             MudStack ()
 modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= putTMVar t . f
@@ -344,7 +347,7 @@ mkAssocListTxt cols = T.concat . map helper
 -- Misc. helpers:
 
 
-statefulFork :: StateInIORefT MudState IO a -> MudStack ()
+statefulFork :: StateInIORefT MudState IO () -> MudStack ()
 statefulFork f = liftIO . void . forkIO . void . runStateInIORefT f =<< get
 
 

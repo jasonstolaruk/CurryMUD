@@ -28,7 +28,7 @@ import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
-import Control.Monad (forever, forM_, guard, mplus, replicateM, unless, void)
+import Control.Monad (forever, forM_, guard, mplus, replicateM, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Char (isSpace)
@@ -85,7 +85,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 12. Make sure you are using "as" and "a" for "args" instead of "rs" and "r".
 -- [DONE] 13. Make sure that all your export lists are properly sorted.
 -- [DONE] 14. "forall"?
--- 15. Lists of imported functions should be loaded.
+-- 15. Lists of imported functions should be sorted.
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -2334,7 +2334,7 @@ debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
     helper       = replicateM 100 . statefulFork $ heavyLogging
     heavyLogging = liftIO myThreadId >>=
-        replicateM 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText
+        replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText
 debugLog p = withoutArgs debugLog p
 
 
