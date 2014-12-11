@@ -23,27 +23,6 @@ port :: Int
 port = 9696
 
 
-telnetIAC, telnetSB, telnetSE, telnetGA :: Char
-telnetIAC = '\255'
-telnetSB  = '\250'
-telnetSE  = '\240'
-telnetGA  = '\249'
-
-
-indentFiller :: Char
-indentFiller = '\128'
-
-
-colorEsc :: Char
-colorEsc = '\129'
-
-
-stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter :: Char
-stdDesigDelimiter    = '\130'
-nonStdDesigDelimiter = '\131'
-desigDelimiter       = '\132'
-
-
 mudDir :: FilePath
 mudDir = let home = unsafePerformIO . getEnv $ "HOME"
          in (home ++) . T.unpack $ "/CurryMUD/"
@@ -58,12 +37,33 @@ miscDir    = resDir ++ "misc/"
 uptimeFile = mudDir ++ "uptime"
 
 
+telnetIAC, telnetSB, telnetSE, telnetGA :: Char
+telnetIAC = '\255'
+telnetSB  = '\250'
+telnetSE  = '\240'
+telnetGA  = '\249'
+
+
+stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter :: Char
+stdDesigDelimiter    = '\130'
+nonStdDesigDelimiter = '\131'
+desigDelimiter       = '\132'
+
+
+indentFiller :: Char
+indentFiller = '\128'
+
+
 noOfTitles :: Int
 noOfTitles = 33
 
 
 maxLogSize :: FileOffset
 maxLogSize = 100000
+
+
+maxCmdLen :: Int
+maxCmdLen = 9
 
 
 allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizCmdChar, debugCmdChar :: Char

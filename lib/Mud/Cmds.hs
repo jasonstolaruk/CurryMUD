@@ -31,7 +31,7 @@ import Control.Lens.Setter (set)
 import Control.Monad (forever, forM_, guard, mplus, replicateM, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
-import Data.Char (isSpace)
+import Data.Char (isSpace, ord)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort, sortBy)
 import Data.Maybe (catMaybes, fromJust, isNothing)
@@ -160,17 +160,14 @@ debugCmds =
                                                                              \message." }
     , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering \
                                                                                   \mode." }
-    , Cmd { cmdName = prefixDebugCmd "colorcode", action = debugColorCode, cmdDesc = "Perform a color test using \
-                                                                                     \\"setSGRCode\"." }
-    , Cmd { cmdName = prefixDebugCmd "colorhandle", action = debugColorHandle, cmdDesc = "Perform a color test using \
-                                                                                         \\"hSetSGR\"." }
+    , Cmd { cmdName = prefixDebugCmd "color", action = debugColor, cmdDesc = "Perform a color test." }
     , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
     , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
     , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
                                                                                \put into a sack on the ground." }
-    , Cmd { cmdName = prefixDebugCmd "showparams", action = debugShowParams, cmdDesc = "Show \"ActionParams\"." }
+    , Cmd { cmdName = prefixDebugCmd "params", action = debugParams, cmdDesc = "Show \"ActionParams\"." }
     , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
@@ -400,7 +397,7 @@ server :: Handle -> Id -> MsgQueue -> MudStack ()
 server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      FromServer msg -> (liftIO . output h $ msg)                >> loop
+      FromServer msg -> (liftIO . T.hPutStr h $ msg)             >> loop
       FromClient (T.strip . T.pack . stripTelnet . T.unpack -> msg)
                      -> unless (T.null msg) (handleInp i mq msg) >> loop
       Prompt p       -> sendPrompt h p                           >> loop
@@ -427,18 +424,15 @@ getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
-output :: Handle -> T.Text -> IO ()
+{-
+output :: Handle -> T.Text -> IO () -- TODO: Delete?
 output h msg
   | T.pack [colorEsc] `T.isInfixOf` msg, (left, colorTxt, right) <- parse msg
   = T.hPutStr h left >> (setColor h . T.unpack $ colorTxt) >> output h right
   | otherwise = T.hPutStr h msg
   where
     parse (T.span (/= colorEsc) -> (left, right)) = (left, T.tail . T.take 5 $ right, T.drop 5 right)
-
-
-setColor :: Handle -> String -> IO ()
-setColor h [ fgi, fgc, bgi, bgc ] = hSetSGR h [ SetColor Foreground (toEnum (read [fgi]) :: ColorIntensity) (toEnum (read [fgc]) :: Color), SetColor Background (toEnum (read [bgi]) :: ColorIntensity) (toEnum (read [bgc]) :: Color) ]
-setColor _ colorTxt = patternMatchFail "setColor" [ T.pack colorTxt ]
+-}
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()
@@ -651,16 +645,17 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 
 
 dispCmdList :: (Cmd -> Bool) -> Action
-dispCmdList p (NoArgs   _ mq cols   ) = send mq . nl . T.unlines . concatMap (wordWrapIndent 12 cols) . cmdListText $ p
+dispCmdList p (NoArgs   _ mq cols   ) =
+    send mq . nl . T.unlines . concatMap (wordWrapIndent (maxCmdLen + 1) cols) . cmdListText $ p
 dispCmdList p (LowerNub _ mq cols as) | matches <- [ grepTextList a . cmdListText $ p | a <- as ] =
-    send mq . nl . T.unlines . concatMap (wordWrapIndent 12 cols) . intercalate [""] $ matches
+    send mq . nl . T.unlines . concatMap (wordWrapIndent (maxCmdLen + 1) cols) . intercalate [""] $ matches
 dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
 
 
 cmdListText :: (Cmd -> Bool) -> [T.Text]
 cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmds
   where
-    helper acc Cmd { .. } | cmdTxt <- nl $ padOrTrunc 12 cmdName <> cmdDesc = cmdTxt : acc
+    helper acc Cmd { .. } | cmdTxt <- nl $ padOrTrunc (maxCmdLen + 1) cmdName <> cmdDesc = cmdTxt : acc
 
 
 mkCmdPred :: Maybe Char -> Cmd -> Bool
@@ -2505,65 +2500,35 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 -----
 
 
-debugShowParams :: Action
-debugShowParams p@(WithArgs i mq cols _) = do
-    logPlaExec (prefixDebugCmd "showparams") i
+debugParams :: Action
+debugParams p@(WithArgs i mq cols _) = do
+    logPlaExec (prefixDebugCmd "params") i
     wrapSend mq cols . showText $ p
-debugShowParams p = patternMatchFail "debugShowParams" [ showText p ]
+debugParams p = patternMatchFail "debugParams" [ showText p ]
 
 
 -----
 
 
-debugColorCode :: Action
-debugColorCode (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "colorcode") i
+debugColor :: Action
+debugColor (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "color") i
     send mq . nl $ colorTestTxt
   where
+    intensities  = [ Dull, Vivid ]
+    colors       = [ Black .. White ]
     colorTestTxt = T.concat $ do
         fgi <- intensities
         fgc <- colors
         bgi <- intensities
         bgc <- colors
-        let fg = (fgi, fgc)
-        let bg = (bgi, bgc)
-        return . nl . T.concat $ [ mkColorDesc fg bg, mkColorANSI fg bg, " CurryMUD ", reset ]
-    intensities = [ Dull, Vivid ]
-    colors      = [ Black .. White ]
-    mkColorDesc (mkColorName -> fg) (mkColorName -> bg)                                  = fg <> "on " <> bg
+        let fg   = (fgi, fgc)
+        let bg   = (bgi, bgc)
+        let ansi = mkColorANSI fg bg
+        return . nl . T.concat $ [ mkANSICodeList ansi, mkColorDesc fg bg, ansi, " CurryMUD ", reset ]
+    mkANSICodeList = padOrTrunc 28 . T.pack . concatMap ((++ " ") . show . ord) . T.unpack
+    mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
     mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
     reset             = mkColorANSI (Dull, White) (Dull, Black)
-debugColorCode p = withoutArgs debugColorCode p
-
-
------
-
-
-debugColorHandle :: Action
-debugColorHandle (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "colorhandle") i -- TODO: Padding in command list.
-    send mq . nl $ colorTestTxt
-  where
-    colorTestTxt = T.concat $ do
-        fgi <- intensities
-        fgc <- colors
-        bgi <- intensities
-        bgc <- colors
-        let fg = (fgi, fgc)
-        let bg = (bgi, bgc)
-        return . nl . T.concat $ [ mkColorDesc fg bg, mkColorCode fg bg, " CurryMUD ", reset ]
-    intensities = [ Dull, Vivid ]
-    colors      = [ Black .. White ]
-    mkColorDesc (mkColorName -> fg) (mkColorName -> bg)                                  = fg <> "on " <> bg
-    mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
-    reset             = mkColorCode (Dull, White) (Dull, Black)
-debugColorHandle p = withoutArgs debugColorHandle p
-
-
-mkColorCode :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> T.Text
-mkColorCode (mkColorTxt -> fg) (mkColorTxt -> bg) = T.pack [colorEsc] <> fg <> bg
-
-
-mkColorTxt :: (ColorIntensity, Color) -> T.Text
-mkColorTxt (showText . fromEnum -> i, showText . fromEnum -> c) = i <> c
+debugColor p = withoutArgs debugColor p
