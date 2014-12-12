@@ -86,7 +86,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 13. Make sure that all your export lists are properly sorted.
 -- [DONE] 14. "forall"?
 -- [DONE] 15. Lists of imported functions should be sorted.
--- 16. Loggers shouldn't print to screen.
+-- [DONE] 16. Loggers shouldn't print to screen.
 -- 17. Use "T.singleton".
 
 

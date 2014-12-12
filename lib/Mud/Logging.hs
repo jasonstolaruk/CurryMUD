@@ -42,7 +42,7 @@ import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
 import System.Log.Handler.Simple (fileHandler)
-import System.Log.Logger (errorM, infoM, noticeM, setHandlers, setLevel, removeAllHandlers, updateGlobalLogger)
+import System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandler, rootLoggerName, setHandlers, setLevel, updateGlobalLogger)
 import System.Posix.Files (fileSize, getFileStatus)
 import qualified Data.IntMap.Lazy as IM (elems)
 import qualified Data.Text as T
@@ -65,6 +65,7 @@ stopLog = liftIO . atomically . flip writeTQueue StopLog
 
 initLogging :: MudStack ()
 initLogging = do
+    liftIO . updateGlobalLogger rootLoggerName $ removeHandler
     (nq, eq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
     (na, ea) <- (,) <$> (liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM $ nq)
                     <*> (liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  $ eq)
