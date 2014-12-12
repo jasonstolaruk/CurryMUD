@@ -44,6 +44,7 @@ import GHC.Conc (ThreadStatus(..), threadStatus)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
+import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hGetBuffering, hGetLine, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1, openTempFile)
@@ -178,6 +179,7 @@ plaCmds :: [Cmd]
 plaCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD." }
+    , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }
     , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
     , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
     , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
@@ -628,6 +630,14 @@ getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet handler
     handler e = do
         readFileExHandler "getMotdTxt" e
         return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
+
+
+-----
+
+
+clear :: Action
+clear (NoArgs' i mq) = logPlaExec "clear" i >> (send mq . T.pack $ clearScreenCode)
+clear p              = withoutArgs clear p
 
 
 -----
