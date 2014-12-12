@@ -61,7 +61,7 @@ import Control.Monad (guard)
 import Data.Char (isDigit, isSpace, toLower, toUpper)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
-import qualified Data.Map.Lazy as M (assocs, Map)
+import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
 

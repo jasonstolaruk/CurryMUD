@@ -15,10 +15,10 @@ import Data.Char (chr, isDigit, isSpace)
 import Data.List (elemIndices, group, sort)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
-import qualified Data.Text as T
 import Test.QuickCheck.Instances ()
-import Test.QuickCheck.Modifiers
-import Test.Tasty.QuickCheck ((==>), choose, forAll, Property)
+import Test.QuickCheck.Modifiers (NonEmptyList(..), NonNegative(..))
+import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
+import qualified Data.Text as T
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

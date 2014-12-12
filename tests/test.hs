@@ -10,7 +10,7 @@ import MudTests.TheWorldTests
 import MudTests.UtilTests
 
 import Data.Monoid ((<>))
-import Test.Tasty (defaultMain, testGroup, TestTree)
+import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit ((@?=), testCase)
 import Test.Tasty.QuickCheck as QC (testProperty)
 import qualified Data.Text as T

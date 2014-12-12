@@ -64,8 +64,8 @@ import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), Const, pure)
 import Control.Concurrent (forkIO)
-import Control.Concurrent.STM (atomically, STM)
-import Control.Concurrent.STM.TMVar (putTMVar, readTMVar, takeTMVar, TMVar)
+import Control.Concurrent.STM (STM, atomically)
+import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (_1, _2, at, both, each, over, to)
 import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.))
@@ -77,7 +77,7 @@ import Data.List ((\\), delete, elemIndex, foldl', nub, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (elems, IntMap, keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, elems, keys)
 import qualified Data.Text as T
 
 

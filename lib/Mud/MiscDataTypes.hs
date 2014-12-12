@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
 {-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
-module Mud.MiscDataTypes ( Action
+module Mud.MiscDataTypes ( AOrThe(..)
+                         , Action
                          , ActionParams(..)
-                         , AOrThe(..)
                          , Amount
                          , Args
                          , Broadcast
