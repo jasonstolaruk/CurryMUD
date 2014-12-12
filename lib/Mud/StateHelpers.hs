@@ -14,6 +14,7 @@ module Mud.StateHelpers ( BothGramNos
                         , getEffName
                         , getLogAsyncs
                         , getNWSRec
+                        , getPla
                         , getPlaColumns
                         , getPlaLogQueue
                         , getSexRace

@@ -337,7 +337,7 @@ adHoc mq host = do
         let pc  = PC iHill r [] []
         let ris = (ws^.invTbl) ! iHill ++ [i]
         -----
-        let pla = Pla True host 80
+        let pla = Pla True host 80 centralDispatch
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
@@ -475,26 +475,19 @@ receiveExHandler = plaThreadExHandler "receive"
 
 
 handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
-handleInp i mq = maybeVoid (dispatch i mq) . splitInp
+handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
+    let cols = p^.columns
+        f    = p^.interpreter
+    in f cn . WithArgs i mq cols $ as
 
 
-type Input = (CmdName, Args)
-
-
-splitInp :: T.Text -> Maybe Input
-splitInp = splitIt . T.words
-  where
-    splitIt [] = Nothing
-    splitIt xs = Just . headTail $ xs
-
-
-dispatch :: Id -> MsgQueue -> Input -> MudStack ()
-dispatch i mq (cn, as) = do
-    cols <- getPlaColumns i
-    findAction i cn >>= maybe sorry (\act -> act (WithArgs i mq cols as))
+centralDispatch :: CmdName -> ActionParams -> MudStack ()
+centralDispatch cn p@(WithArgs i mq _ _) = do
+    findAction i cn >>= maybe sorry (\act -> act p)
     prompt mq "> "
   where
     sorry = send mq . nlnl $ "What?"
+centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)

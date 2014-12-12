@@ -1,5 +1,5 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
+{-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, TemplateHaskell #-}
 
 module Mud.StateDataTypes where
 
@@ -11,11 +11,20 @@ import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
 import Data.Monoid (Monoid, mappend, mempty)
+import Data.String (fromString)
 import Data.Time.Clock (UTCTime)
+import Formatting ((%), sformat)
+import Formatting.Formatters (string)
 import Network (HostName)
+import Prelude hiding ((>>))
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
+
+
+ifThenElse :: Bool -> a -> a -> a
+ifThenElse True  x _ = x
+ifThenElse False _ y = y
 
 
 -- ==================================================
@@ -56,10 +65,10 @@ data WorldState = WorldState { _entTbl   :: IM.IntMap Ent
 -- Entity:
 
 
-type Id = Int
-
+type Id   = Int
 type Sing = T.Text
 type Plur = T.Text
+
 
 data Ent = Ent { _entId    :: !Id
                , _entName  :: !(Maybe T.Text)
@@ -110,7 +119,9 @@ type Cop = Int
 type Sil = Int
 type Gol = Int
 
+
 newtype Coins = Coins (Cop, Sil, Gol) deriving (Eq, Show)
+
 
 instance Monoid Coins where
   mempty = Coins (0, 0, 0)
@@ -124,7 +135,9 @@ instance Monoid Coins where
 
 type Cap = Int
 
+
 newtype Con = Con Cap deriving (Eq, Show)
+
 
 type ConName = T.Text
 
@@ -138,6 +151,7 @@ data Wpn = Wpn { _wpnSub :: !WpnSub
                , _minDmg :: !Int
                , _maxDmg :: !Int } deriving (Eq, Show)
 
+
 data WpnSub = OneHanded
             | TwoHanded deriving (Eq, Show)
 
@@ -149,8 +163,10 @@ data WpnSub = OneHanded
 
 type AC = Int
 
+
 data Arm = Arm { _armSub :: !ArmSub
                , _ac     :: !AC } deriving (Eq, Show)
+
 
 data ArmSub = HeadA
             | UpBodyA
@@ -163,6 +179,7 @@ data ArmSub = HeadA
 
 
 type EqMap = M.Map Slot Id
+
 
 data Slot = HeadS
           | REar1S | REar2S
@@ -197,9 +214,11 @@ data Mob = Mob { _sex               :: !Sex
                , _xp                :: !Int
                , _hand              :: !Hand } deriving (Eq, Show)
 
+
 data Sex = Male
          | Female
          | NoSex deriving (Eq, Show)
+
 
 data Hand = RHand
           | LHand
@@ -215,6 +234,7 @@ data PC = PC { _rmId       :: !Id
              , _race       :: !Race
              , _introduced :: ![Sing]
              , _linked     :: ![Sing] } deriving (Eq, Show)
+
 
 data Race = Dwarf
           | Elf
@@ -236,6 +256,7 @@ data Rm = Rm { _rmName  :: !T.Text
              , _rmFlags :: !Int
              , _rmLinks :: ![RmLink] } deriving Eq
 
+
 data LinkDir = North
              | Northeast
              | East
@@ -247,7 +268,9 @@ data LinkDir = North
              | Up
              | Down deriving (Eq, Show)
 
+
 type LinkName = T.Text
+
 
 data RmLink = StdLink    { _linkDir      :: !LinkDir
                          , _stdDestId    :: !Id }
@@ -301,10 +324,9 @@ data NonWorldState = NonWorldState { _startTime         :: !UTCTime
 
 data LogCmd = StopLog | Msg T.Text
 
-type LogAsync = Async ()
 
-type LogQueue = TQueue LogCmd
-
+type LogAsync   = Async ()
+type LogQueue   = TQueue LogCmd
 type LogService = (LogAsync, LogQueue)
 
 
@@ -313,6 +335,7 @@ type LogService = (LogAsync, LogQueue)
 
 
 type ThreadTbl = M.Map ThreadId ThreadType
+
 
 data ThreadType = Notice
                 | Error
@@ -336,6 +359,7 @@ type TalkAsyncTbl = M.Map ThreadId (Async ())
 
 type MsgQueue = TQueue Msg
 
+
 data Msg = FromServer T.Text
          | FromClient T.Text
          | Prompt     T.Text
@@ -347,12 +371,42 @@ data Msg = FromServer T.Text
 
 
 -- ==================================================
+-- Action parameters:
+
+
+type Cols = Int
+type Args = [T.Text]
+
+
+data ActionParams = ActionParams { plaId       :: !Id
+                                 , plaMsgQueue :: !MsgQueue
+                                 , plaCols     :: !Cols
+                                 , args        :: !Args }
+
+
+instance Show ActionParams where
+  show ActionParams { .. } = showIt (show plaId) (show plaCols) (show args)
+    where
+      showIt i cols = T.unpack . sformat m i cols
+      m = do
+          "ActionParams {plaId = "
+          ", plaMsgQueue = elided, plaCols = "
+          ", args = "
+          "}"
+      a >> b = a % string % b
+
+
+-- ==================================================
 -- Player:
 
 
-data Pla = Pla { _isWiz    :: !Bool
-               , _hostName :: !HostName
-               , _columns  :: !Int }
+type CmdName = T.Text
+
+
+data Pla = Pla { _isWiz       :: !Bool
+               , _hostName    :: !HostName
+               , _columns     :: !Int
+               , _interpreter :: !(CmdName -> ActionParams -> MudStack ()) }
 
 
 -- ==================================================

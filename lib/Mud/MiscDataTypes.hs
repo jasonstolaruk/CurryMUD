@@ -37,8 +37,6 @@ import Control.Applicative (pure)
 import Control.Lens (both, over)
 import Data.Monoid ((<>))
 import Data.String (fromString)
-import Formatting ((%), sformat)
-import Formatting.Formatters (string)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
 
@@ -188,36 +186,10 @@ instance Ord ClassifiedBroadcast where
   _                    `compare` _                    = EQ
 
 
-----
-
-
-instance Show ActionParams where
-  show ActionParams { .. } = showIt (show plaId) (show plaCols) (show args)
-    where
-      showIt i cols = T.unpack . sformat m i cols
-      m = do
-          "ActionParams {plaId = "
-          ", plaMsgQueue = elided, plaCols = "
-          ", args = "
-          "}"
-      a >> b = a % string % b
-
-
 -- ==================================================
 -- Data types:
 
 
-type Cols = Int
-type Args = [T.Text]
-
-
-data ActionParams = ActionParams { plaId       :: !Id
-                                 , plaMsgQueue :: !MsgQueue
-                                 , plaCols     :: !Cols
-                                 , args        :: !Args }
-
-
-type CmdName = T.Text
 type Action  = ActionParams -> MudStack ()
 
 
