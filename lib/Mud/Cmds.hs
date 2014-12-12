@@ -87,7 +87,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- [DONE] 14. "forall"?
 -- [DONE] 15. Lists of imported functions should be sorted.
 -- [DONE] 16. Loggers shouldn't print to screen.
--- 17. Use "T.singleton".
+-- [DONE] 17. Use "T.singleton".
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -1227,7 +1227,7 @@ putAction   (Lower' i as)    = do
                                                 _      -> (++ [cn]) . nub . init $ as
           d                        = mkStdDesig i ws s True ris
       in if (not . null $ pis) || (pc /= mempty)
-        then if T.head cn == rmChar && cn /= T.pack [rmChar]
+        then if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris'
             then shufflePut i (t, ws) d (T.tail cn) True argsWithoutCon ris' rc pis pc procGecrMisRm
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
@@ -1474,7 +1474,7 @@ remove   (Lower' i as)    = do
           (init -> argsWithoutCon) = case as of [_, _] -> as
                                                 _      -> (++ [cn]) . nub . init $ as
           d                        = mkStdDesig i ws s True ris
-      in if T.head cn == rmChar && cn /= T.pack [rmChar]
+      in if T.head cn == rmChar && cn /= T.singleton rmChar
         then if not . null $ ris'
           then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris' rc procGecrMisRm
           else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
@@ -2013,7 +2013,7 @@ whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is
                                                                  , locTxt
                                                                  , "." ]
   where
-    acp                                     = T.pack [allChar]
+    acp                                     = T.singleton allChar
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
                | otherwise                  = ""
     checkFirst e ens | en <- getEffName i ws $ e^.entId, matches <- filter (== en) ens =
@@ -2483,7 +2483,7 @@ debugRemPut (NoArgs' i mq) = do
   where
     remCmd = "remove" <> rest
     putCmd = "put"    <> rest
-    rest   = T.concat [ " ", T.pack [allChar], " ", T.pack [rmChar], "sack" ]
+    rest   = T.concat [ " ", T.singleton allChar, " ", T.singleton rmChar, "sack" ]
 debugRemPut p = withoutArgs debugRemPut p
 
 

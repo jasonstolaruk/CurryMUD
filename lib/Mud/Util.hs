@@ -288,7 +288,7 @@ uncapitalize = capsHelper toLower
 
 
 capsHelper :: (Char -> Char) -> T.Text -> T.Text
-capsHelper f (headTail' -> (h, t)) = T.pack [ f h ] <> t
+capsHelper f (headTail' -> (h, t)) = (T.singleton . f $ h)  <> t
 
 
 aOrAn :: T.Text -> T.Text

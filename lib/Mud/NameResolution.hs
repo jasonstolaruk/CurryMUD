@@ -66,7 +66,7 @@ resolveEntCoinNames i ws (map T.toLower -> as) is c = expandGecrs c [ mkGecr i w
 
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
 mkGecr i ws is c n@(headTail' -> (h, t))
-  | n == T.pack [allChar]
+  | n == T.singleton allChar
   , es <- [ (ws^.entTbl) ! i' | i' <- is ]                  = Mult { amount          = length is
                                                                    , nameSearchedFor = n
                                                                    , entsRes         = Just es
@@ -302,7 +302,7 @@ sorryBadSlot n
 
 
 mkSlotTxt :: T.Text -> T.Text
-mkSlotTxt = dblQuote . (T.pack [slotChar] <>)
+mkSlotTxt = dblQuote . (T.singleton slotChar <>)
 
 
 ringHelp :: T.Text

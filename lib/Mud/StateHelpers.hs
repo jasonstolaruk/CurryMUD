@@ -259,7 +259,7 @@ parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
 parsePCDesig i ws | ((^.introduced) -> intros) <- (ws^.pcTbl) ! i = helper intros
   where
     helper intros msg
-      | T.pack [stdDesigDelimiter] `T.isInfixOf` msg
+      | T.singleton stdDesigDelimiter `T.isInfixOf` msg
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter msg
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
@@ -269,12 +269,12 @@ parsePCDesig i ws | ((^.introduced) -> intros) <- (ws^.pcTbl) ! i = helper intro
         StdDesig { stdPCEntSing = Nothing,  .. } ->
           left <> expandPCEntName i ws isCap pcEntName pcId pcIds <> helper intros rest
         _                                        -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
-      | T.pack [nonStdDesigDelimiter] `T.isInfixOf` msg
+      | T.singleton nonStdDesigDelimiter `T.isInfixOf` msg
       , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter msg
       = left <> (if nonStdPCEntSing `elem` intros then nonStdPCEntSing else nonStdDesc) <> helper intros rest
       | otherwise = msg
     extractPCDesigTxt c (T.span (/= c) -> (left, T.span (/= c) . T.tail -> (pcdTxt, T.tail -> rest)))
-      | pcd <- deserialize . quoteWith (T.pack [c]) $ pcdTxt :: PCDesig = (left, pcd, rest)
+      | pcd <- deserialize . quoteWith (T.singleton c) $ pcdTxt :: PCDesig = (left, pcd, rest)
 
 
 expandPCEntName :: Id -> WorldState -> Bool -> T.Text -> Id -> Inv -> T.Text
@@ -428,7 +428,7 @@ getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
 
 mkUnknownPCEntName :: Id -> WorldState -> T.Text
 mkUnknownPCEntName i ws | ((^.sex) -> s)  <- (ws^.mobTbl) ! i
-                        , ((^.race) -> r) <- (ws^.pcTbl)  ! i = T.pack [ T.head . pp $ s ] <> pp r
+                        , ((^.race) -> r) <- (ws^.pcTbl)  ! i = (T.singleton . T.head . pp $ s) <> pp r
 
 
 getSexRace :: Id -> WorldState -> (Sex, Race)

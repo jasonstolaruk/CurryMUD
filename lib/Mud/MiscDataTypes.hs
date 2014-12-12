@@ -176,7 +176,7 @@ instance Serializable PCDesig where
     where
       deserMaybeText ""  = Nothing
       deserMaybeText txt = Just txt
-      d                  = T.pack [desigDelimiter]
+      d                  = T.singleton desigDelimiter
 
 
 -----
