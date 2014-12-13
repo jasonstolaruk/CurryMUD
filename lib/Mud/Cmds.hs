@@ -2300,7 +2300,10 @@ wizPrint :: Action
 wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message to print to the server console, as \
                                                      \in " <> (dblQuote $ prefixDebugCmd "print" <> " Is anybody \
                                                      \home?") <> "."
-wizPrint (WithArgs _ mq _ as) = (liftIO . T.putStrLn . T.intercalate " " $ as) >> ok mq
+wizPrint (WithArgs i mq _ as) = do
+    logPlaExecArgs (prefixDebugCmd "print") as i
+    liftIO . T.putStrLn . T.intercalate " " $ as
+    ok mq
 wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 
 
