@@ -163,7 +163,7 @@ prop_deleteFirstOfEach delThese fromThis = all (\x -> countOcc x fromThis < 2) d
 -- --------------------------------------------------
 
 
-test_stripTelnet :: String
-test_stripTelnet = stripTelnet $ telnetChars ++ "test"
+test_stripControl :: T.Text
+test_stripControl = stripControl $ T.pack telnetChars <> "test"
   where
     telnetChars = map chr [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]

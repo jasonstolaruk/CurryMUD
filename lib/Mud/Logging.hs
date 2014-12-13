@@ -44,7 +44,7 @@ import System.Log.Handler (close, setFormatter)
 import System.Log.Handler.Simple (fileHandler)
 import System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandler, rootLoggerName, setHandlers, setLevel, updateGlobalLogger)
 import System.Posix.Files (fileSize, getFileStatus)
-import qualified Data.IntMap.Lazy as IM (elems)
+import qualified Data.IntMap.Lazy as IM (elems, lookup)
 import qualified Data.Text as T
 
 
@@ -151,9 +151,13 @@ initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
-logPla modName funName i msg = helper =<< getPlaLogQueue i
-  where
-    helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
+logPla modName funName i msg = doIfLogging i $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
+
+
+doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
+doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
+  Nothing     -> return ()
+  Just (_, q) -> f q
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
@@ -181,4 +185,4 @@ massLogPla modName funName msg = readTMVarInNWS plaLogTblTMVar >>= helper
 
 
 closePlaLog :: Id -> MudStack ()
-closePlaLog i = stopLog =<< getPlaLogQueue i
+closePlaLog = flip doIfLogging stopLog

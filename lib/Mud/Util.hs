@@ -40,7 +40,7 @@ module Mud.Util ( aOrAn
                 , reverseLookup
                 , showText
                 , singleQuote
-                , stripTelnet
+                , stripControl
                 , uncapitalize
                 , unquote
                 , wordWrap
@@ -254,11 +254,8 @@ nl' :: T.Text -> T.Text
 nl' = ("\n" <>)
 
 
-stripTelnet :: String -> String
-stripTelnet (x:y:_:rest)
-  | x == telnetIAC, y == telnetSB = tail . dropWhile (/= telnetSE) $ rest
-  | x == telnetIAC                = stripTelnet rest
-stripTelnet msg                   = msg
+stripControl :: T.Text -> T.Text
+stripControl = T.filter (\c -> c > '\31' && c < '\127')
 
 
 showText :: (Show a) => a -> T.Text

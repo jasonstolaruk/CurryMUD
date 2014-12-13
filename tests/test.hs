@@ -66,7 +66,7 @@ unitTests = testGroup "unit tests" [ unitTestsMiscDataTypes, unitTestsUtil ]
 -- --------------------------------------------------
 
 unitTestsUtil :: TestTree
-unitTestsUtil = testGroup "unit tests Util" [ testCase "stripTelnet" $ test_stripTelnet @?= "test" ]
+unitTestsUtil = testGroup "unit tests Util" [ testCase "stripControl" $ test_stripControl @?= "test" ]
 
 -- --------------------------------------------------
 

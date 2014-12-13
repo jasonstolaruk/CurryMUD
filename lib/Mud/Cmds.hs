@@ -25,7 +25,7 @@ import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
-import Control.Exception.Lifted (catch, finally, throwIO, throwTo, try)
+import Control.Exception.Lifted (catch, finally, handle, throwIO, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
@@ -56,7 +56,7 @@ import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (hPutStr, readFile)
+import qualified Data.Text.IO as T (hPutStr, putStrLn, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
@@ -147,6 +147,7 @@ wizCmds =
     [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
     , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
     , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
+    , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message to the server console." }
     , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the MUD." }
     , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
     , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
@@ -225,21 +226,13 @@ prefixDebugCmd = prefixCmd debugCmdChar
 
 
 listenWrapper :: MudStack ()
-listenWrapper = (initAndStart `catch` listenExHandler) `finally` graceful
+listenWrapper = initAndStart `finally` graceful
   where
     initAndStart = do
         initLogging
         logNotice "listenWrapper initAndStart" "server started."
         initWorld
         listen
-
-
-listenExHandler :: SomeException -> MudStack ()
-listenExHandler e =
-    case fromException e of
-      Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
-      Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
-      _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
 
 
 graceful :: MudStack ()
@@ -267,7 +260,7 @@ getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
 
 
 listen :: MudStack ()
-listen = do
+listen = handle listenExHandler $ do
     registerThread Listen
     listInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
@@ -289,6 +282,14 @@ listen = do
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
 
+listenExHandler :: SomeException -> MudStack ()
+listenExHandler e =
+    case fromException e of
+      Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
+      Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
+      _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
+
+
 registerThread :: ThreadType -> MudStack ()
 registerThread threadType = liftIO myThreadId >>= \ti ->
     modifyNWS threadTblTMVar $ \tt -> tt & at ti ?~ threadType
@@ -299,28 +300,27 @@ talk h host@(T.pack -> host') = helper `finally` cleanUp
   where
     helper = do
         registerThread Talk
-        liftIO configBuffer
-        mq     <- liftIO newTQueueIO
-        (i, n) <- adHoc mq host
-        logNotice "talk" . T.concat $ [ n
-                                      , " has logged on "
-                                      , parensQuote $ "new ID for incoming player: " <> showText i
-                                      , "." ]
-        initPlaLog i n
-        logPla "talk" i $ "logged on from " <> host' <> "."
-        setDfltColor mq
-        dumpTitle mq
-        prompt mq "> "
-        notifyArrival i
-        s <- get
-        liftIO $ race_ (runStateInIORefT (server  h i mq) s)
-                       (runStateInIORefT (receive h i mq) s)
+        mq <- liftIO newTQueueIO
+        i  <- adHoc mq host
+        handle (talkExHandler i) $ do
+            logNotice "talk helper" $ "new ID for incoming player: " <> showText i <> "."
+            liftIO configBuffer
+            setDfltColor mq
+            dumpTitle    mq
+            prompt       mq "What is your name?"
+            s <- get
+            liftIO $ race_ (runStateInIORefT (server  h i mq) s)
+                           (runStateInIORefT (receive h i mq) s)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> host' <> ".") >> (liftIO . hClose $ h)
 
 
-adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
+talkExHandler :: Id -> SomeException -> MudStack ()
+talkExHandler = plaThreadExHandler "talk"
+
+
+adHoc :: MsgQueue -> HostName -> MudStack Id
 adHoc mq host = do
     (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar       <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
     (s, r)                       <- (,)  <$> liftIO randomSex <*> liftIO randomRace
@@ -337,7 +337,7 @@ adHoc mq host = do
         let pc  = PC iHill r [] []
         let ris = (ws^.invTbl) ! iHill ++ [i]
         -----
-        let pla = Pla True host 80 centralDispatch
+        let pla = Pla True host 80 interpName
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
@@ -353,7 +353,7 @@ adHoc mq host = do
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         -----
-        return (i, e^.sing)
+        return i
 
 
 randomSex :: IO Sex
@@ -388,24 +388,12 @@ prompt :: MsgQueue -> T.Text -> MudStack ()
 prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
-notifyArrival :: Id -> MudStack ()
-notifyArrival i = readWSTMVar >>= \ws ->
-    let ((^.sing) -> s) = (ws^.entTbl) ! i
-    in bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
-
-
-mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
-mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <- getSexRace i ws =
-    serialize NonStdDesig { nonStdPCEntSing = s
-                          , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
-
-
 server :: Handle -> Id -> MsgQueue -> MudStack ()
 server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       FromServer msg -> (liftIO . T.hPutStr h $ msg)             >> loop
-      FromClient (T.strip . T.pack . stripTelnet . T.unpack -> msg)
+      FromClient (T.strip . stripControl -> msg)
                      -> unless (T.null msg) (handleInp i mq msg) >> loop
       Prompt p       -> sendPrompt h p                           >> loop
       Quit           -> cowbye h                                 >> handleEgress i
@@ -429,6 +417,13 @@ plaThreadExHandler n i e
 
 getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
+
+
+handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
+handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
+    let cols = p^.columns
+        f    = p^.interpreter
+    in f cn . WithArgs i mq cols $ as
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()
@@ -474,14 +469,36 @@ receiveExHandler :: Id -> SomeException -> MudStack ()
 receiveExHandler = plaThreadExHandler "receive"
 
 
-handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
-handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
-    let cols = p^.columns
-        f    = p^.interpreter
-    in f cn . WithArgs i mq cols $ as
+-- TODO: Check for illegal characters in name, more than one word, etc.
+interpName :: Interp
+interpName cn (WithArgs i mq _ _) = do
+    onWS $ \(t, ws) -> let e  = (ws^.entTbl) ! i
+                           e' = e & sing .~ cn
+                       in putTMVar t (ws & entTbl.at i ?~ e')
+    (T.pack -> host) <- onNWS plaTblTMVar $ \(ptTMVar, pt) -> let p    = pt ! i
+                                                                  p'   = p & interpreter .~ centralDispatch
+                                                                  host = p^.hostName
+                                                              in putTMVar ptTMVar (pt & at i ?~ p') >> return host
+    initPlaLog i cn
+    logPla "interpName" i $ "logged on from " <> host <> "."
+    notifyArrival i
+    prompt mq . nl' $ "> "
+interpName cn p = patternMatchFail "interpName" [ cn, showText p ]
 
 
-centralDispatch :: CmdName -> ActionParams -> MudStack ()
+notifyArrival :: Id -> MudStack ()
+notifyArrival i = readWSTMVar >>= \ws ->
+    let ((^.sing) -> s) = (ws^.entTbl) ! i
+    in bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
+
+
+mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
+mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <- getSexRace i ws =
+    serialize NonStdDesig { nonStdPCEntSing = s
+                          , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
+
+
+centralDispatch :: Interp
 centralDispatch cn p@(WithArgs i mq _ _) = do
     findAction i cn >>= maybe sorry (\act -> act p)
     prompt mq "> "
@@ -2273,6 +2290,18 @@ wizName (NoArgs i mq cols) = do
             (pp -> s', pp -> r) = getSexRace i ws
         in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
 wizName p = withoutArgs wizName p
+
+
+-----
+
+
+-- TODO: Include the name of the message sender in the message.
+wizPrint :: Action
+wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message to print to the server console, as \
+                                                     \in " <> (dblQuote $ prefixDebugCmd "print" <> " Is anybody \
+                                                     \home?") <> "."
+wizPrint (WithArgs _ mq _ as) = (liftIO . T.putStrLn . T.intercalate " " $ as) >> ok mq
+wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 
 
 -- ==================================================
