@@ -2295,15 +2295,16 @@ wizName p = withoutArgs wizName p
 -----
 
 
--- TODO: Include the name of the message sender in the message.
 wizPrint :: Action
 wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message to print to the server console, as \
                                                      \in " <> (dblQuote $ prefixDebugCmd "print" <> " Is anybody \
                                                      \home?") <> "."
-wizPrint (WithArgs i mq _ as) = do
-    logPlaExecArgs (prefixDebugCmd "print") as i
-    liftIO . T.putStrLn . T.intercalate " " $ as
-    ok mq
+wizPrint (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
+    let ((^.sing) -> s) = (ws^.entTbl) ! i
+    in do
+        logPlaExecArgs (prefixDebugCmd "print") as i
+        liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
+        ok mq
 wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 
 
