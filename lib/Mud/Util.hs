@@ -41,6 +41,7 @@ module Mud.Util ( aOrAn
                 , showText
                 , singleQuote
                 , stripControl
+                , stripTelnet
                 , uncapitalize
                 , unquote
                 , wordWrap
@@ -256,6 +257,19 @@ nl' = ("\n" <>)
 
 stripControl :: T.Text -> T.Text
 stripControl = T.filter (\c -> c > '\31' && c < '\127')
+
+
+stripTelnet :: T.Text -> T.Text
+stripTelnet t
+  | T.singleton telnetIAC `T.isInfixOf` t = T.takeWhile (/= telnetIAC) t <> (helper . T.dropWhile (/= telnetIAC) $ t)
+  | otherwise                             = t
+  where
+    helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest)))) -- TODO: Any other places you can use this trick?
+      | x == telnetSB = if T.singleton telnetSE `T.isInfixOf` rest
+                          then stripTelnet . T.tail . T.dropWhile (/= telnetSE) $ rest
+                          else ""
+      | otherwise     = stripTelnet rest
+    helper _ = ""
 
 
 showText :: (Show a) => a -> T.Text

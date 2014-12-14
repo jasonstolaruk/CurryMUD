@@ -66,7 +66,20 @@ unitTests = testGroup "unit tests" [ unitTestsMiscDataTypes, unitTestsUtil ]
 -- --------------------------------------------------
 
 unitTestsUtil :: TestTree
-unitTestsUtil = testGroup "unit tests Util" [ testCase "stripControl" $ test_stripControl @?= "test" ]
+unitTestsUtil = testGroup "unit tests Util"
+    [ testCase "stripControl"                   $ test_stripControl                   @?= "test"
+    , testCase "stripTelnet_null"               $ test_stripTelnet_null               @?= ""
+    , testCase "stripTelnet_telnetCodes"        $ test_stripTelnet_telnetCodes        @?= ""
+    , testCase "stripTelnet_leading"            $ test_stripTelnet_leading            @?= "test"
+    , testCase "stripTelnet_trailing"           $ test_stripTelnet_trailing           @?= "test"
+    , testCase "stripTelnet_leadingAndTrailing" $ test_stripTelnet_leadingAndTrailing @?= "test"
+    , testCase "stripTelnet_intercalated"       $ test_stripTelnet_intercalated       @?= "test1test2test3test4test5"
+    , testCase "stripTelnet_malformed1"         $ test_stripTelnet_malformed1         @?= ""
+    , testCase "stripTelnet_malformed2"         $ test_stripTelnet_malformed2         @?= ""
+    , testCase "stripTelnet_malformed3"         $ test_stripTelnet_malformed3         @?= ""
+    , testCase "stripTelnet_malformed4"         $ test_stripTelnet_malformed4         @?= "test"
+    , testCase "stripTelnet_malformed5"         $ test_stripTelnet_malformed5         @?= "test"
+    , testCase "stripTelnet_malformed6"         $ test_stripTelnet_malformed6         @?= "test" ]
 
 -- --------------------------------------------------
 

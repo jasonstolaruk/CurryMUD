@@ -393,7 +393,7 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       FromServer msg -> (liftIO . T.hPutStr h $ msg)             >> loop
-      FromClient (T.strip . stripControl -> msg)
+      FromClient (T.strip . stripControl . stripTelnet -> msg)
                      -> unless (T.null msg) (handleInp i mq msg) >> loop
       Prompt p       -> sendPrompt h p                           >> loop
       Quit           -> cowbye h                                 >> handleEgress i
