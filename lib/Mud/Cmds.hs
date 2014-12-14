@@ -397,7 +397,8 @@ server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
                      -> unless (T.null msg) (handleInp i mq msg) >> loop
       Prompt p       -> sendPrompt h p                           >> loop
       Quit           -> cowbye h                                 >> handleEgress i
-      Boot           -> boot   h                                 >> handleEgress i
+      SilentBoot     ->                                             handleEgress i
+      MsgBoot msg    -> boot h msg                               >> handleEgress i
       Dropped        ->                                             handleEgress i
       Shutdown       -> shutDown                                 >> loop
       StopThread     -> return ()
@@ -437,8 +438,8 @@ cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
 
 
 -- TODO: Make a wizard command that does this.
-boot :: Handle -> MudStack ()
-boot h = liftIO . T.hPutStr h . nl $ "You have been booted from CurryMUD. Goodbye!"
+boot :: Handle -> T.Text -> MudStack ()
+boot h = liftIO . T.hPutStr h . nl' . nlnl
 
 
 shutDown :: MudStack ()
@@ -473,11 +474,13 @@ receiveExHandler :: Id -> SomeException -> MudStack ()
 receiveExHandler = plaThreadExHandler "receive"
 
 
--- TODO: Adjust case.
+-- TODO: Boot a player who tries too many times.
 interpName :: Interp
-interpName cn (NoArgs' i mq)
-  | T.any (`elem` illegalChars) cn = sorryIllegalName mq "Your name cannot include any numbers or symbols."
-  | otherwise = do
+interpName (capitalize . T.toLower -> cn) (NoArgs' i mq)
+  | l <- T.length cn, l < 3 || l > 12 = sorryIllegalName mq "Your name must be between three and twelve characters \
+                                                            \long."
+  | T.any (`elem` illegalChars) cn    = sorryIllegalName mq "Your name cannot include any numbers or symbols."
+  | otherwise                         = do
       onWS $ \(t, ws) -> let e  = (ws^.entTbl) ! i
                              e' = e & sing .~ cn
                          in putTMVar t (ws & entTbl.at i ?~ e')
@@ -491,7 +494,7 @@ interpName cn (NoArgs' i mq)
       prompt mq . nl' $ "> "
   where
     illegalChars    = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-interpName _  (WithArgs _ mq _ _) = sorryIllegalName mq "Your name can only be one word long."
+interpName _  (WithArgs _ mq _ _) = sorryIllegalName mq "Your name must be a single word."
 interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
 
 
@@ -2476,8 +2479,13 @@ purgeTalkAsyncTbl = do
 
 
 debugBoot :: Action
-debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> massMsg Boot
+debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> (massMsg . MsgBoot $ dfltBootMsg)
 debugBoot p              = withoutArgs debugBoot p
+
+
+-- TODO: When you've made a wiz cmd to boot a player, move this next to the function for that cmd.
+dfltBootMsg :: T.Text
+dfltBootMsg = "You have been booted from CurryMUD. Goodbye!"
 
 
 -----

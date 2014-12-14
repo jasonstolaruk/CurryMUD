@@ -364,7 +364,8 @@ data Msg = FromServer T.Text
          | FromClient T.Text
          | Prompt     T.Text
          | Quit
-         | Boot
+         | SilentBoot
+         | MsgBoot    T.Text
          | Dropped
          | Shutdown
          | StopThread
