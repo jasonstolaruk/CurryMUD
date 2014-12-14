@@ -94,6 +94,6 @@ unitTestsMiscDataTypes = testGroup "unit tests MiscDataTypes"
     , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=
         NonStdDesig "Hanako" "A female human" ]
   where
-    std = T.pack [stdDesigDelimiter]
-    non = T.pack [nonStdDesigDelimiter]
-    d   = T.pack [desigDelimiter]
+    std = T.singleton stdDesigDelimiter
+    non = T.singleton nonStdDesigDelimiter
+    d   = T.singleton desigDelimiter

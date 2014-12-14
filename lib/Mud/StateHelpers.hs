@@ -63,7 +63,7 @@ import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>), Const, pure)
+import Control.Applicative ((<$>), (<*>), Const)
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
@@ -289,7 +289,7 @@ expandPCEntName i ws ic pen@(headTail' -> (h, t)) pi ((i `delete`) -> pis) =
                              _   -> (<> " ") . mkOrdinal . (+ 1) . fromJust . elemIndex pi $ matches
     expandSex 'm'                  = "male"
     expandSex 'f'                  = "female"
-    expandSex (T.pack . pure -> x) = patternMatchFail "expandPCEntName expandSex" [x]
+    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
 
 
 bcastNl :: [Broadcast] -> MudStack ()
@@ -407,7 +407,7 @@ mkListFromCoins (Coins (c, g, s)) = [ c, g, s ]
 
 mkCoinsFromList :: [Int] -> Coins
 mkCoinsFromList [ cop, sil, gol ]       = Coins (cop, sil, gol)
-mkCoinsFromList (pure . showText -> xs) = patternMatchFail "mkCoinsFromList" xs
+mkCoinsFromList xs = patternMatchFail "mkCoinsFromList" [ showText xs ]
 
 
 negateCoins :: Coins -> Coins

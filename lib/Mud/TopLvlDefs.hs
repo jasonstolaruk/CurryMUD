@@ -25,7 +25,7 @@ port = 9696
 
 mudDir :: FilePath
 mudDir = let home = unsafePerformIO . getEnv $ "HOME"
-         in (home ++) . T.unpack $ "/CurryMUD/"
+         in home ++ "/CurryMUD/"
 
 
 logDir, resDir, helpDir, titleDir, miscDir, uptimeFile :: FilePath

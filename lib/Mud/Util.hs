@@ -54,7 +54,7 @@ module Mud.Util ( aOrAn
 
 import Mud.TopLvlDefs
 
-import Control.Applicative ((<$>), (<*>), pure)
+import Control.Applicative ((<$>), (<*>))
 import Control.Lens (both, folded, over, to)
 import Control.Lens.Operators ((^..))
 import Control.Monad (guard)
@@ -118,7 +118,7 @@ wordWrapIndent n cols = map leadingFillerToSpcs . wrapIt . leadingSpcsToFiller
       | otherwise = beforeMax   : wordWrapIndent n cols (leadingIndent <> afterMax)
       where
         (beforeMax, afterMax) = T.splitAt cols t
-        leadingIndent         = T.replicate (adjustIndent n cols) . T.pack $ [indentFiller]
+        leadingIndent         = T.replicate (adjustIndent n cols) . T.singleton $ indentFiller
 
 
 leadingSpcsToFiller :: T.Text -> T.Text
@@ -131,7 +131,7 @@ leadingFillerToSpcs = xformLeading indentFiller ' '
 
 xformLeading :: Char -> Char -> T.Text -> T.Text
 xformLeading _ _                    ""                                        = ""
-xformLeading a (T.pack . pure -> b) (T.break (/= a) -> (T.length -> n, rest)) = T.replicate n b <> rest
+xformLeading a (T.singleton -> b) (T.break (/= a) -> (T.length -> n, rest)) = T.replicate n b <> rest
 
 
 adjustIndent :: Int -> Int -> Int
@@ -264,7 +264,7 @@ stripTelnet t
   | T.singleton telnetIAC `T.isInfixOf` t = T.takeWhile (/= telnetIAC) t <> (helper . T.dropWhile (/= telnetIAC) $ t)
   | otherwise                             = t
   where
-    helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest)))) -- TODO: Any other places you can use this trick?
+    helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest))))
       | x == telnetSB = if T.singleton telnetSE `T.isInfixOf` rest
                           then stripTelnet . T.tail . T.dropWhile (/= telnetSE) $ rest
                           else ""
@@ -303,7 +303,7 @@ aOrAn (T.strip -> t) | T.null t             = ""
 
 
 isVowel :: Char -> Bool
-isVowel = (`elem` T.unpack "aeiou")
+isVowel = (`elem` "aeiou")
 
 
 findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text

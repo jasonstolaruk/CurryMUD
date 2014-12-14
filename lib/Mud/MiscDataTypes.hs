@@ -33,7 +33,6 @@ import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Applicative (pure)
 import Control.Lens (both, over)
 import Data.Monoid ((<>))
 import Data.String (fromString)
@@ -153,14 +152,14 @@ instance Serializable PCDesig where
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
-      (d, d')                 = over both (T.pack . pure) (stdDesigDelimiter, desigDelimiter)
+      (d, d')                 = over both T.singleton (stdDesigDelimiter, desigDelimiter)
   serialize NonStdDesig { .. } = quoteWith d $ do
       nonStdPCEntSing
       d'
       nonStdDesc
     where
       (>>)    = (<>)
-      (d, d') = over both (T.pack . pure) (nonStdDesigDelimiter, desigDelimiter)
+      (d, d') = over both T.singleton (nonStdDesigDelimiter, desigDelimiter)
   deserialize a@(headTail' -> (c, T.init -> t))
     | c == stdDesigDelimiter, [ pes, ic, pen, pi, pis ] <- T.splitOn d t =
         StdDesig { stdPCEntSing = deserMaybeText pes

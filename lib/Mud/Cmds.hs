@@ -17,7 +17,7 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>), pure)
+import Control.Applicative ((<$>), (<*>))
 import Control.Arrow (first)
 import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId)
 import Control.Concurrent.Async (async, asyncThreadId, poll, race_, wait)
@@ -32,7 +32,7 @@ import Control.Lens.Setter (set)
 import Control.Monad (forM_, forever, guard, mplus, replicateM, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
-import Data.Char (isSpace, ord)
+import Data.Char (ord)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort, sortBy)
 import Data.Maybe (catMaybes, fromJust, isNothing)
@@ -47,7 +47,7 @@ import System.CPUTime (getCPUTime)
 import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
-import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hGetBuffering, hGetLine, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1, openTempFile)
+import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hGetBuffering, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1, openTempFile)
 import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
@@ -56,7 +56,7 @@ import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (hPutStr, putStrLn, readFile)
+import qualified Data.Text.IO as T (hGetLine, hPutStr, putStrLn, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
@@ -214,7 +214,7 @@ allCmds = wizCmds ++ debugCmds ++ plaCmds
 
 
 prefixCmd :: Char -> CmdName -> T.Text
-prefixCmd (T.pack . pure -> prefix) cn = prefix <> cn
+prefixCmd (T.singleton -> prefix) cn = prefix <> cn
 
 
 prefixWizCmd :: CmdName -> T.Text
@@ -296,7 +296,7 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
 
 
 talk :: Handle -> HostName -> MudStack ()
-talk h host@(T.pack -> host') = helper `finally` cleanUp
+talk h host = helper `finally` cleanUp
   where
     helper = do
         registerThread Talk
@@ -313,7 +313,7 @@ talk h host@(T.pack -> host') = helper `finally` cleanUp
                            (runStateInIORefT (receive h i mq) s)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
-    cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> host' <> ".") >> (liftIO . hClose $ h)
+    cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
 
 
 talkExHandler :: Id -> SomeException -> MudStack ()
@@ -373,7 +373,7 @@ setDfltColor = flip send dfltColorANSI
 dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExHandler "dumpTitle")
   where
-    getFilename  = (T.unpack "title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
+    getFilename  = ("title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
     takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
 
 
@@ -457,12 +457,16 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
           logPla "receive" i "connection dropped."
           liftIO . atomically . writeTQueue mq $ Dropped
       False -> do
-          liftIO $ atomically . writeTQueue mq . FromClient . T.pack . remDelimiters =<< hGetLine h
+          liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters =<< T.hGetLine h
           loop
-    remDelimiters                         = foldr helper ""
-    helper c acc | c `notElem` delimiters = c : acc
-                 | otherwise              = acc
-    delimiters                            = [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
+    remDelimiters = T.foldr helper ""
+    helper c acc | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
+                 | otherwise                             = acc
+    delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
+
+
+notInfixOf :: T.Text -> T.Text -> Bool
+notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
 
 
 receiveExHandler :: Id -> SomeException -> MudStack ()
@@ -2258,16 +2262,14 @@ wizDate p = withoutArgs wizDate p
 -----
 
 
+-- TODO: Where else can I use "span"?
 wizUptime :: Action
 wizUptime (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "uptime") i
-    (try . send mq . parse =<< runUptime) >>= eitherRet (\e -> logIOEx "wizUptime" e >> sendGenericErrorMsg mq cols)
+    (try . send mq . nl =<< liftIO runUptime) >>= eitherRet (\e -> logIOEx "wizUptime" e >> sendGenericErrorMsg mq cols)
   where
-    runUptime = liftIO . readProcess "uptime" [] $ ""
-    parse (span (/= ',') -> (unwords . tail . words -> a, dropWhile isSpace . takeWhile (/= ',') . tail -> b)) =
-        nlnl . T.concat $ [ capitalize . T.pack $ a, " ", T.pack b, "." ]
+    runUptime = T.pack <$> readProcess "uptime" [] ""
 wizUptime p = withoutArgs wizUptime p
-
 
 -----
 
@@ -2350,9 +2352,9 @@ debugDispEnv (NoArgs i mq cols) = do
 debugDispEnv (WithArgs i mq cols (nub -> as)) = do
     logPlaExecArgs (prefixDebugCmd "env") as i
     env <- liftIO getEnvironment
-    send mq . T.unlines $ [ helper env a | a <- as ]
+    send mq . T.unlines $ [ helper a env | a <- as ]
   where
-    helper env a = mkAssocListTxt cols . filter grepPair $ env
+    helper a = mkAssocListTxt cols . filter grepPair
       where
         grepPair = uncurry (||) . over both ((a `T.isInfixOf`) . T.pack)
 debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
@@ -2553,7 +2555,7 @@ debugColor (NoArgs' i mq) = do
         let ansi = mkColorANSI fg bg
         return . nl . T.concat $ [ mkANSICodeList ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColorANSI ]
   where
-    mkANSICodeList = padOrTrunc 28 . T.pack . concatMap ((++ " ") . show . ord) . T.unpack
+    mkANSICodeList = padOrTrunc 28 . T.concatMap ((<> " ") . showText . ord)
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
 debugColor p = withoutArgs debugColor p

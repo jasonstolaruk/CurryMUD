@@ -31,12 +31,12 @@ test_deserializeStdDesig :: PCDesig
 test_deserializeStdDesig =
     deserialize . quoteWith std . T.intercalate d $ [ "", "True", "fhuman", "55", "[55,54,53,52,51,50]" ]
   where
-    std = T.pack [stdDesigDelimiter]
-    d   = T.pack [desigDelimiter]
+    std = T.singleton stdDesigDelimiter
+    d   = T.singleton desigDelimiter
 
 
 test_deserializeNonStdDesig :: PCDesig
 test_deserializeNonStdDesig = deserialize . quoteWith non $ "Hanako" <> d <> "A female human"
   where
-    non = T.pack [nonStdDesigDelimiter]
-    d   = T.pack [desigDelimiter]
+    non = T.singleton nonStdDesigDelimiter
+    d   = T.singleton desigDelimiter

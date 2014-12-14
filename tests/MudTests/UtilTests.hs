@@ -63,7 +63,7 @@ prop_xformLeading :: Char -> Char -> Property
 prop_xformLeading a b = forAll (choose (0, 10))           $ \numOfLeading ->
                         forAll (genTextOfRandLen (0, 10)) $ \rest ->
                         (T.null . T.takeWhile (== a) $ rest) ==>
-    let leading    = T.pack . replicate numOfLeading $ a
+    let leading    = T.replicate numOfLeading . T.singleton $ a
         t          = leading <> rest
         res        = xformLeading a b t
         resLeading = T.take numOfLeading res
@@ -77,7 +77,7 @@ prop_wrapLineWithIndentTag = forAll genCols                       $ \c ->
                              forAll (genTextOfRandLen (0, c * 2)) $ \t ->
                              forAll (choose (1, maxCols + 10))    $ \n ->
                              T.null t || (not . isDigit . T.last $ t) ==>
-    let res = wrapLineWithIndentTag c $ t <> showText n <> T.pack [indentTagChar]
+    let res = wrapLineWithIndentTag c $ t <> showText n <> T.singleton indentTagChar
     in if T.length t <= c
       then res == [t]
       else resIsIndented (adjustIndent n c) res
@@ -109,7 +109,7 @@ prop_quoteWithAndPad_quotes :: Char -> Char -> T.Text -> Property
 prop_quoteWithAndPad_quotes left right t = (not . isSpace $ left) &&
                                            (not . isSpace $ right) ==>
   forAll (choose (3, 50)) $ \len ->
-      let quotes    = over both T.pack ([left], [right])
+      let quotes    = over both T.singleton (left, right)
           res       = quoteWithAndPad quotes len t
           grabRight = T.head . T.dropWhile isSpace . T.reverse
       in T.head res == left && grabRight res == right

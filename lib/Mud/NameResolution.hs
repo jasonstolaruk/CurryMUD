@@ -281,7 +281,7 @@ don'tHaveIndexedInv x = Left . sformat (do { "You don't have " % int % " "; "." 
 
 sorryIndexedCoins :: Either T.Text Inv
 sorryIndexedCoins =
-    Left . nl . sformat (do { "Sorry, but "; " cannot be used with coins." }) . dblQuote . T.pack $ [indexChar]
+    Left . nl . sformat (do { "Sorry, but "; " cannot be used with coins." }) . dblQuote . T.singleton $ indexChar
 
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
@@ -291,8 +291,8 @@ procGecrMisReady gecrMis                                = procGecrMisPCInv gecrM
 
 sorryBadSlot :: T.Text -> T.Text
 sorryBadSlot n
-  | slotChar `elem` T.unpack n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") (nl' ringHelp)
-  | otherwise                  = sformat (do { "You don't have "; "." }) . aOrAn $ n
+  | T.singleton slotChar `T.isInfixOf` n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") (nl' ringHelp)
+  | otherwise                            = sformat (do { "You don't have "; "." }) . aOrAn $ n
   where
     m = do
         "Please specify "
