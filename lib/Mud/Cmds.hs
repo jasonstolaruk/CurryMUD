@@ -2262,7 +2262,6 @@ wizDate p = withoutArgs wizDate p
 -----
 
 
--- TODO: Where else can I use "span"?
 wizUptime :: Action
 wizUptime (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "uptime") i
