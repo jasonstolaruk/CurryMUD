@@ -218,4 +218,4 @@ test_stripTelnet_malformed5 = stripTelnet $ "test" <> T.pack [ telnetIAC, telnet
 
 
 test_stripTelnet_malformed6 :: T.Text
-test_stripTelnet_malformed6 = stripTelnet $ "test" <> (T.pack $ telnetIAC : telnetSB : "TEST")
+test_stripTelnet_malformed6 = stripTelnet $ "test" <> T.pack (telnetIAC : telnetSB : "TEST")

@@ -307,7 +307,7 @@ talk h host = helper `finally` cleanUp
             liftIO configBuffer
             setDfltColor mq
             dumpTitle    mq
-            prompt       mq "What is your name?"
+            prompt       mq "By what name are you known?"
             s <- get
             liftIO $ race_ (runStateInIORefT (server  h i mq) s)
                            (runStateInIORefT (receive h i mq) s)
@@ -473,21 +473,32 @@ receiveExHandler :: Id -> SomeException -> MudStack ()
 receiveExHandler = plaThreadExHandler "receive"
 
 
--- TODO: Check for illegal characters in name, more than one word, etc.
+-- TODO: Adjust case.
 interpName :: Interp
-interpName cn (WithArgs i mq _ _) = do
-    onWS $ \(t, ws) -> let e  = (ws^.entTbl) ! i
-                           e' = e & sing .~ cn
-                       in putTMVar t (ws & entTbl.at i ?~ e')
-    (T.pack -> host) <- onNWS plaTblTMVar $ \(ptTMVar, pt) -> let p    = pt ! i
-                                                                  p'   = p & interpreter .~ centralDispatch
-                                                                  host = p^.hostName
-                                                              in putTMVar ptTMVar (pt & at i ?~ p') >> return host
-    initPlaLog i cn
-    logPla "interpName" i $ "logged on from " <> host <> "."
-    notifyArrival i
-    prompt mq . nl' $ "> "
-interpName cn p = patternMatchFail "interpName" [ cn, showText p ]
+interpName cn (NoArgs' i mq)
+  | T.any (`elem` illegalChars) cn = sorryIllegalName mq "Your name cannot include any numbers or symbols."
+  | otherwise = do
+      onWS $ \(t, ws) -> let e  = (ws^.entTbl) ! i
+                             e' = e & sing .~ cn
+                         in putTMVar t (ws & entTbl.at i ?~ e')
+      (T.pack -> host) <- onNWS plaTblTMVar $ \(ptTMVar, pt) -> let p    = pt ! i
+                                                                    p'   = p & interpreter .~ centralDispatch
+                                                                    host = p^.hostName
+                                                                in putTMVar ptTMVar (pt & at i ?~ p') >> return host
+      initPlaLog i cn
+      logPla "interpName" i $ "logged on from " <> host <> "."
+      notifyArrival i
+      prompt mq . nl' $ "> "
+  where
+    illegalChars    = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
+interpName _  (WithArgs _ mq _ _) = sorryIllegalName mq "Your name can only be one word long."
+interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
+
+
+sorryIllegalName :: MsgQueue -> T.Text -> MudStack ()
+sorryIllegalName mq msg = do
+    send mq . nl' . nl $ msg
+    prompt mq "Let's try this again. By what name are you known?"
 
 
 notifyArrival :: Id -> MudStack ()
@@ -2298,7 +2309,7 @@ wizName p = withoutArgs wizName p
 
 wizPrint :: Action
 wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message to print to the server console, as \
-                                                     \in " <> (dblQuote $ prefixDebugCmd "print" <> " Is anybody \
+                                                     \in " <> dblQuote (prefixDebugCmd "print" <> " Is anybody \
                                                      \home?") <> "."
 wizPrint (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
     let ((^.sing) -> s) = (ws^.entTbl) ! i
