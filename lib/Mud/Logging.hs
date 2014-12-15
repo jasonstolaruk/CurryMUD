@@ -29,7 +29,8 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
-import Control.Lens.Operators ((&), (.=), (?~), (^.))
+import Control.Lens.Getter (view)
+import Control.Lens.Operators ((&), (.=), (?~))
 import Control.Monad (forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
@@ -51,8 +52,8 @@ import qualified Data.Text as T
 closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (^.nonWorldState.noticeLog)
-                                       , fromJust <$> gets (^.nonWorldState.errorLog) ]
+    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (view (nonWorldState.noticeLog))
+                                       , fromJust <$> gets (view (nonWorldState.errorLog )) ]
     (unzip -> (as, qs)) <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
     mapM_ stopLog         $ nq : eq : qs
     mapM_ (liftIO . wait) $ na : ea : as
@@ -113,13 +114,13 @@ registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
-logNotice modName funName msg = maybeVoid helper =<< gets (^.nonWorldState.noticeLog)
+logNotice modName funName msg = maybeVoid helper =<< gets (view (nonWorldState.noticeLog))
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ]) . snd
 
 
 logError :: T.Text -> MudStack ()
-logError msg = maybeVoid (registerMsg msg . snd) =<< gets (^.nonWorldState.errorLog)
+logError msg = maybeVoid (registerMsg msg . snd) =<< gets (view (nonWorldState.errorLog))
 
 
 logExMsg :: T.Text -> T.Text -> T.Text -> SomeException -> MudStack ()

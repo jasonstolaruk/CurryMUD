@@ -27,6 +27,7 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwIO, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
+import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
 import Control.Monad (forM_, forever, guard, mplus, replicateM, replicateM_, unless, void)
@@ -498,7 +499,7 @@ sorryIllegalName mq msg = do
 interpConfirmName :: Interp
 interpConfirmName cn (NoArgs' i mq) = do
     void . modifyEnt i sing $ cn
-    (T.pack . (^.hostName) -> host) <- modifyPla i interp centralDispatch
+    (T.pack . view hostName -> host) <- modifyPla i interp centralDispatch
     initPlaLog i cn
     logPla "interpName" i $ "(new player) logged on from " <> host <> "."
     notifyArrival i
@@ -506,9 +507,10 @@ interpConfirmName cn (NoArgs' i mq) = do
 interpConfirmName cn p = patternMatchFail "interpConfirmName" [ cn, showText p ]
 
 
+-- TODO: Look for other places to use "view".
 notifyArrival :: Id -> MudStack ()
 notifyArrival i = readWSTMVar >>= \ws ->
-    let ((^.sing) -> s) = (ws^.entTbl) ! i
+    let (view sing -> s) = (ws^.entTbl) ! i
     in bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
 
 
@@ -530,11 +532,11 @@ centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
 findAction i (T.toLower -> cn) = readWSTMVar >>= \ws ->
     readTMVarInNWS plaTblTMVar >>= \((! i) -> p) ->
-        let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
-            r                = (ws^.rmTbl) ! ri
-            cmds             = mkCmdListWithNonStdRmLinks r ++
-                               (if p^.isWiz then wizCmds   else []) ++
-                               (if isDebug  then debugCmds else [])
+        let (view rmId -> ri) = (ws^.pcTbl) ! i
+            r                 = (ws^.rmTbl) ! ri
+            cmds              = mkCmdListWithNonStdRmLinks r ++
+                                (if p^.isWiz then wizCmds   else []) ++
+                                (if isDebug  then debugCmds else [])
         in maybe (return Nothing)
                  (\fn -> return . Just . findActionForFullName fn $ cmds)
                  (findFullNameForAbbrev cn [ cmdName cmd | cmd <- cmds ])
@@ -543,7 +545,7 @@ findAction i (T.toLower -> cn) = readWSTMVar >>= \ws ->
 
 
 mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
-mkCmdListWithNonStdRmLinks ((^.rmLinks) -> rls) =
+mkCmdListWithNonStdRmLinks (view rmLinks -> rls) =
     sortBy sorter $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
   where
     sorter c = uncurry compare . over both cmdName . (c,)
@@ -756,11 +758,11 @@ tryMove i mq cols dir = helper >>= \case
                                                                                    , args        = [] }
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.sing) -> s) = (ws^.entTbl) ! i
-            p               = (ws^.pcTbl)  ! i
-            ri              = p^.rmId
-            r               = (ws^.rmTbl)  ! ri
-            ris             = (ws^.invTbl) ! ri
+        let (view sing -> s) = (ws^.entTbl) ! i
+            p                = (ws^.pcTbl)  ! i
+            ri               = p^.rmId
+            r                = (ws^.rmTbl)  ! ri
+            ris              = (ws^.invTbl) ! ri
         in case findExit r dir of
           Nothing -> putTMVar t ws >> (return . Left $ sorry)
           Just (linkTxt, ri', mom, mdm)
@@ -798,11 +800,11 @@ tryMove i mq cols dir = helper >>= \case
       | dir == "d"              = "heads"
       | dir `elem` stdLinkNames = "leaves"
       | otherwise               = "enters"
-    showRm (showText -> ri) (parensQuote . (^.rmName) -> rn) = ri <> " " <> rn
+    showRm (showText -> ri) (parensQuote . view rmName -> rn) = ri <> " " <> rn
 
 
 findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
-findExit ((^.rmLinks) -> rls) ln =
+findExit (view rmLinks -> rls) ln =
     case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- rls, isValid rl ] of
       [] -> Nothing
       xs -> Just . head $ xs
@@ -860,10 +862,10 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 look :: Action
 look (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
-        r                = (ws^.rmTbl) ! ri
-        primary          = multiWrap cols [ r^.rmName, r^.rmDesc ]
-        suppl            = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
+    let (view rmId -> ri) = (ws^.pcTbl) ! i
+        r                 = (ws^.rmTbl) ! ri
+        primary           = multiWrap cols [ r^.rmName, r^.rmDesc ]
+        suppl             = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
 look (LowerNub i mq cols as) = helper >>= \case
   (Left  msg, _           ) -> send mq msg
@@ -882,19 +884,19 @@ look (LowerNub i mq cols as) = helper >>= \case
               logPla "look" i ("looked at " <> es <> ".")
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.sing) -> s ) = (ws^.entTbl)   ! i
-            ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
-            ris              = (ws^.invTbl)   ! ri
-            ris'             = i `delete` ris
-            c                = (ws^.coinsTbl) ! ri
-            d                = mkStdDesig i ws s True ris
+        let (view sing -> s ) = (ws^.entTbl)   ! i
+            (view rmId -> ri) = (ws^.pcTbl)    ! i
+            ris               = (ws^.invTbl)   ! ri
+            ris'              = i `delete` ris
+            c                 = (ws^.coinsTbl) ! ri
+            d                 = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (c /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as ris' c
                    eiss               = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
                    ecs                = map procReconciledCoinsRm rcs
                    invDesc            = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-                   ds                 = [ let ((^.sing) -> s') = (ws^.entTbl) ! pi
+                   ds                 = [ let (view sing -> s') = (ws^.entTbl) ! pi
                                           in mkStdDesig pi ws s' False ris | pi <- extractPCIdsFromEiss ws eiss ]
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
           else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
@@ -948,7 +950,7 @@ mkEntDescs i cols ws is = T.intercalate "\n" . map (mkEntDesc i cols ws) $ [ (ei
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
-mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(wrapUnlines cols . (^.entDesc) -> ed)) =
+mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(wrapUnlines cols . view entDesc -> ed)) =
     case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws ei $ e
               MobType ->                 (ed <>) . mkEqDesc       i cols ws ei   e $ t
               PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws ei   e $ t
@@ -962,8 +964,8 @@ mkPCDescHeader i ws | (pp -> s, pp -> r) <- getSexRace i ws = T.concat [ "You se
 
 
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
-mkInvCoinsDesc i cols ws ei ((^.sing) -> s) | is <- (ws^.invTbl)   ! ei
-                                            , c  <- (ws^.coinsTbl) ! ei = case (not . null $ is, c /= mempty) of
+mkInvCoinsDesc i cols ws ei (view sing -> s) | is <- (ws^.invTbl)   ! ei
+                                             , c  <- (ws^.coinsTbl) ! ei = case (not . null $ is, c /= mempty) of
   (False, False) -> wrapUnlines cols $ if ei == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
   (True,  False) -> header <> mkEntsInInvDesc i cols ws is
   (False, True ) -> header <>                                 mkCoinsSummary cols c
@@ -1006,14 +1008,14 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
 
 exits :: Action
 exits (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
-        r                = (ws^.rmTbl) ! ri
+    let (view rmId -> ri) = (ws^.pcTbl) ! i
+        r                 = (ws^.rmTbl) ! ri
     in logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
 exits p = withoutArgs exits p
 
 
 mkExitsSummary :: Cols -> Rm -> T.Text
-mkExitsSummary cols ((^.rmLinks) -> rls)
+mkExitsSummary cols (view rmLinks -> rls)
   | stdNames    <- [ rl^.linkDir.to linkDirToCmdName | rl <- rls, not . isNonStdLink $ rl ]
   , customNames <- [ rl^.linkName                    | rl <- rls,       isNonStdLink   rl ]
   = T.unlines . wordWrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
@@ -1072,7 +1074,7 @@ equip p = patternMatchFail "equip" [ showText p ]
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ws ei ((^.sing) -> s) t | descs <- map mkDesc . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei =
+mkEqDesc i cols ws ei (view sing -> s) t | descs <- map mkDesc . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei =
     case descs of [] -> none
                   _  -> (header <>) . T.unlines . concatMap (wordWrapIndent 15 cols) $ descs
   where
@@ -1108,12 +1110,12 @@ getAction   (LowerNub' i as) = do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.sing) -> s)  = (ws^.entTbl)   ! i
-            ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
-            ris              = (ws^.invTbl)   ! ri
-            ris'             = i `delete` ris
-            rc               = (ws^.coinsTbl) ! ri
-            d                = mkStdDesig i ws s True ris
+        let (view sing -> s)  = (ws^.entTbl)   ! i
+            (view rmId -> ri) = (ws^.pcTbl)    ! i
+            ris               = (ws^.invTbl)   ! ri
+            ris'              = i `delete` ris
+            rc                = (ws^.coinsTbl) ! ri
+            d                 = mkStdDesig i ws s True ris
         in if (not . null $ ris') || (rc /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as ris' rc
                    eiss                  = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
@@ -1226,11 +1228,11 @@ dropAction   (LowerNub' i as) = do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.sing) -> s)  = (ws^.entTbl)   ! i
-            ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
-            (pis, ris)       = over both ((ws^.invTbl) !) (i, ri)
-            pc               = (ws^.coinsTbl) ! i
-            d                = mkStdDesig i ws s True ris
+        let (view sing -> s)  = (ws^.entTbl)   ! i
+            (view rmId -> ri) = (ws^.pcTbl)    ! i
+            (pis, ris)        = over both ((ws^.invTbl) !) (i, ri)
+            pc                = (ws^.coinsTbl) ! i
+            d                 = mkStdDesig i ws s True ris
         in if (not . null $ pis) || (pc /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as pis pc
                    eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
@@ -1257,8 +1259,8 @@ putAction   (Lower' i as)    = do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let ((^.sing) -> s)          = (ws^.entTbl)   ! i
-          ((^.rmId) -> ri)         = (ws^.pcTbl)    ! i
+      let (view sing -> s)         = (ws^.entTbl)   ! i
+          (view rmId -> ri)        = (ws^.pcTbl)    ! i
           (pis, ris)               = over both ((ws^.invTbl)   !) (i, ri)
           ris'                     = i `delete` ris
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
@@ -1316,10 +1318,10 @@ type NthOfM = (Int, Int)
 
 
 mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM False _  _ _               _  = Nothing
-mkMaybeNthOfM True  ws i ((^.sing) -> s) is = Just ((+ 1) . fromJust . elemIndex i $ matches, length matches)
+mkMaybeNthOfM False _  _ _                _  = Nothing
+mkMaybeNthOfM True  ws i (view sing -> s) is = Just ((+ 1) . fromJust . elemIndex i $ matches, length matches)
   where
-    matches = filter (\i' -> let ((^.sing) -> s') = (ws^.entTbl) ! i' in s' == s) is
+    matches = filter (\i' -> let (view sing -> s') = (ws^.entTbl) ! i' in s' == s) is
 
 
 type ToEnt  = Ent
@@ -1350,8 +1352,8 @@ helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
 
 
 mkPutRemInvDesc :: Id -> WorldState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i ws d por mnom is ((^.sing) -> ts) | bs <- concatMap helper . mkNameCountBothList i ws $ is
-                                                    = (bs, extractLogMsgs i bs)
+mkPutRemInvDesc i ws d por mnom is (view sing -> ts) | bs <- concatMap helper . mkNameCountBothList i ws $ is
+                                                     = (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
         [ (T.concat [ "You "
@@ -1444,8 +1446,8 @@ helperPutRemEitherCoins i d por mnom fi ti te a@(ws, _, _) = \case
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) ((^.sing) -> ts) | bs <- concat . catMaybes $ [ c, s, g ]
-                                                                         = (bs, extractLogMsgs i bs)
+mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) (view sing -> ts) | bs <- concat . catMaybes $ [ c, s, g ]
+                                                                          = (bs, extractLogMsgs i bs)
   where
     c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
     s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
@@ -1505,8 +1507,8 @@ remove   (Lower' i as)    = do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let ((^.sing) -> s)          = (ws^.entTbl) ! i
-          ((^.rmId) -> ri)         = (ws^.pcTbl)  ! i
+      let (view sing -> s)         = (ws^.entTbl) ! i
+          (view rmId -> ri)        = (ws^.pcTbl)  ! i
           (pis, ris)               = over both ((ws^.invTbl)   !) (i, ri)
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
           ris'                     = i `delete` ris
@@ -1537,7 +1539,7 @@ shuffleRem i (t, ws) d cn icir as is c f
     then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
     else case f . head . zip gecrs $ miss of
       Left  msg -> putTMVar t ws >> return (mkBroadcast i msg, [])
-      Right [ci] | e@((^.sing) -> s) <- (ws^.entTbl) ! ci, t' <- (ws^.typeTbl) ! ci ->
+      Right [ci] | e@(view sing -> s) <- (ws^.entTbl) ! ci, t' <- (ws^.typeTbl) ! ci ->
         if t' /= ConType
           then putTMVar t ws >> return (mkBroadcast i $ "The " <> s <> " isn't a container.", [])
           else let cis                   = (ws^.invTbl)   ! ci
@@ -1688,7 +1690,7 @@ readyCloth :: Id                             ->
               Id                             ->
               Ent                            ->
               (WorldState, T.Text, [T.Text])
-readyCloth i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) =
+readyCloth i cols mrol a@(ws, _, _) ei e@(view sing -> s) =
     let em = (ws^.eqTbl)    ! i
         c  = (ws^.clothTbl) ! ei
     in case maybe (getAvailClothSlot cols ws i c em) (getDesigClothSlot cols ws e c em) mrol of
@@ -1735,7 +1737,7 @@ getAvailClothSlot cols ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.h
 
 
 getDesigClothSlot :: Cols -> WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigClothSlot cols ws ((^.sing) -> s) c em rol
+getDesigClothSlot cols ws (view sing -> s) c em rol
   | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCantWearThere
   | isRingRol rol, c /= FingerC                                           = Left sorryCantWearThere
   | c == FingerC, not . isRingRol $ rol                                   = Left . wrapUnlines cols $ ringHelp
@@ -1759,11 +1761,11 @@ getDesigClothSlot cols ws ((^.sing) -> s) c em rol
     sorryFullEar   = wrapUnlines cols . sorryFullClothSlotsOneSide . getSlotFromList rEarSlots   $ lEarSlots
     sorryFullWrist = wrapUnlines cols . sorryFullClothSlotsOneSide . getSlotFromList rWristSlots $ lWristSlots
     slotFromRol    = fromRol rol :: Slot
-    sorry (pp -> slot) ((^.sing) -> s') = wrapUnlines cols . T.concat $ [ "You're already wearing a "
-                                                                        , s'
-                                                                        , " on your "
-                                                                        , slot
-                                                                        , "." ]
+    sorry (pp -> slot) (view sing -> s') = wrapUnlines cols . T.concat $ [ "You're already wearing a "
+                                                                         , s'
+                                                                         , " on your "
+                                                                         , slot
+                                                                         , "." ]
 
 
 -- Ready weapons:
@@ -1776,9 +1778,9 @@ readyWpn :: Id                             ->
             Id                             ->
             Ent                            ->
             (WorldState, T.Text, [T.Text])
-readyWpn i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) | em  <- (ws^.eqTbl)  ! i
-                                                       , w   <- (ws^.wpnTbl) ! ei
-                                                       , sub <- w^.wpnSub = if not . isSlotAvail em $ BothHandsS
+readyWpn i cols mrol a@(ws, _, _) ei e@(view sing -> s) | em  <- (ws^.eqTbl)  ! i
+                                                        , w   <- (ws^.wpnTbl) ! ei
+                                                        , sub <- w^.wpnSub = if not . isSlotAvail em $ BothHandsS
   then over _2 (<> wrapUnlines cols "You're already wielding a two-handed weapon.") a
   else case maybe (getAvailWpnSlot cols ws i em) (getDesigWpnSlot cols ws e em) mrol of
     Left  msg   -> over _2 (<> msg) a
@@ -1795,7 +1797,7 @@ readyWpn i cols mrol a@(ws, _, _) ei e@((^.sing) -> s) | em  <- (ws^.eqTbl)  ! i
 
 
 getAvailWpnSlot :: Cols -> WorldState -> Id -> EqMap -> Either T.Text Slot
-getAvailWpnSlot cols ws i em | ((^.hand) -> h) <- (ws^.mobTbl) ! i =
+getAvailWpnSlot cols ws i em | (view hand -> h) <- (ws^.mobTbl) ! i =
     maybe (Left . wrapUnlines cols $ "You're already wielding two weapons.")
           Right
           (findAvailSlot em . map getSlotForHand $ [ h, otherHand h ])
@@ -1806,21 +1808,21 @@ getAvailWpnSlot cols ws i em | ((^.hand) -> h) <- (ws^.mobTbl) ! i =
 
 
 getDesigWpnSlot :: Cols -> WorldState -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigWpnSlot cols ws ((^.sing) -> s) em rol
+getDesigWpnSlot cols ws (view sing -> s) em rol
   | isRingRol rol = Left sorryNotRing
   | otherwise     = maybe (Right desigSlot)
                           (\i -> let e = (ws^.entTbl) ! i in Left . sorry $ e)
                           (em^.at desigSlot)
   where
-    sorryNotRing           = wrapUnlines cols $ "You can't wield a " <> s <> " with your finger!"
-    sorry ((^.sing) -> s') = wrapUnlines cols . T.concat $ [ "You're already wielding a "
-                                                           , s'
-                                                           , " with your "
-                                                           , pp desigSlot
-                                                           , "." ]
-    desigSlot              = case rol of R -> RHandS
-                                         L -> LHandS
-                                         _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
+    sorryNotRing            = wrapUnlines cols $ "You can't wield a " <> s <> " with your finger!"
+    sorry (view sing -> s') = wrapUnlines cols . T.concat $ [ "You're already wielding a "
+                                                            , s'
+                                                            , " with your "
+                                                            , pp desigSlot
+                                                            , "." ]
+    desigSlot               = case rol of R -> RHandS
+                                          L -> LHandS
+                                          _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
 
 
 -- Ready armor:
@@ -1890,7 +1892,7 @@ mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i ws i' | i' <- is ], c
 
 intro :: Action
 intro (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let ((^.introduced) -> intros) = (ws^.pcTbl) ! i
+    let (view introduced -> intros) = (ws^.pcTbl) ! i
     in if null intros
       then let introsTxt = "No one has introduced themselves to you yet." in do
           wrapSend mq cols introsTxt
@@ -1904,11 +1906,11 @@ intro (LowerNub' i as) = do
     bcast . map fromClassifiedBroadcast . sort $ cbs
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.sing) -> s)  = (ws^.entTbl)   ! i
-            ((^.rmId) -> ri) = (ws^.pcTbl)    ! i
-            is               = (ws^.invTbl)   ! ri
-            is'              = i `delete` is
-            c                = (ws^.coinsTbl) ! ri
+        let (view sing -> s)  = (ws^.entTbl)   ! i
+            (view rmId -> ri) = (ws^.pcTbl)    ! i
+            is                = (ws^.invTbl)   ! ri
+            is'               = i `delete` is
+            c                 = (ws^.coinsTbl) ! ri
         in if (not . null $ is') || (c /= mempty)
           then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is' c
                    eiss                  = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
@@ -1923,12 +1925,12 @@ intro (LowerNub' i as) = do
                                             | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
-        tryIntro a'@(ws, _, _) targetId | targetType               <- (ws^.typeTbl) ! targetId
-                                        , ((^.sing) -> targetSing) <- (ws^.entTbl)  ! targetId = case targetType of
-          PCType | targetPC@((^.introduced) -> intros)   <- (ws^.pcTbl) ! targetId
-                 , pis                                   <- findPCIds ws ris
-                 , targetDesig                           <- serialize . mkStdDesig targetId ws targetSing False $ ris
-                 , (mkReflexive . (^.sex) -> himHerself) <- (ws^.mobTbl) ! i
+        tryIntro a'@(ws, _, _) targetId | targetType                <- (ws^.typeTbl) ! targetId
+                                        , (view sing -> targetSing) <- (ws^.entTbl)  ! targetId = case targetType of
+          PCType | targetPC@(view introduced -> intros)   <- (ws^.pcTbl) ! targetId
+                 , pis                                    <- findPCIds ws ris
+                 , targetDesig                            <- serialize . mkStdDesig targetId ws targetSing False $ ris
+                 , (mkReflexive . view sex -> himHerself) <- (ws^.mobTbl) ! i
                  -> if s `elem` intros
                    then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
                         in over _2 (++ mkNTBroadcast i msg) a'
@@ -1981,8 +1983,8 @@ what :: Action
 what p@AdviseNoArgs            = advise p ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
                                                      \in " <> dblQuote "what up" <> "."
 what   (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
-    let ((^.rmId) -> ri) = (ws^.pcTbl) ! i
-        r                = (ws^.rmTbl) ! ri
+    let (view rmId -> ri) = (ws^.pcTbl) ! i
+        r                 = (ws^.rmTbl) ! ri
     in logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
   where
     helper ws r n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ws it n | it <- [ PCInv, PCEq, RmInv ] ]
@@ -2004,10 +2006,10 @@ whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
   else T.concat . map (whatInvCoins cols it n) $ rcs
   where
     resolveName | (is, c) <- getLocInvCoins, (gecrs, _, rcs) <- resolveEntCoinNames i ws [n] is c = (is, gecrs, rcs)
-    getLocInvCoins   = case it of PCInv -> ((ws^.invTbl)          ! i,  (ws^.coinsTbl) ! i )
-                                  PCEq  -> (M.elems $ (ws^.eqTbl) ! i,  mempty             )
-                                  RmInv -> ((ws^.invTbl)          ! ri, (ws^.coinsTbl) ! ri)
-    ((^.rmId) -> ri) = (ws^.pcTbl) ! i
+    getLocInvCoins    = case it of PCInv -> ((ws^.invTbl)          ! i,  (ws^.coinsTbl) ! i )
+                                   PCEq  -> (M.elems $ (ws^.eqTbl) ! i,  mempty             )
+                                   RmInv -> ((ws^.invTbl)          ! ri, (ws^.coinsTbl) ! ri)
+    (view rmId -> ri) = (ws^.pcTbl) ! i
 
 
 whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
@@ -2018,8 +2020,8 @@ whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is
                                          , locTxt
                                          , supplement
                                          , "." ]
-    | e@((^.sing) -> s) <- head es, len <- length es -> if len > 1
-      then let ebgns@(head -> h)         = take len [ getEffBothGramNos i ws i' | ((^.entId) -> i') <- es ]
+    | e@(view sing -> s) <- head es, len <- length es -> if len > 1
+      then let ebgns@(head -> h)         = take len [ getEffBothGramNos i ws i' | (view entId -> i') <- es ]
                target | all (== h) ebgns = mkPlurFromBoth h
                       | otherwise        = (<> "s") . bracketQuote . getEffName i ws $ e^.entId
            in T.concat [ r
@@ -2038,20 +2040,20 @@ whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is
                        , " "
                        , locTxt
                        , "." ]
-  Indexed { entRes = (Right e@((^.sing) -> s)), .. } -> T.concat [ r
-                                                                 , " may refer to the "
-                                                                 , mkOrdinal index
-                                                                 , " "
-                                                                 , bracketQuote . getEffName i ws $ e^.entId
-                                                                 , " "
-                                                                 , parensQuote s
-                                                                 , " "
-                                                                 , locTxt
-                                                                 , "." ]
-  _                                                  -> T.concat [ r
-                                                                 , " doesn't refer to anything "
-                                                                 , locTxt
-                                                                 , "." ]
+  Indexed { entRes = (Right e@(view sing -> s)), .. } -> T.concat [ r
+                                                                  , " may refer to the "
+                                                                  , mkOrdinal index
+                                                                  , " "
+                                                                  , bracketQuote . getEffName i ws $ e^.entId
+                                                                  , " "
+                                                                  , parensQuote s
+                                                                  , " "
+                                                                  , locTxt
+                                                                  , "." ]
+  _                                                   -> T.concat [ r
+                                                                  , " doesn't refer to anything "
+                                                                  , locTxt
+                                                                  , "." ]
   where
     acp                                     = T.singleton allChar
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
@@ -2172,19 +2174,19 @@ handleEgress i = do
         mqt <- takeTMVar mqtTMVar
         pt  <- takeTMVar ptTMVar
         -----
-        let ((^.sing)     -> s)   = (ws^.entTbl) ! i
-        let ((^.rmId)     -> ri)  = (ws^.pcTbl)  ! i
-        let ((i `delete`) -> ris) = (ws^.invTbl) ! ri
-        let ws'                   = ws  & typeTbl.at  i  .~ Nothing
-                                        & entTbl.at   i  .~ Nothing
-                                        & invTbl.at   i  .~ Nothing
-                                        & coinsTbl.at i  .~ Nothing
-                                        & eqTbl.at    i  .~ Nothing
-                                        & mobTbl.at   i  .~ Nothing
-                                        & pcTbl.at    i  .~ Nothing
-                                        & invTbl.at   ri ?~ ris
-        let mqt'                  = mqt & at i .~ Nothing
-        let pt'                   = pt  & at i .~ Nothing
+        let (view sing     -> s)   = (ws^.entTbl) ! i
+        let (view rmId     -> ri)  = (ws^.pcTbl)  ! i
+        let ((i `delete`)  -> ris) = (ws^.invTbl) ! ri
+        let ws'                    = ws  & typeTbl.at  i  .~ Nothing
+                                         & entTbl.at   i  .~ Nothing
+                                         & invTbl.at   i  .~ Nothing
+                                         & coinsTbl.at i  .~ Nothing
+                                         & eqTbl.at    i  .~ Nothing
+                                         & mobTbl.at   i  .~ Nothing
+                                         & pcTbl.at    i  .~ Nothing
+                                         & invTbl.at   ri ?~ ris
+        let mqt'                   = mqt & at i .~ Nothing
+        let pt'                    = pt  & at i .~ Nothing
         -----
         putTMVar wsTMVar  ws'
         putTMVar mqtTMVar mqt'
@@ -2196,8 +2198,8 @@ handleEgress i = do
 
 notifyEgress :: Id -> MudStack ()
 notifyEgress i = readWSTMVar >>= \ws ->
-    let ((^.sing)     -> s)   = (ws^.entTbl) ! i
-        ((^.rmId)     -> ri)  = (ws^.pcTbl)  ! i
+    let (view sing    -> s)   = (ws^.entTbl) ! i
+        (view rmId    -> ri)  = (ws^.pcTbl)  ! i
         ris                   = (ws^.invTbl) ! ri
         ((i `delete`) -> pis) = findPCIds ws ris
         d                     = serialize . mkStdDesig i ws s True $ ris
@@ -2220,7 +2222,7 @@ wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
 
 wizShutdown :: Action
 wizShutdown (NoArgs' i mq) = readWSTMVar >>= \ws ->
-    let ((^.sing) -> s) = (ws^.entTbl) ! i in do
+    let (view sing -> s) = (ws^.entTbl) ! i in do
         massSend "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
         logPlaExecArgs (prefixWizCmd "shutdown") [] i
         massLogPla "wizShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
@@ -2235,8 +2237,8 @@ wizShutdown (NoArgs' i mq) = readWSTMVar >>= \ws ->
                                             , "." ]
         liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
-    let ((^.sing) -> s) = (ws^.entTbl) ! i
-        msg             = T.intercalate " " as
+    let (view sing -> s) = (ws^.entTbl) ! i
+        msg              = T.intercalate " " as
     in do
         massSend msg
         logPlaExecArgs (prefixWizCmd "shutdown") as i
@@ -2303,7 +2305,7 @@ wizName :: Action
 wizName (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "name") i
     readWSTMVar >>= \ws ->
-        let ((^.sing) -> s)     = (ws^.entTbl) ! i
+        let (view sing -> s)    = (ws^.entTbl) ! i
             (pp -> s', pp -> r) = getSexRace i ws
         in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
 wizName p = withoutArgs wizName p
@@ -2317,7 +2319,7 @@ wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message
                                                      \in " <> dblQuote (prefixDebugCmd "print" <> " Is anybody \
                                                      \home?") <> "."
 wizPrint (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
-    let ((^.sing) -> s) = (ws^.entTbl) ! i
+    let (view sing -> s) = (ws^.entTbl) ! i
     in do
         logPlaExecArgs (prefixDebugCmd "print") as i
         liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as

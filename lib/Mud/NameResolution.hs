@@ -22,6 +22,7 @@ import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Lens (_1, _2, dropping, folded, over, to)
+import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.), (^..))
 import Data.Char (isDigit, toUpper)
 import Data.IntMap.Lazy ((!))
@@ -143,7 +144,7 @@ mkGecrIndexed i ws x n is
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
   | mess <- map extractMesFromGecr gecrs
-  , miss <- pruneDupIds [] . (fmap . fmap . fmap) (^.entId) $ mess
+  , miss <- pruneDupIds [] . (fmap . fmap . fmap) (view entId) $ mess
   , rcs  <- reconcileCoins c . distillEnscs $ enscs
   = (gecrs, miss, rcs)
 

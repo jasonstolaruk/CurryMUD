@@ -31,10 +31,16 @@ module Mud.StateHelpers ( BothGramNos
                         , mkPlur
                         , mkPlurFromBoth
                         , mkUnknownPCEntName
+                        , modifyArm
                         , modifyEnt
+                        , modifyMob
                         , modifyNWS
+                        , modifyObj
+                        , modifyPC
                         , modifyPla
+                        , modifyRm
                         , modifyWS
+                        , modifyWpn
                         , multiWrapSend
                         , negateCoins
                         , ok
@@ -70,9 +76,10 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (_1, _2, at, both, each, over, to)
+import Control.Lens (_1, _2, at, both, each, over)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((%~), (&), (?~), (.~), (^.), (^.))
-import Control.Lens.Setter (ASetter)
+import Control.Lens.Setter (ASetter, set)
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
@@ -94,7 +101,7 @@ patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
 
 
 getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
-getWSTMVar = gets (^.worldStateTMVar)
+getWSTMVar = gets (view worldStateTMVar)
 
 
 readWSTMVar :: MudStack WorldState
@@ -115,7 +122,7 @@ modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
 
 
 getNWSRec :: ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> MudStack a
-getNWSRec lens = gets (^.nonWorldState.lens)
+getNWSRec lens = gets (view (nonWorldState.lens))
 
 
 readTMVarInNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) ->
@@ -149,7 +156,7 @@ modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
 
 
 getLogAsyncs :: MudStack (LogAsync, LogAsync)
-getLogAsyncs = helper <$> gets (^.nonWorldState)
+getLogAsyncs = helper <$> gets (view nonWorldState)
   where
     helper nws | Just (nla, _) <- nws^.noticeLog, Just (ela, _) <- nws^.errorLog = (nla, ela)
     helper _ = patternMatchFail "getLogAsyncs helper" [ bracketQuote "elided" ]
@@ -220,6 +227,52 @@ putRm i is c r = modifyWS $ \ws ->
 
 
 -- ============================================================
+-- Helper functions for modifying world elements:
+
+
+modifyEnt :: Id -> ASetter Ent Ent a b -> b -> MudStack Ent
+modifyEnt i lens val = onWS $ \(t, ws) ->
+    let (set lens val -> e) = (ws^.entTbl) ! i
+    in putTMVar t (ws & entTbl.at i ?~ e) >> return e
+
+
+modifyObj :: Id -> ASetter Obj Obj a b -> b -> MudStack Obj
+modifyObj i lens val = onWS $ \(t, ws) ->
+    let (set lens val -> e) = (ws^.objTbl) ! i
+    in putTMVar t (ws & objTbl.at i ?~ e) >> return e
+
+
+modifyWpn :: Id -> ASetter Wpn Wpn a b -> b -> MudStack Wpn
+modifyWpn i lens val = onWS $ \(t, ws) ->
+    let (set lens val -> e) = (ws^.wpnTbl) ! i
+    in putTMVar t (ws & wpnTbl.at i ?~ e) >> return e
+
+
+modifyArm :: Id -> ASetter Arm Arm a b -> b -> MudStack Arm
+modifyArm i lens val = onWS $ \(t, ws) ->
+    let (set lens val -> e) = (ws^.armTbl) ! i
+    in putTMVar t (ws & armTbl.at i ?~ e) >> return e
+
+
+modifyMob :: Id -> ASetter Mob Mob a b -> b -> MudStack Mob
+modifyMob i lens val = onWS $ \(t, ws) ->
+    let (set lens val -> e) = (ws^.mobTbl) ! i
+    in putTMVar t (ws & mobTbl.at i ?~ e) >> return e
+
+
+modifyPC :: Id -> ASetter PC PC a b -> b -> MudStack PC
+modifyPC i lens val = onWS $ \(t, ws) ->
+    let (set lens val -> e) = (ws^.pcTbl) ! i
+    in putTMVar t (ws & pcTbl.at i ?~ e) >> return e
+
+
+modifyRm :: Id -> ASetter Rm Rm a b -> b -> MudStack Rm
+modifyRm i lens val = onWS $ \(t, ws) ->
+    let (set lens val -> e) = (ws^.rmTbl) ! i
+    in putTMVar t (ws & rmTbl.at i ?~ e) >> return e
+
+
+-- ============================================================
 -- Helper functions for working with "Pla":
 
 
@@ -233,23 +286,14 @@ getPla i = (! i) <$> readTMVarInNWS plaTblTMVar
 
 
 getPlaColumns :: Id -> MudStack Int
-getPlaColumns i = (^.columns) <$> getPla i
+getPlaColumns i = view columns <$> getPla i
 
 
 modifyPla :: Id -> ASetter Pla Pla a b -> b -> MudStack Pla
-modifyPla i lens value = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
     let p  = pt ! i
-        p' = p & lens .~ value
+        p' = p & lens .~ val
     in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
-
-
--- TODO: Move.
--- TODO: Make similar functions for the other WS tables. Look for places to use these functions.
-modifyEnt :: Id -> ASetter Ent Ent a b -> b -> MudStack Ent
-modifyEnt i lens value = onWS $ \(t, ws) ->
-    let e  = (ws^.entTbl) ! i
-        e' = e & lens .~ value
-    in putTMVar t (ws & entTbl.at i ?~ e') >> return e'
 
 
 -- ============================================================
@@ -276,7 +320,7 @@ bcast bs = getMqtPt >>= \(mqt, pt) -> do
 
 
 parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
-parsePCDesig i ws | ((^.introduced) -> intros) <- (ws^.pcTbl) ! i = helper intros
+parsePCDesig i ws | (view introduced -> intros) <- (ws^.pcTbl) ! i = helper intros
   where
     helper intros msg
       | T.singleton stdDesigDelimiter `T.isInfixOf` msg
@@ -327,7 +371,7 @@ bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = bcast =<< helper
   where
     helper = onWS $ \(t, ws) ->
-        let ((^.rmId)     -> ri)  = (ws^.pcTbl)  ! i
+        let (view rmId    -> ri)  = (ws^.pcTbl)  ! i
             ((i `delete`) -> ris) = (ws^.invTbl) ! ri
         in putTMVar t ws >> return [(msg, findPCIds ws ris)]
 
@@ -372,7 +416,7 @@ statefulFork f = liftIO . void . forkIO . void . runStateInIORefT f =<< get
 
 
 allKeys :: WorldState -> Inv
-allKeys = (^.typeTbl.to IM.keys)
+allKeys = views typeTbl IM.keys -- TODO: Looks for other places where you can use "views".
 
 
 getUnusedId :: WorldState -> Id
@@ -385,7 +429,7 @@ sortInv ws is | (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) <- [ (ws^.t
   where
     helper a (i, t) | t == PCType      = over _1 (++ [i]) a
                     | otherwise        = over _2 (++ [i]) a
-    sortNonPCs is'                     = map (^._1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
+    sortNonPCs is'                     = map (view _1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
     sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing               | i <- is' ]
@@ -397,9 +441,9 @@ type BothGramNos = (Sing, Plur)
 getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
 getEffBothGramNos i ws i'
   | e <- (ws^.entTbl) ! i', mn <- e^.entName = case mn of
-    Nothing | ((^.introduced) -> intros) <- (ws^.pcTbl)  ! i
-            , n                          <- e^.sing
-            , (pp -> s, pp -> r)         <- getSexRace i' ws
+    Nothing | (view introduced -> intros) <- (ws^.pcTbl)  ! i
+            , n                           <- e^.sing
+            , (pp -> s, pp -> r)          <- getSexRace i' ws
             -> if n `elem` intros
                  then (n, "")
                  else over both ((s <>) . (" " <>)) (r, pluralize r)
@@ -411,8 +455,8 @@ getEffBothGramNos i ws i'
 
 
 mkPlur :: Ent -> Plur
-mkPlur e@((^.plur) -> p) | T.null p  = e^.sing <> "s"
-                         | otherwise = p
+mkPlur e@(view plur -> p) | T.null p  = e^.sing <> "s"
+                          | otherwise = p
 
 
 mkPlurFromBoth :: BothGramNos -> Plur
@@ -440,19 +484,19 @@ findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
 getEffName :: Id -> WorldState -> Id -> T.Text
 getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
   where
-    helper | n `elem` intros   = uncapitalize n
-           | otherwise         = mkUnknownPCEntName i' ws
-    n                          = e^.sing
-    ((^.introduced) -> intros) = (ws^.pcTbl) ! i
+    helper | n `elem` intros    = uncapitalize n
+           | otherwise          = mkUnknownPCEntName i' ws
+    n                           = e^.sing
+    (view introduced -> intros) = (ws^.pcTbl) ! i
 
 
 mkUnknownPCEntName :: Id -> WorldState -> T.Text
-mkUnknownPCEntName i ws | ((^.sex) -> s)  <- (ws^.mobTbl) ! i
-                        , ((^.race) -> r) <- (ws^.pcTbl)  ! i = (T.singleton . T.head . pp $ s) <> pp r
+mkUnknownPCEntName i ws | (view sex  -> s) <- (ws^.mobTbl) ! i
+                        , (view race -> r) <- (ws^.pcTbl)  ! i = (T.singleton . T.head . pp $ s) <> pp r
 
 
 getSexRace :: Id -> WorldState -> (Sex, Race)
-getSexRace i ws | ((^.sex) -> s) <- (ws^.mobTbl) ! i, ((^.race) -> r) <- (ws^.pcTbl) ! i = (s, r)
+getSexRace i ws | (view sex -> s) <- (ws^.mobTbl) ! i, (view race -> r) <- (ws^.pcTbl) ! i = (s, r)
 
 
 splitRmInv :: WorldState -> Inv -> (Inv, Inv)
