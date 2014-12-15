@@ -423,7 +423,7 @@ getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
 handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
     let cols = p^.columns
-        f    = p^.interpreter
+        f    = p^.interp
     in f cn . WithArgs i mq cols $ as
 
 
@@ -481,17 +481,8 @@ interpName (capitalize . T.toLower -> cn) (NoArgs' i mq)
                                                             \long."
   | T.any (`elem` illegalChars) cn    = sorryIllegalName mq "Your name cannot include any numbers or symbols."
   | otherwise                         = do
-      onWS $ \(t, ws) -> let e  = (ws^.entTbl) ! i
-                             e' = e & sing .~ cn
-                         in putTMVar t (ws & entTbl.at i ?~ e')
-      (T.pack -> host) <- onNWS plaTblTMVar $ \(ptTMVar, pt) -> let p    = pt ! i
-                                                                    p'   = p & interpreter .~ centralDispatch
-                                                                    host = p^.hostName
-                                                                in putTMVar ptTMVar (pt & at i ?~ p') >> return host
-      initPlaLog i cn
-      logPla "interpName" i $ "logged on from " <> host <> "."
-      notifyArrival i
-      prompt mq . nl' $ "> "
+      prompt mq . nl' $ "Your name will be " <> dblQuote cn <> ", is that OK? [yes/no]"
+      void . modifyPla i interp $ interpConfirmName
   where
     illegalChars    = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
 interpName _  (WithArgs _ mq _ _) = sorryIllegalName mq "Your name must be a single word."
@@ -502,6 +493,17 @@ sorryIllegalName :: MsgQueue -> T.Text -> MudStack ()
 sorryIllegalName mq msg = do
     send mq . nl' . nl $ msg
     prompt mq "Let's try this again. By what name are you known?"
+
+
+interpConfirmName :: Interp
+interpConfirmName cn (NoArgs' i mq) = do
+    void . modifyEnt i sing $ cn
+    (T.pack . (^.hostName) -> host) <- modifyPla i interp centralDispatch
+    initPlaLog i cn
+    logPla "interpName" i $ "(new player) logged on from " <> host <> "."
+    notifyArrival i
+    prompt mq . nl' $ ">"
+interpConfirmName cn p = patternMatchFail "interpConfirmName" [ cn, showText p ]
 
 
 notifyArrival :: Id -> MudStack ()
@@ -519,7 +521,7 @@ mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <-
 centralDispatch :: Interp
 centralDispatch cn p@(WithArgs i mq _ _) = do
     findAction i cn >>= maybe sorry (\act -> act p)
-    prompt mq "> "
+    prompt mq ">"
   where
     sorry = send mq . nlnl $ "What?"
 centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]

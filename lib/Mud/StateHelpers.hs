@@ -31,7 +31,9 @@ module Mud.StateHelpers ( BothGramNos
                         , mkPlur
                         , mkPlurFromBoth
                         , mkUnknownPCEntName
+                        , modifyEnt
                         , modifyNWS
+                        , modifyPla
                         , modifyWS
                         , multiWrapSend
                         , negateCoins
@@ -69,7 +71,8 @@ import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (_1, _2, at, both, each, over, to)
-import Control.Lens.Operators ((%~), (&), (?~), (^.), (^.))
+import Control.Lens.Operators ((%~), (&), (?~), (.~), (^.), (^.))
+import Control.Lens.Setter (ASetter)
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
@@ -231,6 +234,22 @@ getPla i = (! i) <$> readTMVarInNWS plaTblTMVar
 
 getPlaColumns :: Id -> MudStack Int
 getPlaColumns i = (^.columns) <$> getPla i
+
+
+modifyPla :: Id -> ASetter Pla Pla a b -> b -> MudStack Pla
+modifyPla i lens value = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+    let p  = pt ! i
+        p' = p & lens .~ value
+    in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
+
+
+-- TODO: Move.
+-- TODO: Make similar functions for the other WS tables. Look for places to use these functions.
+modifyEnt :: Id -> ASetter Ent Ent a b -> b -> MudStack Ent
+modifyEnt i lens value = onWS $ \(t, ws) ->
+    let e  = (ws^.entTbl) ! i
+        e' = e & lens .~ value
+    in putTMVar t (ws & entTbl.at i ?~ e') >> return e'
 
 
 -- ============================================================

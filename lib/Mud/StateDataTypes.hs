@@ -405,10 +405,10 @@ type CmdName = T.Text
 type Interp  = (CmdName -> ActionParams -> MudStack ())
 
 
-data Pla = Pla { _isWiz       :: !Bool
-               , _hostName    :: !HostName
-               , _columns     :: !Int
-               , _interpreter :: !Interp }
+data Pla = Pla { _isWiz    :: !Bool
+               , _hostName :: !HostName
+               , _columns  :: !Int
+               , _interp   :: !Interp }
 
 
 -- ==================================================
