@@ -6,7 +6,6 @@ module Mud.Cmds.Cmds (listenWrapper) where
 import Mud.Cmds.DebugCmds
 import Mud.Cmds.PlaCmds
 import Mud.Cmds.WizCmds
-import Mud.Cmds.CmdUtil
 import Mud.Color
 import Mud.Ids
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)

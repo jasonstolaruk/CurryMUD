@@ -1,10 +1,13 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.Cmds.PlaCmds ( plaCmds
-                        , getUptime -- TODO: Do these functions belong in this module?
+module Mud.Cmds.PlaCmds ( getRecordUptime
+                        , getUptime
                         , handleEgress
-                        , mkCmdListWithNonStdRmLinks ) where
+                        , mkCmdListWithNonStdRmLinks
+                        , mkSerializedNonStdDesig
+                        , plaCmds
+                        , readFileExHandler ) where
 
 import Mud.Cmds.CmdUtil
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
@@ -14,7 +17,7 @@ import Mud.StateDataTypes
 import Mud.StateHelpers
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import qualified Mud.Logging as L (logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
@@ -22,7 +25,7 @@ import Control.Arrow (first)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Exception.Lifted (try)
+import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
@@ -37,11 +40,13 @@ import Data.Text.Strict.Lens (packed)
 import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (pi)
 import System.Console.ANSI (clearScreenCode)
-import System.Directory (getDirectoryContents)
+import System.Directory (doesFileExist, getDirectoryContents)
 import System.Time.Utils (renderSecs)
 import qualified Data.Map.Lazy as M (elems, filter, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+import System.IO.Error (isDoesNotExistError, isPermissionError)
+import Control.Exception (IOException)
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
@@ -70,6 +75,14 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.PlaCmds"
 
 logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.PlaCmds"
+
+
+logIOEx :: T.Text -> IOException -> MudStack ()
+logIOEx = L.logIOEx "Mud.Cmds.PlaCmds"
+
+
+logIOExRethrow :: T.Text -> IOException -> MudStack ()
+logIOExRethrow = L.logIOExRethrow "Mud.Cmds.PlaCmds"
 
 
 -- ==================================================
@@ -118,6 +131,13 @@ about (NoArgs i mq cols) = do
   where
     helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile . (miscDir ++) $ "about")
 about p = withoutArgs about p
+
+
+readFileExHandler :: T.Text -> IOException -> MudStack ()
+readFileExHandler fn e
+  | isDoesNotExistError e = logIOEx        fn e
+  | isPermissionError   e = logIOEx        fn e
+  | otherwise             = logIOExRethrow fn e
 
 
 -----
@@ -273,6 +293,19 @@ findExit (view rmLinks -> rls) ln =
     getDestMsg   _                 = Nothing
 
 
+linkDirToCmdName :: LinkDir -> CmdName
+linkDirToCmdName North     = "n"
+linkDirToCmdName Northeast = "ne"
+linkDirToCmdName East      = "e"
+linkDirToCmdName Southeast = "se"
+linkDirToCmdName South     = "s"
+linkDirToCmdName Southwest = "sw"
+linkDirToCmdName West      = "w"
+linkDirToCmdName Northwest = "nw"
+linkDirToCmdName Up        = "u"
+linkDirToCmdName Down      = "d"
+
+
 mkStdDesig :: Id -> WorldState -> Sing -> Bool -> Inv -> PCDesig
 mkStdDesig i ws s ic ris = StdDesig { stdPCEntSing = Just s
                                     , isCap        = ic
@@ -307,6 +340,12 @@ expandOppLinkName "nw" = "the southeast"
 expandOppLinkName "u"  = "below"
 expandOppLinkName "d"  = "above"
 expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
+
+
+mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
+mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <- getSexRace i ws =
+    serialize NonStdDesig { nonStdPCEntSing = s
+                          , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
 
 
 -----
@@ -474,6 +513,11 @@ mkExitsSummary cols (view rmLinks -> rls)
   where
     summarize []  []  = "None!"
     summarize std cus = T.intercalate ", " . (std ++) $ cus
+
+
+isNonStdLink :: RmLink -> Bool
+isNonStdLink (NonStdLink {}) = True
+isNonStdLink _               = False
 
 
 -----
@@ -1602,6 +1646,14 @@ uptimeHelper ut = helper <$> getRecordUptime
     mkRecTxt (renderIt -> rut) = mkTxtHelper $ " (record uptime: " <> rut <> ")."
     mkTxtHelper                = ("Up " <>) . (renderIt ut <>)
     renderIt                   = T.pack . renderSecs
+
+
+getRecordUptime :: MudStack (Maybe Integer)
+getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
+  True  -> liftIO readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
+  False -> return Nothing
+  where
+    readUptime = Just . read <$> readFile uptimeFile
 
 
 getUptime :: MudStack Integer
