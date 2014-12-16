@@ -87,6 +87,45 @@ wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
 -----
 
 
+wizDate :: Action
+wizDate (NoArgs' i mq) = do
+    logPlaExec (prefixWizCmd "date") i
+    send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
+wizDate p = withoutArgs wizDate p
+
+
+-----
+
+
+wizName :: Action
+wizName (NoArgs i mq cols) = do
+    logPlaExec (prefixWizCmd "name") i
+    readWSTMVar >>= \ws ->
+        let (view sing -> s)    = (ws^.entTbl) ! i
+            (pp -> s', pp -> r) = getSexRace i ws
+        in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
+wizName p = withoutArgs wizName p
+
+
+-----
+
+
+wizPrint :: Action
+wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message to print to the server console, as \
+                                                     \in " <> dblQuote (prefixWizCmd "print" <> " Is anybody \
+                                                     \home?") <> "."
+wizPrint (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
+    let (view sing -> s) = (ws^.entTbl) ! i
+    in do
+        logPlaExecArgs (prefixWizCmd "print") as i
+        liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
+        ok mq
+wizPrint p = patternMatchFail "wizPrint" [ showText p ]
+
+
+-----
+
+
 wizShutdown :: Action
 wizShutdown (NoArgs' i mq) = readWSTMVar >>= \ws ->
     let (view sing -> s) = (ws^.entTbl) ! i in do
@@ -122,6 +161,16 @@ wizShutdown _ = patternMatchFail "wizShutdown" []
 -----
 
 
+wizStart :: Action
+wizStart (NoArgs i mq cols) = do
+    logPlaExec (prefixWizCmd "start") i
+    wrapSend mq cols . showText =<< getNWSRec startTime
+wizStart p = withoutArgs wizStart p
+
+
+-----
+
+
 wizTime :: Action
 wizTime (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "time") i
@@ -137,16 +186,6 @@ wizTime p = withoutArgs wizTime p
 -----
 
 
-wizDate :: Action
-wizDate (NoArgs' i mq) = do
-    logPlaExec (prefixWizCmd "date") i
-    send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
-wizDate p = withoutArgs wizDate p
-
-
------
-
-
 wizUptime :: Action
 wizUptime (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "uptime") i
@@ -154,42 +193,3 @@ wizUptime (NoArgs i mq cols) = do
   where
     runUptime = T.pack <$> readProcess "uptime" [] ""
 wizUptime p = withoutArgs wizUptime p
-
-
------
-
-
-wizStart :: Action
-wizStart (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "start") i
-    wrapSend mq cols . showText =<< getNWSRec startTime
-wizStart p = withoutArgs wizStart p
-
-
------
-
-
-wizName :: Action
-wizName (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "name") i
-    readWSTMVar >>= \ws ->
-        let (view sing -> s)    = (ws^.entTbl) ! i
-            (pp -> s', pp -> r) = getSexRace i ws
-        in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
-wizName p = withoutArgs wizName p
-
-
------
-
-
-wizPrint :: Action
-wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message to print to the server console, as \
-                                                     \in " <> dblQuote (prefixWizCmd "print" <> " Is anybody \
-                                                     \home?") <> "."
-wizPrint (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i
-    in do
-        logPlaExecArgs (prefixWizCmd "print") as i
-        liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
-        ok mq
-wizPrint p = patternMatchFail "wizPrint" [ showText p ]
