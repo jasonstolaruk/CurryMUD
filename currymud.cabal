@@ -58,7 +58,6 @@ library
                        RankNTypes,
                        RebindableSyntax,
                        RecordWildCards,
-                       ScopedTypeVariables,
                        TemplateHaskell,
                        TupleSections,
                        TypeFamilies,
