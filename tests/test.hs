@@ -19,25 +19,34 @@ import qualified Data.Text as T
 main :: IO ()
 main = defaultMain tests
 
+
 tests :: TestTree
 tests = testGroup "tests" [ propertyTests, unitTests ]
 
+
 -- ==================================================
+
 
 propertyTests :: TestTree
 propertyTests = testGroup "property tests" [ propTestsStateHelpers, propTestsTheWorld, propTestsUtil ]
 
+
 -- --------------------------------------------------
+
 
 propTestsStateHelpers :: TestTree
 propTestsStateHelpers = testGroup "property tests StateHelpers" [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
 
+
 -- --------------------------------------------------
+
 
 propTestsTheWorld :: TestTree
 propTestsTheWorld = testGroup "property tests TheWorld" [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
 
+
 -- --------------------------------------------------
+
 
 propTestsUtil :: TestTree
 propTestsUtil = testGroup "property tests Util"
@@ -58,12 +67,16 @@ propTestsUtil = testGroup "property tests Util"
     , QC.testProperty "prop_deleteFirstOfEach" prop_deleteFirstOfEach
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 
+
 -- ==================================================
+
 
 unitTests :: TestTree
 unitTests = testGroup "unit tests" [ unitTestsMiscDataTypes, unitTestsUtil ]
 
+
 -- --------------------------------------------------
+
 
 unitTestsUtil :: TestTree
 unitTestsUtil = testGroup "unit tests Util"
@@ -81,7 +94,9 @@ unitTestsUtil = testGroup "unit tests Util"
     , testCase "stripTelnet_malformed5"         $ test_stripTelnet_malformed5         @?= "test"
     , testCase "stripTelnet_malformed6"         $ test_stripTelnet_malformed6         @?= "test" ]
 
+
 -- --------------------------------------------------
+
 
 unitTestsMiscDataTypes :: TestTree
 unitTestsMiscDataTypes = testGroup "unit tests MiscDataTypes"

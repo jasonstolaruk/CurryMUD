@@ -60,6 +60,17 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.PlaCmds"
 
 
+-----
+
+
+logIOEx :: T.Text -> IOException -> MudStack ()
+logIOEx = L.logIOEx "Mud.Cmds.PlaCmds"
+
+
+logIOExRethrow :: T.Text -> IOException -> MudStack ()
+logIOExRethrow = L.logIOExRethrow "Mud.Cmds.PlaCmds"
+
+
 logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.PlaCmds"
 
@@ -78,14 +89,6 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.PlaCmds"
 
 logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.PlaCmds"
-
-
-logIOEx :: T.Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Cmds.PlaCmds"
-
-
-logIOExRethrow :: T.Text -> IOException -> MudStack ()
-logIOExRethrow = L.logIOExRethrow "Mud.Cmds.PlaCmds"
 
 
 -- ==================================================

@@ -46,47 +46,30 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
 -- TODO: Here's the plan:
--- [DONE] 1. Consider using conduit.
--- [DONE] 2. Go into server mode. Accept incoming connections.
--- [DONE] 3. Implement client-based routing of output.
--- 4. Implement the broadcasting of messages.
--- [DONE] 5. Log commands.
--- 6. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
+-- 1. Implement the broadcasting of messages.
+-- 2. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
 --   a. Code reduction.
 --   b. Consistency in binding names.
---   c. Stylistic issues:
---      [DONE] Use "++" instead of "<>" where applicable.
---      [DONE] Concat lists of text instead of using "<>".
---      [DONE] ">>=" vs. "=<<".
---      [DONE] "(..)" instead of "(blah)" in import statements.
---   d. [DONE] Check for superfluous exports.
--- 7. Write tests for NameResolution and Cmds.
--- [DONE] 8. Refactor for ViewPatterns and pattern guards.
--- [DONE] 9. Refactor for NamedFieldPuns and RecordWildCards.
--- [DONE] 10. See if you can keep your lines at 120 characters or less.
--- [DONE] 11. Are there places where I can use IO as a Functor or Applicative?
--- [DONE] 12. Make sure you are using "as" and "a" for "args" instead of "rs" and "r".
--- [DONE] 13. Make sure that all your export lists are properly sorted.
--- [DONE] 14. "forall"?
--- [DONE] 15. Lists of imported functions should be sorted.
--- [DONE] 16. Loggers shouldn't print to screen.
--- [DONE] 17. Use "T.singleton".
+-- 3. Write tests for NameResolution and Cmds.
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds"
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Cmds"
+-----
+
+
+logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
+logExMsg = L.logExMsg "Mud.Cmds"
 
 
 logIOEx :: T.Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds"
 
 
-logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
-logExMsg = L.logExMsg "Mud.Cmds"
+logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice = L.logNotice "Mud.Cmds"
 
 
 logPla :: T.Text -> Id -> T.Text -> MudStack ()

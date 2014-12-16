@@ -34,12 +34,15 @@ patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.WizCmds"
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Cmds.WizCmds"
+-----
 
 
 logIOEx :: T.Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds.WizCmds"
+
+
+logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice = L.logNotice "Mud.Cmds.WizCmds"
 
 
 logPlaExec :: CmdName -> Id -> MudStack ()
