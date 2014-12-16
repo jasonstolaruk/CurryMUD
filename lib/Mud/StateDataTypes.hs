@@ -1,15 +1,17 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
-{-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings, PatternSynonyms, RebindableSyntax, RecordWildCards, TemplateHaskell, ViewPatterns #-}
 
 module Mud.StateDataTypes where
 
 import Mud.StateInIORefT
+import Mud.Util
 
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
+import Data.List (nub)
 import Data.Monoid (Monoid, mappend, mempty)
 import Data.String (fromString)
 import Data.Time.Clock (UTCTime)
@@ -395,6 +397,49 @@ instance Show ActionParams where
           ", args = "
           "}"
       a >> b = a % string % b
+
+
+-- ==================================================
+-- Patterns matching type "ActionParams":
+
+
+pattern WithArgs i mq cols as = ActionParams { plaId       = i
+                                             , plaMsgQueue = mq
+                                             , plaCols     = cols
+                                             , args        = as }
+
+
+pattern NoArgs i mq cols = WithArgs i mq cols []
+
+
+pattern NoArgs' i mq <- NoArgs i mq _
+
+
+pattern NoArgs'' i <- NoArgs' i _
+
+
+pattern Lower i mq cols as <- WithArgs i mq cols (map T.toLower -> as)
+
+
+pattern Lower' i as <- Lower i _ _ as
+
+
+pattern LowerNub i mq cols as <- WithArgs i mq cols (nub . map T.toLower -> as)
+
+
+pattern LowerNub' i as <- LowerNub i _ _ as
+
+
+pattern Ignoring mq cols as <- WithArgs _ mq cols (dblQuote . T.unwords -> as)
+
+
+pattern AdviseNoArgs <- NoArgs' _ _
+
+
+pattern AdviseOneArg a <- WithArgs _ _ _ [a]
+
+
+pattern Advising mq cols <- WithArgs _ mq cols _
 
 
 -- ==================================================

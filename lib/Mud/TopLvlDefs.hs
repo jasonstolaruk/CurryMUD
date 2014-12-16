@@ -3,8 +3,6 @@
 
 module Mud.TopLvlDefs where
 
-import Mud.StateDataTypes
-
 import System.Environment (getEnv)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Posix.Types (FileOffset)
@@ -82,7 +80,7 @@ minCols = 30
 maxCols = 200
 
 
-stdLinkNames :: [LinkName]
+stdLinkNames :: [T.Text]
 stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 

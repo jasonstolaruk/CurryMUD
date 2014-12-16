@@ -1,180 +1,80 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, ScopedTypeVariables, TupleSections, ViewPatterns #-}
 
-module Mud.Cmds (listenWrapper) where
+module Mud.Cmds.PlaCmds (
+    plaCmds
+  , getUptime
+  , handleEgress
+  , mkCmdListWithNonStdRmLinks
+    ) where
 
-import Mud.Color
-import Mud.Ids
+import Mud.Cmds.CmdUtil
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes
 import Mud.StateHelpers
-import Mud.StateInIORefT
-import Mud.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Logging as L (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
+import qualified Mud.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow (first)
-import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId)
-import Control.Concurrent.Async (async, asyncThreadId, poll, race_, wait)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
-import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
-import Control.Exception.Lifted (catch, finally, handle, throwIO, throwTo, try)
+import Control.Concurrent.STM.TQueue (writeTQueue)
+import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
-import Control.Monad (forM_, forever, guard, mplus, replicateM, replicateM_, unless, void)
+import Control.Monad (forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (get)
-import Data.Char (ord)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort, sortBy)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Text.Strict.Lens (packed)
-import Data.Time (diffUTCTime, getCurrentTime, getZonedTime)
-import Data.Time.Format (formatTime)
-import GHC.Conc (ThreadStatus(..), threadStatus)
-import Network (HostName, PortID(..), accept, listenOn, sClose)
+import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (pi)
-import System.CPUTime (getCPUTime)
 import System.Console.ANSI (clearScreenCode)
-import System.Directory (doesFileExist, getDirectoryContents, getTemporaryDirectory, removeFile)
-import System.Environment (getEnvironment)
-import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hGetBuffering, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1, openTempFile)
-import System.IO.Error (isDoesNotExistError, isPermissionError)
-import System.Locale (defaultTimeLocale)
-import System.Process (readProcess)
-import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
+import System.Directory (getDirectoryContents)
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys)
-import qualified Data.Map.Lazy as M (assocs, delete, elems, empty, filter, keys, null, toList)
+import qualified Data.Map.Lazy as M (elems, filter, null, toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (hGetLine, hPutStr, putStrLn, readFile)
-import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
-
-
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- TODO: Here's the plan:
--- [DONE] 1. Consider using conduit.
--- [DONE] 2. Go into server mode. Accept incoming connections.
--- [DONE] 3. Implement client-based routing of output.
--- 4. Implement the broadcasting of messages.
--- [DONE] 5. Log commands.
--- 6. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
---   a. Code reduction.
---   b. Consistency in binding names.
---   c. Stylistic issues:
---      [DONE] Use "++" instead of "<>" where applicable.
---      [DONE] Concat lists of text instead of using "<>".
---      [DONE] ">>=" vs. "=<<".
---      [DONE] "(..)" instead of "(blah)" in import statements.
---   d. [DONE] Check for superfluous exports.
--- 7. Write tests for NameResolution and Cmds.
--- [DONE] 8. Refactor for ViewPatterns and pattern guards.
--- [DONE] 9. Refactor for NamedFieldPuns and RecordWildCards.
--- [DONE] 10. See if you can keep your lines at 120 characters or less.
--- [DONE] 11. Are there places where I can use IO as a Functor or Applicative?
--- [DONE] 12. Make sure you are using "as" and "a" for "args" instead of "rs" and "r".
--- [DONE] 13. Make sure that all your export lists are properly sorted.
--- [DONE] 14. "forall"?
--- [DONE] 15. Lists of imported functions should be sorted.
--- [DONE] 16. Loggers shouldn't print to screen.
--- [DONE] 17. Use "T.singleton".
+import qualified Data.Text.IO as T (readFile)
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
-blowUp = U.blowUp "Mud.Cmds"
+blowUp = U.blowUp "Mud.Cmds.PlaCmds"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds"
+patternMatchFail = U.patternMatchFail "Mud.Cmds.PlaCmds"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Cmds"
-
-
-logIOEx :: T.Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Cmds"
-
-
-logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> IOException -> MudStack ()
-logAndDispIOEx mq cols = L.logAndDispIOEx mq cols "Mud.Cmds"
-
-
-logIOExRethrow :: T.Text -> IOException -> MudStack ()
-logIOExRethrow = L.logIOExRethrow "Mud.Cmds"
-
-
-logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
-logExMsg = L.logExMsg "Mud.Cmds"
+logNotice = L.logNotice "Mud.Cmds.PlaCmds"
 
 
 logPla :: T.Text -> Id -> T.Text -> MudStack ()
-logPla = L.logPla "Mud.Cmds"
+logPla = L.logPla "Mud.Cmds.PlaCmds"
 
 
 logPlaExec :: CmdName -> Id -> MudStack ()
-logPlaExec = L.logPlaExec "Mud.Cmds"
+logPlaExec = L.logPlaExec "Mud.Cmds.PlaCmds"
 
 
 logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
-logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds"
+logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.PlaCmds"
 
 
 logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
-logPlaOut = L.logPlaOut "Mud.Cmds"
-
-
-massLogPla :: T.Text -> T.Text -> MudStack ()
-massLogPla = L.massLogPla "Mud.Cmds"
+logPlaOut = L.logPlaOut "Mud.Cmds.PlaCmds"
 
 
 -- ==================================================
-
-
-wizCmds :: [Cmd]
-wizCmds =
-    [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
-    , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
-    , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
-    , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message to the server console." }
-    , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the MUD." }
-    , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
-    , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
-    , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the server uptime." } ]
-
-
-debugCmds :: [Cmd]
-debugCmds =
-    [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
-    , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
-    , Cmd { cmdName = prefixDebugCmd "broad", action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line \
-                                                                             \message." }
-    , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering \
-                                                                                  \mode." }
-    , Cmd { cmdName = prefixDebugCmd "color", action = debugColor, cmdDesc = "Perform a color test." }
-    , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
-    , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
-    , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
-    , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
-    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
-                                                                               \put into a sack on the ground." }
-    , Cmd { cmdName = prefixDebugCmd "params", action = debugParams, cmdDesc = "Show \"ActionParams\"." }
-    , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
-    , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
-    , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
-    , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." } ]
 
 
 plaCmds :: [Cmd]
@@ -210,419 +110,8 @@ plaCmds =
     , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 
 
-allCmds :: [Cmd]
-allCmds = wizCmds ++ debugCmds ++ plaCmds
+-----
 
-
-prefixCmd :: Char -> CmdName -> T.Text
-prefixCmd (T.singleton -> prefix) cn = prefix <> cn
-
-
-prefixWizCmd :: CmdName -> T.Text
-prefixWizCmd = prefixCmd wizCmdChar
-
-
-prefixDebugCmd :: CmdName -> T.Text
-prefixDebugCmd = prefixCmd debugCmdChar
-
-
-listenWrapper :: MudStack ()
-listenWrapper = initAndStart `finally` graceful
-  where
-    initAndStart = do
-        initLogging
-        logNotice "listenWrapper initAndStart" "server started."
-        initWorld
-        listen
-
-
-graceful :: MudStack ()
-graceful = getUptime >>= saveUptime >> closeLogs
-
-
-saveUptime :: Integer -> MudStack ()
-saveUptime ut@(T.pack . renderSecs -> utTxt) = getRecordUptime >>= \case
-  Nothing  -> saveIt >> logIt
-  Just rut -> case ut `compare` rut of GT -> saveIt >> logRec
-                                       _  -> logIt
-  where
-    saveIt    = (liftIO . writeFile uptimeFile . show $ ut) `catch` logIOEx "saveUptime saveIt"
-    logIt     = logHelper "."
-    logRec    = logHelper " - it's a new record!"
-    logHelper = logNotice "saveUptime" . ("the MUD was up for " <>) . (utTxt <>)
-
-
-getRecordUptime :: MudStack (Maybe Integer)
-getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
-  True  -> liftIO readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
-  False -> return Nothing
-  where
-    readUptime = Just . read <$> readFile uptimeFile
-
-
-listen :: MudStack ()
-listen = handle listenExHandler $ do
-    registerThread Listen
-    listInterfaces
-    logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
-    sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-    (forever . loop $ sock) `finally` cleanUp sock
-  where
-    listInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
-        let ifList = T.intercalate ", " [ T.concat [ "["
-                                                   , showText . NI.name $ n
-                                                   , ": "
-                                                   , showText . NI.ipv4 $ n
-                                                   , "]" ] | n <- ns ]
-        in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
-    loop sock = do
-        (h, host, port') <- liftIO . accept $ sock
-        logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
-        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
-        modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
-    cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
-
-
-listenExHandler :: SomeException -> MudStack ()
-listenExHandler e =
-    case fromException e of
-      Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
-      Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
-      _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
-
-
-registerThread :: ThreadType -> MudStack ()
-registerThread threadType = liftIO myThreadId >>= \ti ->
-    modifyNWS threadTblTMVar $ \tt -> tt & at ti ?~ threadType
-
-
-talk :: Handle -> HostName -> MudStack ()
-talk h host = helper `finally` cleanUp
-  where
-    helper = do
-        registerThread Talk
-        mq <- liftIO newTQueueIO
-        i  <- adHoc mq host
-        handle (talkExHandler i) $ do
-            logNotice "talk helper" $ "new ID for incoming player: " <> showText i <> "."
-            liftIO configBuffer
-            setDfltColor mq
-            dumpTitle    mq
-            prompt       mq "By what name are you known?"
-            s <- get
-            liftIO $ race_ (runStateInIORefT (server  h i mq) s)
-                           (runStateInIORefT (receive h i mq) s)
-    configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
-    nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
-    cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
-
-
-talkExHandler :: Id -> SomeException -> MudStack ()
-talkExHandler = plaThreadExHandler "talk"
-
-
-adHoc :: MsgQueue -> HostName -> MudStack Id
-adHoc mq host = do
-    (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar       <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    (s, r)                       <- (,)  <$> liftIO randomSex <*> liftIO randomRace
-    liftIO . atomically $ do
-        (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
-        -----
-        let i   = getUnusedId ws
-        -----
-        let e   = Ent i Nothing (showText r <> showText i) "" "(Player-generated description here.)" 0
-        let is  = []
-        let co  = mempty
-        let em  = M.empty
-        let m   = Mob s 10 10 10 10 10 10 0 RHand
-        let pc  = PC iHill r [] []
-        let ris = (ws^.invTbl) ! iHill ++ [i]
-        -----
-        let pla = Pla True host 80 interpName
-        -----
-        let ws'  = ws  & typeTbl.at  i ?~ PCType
-                       & entTbl.at   i ?~ e
-                       & invTbl.at   i ?~ is
-                       & coinsTbl.at i ?~ co
-                       & eqTbl.at    i ?~ em
-                       & mobTbl.at   i ?~ m
-                       & pcTbl.at    i ?~ pc
-        let mqt' = mqt & at i ?~ mq
-        let pt'  = pt  & at i ?~ pla
-        -----
-        putTMVar wsTMVar $ ws' & invTbl.at iHill ?~ sortInv ws' ris
-        putTMVar mqtTMVar mqt'
-        putTMVar ptTMVar  pt'
-        -----
-        return i
-
-
-randomSex :: IO Sex
-randomSex = newStdGen >>= \g ->
-    let (x, _) = randomR (0, 1) g in return $ [ Male, Female ] !! x
-
-
-randomRace :: IO Race
-randomRace = newStdGen >>= \g ->
-    let (x, _) = randomR (0, 7) g in return $ [ Dwarf .. Vulpenoid ] !! x
-
-
-setDfltColor :: MsgQueue -> MudStack ()
-setDfltColor = flip send dfltColorANSI
-
-
-dumpTitle :: MsgQueue -> MudStack ()
-dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExHandler "dumpTitle")
-  where
-    getFilename  = ("title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
-    takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
-
-
-readFileExHandler :: T.Text -> IOException -> MudStack ()
-readFileExHandler fn e
-  | isDoesNotExistError e = logIOEx        fn e
-  | isPermissionError   e = logIOEx        fn e
-  | otherwise             = logIOExRethrow fn e
-
-
-prompt :: MsgQueue -> T.Text -> MudStack ()
-prompt mq = liftIO . atomically . writeTQueue mq . Prompt
-
-
-server :: Handle -> Id -> MsgQueue -> MudStack ()
-server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
-  where
-    loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      FromServer msg -> (liftIO . T.hPutStr h $ msg)             >> loop
-      FromClient (T.strip . stripControl . stripTelnet -> msg)
-                     -> unless (T.null msg) (handleInp i mq msg) >> loop
-      Prompt p       -> sendPrompt h p                           >> loop
-      Quit           -> cowbye h                                 >> handleEgress i
-      SilentBoot     ->                                             handleEgress i
-      MsgBoot msg    -> boot h msg                               >> handleEgress i
-      Dropped        ->                                             handleEgress i
-      Shutdown       -> shutDown                                 >> loop
-      StopThread     -> return ()
-
-
-serverExHandler :: Id -> SomeException -> MudStack ()
-serverExHandler = plaThreadExHandler "server"
-
-
-plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
-plaThreadExHandler n i e
-  | Just ThreadKilled <- fromException e = closePlaLog i
-  | otherwise                            = do
-      logExMsg (n <> "ExHandler") ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
-      liftIO . flip throwTo e =<< getListenThreadId
-
-
-getListenThreadId :: MudStack ThreadId
-getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
-
-
-handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
-handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
-    let cols = p^.columns
-        f    = p^.interp
-    in f cn . WithArgs i mq cols $ as
-
-
-sendPrompt :: Handle -> T.Text -> MudStack ()
-sendPrompt h = liftIO . T.hPutStr h . nl
-
-
-cowbye :: Handle -> MudStack ()
-cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
-  where
-    takeADump = T.hPutStr h . nl =<< (T.readFile . (miscDir ++) $ "cowbye")
-
-
--- TODO: Make a wizard command that does this.
-boot :: Handle -> T.Text -> MudStack ()
-boot h = liftIO . T.hPutStr h . nl' . nlnl
-
-
-shutDown :: MudStack ()
-shutDown = massMsg StopThread >> commitSuicide
-  where
-    commitSuicide = do
-        liftIO . void . forkIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
-        liftIO . killThread =<< getListenThreadId
-
-
-receive :: Handle -> Id -> MsgQueue -> MudStack ()
-receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler i
-  where
-    loop = (liftIO . hIsEOF $ h) >>= \case
-      True  -> do
-          logPla "receive" i "connection dropped."
-          liftIO . atomically . writeTQueue mq $ Dropped
-      False -> do
-          liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters =<< T.hGetLine h
-          loop
-    remDelimiters = T.foldr helper ""
-    helper c acc | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
-                 | otherwise                             = acc
-    delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
-
-
-notInfixOf :: T.Text -> T.Text -> Bool
-notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
-
-
-receiveExHandler :: Id -> SomeException -> MudStack ()
-receiveExHandler = plaThreadExHandler "receive"
-
-
--- TODO: Boot a player who tries too many times.
-interpName :: Interp
-interpName (capitalize . T.toLower -> cn) (NoArgs' i mq)
-  | l <- T.length cn, l < 3 || l > 12 = sorryIllegalName mq "Your name must be between three and twelve characters \
-                                                            \long."
-  | T.any (`elem` illegalChars) cn    = sorryIllegalName mq "Your name cannot include any numbers or symbols."
-  | otherwise                         = do
-      prompt mq . nl' $ "Your name will be " <> dblQuote cn <> ", is that OK? [yes/no]"
-      void . modifyPla i interp $ interpConfirmName
-  where
-    illegalChars    = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-interpName _  (WithArgs _ mq _ _) = sorryIllegalName mq "Your name must be a single word."
-interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
-
-
-sorryIllegalName :: MsgQueue -> T.Text -> MudStack ()
-sorryIllegalName mq msg = do
-    send mq . nl' . nl $ msg
-    prompt mq "Let's try this again. By what name are you known?"
-
-
-interpConfirmName :: Interp
-interpConfirmName cn (NoArgs' i mq) = do
-    void . modifyEnt i sing $ cn
-    (T.pack . view hostName -> host) <- modifyPla i interp centralDispatch
-    initPlaLog i cn
-    logPla "interpName" i $ "(new player) logged on from " <> host <> "."
-    notifyArrival i
-    prompt mq . nl' $ ">"
-interpConfirmName cn p = patternMatchFail "interpConfirmName" [ cn, showText p ]
-
-
--- TODO: Look for other places to use "view".
-notifyArrival :: Id -> MudStack ()
-notifyArrival i = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i
-    in bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
-
-
-mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
-mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <- getSexRace i ws =
-    serialize NonStdDesig { nonStdPCEntSing = s
-                          , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
-
-
-centralDispatch :: Interp
-centralDispatch cn p@(WithArgs i mq _ _) = do
-    findAction i cn >>= maybe sorry (\act -> act p)
-    prompt mq ">"
-  where
-    sorry = send mq . nlnl $ "What?"
-centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]
-
-
-findAction :: Id -> CmdName -> MudStack (Maybe Action)
-findAction i (T.toLower -> cn) = readWSTMVar >>= \ws ->
-    readTMVarInNWS plaTblTMVar >>= \((! i) -> p) ->
-        let (view rmId -> ri) = (ws^.pcTbl) ! i
-            r                 = (ws^.rmTbl) ! ri
-            cmds              = mkCmdListWithNonStdRmLinks r ++
-                                (if p^.isWiz then wizCmds   else []) ++
-                                (if isDebug  then debugCmds else [])
-        in maybe (return Nothing)
-                 (\fn -> return . Just . findActionForFullName fn $ cmds)
-                 (findFullNameForAbbrev cn [ cmdName cmd | cmd <- cmds ])
-  where
-    findActionForFullName fn = action . head . filter ((== fn) . cmdName)
-
-
-mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
-mkCmdListWithNonStdRmLinks (view rmLinks -> rls) =
-    sortBy sorter $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
-  where
-    sorter c = uncurry compare . over both cmdName . (c,)
-
-
-isNonStdLink :: RmLink -> Bool
-isNonStdLink (NonStdLink {}) = True
-isNonStdLink _               = False
-
-
-mkCmdForRmLink :: RmLink -> Cmd
-mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) = Cmd { cmdName = cn, action = go cn, cmdDesc = "" }
-
-
-mkCmdNameForRmLink :: RmLink -> T.Text
-mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _linkDir
-                                               NonStdLink { .. } -> _linkName
-
-
-linkDirToCmdName :: LinkDir -> CmdName
-linkDirToCmdName North     = "n"
-linkDirToCmdName Northeast = "ne"
-linkDirToCmdName East      = "e"
-linkDirToCmdName Southeast = "se"
-linkDirToCmdName South     = "s"
-linkDirToCmdName Southwest = "sw"
-linkDirToCmdName West      = "w"
-linkDirToCmdName Northwest = "nw"
-linkDirToCmdName Up        = "u"
-linkDirToCmdName Down      = "d"
-
-
--- ==================================================
--- Patterns matching type "ActionParams":
-
-
-pattern WithArgs i mq cols as = ActionParams { plaId       = i
-                                             , plaMsgQueue = mq
-                                             , plaCols     = cols
-                                             , args        = as }
-
-
-pattern NoArgs i mq cols = WithArgs i mq cols []
-
-
-pattern NoArgs' i mq <- NoArgs i mq _
-
-
-pattern NoArgs'' i <- NoArgs' i _
-
-
-pattern Lower i mq cols as <- WithArgs i mq cols (map T.toLower -> as)
-
-
-pattern Lower' i as <- Lower i _ _ as
-
-
-pattern LowerNub i mq cols as <- WithArgs i mq cols (nub . map T.toLower -> as)
-
-
-pattern LowerNub' i as <- LowerNub i _ _ as
-
-
-pattern Ignoring mq cols as <- WithArgs _ mq cols (dblQuote . T.unwords -> as)
-
-
-pattern AdviseNoArgs <- NoArgs' _ _
-
-
-pattern AdviseOneArg a <- WithArgs _ _ _ [a]
-
-
-pattern Advising mq cols <- WithArgs _ mq cols _
-
-
--- ==================================================
--- Player commands:
 
 about :: Action
 about (NoArgs i mq cols) = do
@@ -631,19 +120,6 @@ about (NoArgs i mq cols) = do
   where
     helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile . (miscDir ++) $ "about")
 about p = withoutArgs about p
-
-
-sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
-sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
-
-
-withoutArgs :: Action -> ActionParams -> MudStack ()
-withoutArgs act p = ignore p >> act p { args = [] }
-
-
-ignore :: Action
-ignore (Ignoring mq cols as) = send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> as <> "..."
-ignore p                     = patternMatchFail "ignore" [ showText p ]
 
 
 -----
@@ -676,27 +152,8 @@ clear p              = withoutArgs clear p
 
 
 plaDispCmdList :: Action
-plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList (mkCmdPred Nothing) p
+plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList plaCmds p
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
-
-
-dispCmdList :: (Cmd -> Bool) -> Action
-dispCmdList p (NoArgs   _ mq cols   ) =
-    send mq . nl . T.unlines . concatMap (wordWrapIndent (maxCmdLen + 1) cols) . cmdListText $ p
-dispCmdList p (LowerNub _ mq cols as) | matches <- [ grepTextList a . cmdListText $ p | a <- as ] =
-    send mq . nl . T.unlines . concatMap (wordWrapIndent (maxCmdLen + 1) cols) . intercalate [""] $ matches
-dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
-
-
-cmdListText :: (Cmd -> Bool) -> [T.Text]
-cmdListText p = sort . T.lines . T.concat . foldl' helper [] . filter p $ allCmds
-  where
-    helper acc Cmd { .. } | cmdTxt <- nl $ padOrTrunc (maxCmdLen + 1) cmdName <> cmdDesc = cmdTxt : acc
-
-
-mkCmdPred :: Maybe Char -> Cmd -> Bool
-mkCmdPred mc (T.head . cmdName -> p) = case mc of (Just c) -> c == p
-                                                  Nothing  -> p `notElem` [ wizCmdChar, debugCmdChar ]
 
 
 -----
@@ -714,9 +171,6 @@ help (LowerNub i mq cols as) =
   where
     getTopics = mapM (\a -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols a) as
 help p = patternMatchFail "help" [ showText p ]
-
-
-type HelpTopic = T.Text
 
 
 getHelpTopicByName :: Id -> Cols -> HelpTopic -> MudStack T.Text
@@ -1125,17 +579,6 @@ getAction   (LowerNub' i as) = do
                in putTMVar t ws'' >> return (bs', logMsgs')
           else putTMVar t ws >> return (mkBroadcast i "You don't see anything here to pick up.", [])
 getAction p = patternMatchFail "getAction" [ showText p ]
-
-
-advise :: ActionParams -> [HelpTopic] -> T.Text -> MudStack ()
-advise (Advising mq cols) []  msg = wrapSend mq cols msg
-advise (Advising mq cols) [h] msg
-  | msgs <- [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ] = multiWrapSend mq cols msgs
-advise (Advising mq cols) hs  msg
-  | msgs <- [ msg, "See also the following help topics: " <> helpTopics <> "." ]           = multiWrapSend mq cols msgs
-  where
-    helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
-advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 
 type FromId = Id
@@ -2000,6 +1443,22 @@ whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(dblQuote -> n
     found (dblQuote -> cn) = T.concat [ n', " may refer to the ", cn, " command." ]
 
 
+mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
+mkCmdListWithNonStdRmLinks (view rmLinks -> rls) =
+    sortBy sorter $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
+  where
+    sorter c = uncurry compare . over both cmdName . (c,)
+
+
+mkCmdForRmLink :: RmLink -> Cmd
+mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) = Cmd { cmdName = cn, action = go cn, cmdDesc = "" }
+
+
+mkCmdNameForRmLink :: RmLink -> T.Text
+mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _linkDir
+                                               NonStdLink { .. } -> _linkName
+
+
 whatInv :: Id -> Cols -> WorldState -> InvType -> T.Text -> T.Text
 whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
   then whatInvEnts i cols ws it n (head gecrs) is
@@ -2204,380 +1663,3 @@ notifyEgress i = readWSTMVar >>= \ws ->
         ((i `delete`) -> pis) = findPCIds ws ris
         d                     = serialize . mkStdDesig i ws s True $ ris
     in bcast [(nlnl $ d <> " has left the game.", pis)]
-
-
--- ==================================================
--- Wizard commands:
-
-
-wizDispCmdList :: Action
-wizDispCmdList p@(LowerNub' i as) = do
-    logPlaExecArgs (prefixWizCmd "?") as i
-    dispCmdList (mkCmdPred . Just $ wizCmdChar) p
-wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
-
-
------
-
-
-wizShutdown :: Action
-wizShutdown (NoArgs' i mq) = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i in do
-        massSend "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
-        logPlaExecArgs (prefixWizCmd "shutdown") [] i
-        massLogPla "wizShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
-                                            , s
-                                            , " "
-                                            , parensQuote "no message given"
-                                            , "." ]
-        logNotice  "wizShutdown" $ T.concat [ "server shutdown initiated by "
-                                            , s
-                                            , " "
-                                            , parensQuote "no message given"
-                                            , "." ]
-        liftIO . atomically . writeTQueue mq $ Shutdown
-wizShutdown (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i
-        msg              = T.intercalate " " as
-    in do
-        massSend msg
-        logPlaExecArgs (prefixWizCmd "shutdown") as i
-        massLogPla "wizShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
-                                              , s
-                                              , "; reason: "
-                                              , msg
-                                              , "." ]
-        logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; reason: ", msg, "." ]
-        liftIO . atomically . writeTQueue mq $ Shutdown
-wizShutdown _ = patternMatchFail "wizShutdown" []
-
-
------
-
-
-wizTime :: Action
-wizTime (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "time") i
-    (ct, zt) <- (,) <$> liftIO (formatThat `fmap` getCurrentTime) <*> liftIO (formatThat `fmap` getZonedTime)
-    multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
-  where
-    formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
-      | time <- T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
-      = T.concat [ zone, ": ", date, " ", time ]
-wizTime p = withoutArgs wizTime p
-
-
------
-
-
-wizDate :: Action
-wizDate (NoArgs' i mq) = do
-    logPlaExec (prefixWizCmd "date") i
-    send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
-wizDate p = withoutArgs wizDate p
-
-
------
-
-
-wizUptime :: Action
-wizUptime (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "uptime") i
-    (try . send mq . nl =<< liftIO runUptime) >>= eitherRet (\e -> logIOEx "wizUptime" e >> sendGenericErrorMsg mq cols)
-  where
-    runUptime = T.pack <$> readProcess "uptime" [] ""
-wizUptime p = withoutArgs wizUptime p
-
------
-
-
-wizStart :: Action
-wizStart (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "start") i
-    wrapSend mq cols . showText =<< getNWSRec startTime
-wizStart p = withoutArgs wizStart p
-
-
------
-
-
-wizName :: Action
-wizName (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "name") i
-    readWSTMVar >>= \ws ->
-        let (view sing -> s)    = (ws^.entTbl) ! i
-            (pp -> s', pp -> r) = getSexRace i ws
-        in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
-wizName p = withoutArgs wizName p
-
-
------
-
-
-wizPrint :: Action
-wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message to print to the server console, as \
-                                                     \in " <> dblQuote (prefixDebugCmd "print" <> " Is anybody \
-                                                     \home?") <> "."
-wizPrint (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i
-    in do
-        logPlaExecArgs (prefixDebugCmd "print") as i
-        liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
-        ok mq
-wizPrint p = patternMatchFail "wizPrint" [ showText p ]
-
-
--- ==================================================
--- Debug commands:
-
-
-debugDispCmdList :: Action
-debugDispCmdList p@(LowerNub' i as) = do
-    logPlaExecArgs (prefixDebugCmd "?") as i
-    dispCmdList (mkCmdPred . Just $ debugCmdChar) p
-debugDispCmdList p = patternMatchFail "debugDispCmdList" [ showText p ]
-
-
------
-
-
-debugBuffCheck :: Action
-debugBuffCheck (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "buffer") i
-    try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
-  where
-    helper = do
-        (fn@(dblQuote . T.pack -> fn'), h) <- liftIO $ flip openTempFile "temp" =<< getTemporaryDirectory
-        (dblQuote . showText -> mode)      <- liftIO . hGetBuffering $ h
-        send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ parensQuote "Default"
-                                                                      , " buffering mode for temp file "
-                                                                      , fn'
-                                                                      , " is "
-                                                                      , mode
-                                                                      , "." ]
-        liftIO $ hClose h >> removeFile fn
-debugBuffCheck p = withoutArgs debugBuffCheck p
-
-
------
-
-
-debugDispEnv :: Action
-debugDispEnv (NoArgs i mq cols) = do
-    logPlaExecArgs (prefixDebugCmd "env") [] i
-    send mq . nl =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
-debugDispEnv (WithArgs i mq cols (nub -> as)) = do
-    logPlaExecArgs (prefixDebugCmd "env") as i
-    env <- liftIO getEnvironment
-    send mq . T.unlines $ [ helper a env | a <- as ]
-  where
-    helper a = mkAssocListTxt cols . filter grepPair
-      where
-        grepPair = uncurry (||) . over both ((a `T.isInfixOf`) . T.pack)
-debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
-
-
------
-
-
-debugLog :: Action
-debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
-  where
-    helper       = replicateM 100 . statefulFork $ heavyLogging
-    heavyLogging = liftIO myThreadId >>=
-        replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText
-debugLog p = withoutArgs debugLog p
-
-
-------
-
-
-debugThrow :: Action
-debugThrow (NoArgs'' i) = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
-debugThrow p            = withoutArgs debugThrow p
-
-
------
-
-
-debugThread :: Action
-debugThread (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "thread") i
-    (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
-    kvs        <- M.assocs <$> readTMVarInNWS threadTblTMVar
-    (es, ks)   <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
-    ds         <- mapM mkDesc $ head kvs      :
-                                (nli, Notice) :
-                                (eli, Error)  :
-                                tail kvs ++ [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
-    send mq . frame cols . multiWrap cols $ ds
-  where
-    mkDesc (ti, bracketPad 15 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \ts ->
-        return . T.concat $ [ showText ti, " ", tn, showText ts ]
-    mkTypeName (Server (showText -> i')) = padOrTrunc 8 "Server" <> i'
-    mkTypeName (PlaLog (showText -> i')) = padOrTrunc 8 "PlaLog" <> i'
-    mkTypeName (showText -> tt)          = tt
-debugThread p = withoutArgs debugThread p
-
-
------
-
-
-debugTalk :: Action
-debugTalk (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "talk") i
-    send mq . frame cols . multiWrap cols =<< mapM mkDesc . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
-  where
-    mkDesc a = (liftIO . poll $ a) >>= \status ->
-        let statusTxt = case status of Nothing                                    -> "running"
-                                       Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
-                                       Just (Right ())                            -> "finished"
-        in return . T.concat $ [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
-debugTalk p = withoutArgs debugTalk p
-
-
------
-
-
-debugPurge :: Action
-debugPurge (NoArgs' i mq) = logPlaExec (prefixDebugCmd "purge") i >> purge >> ok mq
-debugPurge p              = withoutArgs debugPurge p
-
-
--- TODO: This function could be automatically run at certain intervals.
-purge :: MudStack ()
-purge = logNotice "purge" "purging the thread tables." >> purgePlaLogTbl >> purgeThreadTbl >> purgeTalkAsyncTbl
-
-
-purgePlaLogTbl :: MudStack ()
-purgePlaLogTbl = IM.assocs <$> readTMVarInNWS plaLogTblTMVar >>= \kvs -> do
-    let is     = [ fst kv         | kv <- kvs ]
-    let asyncs = [ fst . snd $ kv | kv <- kvs ]
-    modifyNWS plaLogTblTMVar . flip (foldl' helper) . zip is =<< (liftIO . mapM poll $ asyncs)
-  where
-    helper m (_, Nothing) = m
-    helper m (i, _      ) = IM.delete i m
-
-
-purgeThreadTbl :: MudStack ()
-purgeThreadTbl = do
-    tis <- M.keys <$> readTMVarInNWS threadTblTMVar
-    ss  <- liftIO . mapM threadStatus $ tis
-    modifyNWS threadTblTMVar . flip (foldl' helper) . zip tis $ ss
-  where
-    helper m (ti, s) | s == ThreadFinished = M.delete ti m
-                     | otherwise           = m
-
-
-purgeTalkAsyncTbl :: MudStack ()
-purgeTalkAsyncTbl = do
-    asyncs <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
-    ss     <- liftIO . mapM poll $ asyncs
-    modifyNWS talkAsyncTblTMVar . flip (foldl' helper) . zip asyncs $ ss
-  where
-    helper m (_, Nothing) = m
-    helper m (a, _      ) = M.delete (asyncThreadId a) m
-
-
------
-
-
-debugBoot :: Action
-debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> (massMsg . MsgBoot $ dfltBootMsg)
-debugBoot p              = withoutArgs debugBoot p
-
-
--- TODO: When you've made a wiz cmd to boot a player, move this next to the function for that cmd.
-dfltBootMsg :: T.Text
-dfltBootMsg = "You have been booted from CurryMUD. Goodbye!"
-
-
------
-
-
-debugStop :: Action
-debugStop (NoArgs' i mq) = logPlaExec (prefixDebugCmd "stop") i >> ok mq >> massMsg StopThread
-debugStop p              = withoutArgs debugStop p
-
-
------
-
-
-debugCPU :: Action
-debugCPU (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "cpu") i
-    wrapSend mq cols . ("CPU time: " <>) =<< liftIO cpuTime
-  where
-    cpuTime = showText . (/ fromIntegral (10 ^ 12)) . fromIntegral <$> getCPUTime
-debugCPU p = withoutArgs debugCPU p
-
-
------
-
-
-debugBroad :: Action
-debugBroad (NoArgs'' i) = do
-    logPlaExec (prefixDebugCmd "broad") i
-    bcast . mkBroadcast i $ msg
-  where
-    msg = "[1] abcdefghij\n\
-          \[2] abcdefghij abcdefghij\n\
-          \[3] abcdefghij abcdefghij abcdefghij\n\
-          \[4] abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[5] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[6] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[7] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[8] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[9] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
-debugBroad p = withoutArgs debugBroad p
-
-
------
-
-
-debugRemPut :: Action
-debugRemPut (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "remput") i
-    mapM_ (fakeClientInput mq) . take 10 . cycle $ [ remCmd, putCmd ]
-  where
-    remCmd = "remove" <> rest
-    putCmd = "put"    <> rest
-    rest   = T.concat [ " ", T.singleton allChar, " ", T.singleton rmChar, "sack" ]
-debugRemPut p = withoutArgs debugRemPut p
-
-
-fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
-fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
-
-
------
-
-
-debugParams :: Action
-debugParams p@(WithArgs i mq cols _) = do
-    logPlaExec (prefixDebugCmd "params") i
-    wrapSend mq cols . showText $ p
-debugParams p = patternMatchFail "debugParams" [ showText p ]
-
-
------
-
-
-debugColor :: Action
-debugColor (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "color") i
-    send mq . nl . T.concat $ do
-        fgi <- intensities
-        fgc <- colors
-        bgi <- intensities
-        bgc <- colors
-        let fg   = (fgi, fgc)
-        let bg   = (bgi, bgc)
-        let ansi = mkColorANSI fg bg
-        return . nl . T.concat $ [ mkANSICodeList ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColorANSI ]
-  where
-    mkANSICodeList = padOrTrunc 28 . T.concatMap ((<> " ") . showText . ord)
-    mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
-    mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
-debugColor p = withoutArgs debugColor p
