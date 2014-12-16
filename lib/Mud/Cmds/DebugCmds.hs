@@ -74,10 +74,10 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
     , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
+    , Cmd { cmdName = prefixDebugCmd "params", action = debugParams, cmdDesc = "Show \"ActionParams\"." }
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
     , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
                                                                                \put into a sack on the ground." }
-    , Cmd { cmdName = prefixDebugCmd "params", action = debugParams, cmdDesc = "Show \"ActionParams\"." }
     , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
@@ -99,6 +99,35 @@ debugDispCmdList p = patternMatchFail "debugDispCmdList" [ showText p ]
 -----
 
 
+debugBoot :: Action
+debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> (massMsg . MsgBoot $ dfltBootMsg)
+debugBoot p              = withoutArgs debugBoot p
+
+
+-----
+
+
+debugBroad :: Action
+debugBroad (NoArgs'' i) = do
+    logPlaExec (prefixDebugCmd "broad") i
+    bcast . mkBroadcast i $ msg
+  where
+    msg = "[1] abcdefghij\n\
+          \[2] abcdefghij abcdefghij\n\
+          \[3] abcdefghij abcdefghij abcdefghij\n\
+          \[4] abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[5] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[6] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[7] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[8] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[9] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
+          \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
+debugBroad p = withoutArgs debugBroad p
+
+
+-----
+
+
 debugBuffCheck :: Action
 debugBuffCheck (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "buffer") i
@@ -115,6 +144,40 @@ debugBuffCheck (NoArgs i mq cols) = do
                                                                       , "." ]
         liftIO $ hClose h >> removeFile fn
 debugBuffCheck p = withoutArgs debugBuffCheck p
+
+
+-----
+
+
+debugColor :: Action
+debugColor (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "color") i
+    send mq . nl . T.concat $ do
+        fgi <- intensities
+        fgc <- colors
+        bgi <- intensities
+        bgc <- colors
+        let fg   = (fgi, fgc)
+        let bg   = (bgi, bgc)
+        let ansi = mkColorANSI fg bg
+        return . nl . T.concat $ [ mkANSICodeList ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColorANSI ]
+  where
+    mkANSICodeList = padOrTrunc 28 . T.concatMap ((<> " ") . showText . ord)
+    mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
+    mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
+debugColor p = withoutArgs debugColor p
+
+
+-----
+
+
+debugCPU :: Action
+debugCPU (NoArgs i mq cols) = do
+    logPlaExec (prefixDebugCmd "cpu") i
+    wrapSend mq cols . ("CPU time: " <>) =<< liftIO cpuTime
+  where
+    cpuTime = showText . (/ fromIntegral (10 ^ 12)) . fromIntegral <$> getCPUTime
+debugCPU p = withoutArgs debugCPU p
 
 
 -----
@@ -150,48 +213,11 @@ debugLog p = withoutArgs debugLog p
 ------
 
 
-debugThrow :: Action
-debugThrow (NoArgs'' i) = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
-debugThrow p            = withoutArgs debugThrow p
-
-
------
-
-
-debugThread :: Action
-debugThread (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "thread") i
-    (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
-    kvs        <- M.assocs <$> readTMVarInNWS threadTblTMVar
-    (es, ks)   <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
-    ds         <- mapM mkDesc $ head kvs      :
-                                (nli, Notice) :
-                                (eli, Error)  :
-                                tail kvs ++ [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
-    send mq . frame cols . multiWrap cols $ ds
-  where
-    mkDesc (ti, bracketPad 15 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \ts ->
-        return . T.concat $ [ showText ti, " ", tn, showText ts ]
-    mkTypeName (Server (showText -> i')) = padOrTrunc 8 "Server" <> i'
-    mkTypeName (PlaLog (showText -> i')) = padOrTrunc 8 "PlaLog" <> i'
-    mkTypeName (showText -> tt)          = tt
-debugThread p = withoutArgs debugThread p
-
-
------
-
-
-debugTalk :: Action
-debugTalk (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "talk") i
-    send mq . frame cols . multiWrap cols =<< mapM mkDesc . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
-  where
-    mkDesc a = (liftIO . poll $ a) >>= \status ->
-        let statusTxt = case status of Nothing                                    -> "running"
-                                       Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
-                                       Just (Right ())                            -> "finished"
-        in return . T.concat $ [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
-debugTalk p = withoutArgs debugTalk p
+debugParams :: Action
+debugParams p@(WithArgs i mq cols _) = do
+    logPlaExec (prefixDebugCmd "params") i
+    wrapSend mq cols . showText $ p
+debugParams p = patternMatchFail "debugParams" [ showText p ]
 
 
 -----
@@ -240,60 +266,6 @@ purgeTalkAsyncTbl = do
 -----
 
 
-debugBoot :: Action
-debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> (massMsg . MsgBoot $ dfltBootMsg)
-debugBoot p              = withoutArgs debugBoot p
-
-
--- TODO: When you've made a wiz cmd to boot a player, move this next to the function for that cmd.
-dfltBootMsg :: T.Text
-dfltBootMsg = "You have been booted from CurryMUD. Goodbye!"
-
-
------
-
-
-debugStop :: Action
-debugStop (NoArgs' i mq) = logPlaExec (prefixDebugCmd "stop") i >> ok mq >> massMsg StopThread
-debugStop p              = withoutArgs debugStop p
-
-
------
-
-
-debugCPU :: Action
-debugCPU (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "cpu") i
-    wrapSend mq cols . ("CPU time: " <>) =<< liftIO cpuTime
-  where
-    cpuTime = showText . (/ fromIntegral (10 ^ 12)) . fromIntegral <$> getCPUTime
-debugCPU p = withoutArgs debugCPU p
-
-
------
-
-
-debugBroad :: Action
-debugBroad (NoArgs'' i) = do
-    logPlaExec (prefixDebugCmd "broad") i
-    bcast . mkBroadcast i $ msg
-  where
-    msg = "[1] abcdefghij\n\
-          \[2] abcdefghij abcdefghij\n\
-          \[3] abcdefghij abcdefghij abcdefghij\n\
-          \[4] abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[5] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[6] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[7] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[8] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[9] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
-          \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
-debugBroad p = withoutArgs debugBroad p
-
-
------
-
-
 debugRemPut :: Action
 debugRemPut (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "remput") i
@@ -312,30 +284,53 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 -----
 
 
-debugParams :: Action
-debugParams p@(WithArgs i mq cols _) = do
-    logPlaExec (prefixDebugCmd "params") i
-    wrapSend mq cols . showText $ p
-debugParams p = patternMatchFail "debugParams" [ showText p ]
+debugStop :: Action
+debugStop (NoArgs' i mq) = logPlaExec (prefixDebugCmd "stop") i >> ok mq >> massMsg StopThread
+debugStop p              = withoutArgs debugStop p
 
 
 -----
 
 
-debugColor :: Action
-debugColor (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "color") i
-    send mq . nl . T.concat $ do
-        fgi <- intensities
-        fgc <- colors
-        bgi <- intensities
-        bgc <- colors
-        let fg   = (fgi, fgc)
-        let bg   = (bgi, bgc)
-        let ansi = mkColorANSI fg bg
-        return . nl . T.concat $ [ mkANSICodeList ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColorANSI ]
+debugTalk :: Action
+debugTalk (NoArgs i mq cols) = do
+    logPlaExec (prefixDebugCmd "talk") i
+    send mq . frame cols . multiWrap cols =<< mapM mkDesc . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
   where
-    mkANSICodeList = padOrTrunc 28 . T.concatMap ((<> " ") . showText . ord)
-    mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
-    mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
-debugColor p = withoutArgs debugColor p
+    mkDesc a = (liftIO . poll $ a) >>= \status ->
+        let statusTxt = case status of Nothing                                    -> "running"
+                                       Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
+                                       Just (Right ())                            -> "finished"
+        in return . T.concat $ [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
+debugTalk p = withoutArgs debugTalk p
+
+
+-----
+
+
+debugThread :: Action
+debugThread (NoArgs i mq cols) = do
+    logPlaExec (prefixDebugCmd "thread") i
+    (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
+    kvs        <- M.assocs <$> readTMVarInNWS threadTblTMVar
+    (es, ks)   <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
+    ds         <- mapM mkDesc $ head kvs      :
+                                (nli, Notice) :
+                                (eli, Error)  :
+                                tail kvs ++ [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
+    send mq . frame cols . multiWrap cols $ ds
+  where
+    mkDesc (ti, bracketPad 15 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \ts ->
+        return . T.concat $ [ showText ti, " ", tn, showText ts ]
+    mkTypeName (Server (showText -> i')) = padOrTrunc 8 "Server" <> i'
+    mkTypeName (PlaLog (showText -> i')) = padOrTrunc 8 "PlaLog" <> i'
+    mkTypeName (showText -> tt)          = tt
+debugThread p = withoutArgs debugThread p
+
+
+-----
+
+
+debugThrow :: Action
+debugThrow (NoArgs'' i) = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
+debugThrow p            = withoutArgs debugThrow p

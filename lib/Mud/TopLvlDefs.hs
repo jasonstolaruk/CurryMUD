@@ -98,3 +98,7 @@ allCoinNames = coinNames ++ aggregateCoinNames
 
 genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
+
+
+dfltBootMsg :: T.Text
+dfltBootMsg = "You have been booted from CurryMUD. Goodbye!"
