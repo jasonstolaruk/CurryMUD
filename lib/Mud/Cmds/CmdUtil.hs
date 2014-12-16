@@ -4,12 +4,12 @@
 module Mud.Cmds.CmdUtil ( HelpTopic
                         , advise
                         , dispCmdList
+                        , getRecordUptime
                         , isNonStdLink
                         , linkDirToCmdName
                         , mkSerializedNonStdDesig
                         , prefixCmd
                         , readFileExHandler
-                        , getRecordUptime
                         , sendGenericErrorMsg
                         , withoutArgs ) where
 

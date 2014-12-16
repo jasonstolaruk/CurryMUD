@@ -1,12 +1,10 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.Cmds.PlaCmds (
-    plaCmds
-  , getUptime
-  , handleEgress
-  , mkCmdListWithNonStdRmLinks
-    ) where
+module Mud.Cmds.PlaCmds ( plaCmds
+                        , getUptime -- TODO: Do these functions belong in this module?
+                        , handleEgress
+                        , mkCmdListWithNonStdRmLinks ) where
 
 import Mud.Cmds.CmdUtil
 import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
