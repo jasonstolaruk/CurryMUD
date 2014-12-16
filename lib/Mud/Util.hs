@@ -30,6 +30,7 @@ module Mud.Util ( aOrAn
                 , nl
                 , nl'
                 , nlnl
+                , notInfixOf
                 , padOrTrunc
                 , parensPad
                 , parensQuote
@@ -273,6 +274,10 @@ stripTelnet t
 
 showText :: (Show a) => a -> T.Text
 showText = T.pack . show
+
+
+notInfixOf :: T.Text -> T.Text -> Bool
+notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
 
 
 headTail :: [a] -> (a, [a])

@@ -52,6 +52,8 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --   b. Consistency in binding names.
 -- 3. Write tests for NameResolution and Cmds.
 -- 4. Confirm that your functions are defined in the order that they are referenced.
+-- 5. Consider how to split your code into more modules, possibly with more tiers.
+-- 6. Rename (and move?) this module.
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -78,6 +80,7 @@ logPla = L.logPla "Mud.Cmds"
 
 
 -- ==================================================
+-- The "listen" thread:
 
 
 listenWrapper :: MudStack ()
@@ -142,6 +145,10 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
     modifyNWS threadTblTMVar $ \tt -> tt & at ti ?~ threadType
 
 
+-- ==================================================
+-- "Talk" threads:
+
+
 talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
@@ -161,10 +168,6 @@ talk h host = helper `finally` cleanUp
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
-
-
-talkExHandler :: Id -> SomeException -> MudStack ()
-talkExHandler = plaThreadExHandler "talk"
 
 
 adHoc :: MsgQueue -> HostName -> MudStack Id
@@ -213,6 +216,10 @@ randomRace = newStdGen >>= \g ->
     let (x, _) = randomR (0, 7) g in return $ [ Dwarf .. Vulpenoid ] !! x
 
 
+talkExHandler :: Id -> SomeException -> MudStack ()
+talkExHandler = plaThreadExHandler "talk"
+
+
 setDfltColor :: MsgQueue -> MudStack ()
 setDfltColor = flip send dfltColorANSI
 
@@ -226,6 +233,10 @@ dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExH
 
 prompt :: MsgQueue -> T.Text -> MudStack ()
 prompt mq = liftIO . atomically . writeTQueue mq . Prompt
+
+
+-- ==================================================
+-- "Server" threads:
 
 
 server :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -277,7 +288,7 @@ cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
     takeADump = T.hPutStr h . nl =<< (T.readFile . (miscDir ++) $ "cowbye")
 
 
--- TODO: Make a wizard command that does this.
+-- TODO: Make a wizard command that boots a specified player.
 boot :: Handle -> T.Text -> MudStack ()
 boot h = liftIO . T.hPutStr h . nl' . nlnl
 
@@ -288,6 +299,10 @@ shutDown = massMsg StopThread >> commitSuicide
     commitSuicide = do
         liftIO . void . forkIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
         liftIO . killThread =<< getListenThreadId
+
+
+-- ==================================================
+-- "Receive" threads:
 
 
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
@@ -306,12 +321,12 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
     delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
 
-notInfixOf :: T.Text -> T.Text -> Bool
-notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
-
-
 receiveExHandler :: Id -> SomeException -> MudStack ()
 receiveExHandler = plaThreadExHandler "receive"
+
+
+-- ==================================================
+-- Interpreters:
 
 
 -- TODO: Boot a player who tries too many times.
@@ -322,7 +337,7 @@ interpName (capitalize . T.toLower -> cn) (NoArgs' i mq)
   | T.any (`elem` illegalChars) cn    = sorryIllegalName mq "Your name cannot include any numbers or symbols."
   | otherwise                         = do
       prompt mq . nl' $ "Your name will be " <> dblQuote cn <> ", is that OK? [yes/no]"
-      void . modifyPla i interp $ interpConfirmName
+      void . modifyPla i interp $ interpConfirmName cn
   where
     illegalChars    = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
 interpName _  (WithArgs _ mq _ _) = sorryIllegalName mq "Your name must be a single word."
@@ -335,18 +350,17 @@ sorryIllegalName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-interpConfirmName :: Interp
-interpConfirmName cn (NoArgs' i mq) = do
-    void . modifyEnt i sing $ cn
+interpConfirmName :: Sing -> Interp
+interpConfirmName s _ (NoArgs' i mq) = do
+    void . modifyEnt i sing $ s
+    initPlaLog i s
     (T.pack . view hostName -> host) <- modifyPla i interp centralDispatch
-    initPlaLog i cn
     logPla "interpName" i $ "(new player) logged on from " <> host <> "."
     notifyArrival i
     prompt mq . nl' $ ">"
-interpConfirmName cn p = patternMatchFail "interpConfirmName" [ cn, showText p ]
+interpConfirmName s cn p = patternMatchFail "interpConfirmName" [ s, cn, showText p ]
 
 
--- TODO: Look for other places to use "view".
 notifyArrival :: Id -> MudStack ()
 notifyArrival i = readWSTMVar >>= \ws ->
     let (view sing -> s) = (ws^.entTbl) ! i
