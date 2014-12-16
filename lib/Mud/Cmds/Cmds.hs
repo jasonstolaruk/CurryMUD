@@ -51,6 +51,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --   a. Code reduction.
 --   b. Consistency in binding names.
 -- 3. Write tests for NameResolution and Cmds.
+-- 4. Confirm that your functions are defined in the order that they are referenced.
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a

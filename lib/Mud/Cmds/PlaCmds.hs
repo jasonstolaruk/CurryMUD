@@ -130,6 +130,14 @@ plaCmds =
 -----
 
 
+plaDispCmdList :: Action
+plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList plaCmds p
+plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
+
+
+-----
+
+
 about :: Action
 about (NoArgs i mq cols) = do
     logPlaExec "about" i
@@ -149,68 +157,9 @@ readFileExHandler fn e
 -----
 
 
--- TODO: Automatically execute this cmd after a user authenticates. (We won't want to log anything in that case.)
-motd :: Action
-motd (NoArgs i mq cols) = logPlaExec "motd" i >> (send mq =<< getMotdTxt cols)
-motd p                  = withoutArgs motd p
-
-
-getMotdTxt :: Cols -> MudStack T.Text
-getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet handler
-  where
-    helper    = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
-    handler e = do
-        readFileExHandler "getMotdTxt" e
-        return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
-
-
------
-
-
 clear :: Action
 clear (NoArgs' i mq) = logPlaExec "clear" i >> (send mq . T.pack $ clearScreenCode)
 clear p              = withoutArgs clear p
-
-
------
-
-
-plaDispCmdList :: Action
-plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList plaCmds p
-plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
-
-
------
-
-
-help :: Action
-help (NoArgs i mq cols) = do
-    try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
-    logPla "help" i "read the root help file."
-  where
-    helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
-    readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
-help (LowerNub i mq cols as) =
-    send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
-  where
-    getTopics = mapM (\a -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols a) as
-help p = patternMatchFail "help" [ showText p ]
-
-
-getHelpTopicByName :: Id -> Cols -> HelpTopic -> MudStack T.Text
-getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(getTopics -> topics) ->
-    maybe sorry
-          (\t -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote t <> ".") >> getHelpTopic t)
-          (findFullNameForAbbrev r topics)
-  where
-    getTopics       = (^..folded.packed) . drop 2 . sort . delete "root"
-    sorry           = return $ "No help is available on " <> dblQuote r <> "."
-    helper          = liftIO . T.readFile . (helpDir ++) . T.unpack
-    getHelpTopic t  = (try . helper $ t) >>= eitherRet handler
-      where
-        handler e = do
-            readFileExHandler "getHelpTopicByName" e
-            return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."
 
 
 -----
@@ -357,89 +306,78 @@ mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <-
 -----
 
 
-look :: Action
-look (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let (view rmId -> ri) = (ws^.pcTbl) ! i
-        r                 = (ws^.rmTbl) ! ri
-        primary           = multiWrap cols [ r^.rmName, r^.rmDesc ]
-        suppl             = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
-    in send mq . nl $ primary <> suppl
-look (LowerNub i mq cols as) = helper >>= \case
-  (Left  msg, _           ) -> send mq msg
-  (Right msg, Nothing     ) -> send mq msg
-  (Right msg, Just (d, ds)) ->
-      let pis = i `delete` pcIds d
-          d'  = serialize d
-          f targetDesig acc | targetId <- pcId targetDesig =
-              (nlnl $ d' <> " looks at you.", [targetId]) :
-              (nlnl . T.concat $ [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
-              acc
-      in do
-          bcast . foldr f [] $ ds
-          send mq msg
-          forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
-              logPla "look" i ("looked at " <> es <> ".")
+dropAction :: Action
+dropAction p@AdviseNoArgs     = advise p ["drop"] $ "Please specify one or more things to drop, as \
+                                                    \in " <> dblQuote "drop sword" <> "."
+dropAction   (LowerNub' i as) = do
+    (bs, logMsgs) <- helper
+    unless (null logMsgs) $ logPlaOut "drop" i logMsgs
+    bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (view sing -> s ) = (ws^.entTbl)   ! i
+        let (view sing -> s)  = (ws^.entTbl)   ! i
             (view rmId -> ri) = (ws^.pcTbl)    ! i
-            ris               = (ws^.invTbl)   ! ri
-            ris'              = i `delete` ris
-            c                 = (ws^.coinsTbl) ! ri
+            (pis, ris)        = over both ((ws^.invTbl) !) (i, ri)
+            pc                = (ws^.coinsTbl) ! i
             d                 = mkStdDesig i ws s True ris
-        in if (not . null $ ris') || (c /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as ris' c
-                   eiss               = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
-                   ecs                = map procReconciledCoinsRm rcs
-                   invDesc            = foldl' (helperLookEitherInv ws) "" eiss
-                   coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-                   ds                 = [ let (view sing -> s') = (ws^.entTbl) ! pi
-                                          in mkStdDesig pi ws s' False ris | pi <- extractPCIdsFromEiss ws eiss ]
-               in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
-          else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
-                                          , Nothing )
-    helperLookEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
-    helperLookEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
-    helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
-look p = patternMatchFail "look" [ showText p ]
+        in if (not . null $ pis) || (pc /= mempty)
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as pis pc
+                   eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
+                   ecs                   = map procReconciledCoinsPCInv rcs
+                   (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
+                   (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
+               in putTMVar t ws'' >> return (bs', logMsgs')
+          else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
--- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
-mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
-mkRmInvCoinsDesc i cols ws ri =
-    let (splitRmInv ws -> ((i `delete`) -> pis, ois)) = (ws^.invTbl) ! ri
-        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
-        otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
-        c          = (ws^.coinsTbl) ! ri
-    in (if not . null $ pis then pcDescs               else "") <>
-       (if not . null $ ois then otherDescs            else "") <>
-       (if c /= mempty      then mkCoinsSummary cols c else "")
+-----
+
+
+equip :: Action
+equip (NoArgs i mq cols) = readWSTMVar >>= \ws ->
+    let e = (ws^.entTbl) ! i
+    in send mq . nl . mkEqDesc i cols ws i e $ PCType
+equip (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
+    let em@(M.elems -> is) = (ws^.eqTbl) ! i
+    in send mq $ if not . M.null $ em
+      then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws as is mempty
+               eiss                         = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
+               invDesc                      = foldl' (helperEitherInv ws) "" eiss
+               coinsDesc | not . null $ rcs = wrapUnlinesNl cols "You don't have any coins among your readied \
+                                                                 \equipment."
+                         | otherwise        = ""
+           in invDesc <> coinsDesc
+      else wrapUnlinesNl cols dudeYou'reNaked
   where
-    mkPCDesc    (bracketQuote -> en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s then s else aOrAn s
-    mkPCDesc    a                                        = mkOtherDesc a
-    mkOtherDesc (bracketQuote -> en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
-    mkOtherDesc (bracketQuote -> en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
+    helperEitherInv _  acc (Left  msg) = (acc <>) . wrapUnlinesNl cols $ msg
+    helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
+equip p = patternMatchFail "equip" [ showText p ]
 
 
-isKnownPCSing :: Sing -> Bool
-isKnownPCSing (T.words -> ss) = case ss of [ "male",   _ ] -> False
-                                           [ "female", _ ] -> False
-                                           _               -> True
-
-
-mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkNameCountBothList i ws is = let ens   = [ getEffName        i ws i' | i' <- is ]
-                                  ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
-                                  cs    = mkCountList ebgns
-                              in nub . zip3 ens cs $ ebgns
-
-
-extractPCIdsFromEiss :: WorldState -> [Either T.Text Inv] -> [Id]
-extractPCIdsFromEiss ws = foldl' helper []
+mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
+mkEqDesc i cols ws ei (view sing -> s) t | descs <- map mkDesc . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei =
+    case descs of [] -> none
+                  _  -> (header <>) . T.unlines . concatMap (wordWrapIndent 15 cols) $ descs
   where
-    helper acc (Left  _ )  = acc
-    helper acc (Right is)  = acc ++ findPCIds ws is
+    mkSlotNameIdList = map (first pp)
+    mkDesc (T.breakOn " finger" -> (sn, _), i')
+      | e' <- (ws^.entTbl) ! i'
+      , en <- if ei == i then (" " <>) . bracketQuote . fromJust $ e'^.entName else ""
+      = parensPad 15 sn <> e'^.sing <> en
+    none = wrapUnlines cols $ if
+      | ei == i      -> dudeYou'reNaked
+      | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
+      | otherwise    -> "The " <> s <> " doesn't have anything readied."
+    header = wrapUnlines cols $ if
+      | ei == i      -> "You have readied the following equipment:"
+      | t  == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
+      | otherwise    -> "The " <> s <> " has readied the following equipment:"
+    d = mkSerializedNonStdDesig ei ws s The
+
+
+dudeYou'reNaked :: T.Text
+dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 
 mkEntDescs :: Id -> Cols -> WorldState -> Inv -> T.Text
@@ -529,80 +467,6 @@ isNonStdLink _               = False
 -----
 
 
-inv :: Action -- TODO: Give some indication of encumbrance.
-inv (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    send mq . nl . mkInvCoinsDesc i cols ws i $ (ws^.entTbl) ! i
-inv (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
-    let is = (ws^.invTbl)   ! i
-        c  = (ws^.coinsTbl) ! i
-    in send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
-               eiss               = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
-               ecs                = map procReconciledCoinsPCInv rcs
-               invDesc            = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc          = foldl' helperEitherCoins    "" ecs
-           in invDesc <> coinsDesc
-      else wrapUnlinesNl cols dudeYourHandsAreEmpty
-  where
-    helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
-    helperEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
-    helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
-inv p = patternMatchFail "inv" [ showText p ]
-
-
------
-
-
-equip :: Action
-equip (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let e = (ws^.entTbl) ! i
-    in send mq . nl . mkEqDesc i cols ws i e $ PCType
-equip (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
-    let em@(M.elems -> is) = (ws^.eqTbl) ! i
-    in send mq $ if not . M.null $ em
-      then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws as is mempty
-               eiss                         = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
-               invDesc                      = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc | not . null $ rcs = wrapUnlinesNl cols "You don't have any coins among your readied \
-                                                                 \equipment."
-                         | otherwise        = ""
-           in invDesc <> coinsDesc
-      else wrapUnlinesNl cols dudeYou'reNaked
-  where
-    helperEitherInv _  acc (Left  msg) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
-equip p = patternMatchFail "equip" [ showText p ]
-
-
-mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ws ei (view sing -> s) t | descs <- map mkDesc . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei =
-    case descs of [] -> none
-                  _  -> (header <>) . T.unlines . concatMap (wordWrapIndent 15 cols) $ descs
-  where
-    mkSlotNameIdList = map (first pp)
-    mkDesc (T.breakOn " finger" -> (sn, _), i')
-      | e' <- (ws^.entTbl) ! i'
-      , en <- if ei == i then (" " <>) . bracketQuote . fromJust $ e'^.entName else ""
-      = parensPad 15 sn <> e'^.sing <> en
-    none = wrapUnlines cols $ if
-      | ei == i      -> dudeYou'reNaked
-      | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
-      | otherwise    -> "The " <> s <> " doesn't have anything readied."
-    header = wrapUnlines cols $ if
-      | ei == i      -> "You have readied the following equipment:"
-      | t  == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
-      | otherwise    -> "The " <> s <> " has readied the following equipment:"
-    d = mkSerializedNonStdDesig ei ws s The
-
-
-dudeYou'reNaked :: T.Text
-dudeYou'reNaked = "You don't have anything readied. You're naked!"
-
-
------
-
-
 getAction :: Action
 getAction p@AdviseNoArgs     = advise p ["get"] $ "Please specify one or more items to pick up, as \
                                                   \in " <> dblQuote "get sword" <> "."
@@ -664,6 +528,13 @@ mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap
     otherPCIds = i `delete` pcIds d
 
 
+mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkNameCountBothList i ws is = let ens   = [ getEffName        i ws i' | i' <- is ]
+                                  ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
+                                  cs    = mkCountList ebgns
+                              in nub . zip3 ens cs $ ebgns
+
+
 mkGodVerb :: GetOrDrop -> Verb -> T.Text
 mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
@@ -710,29 +581,246 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 -----
 
 
-dropAction :: Action
-dropAction p@AdviseNoArgs     = advise p ["drop"] $ "Please specify one or more things to drop, as \
-                                                    \in " <> dblQuote "drop sword" <> "."
-dropAction   (LowerNub' i as) = do
-    (bs, logMsgs) <- helper
-    unless (null logMsgs) $ logPlaOut "drop" i logMsgs
-    bcastNl bs
+help :: Action
+help (NoArgs i mq cols) = do
+    try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
+    logPla "help" i "read the root help file."
+  where
+    helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
+    readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
+help (LowerNub i mq cols as) =
+    send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
+  where
+    getTopics = mapM (\a -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols a) as
+help p = patternMatchFail "help" [ showText p ]
+
+
+getHelpTopicByName :: Id -> Cols -> HelpTopic -> MudStack T.Text
+getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(getTopics -> topics) ->
+    maybe sorry
+          (\t -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote t <> ".") >> getHelpTopic t)
+          (findFullNameForAbbrev r topics)
+  where
+    getTopics       = (^..folded.packed) . drop 2 . sort . delete "root"
+    sorry           = return $ "No help is available on " <> dblQuote r <> "."
+    helper          = liftIO . T.readFile . (helpDir ++) . T.unpack
+    getHelpTopic t  = (try . helper $ t) >>= eitherRet handler
+      where
+        handler e = do
+            readFileExHandler "getHelpTopicByName" e
+            return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."
+
+
+-----
+
+
+inv :: Action -- TODO: Give some indication of encumbrance.
+inv (NoArgs i mq cols) = readWSTMVar >>= \ws ->
+    send mq . nl . mkInvCoinsDesc i cols ws i $ (ws^.entTbl) ! i
+inv (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
+    let is = (ws^.invTbl)   ! i
+        c  = (ws^.coinsTbl) ! i
+    in send mq $ if (not . null $ is) || (c /= mempty)
+      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
+               eiss               = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
+               ecs                = map procReconciledCoinsPCInv rcs
+               invDesc            = foldl' (helperEitherInv ws) "" eiss
+               coinsDesc          = foldl' helperEitherCoins    "" ecs
+           in invDesc <> coinsDesc
+      else wrapUnlinesNl cols dudeYourHandsAreEmpty
+  where
+    helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
+    helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
+    helperEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
+    helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
+inv p = patternMatchFail "inv" [ showText p ]
+
+
+-----
+
+
+intro :: Action
+intro (NoArgs i mq cols) = readWSTMVar >>= \ws ->
+    let (view introduced -> intros) = (ws^.pcTbl) ! i
+    in if null intros
+      then let introsTxt = "No one has introduced themselves to you yet." in do
+          wrapSend mq cols introsTxt
+          logPlaOut "intro" i [introsTxt]
+      else let introsTxt = T.intercalate ", " intros in do
+          multiWrapSend mq cols [ "You know the following names:", introsTxt ]
+          logPlaOut "intro" i [introsTxt]
+intro (LowerNub' i as) = do
+    (cbs, logMsgs) <- helper
+    unless (null logMsgs) $ logPlaOut "intro" i logMsgs
+    bcast . map fromClassifiedBroadcast . sort $ cbs
   where
     helper = onWS $ \(t, ws) ->
         let (view sing -> s)  = (ws^.entTbl)   ! i
             (view rmId -> ri) = (ws^.pcTbl)    ! i
-            (pis, ris)        = over both ((ws^.invTbl) !) (i, ri)
-            pc                = (ws^.coinsTbl) ! i
+            is                = (ws^.invTbl)   ! ri
+            is'               = i `delete` is
+            c                 = (ws^.coinsTbl) ! ri
+        in if (not . null $ is') || (c /= mempty)
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is' c
+                   eiss                  = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
+                   ecs                   = map procReconciledCoinsRm rcs
+                   (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
+                   (     cbs', logMsgs') = foldl' helperIntroEitherCoins      (    cbs, logMsgs) ecs
+               in putTMVar t ws' >> return (cbs', logMsgs')
+          else do
+              putTMVar t ws
+              return (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])
+    helperIntroEitherInv _ _   a (Left msg) | T.null msg = a
+                                            | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
+    helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
+      where
+        tryIntro a'@(ws, _, _) targetId | targetType                <- (ws^.typeTbl) ! targetId
+                                        , (view sing -> targetSing) <- (ws^.entTbl)  ! targetId = case targetType of
+          PCType | targetPC@(view introduced -> intros)   <- (ws^.pcTbl) ! targetId
+                 , pis                                    <- findPCIds ws ris
+                 , targetDesig                            <- serialize . mkStdDesig targetId ws targetSing False $ ris
+                 , (mkReflexive . view sex -> himHerself) <- (ws^.mobTbl) ! i
+                 -> if s `elem` intros
+                   then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
+                        in over _2 (++ mkNTBroadcast i msg) a'
+                   else let p         = targetPC & introduced .~ sort (s : intros)
+                            ws'       = ws & pcTbl.at targetId ?~ p
+                            srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
+                            srcDesig  = StdDesig { stdPCEntSing = Nothing
+                                                 , isCap        = True
+                                                 , pcEntName    = mkUnknownPCEntName i ws
+                                                 , pcId         = i
+                                                 , pcIds        = pis }
+                            targetMsg = nlnl . T.concat $ [ serialize srcDesig
+                                                          , " introduces "
+                                                          , himHerself
+                                                          , " to you as "
+                                                          , s
+                                                          , "." ]
+                            othersMsg = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
+                                                          , " introduces "
+                                                          , himHerself
+                                                          , " to "
+                                                          , targetDesig
+                                                          , "." ]
+                            cbs = [ NonTargetBroadcast (srcMsg,    [i])
+                                  , TargetBroadcast    (targetMsg, [targetId])
+                                  , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
+                        in set _1 ws' . over _2 (++ cbs) . over _3 (++ [srcMsg]) $ a'
+          _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
+                 -> over _2 (`appendIfUnique` b) a'
+    helperIntroEitherCoins a (Left  msgs) =
+        over _1 (++ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]) a
+    helperIntroEitherCoins a (Right _   ) =
+        over _1 (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
+    fromClassifiedBroadcast (TargetBroadcast    b) = b
+    fromClassifiedBroadcast (NonTargetBroadcast b) = b
+intro p = patternMatchFail "intro" [ showText p ]
+
+
+mkReflexive :: Sex -> T.Text
+mkReflexive Male   = "himself"
+mkReflexive Female = "herself"
+mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
+
+
+-----
+
+
+look :: Action
+look (NoArgs i mq cols) = readWSTMVar >>= \ws ->
+    let (view rmId -> ri) = (ws^.pcTbl) ! i
+        r                 = (ws^.rmTbl) ! ri
+        primary           = multiWrap cols [ r^.rmName, r^.rmDesc ]
+        suppl             = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
+    in send mq . nl $ primary <> suppl
+look (LowerNub i mq cols as) = helper >>= \case
+  (Left  msg, _           ) -> send mq msg
+  (Right msg, Nothing     ) -> send mq msg
+  (Right msg, Just (d, ds)) ->
+      let pis = i `delete` pcIds d
+          d'  = serialize d
+          f targetDesig acc | targetId <- pcId targetDesig =
+              (nlnl $ d' <> " looks at you.", [targetId]) :
+              (nlnl . T.concat $ [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
+              acc
+      in do
+          bcast . foldr f [] $ ds
+          send mq msg
+          forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
+              logPla "look" i ("looked at " <> es <> ".")
+  where
+    helper = onWS $ \(t, ws) ->
+        let (view sing -> s ) = (ws^.entTbl)   ! i
+            (view rmId -> ri) = (ws^.pcTbl)    ! i
+            ris               = (ws^.invTbl)   ! ri
+            ris'              = i `delete` ris
+            c                 = (ws^.coinsTbl) ! ri
             d                 = mkStdDesig i ws s True ris
-        in if (not . null $ pis) || (pc /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as pis pc
-                   eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
-                   ecs                   = map procReconciledCoinsPCInv rcs
-                   (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
-                   (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
-               in putTMVar t ws'' >> return (bs', logMsgs')
-          else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
-dropAction p = patternMatchFail "dropAction" [ showText p ]
+        in if (not . null $ ris') || (c /= mempty)
+          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as ris' c
+                   eiss               = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
+                   ecs                = map procReconciledCoinsRm rcs
+                   invDesc            = foldl' (helperLookEitherInv ws) "" eiss
+                   coinsDesc          = foldl' helperLookEitherCoins    "" ecs
+                   ds                 = [ let (view sing -> s') = (ws^.entTbl) ! pi
+                                          in mkStdDesig pi ws s' False ris | pi <- extractPCIdsFromEiss ws eiss ]
+               in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
+          else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
+                                          , Nothing )
+    helperLookEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
+    helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
+    helperLookEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
+    helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
+look p = patternMatchFail "look" [ showText p ]
+
+
+-- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
+mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
+mkRmInvCoinsDesc i cols ws ri =
+    let (splitRmInv ws -> ((i `delete`) -> pis, ois)) = (ws^.invTbl) ! ri
+        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
+        otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
+        c          = (ws^.coinsTbl) ! ri
+    in (if not . null $ pis then pcDescs               else "") <>
+       (if not . null $ ois then otherDescs            else "") <>
+       (if c /= mempty      then mkCoinsSummary cols c else "")
+  where
+    mkPCDesc    (bracketQuote -> en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s then s else aOrAn s
+    mkPCDesc    a                                        = mkOtherDesc a
+    mkOtherDesc (bracketQuote -> en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
+    mkOtherDesc (bracketQuote -> en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
+
+
+isKnownPCSing :: Sing -> Bool
+isKnownPCSing (T.words -> ss) = case ss of [ "male",   _ ] -> False
+                                           [ "female", _ ] -> False
+                                           _               -> True
+
+
+extractPCIdsFromEiss :: WorldState -> [Either T.Text Inv] -> [Id]
+extractPCIdsFromEiss ws = foldl' helper []
+  where
+    helper acc (Left  _ )  = acc
+    helper acc (Right is)  = acc ++ findPCIds ws is
+
+
+-----
+
+
+-- TODO: Automatically execute this cmd after a user authenticates. (We won't want to log anything in that case.)
+motd :: Action
+motd (NoArgs i mq cols) = logPlaExec "motd" i >> (send mq =<< getMotdTxt cols)
+motd p                  = withoutArgs motd p
+
+
+getMotdTxt :: Cols -> MudStack T.Text
+getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet handler
+  where
+    helper    = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
+    handler e = do
+        readFileExHandler "getMotdTxt" e
+        return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
 
 
 -----
@@ -986,65 +1074,54 @@ mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) (view sing -> ts) | bs <
 -----
 
 
-remove :: Action
-remove p@AdviseNoArgs     = advise p ["remove"] $ "Please specify one or more things to remove, followed by the \
-                                                  \container you want to remove them from, as in " <> dblQuote "remove \
-                                                  \doll sack" <> "."
-remove p@(AdviseOneArg a) = advise p ["remove"] $ "Please also specify the container you want to remove it from, as \
-                                                  \in " <> dblQuote ("remove " <> a <> " sack") <> "."
-remove   (Lower' i as)    = do
-    (bs, logMsgs) <- helper
-    unless (null logMsgs) $ logPlaOut "remove" i logMsgs
-    bcastNl bs
+quit :: Action
+quit (NoArgs' i mq)                        = (liftIO . atomically . writeTQueue mq $ Quit) >> logPlaExec "quit" i
+quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
   where
-    helper = onWS $ \(t, ws) ->
-      let (view sing -> s)         = (ws^.entTbl) ! i
-          (view rmId -> ri)        = (ws^.pcTbl)  ! i
-          (pis, ris)               = over both ((ws^.invTbl)   !) (i, ri)
-          (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
-          ris'                     = i `delete` ris
-          cn                       = last as
-          (init -> argsWithoutCon) = case as of [_, _] -> as
-                                                _      -> (++ [cn]) . nub . init $ as
-          d                        = mkStdDesig i ws s True ris
-      in if T.head cn == rmChar && cn /= T.singleton rmChar
-        then if not . null $ ris'
-          then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris' rc procGecrMisRm
-          else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
-        else shuffleRem i (t, ws) d cn False argsWithoutCon pis pc procGecrMisPCInv
-remove p = patternMatchFail "remove" [ showText p ]
+    msg = "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
 
-shuffleRem :: Id                                                  ->
-              (TMVar WorldState, WorldState)                      ->
-              PCDesig                                             ->
-              ConName                                             ->
-              IsConInRm                                           ->
-              Args                                                ->
-              InvWithCon                                          ->
-              CoinsWithCon                                        ->
-              ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
-              STM ([Broadcast], [T.Text])
-shuffleRem i (t, ws) d cn icir as is c f
-  | (gecrs, miss, rcs) <- resolveEntCoinNames i ws [cn] is c = if null miss && (not . null $ rcs)
-    then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
-    else case f . head . zip gecrs $ miss of
-      Left  msg -> putTMVar t ws >> return (mkBroadcast i msg, [])
-      Right [ci] | e@(view sing -> s) <- (ws^.entTbl) ! ci, t' <- (ws^.typeTbl) ! ci ->
-        if t' /= ConType
-          then putTMVar t ws >> return (mkBroadcast i $ "The " <> s <> " isn't a container.", [])
-          else let cis                   = (ws^.invTbl)   ! ci
-                   cc                    = (ws^.coinsTbl) ! ci
-                   (gecrs', miss', rcs') = resolveEntCoinNames i ws as cis cc
-                   eiss                  = [ curry (procGecrMisCon s) gecr mis | gecr <- gecrs' | mis <- miss' ]
-                   ecs                   = map (procReconciledCoinsCon s) rcs'
-                   mnom                  = mkMaybeNthOfM icir ws ci e is
-                   (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem mnom ci i e) (ws,  [], []     ) eiss
-                   (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem mnom ci i e) (ws', bs, logMsgs) ecs
-               in putTMVar t ws'' >> return (bs', logMsgs')
-      Right _ -> do
-          putTMVar t ws
-          return (mkBroadcast i "You can only remove things from one container at a time.", [])
+handleEgress :: Id -> MudStack ()
+handleEgress i = do
+    notifyEgress i
+    wsTMVar  <- getWSTMVar
+    mqtTMVar <- getNWSRec msgQueueTblTMVar
+    ptTMVar  <- getNWSRec plaTblTMVar
+    (parensQuote -> n) <- liftIO . atomically $ do
+        ws  <- takeTMVar wsTMVar
+        mqt <- takeTMVar mqtTMVar
+        pt  <- takeTMVar ptTMVar
+        -----
+        let (view sing     -> s)   = (ws^.entTbl) ! i
+        let (view rmId     -> ri)  = (ws^.pcTbl)  ! i
+        let ((i `delete`)  -> ris) = (ws^.invTbl) ! ri
+        let ws'                    = ws  & typeTbl.at  i  .~ Nothing
+                                         & entTbl.at   i  .~ Nothing
+                                         & invTbl.at   i  .~ Nothing
+                                         & coinsTbl.at i  .~ Nothing
+                                         & eqTbl.at    i  .~ Nothing
+                                         & mobTbl.at   i  .~ Nothing
+                                         & pcTbl.at    i  .~ Nothing
+                                         & invTbl.at   ri ?~ ris
+        let mqt'                   = mqt & at i .~ Nothing
+        let pt'                    = pt  & at i .~ Nothing
+        -----
+        putTMVar wsTMVar  ws'
+        putTMVar mqtTMVar mqt'
+        putTMVar ptTMVar  pt'
+        return s
+    logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", n, " has left the game." ]
+    closePlaLog i
+
+
+notifyEgress :: Id -> MudStack ()
+notifyEgress i = readWSTMVar >>= \ws ->
+    let (view sing    -> s)   = (ws^.entTbl) ! i
+        (view rmId    -> ri)  = (ws^.pcTbl)  ! i
+        ris                   = (ws^.invTbl) ! ri
+        ((i `delete`) -> pis) = findPCIds ws ris
+        d                     = serialize . mkStdDesig i ws s True $ ris
+    in bcast [(nlnl $ d <> " has left the game.", pis)]
 
 
 -----
@@ -1322,6 +1399,70 @@ getDesigWpnSlot cols ws (view sing -> s) em rol
 -----
 
 
+remove :: Action
+remove p@AdviseNoArgs     = advise p ["remove"] $ "Please specify one or more things to remove, followed by the \
+                                                  \container you want to remove them from, as in " <> dblQuote "remove \
+                                                  \doll sack" <> "."
+remove p@(AdviseOneArg a) = advise p ["remove"] $ "Please also specify the container you want to remove it from, as \
+                                                  \in " <> dblQuote ("remove " <> a <> " sack") <> "."
+remove   (Lower' i as)    = do
+    (bs, logMsgs) <- helper
+    unless (null logMsgs) $ logPlaOut "remove" i logMsgs
+    bcastNl bs
+  where
+    helper = onWS $ \(t, ws) ->
+      let (view sing -> s)         = (ws^.entTbl) ! i
+          (view rmId -> ri)        = (ws^.pcTbl)  ! i
+          (pis, ris)               = over both ((ws^.invTbl)   !) (i, ri)
+          (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
+          ris'                     = i `delete` ris
+          cn                       = last as
+          (init -> argsWithoutCon) = case as of [_, _] -> as
+                                                _      -> (++ [cn]) . nub . init $ as
+          d                        = mkStdDesig i ws s True ris
+      in if T.head cn == rmChar && cn /= T.singleton rmChar
+        then if not . null $ ris'
+          then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris' rc procGecrMisRm
+          else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
+        else shuffleRem i (t, ws) d cn False argsWithoutCon pis pc procGecrMisPCInv
+remove p = patternMatchFail "remove" [ showText p ]
+
+
+shuffleRem :: Id                                                  ->
+              (TMVar WorldState, WorldState)                      ->
+              PCDesig                                             ->
+              ConName                                             ->
+              IsConInRm                                           ->
+              Args                                                ->
+              InvWithCon                                          ->
+              CoinsWithCon                                        ->
+              ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
+              STM ([Broadcast], [T.Text])
+shuffleRem i (t, ws) d cn icir as is c f
+  | (gecrs, miss, rcs) <- resolveEntCoinNames i ws [cn] is c = if null miss && (not . null $ rcs)
+    then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
+    else case f . head . zip gecrs $ miss of
+      Left  msg -> putTMVar t ws >> return (mkBroadcast i msg, [])
+      Right [ci] | e@(view sing -> s) <- (ws^.entTbl) ! ci, t' <- (ws^.typeTbl) ! ci ->
+        if t' /= ConType
+          then putTMVar t ws >> return (mkBroadcast i $ "The " <> s <> " isn't a container.", [])
+          else let cis                   = (ws^.invTbl)   ! ci
+                   cc                    = (ws^.coinsTbl) ! ci
+                   (gecrs', miss', rcs') = resolveEntCoinNames i ws as cis cc
+                   eiss                  = [ curry (procGecrMisCon s) gecr mis | gecr <- gecrs' | mis <- miss' ]
+                   ecs                   = map (procReconciledCoinsCon s) rcs'
+                   mnom                  = mkMaybeNthOfM icir ws ci e is
+                   (ws',  bs,  logMsgs)  = foldl' (helperPutRemEitherInv   i d Rem mnom ci i e) (ws,  [], []     ) eiss
+                   (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem mnom ci i e) (ws', bs, logMsgs) ecs
+               in putTMVar t ws'' >> return (bs', logMsgs')
+      Right _ -> do
+          putTMVar t ws
+          return (mkBroadcast i "You can only remove things from one container at a time.", [])
+
+
+-----
+
+
 unready :: Action
 unready p@AdviseNoArgs            = advise p ["unready"] $ "Please specify one or more things to unready, as \
                                                            \in " <> dblQuote "unready sword" <> "."
@@ -1381,89 +1522,38 @@ mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i ws i' | i' <- is ], c
 -----
 
 
-intro :: Action
-intro (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let (view introduced -> intros) = (ws^.pcTbl) ! i
-    in if null intros
-      then let introsTxt = "No one has introduced themselves to you yet." in do
-          wrapSend mq cols introsTxt
-          logPlaOut "intro" i [introsTxt]
-      else let introsTxt = T.intercalate ", " intros in do
-          multiWrapSend mq cols [ "You know the following names:", introsTxt ]
-          logPlaOut "intro" i [introsTxt]
-intro (LowerNub' i as) = do
-    (cbs, logMsgs) <- helper
-    unless (null logMsgs) $ logPlaOut "intro" i logMsgs
-    bcast . map fromClassifiedBroadcast . sort $ cbs
+uptime :: Action
+uptime (NoArgs i mq cols) = do
+    logPlaExec "uptime" i
+    wrapSend mq cols =<< uptimeHelper =<< getUptime
+uptime p = withoutArgs uptime p
+
+
+uptimeHelper :: Integer -> MudStack T.Text
+uptimeHelper ut = helper <$> getRecordUptime
   where
-    helper = onWS $ \(t, ws) ->
-        let (view sing -> s)  = (ws^.entTbl)   ! i
-            (view rmId -> ri) = (ws^.pcTbl)    ! i
-            is                = (ws^.invTbl)   ! ri
-            is'               = i `delete` is
-            c                 = (ws^.coinsTbl) ! ri
-        in if (not . null $ is') || (c /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is' c
-                   eiss                  = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
-                   ecs                   = map procReconciledCoinsRm rcs
-                   (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
-                   (     cbs', logMsgs') = foldl' helperIntroEitherCoins      (    cbs, logMsgs) ecs
-               in putTMVar t ws' >> return (cbs', logMsgs')
-          else do
-              putTMVar t ws
-              return (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])
-    helperIntroEitherInv _ _   a (Left msg) | T.null msg = a
-                                            | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
-    helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
-      where
-        tryIntro a'@(ws, _, _) targetId | targetType                <- (ws^.typeTbl) ! targetId
-                                        , (view sing -> targetSing) <- (ws^.entTbl)  ! targetId = case targetType of
-          PCType | targetPC@(view introduced -> intros)   <- (ws^.pcTbl) ! targetId
-                 , pis                                    <- findPCIds ws ris
-                 , targetDesig                            <- serialize . mkStdDesig targetId ws targetSing False $ ris
-                 , (mkReflexive . view sex -> himHerself) <- (ws^.mobTbl) ! i
-                 -> if s `elem` intros
-                   then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                        in over _2 (++ mkNTBroadcast i msg) a'
-                   else let p         = targetPC & introduced .~ sort (s : intros)
-                            ws'       = ws & pcTbl.at targetId ?~ p
-                            srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
-                            srcDesig  = StdDesig { stdPCEntSing = Nothing
-                                                 , isCap        = True
-                                                 , pcEntName    = mkUnknownPCEntName i ws
-                                                 , pcId         = i
-                                                 , pcIds        = pis }
-                            targetMsg = nlnl . T.concat $ [ serialize srcDesig
-                                                          , " introduces "
-                                                          , himHerself
-                                                          , " to you as "
-                                                          , s
-                                                          , "." ]
-                            othersMsg = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
-                                                          , " introduces "
-                                                          , himHerself
-                                                          , " to "
-                                                          , targetDesig
-                                                          , "." ]
-                            cbs = [ NonTargetBroadcast (srcMsg,    [i])
-                                  , TargetBroadcast    (targetMsg, [targetId])
-                                  , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
-                        in set _1 ws' . over _2 (++ cbs) . over _3 (++ [srcMsg]) $ a'
-          _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
-                 -> over _2 (`appendIfUnique` b) a'
-    helperIntroEitherCoins a (Left  msgs) =
-        over _1 (++ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]) a
-    helperIntroEitherCoins a (Right _   ) =
-        over _1 (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
-    fromClassifiedBroadcast (TargetBroadcast    b) = b
-    fromClassifiedBroadcast (NonTargetBroadcast b) = b
-intro p = patternMatchFail "intro" [ showText p ]
+    helper = \case Nothing  -> mkUptimeTxt
+                   Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
+                                                        _  -> mkRecTxt rut
+    mkUptimeTxt                = mkTxtHelper "."
+    mkNewRecTxt                = mkTxtHelper " - it's a new record!"
+    mkRecTxt (renderIt -> rut) = mkTxtHelper $ " (record uptime: " <> rut <> ")."
+    mkTxtHelper                = ("Up " <>) . (renderIt ut <>)
+    renderIt                   = T.pack . renderSecs
 
 
-mkReflexive :: Sex -> T.Text
-mkReflexive Male   = "himself"
-mkReflexive Female = "herself"
-mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
+getRecordUptime :: MudStack (Maybe Integer)
+getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
+  True  -> liftIO readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
+  False -> return Nothing
+  where
+    readUptime = Just . read <$> readFile uptimeFile
+
+
+getUptime :: MudStack Integer
+getUptime = round <$> diff
+  where
+    diff = diffUTCTime <$> liftIO getCurrentTime <*> getNWSRec startTime
 
 
 -----
@@ -1629,93 +1719,3 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) rc
       | gol == 1  = "1 gold piece"
       | gol /= 0  = showText gol <> " gold pieces"
       | otherwise = blowUp "whatInvCoins mkTxtForCoinsWithAmt" "attempted to make text for empty coins" [ showText c ]
-
-
------
-
-
-uptime :: Action
-uptime (NoArgs i mq cols) = do
-    logPlaExec "uptime" i
-    wrapSend mq cols =<< uptimeHelper =<< getUptime
-uptime p = withoutArgs uptime p
-
-
-uptimeHelper :: Integer -> MudStack T.Text
-uptimeHelper ut = helper <$> getRecordUptime
-  where
-    helper = \case Nothing  -> mkUptimeTxt
-                   Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
-                                                        _  -> mkRecTxt rut
-    mkUptimeTxt                = mkTxtHelper "."
-    mkNewRecTxt                = mkTxtHelper " - it's a new record!"
-    mkRecTxt (renderIt -> rut) = mkTxtHelper $ " (record uptime: " <> rut <> ")."
-    mkTxtHelper                = ("Up " <>) . (renderIt ut <>)
-    renderIt                   = T.pack . renderSecs
-
-
-getRecordUptime :: MudStack (Maybe Integer)
-getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
-  True  -> liftIO readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
-  False -> return Nothing
-  where
-    readUptime = Just . read <$> readFile uptimeFile
-
-
-getUptime :: MudStack Integer
-getUptime = round <$> diff
-  where
-    diff = diffUTCTime <$> liftIO getCurrentTime <*> getNWSRec startTime
-
-
------
-
-
-quit :: Action
-quit (NoArgs' i mq)                        = (liftIO . atomically . writeTQueue mq $ Quit) >> logPlaExec "quit" i
-quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
-  where
-    msg = "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
-
-
-handleEgress :: Id -> MudStack ()
-handleEgress i = do
-    notifyEgress i
-    wsTMVar  <- getWSTMVar
-    mqtTMVar <- getNWSRec msgQueueTblTMVar
-    ptTMVar  <- getNWSRec plaTblTMVar
-    (parensQuote -> n) <- liftIO . atomically $ do
-        ws  <- takeTMVar wsTMVar
-        mqt <- takeTMVar mqtTMVar
-        pt  <- takeTMVar ptTMVar
-        -----
-        let (view sing     -> s)   = (ws^.entTbl) ! i
-        let (view rmId     -> ri)  = (ws^.pcTbl)  ! i
-        let ((i `delete`)  -> ris) = (ws^.invTbl) ! ri
-        let ws'                    = ws  & typeTbl.at  i  .~ Nothing
-                                         & entTbl.at   i  .~ Nothing
-                                         & invTbl.at   i  .~ Nothing
-                                         & coinsTbl.at i  .~ Nothing
-                                         & eqTbl.at    i  .~ Nothing
-                                         & mobTbl.at   i  .~ Nothing
-                                         & pcTbl.at    i  .~ Nothing
-                                         & invTbl.at   ri ?~ ris
-        let mqt'                   = mqt & at i .~ Nothing
-        let pt'                    = pt  & at i .~ Nothing
-        -----
-        putTMVar wsTMVar  ws'
-        putTMVar mqtTMVar mqt'
-        putTMVar ptTMVar  pt'
-        return s
-    logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", n, " has left the game." ]
-    closePlaLog i
-
-
-notifyEgress :: Id -> MudStack ()
-notifyEgress i = readWSTMVar >>= \ws ->
-    let (view sing    -> s)   = (ws^.entTbl) ! i
-        (view rmId    -> ri)  = (ws^.pcTbl)  ! i
-        ris                   = (ws^.invTbl) ! ri
-        ((i `delete`) -> pis) = findPCIds ws ris
-        d                     = serialize . mkStdDesig i ws s True $ ris
-    in bcast [(nlnl $ d <> " has left the game.", pis)]
