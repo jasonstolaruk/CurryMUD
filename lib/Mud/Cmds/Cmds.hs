@@ -36,7 +36,6 @@ import Control.Monad.State (get)
 import Data.IntMap.Lazy ((!))
 import Data.Monoid ((<>), mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
-import Prelude hiding (pi)
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)

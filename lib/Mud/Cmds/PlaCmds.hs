@@ -25,6 +25,7 @@ import Control.Arrow (first)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
+import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Getter (view)
@@ -41,12 +42,11 @@ import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (pi)
 import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
+import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Time.Utils (renderSecs)
 import qualified Data.Map.Lazy as M (elems, filter, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
-import System.IO.Error (isDoesNotExistError, isPermissionError)
-import Control.Exception (IOException)
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
