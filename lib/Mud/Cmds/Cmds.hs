@@ -8,14 +8,14 @@ import Mud.Cmds.PlaCmds
 import Mud.Cmds.WizCmds
 import Mud.Color
 import Mud.Ids
-import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
+import Mud.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.StateHelpers
 import Mud.StateInIORefT
 import Mud.TheWorld
 import Mud.TopLvlDefs
-import Mud.Util hiding (blowUp, patternMatchFail)
+import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 import qualified Mud.Util as U (patternMatchFail)
 

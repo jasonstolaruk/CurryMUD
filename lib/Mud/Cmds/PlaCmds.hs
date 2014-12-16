@@ -10,7 +10,7 @@ module Mud.Cmds.PlaCmds ( getRecordUptime
                         , readFileExHandler ) where
 
 import Mud.Cmds.CmdUtil
-import Mud.Logging hiding (logAndDispIOEx, logExMsg, logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
+import Mud.Logging hiding (logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.MiscDataTypes
 import Mud.NameResolution
 import Mud.StateDataTypes

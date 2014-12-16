@@ -9,7 +9,7 @@ import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.StateHelpers
 import Mud.TopLvlDefs
-import Mud.Util hiding (blowUp, patternMatchFail)
+import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import qualified Mud.Util as U (patternMatchFail)
 
