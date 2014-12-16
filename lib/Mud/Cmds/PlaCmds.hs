@@ -394,10 +394,6 @@ mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(wrapUnlines cols . view ent
     pcHeader = wrapUnlines cols . mkPCDescHeader ei $ ws
 
 
-mkPCDescHeader :: Id -> WorldState -> T.Text
-mkPCDescHeader i ws | (pp -> s, pp -> r) <- getSexRace i ws = T.concat [ "You see a ", s, " ", r, "." ]
-
-
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
 mkInvCoinsDesc i cols ws ei (view sing -> s) | is <- (ws^.invTbl)   ! ei
                                              , c  <- (ws^.coinsTbl) ! ei = case (not . null $ is, c /= mempty) of
@@ -438,6 +434,10 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
     golDesc = if gol /= 0 then "The gold piece is round and shiny."   else ""
 
 
+mkPCDescHeader :: Id -> WorldState -> T.Text
+mkPCDescHeader i ws | (pp -> s, pp -> r) <- getSexRace i ws = T.concat [ "You see a ", s, " ", r, "." ]
+
+
 -----
 
 
@@ -467,6 +467,7 @@ isNonStdLink _               = False
 -----
 
 
+-- TODO: Cont. confirming function definition order from here.
 getAction :: Action
 getAction p@AdviseNoArgs     = advise p ["get"] $ "Please specify one or more items to pick up, as \
                                                   \in " <> dblQuote "get sword" <> "."
