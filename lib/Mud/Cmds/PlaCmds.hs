@@ -49,6 +49,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.Cmds.PlaCmds"
 

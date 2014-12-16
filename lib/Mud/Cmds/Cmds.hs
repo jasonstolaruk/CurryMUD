@@ -45,9 +45,6 @@ import qualified Data.Text.IO as T (hGetLine, hPutStr, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
 -- TODO: Here's the plan:
 -- [DONE] 1. Consider using conduit.
 -- [DONE] 2. Go into server mode. Accept incoming connections.
