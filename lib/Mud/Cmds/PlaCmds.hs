@@ -467,7 +467,6 @@ isNonStdLink _               = False
 -----
 
 
--- TODO: Cont. confirming function definition order from here.
 getAction :: Action
 getAction p@AdviseNoArgs     = advise p ["get"] $ "Please specify one or more items to pick up, as \
                                                   \in " <> dblQuote "get sword" <> "."
@@ -536,15 +535,15 @@ mkNameCountBothList i ws is = let ens   = [ getEffName        i ws i' | i' <- is
                               in nub . zip3 ens cs $ ebgns
 
 
+extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
+extractLogMsgs i bs = [ fst b | b <- bs, snd b == [i] ]
+
+
 mkGodVerb :: GetOrDrop -> Verb -> T.Text
 mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
 mkGodVerb Drop SndPer = "drop"
 mkGodVerb Drop ThrPer = "drops"
-
-
-extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
-extractLogMsgs i bs = [ fst b | b <- bs, snd b == [i] ]
 
 
 helperGetDropEitherCoins :: Id                                  ->
@@ -904,7 +903,7 @@ mkMaybeNthOfM True  ws i (view sing -> s) is = Just ((+ 1) . fromJust . elemInde
     matches = filter (\i' -> let (view sing -> s') = (ws^.entTbl) ! i' in s' == s) is
 
 
-type ToEnt  = Ent
+type ToEnt = Ent
 
 
 helperPutRemEitherInv :: Id                                  ->
@@ -1174,6 +1173,9 @@ readyDispatcher i cols mrol a@(ws, _, _) ei =
       _         -> over _2 (<> (wrapUnlines cols $ "You can't ready a " <> e^.sing <> ".")) a
 
 
+-- Helpers for the entity type-specific ready functions:
+
+
 moveReadiedItem :: Id                             ->
                    Cols                           ->
                    (WorldState, T.Text, [T.Text]) ->
@@ -1189,13 +1191,12 @@ moveReadiedItem i cols a@(ws, _, _) em s ei msg
   = set _1 ws' . over _2 (<> wrapUnlines cols msg) . over _3 (++ [msg]) $ a
 
 
--- Helpers for the entity type-specific ready functions:
+isSlotAvail :: EqMap -> Slot -> Bool
+isSlotAvail em s = em^.at s.to isNothing
 
 
-otherSex :: Sex -> Sex
-otherSex Male   = Female
-otherSex Female = Male
-otherSex NoSex  = NoSex
+findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
+findAvailSlot em = find (isSlotAvail em)
 
 
 otherHand :: Hand -> Hand
@@ -1210,46 +1211,7 @@ isRingRol = \case R -> False
                   _ -> True
 
 
-rEarSlots, lEarSlots, noseSlots, neckSlots, rWristSlots, lWristSlots :: [Slot]
-rEarSlots   = [ REar1S, REar2S       ]
-lEarSlots   = [ LEar1S, LEar2S       ]
-noseSlots   = [ Nose1S, Nose2S       ]
-neckSlots   = [ Neck1S   .. Neck3S   ]
-rWristSlots = [ RWrist1S .. RWrist3S ]
-lWristSlots = [ LWrist1S .. LWrist3S ]
-
-
-isSlotAvail :: EqMap -> Slot -> Bool
-isSlotAvail em s = em^.at s.to isNothing
-
-
-findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
-findAvailSlot em = find (isSlotAvail em)
-
-
-sorryFullClothSlots :: Cloth -> T.Text
-sorryFullClothSlots c = "You can't wear any more " <> whatWhere c
-  where
-    whatWhere = \case
-      EarC      -> aoy <> "ears."
-      NoseC     -> "rings on your nose."
-      NeckC     -> aoy <> "neck."
-      WristC    -> aoy <> "wrists."
-      FingerC   -> aoy <> "fingers."
-      UpBodyC   -> coy <> "torso."
-      LowBodyC  -> coy <> "legs."
-      FullBodyC -> "clothing about your body."
-      BackC     -> "on your back."
-      FeetC     -> "footwear on your feet."
-    aoy = "accessories on your "
-    coy = "clothing on your "
-
-
-sorryFullClothSlotsOneSide :: Slot -> T.Text
-sorryFullClothSlotsOneSide (pp -> s) = "You can't wear any more on your " <> s <> "."
-
-
--- Ready clothing:
+-- Readying clothing:
 
 
 readyCloth :: Id                             ->
@@ -1305,6 +1267,39 @@ getAvailClothSlot cols ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.h
       _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText s ]
 
 
+otherSex :: Sex -> Sex
+otherSex Male   = Female
+otherSex Female = Male
+otherSex NoSex  = NoSex
+
+
+rEarSlots, lEarSlots, noseSlots, neckSlots, rWristSlots, lWristSlots :: [Slot]
+rEarSlots   = [ REar1S, REar2S ]
+lEarSlots   = [ LEar1S, LEar2S ]
+noseSlots   = [ Nose1S, Nose2S ]
+neckSlots   = [ Neck1S   .. Neck3S   ]
+rWristSlots = [ RWrist1S .. RWrist3S ]
+lWristSlots = [ LWrist1S .. LWrist3S ]
+
+
+sorryFullClothSlots :: Cloth -> T.Text
+sorryFullClothSlots c = "You can't wear any more " <> whatWhere c
+  where
+    whatWhere = \case
+      EarC      -> aoy <> "ears."
+      NoseC     -> "rings on your nose."
+      NeckC     -> aoy <> "neck."
+      WristC    -> aoy <> "wrists."
+      FingerC   -> aoy <> "fingers."
+      UpBodyC   -> coy <> "torso."
+      LowBodyC  -> coy <> "legs."
+      FullBodyC -> "clothing about your body."
+      BackC     -> "on your back."
+      FeetC     -> "footwear on your feet."
+    aoy = "accessories on your "
+    coy = "clothing on your "
+
+
 getDesigClothSlot :: Cols -> WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigClothSlot cols ws (view sing -> s) c em rol
   | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCantWearThere
@@ -1337,7 +1332,11 @@ getDesigClothSlot cols ws (view sing -> s) c em rol
                                                                          , "." ]
 
 
--- Ready weapons:
+sorryFullClothSlotsOneSide :: Slot -> T.Text
+sorryFullClothSlotsOneSide (pp -> s) = "You can't wear any more on your " <> s <> "."
+
+
+-- Readying weapons:
 
 
 readyWpn :: Id                             ->
@@ -1392,9 +1391,6 @@ getDesigWpnSlot cols ws (view sing -> s) em rol
     desigSlot               = case rol of R -> RHandS
                                           L -> LHandS
                                           _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
-
-
--- Ready armor:
 
 
 -----
