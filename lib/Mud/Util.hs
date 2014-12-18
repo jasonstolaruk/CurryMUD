@@ -136,7 +136,7 @@ xformLeading a (T.singleton -> b) (T.break (/= a) -> (T.length -> n, rest)) = T.
 
 
 adjustIndent :: Int -> Int -> Int
-adjustIndent n cols = if n >= cols then cols - 1 else n
+adjustIndent n cols = if n >= cols then pred cols else n
 
 
 wordWrapLines :: Int -> [T.Text] -> [[T.Text]]
@@ -221,7 +221,7 @@ unquote = T.init . T.tail
 quoteWithAndPad :: (T.Text, T.Text) -> Int -> T.Text -> T.Text
 quoteWithAndPad q x t = quoteWith' q t' <> T.replicate (x - T.length t' - 2) " "
   where
-    t' = T.take (x - l - 1) t
+    t' = T.take (pred $ x - l) t
     l  = sum $ [ fst q, snd q ]^..folded.to T.length
 
 

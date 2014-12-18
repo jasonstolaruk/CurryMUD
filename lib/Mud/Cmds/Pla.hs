@@ -901,7 +901,7 @@ type NthOfM = (Int, Int)
 
 mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe NthOfM
 mkMaybeNthOfM False _  _ _                _  = Nothing
-mkMaybeNthOfM True  ws i (view sing -> s) is = Just ((+ 1) . fromJust . elemIndex i $ matches, length matches)
+mkMaybeNthOfM True  ws i (view sing -> s) is = Just (succ . fromJust . elemIndex i $ matches, length matches)
   where
     matches = filter (\i' -> let (view sing -> s') = (ws^.entTbl) ! i' in s' == s) is
 

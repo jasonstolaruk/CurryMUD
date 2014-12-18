@@ -144,7 +144,7 @@ mkGecrIndexed i ws x n is
     notFound = Left ""
     found ens fn | matches <- filter (\(_, en) -> en == fn) . zip is $ ens = if length matches < x
       then Left . mkPlurFromBoth . getEffBothGramNos i ws . fst . head $ matches
-      else Right . ((ws^.entTbl) !) . fst $ matches !! (x - 1)
+      else Right . ((ws^.entTbl) !) . fst $ matches !! pred x
 
 
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
