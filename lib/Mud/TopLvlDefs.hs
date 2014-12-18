@@ -26,26 +26,37 @@ mudDir = let home = unsafePerformIO . getEnv $ "HOME"
          in home ++ "/CurryMUD/"
 
 
-logDir, resDir, helpDir, titleDir, miscDir, uptimeFile :: FilePath
-logDir     = mudDir ++ "logs/"
-resDir     = mudDir ++ "res/"
+helpDir, logDir, miscDir, resDir, titleDir, uptimeFile :: FilePath
 helpDir    = resDir ++ "help/"
-titleDir   = resDir ++ "titles/"
+logDir     = mudDir ++ "logs/"
 miscDir    = resDir ++ "misc/"
+resDir     = mudDir ++ "res/"
+titleDir   = resDir ++ "titles/"
 uptimeFile = mudDir ++ "uptime"
 
 
-telnetIAC, telnetSB, telnetSE, telnetGA :: Char
+allChar, amountChar, debugCmdChar, indentTagChar, indexChar, rmChar, slotChar, wizCmdChar :: Char
+allChar       = '\''
+amountChar    = '/'
+debugCmdChar  = '!'
+indentTagChar = '`'
+indexChar     = '.'
+rmChar        = '-'
+slotChar      = ':'
+wizCmdChar    = ':'
+
+
+telnetGA, telnetIAC, telnetSB, telnetSE :: Char
+telnetGA  = '\249'
 telnetIAC = '\255'
 telnetSB  = '\250'
 telnetSE  = '\240'
-telnetGA  = '\249'
 
 
-stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter :: Char
-stdDesigDelimiter    = '\130'
-nonStdDesigDelimiter = '\131'
+desigDelimiter, stdDesigDelimiter, nonStdDesigDelimiter :: Char
 desigDelimiter       = '\132'
+nonStdDesigDelimiter = '\131'
+stdDesigDelimiter    = '\130'
 
 
 indentFiller :: Char
@@ -62,17 +73,6 @@ maxLogSize = 100000
 
 maxCmdLen :: Int
 maxCmdLen = 9
-
-
-allChar, amountChar, indentTagChar, indexChar, rmChar, slotChar, wizCmdChar, debugCmdChar :: Char
-allChar       = '\''
-amountChar    = '/'
-indentTagChar = '`'
-indexChar     = '.'
-rmChar        = '-'
-slotChar      = ':'
-wizCmdChar    = ':'
-debugCmdChar  = '!'
 
 
 minCols, maxCols :: Int
