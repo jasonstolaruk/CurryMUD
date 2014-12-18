@@ -12,7 +12,7 @@ kickButt <$> take maxBound names
 
 module Main (main) where
 
-import Mud.StateInIORefT
+import Mud.Data.State.StateInIORefT
 import Mud.TheWorld.TheWorld
 import Mud.Threads
 import Mud.TopLvlDefs

@@ -48,7 +48,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --   b. Consistency in binding names.
 -- 3. Write tests for NameResolution and the Cmds modules.
 -- 4. Confirm that your functions are defined in the order that they are referenced (DONE for this module and all Cmd modules).
--- 5. Remove OverloadedStrings where it is not used.
 
 
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
