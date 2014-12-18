@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-} -- TODO: Check.
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Cmds.Cmds (listenWrapper) where
+module Mud.Threads (listenWrapper) where
 
 import Mud.Cmds.PlaCmds
 import Mud.Color
@@ -53,19 +53,19 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
-logExMsg = L.logExMsg "Mud.Cmds"
+logExMsg = L.logExMsg "Mud.Threads"
 
 
 logIOEx :: T.Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Cmds"
+logIOEx = L.logIOEx "Mud.Threads"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Cmds"
+logNotice = L.logNotice "Mud.Threads"
 
 
 logPla :: T.Text -> Id -> T.Text -> MudStack ()
-logPla = L.logPla "Mud.Cmds"
+logPla = L.logPla "Mud.Threads"
 
 
 -- ==================================================
