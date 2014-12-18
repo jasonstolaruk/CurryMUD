@@ -66,15 +66,15 @@ propTests_Mud_Util = testGroup "property tests Mud.Util"
     , QC.testProperty "prop_xformLeading" prop_xformLeading
     , QC.testProperty "prop_wrapLineWithIndentTag" prop_wrapLineWithIndentTag
     , QC.testProperty "prop_calcIndent" prop_calcIndent
-    , QC.testProperty "prop_aOrAn" prop_aOrAn
     , QC.testProperty "prop_quoteWithAndPad_length" prop_quoteWithAndPad_length
     , QC.testProperty "prop_quoteWithAndPad_quotes" prop_quoteWithAndPad_quotes
     , QC.testProperty "prop_padOrTrunc_pads" prop_padOrTrunc_pads
     , QC.testProperty "prop_padOrTrunc_truncates" prop_padOrTrunc_truncates
-    , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
-    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch" prop_findFullNameForAbbrev_findsMatch
+    , QC.testProperty "prop_aOrAn" prop_aOrAn
     , QC.testProperty "prop_countOcc" prop_countOcc
     , QC.testProperty "prop_deleteFirstOfEach" prop_deleteFirstOfEach
+    , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
+    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch" prop_findFullNameForAbbrev_findsMatch
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 
 

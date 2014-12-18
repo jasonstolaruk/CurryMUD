@@ -92,10 +92,7 @@ prop_calcIndent = forAll (genTextOfRandLen (0, 10)) $ \firstWord ->
     in calcIndent t == T.length firstWord + numOfFollowingSpcs
 
 
-prop_aOrAn :: T.Text -> Property
-prop_aOrAn t = (not . T.null . T.strip $ t) ==>
-  let (a, b) = T.break isSpace . aOrAn $ t
-  in a == if isVowel . T.head . T.tail $ b then "an" else "a"
+-- --------------------------------------------------
 
 
 prop_quoteWithAndPad_length :: T.Text -> Property
@@ -124,6 +121,27 @@ prop_padOrTrunc_truncates (NonNegative x) t = T.length t > x ==>
   (T.length . padOrTrunc x $ t) == x
 
 
+-- --------------------------------------------------
+
+
+prop_aOrAn :: T.Text -> Property
+prop_aOrAn t = (not . T.null . T.strip $ t) ==>
+  let (a, b) = T.break isSpace . aOrAn $ t
+  in a == if isVowel . T.head . T.tail $ b then "an" else "a"
+
+
+prop_countOcc :: Int -> [Int] -> Bool
+prop_countOcc needle hay = countOcc needle hay == matches
+  where
+    matches = length . elemIndices needle $ hay
+
+
+prop_deleteFirstOfEach :: [Int] -> [Int] -> Property
+prop_deleteFirstOfEach delThese fromThis = all (\x -> countOcc x fromThis < 2) delThese ==>
+  let res = deleteFirstOfEach delThese fromThis
+  in all (`notElem` res) delThese
+
+
 prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [T.Text] -> Property
 prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any (not . T.null) hay &&
                                                                             all (not . (needle `T.isInfixOf`)) hay ==>
@@ -139,12 +157,6 @@ prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (n
   in findFullNameForAbbrev needle hay' == Just match
 
 
-prop_countOcc :: Int -> [Int] -> Bool
-prop_countOcc needle hay = countOcc needle hay == matches
-  where
-    matches = length . elemIndices needle $ hay
-
-
 prop_mkCountList :: [Int] -> Bool
 prop_mkCountList xs = mkCountList xs == mkCountList' xs
   where
@@ -153,23 +165,10 @@ prop_mkCountList xs = mkCountList xs == mkCountList' xs
       in map getCountForElem xs'
 
 
-prop_deleteFirstOfEach :: [Int] -> [Int] -> Property
-prop_deleteFirstOfEach delThese fromThis = all (\x -> countOcc x fromThis < 2) delThese ==>
-  let res = deleteFirstOfEach delThese fromThis
-  in all (`notElem` res) delThese
-
-
--- --------------------------------------------------
-
-
 test_stripControl :: T.Text
 test_stripControl = stripControl . quoteWith controlCodes $ "test"
   where
     controlCodes = T.pack $ [ '\0' .. '\31' ] ++ [ '\127' .. (maxBound :: Char) ]
-
-
-telnetCodes :: T.Text
-telnetCodes = T.pack . map chr $ [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
 
 
 test_stripTelnet_null :: T.Text
@@ -178,6 +177,10 @@ test_stripTelnet_null = stripTelnet ""
 
 test_stripTelnet_telnetCodes :: T.Text
 test_stripTelnet_telnetCodes = stripTelnet telnetCodes
+
+
+telnetCodes :: T.Text
+telnetCodes = T.pack . map chr $ [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
 
 
 test_stripTelnet_leading :: T.Text

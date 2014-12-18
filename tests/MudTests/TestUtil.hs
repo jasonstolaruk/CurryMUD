@@ -31,12 +31,12 @@ genTextOfLen :: Int -> Gen T.Text
 genTextOfLen n = T.pack <$> replicateM n genAsciiAlphaNum
 
 
-genTextLongerThan :: Int -> Gen T.Text
-genTextLongerThan x = genTextOfLen . (x +) =<< choose (1, 50)
-
-
 genTextOfRandLen :: (Int, Int) -> Gen T.Text
 genTextOfRandLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
+
+
+genTextLongerThan :: Int -> Gen T.Text
+genTextLongerThan x = genTextOfLen . (x +) =<< choose (1, 50)
 
 
 genCols :: Gen Int
