@@ -48,14 +48,41 @@ patternMatchFail = U.patternMatchFail "Mud.Data.Misc"
 -- Typeclasses and instances:
 
 
+class FromRol a where
+  fromRol :: RightOrLeft -> a
+
+
+instance FromRol Slot where
+  fromRol RI = RIndexFS
+  fromRol RM = RMidFS
+  fromRol RR = RRingFS
+  fromRol RP = RPinkyFS
+  fromRol LI = LIndexFS
+  fromRol LM = LMidFS
+  fromRol LR = LRingFS
+  fromRol LP = LPinkyFS
+  fromRol s  = patternMatchFail "fromRol" [ showText s ]
+
+
+-----
+
+
+instance Ord ClassifiedBroadcast where
+  TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
+  NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
+  _                    `compare` _                    = EQ
+
+
+-----
+
+
 class Pretty a where
   pp :: a -> T.Text
 
 
-instance Pretty Sex where
-  pp Male   = "male"
-  pp Female = "female"
-  pp NoSex  = undefined
+instance Pretty AOrThe where
+  pp A   = "a"
+  pp The = "the"
 
 
 instance Pretty Race where
@@ -67,6 +94,18 @@ instance Pretty Race where
   pp Lagomorph = "lagomorph"
   pp Nymph     = "nymph"
   pp Vulpenoid = "vulpenoid"
+
+
+instance Pretty RightOrLeft where
+  pp R   = "right"
+  pp L   = "left"
+  pp rol = pp (fromRol rol :: Slot)
+
+
+instance Pretty Sex where
+  pp Male   = "male"
+  pp Female = "female"
+  pp NoSex  = undefined
 
 
 instance Pretty Slot where
@@ -105,36 +144,6 @@ instance Pretty Slot where
   pp FullBodyAS = "full body"
   pp BackS      = "back"
   pp FeetS      = "feet"
-
-
-instance Pretty AOrThe where
-  pp A   = "a"
-  pp The = "the"
-
-
-instance Pretty RightOrLeft where
-  pp R   = "right"
-  pp L   = "left"
-  pp rol = pp (fromRol rol :: Slot)
-
-
------
-
-
-class FromRol a where
-  fromRol :: RightOrLeft -> a
-
-
-instance FromRol Slot where
-  fromRol RI = RIndexFS
-  fromRol RM = RMidFS
-  fromRol RR = RRingFS
-  fromRol RP = RPinkyFS
-  fromRol LI = LIndexFS
-  fromRol LM = LMidFS
-  fromRol LR = LRingFS
-  fromRol LP = LPinkyFS
-  fromRol s  = patternMatchFail "fromRol" [ showText s ]
 
 
 -----
@@ -176,20 +185,27 @@ instance Serializable PCDesig where
       d                  = T.singleton desigDelimiter
 
 
------
-
-
-instance Ord ClassifiedBroadcast where
-  TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
-  NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
-  _                    `compare` _                    = EQ
-
-
 -- ==================================================
 -- Data types:
 
 
-type Action  = ActionParams -> MudStack ()
+data AOrThe = A | The
+
+
+-----
+
+
+type Broadcast = (T.Text, Inv)
+
+
+data ClassifiedBroadcast = TargetBroadcast    Broadcast
+                         | NonTargetBroadcast Broadcast deriving Eq
+
+
+-----
+
+
+type Action = ActionParams -> MudStack ()
 
 
 data Cmd = Cmd { cmdName :: !CmdName
@@ -223,22 +239,10 @@ data EmptyNoneSome a = Empty
 -----
 
 
-data AOrThe = A | The
-
-
-data Verb = SndPer | ThrPer
-
-
 data GetOrDrop = Get | Drop
 
 
-data PutOrRem = Put | Rem deriving (Eq, Show)
-
-
-data RightOrLeft = R
-                 | L
-                 | RI | RM | RR | RP
-                 | LI | LM | LR | LP deriving (Show, Read)
+-----
 
 
 data InvType = PCInv | PCEq | RmInv deriving Eq
@@ -259,8 +263,19 @@ data PCDesig = StdDesig    { stdPCEntSing    :: !(Maybe T.Text)
 -----
 
 
-type Broadcast = (T.Text, Inv)
+data PutOrRem = Put | Rem deriving (Eq, Show)
 
 
-data ClassifiedBroadcast = TargetBroadcast    Broadcast
-                         | NonTargetBroadcast Broadcast deriving Eq
+-----
+
+
+data RightOrLeft = R
+                 | L
+                 | RI | RM | RR | RP
+                 | LI | LM | LR | LP deriving (Show, Read)
+
+
+-----
+
+
+data Verb = SndPer | ThrPer

@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, RankNTypes, RecordWildCards, ViewPatterns #-}
 
--- This module is considered to have sufficient test coverage as of 2014-10-13.
-
 module Mud.Data.State.Util ( BothGramNos
                            , allKeys
                            , bcast
@@ -22,7 +20,6 @@ module Mud.Data.State.Util ( BothGramNos
                            , getWSTMVar
                            , massMsg
                            , massSend
-                           , mkAssocListTxt
                            , mkBroadcast
                            , mkCoinsFromList
                            , mkDividerTxt
@@ -101,6 +98,9 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util"
 -- Higher-level abstractions for working with STM:
 
 
+-- World state:
+
+
 getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
 getWSTMVar = gets (view worldStateTMVar)
 
@@ -122,6 +122,9 @@ modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
     transaction t = takeTMVar t >>= putTMVar t . f
 
 
+-- Non-world state:
+
+
 getNWSRec :: ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> MudStack a
 getNWSRec lens = gets (view (nonWorldState.lens))
 
@@ -131,12 +134,6 @@ readTMVarInNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) ->
                   Const (TMVar a) NonWorldState)          ->
                   MudStack a
 readTMVarInNWS lens = liftIO . atomically . readTMVar =<< getNWSRec lens
-
-
-getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
-getMqtPt = do
-    (mqtTMVar, ptTMVar) <- (,) <$> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    liftIO . atomically $  (,) <$> readTMVar mqtTMVar         <*> readTMVar ptTMVar
 
 
 onNWS :: ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) ->
@@ -154,17 +151,6 @@ modifyNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (
 modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= putTMVar t . f
-
-
-getLogAsyncs :: MudStack (LogAsync, LogAsync)
-getLogAsyncs = helper <$> gets (view nonWorldState)
-  where
-    helper nws | Just (nla, _) <- nws^.noticeLog, Just (ela, _) <- nws^.errorLog = (nla, ela)
-    helper _ = patternMatchFail "getLogAsyncs helper" [ bracketQuote "elided" ]
-
-
-getPlaLogQueue :: Id -> MudStack LogQueue
-getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
 
 
 -- ============================================================
@@ -277,17 +263,13 @@ modifyRm i lens val = onWS $ \(t, ws) ->
 -- Helper functions for working with "Pla":
 
 
-putPla :: Id -> Pla -> MudStack () -- TODO: Currently not used.
-putPla i p = modifyNWS plaTblTMVar $ \pt ->
-    pt & at i ?~ p
-
-
 getPla :: Id -> MudStack Pla
 getPla i = (! i) <$> readTMVarInNWS plaTblTMVar
 
 
-getPlaColumns :: Id -> MudStack Int
-getPlaColumns i = view columns <$> getPla i
+putPla :: Id -> Pla -> MudStack () -- TODO: Currently not used.
+putPla i p = modifyNWS plaTblTMVar $ \pt ->
+    pt & at i ?~ p
 
 
 modifyPla :: Id -> ASetter Pla Pla a b -> b -> MudStack Pla
@@ -295,6 +277,10 @@ modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
     let p  = pt ! i
         p' = p & lens .~ val
     in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
+
+
+getPlaColumns :: Id -> MudStack Int
+getPlaColumns i = view columns <$> getPla i
 
 
 -- ============================================================
@@ -397,50 +383,25 @@ mkDividerTxt :: Cols -> T.Text
 mkDividerTxt = flip T.replicate "="
 
 
-ok :: MsgQueue -> MudStack ()
-ok mq = send mq . nlnl $ "OK!"
-
-
 massMsg :: Msg -> MudStack ()
 massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
     forM_ is $ liftIO . atomically . flip writeTQueue m
 
 
-mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
-mkAssocListTxt cols = T.concat . map helper
-  where
-    helper (unquote . showText -> a, showText -> b) = T.unlines . wordWrapIndent 2 cols $ a <> ": " <> b
+ok :: MsgQueue -> MudStack ()
+ok mq = send mq . nlnl $ "OK!"
 
 
 -- ============================================================
 -- Misc. helpers:
 
 
-statefulFork :: StateInIORefT MudState IO () -> MudStack ()
-statefulFork f = liftIO . void . forkIO . void . runStateInIORefT f =<< get
-
-
 allKeys :: WorldState -> Inv
 allKeys = views typeTbl IM.keys -- TODO: Looks for other places where you can use "views".
 
 
-getUnusedId :: WorldState -> Id
-getUnusedId = head . (\\) [0..] . allKeys
-
-
-sortInv :: WorldState -> Inv -> Inv
-sortInv ws is | (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) <- [ (ws^.typeTbl) ! i | i <- is ]
-              = (pcIs ++) . sortNonPCs $ nonPCIs
-  where
-    helper a (i, t) | t == PCType      = over _1 (++ [i]) a
-                    | otherwise        = over _2 (++ [i]) a
-    sortNonPCs is'                     = map (view _1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
-    nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
-    names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
-    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing               | i <- is' ]
-
-
-type BothGramNos = (Sing, Plur)
+findPCIds :: WorldState -> [Id] -> [Id]
+findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
 
 
 getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
@@ -459,33 +420,6 @@ getEffBothGramNos i ws i'
     pluralize r       = r <> "s"
 
 
-mkPlur :: Ent -> Plur
-mkPlur e@(view plur -> p) | T.null p  = e^.sing <> "s"
-                          | otherwise = p
-
-
-mkPlurFromBoth :: BothGramNos -> Plur
-mkPlurFromBoth (s, "") = s <> "s"
-mkPlurFromBoth (_, p ) = p
-
-
-mkListFromCoins :: Coins -> [Int]
-mkListFromCoins (Coins (c, g, s)) = [ c, g, s ]
-
-
-mkCoinsFromList :: [Int] -> Coins
-mkCoinsFromList [ cop, sil, gol ]       = Coins (cop, sil, gol)
-mkCoinsFromList xs = patternMatchFail "mkCoinsFromList" [ showText xs ]
-
-
-negateCoins :: Coins -> Coins
-negateCoins (Coins (each %~ negate -> c)) = Coins c
-
-
-findPCIds :: WorldState -> [Id] -> [Id]
-findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
-
-
 getEffName :: Id -> WorldState -> Id -> T.Text
 getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
   where
@@ -495,14 +429,77 @@ getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
     (view introduced -> intros) = (ws^.pcTbl) ! i
 
 
-mkUnknownPCEntName :: Id -> WorldState -> T.Text
-mkUnknownPCEntName i ws | (view sex  -> s) <- (ws^.mobTbl) ! i
-                        , (view race -> r) <- (ws^.pcTbl)  ! i = (T.singleton . T.head . pp $ s) <> pp r
+getLogAsyncs :: MudStack (LogAsync, LogAsync)
+getLogAsyncs = helper <$> gets (view nonWorldState)
+  where
+    helper nws | Just (nla, _) <- nws^.noticeLog, Just (ela, _) <- nws^.errorLog = (nla, ela)
+    helper _ = patternMatchFail "getLogAsyncs helper" [ bracketQuote "elided" ]
+
+
+getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
+getMqtPt = do
+    (mqtTMVar, ptTMVar) <- (,) <$> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
+    liftIO . atomically $  (,) <$> readTMVar mqtTMVar         <*> readTMVar ptTMVar
+
+
+getPlaLogQueue :: Id -> MudStack LogQueue
+getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
 
 
 getSexRace :: Id -> WorldState -> (Sex, Race)
 getSexRace i ws | (view sex -> s) <- (ws^.mobTbl) ! i, (view race -> r) <- (ws^.pcTbl) ! i = (s, r)
 
 
+getUnusedId :: WorldState -> Id
+getUnusedId = head . (\\) [0..] . allKeys
+
+
+mkCoinsFromList :: [Int] -> Coins
+mkCoinsFromList [ cop, sil, gol ]       = Coins (cop, sil, gol)
+mkCoinsFromList xs = patternMatchFail "mkCoinsFromList" [ showText xs ]
+
+
+mkListFromCoins :: Coins -> [Int]
+mkListFromCoins (Coins (c, g, s)) = [ c, g, s ]
+
+
+mkPlur :: Ent -> Plur
+mkPlur e@(view plur -> p) | T.null p  = e^.sing <> "s"
+                          | otherwise = p
+
+
+type BothGramNos = (Sing, Plur)
+
+
+mkPlurFromBoth :: BothGramNos -> Plur
+mkPlurFromBoth (s, "") = s <> "s"
+mkPlurFromBoth (_, p ) = p
+
+
+mkUnknownPCEntName :: Id -> WorldState -> T.Text
+mkUnknownPCEntName i ws | (view sex  -> s) <- (ws^.mobTbl) ! i
+                        , (view race -> r) <- (ws^.pcTbl)  ! i = (T.singleton . T.head . pp $ s) <> pp r
+
+
+negateCoins :: Coins -> Coins
+negateCoins (Coins (each %~ negate -> c)) = Coins c
+
+
+sortInv :: WorldState -> Inv -> Inv
+sortInv ws is | (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) <- [ (ws^.typeTbl) ! i | i <- is ]
+              = (pcIs ++) . sortNonPCs $ nonPCIs
+  where
+    helper a (i, t) | t == PCType      = over _1 (++ [i]) a
+                    | otherwise        = over _2 (++ [i]) a
+    sortNonPCs is'                     = map (view _1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
+    nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
+    names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
+    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing               | i <- is' ]
+
+
 splitRmInv :: WorldState -> Inv -> (Inv, Inv)
 splitRmInv ws = span (\i -> (ws^.typeTbl) ! i == PCType)
+
+
+statefulFork :: StateInIORefT MudState IO () -> MudStack ()
+statefulFork f = liftIO . void . forkIO . void . runStateInIORefT f =<< get

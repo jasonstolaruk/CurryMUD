@@ -198,6 +198,12 @@ debugDispEnv (WithArgs i mq cols (nub -> as)) = do
 debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 
 
+mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
+mkAssocListTxt cols = T.concat . map helper
+  where
+    helper (unquote . showText -> a, showText -> b) = T.unlines . wordWrapIndent 2 cols $ a <> ": " <> b
+
+
 -----
 
 
