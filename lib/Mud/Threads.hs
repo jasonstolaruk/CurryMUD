@@ -46,10 +46,9 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- 2. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
 --   a. Code reduction.
 --   b. Consistency in binding names.
--- 3. Write tests for NameResolution and Cmds.
+-- 3. Write tests for NameResolution and the Cmds modules.
 -- 4. Confirm that your functions are defined in the order that they are referenced (DONE for this module and all Cmd modules).
 -- 5. Consider how to split your code into more modules, possibly with more tiers.
--- 6. Rename (and move?) this module.
 
 
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
