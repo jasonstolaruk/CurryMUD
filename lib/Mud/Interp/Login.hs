@@ -13,7 +13,7 @@ import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logPla)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad (void)
 import Data.IntMap.Lazy ((!))
@@ -60,7 +60,7 @@ interpConfirmName :: Sing -> Interp
 interpConfirmName s _ (NoArgs' i mq) = do
     void . modifyEnt i sing $ s
     initPlaLog i s
-    (T.pack . view hostName -> host) <- modifyPla i interp centralDispatch
+    (views hostName T.pack -> host) <- modifyPla i interp centralDispatch
     logPla "interpConfirmName" i $ "(new player) logged on from " <> host <> "."
     notifyArrival i
     prompt mq . nl' $ ">"

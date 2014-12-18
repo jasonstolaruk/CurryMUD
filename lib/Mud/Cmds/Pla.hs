@@ -28,7 +28,7 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
 import Control.Monad (forM_, guard, mplus, unless)
@@ -230,7 +230,7 @@ tryMove i mq cols dir = helper >>= \case
       | dir == "d"              = "heads"
       | dir `elem` stdLinkNames = "leaves"
       | otherwise               = "enters"
-    showRm (showText -> ri) (parensQuote . view rmName -> rn) = ri <> " " <> rn
+    showRm (showText -> ri) (views rmName parensQuote -> rn) = ri <> " " <> rn
 
 
 findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
@@ -388,7 +388,7 @@ mkEntDescs i cols ws is = T.intercalate "\n" . map (mkEntDesc i cols ws) $ [ (ei
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
-mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(wrapUnlines cols . view entDesc -> ed)) =
+mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(views entDesc (wrapUnlines cols) -> ed)) =
     case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws ei $ e
               MobType ->                 (ed <>) . mkEqDesc       i cols ws ei   e $ t
               PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws ei   e $ t
@@ -679,10 +679,10 @@ intro (LowerNub' i as) = do
       where
         tryIntro a'@(ws, _, _) targetId | targetType                <- (ws^.typeTbl) ! targetId
                                         , (view sing -> targetSing) <- (ws^.entTbl)  ! targetId = case targetType of
-          PCType | targetPC@(view introduced -> intros)   <- (ws^.pcTbl) ! targetId
-                 , pis                                    <- findPCIds ws ris
-                 , targetDesig                            <- serialize . mkStdDesig targetId ws targetSing False $ ris
-                 , (mkReflexive . view sex -> himHerself) <- (ws^.mobTbl) ! i
+          PCType | targetPC@(view introduced -> intros)  <- (ws^.pcTbl) ! targetId
+                 , pis                                   <- findPCIds ws ris
+                 , targetDesig                           <- serialize . mkStdDesig targetId ws targetSing False $ ris
+                 , (views sex mkReflexive -> himHerself) <- (ws^.mobTbl) ! i
                  -> if s `elem` intros
                    then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
                         in over _2 (++ mkNTBroadcast i msg) a'

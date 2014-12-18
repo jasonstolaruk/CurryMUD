@@ -397,7 +397,7 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 allKeys :: WorldState -> Inv
-allKeys = views typeTbl IM.keys -- TODO: Looks for other places where you can use "views".
+allKeys = views typeTbl IM.keys
 
 
 findPCIds :: WorldState -> [Id] -> [Id]
