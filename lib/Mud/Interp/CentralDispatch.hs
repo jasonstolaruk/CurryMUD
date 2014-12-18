@@ -3,12 +3,12 @@
 
 module Mud.Interp.CentralDispatch (centralDispatch) where
 
-import Mud.Cmds.DebugCmds
-import Mud.Cmds.PlaCmds
-import Mud.Cmds.WizCmds
-import Mud.MiscDataTypes
-import Mud.StateDataTypes
-import Mud.StateHelpers
+import Mud.Cmds.Debug
+import Mud.Cmds.Pla
+import Mud.Cmds.Wiz
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)

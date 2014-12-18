@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
 
-module Mud.Cmds.DebugCmds (debugCmds) where
+module Mud.Cmds.Debug (debugCmds) where
 
-import Mud.Cmds.CmdUtil
+import Mud.Cmds.Util
 import Mud.Color
-import Mud.MiscDataTypes
-import Mud.StateDataTypes
-import Mud.StateHelpers
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
@@ -37,26 +37,26 @@ import qualified Data.Text as T
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds.DebugCmds"
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
 
 -----
 
 
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> IOException -> MudStack ()
-logAndDispIOEx mq cols = L.logAndDispIOEx mq cols "Mud.Cmds.DebugCmds"
+logAndDispIOEx mq cols = L.logAndDispIOEx mq cols "Mud.Cmds.Debug"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Cmds.DebugCmds"
+logNotice = L.logNotice "Mud.Cmds.Debug"
 
 
 logPlaExec :: CmdName -> Id -> MudStack ()
-logPlaExec = L.logPlaExec "Mud.Cmds.DebugCmds"
+logPlaExec = L.logPlaExec "Mud.Cmds.Debug"
 
 
 logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
-logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.DebugCmds"
+logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 
 
 -- ==================================================

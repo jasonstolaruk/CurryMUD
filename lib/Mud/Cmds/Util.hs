@@ -1,16 +1,16 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, RecordWildCards, ViewPatterns #-}
 
-module Mud.Cmds.CmdUtil ( HelpTopic
-                        , advise
-                        , dispCmdList
-                        , prefixCmd
-                        , sendGenericErrorMsg
-                        , withoutArgs ) where
+module Mud.Cmds.Util ( HelpTopic
+                     , advise
+                     , dispCmdList
+                     , prefixCmd
+                     , sendGenericErrorMsg
+                     , withoutArgs ) where
 
-import Mud.MiscDataTypes
-import Mud.StateDataTypes
-import Mud.StateHelpers
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
@@ -21,7 +21,7 @@ import qualified Data.Text as T
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds.CmdUtil"
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Util"
 
 
 -- ==================================================

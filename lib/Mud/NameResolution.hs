@@ -14,9 +14,9 @@ module Mud.NameResolution ( ReconciledCoins
                           , resolveEntCoinNamesWithRols
                           , ringHelp ) where
 
-import Mud.MiscDataTypes
-import Mud.StateDataTypes
-import Mud.StateHelpers
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)

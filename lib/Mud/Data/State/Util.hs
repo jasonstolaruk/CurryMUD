@@ -3,71 +3,71 @@
 
 -- This module is considered to have sufficient test coverage as of 2014-10-13.
 
-module Mud.StateHelpers ( BothGramNos
-                        , allKeys
-                        , bcast
-                        , bcastNl
-                        , bcastOthersInRm
-                        , findPCIds
-                        , frame
-                        , getEffBothGramNos
-                        , getEffName
-                        , getLogAsyncs
-                        , getNWSRec
-                        , getPla
-                        , getPlaColumns
-                        , getPlaLogQueue
-                        , getSexRace
-                        , getUnusedId
-                        , getWSTMVar
-                        , massMsg
-                        , massSend
-                        , mkAssocListTxt
-                        , mkBroadcast
-                        , mkCoinsFromList
-                        , mkDividerTxt
-                        , mkListFromCoins
-                        , mkNTBroadcast
-                        , mkPlur
-                        , mkPlurFromBoth
-                        , mkUnknownPCEntName
-                        , modifyArm
-                        , modifyEnt
-                        , modifyMob
-                        , modifyNWS
-                        , modifyObj
-                        , modifyPC
-                        , modifyPla
-                        , modifyRm
-                        , modifyWS
-                        , modifyWpn
-                        , multiWrapSend
-                        , negateCoins
-                        , ok
-                        , onNWS
-                        , onWS
-                        , parsePCDesig
-                        , prompt
-                        , putArm
-                        , putCloth
-                        , putCon
-                        , putMob
-                        , putObj
-                        , putPC
-                        , putPla
-                        , putRm
-                        , putWpn
-                        , readTMVarInNWS
-                        , readWSTMVar
-                        , send
-                        , sortInv
-                        , splitRmInv
-                        , statefulFork
-                        , wrapSend ) where
+module Mud.Data.State.Util ( BothGramNos
+                           , allKeys
+                           , bcast
+                           , bcastNl
+                           , bcastOthersInRm
+                           , findPCIds
+                           , frame
+                           , getEffBothGramNos
+                           , getEffName
+                           , getLogAsyncs
+                           , getNWSRec
+                           , getPla
+                           , getPlaColumns
+                           , getPlaLogQueue
+                           , getSexRace
+                           , getUnusedId
+                           , getWSTMVar
+                           , massMsg
+                           , massSend
+                           , mkAssocListTxt
+                           , mkBroadcast
+                           , mkCoinsFromList
+                           , mkDividerTxt
+                           , mkListFromCoins
+                           , mkNTBroadcast
+                           , mkPlur
+                           , mkPlurFromBoth
+                           , mkUnknownPCEntName
+                           , modifyArm
+                           , modifyEnt
+                           , modifyMob
+                           , modifyNWS
+                           , modifyObj
+                           , modifyPC
+                           , modifyPla
+                           , modifyRm
+                           , modifyWS
+                           , modifyWpn
+                           , multiWrapSend
+                           , negateCoins
+                           , ok
+                           , onNWS
+                           , onWS
+                           , parsePCDesig
+                           , prompt
+                           , putArm
+                           , putCloth
+                           , putCon
+                           , putMob
+                           , putObj
+                           , putPC
+                           , putPla
+                           , putRm
+                           , putWpn
+                           , readTMVarInNWS
+                           , readWSTMVar
+                           , send
+                           , sortInv
+                           , splitRmInv
+                           , statefulFork
+                           , wrapSend ) where
 
-import Mud.MiscDataTypes
-import Mud.StateDataTypes
-import Mud.StateInIORefT
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.StateInIORefT
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
@@ -94,7 +94,7 @@ import qualified Data.Text as T
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.StateHelpers"
+patternMatchFail = U.patternMatchFail "Mud.Data.State.Util"
 
 
 -- ============================================================

@@ -17,9 +17,9 @@ module Mud.Logging ( closeLogs
                    , logPlaOut
                    , massLogPla ) where
 
-import Mud.MiscDataTypes
-import Mud.StateDataTypes
-import Mud.StateHelpers
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.TopLvlDefs
 import Mud.Util
 

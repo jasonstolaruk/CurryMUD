@@ -3,12 +3,12 @@
 
 module Mud.Interp.Login (interpName) where
 
-import Mud.Cmds.PlaCmds
+import Mud.Cmds.Pla
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.Interp.CentralDispatch
 import Mud.Logging hiding (logPla)
-import Mud.MiscDataTypes
-import Mud.StateDataTypes
-import Mud.StateHelpers
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logPla)
 import qualified Mud.Util as U (patternMatchFail)

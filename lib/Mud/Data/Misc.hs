@@ -1,34 +1,34 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
 {-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
-module Mud.MiscDataTypes ( AOrThe(..)
-                         , Action
-                         , ActionParams(..)
-                         , Amount
-                         , Args
-                         , Broadcast
-                         , ClassifiedBroadcast(..)
-                         , Cmd(..)
-                         , CmdName
-                         , Cols
-                         , EmptyNoneSome(..)
-                         , FromRol
-                         , GetEntsCoinsRes(..)
-                         , GetOrDrop(..)
-                         , Index
-                         , InvType(..)
-                         , PCDesig(..)
-                         , Pretty
-                         , PutOrRem(..)
-                         , RightOrLeft(..)
-                         , Serializable
-                         , Verb(..)
-                         , deserialize
-                         , fromRol
-                         , pp
-                         , serialize ) where
+module Mud.Data.Misc ( AOrThe(..)
+                     , Action
+                     , ActionParams(..)
+                     , Amount
+                     , Args
+                     , Broadcast
+                     , ClassifiedBroadcast(..)
+                     , Cmd(..)
+                     , CmdName
+                     , Cols
+                     , EmptyNoneSome(..)
+                     , FromRol
+                     , GetEntsCoinsRes(..)
+                     , GetOrDrop(..)
+                     , Index
+                     , InvType(..)
+                     , PCDesig(..)
+                     , Pretty
+                     , PutOrRem(..)
+                     , RightOrLeft(..)
+                     , Serializable
+                     , Verb(..)
+                     , deserialize
+                     , fromRol
+                     , pp
+                     , serialize ) where
 
-import Mud.StateDataTypes
+import Mud.Data.State.State
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
@@ -41,7 +41,7 @@ import qualified Data.Text as T
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.MiscDataTypes"
+patternMatchFail = U.patternMatchFail "Mud.Data.Misc"
 
 
 -- ==================================================

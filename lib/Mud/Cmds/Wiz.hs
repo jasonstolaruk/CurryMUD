@@ -1,12 +1,12 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
-module Mud.Cmds.WizCmds (wizCmds) where
+module Mud.Cmds.Wiz (wizCmds) where
 
-import Mud.Cmds.CmdUtil
-import Mud.MiscDataTypes
-import Mud.StateDataTypes
-import Mud.StateHelpers
+import Mud.Cmds.Util
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logIOEx, logNotice, logPlaExec, logPlaExecArgs, massLogPla)
@@ -31,30 +31,30 @@ import qualified Data.Text.IO as T (putStrLn)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds.WizCmds"
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Wiz"
 
 
 -----
 
 
 logIOEx :: T.Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Cmds.WizCmds"
+logIOEx = L.logIOEx "Mud.Cmds.Wiz"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Cmds.WizCmds"
+logNotice = L.logNotice "Mud.Cmds.Wiz"
 
 
 logPlaExec :: CmdName -> Id -> MudStack ()
-logPlaExec = L.logPlaExec "Mud.Cmds.WizCmds"
+logPlaExec = L.logPlaExec "Mud.Cmds.Wiz"
 
 
 logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
-logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.WizCmds"
+logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Wiz"
 
 
 massLogPla :: T.Text -> T.Text -> MudStack ()
-massLogPla = L.massLogPla "Mud.Cmds.WizCmds"
+massLogPla = L.massLogPla "Mud.Cmds.Wiz"
 
 
 -- ==================================================

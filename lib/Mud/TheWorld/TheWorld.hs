@@ -6,8 +6,8 @@
 module Mud.TheWorld.TheWorld ( initMudState
                              , initWorld ) where
 
-import Mud.StateDataTypes
-import Mud.StateHelpers
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.TheWorld.Ids
 import qualified Mud.Logging as L (logNotice)
 
@@ -24,7 +24,7 @@ import qualified Data.Text as T
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.TheWorld"
+logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 
 -- ==================================================

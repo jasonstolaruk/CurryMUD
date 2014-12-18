@@ -1,20 +1,20 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.Cmds.PlaCmds ( getRecordUptime
-                        , getUptime
-                        , handleEgress
-                        , mkCmdListWithNonStdRmLinks
-                        , mkSerializedNonStdDesig
-                        , plaCmds
-                        , readFileExHandler ) where
+module Mud.Cmds.Pla ( getRecordUptime
+                    , getUptime
+                    , handleEgress
+                    , mkCmdListWithNonStdRmLinks
+                    , mkSerializedNonStdDesig
+                    , plaCmds
+                    , readFileExHandler ) where
 
-import Mud.Cmds.CmdUtil
+import Mud.Cmds.Util
+import Mud.Data.Misc
+import Mud.Data.State.State
+import Mud.Data.State.Util
 import Mud.Logging hiding (logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
-import Mud.MiscDataTypes
 import Mud.NameResolution
-import Mud.StateDataTypes
-import Mud.StateHelpers
 import Mud.TopLvlDefs
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Logging as L (logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
@@ -56,42 +56,42 @@ import qualified Data.Text.IO as T (readFile)
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
-blowUp = U.blowUp "Mud.Cmds.PlaCmds"
+blowUp = U.blowUp "Mud.Cmds.Pla"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds.PlaCmds"
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Pla"
 
 
 -----
 
 
 logIOEx :: T.Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Cmds.PlaCmds"
+logIOEx = L.logIOEx "Mud.Cmds.Pla"
 
 
 logIOExRethrow :: T.Text -> IOException -> MudStack ()
-logIOExRethrow = L.logIOExRethrow "Mud.Cmds.PlaCmds"
+logIOExRethrow = L.logIOExRethrow "Mud.Cmds.Pla"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Cmds.PlaCmds"
+logNotice = L.logNotice "Mud.Cmds.Pla"
 
 
 logPla :: T.Text -> Id -> T.Text -> MudStack ()
-logPla = L.logPla "Mud.Cmds.PlaCmds"
+logPla = L.logPla "Mud.Cmds.Pla"
 
 
 logPlaExec :: CmdName -> Id -> MudStack ()
-logPlaExec = L.logPlaExec "Mud.Cmds.PlaCmds"
+logPlaExec = L.logPlaExec "Mud.Cmds.Pla"
 
 
 logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
-logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.PlaCmds"
+logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Pla"
 
 
 logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
-logPlaOut = L.logPlaOut "Mud.Cmds.PlaCmds"
+logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
 
 -- ==================================================

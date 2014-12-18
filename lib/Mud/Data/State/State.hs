@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
 {-# LANGUAGE OverloadedStrings, PatternSynonyms, RebindableSyntax, RecordWildCards, TemplateHaskell, ViewPatterns #-}
 
-module Mud.StateDataTypes where
+module Mud.Data.State.State where
 
-import Mud.StateInIORefT
+import Mud.Data.State.StateInIORefT
 import Mud.Util
 
 import Control.Concurrent (ThreadId)

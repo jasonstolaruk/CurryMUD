@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses, TypeFamilies, UndecidableInstances #-}
 
-module Mud.StateInIORefT where
+module Mud.Data.State.StateInIORefT where
 
 import Control.Applicative
 import Control.Monad.Base
