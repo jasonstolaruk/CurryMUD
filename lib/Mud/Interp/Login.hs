@@ -38,36 +38,51 @@ logPla = L.logPla "Mud.Interp.Login"
 -- TODO: Boot a player who tries too many times.
 interpName :: Interp
 interpName (capitalize . T.toLower -> cn) (NoArgs' i mq)
-  | l <- T.length cn, l < 3 || l > 12 = sorryIllegalName mq "Your name must be between three and twelve characters \
-                                                            \long."
-  | T.any (`elem` illegalChars) cn    = sorryIllegalName mq "Your name cannot include any numbers or symbols."
+  | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
+  | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise                         = do
       prompt mq . nl' $ "Your name will be " <> dblQuote cn <> ", is that OK? [yes/no]"
       void . modifyPla i interp $ interpConfirmName cn
   where
     illegalChars    = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-interpName _  (WithArgs _ mq _ _) = sorryIllegalName mq "Your name must be a single word."
+interpName _  (WithArgs _ mq _ _) = promptRetryName mq "Your name must be a single word."
 interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
 
 
-sorryIllegalName :: MsgQueue -> T.Text -> MudStack ()
-sorryIllegalName mq msg = do
-    send mq . nl' . nl $ msg
+promptRetryName :: MsgQueue -> T.Text -> MudStack ()
+promptRetryName mq msg = do
+    send mq . nl' $ if (not . T.null $ msg) then nl msg else ""
     prompt mq "Let's try this again. By what name are you known?"
 
 
 interpConfirmName :: Sing -> Interp
-interpConfirmName s _ (NoArgs' i mq) = do
-    void . modifyEnt i sing $ s
-    initPlaLog i s
-    (views hostName T.pack -> host) <- modifyPla i interp centralDispatch
-    logPla "interpConfirmName" i $ "(new player) logged on from " <> host <> "."
-    notifyArrival i
-    prompt mq . nl' $ ">"
-interpConfirmName s cn p = patternMatchFail "interpConfirmName" [ s, cn, showText p ]
+interpConfirmName s cn (NoArgs' i mq) = case yesNo cn of
+  Just True -> do
+      void . modifyEnt i sing $ s
+      (views hostName T.pack -> host) <- modifyPla i interp centralDispatch
+      initPlaLog i s
+      logPla "interpConfirmName" i $ "(new player) logged on from " <> host <> "."
+      notifyArrival i
+      prompt mq . nl' $ ">"
+  Just False -> do
+      promptRetryName mq ""
+      void . modifyPla i interp $ interpName
+  Nothing -> promptRetryYesNo mq
+interpConfirmName _ _  (WithArgs _ mq _ _) = promptRetryYesNo mq
+interpConfirmName s cn p                   = patternMatchFail "interpConfirmName" [ s, cn, showText p ]
+
+
+yesNo :: T.Text -> Maybe Bool
+yesNo (T.toLower -> a) | a `T.isPrefixOf` "yes" = Just True
+                       | a `T.isPrefixOf` "no"  = Just False
+                       | otherwise              = Nothing
 
 
 notifyArrival :: Id -> MudStack ()
 notifyArrival i = readWSTMVar >>= \ws ->
     let (view sing -> s) = (ws^.entTbl) ! i
     in bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
+
+
+promptRetryYesNo :: MsgQueue -> MudStack ()
+promptRetryYesNo mq = prompt mq . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
