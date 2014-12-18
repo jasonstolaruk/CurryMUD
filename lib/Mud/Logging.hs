@@ -49,19 +49,8 @@ import qualified Data.IntMap.Lazy as IM (elems, lookup)
 import qualified Data.Text as T
 
 
-closeLogs :: MudStack ()
-closeLogs = do
-    logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (view (nonWorldState.noticeLog))
-                                       , fromJust <$> gets (view (nonWorldState.errorLog )) ]
-    (unzip -> (as, qs)) <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
-    mapM_ stopLog         $ nq : eq : qs
-    mapM_ (liftIO . wait) $ na : ea : as
-    liftIO removeAllHandlers
-
-
-stopLog :: LogQueue -> MudStack ()
-stopLog = liftIO . atomically . flip writeTQueue StopLog
+-- ==================================================
+-- Starting logs:
 
 
 initLogging :: MudStack ()
@@ -109,6 +98,47 @@ rotateLog fn = helper `catch` \e -> throwIO (e :: SomeException)
     dropExt           = reverse . drop 4 . reverse
 
 
+initPlaLog :: Id -> Sing -> MudStack ()
+initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
+    q <- liftIO newTQueueIO
+    a <- liftIO . spawnLogger fn INFO ("currymud." <> n) infoM $ q
+    modifyNWS plaLogTblTMVar $ \plt ->
+        plt & at i ?~ (a, q)
+
+
+-- ==================================================
+-- Stopping logs:
+
+
+closeLogs :: MudStack ()
+closeLogs = do
+    logNotice "Mud.Logging" "closeLogs" "closing the logs."
+    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (view (nonWorldState.noticeLog))
+                                       , fromJust <$> gets (view (nonWorldState.errorLog )) ]
+    (unzip -> (as, qs)) <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
+    mapM_ stopLog         $ nq : eq : qs
+    mapM_ (liftIO . wait) $ na : ea : as
+    liftIO removeAllHandlers
+
+
+stopLog :: LogQueue -> MudStack ()
+stopLog = liftIO . atomically . flip writeTQueue StopLog
+
+
+closePlaLog :: Id -> MudStack ()
+closePlaLog = flip doIfLogging stopLog
+
+
+doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
+doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
+  Nothing     -> return ()
+  Just (_, q) -> f q
+
+
+-- ==================================================
+-- Logging messages:
+
+
 registerMsg :: T.Text -> LogQueue -> MudStack ()
 registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
 
@@ -143,22 +173,8 @@ logIOExRethrow modName funName e = do
     liftIO . throwIO $ e
 
 
-initPlaLog :: Id -> Sing -> MudStack ()
-initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
-    q <- liftIO newTQueueIO
-    a <- liftIO . spawnLogger fn INFO ("currymud." <> n) infoM $ q
-    modifyNWS plaLogTblTMVar $ \plt ->
-        plt & at i ?~ (a, q)
-
-
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
 logPla modName funName i msg = doIfLogging i $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
-
-
-doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
-  Nothing     -> return ()
-  Just (_, q) -> f q
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
@@ -183,7 +199,3 @@ massLogPla modName funName msg = readTMVarInNWS plaLogTblTMVar >>= helper
   where
     helper (map snd . IM.elems -> logQueues) =
         forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
-
-
-closePlaLog :: Id -> MudStack ()
-closePlaLog = flip doIfLogging stopLog

@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- This module is considered to have sufficient test coverage as of 2014-09-13.
-
 module Mud.TheWorld.TheWorld ( initMudState
                              , initWorld ) where
 
@@ -28,7 +26,6 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 
 -- ==================================================
--- Initializing and creating the world:
 
 
 initMudState :: IO MudState
