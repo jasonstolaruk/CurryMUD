@@ -16,6 +16,12 @@ import Test.Tasty.QuickCheck as QC (testProperty)
 import qualified Data.Text as T
 
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
+
+
 main :: IO ()
 main = defaultMain tests
 
@@ -28,28 +34,32 @@ tests = testGroup "tests" [ propertyTests, unitTests ]
 
 
 propertyTests :: TestTree
-propertyTests = testGroup "property tests" [ propTestsStateHelpers, propTestsTheWorld, propTestsUtil ]
+propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util
+                                           , propTests_Mud_TheWorld_TheWorld
+                                           , propTests_Mud_Util ]
 
 
 -- --------------------------------------------------
 
 
-propTestsStateHelpers :: TestTree
-propTestsStateHelpers = testGroup "property tests StateHelpers" [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
+propTests_Mud_Data_State_Util :: TestTree
+propTests_Mud_Data_State_Util = testGroup "property tests Mud.Data.State.Util"
+    [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
 
 
 -- --------------------------------------------------
 
 
-propTestsTheWorld :: TestTree
-propTestsTheWorld = testGroup "property tests TheWorld" [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
+propTests_Mud_TheWorld_TheWorld :: TestTree
+propTests_Mud_TheWorld_TheWorld = testGroup "property tests Mud.TheWorld.TheWorld"
+    [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
 
 
 -- --------------------------------------------------
 
 
-propTestsUtil :: TestTree
-propTestsUtil = testGroup "property tests Util"
+propTests_Mud_Util :: TestTree
+propTests_Mud_Util = testGroup "property tests Mud.Util"
     [ QC.testProperty "prop_wordWrap" prop_wordWrap
     , QC.testProperty "prop_wordWrapIndent_wraps" prop_wordWrapIndent_wraps
     , QC.testProperty "prop_wordWrapIndent_indents" prop_wordWrapIndent_indents
@@ -72,14 +82,33 @@ propTestsUtil = testGroup "property tests Util"
 
 
 unitTests :: TestTree
-unitTests = testGroup "unit tests" [ unitTestsMiscDataTypes, unitTestsUtil ]
+unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc, unitTests_Mud_Util ]
 
 
 -- --------------------------------------------------
 
 
-unitTestsUtil :: TestTree
-unitTestsUtil = testGroup "unit tests Util"
+unitTests_Mud_Data_Misc :: TestTree
+unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
+    [ testCase "serializeStdDesig"      $ test_serializeStdDesig      @?=
+        quoteWith std (T.intercalate d [ "Taro", "False", "mhuman", "50", "[50,51,52,53,54,55]" ])
+    , testCase "serializeNonStdDesig"   $ test_serializeNonStdDesig   @?=
+        quoteWith non ("Taro" <> d <> "A male human")
+    , testCase "deserializeStdDesig"    $ test_deserializeStdDesig    @?=
+        StdDesig Nothing True "fhuman" 55 [55,54..50]
+    , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=
+        NonStdDesig "Hanako" "A female human" ]
+  where
+    std = T.singleton stdDesigDelimiter
+    non = T.singleton nonStdDesigDelimiter
+    d   = T.singleton desigDelimiter
+
+
+-- --------------------------------------------------
+
+
+unitTests_Mud_Util :: TestTree
+unitTests_Mud_Util = testGroup "unit tests Mud.Util"
     [ testCase "stripControl"                   $ test_stripControl                   @?= "test"
     , testCase "stripTelnet_null"               $ test_stripTelnet_null               @?= ""
     , testCase "stripTelnet_telnetCodes"        $ test_stripTelnet_telnetCodes        @?= ""
@@ -93,22 +122,3 @@ unitTestsUtil = testGroup "unit tests Util"
     , testCase "stripTelnet_malformed4"         $ test_stripTelnet_malformed4         @?= "test"
     , testCase "stripTelnet_malformed5"         $ test_stripTelnet_malformed5         @?= "test"
     , testCase "stripTelnet_malformed6"         $ test_stripTelnet_malformed6         @?= "test" ]
-
-
--- --------------------------------------------------
-
-
-unitTestsMiscDataTypes :: TestTree
-unitTestsMiscDataTypes = testGroup "unit tests MiscDataTypes"
-    [ testCase "serializeStdDesig"      $ test_serializeStdDesig      @?=
-        quoteWith std (T.intercalate d [ "Taro", "False", "mhuman", "50", "[50,51,52,53,54,55]" ])
-    , testCase "serializeNonStdDesig"   $ test_serializeNonStdDesig   @?=
-        quoteWith non ("Taro" <> d <> "A male human")
-    , testCase "deserializeStdDesig"    $ test_deserializeStdDesig    @?=
-        StdDesig Nothing True "fhuman" 55 [55,54..50]
-    , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=
-        NonStdDesig "Hanako" "A female human" ]
-  where
-    std = T.singleton stdDesigDelimiter
-    non = T.singleton nonStdDesigDelimiter
-    d   = T.singleton desigDelimiter
