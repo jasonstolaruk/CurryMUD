@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 
-module MudTests.TestHelpers where
+module MudTests.TestUtil where
 
-import Mud.StateDataTypes
-import Mud.StateInIORefT
+import Mud.Data.State.State
+import Mud.Data.State.StateInIORefT
 import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs
 

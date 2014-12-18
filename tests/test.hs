@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import Mud.MiscDataTypes
+import Mud.Data.Misc
 import Mud.TopLvlDefs
 import Mud.Util
-import MudTests.MiscDataTypesTests
-import MudTests.StateHelpersTests
-import MudTests.TheWorldTests
-import MudTests.UtilTests
+import MudTests.Data.Misc
+import MudTests.Data.State.Util
+import MudTests.TheWorld.TheWorld
+import MudTests.Util
 
 import Data.Monoid ((<>))
 import Test.Tasty (TestTree, defaultMain, testGroup)

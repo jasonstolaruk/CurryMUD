@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module MudTests.MiscDataTypesTests where
+module MudTests.Data.Misc where
 
-import Mud.MiscDataTypes
+import Mud.Data.Misc
 import Mud.TopLvlDefs
 import Mud.Util
 

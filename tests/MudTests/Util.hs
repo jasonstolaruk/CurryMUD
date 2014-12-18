@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module MudTests.UtilTests where
+module MudTests.Util where
 
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
-import MudTests.TestHelpers
+import MudTests.TestUtil
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))

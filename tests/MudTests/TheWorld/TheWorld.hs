@@ -1,10 +1,10 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 
-module MudTests.TheWorldTests where
+module MudTests.TheWorld.TheWorld where
 
-import Mud.StateDataTypes
-import Mud.StateHelpers
-import MudTests.TestHelpers
+import Mud.Data.State.State
+import Mud.Data.State.Util
+import MudTests.TestUtil
 
 import Control.Lens.Operators ((^.))
 import Data.Functor ((<$>))
