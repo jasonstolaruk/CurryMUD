@@ -34,7 +34,6 @@ library
                        Mud.Cmds.PlaCmds,
                        Mud.Cmds.WizCmds,
                        Mud.Color,
-                       Mud.Ids,
                        Mud.Interp.CentralDispatch
                        Mud.Interp.Login,
                        Mud.Logging,
@@ -43,7 +42,8 @@ library
                        Mud.StateDataTypes,
                        Mud.StateHelpers,
                        Mud.StateInIORefT,
-                       Mud.TheWorld,
+                       Mud.TheWorld.Ids,
+                       Mud.TheWorld.TheWorld,
                        Mud.Threads,
                        Mud.TopLvlDefs,
                        Mud.Util

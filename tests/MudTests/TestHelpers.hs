@@ -4,7 +4,7 @@ module MudTests.TestHelpers where
 
 import Mud.StateDataTypes
 import Mud.StateInIORefT
-import Mud.TheWorld
+import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs
 
 import Control.Monad (replicateM)

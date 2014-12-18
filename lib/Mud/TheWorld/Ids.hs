@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
-module Mud.Ids where
+module Mud.TheWorld.Ids where
 
 
 iHill = 0 :: Int

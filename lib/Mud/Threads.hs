@@ -5,13 +5,13 @@ module Mud.Threads (listenWrapper) where
 
 import Mud.Cmds.PlaCmds
 import Mud.Color
-import Mud.Ids
 import Mud.Interp.Login
 import Mud.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.StateDataTypes
 import Mud.StateHelpers
 import Mud.StateInIORefT
-import Mud.TheWorld
+import Mud.TheWorld.Ids
+import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs
 import Mud.Util
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)

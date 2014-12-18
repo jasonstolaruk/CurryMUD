@@ -3,12 +3,12 @@
 
 -- This module is considered to have sufficient test coverage as of 2014-09-13.
 
-module Mud.TheWorld ( initMudState
-                    , initWorld ) where
+module Mud.TheWorld.TheWorld ( initMudState
+                             , initWorld ) where
 
-import Mud.Ids
 import Mud.StateDataTypes
 import Mud.StateHelpers
+import Mud.TheWorld.Ids
 import qualified Mud.Logging as L (logNotice)
 
 import Control.Applicative ((<$>), (<*>))
