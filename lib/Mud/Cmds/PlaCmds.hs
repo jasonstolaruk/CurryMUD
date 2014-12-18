@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
+-- TODO: The exported functions are used by what is presently called "Cmds". Move these into their own module?
 module Mud.Cmds.PlaCmds ( getRecordUptime
                         , getUptime
                         , handleEgress

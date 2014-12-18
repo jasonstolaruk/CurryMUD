@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings, ParallelListComp, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.DebugCmds (debugCmds) where
 

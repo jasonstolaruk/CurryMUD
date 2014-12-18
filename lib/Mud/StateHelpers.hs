@@ -47,6 +47,7 @@ module Mud.StateHelpers ( BothGramNos
                         , onNWS
                         , onWS
                         , parsePCDesig
+                        , prompt
                         , putArm
                         , putCloth
                         , putCon
@@ -298,6 +299,10 @@ modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
 
 -- ============================================================
 -- Helper functions relating to output:
+
+
+prompt :: MsgQueue -> T.Text -> MudStack ()
+prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 send :: MsgQueue -> T.Text -> MudStack ()

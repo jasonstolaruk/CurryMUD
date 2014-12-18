@@ -1,23 +1,20 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-} -- TODO: Check.
 
 module Mud.Cmds.Cmds (listenWrapper) where
 
-import Mud.Cmds.DebugCmds
 import Mud.Cmds.PlaCmds
-import Mud.Cmds.WizCmds
 import Mud.Color
 import Mud.Ids
+import Mud.Interp.Login
 import Mud.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
-import Mud.MiscDataTypes
 import Mud.StateDataTypes
 import Mud.StateHelpers
 import Mud.StateInIORefT
 import Mud.TheWorld
 import Mud.TopLvlDefs
-import Mud.Util hiding (patternMatchFail)
+import Mud.Util
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
-import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId)
@@ -28,7 +25,6 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
-import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Monad (forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -54,13 +50,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- 4. Confirm that your functions are defined in the order that they are referenced (DONE for this module and all Cmd modules).
 -- 5. Consider how to split your code into more modules, possibly with more tiers.
 -- 6. Rename (and move?) this module.
-
-
-patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds"
-
-
------
 
 
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
@@ -231,10 +220,6 @@ dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExH
     takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
 
 
-prompt :: MsgQueue -> T.Text -> MudStack ()
-prompt mq = liftIO . atomically . writeTQueue mq . Prompt
-
-
 -- ==================================================
 -- "Server" threads:
 
@@ -323,69 +308,3 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
 
 receiveExHandler :: Id -> SomeException -> MudStack ()
 receiveExHandler = plaThreadExHandler "receive"
-
-
--- ==================================================
--- Interpreters:
-
-
--- TODO: Boot a player who tries too many times.
-interpName :: Interp
-interpName (capitalize . T.toLower -> cn) (NoArgs' i mq)
-  | l <- T.length cn, l < 3 || l > 12 = sorryIllegalName mq "Your name must be between three and twelve characters \
-                                                            \long."
-  | T.any (`elem` illegalChars) cn    = sorryIllegalName mq "Your name cannot include any numbers or symbols."
-  | otherwise                         = do
-      prompt mq . nl' $ "Your name will be " <> dblQuote cn <> ", is that OK? [yes/no]"
-      void . modifyPla i interp $ interpConfirmName cn
-  where
-    illegalChars    = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-interpName _  (WithArgs _ mq _ _) = sorryIllegalName mq "Your name must be a single word."
-interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
-
-
-sorryIllegalName :: MsgQueue -> T.Text -> MudStack ()
-sorryIllegalName mq msg = do
-    send mq . nl' . nl $ msg
-    prompt mq "Let's try this again. By what name are you known?"
-
-
-interpConfirmName :: Sing -> Interp
-interpConfirmName s _ (NoArgs' i mq) = do
-    void . modifyEnt i sing $ s
-    initPlaLog i s
-    (T.pack . view hostName -> host) <- modifyPla i interp centralDispatch
-    logPla "interpName" i $ "(new player) logged on from " <> host <> "."
-    notifyArrival i
-    prompt mq . nl' $ ">"
-interpConfirmName s cn p = patternMatchFail "interpConfirmName" [ s, cn, showText p ]
-
-
-notifyArrival :: Id -> MudStack ()
-notifyArrival i = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i
-    in bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
-
-
-centralDispatch :: Interp
-centralDispatch cn p@(WithArgs i mq _ _) = do
-    findAction i cn >>= maybe sorry (\act -> act p)
-    prompt mq ">"
-  where
-    sorry = send mq . nlnl $ "What?"
-centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]
-
-
-findAction :: Id -> CmdName -> MudStack (Maybe Action)
-findAction i (T.toLower -> cn) = readWSTMVar >>= \ws ->
-    readTMVarInNWS plaTblTMVar >>= \((! i) -> p) ->
-        let (view rmId -> ri) = (ws^.pcTbl) ! i
-            r                 = (ws^.rmTbl) ! ri
-            cmds              = mkCmdListWithNonStdRmLinks r ++
-                                (if p^.isWiz then wizCmds   else []) ++
-                                (if isDebug  then debugCmds else [])
-        in maybe (return Nothing)
-                 (\fn -> return . Just . findActionForFullName fn $ cmds)
-                 (findFullNameForAbbrev cn [ cmdName cmd | cmd <- cmds ])
-  where
-    findActionForFullName fn = action . head . filter ((== fn) . cmdName)

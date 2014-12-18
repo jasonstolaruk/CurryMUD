@@ -36,6 +36,8 @@ library
                        Mud.Cmds.WizCmds,
                        Mud.Color,
                        Mud.Ids,
+                       Mud.Interp.CentralDispatch
+                       Mud.Interp.Login,
                        Mud.Logging,
                        Mud.MiscDataTypes,
                        Mud.NameResolution,
