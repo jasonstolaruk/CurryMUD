@@ -242,48 +242,15 @@ padOrTrunc _ t = t
 -- Misc.:
 
 
-nl :: T.Text -> T.Text
-nl = (<> "\n")
+aOrAn :: T.Text -> T.Text
+aOrAn (T.strip -> t) | T.null t             = ""
+                     | isVowel . T.head $ t = "an " <> t
+                     | otherwise            = "a "  <> t
 
 
-nlnl :: T.Text -> T.Text
-nlnl = nl . nl
-
-
-nl' :: T.Text -> T.Text
-nl' = ("\n" <>)
-
-
-stripControl :: T.Text -> T.Text
-stripControl = T.filter (\c -> c > '\31' && c < '\127')
-
-
-stripTelnet :: T.Text -> T.Text
-stripTelnet t
-  | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.span (/= telnetIAC) t = left <> helper right
-  | otherwise = t
-  where
-    helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest))))
-      | x == telnetSB = case T.span (/= telnetSE) rest of (_, "")              -> ""
-                                                          (_, T.tail -> rest') -> stripTelnet rest'
-      | otherwise     = stripTelnet rest
-    helper _ = ""
-
-
-showText :: (Show a) => a -> T.Text
-showText = T.pack . show
-
-
-notInfixOf :: T.Text -> T.Text -> Bool
-notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
-
-
-headTail :: [a] -> (a, [a])
-headTail = (,) <$> head <*> tail
-
-
-headTail' :: T.Text -> (Char, T.Text)
-headTail' txt = (T.head txt, T.tail txt)
+appendIfUnique :: (Eq a) => [a] -> a -> [a]
+xs `appendIfUnique` x | x `elem` xs = xs
+                      | otherwise   = xs ++ [x]
 
 
 capitalize :: T.Text -> T.Text
@@ -296,26 +263,6 @@ uncapitalize = capsHelper toLower
 
 capsHelper :: (Char -> Char) -> T.Text -> T.Text
 capsHelper f (headTail' -> (h, t)) = (T.singleton . f $ h)  <> t
-
-
-aOrAn :: T.Text -> T.Text
-aOrAn (T.strip -> t) | T.null t             = ""
-                     | isVowel . T.head $ t = "an " <> t
-                     | otherwise            = "a "  <> t
-
-
-isVowel :: Char -> Bool
-isVowel = (`elem` "aeiou")
-
-
-findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
-findFullNameForAbbrev needle hay = guard (not . null $ res) >> (Just . head $ res)
-  where
-    res = sort . filter (needle `T.isPrefixOf`) $ hay
-
-
-mkCountList :: (Eq a) => [a] -> [Int]
-mkCountList xs = map (`countOcc` xs) xs
 
 
 countOcc :: (Eq a) => a -> [a] -> Int
@@ -332,9 +279,42 @@ dropBlanks ("":xs) =     dropBlanks xs
 dropBlanks ( x:xs) = x : dropBlanks xs
 
 
-appendIfUnique :: (Eq a) => [a] -> a -> [a]
-xs `appendIfUnique` x | x `elem` xs = xs
-                      | otherwise   = xs ++ [x]
+eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
+eitherRet = flip either return
+
+
+findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
+findFullNameForAbbrev needle hay = guard (not . null $ res) >> (Just . head $ res)
+  where
+    res = sort . filter (needle `T.isPrefixOf`) $ hay
+
+
+grepTextList :: T.Text -> [T.Text] -> [T.Text]
+grepTextList needle = filter (needle `T.isInfixOf`)
+
+
+headTail :: [a] -> (a, [a])
+headTail = (,) <$> head <*> tail
+
+
+headTail' :: T.Text -> (Char, T.Text)
+headTail' txt = (T.head txt, T.tail txt)
+
+
+isVowel :: Char -> Bool
+isVowel = (`elem` "aeiou")
+
+
+maybeRet :: Monad m => m a -> Maybe a -> m a
+maybeRet dflt = maybe dflt return
+
+
+maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
+maybeVoid = maybe (return ())
+
+
+mkCountList :: (Eq a) => [a] -> [Int]
+mkCountList xs = map (`countOcc` xs) xs
 
 
 mkOrdinal :: Int -> T.Text
@@ -347,21 +327,41 @@ mkOrdinal (showText -> n) = n <> case T.last n of '1' -> "st"
                                                   _   -> "th"
 
 
-grepTextList :: T.Text -> [T.Text] -> [T.Text]
-grepTextList needle = filter (needle `T.isInfixOf`)
+nl :: T.Text -> T.Text
+nl = (<> "\n")
+
+
+nlnl :: T.Text -> T.Text
+nlnl = nl . nl
+
+
+nl' :: T.Text -> T.Text
+nl' = ("\n" <>)
+
+
+notInfixOf :: T.Text -> T.Text -> Bool
+notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
 
 
 reverseLookup :: (Eq v) => v -> M.Map k v -> k
 reverseLookup v = fst . head . filter ((== v) . snd) . M.assocs
 
 
-maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
-maybeVoid = maybe (return ())
+showText :: (Show a) => a -> T.Text
+showText = T.pack . show
 
 
-maybeRet :: Monad m => m a -> Maybe a -> m a
-maybeRet dflt = maybe dflt return
+stripControl :: T.Text -> T.Text
+stripControl = T.filter (\c -> c > '\31' && c < '\127')
 
 
-eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
-eitherRet = flip either return
+stripTelnet :: T.Text -> T.Text
+stripTelnet t
+  | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.span (/= telnetIAC) t = left <> helper right
+  | otherwise = t
+  where
+    helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest))))
+      | x == telnetSB = case T.span (/= telnetSE) rest of (_, "")              -> ""
+                                                          (_, T.tail -> rest') -> stripTelnet rest'
+      | otherwise     = stripTelnet rest
+    helper _ = ""
