@@ -11,6 +11,12 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-- ==================================================
+
+
 test_serializeStdDesig :: T.Text
 test_serializeStdDesig = serialize StdDesig { stdPCEntSing = Just "Taro"
                                             , isCap        = False
