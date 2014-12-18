@@ -9,8 +9,7 @@ import MudTests.TestUtil
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens (_1, _2, both, over, to)
-import Control.Lens.Operators ((^.))
+import Control.Lens (both, over)
 import Data.Char (chr, isDigit, isSpace)
 import Data.List (elemIndices, group, sort)
 import Data.Maybe (isNothing)
@@ -25,7 +24,7 @@ import qualified Data.Text as T
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "UtilTests"
+patternMatchFail = U.patternMatchFail "MudTests.Util"
 
 
 -- ==================================================
@@ -150,7 +149,7 @@ prop_mkCountList :: [Int] -> Bool
 prop_mkCountList xs = mkCountList xs == mkCountList' xs
   where
     mkCountList' xs'@(group . sort -> grouped) | ((`map` grouped) -> elemCountList) <- (,) <$> head <*> length =
-      let getCountForElem x = (head . filter (^._1.to (== x)) $ elemCountList)^._2
+      let getCountForElem x = snd (head . filter ((== x) . fst) $ elemCountList)
       in map getCountForElem xs'
 
 
