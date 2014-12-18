@@ -57,17 +57,15 @@ promptRetryName mq msg = do
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs' i mq) = case yesNo cn of
-  Just True -> do
+  Just True  -> do
       void . modifyEnt i sing $ s
       (views hostName T.pack -> host) <- modifyPla i interp centralDispatch
       initPlaLog i s
       logPla "interpConfirmName" i $ "(new player) logged on from " <> host <> "."
       notifyArrival i
       prompt mq . nl' $ ">"
-  Just False -> do
-      promptRetryName mq ""
-      void . modifyPla i interp $ interpName
-  Nothing -> promptRetryYesNo mq
+  Just False -> promptRetryName mq "" >> (void . modifyPla i interp $ interpName)
+  Nothing    -> promptRetryYesNo mq
 interpConfirmName _ _  (WithArgs _ mq _ _) = promptRetryYesNo mq
 interpConfirmName s cn p                   = patternMatchFail "interpConfirmName" [ s, cn, showText p ]
 

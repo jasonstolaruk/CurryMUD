@@ -58,7 +58,8 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world."
 
-    putRm iHill [ iGP1, iLongSword, iKewpie1, iBag1, iClub, iSword1, iSword2 ] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." 0 [ StdLink East iCliff ])
+    putRm iWelcome [] mempty (Rm "The welcome room" "Ad-hoc PCs created for new connections are placed here." 0 [ StdLink Down iHill ])
+    putRm iHill [ iGP1, iLongSword, iKewpie1, iBag1, iClub, iSword1, iSword2 ] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." 0 [ StdLink Up iWelcome, StdLink East iCliff ])
     putRm iCliff [ iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4 ] mempty (Rm "The cliff" "You have reached the edge of a cliff. There is a sizeable hole in the ground. Next to the hole is a small hut." 0 [ StdLink West iHill, StdLink Down iHole, NonStdLink "hut" iHut (sformat $ stext % " enters the hut.") (sformat $ stext % " enters the hut.") ])
     putRm iHole [ iNeck1, iNeck2, iNeck3, iNeck4, iHelm ] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. It's damp and smells of soil." 0 [ StdLink West iVoid, StdLink Up iCliff ])
     putRm iVoid [ iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3 ] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." 0 [ StdLink East iHole ])

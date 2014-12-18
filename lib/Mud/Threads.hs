@@ -165,13 +165,13 @@ adHoc mq host = do
         -----
         let i   = getUnusedId ws
         -----
-        let e   = Ent i Nothing (showText r <> showText i) "" "(Player-generated description here.)" 0
+        let e   = Ent i Nothing (showText r <> showText i) "" "You see an ad-hoc player character." 0
         let is  = []
         let co  = mempty
         let em  = M.empty
         let m   = Mob s 10 10 10 10 10 10 0 RHand
-        let pc  = PC iHill r [] []
-        let ris = (ws^.invTbl) ! iHill ++ [i]
+        let pc  = PC iWelcome r [] []
+        let ris = (ws^.invTbl) ! iWelcome ++ [i]
         -----
         let pla = Pla True host 80 interpName
         -----
@@ -185,7 +185,7 @@ adHoc mq host = do
         let mqt' = mqt & at i ?~ mq
         let pt'  = pt  & at i ?~ pla
         -----
-        putTMVar wsTMVar $ ws' & invTbl.at iHill ?~ sortInv ws' ris
+        putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ sortInv ws' ris
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         -----
