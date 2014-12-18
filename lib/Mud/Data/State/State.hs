@@ -259,18 +259,6 @@ data Rm = Rm { _rmName  :: !T.Text
              , _rmLinks :: ![RmLink] } deriving Eq
 
 
-data LinkDir = North
-             | Northeast
-             | East
-             | Southeast
-             | South
-             | Southwest
-             | West
-             | Northwest
-             | Up
-             | Down deriving (Eq, Show)
-
-
 type LinkName = T.Text
 
 
@@ -290,6 +278,18 @@ instance Eq RmLink where
                                                            , om "" == om' ""
                                                            , dm "" == dm' "" = True
   _                        == _                            = False
+
+
+data LinkDir = North
+             | Northeast
+             | East
+             | Southeast
+             | South
+             | Southwest
+             | West
+             | Northwest
+             | Up
+             | Down deriving (Eq, Show)
 
 
 -- ==================================================
@@ -374,6 +374,20 @@ data Msg = FromServer T.Text
 
 
 -- ==================================================
+-- Player:
+
+
+type CmdName = T.Text
+type Interp  = (CmdName -> ActionParams -> MudStack ())
+
+
+data Pla = Pla { _isWiz    :: !Bool
+               , _hostName :: !HostName
+               , _columns  :: !Int
+               , _interp   :: !Interp }
+
+
+-- ==================================================
 -- Action parameters:
 
 
@@ -440,20 +454,6 @@ pattern AdviseOneArg a <- WithArgs _ _ _ [a]
 
 
 pattern Advising mq cols <- WithArgs _ mq cols _
-
-
--- ==================================================
--- Player:
-
-
-type CmdName = T.Text
-type Interp  = (CmdName -> ActionParams -> MudStack ())
-
-
-data Pla = Pla { _isWiz    :: !Bool
-               , _hostName :: !HostName
-               , _columns  :: !Int
-               , _interp   :: !Interp }
 
 
 -- ==================================================
