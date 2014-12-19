@@ -39,7 +39,7 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
--- TODO: Boot a player who tries too many times.
+-- TODO: Boot a player who tries too many times?
 interpName :: Interp
 interpName (capitalize . T.toLower -> cn) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
@@ -48,7 +48,7 @@ interpName (capitalize . T.toLower -> cn) (NoArgs' i mq)
       prompt mq . nl' $ "Your name will be " <> dblQuote cn <> ", is that OK? [yes/no]"
       void . modifyPla i interp $ interpConfirmName cn
   where
-    illegalChars    = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
+    illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
 interpName _  (WithArgs _ mq _ _) = promptRetryName mq "Your name must be a single word."
 interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
 

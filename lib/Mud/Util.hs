@@ -81,6 +81,7 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 -- Word wrapping and indenting:
 
 
+-- TODO: Consider how to wrap lines with ANSI color codes.
 wordWrap :: Int -> T.Text -> [T.Text]
 wordWrap cols t
   | T.null afterMax                                 = [t]
