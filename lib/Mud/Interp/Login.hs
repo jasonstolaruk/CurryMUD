@@ -9,14 +9,18 @@ import Mud.Data.State.State
 import Mud.Data.State.Util
 import Mud.Interp.CentralDispatch
 import Mud.Logging hiding (logPla)
+import Mud.TheWorld.Ids
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logPla)
 import qualified Mud.Util as U (patternMatchFail)
 
+import Control.Concurrent.STM.TMVar (putTMVar)
+import Control.Lens (at)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((^.))
+import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Monad (void)
 import Data.IntMap.Lazy ((!))
+import Data.List (delete)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
@@ -56,16 +60,33 @@ promptRetryName mq msg = do
 
 
 interpConfirmName :: Sing -> Interp
-interpConfirmName s cn (NoArgs' i mq) = case yesNo cn of
+interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True  -> do
       void . modifyEnt i sing $ s
       (views hostName T.pack -> host) <- modifyPla i interp centralDispatch
       initPlaLog i s
       logPla "interpConfirmName" i $ "(new player) logged on from " <> host <> "."
+      movePC
       notifyArrival i
-      prompt mq . nl' $ ">"
+      send mq . nl $ ""
+      look ActionParams { plaId       = i
+                        , plaMsgQueue = mq
+                        , plaCols     = cols
+                        , args        = [] }
+      prompt mq ">"
   Just False -> promptRetryName mq "" >> (void . modifyPla i interp $ interpName)
   Nothing    -> promptRetryYesNo mq
+  where
+    movePC = onWS $ \(t, ws) ->
+        let p         = (ws^.pcTbl)  ! i
+            p'        = p & rmId .~ iHill
+            originIs  = (ws^.invTbl) ! iWelcome
+            originIs' = i `delete` originIs
+            destIs    = (ws^.invTbl) ! iHill
+            destIs'   = sortInv ws $ destIs ++ [i]
+        in putTMVar t (ws & pcTbl.at  i        ?~ p'
+                          & invTbl.at iWelcome ?~ originIs'
+                          & invTbl.at iHill    ?~ destIs')
 interpConfirmName _ _  (WithArgs _ mq _ _) = promptRetryYesNo mq
 interpConfirmName s cn p                   = patternMatchFail "interpConfirmName" [ s, cn, showText p ]
 

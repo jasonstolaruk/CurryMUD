@@ -4,6 +4,7 @@
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
                     , handleEgress
+                    , look
                     , mkCmdListWithNonStdRmLinks
                     , mkSerializedNonStdDesig
                     , plaCmds
@@ -192,18 +193,18 @@ tryMove i mq cols dir = helper >>= \case
             p                = (ws^.pcTbl)  ! i
             ri               = p^.rmId
             r                = (ws^.rmTbl)  ! ri
-            ris              = (ws^.invTbl) ! ri
+            originIs         = (ws^.invTbl) ! ri
         in case findExit r dir of
           Nothing -> putTMVar t ws >> (return . Left $ sorry)
           Just (linkTxt, ri', mom, mdm)
             | p'          <- p & rmId .~ ri'
             , r'          <- (ws^.rmTbl)  ! ri'
-            , originIs    <- i `delete` ris
+            , originIs'   <- i `delete` originIs
             , destIs      <- (ws^.invTbl) ! ri'
             , destIs'     <- sortInv ws $ destIs ++ [i]
-            , originPis   <- findPCIds ws originIs
+            , originPis   <- findPCIds ws originIs'
             , destPis     <- findPCIds ws destIs
-            , msgAtOrigin <- let d = serialize . mkStdDesig i ws s True $ ris
+            , msgAtOrigin <- let d = serialize . mkStdDesig i ws s True $ originIs
                              in nlnl $ case mom of
                                Nothing -> T.concat [ d, " ", verb, " ", expandLinkName dir, "." ]
                                Just f  -> f d
@@ -220,7 +221,7 @@ tryMove i mq cols dir = helper >>= \case
                                       , "." ]
             -> do
                 putTMVar t (ws & pcTbl.at  i   ?~ p'
-                               & invTbl.at ri  ?~ originIs
+                               & invTbl.at ri  ?~ originIs'
                                & invTbl.at ri' ?~ destIs')
                 return . Right $ (logMsg, [ (msgAtOrigin, originPis), (msgAtDest, destPis) ])
     sorry | dir `elem` stdLinkNames = "You can't go that way."
@@ -719,12 +720,6 @@ intro (LowerNub' i as) = do
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
 intro p = patternMatchFail "intro" [ showText p ]
-
-
-mkReflexive :: Sex -> T.Text
-mkReflexive Male   = "himself"
-mkReflexive Female = "herself"
-mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
 
 
 -----

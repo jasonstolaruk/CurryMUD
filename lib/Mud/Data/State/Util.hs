@@ -27,6 +27,8 @@ module Mud.Data.State.Util ( BothGramNos
                            , mkNTBroadcast
                            , mkPlur
                            , mkPlurFromBoth
+                           , mkPronoun
+                           , mkReflexive
                            , mkUnknownPCEntName
                            , modifyArm
                            , modifyEnt
@@ -474,6 +476,18 @@ type BothGramNos = (Sing, Plur)
 mkPlurFromBoth :: BothGramNos -> Plur
 mkPlurFromBoth (s, "") = s <> "s"
 mkPlurFromBoth (_, p ) = p
+
+
+mkPronoun :: Sex -> T.Text
+mkPronoun Male   = "he"
+mkPronoun Female = "she"
+mkPronoun s      = patternMatchFail "mkPronoun" [ showText s ]
+
+
+mkReflexive :: Sex -> T.Text
+mkReflexive Male   = "himself"
+mkReflexive Female = "herself"
+mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
 
 
 mkUnknownPCEntName :: Id -> WorldState -> T.Text

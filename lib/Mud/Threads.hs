@@ -163,17 +163,18 @@ adHoc mq host = do
     liftIO . atomically $ do
         (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
         -----
-        let i   = getUnusedId ws
+        let i    = getUnusedId ws
         -----
-        let e   = Ent i Nothing (showText r <> showText i) "" "You see an ad-hoc player character." 0
-        let is  = []
-        let co  = mempty
-        let em  = M.empty
-        let m   = Mob s 10 10 10 10 10 10 0 RHand
-        let pc  = PC iWelcome r [] []
-        let ris = (ws^.invTbl) ! iWelcome ++ [i]
+        let desc = capitalize $ mkPronoun s <> " is an ad-hoc player character."
+        let e    = Ent i Nothing (showText r <> showText i) "" desc 0
+        let is   = []
+        let co   = mempty
+        let em   = M.empty
+        let m    = Mob s 10 10 10 10 10 10 0 RHand
+        let pc   = PC iWelcome r [] []
+        let ris  = (ws^.invTbl) ! iWelcome ++ [i]
         -----
-        let pla = Pla True host 80 interpName
+        let pla  = Pla True host 80 interpName
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
