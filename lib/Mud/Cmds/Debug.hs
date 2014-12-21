@@ -78,7 +78,6 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
     , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
                                                                                \put into a sack on the ground." }
-    , Cmd { cmdName = prefixDebugCmd "stop", action = debugStop, cmdDesc = "Stop all server threads." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
     , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." } ]
@@ -285,14 +284,6 @@ debugRemPut p = withoutArgs debugRemPut p
 
 fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
 fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
-
-
------
-
-
-debugStop :: Action
-debugStop (NoArgs' i mq) = logPlaExec (prefixDebugCmd "stop") i >> ok mq >> massMsg StopThread
-debugStop p              = withoutArgs debugStop p
 
 
 -----

@@ -372,7 +372,6 @@ data Msg = Dropped
          | Quit
          | Shutdown
          | SilentBoot
-         | StopThread
 
 
 -- ==================================================

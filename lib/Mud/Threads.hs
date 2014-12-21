@@ -237,7 +237,6 @@ server h i mq itq = (registerThread . Server $ i) >> loop `catch` serverExHandle
       Quit           -> cowbye h                      >> sayonara i itq
       Shutdown       -> shutDown                      >> loop
       SilentBoot     ->                                  sayonara i itq
-      StopThread     -> return ()
 
 
 serverExHandler :: Id -> SomeException -> MudStack ()
@@ -293,7 +292,7 @@ cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = massMsg StopThread >> commitSuicide
+shutDown = massMsg SilentBoot >> commitSuicide
   where
     commitSuicide = do
         liftIO . void . forkIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
