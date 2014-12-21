@@ -22,7 +22,7 @@ import qualified Mud.Logging as L (logIOEx, logIOExRethrow, logNotice, logPla, l
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Arrow (first)
+import Control.Arrow ((***), first)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -302,7 +302,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
 mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
-mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <- getSexRace i ws =
+mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (s', r)) <- getSexRace i ws =
     serialize NonStdDesig { nonStdPCEntSing = s
                           , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
 
@@ -313,8 +313,7 @@ mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp -> s', pp -> r) <-
 dropAction :: Action
 dropAction p@AdviseNoArgs     = advise p ["drop"] $ "Please specify one or more things to drop, as \
                                                     \in " <> dblQuote "drop sword" <> "."
-dropAction   (LowerNub' i as) = do
-    (bs, logMsgs) <- helper
+dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "drop" i logMsgs
     bcastNl bs
   where
@@ -385,17 +384,17 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 
 mkEntDescs :: Id -> Cols -> WorldState -> Inv -> T.Text
-mkEntDescs i cols ws is = T.intercalate "\n" . map (mkEntDesc i cols ws) $ [ (ei, (ws^.entTbl) ! ei) | ei <- is ]
+mkEntDescs i cols ws is = T.intercalate "\n" . map (mkEntDesc i cols ws) $ [ (i', (ws^.entTbl) ! i') | i' <- is ]
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
-mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(views entDesc (wrapUnlines cols) -> ed)) =
-    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws ei $ e
-              MobType ->                 (ed <>) . mkEqDesc       i cols ws ei   e $ t
-              PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws ei   e $ t
+mkEntDesc i cols ws (i'@(((ws^.typeTbl) !) -> t), e@(views entDesc (wrapUnlines cols) -> ed)) =
+    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws i' $ e
+              MobType ->                 (ed <>) . mkEqDesc       i cols ws i'   e $ t
+              PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws i'   e $ t
               _       -> ed
   where
-    pcHeader = wrapUnlines cols . mkPCDescHeader ei $ ws
+    pcHeader = wrapUnlines cols . mkPCDescHeader i' $ ws
 
 
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
@@ -439,7 +438,7 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
 
 
 mkPCDescHeader :: Id -> WorldState -> T.Text
-mkPCDescHeader i ws | (pp -> s, pp -> r) <- getSexRace i ws = T.concat [ "You see a ", s, " ", r, "." ]
+mkPCDescHeader i ws | (pp *** pp -> (s, r)) <- getSexRace i ws = T.concat [ "You see a ", s, " ", r, "." ]
 
 
 -----
@@ -474,8 +473,7 @@ isNonStdLink _               = False
 getAction :: Action
 getAction p@AdviseNoArgs     = advise p ["get"] $ "Please specify one or more items to pick up, as \
                                                   \in " <> dblQuote "get sword" <> "."
-getAction   (LowerNub' i as) = do
-    (bs, logMsgs) <- helper
+getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "get" i logMsgs
     bcastNl bs
   where
@@ -653,8 +651,7 @@ intro (NoArgs i mq cols) = readWSTMVar >>= \ws ->
       else let introsTxt = T.intercalate ", " intros in do
           multiWrapSend mq cols [ "You know the following names:", introsTxt ]
           logPlaOut "intro" i [introsTxt]
-intro (LowerNub' i as) = do
-    (cbs, logMsgs) <- helper
+intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "intro" i logMsgs
     bcast . map fromClassifiedBroadcast . sort $ cbs
   where
