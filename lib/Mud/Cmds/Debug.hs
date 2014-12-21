@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug (debugCmds) where
 
@@ -13,7 +13,8 @@ import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), pure)
+import Control.Arrow ((***))
 import Control.Concurrent (myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Concurrent.STM (atomically)
@@ -26,6 +27,8 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Char (ord)
 import Data.List (foldl', nub, sort)
 import Data.Monoid ((<>))
+import Formatting ((%), sformat)
+import Formatting.Formatters (stext)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import System.CPUTime (getCPUTime)
 import System.Directory (getTemporaryDirectory, removeFile)
@@ -163,7 +166,7 @@ debugColor (NoArgs' i mq) = do
   where
     mkANSICodeList = padOrTrunc 28 . T.concatMap ((<> " ") . showText . ord)
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
-    mkColorName (padOrTrunc 6 . showText -> intensity, padOrTrunc 8 . showText -> color) = intensity <> color
+    mkColorName = uncurry (<>) . (padOrTrunc 6 . showText *** padOrTrunc 8 . showText)
 debugColor p = withoutArgs debugColor p
 
 
@@ -200,7 +203,8 @@ debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
 mkAssocListTxt cols = T.concat . map helper
   where
-    helper (unquote . showText -> a, showText -> b) = T.unlines . wordWrapIndent 2 cols $ a <> ": " <> b
+    helper  = T.unlines . wordWrapIndent 2 cols . uncurry builder . (unquote . showText *** showText)
+    builder = sformat $ stext % ": " % stext
 
 
 -----
@@ -308,11 +312,11 @@ debugTalk p = withoutArgs debugTalk p
 debugThread :: Action
 debugThread (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "thread") i
-    (nli, eli)   <- over both asyncThreadId <$> getLogAsyncs
+    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId <$> getLogAsyncs
     threadTblKvs <- M.assocs <$> readTMVarInNWS threadTblTMVar
     (es, ks)     <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
     let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
-    ds <- mapM mkDesc . sort $ (nli, Notice) : (eli, Error) : threadTblKvs ++ plaLogTblKvs
+    ds <- mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs
     send mq . frame cols . multiWrap cols $ ds
   where
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \(showText -> ts) ->
