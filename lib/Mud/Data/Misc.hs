@@ -272,7 +272,7 @@ data PutOrRem = Put | Rem deriving (Eq, Show)
 data RightOrLeft = R
                  | L
                  | RI | RM | RR | RP
-                 | LI | LM | LR | LP deriving (Show, Read)
+                 | LI | LM | LR | LP deriving (Read, Show)
 
 
 -----

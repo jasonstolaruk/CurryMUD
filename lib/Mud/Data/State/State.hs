@@ -202,7 +202,7 @@ data Slot = HeadS
           | LowBodyAS
           | FullBodyAS
           | BackS
-          | FeetS deriving (Eq, Ord, Enum)
+          | FeetS deriving (Enum, Eq, Ord)
 
 
 -- ==================================================
@@ -245,7 +245,7 @@ data Race = Dwarf
           | Human
           | Lagomorph
           | Nymph
-          | Vulpenoid deriving (Eq, Show, Enum)
+          | Vulpenoid deriving (Enum, Eq, Show)
 
 
 -- ==================================================
@@ -346,7 +346,7 @@ data ThreadType = Error
                 | PlaLog    Id
                 | Receive   Id
                 | Server    Id
-                | Talk      Id deriving (Eq, Show)
+                | Talk      Id deriving (Eq, Ord, Show)
 
 
 -- ==================================================

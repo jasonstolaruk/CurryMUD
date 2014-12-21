@@ -24,7 +24,7 @@ import Control.Lens (both, over)
 import Control.Monad (replicateM, replicateM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (ord)
-import Data.List (foldl', nub)
+import Data.List (foldl', nub, sort)
 import Data.Monoid ((<>))
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import System.CPUTime (getCPUTime)
@@ -317,22 +317,20 @@ debugTalk p = withoutArgs debugTalk p
 debugThread :: Action
 debugThread (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "thread") i
-    (nli, eli) <- over both asyncThreadId <$> getLogAsyncs
-    kvs        <- M.assocs <$> readTMVarInNWS threadTblTMVar
-    (es, ks)   <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
-    ds         <- mapM mkDesc $ head kvs      :
-                                (nli, Notice) :
-                                (eli, Error)  :
-                                tail kvs ++ [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
+    (nli, eli)   <- over both asyncThreadId <$> getLogAsyncs
+    threadTblKvs <- M.assocs <$> readTMVarInNWS threadTblTMVar
+    (es, ks)     <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
+    let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
+    ds <- mapM mkDesc . sort $ (nli, Notice) : (eli, Error) : threadTblKvs ++ plaLogTblKvs
     send mq . frame cols . multiWrap cols $ ds
   where
-    mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \ts ->
-        return . T.concat $ [ showText ti, " ", tn, showText ts ]
+    mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \(showText -> ts) ->
+        return . T.concat $ [ padOrTrunc 16 . showText $ ti, tn, ts ]
     mkTypeName (PlaLog  (showText -> i')) = padOrTrunc 10 "PlaLog"  <> i'
     mkTypeName (Receive (showText -> i')) = padOrTrunc 10 "Receive" <> i'
     mkTypeName (Server  (showText -> i')) = padOrTrunc 10 "Server"  <> i'
     mkTypeName (Talk    (showText -> i')) = padOrTrunc 10 "Talk"    <> i'
-    mkTypeName (showText -> tt)          = tt
+    mkTypeName (showText -> tt)           = tt
 debugThread p = withoutArgs debugThread p
 
 

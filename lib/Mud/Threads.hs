@@ -228,15 +228,15 @@ server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 server h i mq itq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      Dropped        ->                                  handleEgress i
+      Dropped        ->                                  sayonara i itq
       FromClient msg -> handleFromClient i mq itq msg >> loop
       FromServer msg -> (liftIO . T.hPutStr h $ msg)  >> loop
-      InacBoot       -> sendInacBootMsg h             >> handleEgress i
-      MsgBoot msg    -> boot h msg                    >> handleEgress i
+      InacBoot       -> sendInacBootMsg h             >> sayonara i itq
+      MsgBoot msg    -> boot h msg                    >> sayonara i itq
       Prompt p       -> sendPrompt h p                >> loop
-      Quit           -> cowbye h                      >> handleEgress i
+      Quit           -> cowbye h                      >> sayonara i itq
       Shutdown       -> shutDown                      >> loop
-      SilentBoot     ->                                  handleEgress i
+      SilentBoot     ->                                  sayonara i itq
       StopThread     -> return ()
 
 
@@ -254,6 +254,10 @@ plaThreadExHandler n i e
 
 getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
+
+
+sayonara :: Id -> InacTimerQueue -> MudStack ()
+sayonara i itq = (liftIO . atomically . writeTQueue itq $ StopTimer) >> handleEgress i
 
 
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
