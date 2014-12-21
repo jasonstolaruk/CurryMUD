@@ -324,7 +324,7 @@ data NonWorldState = NonWorldState { _startTime         :: !UTCTime
 -- Log services:
 
 
-data LogCmd = StopLog | Msg T.Text
+data LogCmd = StopLog | LogMsg T.Text
 
 
 type LogAsync   = Async ()
@@ -339,13 +339,14 @@ type LogService = (LogAsync, LogQueue)
 type ThreadTbl = M.Map ThreadId ThreadType
 
 
-data ThreadType = Notice
-                | Error
+data ThreadType = Error
+                | InacTimer Id
                 | Listen
-                | Talk
-                | Server  Id
-                | Receive Id
-                | PlaLog  Id deriving (Eq, Show)
+                | Notice
+                | PlaLog    Id
+                | Receive   Id
+                | Server    Id
+                | Talk      Id deriving (Eq, Show)
 
 
 -- ==================================================
@@ -362,14 +363,15 @@ type TalkAsyncTbl = M.Map ThreadId (Async ())
 type MsgQueue = TQueue Msg
 
 
-data Msg = FromServer T.Text
+data Msg = Dropped
          | FromClient T.Text
+         | FromServer T.Text
+         | InacBoot
+         | MsgBoot    T.Text
          | Prompt     T.Text
          | Quit
-         | SilentBoot
-         | MsgBoot    T.Text
-         | Dropped
          | Shutdown
+         | SilentBoot
          | StopThread
 
 

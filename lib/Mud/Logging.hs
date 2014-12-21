@@ -77,8 +77,8 @@ spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . loop =<< initLo
         updateGlobalLogger ln (setHandlers [h] . setLevel p)
         return gh
     loop gh = (atomically . readTQueue $ q) >>= \case
-      StopLog             -> close gh
-      Msg (T.unpack -> m) -> f ln m >> loop gh
+      StopLog                -> close gh
+      LogMsg (T.unpack -> m) -> f ln m >> loop gh
 
 
 -- TODO: Consider writing a function that can periodically be called to rotate logs on the fly.
@@ -140,7 +140,7 @@ doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
 
 
 registerMsg :: T.Text -> LogQueue -> MudStack ()
-registerMsg msg q = liftIO . atomically . writeTQueue q . Msg $ msg
+registerMsg msg q = liftIO . atomically . writeTQueue q . LogMsg $ msg
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()

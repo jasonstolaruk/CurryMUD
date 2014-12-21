@@ -326,10 +326,12 @@ debugThread (NoArgs i mq cols) = do
                                 tail kvs ++ [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
     send mq . frame cols . multiWrap cols $ ds
   where
-    mkDesc (ti, bracketPad 15 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \ts ->
+    mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \ts ->
         return . T.concat $ [ showText ti, " ", tn, showText ts ]
-    mkTypeName (Server (showText -> i')) = padOrTrunc 8 "Server" <> i'
-    mkTypeName (PlaLog (showText -> i')) = padOrTrunc 8 "PlaLog" <> i'
+    mkTypeName (PlaLog  (showText -> i')) = padOrTrunc 10 "PlaLog"  <> i'
+    mkTypeName (Receive (showText -> i')) = padOrTrunc 10 "Receive" <> i'
+    mkTypeName (Server  (showText -> i')) = padOrTrunc 10 "Server"  <> i'
+    mkTypeName (Talk    (showText -> i')) = padOrTrunc 10 "Talk"    <> i'
     mkTypeName (showText -> tt)          = tt
 debugThread p = withoutArgs debugThread p
 

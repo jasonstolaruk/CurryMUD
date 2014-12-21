@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Threads (listenWrapper) where
@@ -17,10 +17,11 @@ import Mud.Util
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId)
+import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
+import Control.Concurrent.STM.TQueue (TQueue, tryReadTQueue)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
@@ -37,7 +38,7 @@ import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. 
 import System.Time.Utils (renderSecs)
 import qualified Data.Map.Lazy as M (elems, empty)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (hGetLine, hPutStr, readFile)
+import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
@@ -139,9 +140,9 @@ talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
     helper = do
-        registerThread Talk
-        mq <- liftIO newTQueueIO
-        i  <- adHoc mq host
+        (mq, itq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
+        i         <- adHoc mq host
+        registerThread . Talk $ i
         handle (talkExHandler i) $ do
             logNotice "talk helper" $ "new ID for incoming player: " <> showText i <> "."
             liftIO configBuffer
@@ -149,8 +150,9 @@ talk h host = helper `finally` cleanUp
             dumpTitle    mq
             prompt       mq "By what name are you known?"
             s <- get
-            liftIO $ race_ (runStateInIORefT (server  h i mq) s)
-                           (runStateInIORefT (receive h i mq) s)
+            liftIO . void . forkIO . void $ runStateInIORefT (inacTimer i mq itq) s
+            liftIO $ race_ (runStateInIORefT (server  h i mq itq) s)
+                           (runStateInIORefT (receive h i mq)     s)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
@@ -222,19 +224,19 @@ dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExH
 -- "Server" threads:
 
 
-server :: Handle -> Id -> MsgQueue -> MudStack ()
-server h i mq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
+server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
+server h i mq itq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      FromServer msg -> (liftIO . T.hPutStr h $ msg)             >> loop
-      FromClient (T.strip . stripControl . stripTelnet -> msg)
-                     -> unless (T.null msg) (handleInp i mq msg) >> loop
-      Prompt p       -> sendPrompt h p                           >> loop
-      Quit           -> cowbye h                                 >> handleEgress i
-      SilentBoot     ->                                             handleEgress i
-      MsgBoot msg    -> boot h msg                               >> handleEgress i
-      Dropped        ->                                             handleEgress i
-      Shutdown       -> shutDown                                 >> loop
+      Dropped        ->                                  handleEgress i
+      FromClient msg -> handleFromClient i mq itq msg >> loop
+      FromServer msg -> (liftIO . T.hPutStr h $ msg)  >> loop
+      InacBoot       -> sendInacBootMsg h             >> handleEgress i
+      MsgBoot msg    -> boot h msg                    >> handleEgress i
+      Prompt p       -> sendPrompt h p                >> loop
+      Quit           -> cowbye h                      >> handleEgress i
+      Shutdown       -> shutDown                      >> loop
+      SilentBoot     ->                                  handleEgress i
       StopThread     -> return ()
 
 
@@ -254,6 +256,12 @@ getListenThreadId :: MudStack ThreadId
 getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
+handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
+handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = unless (T.null msg) $ do
+    liftIO . atomically . writeTQueue itq $ ResetTimer
+    handleInp i mq msg
+
+
 handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
 handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
     let cols = p^.columns
@@ -261,19 +269,23 @@ handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
     in f cn . WithArgs i mq cols $ as
 
 
+sendInacBootMsg :: Handle -> MudStack ()
+sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ "You are being booted from CurryMUD due to inactivity."
+
+
+-- TODO: Make a wizard command that boots a specified player.
+boot :: Handle -> T.Text -> MudStack ()
+boot h = liftIO . T.hPutStrLn h . nl' . nl
+
+
 sendPrompt :: Handle -> T.Text -> MudStack ()
-sendPrompt h = liftIO . T.hPutStr h . nl
+sendPrompt h = liftIO . T.hPutStrLn h
 
 
 cowbye :: Handle -> MudStack ()
 cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
   where
-    takeADump = T.hPutStr h . nl =<< (T.readFile . (miscDir ++) $ "cowbye")
-
-
--- TODO: Make a wizard command that boots a specified player.
-boot :: Handle -> T.Text -> MudStack ()
-boot h = liftIO . T.hPutStr h . nl' . nlnl
+    takeADump = T.hPutStrLn h =<< (T.readFile . (miscDir ++) $ "cowbye")
 
 
 shutDown :: MudStack ()
@@ -306,3 +318,31 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
 
 receiveExHandler :: Id -> SomeException -> MudStack ()
 receiveExHandler = plaThreadExHandler "receive"
+
+
+-- ==================================================
+-- "Inactivity timer" threads:
+
+
+type InacTimerQueue = TQueue InacTimerMsg
+
+
+data InacTimerMsg = ResetTimer
+                  | StopTimer
+
+
+inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
+inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` inacTimerExHandler i
+  where
+    loop secs = do
+        liftIO . threadDelay $ (10 ^ 6 * 1)
+        (liftIO . atomically . tryReadTQueue $ itq) >>= \case
+          Nothing  -> if secs >= maxInacSecs
+                        then liftIO . atomically . writeTQueue mq $ InacBoot
+                        else loop . succ $ secs
+          Just itm -> case itm of StopTimer  -> return ()
+                                  ResetTimer -> loop 0
+
+
+inacTimerExHandler :: Id -> SomeException -> MudStack ()
+inacTimerExHandler = plaThreadExHandler "inactivity timer"

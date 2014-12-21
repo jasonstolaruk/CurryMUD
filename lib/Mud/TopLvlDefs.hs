@@ -67,6 +67,10 @@ noOfTitles :: Int
 noOfTitles = 33
 
 
+maxInacSecs :: Int
+maxInacSecs = 60 * 10
+
+
 maxLogSize :: FileOffset
 maxLogSize = 100000
 
