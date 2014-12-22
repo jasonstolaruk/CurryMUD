@@ -208,7 +208,7 @@ mkGecrIndexed i ws x n is
   | ens <- [ getEffName i ws i' | i' <- is ] = Indexed x n . maybe notFound (found ens) . findFullNameForAbbrev n $ ens
   where
     notFound = Left ""
-    found ens fn | matches <- filter (\(_, en) -> en == fn) . zip is $ ens = if length matches < x
+    found ens fn | matches <- filter ((== fn) . snd) . zip is $ ens = if length matches < x
       then Left . mkPlurFromBoth . getEffBothGramNos i ws . fst . head $ matches
       else Right . ((ws^.entTbl) !) . fst $ matches !! pred x
 
