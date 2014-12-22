@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RankNTypes, ViewPatterns #-}
 
 module Mud.Logging ( closeLogs
@@ -25,7 +25,8 @@ import Mud.TopLvlDefs
 import Mud.Util
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent.Async (async, wait)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
 import Control.Exception.Lifted (catch, throwIO)
@@ -33,6 +34,7 @@ import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
 import Control.Monad (forM_)
+import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
@@ -69,7 +71,7 @@ type LoggingFun = String -> String -> IO ()
 
 
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
-spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . loop =<< initLog
+spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<< initLog) $ (logRotationFlagger q)
   where
     initLog = fileHandler fn p >>= \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
@@ -78,7 +80,7 @@ spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . loop =<< initLo
       LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
       RotateLog                -> rotateLog gh
       StopLog                  -> close gh
-    rotateLog gh = helper `catch` \e -> throwIO (e :: SomeException) -- TODO: What happens when there is an exception?
+    rotateLog gh = helper `catch` \e -> throwIO (e :: SomeException) -- TODO: Thread silently dies. Throw TO?
       where
         helper = doesFileExist fn >>= \case
           True  -> (fileSize <$> getFileStatus fn) >>= \fs ->
@@ -138,7 +140,15 @@ closeLogs = do
 -- Rotating logs:
 
 
-rotatePlaLog :: Id -> MudStack ()
+logRotationFlagger :: LogQueue -> IO ()
+logRotationFlagger q = forever loop -- TODO: `catch` ExHandler
+  where
+    loop = do
+        threadDelay $ 10 ^ 6 * logRotationFlaggerDelay
+        atomically . writeTQueue q $ RotateLog
+
+
+rotatePlaLog :: Id -> MudStack () -- TODO: Needed?
 rotatePlaLog = flip doIfLogging (liftIO . atomically . flip writeTQueue RotateLog)
 
 

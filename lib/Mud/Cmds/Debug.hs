@@ -9,7 +9,6 @@ import Mud.Color
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util
-import Mud.Logging hiding (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
@@ -298,7 +297,15 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 debugRotate :: Action
-debugRotate (NoArgs' i mq) = logPlaExec (prefixDebugCmd "rotate") i >> ok mq >> rotatePlaLog i
+debugRotate (NoArgs' i mq) = logPlaExec (prefixDebugCmd "rotate") i >> ok mq >> return () -- TODO: ...rotatePlaLog i
+{-
+doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
+doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
+  Nothing     -> return ()
+  Just (_, q) -> f q
+
+liftIO . atomically . flip writeTQueue RotateLog
+-}
 debugRotate p              = withoutArgs debugRotate p
 
 

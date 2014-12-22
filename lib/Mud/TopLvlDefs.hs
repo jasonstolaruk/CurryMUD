@@ -63,6 +63,10 @@ isDebug :: Bool
 isDebug = True
 
 
+logRotationFlaggerDelay :: Int -- TODO
+logRotationFlaggerDelay = 10 -- 60 * 5
+
+
 maxCmdLen :: Int
 maxCmdLen = 9
 
