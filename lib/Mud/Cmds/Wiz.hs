@@ -13,6 +13,7 @@ import qualified Mud.Logging as L (logIOEx, logNotice, logPlaExec, logPlaExecArg
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
@@ -102,7 +103,7 @@ wizName (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "name") i
     readWSTMVar >>= \ws ->
         let (view sing -> s)    = (ws^.entTbl) ! i
-            (pp -> s', pp -> r) = getSexRace i ws
+            (pp *** pp -> (s', r)) = getSexRace i ws
         in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
 wizName p = withoutArgs wizName p
 

@@ -72,6 +72,7 @@ import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), Const)
+import Control.Arrow ((***))
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
@@ -411,11 +412,11 @@ getEffBothGramNos i ws i'
   | e <- (ws^.entTbl) ! i', mn <- e^.entName = case mn of
     Nothing | (view introduced -> intros) <- (ws^.pcTbl)  ! i
             , n                           <- e^.sing
-            , (pp -> s, pp -> r)          <- getSexRace i' ws
+            , (pp *** pp -> (s, r))       <- getSexRace i' ws
             -> if n `elem` intros
                  then (n, "")
                  else over both ((s <>) . (" " <>)) (r, pluralize r)
-    Just _  -> (e^.sing, e^.plur)
+    Just _  -> (view sing *** view plur) . dup $ e
   where
     pluralize "dwarf" = "dwarves"
     pluralize "elf"   = "elves"
@@ -434,8 +435,8 @@ getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
 getLogAsyncs :: MudStack (LogAsync, LogAsync)
 getLogAsyncs = helper <$> gets (view nonWorldState)
   where
-    helper nws | Just (nla, _) <- nws^.noticeLog, Just (ela, _) <- nws^.errorLog = (nla, ela)
-    helper _ = patternMatchFail "getLogAsyncs helper" [ bracketQuote "elided" ]
+    helper     = (getAsync noticeLog *** getAsync errorLog) . dup
+    getAsync l = fst . fromJust . view l
 
 
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
@@ -449,7 +450,7 @@ getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
 
 
 getSexRace :: Id -> WorldState -> (Sex, Race)
-getSexRace i ws | (view sex -> s) <- (ws^.mobTbl) ! i, (view race -> r) <- (ws^.pcTbl) ! i = (s, r)
+getSexRace i ws = (view sex *** view race) . (((ws^.mobTbl) !) *** ((ws^.pcTbl) !)) . dup $ i
 
 
 getUnusedId :: WorldState -> Id
@@ -457,8 +458,8 @@ getUnusedId = head . (\\) [0..] . allKeys
 
 
 mkCoinsFromList :: [Int] -> Coins
-mkCoinsFromList [ cop, sil, gol ]       = Coins (cop, sil, gol)
-mkCoinsFromList xs = patternMatchFail "mkCoinsFromList" [ showText xs ]
+mkCoinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
+mkCoinsFromList xs                = patternMatchFail "mkCoinsFromList" [ showText xs ]
 
 
 mkListFromCoins :: Coins -> [Int]
