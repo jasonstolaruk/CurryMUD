@@ -398,14 +398,14 @@ mkEntDesc i cols ws (i'@(((ws^.typeTbl) !) -> t), e@(views entDesc (wrapUnlines 
 
 
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
-mkInvCoinsDesc i cols ws ei (view sing -> s) | is <- (ws^.invTbl)   ! ei
-                                             , c  <- (ws^.coinsTbl) ! ei = case (not . null $ is, c /= mempty) of
-  (False, False) -> wrapUnlines cols $ if ei == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
+mkInvCoinsDesc i cols ws i' (view sing -> s) | is <- (ws^.invTbl)   ! i'
+                                             , c  <- (ws^.coinsTbl) ! i' = case (not . null $ is, c /= mempty) of
+  (False, False) -> wrapUnlines cols $ if i' == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
   (True,  False) -> header <> mkEntsInInvDesc i cols ws is
   (False, True ) -> header <>                                 mkCoinsSummary cols c
   (True,  True ) -> header <> mkEntsInInvDesc i cols ws is <> mkCoinsSummary cols c
   where
-    header | ei == i   = nl "You are carrying:"
+    header | i' == i   = nl "You are carrying:"
            | otherwise = wrapUnlines cols $ "The " <> s <> " contains:"
 
 
@@ -827,8 +827,7 @@ putAction p@AdviseNoArgs     = advise p ["put"] $ "Please specify one or more th
                                                   \sack" <> "."
 putAction p@(AdviseOneArg a) = advise p ["put"] $ "Please also specify where you want to put it, as \
                                                   \in " <> dblQuote ("put " <> a <> " sack") <> "."
-putAction   (Lower' i as)    = do
-    (bs, logMsgs) <- helper
+putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "put" i logMsgs
     bcastNl bs
   where
@@ -893,7 +892,7 @@ type NthOfM = (Int, Int)
 
 mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe NthOfM
 mkMaybeNthOfM False _  _ _                _  = Nothing
-mkMaybeNthOfM True  ws i (view sing -> s) is = Just (succ . fromJust . elemIndex i $ matches, length matches)
+mkMaybeNthOfM True  ws i (view sing -> s) is = Just . (succ . fromJust . elemIndex i *** length) . dup $ matches
   where
     matches = filter (\i' -> let (view sing -> s') = (ws^.entTbl) ! i' in s' == s) is
 
@@ -1125,8 +1124,7 @@ notifyEgress i = readWSTMVar >>= \ws ->
 ready :: Action
 ready p@AdviseNoArgs            = advise p ["ready"] $ "Please specify one or more things to ready, as \
                                                        \in " <> dblQuote "ready sword" <> "."
-ready   (LowerNub i mq cols as) = do
-    (msg, logMsgs) <- helper
+ready   (LowerNub i mq cols as) = helper >>= \(msg, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "ready" i logMsgs
     send mq . nl $ msg
   where
@@ -1397,8 +1395,7 @@ remove p@AdviseNoArgs     = advise p ["remove"] $ "Please specify one or more th
                                                   \doll sack" <> "."
 remove p@(AdviseOneArg a) = advise p ["remove"] $ "Please also specify the container you want to remove it from, as \
                                                   \in " <> dblQuote ("remove " <> a <> " sack") <> "."
-remove   (Lower' i as)    = do
-    (bs, logMsgs) <- helper
+remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "remove" i logMsgs
     bcastNl bs
   where
@@ -1458,8 +1455,7 @@ shuffleRem i (t, ws) d cn icir as is c f
 unready :: Action
 unready p@AdviseNoArgs            = advise p ["unready"] $ "Please specify one or more things to unready, as \
                                                            \in " <> dblQuote "unready sword" <> "."
-unready   (LowerNub i mq cols as) = do
-    (msg, logMsgs) <- helper
+unready   (LowerNub i mq cols as) = helper >>= \(msg, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "unready" i logMsgs
     send mq . nl $ msg
   where
@@ -1595,9 +1591,9 @@ whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
   else T.concat . map (whatInvCoins cols it n) $ rcs
   where
     resolveName | (is, c) <- getLocInvCoins, (gecrs, _, rcs) <- resolveEntCoinNames i ws [n] is c = (is, gecrs, rcs)
-    getLocInvCoins    = case it of PCInv -> ((ws^.invTbl)          ! i,  (ws^.coinsTbl) ! i )
-                                   PCEq  -> (M.elems $ (ws^.eqTbl) ! i,  mempty             )
-                                   RmInv -> ((ws^.invTbl)          ! ri, (ws^.coinsTbl) ! ri)
+    getLocInvCoins    = case it of PCInv -> (((ws^.invTbl) !) *** ((ws^.coinsTbl) !)) . dup $ i
+                                   PCEq  -> (M.elems $ (ws^.eqTbl) ! i, mempty)
+                                   RmInv -> (((ws^.invTbl) !) *** ((ws^.coinsTbl) !)) . dup $ ri
     (view rmId -> ri) = (ws^.pcTbl) ! i
 
 

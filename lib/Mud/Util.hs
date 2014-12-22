@@ -14,6 +14,7 @@ module Mud.Util ( aOrAn
                 , dblQuoteStr
                 , deleteFirstOfEach
                 , dropBlanks
+                , dup
                 , eitherRet
                 , findFullNameForAbbrev
                 , grepTextList
@@ -278,6 +279,10 @@ dropBlanks :: [T.Text] -> [T.Text]
 dropBlanks []      = []
 dropBlanks ("":xs) =     dropBlanks xs
 dropBlanks ( x:xs) = x : dropBlanks xs
+
+
+dup :: a -> (a, a)
+dup x = (x, x)
 
 
 eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
