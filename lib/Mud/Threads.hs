@@ -341,11 +341,20 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` inacTime
         liftIO . threadDelay $ (10 ^ 6 * 1)
         (liftIO . atomically . tryReadTQueue $ itq) >>= \case
           Nothing  -> if secs >= maxInacSecs
-                        then liftIO . atomically . writeTQueue mq $ InacBoot
+                        then inacBoot secs
                         else loop . succ $ secs
           Just itm -> case itm of StopTimer  -> return ()
                                   ResetTimer -> loop 0
+    inacBoot (parensQuote . T.pack . renderSecs -> secs) = do
+        logPla "inacTimer" i $ "booted due to inactivity " <> secs <>  "."
+        liftIO . atomically . writeTQueue mq $ InacBoot
 
 
 inacTimerExHandler :: Id -> SomeException -> MudStack ()
 inacTimerExHandler = plaThreadExHandler "inactivity timer"
+
+
+-- ==================================================
+-- "Thread table purge" threads:
+
+

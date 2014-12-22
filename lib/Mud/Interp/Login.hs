@@ -61,7 +61,7 @@ promptRetryName mq msg = do
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
-  Just True  -> do
+  Just True -> do
       void . modifyEnt i sing $ s
       (views hostName T.pack -> host) <- modifyPla i interp centralDispatch
       initPlaLog i s

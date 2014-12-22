@@ -270,7 +270,7 @@ getPla :: Id -> MudStack Pla
 getPla i = (! i) <$> readTMVarInNWS plaTblTMVar
 
 
-putPla :: Id -> Pla -> MudStack () -- TODO: Currently not used.
+putPla :: Id -> Pla -> MudStack ()
 putPla i p = modifyNWS plaTblTMVar $ \pt ->
     pt & at i ?~ p
 
