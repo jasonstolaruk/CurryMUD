@@ -55,6 +55,7 @@ module Mud.Util ( aOrAn
 import Mud.TopLvlDefs
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Arrow ((***))
 import Control.Lens (both, folded, over, to)
 import Control.Lens.Operators ((^..))
 import Control.Monad (guard)
@@ -183,7 +184,7 @@ calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
 
 
 quoteWith :: T.Text -> T.Text -> T.Text
-quoteWith q = quoteWith' (q, q)
+quoteWith = quoteWith' . dup
 
 
 quoteWith' :: (T.Text, T.Text) -> T.Text -> T.Text
@@ -264,7 +265,7 @@ uncapitalize = capsHelper toLower
 
 
 capsHelper :: (Char -> Char) -> T.Text -> T.Text
-capsHelper f (headTail' -> (h, t)) = (T.singleton . f $ h)  <> t
+capsHelper f (headTail' -> (T.singleton . f -> h, t)) = h <> t
 
 
 countOcc :: (Eq a) => a -> [a] -> Int
@@ -304,7 +305,7 @@ headTail = (,) <$> head <*> tail
 
 
 headTail' :: T.Text -> (Char, T.Text)
-headTail' txt = (T.head txt, T.tail txt)
+headTail' = (T.head *** T.tail) . dup
 
 
 isVowel :: Char -> Bool

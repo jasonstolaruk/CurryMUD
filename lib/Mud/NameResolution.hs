@@ -198,8 +198,7 @@ mkGecrMultForEnts i ws a n is | ens <- [ getEffName i ws i' | i' <- is ] =
   where
     notFound                    = (Nothing, Nothing)
     found (zip is -> zipped) fn = (Just . takeMatchingEnts zipped $ fn, Nothing)
-    takeMatchingEnts zipped  fn | matches <- filter (\(_, en) -> en == fn) zipped
-                                = take a [ (ws^.entTbl) ! i' | (i', _) <- matches ]
+    takeMatchingEnts zipped  fn = take a [ (ws^.entTbl) ! i' | (i', _) <- filter ((== fn) . snd) zipped ]
 
 
 mkGecrIndexed :: Id -> WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
