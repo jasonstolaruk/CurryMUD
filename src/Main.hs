@@ -3,7 +3,7 @@
 
 {-
 CurryMud - A Multi-User Dungeon by Jason Stolaruk.
-Copyright (c) 2014, Jason Stolaruk and Detroit Labs LLC
+Copyright (c) 2015, Jason Stolaruk and Detroit Labs LLC
 jasonstolaruk (`at` gmail) . com
 @JasonStolaruk
 https://github.com/jasonstolaruk/CurryMUD
