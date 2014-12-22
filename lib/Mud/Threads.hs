@@ -3,6 +3,7 @@
 
 module Mud.Threads (listenWrapper) where
 
+import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Color
 import Mud.Data.State.State
@@ -77,6 +78,7 @@ listenWrapper = initAndStart `finally` graceful
         initLogging
         logNotice "listenWrapper initAndStart" "server started."
         initWorld
+        liftIO . void . async . void . runStateInIORefT threadTblPurger =<< get -- TODO: gets?
         listen
 
 
@@ -114,7 +116,7 @@ listen = handle listenExHandler $ do
     loop sock = do
         (h, host, port') <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
-        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
+        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get -- TODO: gets?
         modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
@@ -143,14 +145,14 @@ talk h host = helper `finally` cleanUp
         (mq, itq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
         i         <- adHoc mq host
         registerThread . Talk $ i
-        handle (talkExHandler i) $ do
+        handle (plaThreadExHandler "talk" i) $ do
             logNotice "talk helper" $ "new ID for incoming player: " <> showText i <> "."
             liftIO configBuffer
             setDfltColor mq
             dumpTitle    mq
             prompt       mq "By what name are you known?"
             s <- get
-            liftIO . void . forkIO . void $ runStateInIORefT (inacTimer i mq itq) s
+            liftIO . void . forkIO . void $ runStateInIORefT (inacTimer i mq itq) s -- TODO: Use "async" instead?
             liftIO $ race_ (runStateInIORefT (server  h i mq itq) s)
                            (runStateInIORefT (receive h i mq)     s)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
@@ -205,8 +207,16 @@ randomRace = newStdGen >>= \g ->
     let (x, _) = randomR (0, 7) g in return $ [ Dwarf .. Vulpenoid ] !! x
 
 
-talkExHandler :: Id -> SomeException -> MudStack ()
-talkExHandler = plaThreadExHandler "talk"
+plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
+plaThreadExHandler n i e
+  | Just ThreadKilled <- fromException e = closePlaLog i
+  | otherwise                            = do
+      logExMsg "plaThreadExHandler" ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
+      liftIO . flip throwTo e =<< getListenThreadId
+
+
+getListenThreadId :: MudStack ThreadId
+getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 setDfltColor :: MsgQueue -> MudStack ()
@@ -225,7 +235,7 @@ dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExH
 
 
 server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-server h i mq itq = (registerThread . Server $ i) >> loop `catch` serverExHandler i
+server h i mq itq = (registerThread . Server $ i) >> loop `catch` plaThreadExHandler "server" i
   where
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       Dropped        ->                                  sayonara i itq
@@ -237,22 +247,6 @@ server h i mq itq = (registerThread . Server $ i) >> loop `catch` serverExHandle
       Quit           -> cowbye h                      >> sayonara i itq
       Shutdown       -> shutDown                      >> loop
       SilentBoot     ->                                  sayonara i itq
-
-
-serverExHandler :: Id -> SomeException -> MudStack ()
-serverExHandler = plaThreadExHandler "server"
-
-
-plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
-plaThreadExHandler n i e
-  | Just ThreadKilled <- fromException e = closePlaLog i
-  | otherwise                            = do
-      logExMsg (n <> "ExHandler") ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
-      liftIO . flip throwTo e =<< getListenThreadId
-
-
-getListenThreadId :: MudStack ThreadId
-getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 sayonara :: Id -> InacTimerQueue -> MudStack ()
@@ -304,7 +298,7 @@ shutDown = massMsg SilentBoot >> commitSuicide
 
 
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
-receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler i
+receive h i mq = (registerThread . Receive $ i) >> loop `catch` plaThreadExHandler "receive" i
   where
     loop = (liftIO . hIsEOF $ h) >>= \case
       True  -> do
@@ -319,10 +313,6 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` receiveExHandler
     delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
 
-receiveExHandler :: Id -> SomeException -> MudStack ()
-receiveExHandler = plaThreadExHandler "receive"
-
-
 -- ==================================================
 -- "Inactivity timer" threads:
 
@@ -335,10 +325,10 @@ data InacTimerMsg = ResetTimer
 
 
 inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` inacTimerExHandler i
+inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThreadExHandler "inactivity timer" i
   where
     loop secs = do
-        liftIO . threadDelay $ (10 ^ 6 * 1)
+        liftIO . threadDelay $ 10 ^ 6 * 1
         (liftIO . atomically . tryReadTQueue $ itq) >>= \case
           Nothing  -> if secs >= maxInacSecs
                         then inacBoot secs
@@ -350,11 +340,17 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` inacTime
         liftIO . atomically . writeTQueue mq $ InacBoot
 
 
-inacTimerExHandler :: Id -> SomeException -> MudStack ()
-inacTimerExHandler = plaThreadExHandler "inactivity timer"
-
-
 -- ==================================================
 -- "Thread table purge" threads:
 
 
+threadTblPurger :: MudStack ()
+threadTblPurger = registerThread ThreadTblPurger >> forever loop `catch` threadTblPurgerExHandler
+  where
+    loop = (liftIO . threadDelay $ 10 ^ 6 * threadTblPurgerDelay) >> purgeThreadTbls
+
+
+threadTblPurgerExHandler :: SomeException -> MudStack ()
+threadTblPurgerExHandler e = do
+    logExMsg "threadTblPurgerExHandler" "exception caught on thread table purger thread; rethrowing to listen thread" e
+    liftIO . flip throwTo e =<< getListenThreadId

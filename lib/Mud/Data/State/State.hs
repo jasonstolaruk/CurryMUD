@@ -346,7 +346,8 @@ data ThreadType = Error
                 | PlaLog    Id
                 | Receive   Id
                 | Server    Id
-                | Talk      Id deriving (Eq, Ord, Show)
+                | Talk      Id
+                | ThreadTblPurger deriving (Eq, Ord, Show)
 
 
 -- ==================================================
