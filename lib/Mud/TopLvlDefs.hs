@@ -76,8 +76,8 @@ maxInacSecs :: Integer
 maxInacSecs = 60 * 10
 
 
-maxLogSize :: FileOffset
-maxLogSize = 100000
+maxLogSize :: FileOffset -- TODO
+maxLogSize = 100 -- 100000
 
 
 mudDir :: FilePath

@@ -9,6 +9,7 @@ import Mud.Color
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util
+import Mud.Logging hiding (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
@@ -82,6 +83,8 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
     , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
                                                                                \put into a sack on the ground." }
+    , Cmd { cmdName = prefixDebugCmd "rotate", action = debugRotate, cmdDesc = "Send the signal to rotate your player \
+                                                                               \log." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
     , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." } ]
@@ -289,6 +292,14 @@ debugRemPut p = withoutArgs debugRemPut p
 
 fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
 fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
+
+
+-----
+
+
+debugRotate :: Action
+debugRotate (NoArgs' i mq) = logPlaExec (prefixDebugCmd "rotate") i >> ok mq >> rotatePlaLog i
+debugRotate p              = withoutArgs debugRotate p
 
 
 -----

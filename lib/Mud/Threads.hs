@@ -78,7 +78,7 @@ listenWrapper = initAndStart `finally` graceful
         initLogging
         logNotice "listenWrapper initAndStart" "server started."
         initWorld
-        liftIO . void . async . void . runStateInIORefT threadTblPurger =<< get -- TODO: gets?
+        liftIO . void . async . void . runStateInIORefT threadTblPurger =<< get -- TODO: Or just "forkIO"?
         listen
 
 
@@ -116,7 +116,7 @@ listen = handle listenExHandler $ do
     loop sock = do
         (h, host, port') <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
-        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get -- TODO: gets?
+        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
         modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
@@ -152,7 +152,7 @@ talk h host = helper `finally` cleanUp
             dumpTitle    mq
             prompt       mq "By what name are you known?"
             s <- get
-            liftIO . void . forkIO . void $ runStateInIORefT (inacTimer i mq itq) s -- TODO: Use "async" instead?
+            liftIO . void . async . void . runStateInIORefT (inacTimer i mq itq) $ s -- TODO: Or just "forkIO"?
             liftIO $ race_ (runStateInIORefT (server  h i mq itq) s)
                            (runStateInIORefT (receive h i mq)     s)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1

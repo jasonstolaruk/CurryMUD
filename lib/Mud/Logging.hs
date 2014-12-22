@@ -15,7 +15,8 @@ module Mud.Logging ( closeLogs
                    , logPlaExec
                    , logPlaExecArgs
                    , logPlaOut
-                   , massLogPla ) where
+                   , massLogPla
+                   , rotatePlaLog ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.State
@@ -31,7 +32,7 @@ import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
-import Control.Monad (forM_, unless, when)
+import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
@@ -70,32 +71,30 @@ type LoggingFun = String -> String -> IO ()
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
 spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . loop =<< initLog
   where
-    initLog = do
-        rotateLog fn
-        gh <- fileHandler fn p
+    initLog = fileHandler fn p >>= \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
-        updateGlobalLogger ln (setHandlers [h] . setLevel p)
-        return gh
+        in updateGlobalLogger ln (setHandlers [h] . setLevel p) >> return gh
     loop gh = (atomically . readTQueue $ q) >>= \case
-      StopLog                -> close gh
-      LogMsg (T.unpack -> m) -> f ln m >> loop gh
-
-
--- TODO: Consider writing a function that can periodically be called to rotate logs on the fly.
-rotateLog :: FilePath -> IO ()
-rotateLog fn = helper `catch` \e -> throwIO (e :: SomeException)
-  where
-    helper = doesFileExist fn >>= \doesExist -> when doesExist $ do
-        fs <- fileSize <$> getFileStatus fn
-        unless (fs < maxLogSize) rotateIt
-    rotateIt = getZonedTime >>= \t ->
-        let wordy = words . show $ t
-            date  = head wordy
-            time  = map replaceColons . init . reverse . dropWhile (/= '.') . reverse . head . tail $ wordy
-        in renameFile fn . concat $ [ dropExt fn, ".", date, "_", time, ".log" ]
-    replaceColons ':' = '-'
-    replaceColons x   = x
-    dropExt           = reverse . drop 4 . reverse
+      LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
+      RotateLog                -> rotateLog gh
+      StopLog                  -> close gh
+    rotateLog gh = helper `catch` \e -> throwIO (e :: SomeException) -- TODO: What happens when there is an exception?
+      where
+        helper = doesFileExist fn >>= \case
+          True  -> (fileSize <$> getFileStatus fn) >>= \fs ->
+              if fs >= maxLogSize then rotateIt else loop gh
+          False -> close gh >> (loop =<< initLog)
+        rotateIt = getZonedTime >>= \t ->
+            let wordy = words . show $ t
+                date  = head wordy
+                time  = map replaceColons . init . reverse . dropWhile (/= '.') . reverse . head . tail $ wordy
+            in do
+                close gh
+                renameFile fn . concat $ [ dropExt fn, ".", date, "_", time, ".log" ]
+                loop =<< initLog
+        replaceColons ':' = '-'
+        replaceColons x   = x
+        dropExt           = reverse . drop 4 . reverse
 
 
 initPlaLog :: Id -> Sing -> MudStack ()
@@ -107,18 +106,7 @@ initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
 
 
 -- ==================================================
--- Stopping logs:
-
-
-closeLogs :: MudStack ()
-closeLogs = do
-    logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (view (nonWorldState.noticeLog))
-                                       , fromJust <$> gets (view (nonWorldState.errorLog )) ]
-    (unzip -> (as, qs)) <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
-    mapM_ stopLog         $ nq : eq : qs
-    mapM_ (liftIO . wait) $ na : ea : as
-    liftIO removeAllHandlers
+-- Stopping/closing logs:
 
 
 stopLog :: LogQueue -> MudStack ()
@@ -133,6 +121,25 @@ doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
 doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
   Nothing     -> return ()
   Just (_, q) -> f q
+
+
+closeLogs :: MudStack ()
+closeLogs = do
+    logNotice "Mud.Logging" "closeLogs" "closing the logs."
+    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (view (nonWorldState.noticeLog))
+                                       , fromJust <$> gets (view (nonWorldState.errorLog )) ]
+    (unzip -> (as, qs)) <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
+    mapM_ stopLog         $ nq : eq : qs
+    mapM_ (liftIO . wait) $ na : ea : as
+    liftIO removeAllHandlers
+
+
+-- ==================================================
+-- Rotating logs:
+
+
+rotatePlaLog :: Id -> MudStack ()
+rotatePlaLog = flip doIfLogging (liftIO . atomically . flip writeTQueue RotateLog)
 
 
 -- ==================================================

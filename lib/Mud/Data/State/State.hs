@@ -324,7 +324,9 @@ data NonWorldState = NonWorldState { _startTime         :: !UTCTime
 -- Log services:
 
 
-data LogCmd = StopLog | LogMsg T.Text
+data LogCmd = LogMsg T.Text
+            | RotateLog
+            | StopLog
 
 
 type LogAsync   = Async ()
