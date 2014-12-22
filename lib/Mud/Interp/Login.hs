@@ -69,6 +69,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
       movePC
       notifyArrival i
       send mq . nl $ ""
+      showMotd mq cols
       look ActionParams { plaId       = i
                         , plaMsgQueue = mq
                         , plaCols     = cols

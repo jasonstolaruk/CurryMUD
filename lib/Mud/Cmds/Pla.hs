@@ -8,7 +8,8 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , mkCmdListWithNonStdRmLinks
                     , mkSerializedNonStdDesig
                     , plaCmds
-                    , readFileExHandler ) where
+                    , readFileExHandler
+                    , showMotd ) where
 
 import Mud.Cmds.Util
 import Mud.Data.Misc
@@ -803,16 +804,16 @@ extractPCIdsFromEiss ws = foldl' helper []
 -----
 
 
--- TODO: Automatically execute this cmd after a user authenticates. (We won't want to log anything in that case.)
 motd :: Action
-motd (NoArgs i mq cols) = logPlaExec "motd" i >> (send mq =<< getMotdTxt cols)
+motd (NoArgs i mq cols) = logPlaExec "motd" i >> showMotd mq cols
 motd p                  = withoutArgs motd p
 
 
-getMotdTxt :: Cols -> MudStack T.Text
-getMotdTxt cols = (try . liftIO $ helper) >>= eitherRet handler
+showMotd :: MsgQueue -> Cols -> MudStack ()
+showMotd mq cols = send mq =<< helper
   where
-    helper    = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
+    helper    = (try . liftIO $ readMotd) >>= eitherRet handler
+    readMotd  = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
     handler e = do
         readFileExHandler "getMotdTxt" e
         return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
