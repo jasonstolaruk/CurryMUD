@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
-module Mud.Cmds.Debug (debugCmds) where
+module Mud.Cmds.Debug ( debugCmds
+                      , purgeThreadTbls ) where
 
 import Mud.Cmds.Util
 import Mud.Color
@@ -233,13 +234,13 @@ debugParams p = patternMatchFail "debugParams" [ showText p ]
 
 
 debugPurge :: Action
-debugPurge (NoArgs' i mq) = logPlaExec (prefixDebugCmd "purge") i >> purge >> ok mq
+debugPurge (NoArgs' i mq) = logPlaExec (prefixDebugCmd "purge") i >> purgeThreadTbls >> ok mq
 debugPurge p              = withoutArgs debugPurge p
 
 
--- TODO: This function could be automatically run at certain intervals.
-purge :: MudStack ()
-purge = logNotice "purge" "purging the thread tables." >> purgePlaLogTbl >> purgeThreadTbl >> purgeTalkAsyncTbl
+purgeThreadTbls :: MudStack ()
+purgeThreadTbls =
+    logNotice "purgeThreadTbls" "purging the thread tables." >> purgePlaLogTbl >> purgeTalkAsyncTbl >> purgeThreadTbl
 
 
 purgePlaLogTbl :: MudStack ()
@@ -252,16 +253,6 @@ purgePlaLogTbl = IM.assocs <$> readTMVarInNWS plaLogTblTMVar >>= \kvs -> do
     helper m (i, _      ) = IM.delete i m
 
 
-purgeThreadTbl :: MudStack ()
-purgeThreadTbl = do
-    tis <- M.keys <$> readTMVarInNWS threadTblTMVar
-    ss  <- liftIO . mapM threadStatus $ tis
-    modifyNWS threadTblTMVar . flip (foldl' helper) . zip tis $ ss
-  where
-    helper m (ti, s) | s == ThreadFinished = M.delete ti m
-                     | otherwise           = m
-
-
 purgeTalkAsyncTbl :: MudStack ()
 purgeTalkAsyncTbl = do
     asyncs <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
@@ -270,6 +261,16 @@ purgeTalkAsyncTbl = do
   where
     helper m (_, Nothing) = m
     helper m (a, _      ) = M.delete (asyncThreadId a) m
+
+
+purgeThreadTbl :: MudStack ()
+purgeThreadTbl = do
+    tis <- M.keys <$> readTMVarInNWS threadTblTMVar
+    ss  <- liftIO . mapM threadStatus $ tis
+    modifyNWS threadTblTMVar . flip (foldl' helper) . zip tis $ ss
+  where
+    helper m (ti, s) | s == ThreadFinished = M.delete ti m
+                     | otherwise           = m
 
 
 -----
