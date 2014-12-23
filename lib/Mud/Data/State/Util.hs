@@ -62,6 +62,7 @@ module Mud.Data.State.Util ( BothGramNos
                            , sortInv
                            , splitRmInv
                            , statefulFork
+                           , statefulFork_
                            , wrapSend ) where
 
 import Mud.Data.Misc
@@ -516,5 +517,10 @@ splitRmInv :: WorldState -> Inv -> (Inv, Inv)
 splitRmInv ws = span (\i -> (ws^.typeTbl) ! i == PCType)
 
 
-statefulFork :: StateInIORefT MudState IO () -> MudStack ()
-statefulFork f = liftIO . void . forkIO . void . runStateInIORefT f =<< get
+statefulFork :: StateInIORefT MudState IO () -> MudStack MudState
+statefulFork f = get >>= \s ->
+    (liftIO . void . forkIO . void . runStateInIORefT f $ s) >> return s
+
+
+statefulFork_ :: StateInIORefT MudState IO () -> MudStack ()
+statefulFork_ f = liftIO . void . forkIO . void . runStateInIORefT f =<< get

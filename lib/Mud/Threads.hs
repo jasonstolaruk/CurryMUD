@@ -18,7 +18,7 @@ import Mud.Util
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId, threadDelay)
+import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
@@ -48,7 +48,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --   a. Code reduction.
 --   b. Consistency in binding names.
 -- 3. Write tests for NameResolution and the Cmds modules.
--- 4. Confirm that all threads have exception handlers.
 
 
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
@@ -100,7 +99,7 @@ saveUptime ut@(T.pack . renderSecs -> utTxt) = getRecordUptime >>= \case
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     registerThread Listen
-    statefulFork threadTblPurger
+    statefulFork_ threadTblPurger
     listInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
@@ -170,8 +169,7 @@ talk h host = helper `finally` cleanUp
             setDfltColor mq
             dumpTitle    mq
             prompt       mq "By what name are you known?"
-            s <- get
-            liftIO . void . forkIO . void . runStateInIORefT (inacTimer i mq itq) $ s
+            s <- statefulFork . inacTimer i mq $ itq
             liftIO $ race_ (runStateInIORefT (server  h i mq itq) s)
                            (runStateInIORefT (receive h i mq)     s)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
@@ -334,7 +332,7 @@ cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
 shutDown :: MudStack ()
 shutDown = massMsg SilentBoot >> commitSuicide
   where
-    commitSuicide = statefulFork $ do
+    commitSuicide = statefulFork_ $ do
         liftIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
         logNotice "shutDown" "all players have been disconnected."
         liftIO . killThread =<< getListenThreadId
