@@ -55,7 +55,7 @@ interpName cn p                   = patternMatchFail "interpName" [ cn, showText
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
 promptRetryName mq msg = do
-    send mq . nl' $ if (not . T.null $ msg) then nl msg else ""
+    send mq . nl' $ if not . T.null $ msg then nl msg else ""
     prompt mq "Let's try this again. By what name are you known?"
 
 

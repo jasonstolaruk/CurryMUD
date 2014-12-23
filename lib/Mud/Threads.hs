@@ -22,8 +22,7 @@ import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId, threadDelay
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
-import Control.Concurrent.STM.TQueue (TQueue, tryReadTQueue)
-import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
+import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, readTQueue, tryReadTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
@@ -328,7 +327,7 @@ inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThreadExHandler "inactivity timer" i
   where
     loop secs = do
-        liftIO . threadDelay $ 10 ^ 6 * 1
+        liftIO . threadDelay $ 10 ^ 6
         (liftIO . atomically . tryReadTQueue $ itq) >>= \case
           Nothing  -> if secs >= maxInacSecs
                         then inacBoot secs
