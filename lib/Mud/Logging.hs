@@ -70,7 +70,7 @@ type LoggingFun = String -> String -> IO ()
 
 
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
-spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<< initLog) $ (logRotationFlagger q)
+spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<< initLog) $ logRotationFlagger q
   where
     initLog = fileHandler fn p >>= \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
@@ -90,6 +90,7 @@ spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<<
                 date  = head wordy
                 time  = map replaceColons . init . reverse . dropWhile (/= '.') . reverse . head . tail $ wordy
             in do
+                atomically . writeTQueue q . LogMsg $ "Mud.Logging spawnLogger rotateLog rotateIt: log rotated."
                 close gh
                 renameFile fn . concat $ [ dropExt fn, ".", date, "_", time, ".log" ]
                 loop =<< initLog
@@ -104,6 +105,14 @@ initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
     a <- liftIO . spawnLogger fn INFO ("currymud." <> n) infoM $ q
     modifyNWS plaLogTblTMVar $ \plt ->
         plt & at i ?~ (a, q)
+
+
+logRotationFlagger :: LogQueue -> IO ()
+logRotationFlagger q = forever loop
+  where
+    loop = do
+        threadDelay $ 10 ^ 6 * logRotationFlaggerDelay
+        atomically . writeTQueue q $ RotateLog
 
 
 -- ==================================================
@@ -133,18 +142,6 @@ closeLogs = do
     mapM_ stopLog         $ nq : eq : qs
     mapM_ (liftIO . wait) $ na : ea : as
     liftIO removeAllHandlers
-
-
--- ==================================================
--- Rotating logs:
-
-
-logRotationFlagger :: LogQueue -> IO ()
-logRotationFlagger q = forever loop
-  where
-    loop = do
-        threadDelay $ 10 ^ 6 * logRotationFlaggerDelay
-        atomically . writeTQueue q $ RotateLog
 
 
 -- ==================================================
