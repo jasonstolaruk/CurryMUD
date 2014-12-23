@@ -77,7 +77,6 @@ listenWrapper = initAndStart `finally` graceful
         initLogging
         logNotice "listenWrapper initAndStart" "server started."
         initWorld
-        liftIO . void . async . void . runStateInIORefT threadTblPurger =<< get -- TODO: Or just "forkIO"?
         listen
 
 
@@ -100,6 +99,7 @@ saveUptime ut@(T.pack . renderSecs -> utTxt) = getRecordUptime >>= \case
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     registerThread Listen
+    liftIO . void . forkIO . void . runStateInIORefT threadTblPurger =<< get
     listInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
@@ -134,6 +134,25 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
 
 
 -- ==================================================
+-- The "thread table purge" thread:
+
+
+threadTblPurger :: MudStack ()
+threadTblPurger = do
+    registerThread ThreadTblPurger
+    logNotice "threadTblPurger" "thread table purge thread started."
+    forever loop `catch` threadTblPurgerExHandler
+  where
+    loop = (liftIO . threadDelay $ 10 ^ 6 * threadTblPurgerDelay) >> purgeThreadTbls
+
+
+threadTblPurgerExHandler :: SomeException -> MudStack ()
+threadTblPurgerExHandler e = do
+    logExMsg "threadTblPurgerExHandler" "exception caught on thread table purger thread; rethrowing to listen thread" e
+    liftIO . flip throwTo e =<< getListenThreadId
+
+
+-- ==================================================
 -- "Talk" threads:
 
 
@@ -151,7 +170,7 @@ talk h host = helper `finally` cleanUp
             dumpTitle    mq
             prompt       mq "By what name are you known?"
             s <- get
-            liftIO . void . async . void . runStateInIORefT (inacTimer i mq itq) $ s -- TODO: Or just "forkIO"?
+            liftIO . void . forkIO . void . runStateInIORefT (inacTimer i mq itq) $ s
             liftIO $ race_ (runStateInIORefT (server  h i mq itq) s)
                            (runStateInIORefT (receive h i mq)     s)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
@@ -227,6 +246,33 @@ dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExH
   where
     getFilename  = ("title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
     takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
+
+
+-- ==================================================
+-- "Inactivity timer" threads:
+
+
+type InacTimerQueue = TQueue InacTimerMsg
+
+
+data InacTimerMsg = ResetTimer
+                  | StopTimer
+
+
+inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
+inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThreadExHandler "inactivity timer" i
+  where
+    loop secs = do
+        liftIO . threadDelay $ 10 ^ 6
+        (liftIO . atomically . tryReadTQueue $ itq) >>= \case
+          Nothing  -> if secs >= maxInacSecs
+                        then inacBoot secs
+                        else loop . succ $ secs
+          Just itm -> case itm of StopTimer  -> return ()
+                                  ResetTimer -> loop 0
+    inacBoot (parensQuote . T.pack . renderSecs -> secs) = do
+        logPla "inacTimer" i $ "booted due to inactivity " <> secs <>  "."
+        liftIO . atomically . writeTQueue mq $ InacBoot
 
 
 -- ==================================================
@@ -310,46 +356,3 @@ receive h i mq = (registerThread . Receive $ i) >> loop `catch` plaThreadExHandl
     helper c acc | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
                  | otherwise                             = acc
     delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
-
-
--- ==================================================
--- "Inactivity timer" threads:
-
-
-type InacTimerQueue = TQueue InacTimerMsg
-
-
-data InacTimerMsg = ResetTimer
-                  | StopTimer
-
-
-inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThreadExHandler "inactivity timer" i
-  where
-    loop secs = do
-        liftIO . threadDelay $ 10 ^ 6
-        (liftIO . atomically . tryReadTQueue $ itq) >>= \case
-          Nothing  -> if secs >= maxInacSecs
-                        then inacBoot secs
-                        else loop . succ $ secs
-          Just itm -> case itm of StopTimer  -> return ()
-                                  ResetTimer -> loop 0
-    inacBoot (parensQuote . T.pack . renderSecs -> secs) = do
-        logPla "inacTimer" i $ "booted due to inactivity " <> secs <>  "."
-        liftIO . atomically . writeTQueue mq $ InacBoot
-
-
--- ==================================================
--- "Thread table purge" threads:
-
-
-threadTblPurger :: MudStack ()
-threadTblPurger = registerThread ThreadTblPurger >> forever loop `catch` threadTblPurgerExHandler
-  where
-    loop = (liftIO . threadDelay $ 10 ^ 6 * threadTblPurgerDelay) >> purgeThreadTbls
-
-
-threadTblPurgerExHandler :: SomeException -> MudStack ()
-threadTblPurgerExHandler e = do
-    logExMsg "threadTblPurgerExHandler" "exception caught on thread table purger thread; rethrowing to listen thread" e
-    liftIO . flip throwTo e =<< getListenThreadId
