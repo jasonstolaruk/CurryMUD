@@ -65,7 +65,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
       void . modifyEnt i sing $ s
       (views hostName T.pack -> host) <- modifyPla i interp centralDispatch
       initPlaLog i s
-      logPla "interpConfirmName" i $ "(new player) logged on from " <> host <> "."
+      logPla "interpConfirmName" i $ "new player logged on from " <> host <> "."
       movePC
       notifyArrival i
       send mq . nl $ ""

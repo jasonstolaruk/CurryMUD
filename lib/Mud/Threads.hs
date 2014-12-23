@@ -48,6 +48,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 --   a. Code reduction.
 --   b. Consistency in binding names.
 -- 3. Write tests for NameResolution and the Cmds modules.
+-- 4. Confirm that all threads have exception handlers.
 
 
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
@@ -99,7 +100,7 @@ saveUptime ut@(T.pack . renderSecs -> utTxt) = getRecordUptime >>= \case
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     registerThread Listen
-    liftIO . void . forkIO . void . runStateInIORefT threadTblPurger =<< get
+    statefulFork threadTblPurger
     listInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
@@ -333,8 +334,9 @@ cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
 shutDown :: MudStack ()
 shutDown = massMsg SilentBoot >> commitSuicide
   where
-    commitSuicide = do
-        liftIO . void . forkIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
+    commitSuicide = statefulFork $ do
+        liftIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
+        logNotice "shutDown" "all players have been disconnected."
         liftIO . killThread =<< getListenThreadId
 
 

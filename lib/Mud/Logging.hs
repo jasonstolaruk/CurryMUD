@@ -78,12 +78,11 @@ spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<<
       LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
       RotateLog                -> rotateLog gh
       StopLog                  -> close gh
-    rotateLog gh = helper -- TODO: Handle exceptions. "throwTo"
+    rotateLog gh = doesFileExist fn >>= \case
+        True  -> (fileSize <$> getFileStatus fn) >>= \fs ->
+            if fs >= maxLogSize then rotateIt else loop gh
+        False -> close gh >> (loop =<< initLog)
       where
-        helper = doesFileExist fn >>= \case
-          True  -> (fileSize <$> getFileStatus fn) >>= \fs ->
-              if fs >= maxLogSize then rotateIt else loop gh
-          False -> close gh >> (loop =<< initLog)
         rotateIt = getZonedTime >>= \t ->
             let wordy = words . show $ t
                 date  = head wordy
