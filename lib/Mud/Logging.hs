@@ -28,7 +28,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
-import Control.Exception.Lifted (catch, throwIO)
+import Control.Exception.Lifted (throwIO)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
@@ -79,7 +79,7 @@ spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<<
       LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
       RotateLog                -> rotateLog gh
       StopLog                  -> close gh
-    rotateLog gh = helper `catch` \e -> throwIO (e :: SomeException) -- TODO: Thread silently dies. Throw TO?
+    rotateLog gh = helper -- TODO: Handle exceptions. "throwTo"
       where
         helper = doesFileExist fn >>= \case
           True  -> (fileSize <$> getFileStatus fn) >>= \fs ->
@@ -140,7 +140,7 @@ closeLogs = do
 
 
 logRotationFlagger :: LogQueue -> IO ()
-logRotationFlagger q = forever loop -- TODO: `catch` ExHandler
+logRotationFlagger q = forever loop
   where
     loop = do
         threadDelay $ 10 ^ 6 * logRotationFlaggerDelay
@@ -182,7 +182,7 @@ logAndDispIOEx mq cols modName funName (dblQuote . showText -> e)
 logIOExRethrow :: T.Text -> T.Text -> IOException -> MudStack ()
 logIOExRethrow modName funName e = do
     logError . T.concat $ [ modName, " ", funName, ": unexpected exception; rethrowing." ]
-    liftIO . throwIO $ e
+    liftIO . throwIO $ e -- TODO: Does this work?
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
