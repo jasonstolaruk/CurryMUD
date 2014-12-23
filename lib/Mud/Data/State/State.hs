@@ -421,7 +421,6 @@ instance Show ActionParams where
 -- Patterns matching type "ActionParams":
 
 
-{-
 pattern WithArgs i mq cols as = ActionParams { plaId       = i
                                              , plaMsgQueue = mq
                                              , plaCols     = cols
@@ -459,7 +458,6 @@ pattern AdviseOneArg a <- WithArgs _ _ _ [a]
 
 
 pattern Advising mq cols <- WithArgs _ mq cols _
--}
 
 
 -- ==================================================
