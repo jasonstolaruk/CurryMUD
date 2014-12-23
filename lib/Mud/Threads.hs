@@ -311,10 +311,9 @@ handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
 
 
 sendInacBootMsg :: Handle -> MudStack ()
-sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ "You are being booted from CurryMUD due to inactivity."
+sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ "You are being disconnected from CurryMUD due to inactivity."
 
 
--- TODO: Make a wizard command that boots a specified player.
 boot :: Handle -> T.Text -> MudStack ()
 boot h = liftIO . T.hPutStrLn h . nl' . nl
 
@@ -334,7 +333,7 @@ shutDown = massMsg SilentBoot >> commitSuicide
   where
     commitSuicide = statefulFork_ $ do
         liftIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
-        logNotice "shutDown" "all players have been disconnected."
+        logNotice "shutDown commitSuicide" "all players have been disconnected; killing the listen thread."
         liftIO . killThread =<< getListenThreadId
 
 

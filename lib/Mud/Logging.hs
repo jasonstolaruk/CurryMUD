@@ -69,7 +69,7 @@ type LoggingFun = String -> String -> IO ()
 
 
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
-spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<< initLog) $ logRotationFlagger q
+spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<< initLog) $ logRotationFlagger q -- TODO: Exception handling.
   where
     initLog = fileHandler fn p >>= \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"

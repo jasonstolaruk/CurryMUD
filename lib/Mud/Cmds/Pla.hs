@@ -127,7 +127,7 @@ plaCmds =
     , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
     , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
     , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
-    , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long the MUD has been running." }
+    , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long CurryMUD has been running." }
     , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
     , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
 

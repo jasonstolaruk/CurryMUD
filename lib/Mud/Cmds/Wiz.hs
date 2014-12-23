@@ -9,7 +9,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util
 import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Logging as L (logIOEx, logNotice, logPlaExec, logPlaExecArgs, massLogPla)
+import qualified Mud.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
@@ -27,6 +27,7 @@ import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 
@@ -44,6 +45,10 @@ logIOEx = L.logIOEx "Mud.Cmds.Wiz"
 
 logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Wiz"
+
+
+logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla = L.logPla "Mud.Cmds.Wiz"
 
 
 logPlaExec :: CmdName -> Id -> MudStack ()
@@ -64,10 +69,11 @@ massLogPla = L.massLogPla "Mud.Cmds.Wiz"
 wizCmds :: [Cmd]
 wizCmds =
     [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
+    , Cmd { cmdName = prefixWizCmd "boot", action = wizBoot, cmdDesc = "Boot a player." }
     , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
     , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
     , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message to the server console." }
-    , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down the MUD." }
+    , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down CurryMUD." }
     , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
     , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
     , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the server uptime." } ]
@@ -88,6 +94,35 @@ wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
 -----
 
 
+wizBoot :: Action
+wizBoot p@AdviseNoArgs = advise p [prefixWizCmd "boot"] $ "Please specify the full name of the PC you wish to boot, \
+                                                          \followed optionally by a message."
+wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
+    mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
+    (view entTbl -> et) <- readWSTMVar -- TODO: Can we do like this in other places?
+    case [ i' | i' <- is, (et ! i')^.sing == n ] of
+      []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote n <> " is currently logged in."
+      [i'] -> let n'  = (et  ! i )^.sing
+                  mq' = (mqt ! i')
+              in do
+                  logPlaExecArgs (prefixWizCmd "boot") as i
+                  ok mq
+                  case rest of [] -> dfltMsg   i' n' mq'
+                               _  -> customMsg i' n' mq'
+      xs   -> patternMatchFail "wizBoot" [ showText xs ]
+  where
+    dfltMsg   i' n' mq' = do
+        logPla "wizBoot dfltMsg" i' $ T.concat [ "booted by ", n', " ", parensQuote "no message given", "." ]
+        liftIO . atomically . writeTQueue mq' . MsgBoot $ dfltBootMsg
+    customMsg i' n' mq' = let msg = T.intercalate " " rest in do
+        logPla "wizBoot customMsg" i' $ T.concat [ "booted by ", n', "; message: ", msg ]
+        liftIO . atomically . writeTQueue mq' . MsgBoot $ msg
+wizBoot p = patternMatchFail "wizBoot" [ showText p ]
+
+
+-----
+
+
 wizDate :: Action
 wizDate (NoArgs' i mq) = do
     logPlaExec (prefixWizCmd "date") i
@@ -102,7 +137,7 @@ wizName :: Action
 wizName (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "name") i
     readWSTMVar >>= \ws ->
-        let (view sing -> s)    = (ws^.entTbl) ! i
+        let (view sing -> s)       = (ws^.entTbl) ! i
             (pp *** pp -> (s', r)) = getSexRace i ws
         in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
 wizName p = withoutArgs wizName p
@@ -112,9 +147,10 @@ wizName p = withoutArgs wizName p
 
 
 wizPrint :: Action
-wizPrint p@AdviseNoArgs       = advise p ["print"] $ "You must provide a message to print to the server console, as \
-                                                     \in " <> dblQuote (prefixWizCmd "print" <> " Is anybody \
-                                                     \home?") <> "."
+wizPrint p@AdviseNoArgs = advise p [prefixWizCmd "print"] $ advice
+  where
+    advice = "You must provide a message to print to the server console, as in " <> dblQuote (prefixWizCmd "print" <>
+             " Is anybody home?") <> "."
 wizPrint (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
     let (view sing -> s) = (ws^.entTbl) ! i
     in do
@@ -151,10 +187,9 @@ wizShutdown (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
         logPlaExecArgs (prefixWizCmd "shutdown") as i
         massLogPla "wizShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
                                               , s
-                                              , "; reason: "
-                                              , msg
-                                              , "." ]
-        logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; reason: ", msg, "." ]
+                                              , "; message: "
+                                              , msg ]
+        logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg, "." ]
         liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown _ = patternMatchFail "wizShutdown" []
 
