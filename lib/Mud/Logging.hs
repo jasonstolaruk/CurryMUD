@@ -15,8 +15,7 @@ module Mud.Logging ( closeLogs
                    , logPlaExec
                    , logPlaExecArgs
                    , logPlaOut
-                   , massLogPla
-                   , rotatePlaLog ) where
+                   , massLogPla ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.State
@@ -146,10 +145,6 @@ logRotationFlagger q = forever loop -- TODO: `catch` ExHandler
     loop = do
         threadDelay $ 10 ^ 6 * logRotationFlaggerDelay
         atomically . writeTQueue q $ RotateLog
-
-
-rotatePlaLog :: Id -> MudStack () -- TODO: Needed?
-rotatePlaLog = flip doIfLogging (liftIO . atomically . flip writeTQueue RotateLog)
 
 
 -- ==================================================

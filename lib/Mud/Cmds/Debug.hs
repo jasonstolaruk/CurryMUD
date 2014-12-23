@@ -27,6 +27,7 @@ import Control.Monad (replicateM, replicateM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (ord)
 import Data.List (foldl', nub, sort)
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
@@ -35,7 +36,7 @@ import System.CPUTime (getCPUTime)
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys)
+import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys, lookup)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, keys)
 import qualified Data.Text as T
 
@@ -297,16 +298,12 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 debugRotate :: Action
-debugRotate (NoArgs' i mq) = logPlaExec (prefixDebugCmd "rotate") i >> ok mq >> return () -- TODO: ...rotatePlaLog i
-{-
-doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
-  Nothing     -> return ()
-  Just (_, q) -> f q
-
-liftIO . atomically . flip writeTQueue RotateLog
--}
-debugRotate p              = withoutArgs debugRotate p
+debugRotate (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "rotate") i
+    q <- snd . fromJust . IM.lookup i <$> readTMVarInNWS plaLogTblTMVar
+    liftIO . atomically . writeTQueue q $ RotateLog
+    ok mq
+debugRotate p = withoutArgs debugRotate p
 
 
 -----
