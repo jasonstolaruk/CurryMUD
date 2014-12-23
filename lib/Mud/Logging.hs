@@ -179,7 +179,7 @@ logAndDispIOEx mq cols modName funName (dblQuote . showText -> e)
 logIOExRethrow :: T.Text -> T.Text -> IOException -> MudStack ()
 logIOExRethrow modName funName e = do
     logError . T.concat $ [ modName, " ", funName, ": unexpected exception; rethrowing." ]
-    liftIO . throwIO $ e -- TODO: Does this work?
+    liftIO . throwIO $ e
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
