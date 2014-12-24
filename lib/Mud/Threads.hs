@@ -18,7 +18,7 @@ import Mud.Util
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
+import Control.Concurrent (killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
@@ -230,10 +230,6 @@ plaThreadExHandler n i e
   | otherwise                            = do
       logExMsg "plaThreadExHandler" ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
       liftIO . flip throwTo e =<< getListenThreadId
-
-
-getListenThreadId :: MudStack ThreadId
-getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 setDfltColor :: MsgQueue -> MudStack ()

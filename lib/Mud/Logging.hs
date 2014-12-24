@@ -24,11 +24,11 @@ import Mud.TopLvlDefs
 import Mud.Util
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (ThreadId, threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (IOException, SomeException)
-import Control.Exception.Lifted (throwIO)
+import Control.Exception.Lifted (catch, throwIO, throwTo)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
@@ -40,6 +40,7 @@ import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
 import System.Directory (doesFileExist, renameFile)
+import System.IO (stderr)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
@@ -48,6 +49,7 @@ import System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandl
 import System.Posix.Files (fileSize, getFileStatus)
 import qualified Data.IntMap.Lazy as IM (elems, lookup)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T (hPutStrLn)
 
 
 -- ==================================================
@@ -58,18 +60,21 @@ initLogging :: MudStack ()
 initLogging = do
     liftIO . updateGlobalLogger rootLoggerName $ removeHandler
     (nq, eq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
-    (na, ea) <- (,) <$> (liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM $ nq)
-                    <*> (liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  $ eq)
+    (na, ea) <- (,) <$> (getListenThreadId >>= liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM nq)
+                    <*> (getListenThreadId >>= liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  eq)
     nonWorldState.noticeLog .= Just (na, nq)
     nonWorldState.errorLog  .= Just (ea, eq)
 
 
-type LogName    = T.Text
-type LoggingFun = String -> String -> IO ()
+type LogName        = T.Text
+type LoggingFun     = String -> String -> IO ()
+type ListenThreadId = ThreadId
 
 
-spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
-spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<< initLog) $ logRotationFlagger q -- TODO: Exception handling.
+spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> ListenThreadId -> IO LogAsync
+spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q lti =
+    async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler lti "spawnLogger")
+                  (logRotationFlagger q `catch` loggingThreadExHandler lti "logRotationFlagger")
   where
     initLog = fileHandler fn p >>= \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
@@ -97,12 +102,10 @@ spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q = async . race_ (loop =<<
         dropExt           = reverse . drop 4 . reverse
 
 
-initPlaLog :: Id -> Sing -> MudStack ()
-initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
-    q <- liftIO newTQueueIO
-    a <- liftIO . spawnLogger fn INFO ("currymud." <> n) infoM $ q
-    modifyNWS plaLogTblTMVar $ \plt ->
-        plt & at i ?~ (a, q)
+loggingThreadExHandler :: ListenThreadId -> T.Text -> SomeException -> IO ()
+loggingThreadExHandler lti n e = do
+    T.hPutStrLn stderr $ "Mud.Logging loggingThreadExHandler: exception caught on logging thread " <> parensQuote ("inside " <> dblQuote n) <> "; rethrowing to listen thread"
+    throwTo lti e
 
 
 logRotationFlagger :: LogQueue -> IO ()
@@ -111,6 +114,14 @@ logRotationFlagger q = forever loop
     loop = do
         threadDelay $ 10 ^ 6 * logRotationFlaggerDelay
         atomically . writeTQueue q $ RotateLog
+
+
+initPlaLog :: Id -> Sing -> MudStack ()
+initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
+    q <- liftIO newTQueueIO
+    a <- getListenThreadId >>= liftIO . spawnLogger fn INFO ("currymud." <> n) infoM q
+    modifyNWS plaLogTblTMVar $ \plt ->
+        plt & at i ?~ (a, q)
 
 
 -- ==================================================
