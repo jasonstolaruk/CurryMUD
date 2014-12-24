@@ -643,9 +643,9 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 intro :: Action
-intro (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let (view introduced -> intros) = (ws^.pcTbl) ! i
-    in if null intros
+intro (NoArgs i mq cols) = do
+    (view pcTbl -> view introduced . (! i) -> intros) <- readWSTMVar
+    if null intros
       then let introsTxt = "No one has introduced themselves to you yet." in do
           wrapSend mq cols introsTxt
           logPlaOut "intro" i [introsTxt]

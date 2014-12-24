@@ -99,7 +99,7 @@ wizBoot p@AdviseNoArgs = advise p [prefixWizCmd "boot"] $ "Please specify the fu
                                                           \followed optionally by a message."
 wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
-    (view entTbl -> et) <- readWSTMVar -- TODO: Can we do like this in other places?
+    (view entTbl -> et) <- readWSTMVar
     case [ i' | i' <- is, (et ! i')^.sing == n ] of
       []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote n <> " is currently logged in."
       [i'] -> let n'  = (et  ! i )^.sing
@@ -151,12 +151,11 @@ wizPrint p@AdviseNoArgs = advise p [prefixWizCmd "print"] $ advice
   where
     advice = "You must provide a message to print to the server console, as in " <> dblQuote (prefixWizCmd "print" <>
              " Is anybody home?") <> "."
-wizPrint (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i
-    in do
-        logPlaExecArgs (prefixWizCmd "print") as i
-        liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
-        ok mq
+wizPrint (WithArgs i mq _ as) = do
+    logPlaExecArgs (prefixWizCmd "print") as i
+    (view entTbl -> view sing . (! i) -> s) <- readWSTMVar
+    liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
+    ok mq
 wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 
 
@@ -164,33 +163,32 @@ wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 
 
 wizShutdown :: Action
-wizShutdown (NoArgs' i mq) = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i in do
-        massSend "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
-        logPlaExecArgs (prefixWizCmd "shutdown") [] i
-        massLogPla "wizShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
-                                            , s
-                                            , " "
-                                            , parensQuote "no message given"
-                                            , "." ]
-        logNotice  "wizShutdown" $ T.concat [ "server shutdown initiated by "
-                                            , s
-                                            , " "
-                                            , parensQuote "no message given"
-                                            , "." ]
-        liftIO . atomically . writeTQueue mq $ Shutdown
-wizShutdown (WithArgs i mq _ as) = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i
-        msg              = T.intercalate " " as
-    in do
-        massSend msg
-        logPlaExecArgs (prefixWizCmd "shutdown") as i
-        massLogPla "wizShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
-                                              , s
-                                              , "; message: "
-                                              , msg ]
-        logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg, "." ]
-        liftIO . atomically . writeTQueue mq $ Shutdown
+wizShutdown (NoArgs' i mq) = do
+    logPlaExecArgs (prefixWizCmd "shutdown") [] i
+    (view entTbl -> view sing . (! i) -> s) <- readWSTMVar
+    massSend dfltShutdownMsg
+    massLogPla "wizShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
+                                        , s
+                                        , " "
+                                        , parensQuote "no message given"
+                                        , "." ]
+    logNotice  "wizShutdown" $ T.concat [ "server shutdown initiated by "
+                                        , s
+                                        , " "
+                                        , parensQuote "no message given"
+                                        , "." ]
+    liftIO . atomically . writeTQueue mq $ Shutdown
+wizShutdown (WithArgs i mq _ as) = do
+    logPlaExecArgs (prefixWizCmd "shutdown") as i
+    (view entTbl -> view sing . (! i) -> s) <- readWSTMVar
+    let msg = T.intercalate " " as
+    massSend msg
+    massLogPla "wizShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
+                                          , s
+                                          , "; message: "
+                                          , msg ]
+    logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg, "." ]
+    liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown _ = patternMatchFail "wizShutdown" []
 
 
