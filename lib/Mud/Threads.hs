@@ -121,11 +121,10 @@ listen = handle listenExHandler $ do
 
 
 listenExHandler :: SomeException -> MudStack ()
-listenExHandler e =
-    case fromException e of
-      Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
-      Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
-      _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
+listenExHandler e = case fromException e of
+  Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
+  Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
+  _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
 
 
 registerThread :: ThreadType -> MudStack ()

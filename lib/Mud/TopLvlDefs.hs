@@ -50,13 +50,14 @@ genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
 
-helpDir, logDir, miscDir, resDir, titleDir, uptimeFile :: FilePath
-helpDir    = resDir ++ "help/"
+helpDir, logDir, miscDir, mudDir, resDir, titleDir, uptimeFile :: FilePath
+mudDir     = let home = unsafePerformIO . getEnv $ "HOME" in home ++ "/CurryMUD/"
 logDir     = mudDir ++ "logs/"
-miscDir    = resDir ++ "misc/"
-resDir     = mudDir ++ "res/"
-titleDir   = resDir ++ "titles/"
 uptimeFile = mudDir ++ "uptime"
+resDir     = mudDir ++ "res/"
+helpDir    = resDir ++ "help/"
+miscDir    = resDir ++ "misc/"
+titleDir   = resDir ++ "titles/"
 
 
 indentFiller :: Char
@@ -86,11 +87,6 @@ maxInacSecs = 60 * 10
 
 maxLogSize :: FileOffset
 maxLogSize = 100000
-
-
-mudDir :: FilePath
-mudDir = let home = unsafePerformIO . getEnv $ "HOME"
-         in home ++ "/CurryMUD/"
 
 
 noOfTitles :: Int

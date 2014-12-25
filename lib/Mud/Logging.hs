@@ -24,11 +24,11 @@ import Mud.TopLvlDefs
 import Mud.Util
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent (ThreadId, threadDelay)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Exception (IOException, SomeException)
-import Control.Exception.Lifted (catch, throwIO, throwTo)
+import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
+import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
@@ -40,7 +40,6 @@ import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
 import System.Directory (doesFileExist, renameFile)
-import System.IO (stderr)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
@@ -49,7 +48,7 @@ import System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandl
 import System.Posix.Files (fileSize, getFileStatus)
 import qualified Data.IntMap.Lazy as IM (elems, lookup)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (hPutStrLn)
+import qualified Data.Text.IO as T (appendFile)
 
 
 -- ==================================================
@@ -60,21 +59,20 @@ initLogging :: MudStack ()
 initLogging = do
     liftIO . updateGlobalLogger rootLoggerName $ removeHandler
     (nq, eq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
-    (na, ea) <- (,) <$> (getListenThreadId >>= liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM nq)
-                    <*> (getListenThreadId >>= liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  eq)
+    (na, ea) <- (,) <$> (liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM $ nq)
+                    <*> (liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  $ eq)
     nonWorldState.noticeLog .= Just (na, nq)
     nonWorldState.errorLog  .= Just (ea, eq)
 
 
-type LogName        = T.Text
-type LoggingFun     = String -> String -> IO ()
-type ListenThreadId = ThreadId
+type LogName    = T.Text
+type LoggingFun = String -> String -> IO ()
 
 
-spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> ListenThreadId -> IO LogAsync
-spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q lti =
-    async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler lti "spawnLogger")
-                  (logRotationFlagger q `catch` loggingThreadExHandler lti "logRotationFlagger")
+spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
+spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q =
+    async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler "spawnLogger")
+                  (logRotationFlagger q `catch` loggingThreadExHandler "logRotationFlagger")
   where
     initLog = fileHandler fn p >>= \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
@@ -88,10 +86,9 @@ spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q lti =
             if fs >= maxLogSize then rotateIt else loop gh
         False -> close gh >> (loop =<< initLog)
       where
-        rotateIt = getZonedTime >>= \t ->
-            let wordy = words . show $ t
-                date  = head wordy
-                time  = map replaceColons . init . reverse . dropWhile (/= '.') . reverse . head . tail $ wordy
+        rotateIt = getZonedTime >>= \(words . show -> wordy) ->
+            let date = head wordy
+                time = map replaceColons . init . reverse . dropWhile (/= '.') . reverse . head . tail $ wordy
             in do
                 atomically . writeTQueue q . LogMsg $ "Mud.Logging spawnLogger rotateLog rotateIt: log rotated."
                 close gh
@@ -102,10 +99,19 @@ spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q lti =
         dropExt           = reverse . drop 4 . reverse
 
 
-loggingThreadExHandler :: ListenThreadId -> T.Text -> SomeException -> IO ()
-loggingThreadExHandler lti n e = do
-    T.hPutStrLn stderr $ "Mud.Logging loggingThreadExHandler: exception caught on logging thread " <> parensQuote ("inside " <> dblQuote n) <> "; rethrowing to listen thread"
-    throwTo lti e
+loggingThreadExHandler :: T.Text -> SomeException -> IO ()
+loggingThreadExHandler n e = case fromException e of
+  Just ThreadKilled -> return ()
+  _                 -> getZonedTime >>= \(T.words . showText -> wordy) ->
+      let date = head wordy
+          time = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
+          msg  = T.concat $ [ bracketQuote $ date <> " " <> time
+                            , " "
+                            , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
+                            , parensQuote $ "inside " <> dblQuote n
+                            , ". "
+                            , dblQuote . showText $ e ]
+      in T.appendFile (logDir ++ "logging thread exception.log") . nl $ msg
 
 
 logRotationFlagger :: LogQueue -> IO ()
@@ -119,7 +125,7 @@ logRotationFlagger q = forever loop
 initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
     q <- liftIO newTQueueIO
-    a <- getListenThreadId >>= liftIO . spawnLogger fn INFO ("currymud." <> n) infoM q
+    a <- liftIO . spawnLogger fn INFO ("currymud." <> n) infoM $ q
     modifyNWS plaLogTblTMVar $ \plt ->
         plt & at i ?~ (a, q)
 
