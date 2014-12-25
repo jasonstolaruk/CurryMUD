@@ -10,7 +10,6 @@ module Mud.Data.State.Util ( BothGramNos
                            , frame
                            , getEffBothGramNos
                            , getEffName
-                           , getListenThreadId
                            , getLogAsyncs
                            , getNWSRec
                            , getPla
@@ -75,7 +74,7 @@ import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), Const)
 import Control.Arrow ((***))
-import Control.Concurrent (ThreadId, forkIO)
+import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -432,10 +431,6 @@ getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
            | otherwise          = mkUnknownPCEntName i' ws
     n                           = e^.sing
     (view introduced -> intros) = (ws^.pcTbl) ! i
-
-
-getListenThreadId :: MudStack ThreadId
-getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 getLogAsyncs :: MudStack (LogAsync, LogAsync)

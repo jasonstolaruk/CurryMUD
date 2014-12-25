@@ -18,7 +18,7 @@ import Mud.Util
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent (killThread, myThreadId, threadDelay)
+import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
@@ -149,6 +149,10 @@ threadTblPurgerExHandler :: SomeException -> MudStack ()
 threadTblPurgerExHandler e = do
     logExMsg "threadTblPurgerExHandler" "exception caught on thread table purger thread; rethrowing to listen thread" e
     liftIO . flip throwTo e =<< getListenThreadId
+
+
+getListenThreadId :: MudStack ThreadId
+getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 
 
 -- ==================================================
