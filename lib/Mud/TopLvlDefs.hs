@@ -46,18 +46,23 @@ dfltShutdownMsg :: T.Text
 dfltShutdownMsg = "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
 
 
+dictFile, propNamesFile :: Maybe FilePath
+dictFile      = Just "/usr/share/dict/words"
+propNamesFile = Just "/usr/share/dict/propernames"
+
+
 genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
 
 helpDir, logDir, miscDir, mudDir, resDir, titleDir, uptimeFile :: FilePath
-mudDir     = let home = unsafePerformIO . getEnv $ "HOME" in home ++ "/CurryMUD/"
-logDir     = mudDir ++ "logs/"
-uptimeFile = mudDir ++ "uptime"
-resDir     = mudDir ++ "res/"
 helpDir    = resDir ++ "help/"
+logDir     = mudDir ++ "logs/"
 miscDir    = resDir ++ "misc/"
+mudDir     = let home = unsafePerformIO . getEnv $ "HOME" in home ++ "/CurryMUD/"
+resDir     = mudDir ++ "res/"
 titleDir   = resDir ++ "titles/"
+uptimeFile = mudDir ++ "uptime"
 
 
 indentFiller :: Char

@@ -21,6 +21,7 @@ import Network (HostName)
 import Prelude hiding ((>>))
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
+import qualified Data.Set as S (Set)
 import qualified Data.Text as T
 
 
@@ -310,14 +311,23 @@ data Type = ObjType
 -- Non-world state:
 
 
-data NonWorldState = NonWorldState { _startTime         :: !UTCTime
-                                   , _noticeLog         :: !(Maybe LogService)
+data NonWorldState = NonWorldState { _dicts             :: !(Dicts)
                                    , _errorLog          :: !(Maybe LogService)
-                                   , _plaLogTblTMVar    :: !(TMVar (IM.IntMap LogService))
-                                   , _threadTblTMVar    :: !(TMVar ThreadTbl)
-                                   , _talkAsyncTblTMVar :: !(TMVar TalkAsyncTbl)
                                    , _msgQueueTblTMVar  :: !(TMVar (IM.IntMap MsgQueue))
-                                   , _plaTblTMVar       :: !(TMVar (IM.IntMap Pla)) }
+                                   , _noticeLog         :: !(Maybe LogService)
+                                   , _plaLogTblTMVar    :: !(TMVar (IM.IntMap LogService))
+                                   , _plaTblTMVar       :: !(TMVar (IM.IntMap Pla))
+                                   , _startTime         :: !UTCTime
+                                   , _talkAsyncTblTMVar :: !(TMVar TalkAsyncTbl)
+                                   , _threadTblTMVar    :: !(TMVar ThreadTbl) }
+
+
+-- ==================================================
+-- Dictionaries:
+
+
+data Dicts = Dicts { _dictWords     :: !(Maybe (S.Set T.Text))
+                   , _dictPropNames :: !(Maybe (S.Set T.Text)) }
 
 
 -- ==================================================
@@ -332,31 +342,6 @@ data LogCmd = LogMsg T.Text
 type LogAsync   = Async ()
 type LogQueue   = TQueue LogCmd
 type LogService = (LogAsync, LogQueue)
-
-
--- ==================================================
--- Thread table:
-
-
-type ThreadTbl = M.Map ThreadId ThreadType
-
-
-data ThreadType = Error
-                | InacTimer Id
-                | Listen
-                | Notice
-                | PlaLog    Id
-                | Receive   Id
-                | Server    Id
-                | Talk      Id
-                | ThreadTblPurger deriving (Eq, Ord, Show)
-
-
--- ==================================================
--- Talk async table:
-
-
-type TalkAsyncTbl = M.Map ThreadId (Async ())
 
 
 -- ==================================================
@@ -461,6 +446,31 @@ pattern Advising mq cols <- WithArgs _ mq cols _
 
 
 -- ==================================================
+-- Talk async table:
+
+
+type TalkAsyncTbl = M.Map ThreadId (Async ())
+
+
+-- ==================================================
+-- Thread table:
+
+
+type ThreadTbl = M.Map ThreadId ThreadType
+
+
+data ThreadType = Error
+                | InacTimer Id
+                | Listen
+                | Notice
+                | PlaLog    Id
+                | Receive   Id
+                | Server    Id
+                | Talk      Id
+                | ThreadTblPurger deriving (Eq, Ord, Show)
+
+
+-- ==================================================
 -- Template Haskell for creating lenses:
 
 
@@ -477,4 +487,5 @@ makeLenses ''Rm
 makeLenses ''RmLink
 
 makeLenses ''NonWorldState
+makeLenses ''Dicts
 makeLenses ''Pla

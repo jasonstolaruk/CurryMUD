@@ -30,22 +30,24 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 initMudState :: IO MudState
 initMudState = do
+    let dictionaries = Dicts Nothing Nothing
     start <- getCurrentTime
-    (wsTMVar, pltTMVar, ttTMVar, tatTMVar, mqtTMVar, ptTMVar) <- (,,,,,) <$> newTMVarIO ws
+    (mqtTMVar, pltTMVar, ptTMVar, tatTMVar, ttTMVar, wsTMVar) <- (,,,,,) <$> newTMVarIO IM.empty
+                                                                         <*> newTMVarIO IM.empty
                                                                          <*> newTMVarIO IM.empty
                                                                          <*> newTMVarIO M.empty
                                                                          <*> newTMVarIO M.empty
-                                                                         <*> newTMVarIO IM.empty
-                                                                         <*> newTMVarIO IM.empty
+                                                                         <*> newTMVarIO ws
     return MudState { _worldStateTMVar = wsTMVar
-                    , _nonWorldState   = NonWorldState { _startTime         = start
-                                                       , _noticeLog         = Nothing
+                    , _nonWorldState   = NonWorldState { _dicts             = dictionaries
                                                        , _errorLog          = Nothing
-                                                       , _plaLogTblTMVar    = pltTMVar
-                                                       , _threadTblTMVar    = ttTMVar
-                                                       , _talkAsyncTblTMVar = tatTMVar
                                                        , _msgQueueTblTMVar  = mqtTMVar
-                                                       , _plaTblTMVar       = ptTMVar } }
+                                                       , _noticeLog         = Nothing
+                                                       , _plaLogTblTMVar    = pltTMVar
+                                                       , _plaTblTMVar       = ptTMVar
+                                                       , _startTime         = start
+                                                       , _talkAsyncTblTMVar = tatTMVar
+                                                       , _threadTblTMVar    = ttTMVar } }
   where
     ws = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
 

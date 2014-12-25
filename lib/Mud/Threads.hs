@@ -71,13 +71,10 @@ logPla = L.logPla "Mud.Threads"
 
 
 listenWrapper :: MudStack ()
-listenWrapper = initAndStart `finally` graceful
-  where
-    initAndStart = do
-        initLogging
-        logNotice "listenWrapper initAndStart" "server started."
-        initWorld
-        listen
+listenWrapper = flip finally graceful $ do
+    initLogging
+    logNotice "listenWrapper initAndStart" "server started."
+    listen
 
 
 graceful :: MudStack ()
@@ -100,17 +97,17 @@ listen :: MudStack ()
 listen = handle listenExHandler $ do
     registerThread Listen
     statefulFork_ threadTblPurger
+    initWorld
+    loadDictFiles
     listInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
     (forever . loop $ sock) `finally` cleanUp sock
   where
     listInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
-        let ifList = T.intercalate ", " [ T.concat [ "["
-                                                   , showText . NI.name $ n
-                                                   , ": "
-                                                   , showText . NI.ipv4 $ n
-                                                   , "]" ] | n <- ns ]
+        let ifList = T.intercalate ", " [ bracketQuote . T.concat $ [ showText . NI.name $ n
+                                                                    , ": "
+                                                                    , showText . NI.ipv4 $ n ] | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
     loop sock = do
         (h, host, port') <- liftIO . accept $ sock
@@ -132,6 +129,10 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
     modifyNWS threadTblTMVar $ \tt -> tt & at ti ?~ threadType
 
 
+loadDictFiles :: MudStack ()
+loadDictFiles = return ()
+
+
 -- ==================================================
 -- The "thread table purge" thread:
 
@@ -139,7 +140,7 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
 threadTblPurger :: MudStack ()
 threadTblPurger = do
     registerThread ThreadTblPurger
-    logNotice "threadTblPurger" "thread table purge thread started."
+    logNotice "threadTblPurger" "thread table purger thread started."
     forever loop `catch` threadTblPurgerExHandler
   where
     loop = (liftIO . threadDelay $ 10 ^ 6 * threadTblPurgerDelay) >> purgeThreadTbls
