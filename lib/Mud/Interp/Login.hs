@@ -26,7 +26,6 @@ import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, sort)
 import Data.Monoid ((<>))
-import Data.Time (getZonedTime)
 import Network (HostName)
 import System.Directory (doesFileExist)
 import qualified Data.Set as S (member)
@@ -91,12 +90,9 @@ checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) >>= \profanitie
           return True
 
 
--- TODO: Make a helper function for the timestamper. The same functionality is used by the logging ex handler.
 logProfanity :: CmdName -> HostName -> IO ()
-logProfanity cn (T.pack -> hn) = getZonedTime >>= \(T.words . showText -> wordy) ->
-    let date     = head wordy
-        time     = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
-        newEntry = T.concat [ bracketQuote $ date <> " " <> time, " ", hn, " ", cn ]
+logProfanity cn (T.pack -> hn) = mkTimestamp >>= \ts ->
+    let newEntry = T.concat [ ts, " ", hn, " ", cn ]
     in getLogConts >>= T.writeFile profanityLogFile . T.unlines . sort . (newEntry :)
   where
     getLogConts = doesFileExist profanityLogFile >>= \case

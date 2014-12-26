@@ -103,15 +103,13 @@ spawnLogger fn p (T.unpack -> ln) f q =
 loggingThreadExHandler :: T.Text -> SomeException -> IO ()
 loggingThreadExHandler n e = case fromException e of
   Just ThreadKilled -> return ()
-  _                 -> getZonedTime >>= \(T.words . showText -> wordy) ->
-      let date = head wordy
-          time = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
-          msg  = T.concat [ bracketQuote $ date <> " " <> time
-                          , " "
-                          , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
-                          , parensQuote $ "inside " <> dblQuote n
-                          , ". "
-                          , dblQuote . showText $ e ]
+  _                 -> mkTimestamp >>= \ts ->
+      let msg = T.concat [ ts
+                         , " "
+                         , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
+                         , parensQuote $ "inside " <> dblQuote n
+                         , ". "
+                         , dblQuote . showText $ e ]
       in T.appendFile loggingExLogFile . nl $ msg
 
 

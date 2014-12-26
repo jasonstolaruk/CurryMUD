@@ -24,6 +24,7 @@ module Mud.Util ( aOrAn
                 , maybeVoid
                 , mkCountList
                 , mkOrdinal
+                , mkTimestamp
                 , multiWrap
                 , nl
                 , nl'
@@ -61,6 +62,7 @@ import Control.Monad (guard)
 import Data.Char (isDigit, isSpace, toLower, toUpper)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
+import Data.Time (getZonedTime)
 import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
@@ -327,6 +329,13 @@ mkOrdinal (showText -> n) = n <> case T.last n of '1' -> "st"
                                                   '2' -> "nd"
                                                   '3' -> "rd"
                                                   _   -> "th"
+
+
+mkTimestamp :: IO T.Text
+mkTimestamp = getZonedTime >>= \(T.words . showText -> wordy) ->
+    let date = head wordy
+        time = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
+    in return . bracketQuote $ date <> " " <> time
 
 
 nl :: T.Text -> T.Text
