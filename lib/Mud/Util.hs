@@ -11,7 +11,6 @@ module Mud.Util ( aOrAn
                 , capitalize
                 , countOcc
                 , dblQuote
-                , dblQuoteStr
                 , deleteFirstOfEach
                 , dropBlanks
                 , dup
@@ -197,10 +196,6 @@ singleQuote = quoteWith "'"
 
 dblQuote :: T.Text -> T.Text
 dblQuote = quoteWith "\""
-
-
-dblQuoteStr :: String -> String
-dblQuoteStr = T.unpack . dblQuote . T.pack
 
 
 bracketQuote :: T.Text -> T.Text

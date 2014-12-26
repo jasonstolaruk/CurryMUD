@@ -26,7 +26,7 @@ import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, readTQueue, tryReadTQ
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
-import Control.Lens.Operators ((&), (?~), (^.))
+import Control.Lens.Operators ((&), (.=), (?~), (^.))
 import Control.Monad (forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
@@ -37,6 +37,7 @@ import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, 
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)
 import qualified Data.Map.Lazy as M (elems, empty)
+import qualified Data.Set as S (Set, fromList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
@@ -130,7 +131,18 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
 
 
 loadDictFiles :: MudStack ()
-loadDictFiles = return ()
+loadDictFiles = do
+    wordsSet     <- loadDictFile wordsFile
+    propNamesSet <- loadDictFile propNamesFile
+    nonWorldState.dicts .= Dicts wordsSet propNamesSet
+
+
+loadDictFile :: Maybe FilePath -> MudStack (Maybe (S.Set T.Text))
+loadDictFile = \case
+  Nothing -> return Nothing
+  Just fn -> do
+      logNotice "loadDictFile" $ "loading dictionary " <> (dblQuote . T.pack $ fn) <> "."
+      Just . S.fromList . T.lines . T.toLower <$> (liftIO . T.readFile $ fn)
 
 
 -- ==================================================

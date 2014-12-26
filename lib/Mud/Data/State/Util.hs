@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, RankNTypes, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RankNTypes, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.State.Util ( BothGramNos
                            , allKeys
@@ -18,6 +18,7 @@ module Mud.Data.State.Util ( BothGramNos
                            , getSexRace
                            , getUnusedId
                            , getWSTMVar
+                           , isInDict
                            , massMsg
                            , massSend
                            , mkBroadcast
@@ -85,12 +86,14 @@ import Control.Lens.Setter (ASetter, set)
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get, gets)
+import Control.Monad.State.Class (MonadState)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, foldl', nub, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, elems, keys)
+import qualified Data.Set as S (Set, member)
 import qualified Data.Text as T
 
 
@@ -398,6 +401,7 @@ ok mq = send mq . nlnl $ "OK!"
 
 -- ============================================================
 -- Misc. helpers:
+-- TODO: Pull some of these out into their own categories?
 
 
 allKeys :: WorldState -> Inv
@@ -456,6 +460,15 @@ getSexRace i ws = (view sex *** view race) . (((ws^.mobTbl) !) *** ((ws^.pcTbl) 
 
 getUnusedId :: WorldState -> Id
 getUnusedId = head . (\\) [0..] . allKeys
+
+
+isInDict :: (MonadState MudState ((->) (Maybe (S.Set T.Text) -> Bool)))                                        =>
+            T.Text                                                                                             ->
+            ((MudStack Bool -> Const (MudStack Bool) (MudStack Bool)) -> Dicts -> Const (MudStack Bool) Dicts) ->
+            MudStack Bool
+isInDict cn lens = gets (view (nonWorldState.dicts.lens)) >>= return $ \case
+  Nothing   -> False
+  Just dict -> cn `S.member` dict
 
 
 mkCoinsFromList :: [Int] -> Coins

@@ -46,11 +46,6 @@ dfltShutdownMsg :: T.Text
 dfltShutdownMsg = "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
 
 
-dictFile, propNamesFile :: Maybe FilePath
-dictFile      = Just "/usr/share/dict/words"
-propNamesFile = Just "/usr/share/dict/propernames"
-
-
 genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
@@ -100,6 +95,11 @@ noOfTitles = 33
 
 port :: Int
 port = 9696
+
+
+propNamesFile, wordsFile :: Maybe FilePath
+propNamesFile = Just "/usr/share/dict/propernames"
+wordsFile     = Just "/usr/share/dict/words"
 
 
 stdLinkNames :: [T.Text]
