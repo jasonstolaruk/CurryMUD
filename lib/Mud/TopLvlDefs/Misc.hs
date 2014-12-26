@@ -37,7 +37,7 @@ minCols = 30
 
 
 maxInacSecs :: Integer
-maxInacSecs = 10 --60 * 10
+maxInacSecs = 60 * 10
 
 
 maxLogSize :: FileOffset

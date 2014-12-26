@@ -8,11 +8,11 @@ import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util
 import Mud.Interp.CentralDispatch
-import Mud.Logging hiding (logPla)
+import Mud.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Logging as L (logPla)
+import qualified Mud.Logging as L (logNotice, logPla)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>))
@@ -39,6 +39,10 @@ patternMatchFail = U.patternMatchFail "Mud.Interp.Login"
 
 
 -----
+
+
+logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice = L.logNotice "Mud.Interp.Login"
 
 
 logPla :: T.Text -> Id -> T.Text -> MudStack ()
@@ -78,7 +82,9 @@ checkProfanity :: CmdName -> Id -> MsgQueue -> MudStack Bool
 checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) >>= \profanities ->
     if cn `notElem` T.lines profanities
       then return False
-      else do -- TODO: Log to the notice log.
+      else do
+          (view entTbl -> parensQuote . view sing . (! i) -> n) <- readWSTMVar
+          logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", n, " due to profanity." ]
           liftIO . logProfanity cn . view hostName =<< getPla i
           send mq . nl' $ "Nice try. Your IP address has been logged. Keep this up and you'll get banned."
           sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
