@@ -26,7 +26,7 @@ slotChar   = ':'
 
 
 -- ==================================================
--- Significant characters in the telnet protocol:
+-- Telnet characters:
 
 
 telnetGA, telnetIAC, telnetSB, telnetSE :: Char

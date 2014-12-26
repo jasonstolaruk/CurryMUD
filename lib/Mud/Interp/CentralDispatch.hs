@@ -9,13 +9,13 @@ import Mud.Cmds.Wiz
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util
+import Mud.TopLvlDefs.Misc
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
-import Mud.TopLvlDefs.Misc
 import qualified Data.Text as T
 
 
