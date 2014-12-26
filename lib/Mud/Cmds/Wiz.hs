@@ -114,7 +114,7 @@ wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
   where
     dfltMsg   i' n' mq' = do
         logPla "wizBoot dfltMsg" i' $ T.concat [ "booted by ", n', " ", parensQuote "no message given", "." ]
-        sendMsgBoot mq' $ Nothing
+        sendMsgBoot mq' Nothing
     customMsg i' n' mq' = let msg = T.intercalate " " rest in do
         logPla "wizBoot customMsg" i' $ T.concat [ "booted by ", n', "; message: ", msg ]
         sendMsgBoot mq' . Just $ msg
