@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Interp.Login (interpName) where
 
@@ -10,6 +10,7 @@ import Mud.Data.State.Util
 import Mud.Interp.CentralDispatch
 import Mud.Logging hiding (logPla)
 import Mud.TheWorld.Ids
+import Mud.TopLvlDefs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logPla)
 import qualified Mud.Util as U (patternMatchFail)
@@ -18,13 +19,15 @@ import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Lens (at)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
-import Control.Monad (void)
+import Control.Monad (unless, void)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
 import Data.Monoid ((<>))
 import qualified Data.Set as S (member)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -47,27 +50,55 @@ interpName (T.toLower -> cn) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise                         = do
-      (Just wd) <- gets (view (nonWorldState.dicts.wordsDict))
-      if cn `S.member` wd
-        then promptRetryName mq "You name cannot be an English word. Please choose an original fantasy name."
-        else let cn' = capitalize cn in do
-            prompt mq . nl' $ "Your name will be " <> dblQuote cn' <> ", is that OK? [yes/no]"
-            void . modifyPla i interp $ interpConfirmName cn'
+      isProfane <- checkProfanity cn mq
+      unless isProfane $ do
+          isPropName <- checkPropNamesDict cn mq
+          unless isPropName $ do
+              isWord <- checkWordsDict cn mq
+              unless isWord $ let cn' = capitalize cn in do
+                  prompt mq . nl' $ "Your name will be " <> dblQuote cn' <> ", is that OK? [yes/no]"
+                  void . modifyPla i interp $ interpConfirmName cn'
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
 interpName _  (WithArgs _ mq _ _) = promptRetryName mq "Your name must be a single word."
 interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
-{-
-gets (view (nonWorldState.dicts.lens)) >>= return $ \case
-  Nothing   -> False
-  Just dict -> cn `S.member` dict
--}
 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
 promptRetryName mq msg = do
     send mq . nl' $ if not . T.null $ msg then nl msg else ""
     prompt mq "Let's try this again. By what name are you known?"
+
+
+-- TODO: Log IPs.
+checkProfanity :: CmdName -> MsgQueue -> MudStack Bool
+checkProfanity cn mq = (liftIO . T.readFile $ profanitiesFile) >>= \profanities ->
+    case cn `elem` T.lines profanities of
+      False -> return False
+      True  -> do
+          send mq . nl' $ "Nice try. Your IP address has been logged. Keep this up and you'll get banned."
+          sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
+          return True
+
+
+checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
+checkPropNamesDict cn mq = gets (view (nonWorldState.dicts.propNamesDict)) >>= \case
+  Nothing  -> return False
+  Just pnd -> if cn `S.member` pnd
+    then do
+        promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
+        return True
+    else return False
+
+
+checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
+checkWordsDict cn mq = gets (view (nonWorldState.dicts.wordsDict)) >>= \case
+  Nothing -> return False
+  Just wd -> if cn `S.member` wd
+    then do
+        promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
+        return True
+    else return False
 
 
 interpConfirmName :: Sing -> Interp

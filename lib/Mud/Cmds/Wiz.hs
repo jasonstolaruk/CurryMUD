@@ -113,10 +113,10 @@ wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
   where
     dfltMsg   i' n' mq' = do
         logPla "wizBoot dfltMsg" i' $ T.concat [ "booted by ", n', " ", parensQuote "no message given", "." ]
-        liftIO . atomically . writeTQueue mq' . MsgBoot $ dfltBootMsg
+        sendMsgBoot mq' $ Nothing
     customMsg i' n' mq' = let msg = T.intercalate " " rest in do
         logPla "wizBoot customMsg" i' $ T.concat [ "booted by ", n', "; message: ", msg ]
-        liftIO . atomically . writeTQueue mq' . MsgBoot $ msg
+        sendMsgBoot mq' . Just $ msg
 wizBoot p = patternMatchFail "wizBoot" [ showText p ]
 
 

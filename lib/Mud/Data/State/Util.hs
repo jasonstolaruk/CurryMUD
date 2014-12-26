@@ -59,6 +59,7 @@ module Mud.Data.State.Util ( BothGramNos
                            , readTMVarInNWS
                            , readWSTMVar
                            , send
+                           , sendMsgBoot
                            , sortInv
                            , splitRmInv
                            , statefulFork
@@ -297,6 +298,13 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
+
+
+sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
+sendMsgBoot mq mt = let t = case mt of Just msg -> msg
+                                       Nothing  -> dfltBootMsg
+                    in liftIO . atomically . writeTQueue mq . MsgBoot $ t
+
 
 
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
