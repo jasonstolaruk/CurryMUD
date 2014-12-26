@@ -306,7 +306,6 @@ sendMsgBoot mq mt = let t = case mt of Just msg -> msg
                     in liftIO . atomically . writeTQueue mq . MsgBoot $ t
 
 
-
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
 wrapSend mq cols = send mq . wrapUnlinesNl cols
 

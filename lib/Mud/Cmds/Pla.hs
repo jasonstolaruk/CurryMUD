@@ -148,7 +148,7 @@ about (NoArgs i mq cols) = do
     logPlaExec "about" i
     try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
-    helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile . (miscDir ++) $ "about")
+    helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ aboutFile)
 about p = withoutArgs about p
 
 
@@ -813,7 +813,7 @@ showMotd :: MsgQueue -> Cols -> MudStack ()
 showMotd mq cols = send mq =<< helper
   where
     helper    = (try . liftIO $ readMotd) >>= eitherRet handler
-    readMotd  = return . frame cols . multiWrap cols . T.lines =<< (T.readFile . (miscDir ++) $ "motd")
+    readMotd  = return . frame cols . multiWrap cols . T.lines =<< T.readFile motdFile
     handler e = do
         readFileExHandler "getMotdTxt" e
         return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."

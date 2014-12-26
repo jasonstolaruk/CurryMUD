@@ -337,7 +337,7 @@ sendPrompt h = liftIO . T.hPutStrLn h
 cowbye :: Handle -> MudStack ()
 cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
   where
-    takeADump = T.hPutStrLn h =<< (T.readFile . (miscDir ++) $ "cowbye")
+    takeADump = T.hPutStrLn h =<< T.readFile cowbyeFile
 
 
 shutDown :: MudStack ()

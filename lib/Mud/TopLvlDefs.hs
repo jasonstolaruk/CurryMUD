@@ -50,11 +50,13 @@ genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
 
--- TODO: Make bindings for all the files in the misc directory.
-helpDir, logDir, miscDir, mudDir, profanitiesFile, resDir, titleDir, uptimeFile :: FilePath
+aboutFile, cowbyeFile, helpDir, logDir, miscDir, motdFile, mudDir, profanitiesFile, resDir, titleDir, uptimeFile :: FilePath
+aboutFile       = miscDir ++ "about"
+cowbyeFile      = miscDir ++ "cowbye"
 helpDir         = resDir  ++ "help/"
 logDir          = mudDir  ++ "logs/"
 miscDir         = resDir  ++ "misc/"
+motdFile        = miscDir ++ "motd"
 mudDir          = let home = unsafePerformIO . getEnv $ "HOME" in home ++ "/CurryMUD/"
 profanitiesFile = miscDir ++ "profanities"
 resDir          = mudDir  ++ "res/"
