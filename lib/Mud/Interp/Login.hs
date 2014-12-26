@@ -19,9 +19,11 @@ import Control.Lens (at)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Monad (void)
+import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
 import Data.Monoid ((<>))
+import qualified Data.Set as S (member)
 import qualified Data.Text as T
 
 
@@ -44,13 +46,22 @@ interpName :: Interp
 interpName (T.toLower -> cn) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                         = let cn' = capitalize cn in do
-      prompt mq . nl' $ "Your name will be " <> dblQuote cn' <> ", is that OK? [yes/no]"
-      void . modifyPla i interp $ interpConfirmName cn'
+  | otherwise                         = do
+      (Just wd) <- gets (view (nonWorldState.dicts.wordsDict))
+      if cn `S.member` wd
+        then promptRetryName mq "You name cannot be an English word. Please choose an original fantasy name."
+        else let cn' = capitalize cn in do
+            prompt mq . nl' $ "Your name will be " <> dblQuote cn' <> ", is that OK? [yes/no]"
+            void . modifyPla i interp $ interpConfirmName cn'
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
 interpName _  (WithArgs _ mq _ _) = promptRetryName mq "Your name must be a single word."
 interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
+{-
+gets (view (nonWorldState.dicts.lens)) >>= return $ \case
+  Nothing   -> False
+  Just dict -> cn `S.member` dict
+-}
 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()

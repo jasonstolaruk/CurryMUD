@@ -326,8 +326,8 @@ data NonWorldState = NonWorldState { _dicts             :: !(Dicts)
 -- Dictionaries:
 
 
-data Dicts = Dicts { _dictWords     :: !(Maybe (S.Set T.Text))
-                   , _dictPropNames :: !(Maybe (S.Set T.Text)) }
+data Dicts = Dicts { _wordsDict     :: !(Maybe (S.Set T.Text))
+                   , _propNamesDict :: !(Maybe (S.Set T.Text)) }
 
 
 -- ==================================================
