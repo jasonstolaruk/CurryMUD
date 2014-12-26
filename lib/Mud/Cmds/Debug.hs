@@ -24,8 +24,10 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (catch, throwIO, try)
 import Control.Lens (both, over)
+import Control.Lens.Getter (view)
 import Control.Monad (replicateM, replicateM_)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State (gets)
 import Data.Char (ord)
 import Data.List (foldl', nub, sort)
 import Data.Maybe (fromJust)
@@ -359,6 +361,13 @@ debugThread (NoArgs i mq cols) = do
     mkTypeName (Talk    (showText -> i')) = padOrTrunc 10 "Talk"    <> i'
     mkTypeName (showText -> tt)           = tt
 debugThread p = withoutArgs debugThread p
+
+
+getLogAsyncs :: MudStack (LogAsync, LogAsync)
+getLogAsyncs = helper <$> gets (view nonWorldState)
+  where
+    helper     = (getAsync noticeLog *** getAsync errorLog) . dup
+    getAsync l = fst . fromJust . view l
 
 
 -----

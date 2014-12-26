@@ -10,11 +10,9 @@ module Mud.Data.State.Util ( BothGramNos
                            , frame
                            , getEffBothGramNos
                            , getEffName
-                           , getLogAsyncs
                            , getNWSRec
                            , getPla
                            , getPlaColumns
-                           , getPlaLogQueue
                            , getSexRace
                            , getUnusedId
                            , getWSTMVar
@@ -160,7 +158,7 @@ modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
 
 
 -- ============================================================
--- Helper functions for registering world elements:
+-- Registering world elements:
 
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
@@ -220,7 +218,7 @@ putRm i is c r = modifyWS $ \ws ->
 
 
 -- ============================================================
--- Helper functions for modifying world elements:
+-- Modifying world elements:
 
 
 modifyEnt :: Id -> ASetter Ent Ent a b -> b -> MudStack Ent
@@ -266,7 +264,7 @@ modifyRm i lens val = onWS $ \(t, ws) ->
 
 
 -- ============================================================
--- Helper functions for working with "Pla":
+-- Working with "Pla":
 
 
 getPla :: Id -> MudStack Pla
@@ -290,7 +288,7 @@ getPlaColumns i = view columns <$> getPla i
 
 
 -- ============================================================
--- Helper functions relating to output:
+-- Output:
 
 
 prompt :: MsgQueue -> T.Text -> MudStack ()
@@ -403,8 +401,24 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 -- ============================================================
--- Misc. helpers:
--- TODO: Pull some of these out into their own categories?
+-- Coins:
+
+
+mkCoinsFromList :: [Int] -> Coins
+mkCoinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
+mkCoinsFromList xs                = patternMatchFail "mkCoinsFromList" [ showText xs ]
+
+
+mkListFromCoins :: Coins -> [Int]
+mkListFromCoins (Coins (c, g, s)) = [ c, g, s ]
+
+
+negateCoins :: Coins -> Coins
+negateCoins (Coins (each %~ negate -> c)) = Coins c
+
+
+-- ============================================================
+-- Misc.:
 
 
 allKeys :: WorldState -> Inv
@@ -440,21 +454,10 @@ getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
     (view introduced -> intros) = (ws^.pcTbl) ! i
 
 
-getLogAsyncs :: MudStack (LogAsync, LogAsync)
-getLogAsyncs = helper <$> gets (view nonWorldState)
-  where
-    helper     = (getAsync noticeLog *** getAsync errorLog) . dup
-    getAsync l = fst . fromJust . view l
-
-
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
 getMqtPt = do
     (mqtTMVar, ptTMVar) <- (,) <$> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
     liftIO . atomically $  (,) <$> readTMVar mqtTMVar         <*> readTMVar ptTMVar
-
-
-getPlaLogQueue :: Id -> MudStack LogQueue
-getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
 
 
 getSexRace :: Id -> WorldState -> (Sex, Race)
@@ -463,15 +466,6 @@ getSexRace i ws = (view sex *** view race) . (((ws^.mobTbl) !) *** ((ws^.pcTbl) 
 
 getUnusedId :: WorldState -> Id
 getUnusedId = head . (\\) [0..] . allKeys
-
-
-mkCoinsFromList :: [Int] -> Coins
-mkCoinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
-mkCoinsFromList xs                = patternMatchFail "mkCoinsFromList" [ showText xs ]
-
-
-mkListFromCoins :: Coins -> [Int]
-mkListFromCoins (Coins (c, g, s)) = [ c, g, s ]
 
 
 mkPlur :: Ent -> Plur
@@ -502,10 +496,6 @@ mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
 mkUnknownPCEntName :: Id -> WorldState -> T.Text
 mkUnknownPCEntName i ws | (view sex  -> s) <- (ws^.mobTbl) ! i
                         , (view race -> r) <- (ws^.pcTbl)  ! i = (T.singleton . T.head . pp $ s) <> pp r
-
-
-negateCoins :: Coins -> Coins
-negateCoins (Coins (each %~ negate -> c)) = Coins c
 
 
 sortInv :: WorldState -> Inv -> Inv

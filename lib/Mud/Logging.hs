@@ -37,6 +37,7 @@ import Control.Monad (forM_, forever)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
+import Data.IntMap.Lazy ((!))
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
@@ -215,6 +216,10 @@ logPlaOut :: T.Text -> CmdName -> Id -> [T.Text] -> MudStack ()
 logPlaOut modName cn i (T.intercalate " / " -> msgs) = helper =<< getPlaLogQueue i
   where
     helper = registerMsg (T.concat [ modName, " ", cn, " (output): ", msgs ])
+
+
+getPlaLogQueue :: Id -> MudStack LogQueue
+getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
 
 
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
