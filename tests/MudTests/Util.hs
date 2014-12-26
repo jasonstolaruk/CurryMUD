@@ -3,7 +3,8 @@
 
 module MudTests.Util where
 
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 import Mud.Util hiding (patternMatchFail)
 import MudTests.TestUtil
 import qualified Mud.Util as U (patternMatchFail)

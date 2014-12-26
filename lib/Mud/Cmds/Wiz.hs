@@ -7,7 +7,8 @@ import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
 import qualified Mud.Util as U (patternMatchFail)

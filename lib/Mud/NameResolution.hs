@@ -17,7 +17,8 @@ module Mud.NameResolution ( ReconciledCoins
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 

@@ -15,7 +15,8 @@ module Main (main) where
 import Mud.Data.State.StateInIORefT
 import Mud.TheWorld.TheWorld
 import Mud.Threads
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 import Mud.Util
 
 import Control.Monad (void)

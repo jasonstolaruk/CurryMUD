@@ -13,7 +13,9 @@ import Mud.Interp.Login
 import Mud.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TheWorld.TheWorld
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 import Mud.Util
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
@@ -146,7 +148,7 @@ loadDictFile = \case
 
 
 -- ==================================================
--- The "thread table purge" thread:
+-- The "thread table purger" thread:
 
 
 threadTblPurger :: MudStack ()

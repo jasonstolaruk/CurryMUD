@@ -29,7 +29,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , serialize ) where
 
 import Mud.Data.State.State
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 

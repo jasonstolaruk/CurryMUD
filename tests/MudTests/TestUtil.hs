@@ -5,7 +5,7 @@ module MudTests.TestUtil where
 import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
 import Mud.TheWorld.TheWorld
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Misc
 
 import Control.Monad (replicateM)
 import Data.Char (chr)

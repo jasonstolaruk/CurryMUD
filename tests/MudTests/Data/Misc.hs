@@ -4,7 +4,7 @@
 module MudTests.Data.Misc where
 
 import Mud.Data.Misc
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
 import Mud.Util
 
 import Data.Monoid ((<>))

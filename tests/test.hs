@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Mud.Data.Misc
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
 import Mud.Util
 import MudTests.Data.Misc
 import MudTests.Data.State.Util
@@ -95,7 +95,7 @@ unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
     , testCase "serializeNonStdDesig"   $ test_serializeNonStdDesig   @?=
         quoteWith non ("Taro" <> d <> "A male human")
     , testCase "deserializeStdDesig"    $ test_deserializeStdDesig    @?=
-        StdDesig Nothing True "fhuman" 55 [55,54..50]
+        StdDesig Nothing True "fhuman" 55 [ 55, 54..50 ]
     , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=
         NonStdDesig "Hanako" "A female human" ]
   where

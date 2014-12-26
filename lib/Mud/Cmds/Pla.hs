@@ -17,7 +17,9 @@ import Mud.Data.State.State
 import Mud.Data.State.Util
 import Mud.Logging hiding (logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.NameResolution
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 import Mud.Util hiding (blowUp, patternMatchFail)
 import qualified Mud.Logging as L (logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util as U (blowUp, patternMatchFail)

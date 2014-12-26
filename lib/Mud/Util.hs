@@ -51,7 +51,7 @@ module Mud.Util ( aOrAn
                 , wrapUnlinesNl
                 , xformLeading ) where
 
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Chars
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))

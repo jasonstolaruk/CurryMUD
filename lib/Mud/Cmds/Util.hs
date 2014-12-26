@@ -11,7 +11,8 @@ module Mud.Cmds.Util ( HelpTopic
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 

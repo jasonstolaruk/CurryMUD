@@ -10,7 +10,7 @@ import Mud.Data.State.Util
 import Mud.Interp.CentralDispatch
 import Mud.Logging hiding (logPla)
 import Mud.TheWorld.Ids
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.FilePaths
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logPla)
 import qualified Mud.Util as U (patternMatchFail)

@@ -45,7 +45,10 @@ library
                        Mud.TheWorld.Ids,
                        Mud.TheWorld.TheWorld,
                        Mud.Threads,
-                       Mud.TopLvlDefs,
+                       Mud.TopLvlDefs.Chars,
+                       Mud.TopLvlDefs.FilePaths,
+                       Mud.TopLvlDefs.Misc,
+                       Mud.TopLvlDefs.Msgs,
                        Mud.Util
   other-extensions:    FlexibleContexts,
                        FlexibleInstances,

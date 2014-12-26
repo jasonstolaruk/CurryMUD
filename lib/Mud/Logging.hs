@@ -20,7 +20,8 @@ module Mud.Logging ( closeLogs
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util
-import Mud.TopLvlDefs
+import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 import Mud.Util
 
 import Control.Applicative ((<$>), (<*>))
@@ -59,8 +60,8 @@ initLogging :: MudStack ()
 initLogging = do
     liftIO . updateGlobalLogger rootLoggerName $ removeHandler
     (nq, eq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
-    (na, ea) <- (,) <$> (liftIO . spawnLogger "notice.log" NOTICE "currymud.notice" noticeM $ nq)
-                    <*> (liftIO . spawnLogger "error.log"  ERROR  "currymud.error"  errorM  $ eq)
+    (na, ea) <- (,) <$> (liftIO . spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM $ nq)
+                    <*> (liftIO . spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  $ eq)
     nonWorldState.noticeLog .= Just (na, nq)
     nonWorldState.errorLog  .= Just (ea, eq)
 
@@ -70,7 +71,7 @@ type LoggingFun = String -> String -> IO ()
 
 
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
-spawnLogger ((logDir ++) -> fn) p (T.unpack -> ln) f q =
+spawnLogger fn p (T.unpack -> ln) f q =
     async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler "spawnLogger")
                   (logRotationFlagger q `catch` loggingThreadExHandler "logRotationFlagger")
   where
@@ -111,7 +112,7 @@ loggingThreadExHandler n e = case fromException e of
                           , parensQuote $ "inside " <> dblQuote n
                           , ". "
                           , dblQuote . showText $ e ]
-      in T.appendFile (logDir ++ "logging thread exception.log") . nl $ msg -- TODO: Make a binding for this filename.
+      in T.appendFile loggingExLogFile . nl $ msg
 
 
 logRotationFlagger :: LogQueue -> IO ()
@@ -123,7 +124,7 @@ logRotationFlagger q = forever loop
 
 
 initPlaLog :: Id -> Sing -> MudStack ()
-initPlaLog i n@(T.unpack . (<> ".log") -> fn) = do
+initPlaLog i n@((logDir ++) . (++ ".log") . T.unpack -> fn) = do
     q <- liftIO newTQueueIO
     a <- liftIO . spawnLogger fn INFO ("currymud." <> n) infoM $ q
     modifyNWS plaLogTblTMVar $ \plt ->
