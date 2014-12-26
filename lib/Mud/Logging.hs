@@ -105,13 +105,13 @@ loggingThreadExHandler n e = case fromException e of
   _                 -> getZonedTime >>= \(T.words . showText -> wordy) ->
       let date = head wordy
           time = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
-          msg  = T.concat $ [ bracketQuote $ date <> " " <> time
-                            , " "
-                            , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
-                            , parensQuote $ "inside " <> dblQuote n
-                            , ". "
-                            , dblQuote . showText $ e ]
-      in T.appendFile (logDir ++ "logging thread exception.log") . nl $ msg
+          msg  = T.concat [ bracketQuote $ date <> " " <> time
+                          , " "
+                          , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
+                          , parensQuote $ "inside " <> dblQuote n
+                          , ". "
+                          , dblQuote . showText $ e ]
+      in T.appendFile (logDir ++ "logging thread exception.log") . nl $ msg -- TODO: Make a binding for this filename.
 
 
 logRotationFlagger :: LogQueue -> IO ()

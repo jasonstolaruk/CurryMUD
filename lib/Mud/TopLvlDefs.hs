@@ -50,18 +50,21 @@ genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
 
-aboutFile, cowbyeFile, helpDir, logDir, miscDir, motdFile, mudDir, profanitiesFile, resDir, titleDir, uptimeFile :: FilePath
-aboutFile       = miscDir ++ "about"
-cowbyeFile      = miscDir ++ "cowbye"
-helpDir         = resDir  ++ "help/"
-logDir          = mudDir  ++ "logs/"
-miscDir         = resDir  ++ "misc/"
-motdFile        = miscDir ++ "motd"
-mudDir          = let home = unsafePerformIO . getEnv $ "HOME" in home ++ "/CurryMUD/"
-profanitiesFile = miscDir ++ "profanities"
-resDir          = mudDir  ++ "res/"
-titleDir        = resDir  ++ "titles/"
-uptimeFile      = mudDir  ++ "uptime"
+-- TODO: Add the other log filenames.
+-- TODO: Split up into different categories.
+aboutFile, cowbyeFile, helpDir, logDir, miscDir, motdFile, mudDir, profanitiesFile, profanityLogFile, resDir, titleDir, uptimeFile :: FilePath
+aboutFile        = miscDir ++ "about"
+cowbyeFile       = miscDir ++ "cowbye"
+helpDir          = resDir  ++ "help/"
+logDir           = mudDir  ++ "logs/"
+miscDir          = resDir  ++ "misc/"
+motdFile         = miscDir ++ "motd"
+mudDir           = let home = unsafePerformIO . getEnv $ "HOME" in home ++ "/CurryMUD/"
+profanitiesFile  = miscDir ++ "profanities"
+profanityLogFile = logDir ++ "profanity.log"
+resDir           = mudDir  ++ "res/"
+titleDir         = resDir  ++ "titles/"
+uptimeFile       = mudDir  ++ "uptime"
 
 
 indentFiller :: Char

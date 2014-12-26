@@ -311,7 +311,7 @@ data Type = ObjType
 -- Non-world state:
 
 
-data NonWorldState = NonWorldState { _dicts             :: !(Dicts)
+data NonWorldState = NonWorldState { _dicts             :: !Dicts
                                    , _errorLog          :: !(Maybe LogService)
                                    , _msgQueueTblTMVar  :: !(TMVar (IM.IntMap MsgQueue))
                                    , _noticeLog         :: !(Maybe LogService)

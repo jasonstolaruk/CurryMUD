@@ -111,7 +111,7 @@ listen = handle listenExHandler $ do
                                                                     , showText . NI.ipv4 $ n ] | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
     loop sock = do
-        (h, host, port') <- liftIO . accept $ sock
+        (h, host, port') <- liftIO . accept $ sock -- TODO: Can we get the actual IP address?
         logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
         a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
         modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a

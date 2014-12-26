@@ -15,6 +15,7 @@ import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logPla)
 import qualified Mud.Util as U (patternMatchFail)
 
+import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Lens (at)
 import Control.Lens.Getter (view, views)
@@ -23,8 +24,11 @@ import Control.Monad (unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete)
+import Data.List (delete, sort)
 import Data.Monoid ((<>))
+import Data.Time (getZonedTime)
+import Network (HostName)
+import System.Directory (doesFileExist)
 import qualified Data.Set as S (member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -50,7 +54,7 @@ interpName (T.toLower -> cn) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise                         = do
-      isProfane <- checkProfanity cn mq
+      isProfane <- checkProfanity cn i mq
       unless isProfane $ do
           isPropName <- checkPropNamesDict cn mq
           unless isPropName $ do
@@ -70,15 +74,28 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
--- TODO: Log IPs.
-checkProfanity :: CmdName -> MsgQueue -> MudStack Bool
-checkProfanity cn mq = (liftIO . T.readFile $ profanitiesFile) >>= \profanities ->
-    case cn `elem` T.lines profanities of
-      False -> return False
-      True  -> do
+checkProfanity :: CmdName -> Id -> MsgQueue -> MudStack Bool
+checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) >>= \profanities ->
+    if cn `notElem` T.lines profanities
+      then return False
+      else do -- TODO: Log to the notice log.
+          liftIO . logProfanity cn . view hostName =<< getPla i
           send mq . nl' $ "Nice try. Your IP address has been logged. Keep this up and you'll get banned."
           sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
           return True
+
+
+-- TODO: Make a helper function for the timestamper. The same functionality is used by the logging ex handler.
+logProfanity :: CmdName -> HostName -> IO ()
+logProfanity cn (T.pack -> hn) = getZonedTime >>= \(T.words . showText -> wordy) ->
+    let date     = head wordy
+        time     = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
+        newEntry = T.concat [ bracketQuote $ date <> " " <> time, " ", hn, " ", cn ]
+    in getLogConts >>= T.writeFile profanityLogFile . T.unlines . sort . (newEntry :)
+  where
+    getLogConts = doesFileExist profanityLogFile >>= \case
+      True  -> T.lines <$> T.readFile profanityLogFile
+      False -> return []
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool

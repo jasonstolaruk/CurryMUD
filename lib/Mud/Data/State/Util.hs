@@ -301,9 +301,7 @@ send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
 sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
-sendMsgBoot mq mt = let t = case mt of Just msg -> msg
-                                       Nothing  -> dfltBootMsg
-                    in liftIO . atomically . writeTQueue mq . MsgBoot $ t
+sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
 
 
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
