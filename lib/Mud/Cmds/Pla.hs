@@ -18,13 +18,13 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.STM
-import Mud.Logging hiding (logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import Mud.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.NameResolution
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Logging as L (logIOEx, logIOExRethrow, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import qualified Mud.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
@@ -32,7 +32,6 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Getter (view, views)
@@ -49,7 +48,6 @@ import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (pi)
 import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
-import System.IO.Error (isDoesNotExistError, isPermissionError)
 import System.Time.Utils (renderSecs)
 import qualified Data.Map.Lazy as M (elems, filter, null, toList)
 import qualified Data.Text as T
@@ -71,14 +69,6 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Pla"
 
 
 -----
-
-
-logIOEx :: T.Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Cmds.Pla"
-
-
-logIOExRethrow :: T.Text -> IOException -> MudStack ()
-logIOExRethrow = L.logIOExRethrow "Mud.Cmds.Pla"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
@@ -107,7 +97,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 plaCmds :: [Cmd]
 plaCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
-    , Cmd { cmdName = "about", action = about, cmdDesc = "About this MUD." }
+    , Cmd { cmdName = "about", action = about, cmdDesc = "About CurryMUD." }
     , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }
     , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
     , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
@@ -155,13 +145,6 @@ about (NoArgs i mq cols) = do
   where
     helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ aboutFile)
 about p = withoutArgs about p
-
-
-readFileExHandler :: T.Text -> IOException -> MudStack ()
-readFileExHandler fn e
-  | isDoesNotExistError e = logIOEx        fn e
-  | isPermissionError   e = logIOEx        fn e
-  | otherwise             = logIOExRethrow fn e
 
 
 -----

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Wiz (wizCmds) where
 
@@ -10,6 +10,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
@@ -28,11 +29,12 @@ import Data.IntMap.Lazy ((!))
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
+import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (putStrLn)
+import qualified Data.Text.IO as T (putStrLn, readFile)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -76,6 +78,7 @@ wizCmds =
     , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
     , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
     , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message to the server console." }
+    , Cmd { cmdName = prefixWizCmd "profanity", action = wizProfanity, cmdDesc = "Dump the profanity log." }
     , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down CurryMUD." }
     , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the MUD start time." }
     , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
@@ -160,6 +163,21 @@ wizPrint (WithArgs i mq _ as) = do
     liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
     ok mq
 wizPrint p = patternMatchFail "wizPrint" [ showText p ]
+
+
+-----
+
+
+-- TODO: Why use "try"?
+wizProfanity :: Action
+wizProfanity (NoArgs i mq cols) = do
+    logPlaExec (prefixWizCmd "profanity") i
+    (liftIO . doesFileExist $ profanityLogFile) >>= \case
+      True  -> try helper >>= eitherRet (\e -> readFileExHandler "wizProfanity" e >> sendGenericErrorMsg mq cols)
+      False -> wrapSend mq cols "No profanities have been logged."
+  where
+    helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ profanityLogFile)
+wizProfanity p = withoutArgs wizProfanity p
 
 
 -----

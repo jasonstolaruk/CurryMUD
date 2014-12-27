@@ -5,6 +5,7 @@ module Mud.Cmds.Util ( HelpTopic
                      , advise
                      , dispCmdList
                      , prefixCmd
+                     , readFileExHandler
                      , sendGenericErrorMsg
                      , withoutArgs ) where
 
@@ -14,15 +15,29 @@ import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)
+import qualified Mud.Logging as L (logIOEx, logIOExRethrow)
 import qualified Mud.Util as U (patternMatchFail)
 
+import Control.Exception (IOException)
 import Data.List (foldl', intercalate, sort)
 import Data.Monoid ((<>))
+import System.IO.Error (isDoesNotExistError, isPermissionError)
 import qualified Data.Text as T
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util"
+
+
+-----
+
+
+logIOEx :: T.Text -> IOException -> MudStack ()
+logIOEx = L.logIOEx "Mud.Cmds.Util"
+
+
+logIOExRethrow :: T.Text -> IOException -> MudStack ()
+logIOExRethrow = L.logIOExRethrow "Mud.Cmds.Util"
 
 
 -- ==================================================
@@ -64,6 +79,16 @@ mkCmdListText = sort . T.lines . T.concat . foldl' helper []
 
 prefixCmd :: Char -> CmdName -> T.Text
 prefixCmd (T.singleton -> prefix) cn = prefix <> cn
+
+
+-----
+
+
+readFileExHandler :: T.Text -> IOException -> MudStack ()
+readFileExHandler fn e
+  | isDoesNotExistError e = logIOEx        fn e
+  | isPermissionError   e = logIOEx        fn e
+  | otherwise             = logIOExRethrow fn e
 
 
 -----

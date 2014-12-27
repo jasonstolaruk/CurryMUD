@@ -9,6 +9,9 @@ import Control.Lens (at)
 import Control.Lens.Operators ((&), (?~))
 
 
+-- TODO: Also make a "Get" module.
+
+
 putObj :: Id -> Ent -> Obj -> MudStack ()
 putObj i e o = modifyWS $ \ws ->
     ws & typeTbl.at i ?~ ObjType & entTbl.at i ?~ e & objTbl.at i ?~ o
