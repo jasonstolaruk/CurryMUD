@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, PatternSynonyms, RecordWildCards, ViewPatterns #-}
 
 module Mud.Cmds.Util ( HelpTopic
                      , advise

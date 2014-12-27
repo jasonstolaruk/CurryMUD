@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastNl
@@ -59,16 +59,16 @@ send :: MsgQueue -> T.Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
-sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
-sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
-
-
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
 wrapSend mq cols = send mq . wrapUnlinesNl cols
 
 
 multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
 multiWrapSend mq cols = send mq . nl . multiWrap cols
+
+
+sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
+sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
 
 
 bcast :: [Broadcast] -> MudStack ()
@@ -135,6 +135,11 @@ bcastOthersInRm i msg = bcast =<< helper
         in putTMVar t ws >> return [(msg, findPCIds ws ris)]
 
 
+massMsg :: Msg -> MudStack ()
+massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
+    forM_ is $ liftIO . atomically . flip writeTQueue m
+
+
 massSend :: T.Text -> MudStack ()
 massSend msg = getMqtPt >>= \(mqt, pt) -> do
     let helper i = let mq   = mqt ! i
@@ -149,11 +154,6 @@ frame cols | divider <- nl . mkDividerTxt $ cols = nl . (<> divider) . (divider 
 
 mkDividerTxt :: Cols -> T.Text
 mkDividerTxt = flip T.replicate "="
-
-
-massMsg :: Msg -> MudStack ()
-massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
-    forM_ is $ liftIO . atomically . flip writeTQueue m
 
 
 ok :: MsgQueue -> MudStack ()

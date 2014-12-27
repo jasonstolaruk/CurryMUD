@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Mud.TopLvlDefs.FilePaths where
 
