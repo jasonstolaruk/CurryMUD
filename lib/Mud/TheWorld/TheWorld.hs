@@ -1,11 +1,12 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Mud.TheWorld.TheWorld ( initMudState
                              , initWorld ) where
 
 import Mud.Data.State.State
-import Mud.Data.State.Util
+import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Put
+import Mud.Data.State.Util.STM
 import Mud.TheWorld.Ids
 import qualified Mud.Logging as L (logNotice)
 

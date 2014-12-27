@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RankNTypes, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, ViewPatterns #-}
 
 module Mud.Logging ( closeLogs
                    , closePlaLog
@@ -19,7 +19,8 @@ module Mud.Logging ( closeLogs
 
 import Mud.Data.Misc
 import Mud.Data.State.State
-import Mud.Data.State.Util
+import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util

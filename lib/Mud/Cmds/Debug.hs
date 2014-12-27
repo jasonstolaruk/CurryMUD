@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE ParallelListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls ) where
@@ -8,7 +8,9 @@ import Mud.Cmds.Util
 import Mud.Color
 import Mud.Data.Misc
 import Mud.Data.State.State
-import Mud.Data.State.Util
+import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE RecordWildCards, ViewPatterns #-}
 
 module Mud.Cmds.Util ( HelpTopic
                      , advise
@@ -10,7 +10,7 @@ module Mud.Cmds.Util ( HelpTopic
 
 import Mud.Data.Misc
 import Mud.Data.State.State
-import Mud.Data.State.Util
+import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)

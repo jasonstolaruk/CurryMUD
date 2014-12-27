@@ -1,12 +1,16 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, ViewPatterns #-}
 
 module Mud.Interp.Login (interpName) where
 
 import Mud.Cmds.Pla
 import Mud.Data.Misc
 import Mud.Data.State.State
-import Mud.Data.State.Util
+import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Modify
+import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Pla
+import Mud.Data.State.Util.STM
 import Mud.Interp.CentralDispatch
 import Mud.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids

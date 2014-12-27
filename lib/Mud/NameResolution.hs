@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RebindableSyntax, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, RebindableSyntax, ViewPatterns #-}
 
 module Mud.NameResolution ( ReconciledCoins
                           , procGecrMisCon
@@ -16,7 +16,8 @@ module Mud.NameResolution ( ReconciledCoins
 
 import Mud.Data.Misc
 import Mud.Data.State.State
-import Mud.Data.State.Util
+import Mud.Data.State.Util.Coins
+import Mud.Data.State.Util.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util hiding (blowUp, patternMatchFail)
@@ -30,12 +31,12 @@ import Data.IntMap.Lazy ((!))
 import Data.List (foldl')
 import Data.Monoid ((<>), mempty)
 import Data.String (fromString)
+import Data.Text.Internal.Builder (Builder)
 import Data.Text.Read (decimal)
 import Data.Text.Strict.Lens (unpacked)
 import Formatting ((%), sformat)
-import Formatting.Holey (Holey)
-import Data.Text.Internal.Builder (Builder)
 import Formatting.Formatters (int, stext)
+import Formatting.Holey (Holey)
 import Prelude hiding ((>>))
 import qualified Data.Text as T
 

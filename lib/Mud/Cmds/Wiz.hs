@@ -1,12 +1,14 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Mud.Cmds.Wiz (wizCmds) where
 
 import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
-import Mud.Data.State.Util
+import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Mud.Interp.CentralDispatch (centralDispatch) where
 
@@ -8,7 +8,8 @@ import Mud.Cmds.Pla
 import Mud.Cmds.Wiz
 import Mud.Data.Misc
 import Mud.Data.State.State
-import Mud.Data.State.Util
+import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Misc
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
