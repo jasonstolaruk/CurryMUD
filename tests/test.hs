@@ -5,7 +5,7 @@ import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.Util
 import MudTests.Data.Misc
-import MudTests.Data.State.Util
+import MudTests.Data.State.Util.Misc
 import MudTests.TheWorld.TheWorld
 import MudTests.Util
 
@@ -34,7 +34,7 @@ tests = testGroup "tests" [ propertyTests, unitTests ]
 
 
 propertyTests :: TestTree
-propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util
+propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Misc
                                            , propTests_Mud_TheWorld_TheWorld
                                            , propTests_Mud_Util ]
 
@@ -42,8 +42,8 @@ propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util
 -- --------------------------------------------------
 
 
-propTests_Mud_Data_State_Util :: TestTree
-propTests_Mud_Data_State_Util = testGroup "property tests Mud.Data.State.Util"
+propTests_Mud_Data_State_Util_Misc :: TestTree
+propTests_Mud_Data_State_Util_Misc = testGroup "property tests Mud.Data.State.Util.Misc"
     [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
 
 
