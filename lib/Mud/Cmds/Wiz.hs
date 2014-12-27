@@ -101,8 +101,8 @@ wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
 
 
 wizBoot :: Action
-wizBoot p@AdviseNoArgs = advise p [prefixWizCmd "boot"] $ "Please specify the full name of the PC you wish to boot, \
-                                                          \followed optionally by a message."
+wizBoot p@AdviseNoArgs = advise p [prefixWizCmd "boot"] "Please specify the full name of the PC you wish to boot, \
+                                                        \followed optionally by a message."
 wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
     (view entTbl -> et) <- readWSTMVar
@@ -153,7 +153,7 @@ wizName p = withoutArgs wizName p
 
 
 wizPrint :: Action
-wizPrint p@AdviseNoArgs = advise p [prefixWizCmd "print"] $ advice
+wizPrint p@AdviseNoArgs = advise p [prefixWizCmd "print"] advice
   where
     advice = "You must provide a message to print to the server console, as in " <> dblQuote (prefixWizCmd "print" <>
              " Is anybody home?") <> "."
