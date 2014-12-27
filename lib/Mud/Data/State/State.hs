@@ -337,6 +337,7 @@ data Dicts = Dicts { _wordsDict     :: !(Maybe (S.Set T.Text))
 data LogCmd = LogMsg T.Text
             | RotateLog
             | StopLog
+            | Throw
 
 
 type LogAsync   = Async ()

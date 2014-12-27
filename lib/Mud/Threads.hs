@@ -152,7 +152,7 @@ loadDictFile = \case
       helper fn `catch` handler
   where
     helper fn = Just . S.fromList . T.lines . T.toLower <$> (liftIO . T.readFile $ fn)
-    handler e = fileIOExHandler "loadDictFile" e >> return Nothing -- TODO: Confirm that ex handling works.
+    handler e = fileIOExHandler "loadDictFile" e >> return Nothing
 
 
 -- ==================================================

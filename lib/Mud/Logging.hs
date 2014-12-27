@@ -28,9 +28,8 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
-import Control.Exception.Lifted (catch)
-import Control.Exception.Lifted (throwIO)
+import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
+import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
@@ -74,7 +73,7 @@ type LogName    = T.Text
 type LoggingFun = String -> String -> IO ()
 
 
-spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
+spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync -- TODO: Can we split this up?
 spawnLogger fn p (T.unpack -> ln) f q =
     async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler "spawnLogger")
                   (logRotationFlagger q `catch` loggingThreadExHandler "logRotationFlagger")
@@ -86,6 +85,7 @@ spawnLogger fn p (T.unpack -> ln) f q =
       LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
       RotateLog                -> rotateLog gh
       StopLog                  -> close gh
+      Throw                    -> throwIO DivideByZero
     rotateLog gh = doesFileExist fn >>= \case
         True  -> (fileSize <$> getFileStatus fn) >>= \fs ->
             if fs >= maxLogSize then rotateIt else loop gh
@@ -116,7 +116,7 @@ loggingThreadExHandler n e = case fromException e of
                          , dblQuote . showText $ e ]
       in (T.appendFile loggingExLogFile . nl $ msg) `catch` handler msg
   where
-    handler msg e' | isAlreadyInUseError e' = showIt -- TODO: Confirm that this works.
+    handler msg e' | isAlreadyInUseError e' = showIt
                    | isPermissionError   e' = showIt
                    | otherwise              = throwIO e'
       where

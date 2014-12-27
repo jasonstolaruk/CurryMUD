@@ -31,6 +31,7 @@ import Control.Monad (replicateM, replicateM_)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.Char (ord)
+import Data.IntMap.Lazy ((!))
 import Data.List (foldl', nub, sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
@@ -92,7 +93,9 @@ debugCmds =
                                                                                \log." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
-    , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." } ]
+    , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
+    , Cmd { cmdName = prefixDebugCmd "throwlog", action = debugThrowLog, cmdDesc = "Throw an exception on your player \
+                                                                                   \log thread." } ]
 
 
 prefixDebugCmd :: CmdName -> T.Text
@@ -228,7 +231,7 @@ debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
 debugLog p = withoutArgs debugLog p
 
 
-------
+-----
 
 
 debugParams :: Action
@@ -363,3 +366,15 @@ getLogAsyncs = helper <$> gets (view nonWorldState)
 debugThrow :: Action
 debugThrow (NoArgs'' i) = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
 debugThrow p            = withoutArgs debugThrow p
+
+
+-----
+
+
+debugThrowLog :: Action
+debugThrowLog (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "throwlog") i
+    (snd . (! i) -> q) <- readTMVarInNWS plaLogTblTMVar
+    liftIO . atomically . writeTQueue q $ Throw
+    ok mq
+debugThrowLog p = withoutArgs debugThrowLog p
