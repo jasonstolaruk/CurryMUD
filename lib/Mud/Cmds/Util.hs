@@ -15,13 +15,14 @@ import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Logging as L (logIOEx, logIOExRethrow)
+import qualified Mud.Logging as L (logIOEx)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Exception (IOException)
+import Control.Exception.Lifted (throwIO)
 import Data.List (foldl', intercalate, sort)
 import Data.Monoid ((<>))
-import System.IO.Error (isDoesNotExistError, isPermissionError)
+import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 import qualified Data.Text as T
 
 
@@ -34,10 +35,6 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util"
 
 logIOEx :: T.Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds.Util"
-
-
-logIOExRethrow :: T.Text -> IOException -> MudStack ()
-logIOExRethrow = L.logIOExRethrow "Mud.Cmds.Util"
 
 
 -- ==================================================
@@ -86,9 +83,10 @@ prefixCmd (T.singleton -> prefix) cn = prefix <> cn
 
 readFileExHandler :: T.Text -> IOException -> MudStack ()
 readFileExHandler fn e
-  | isDoesNotExistError e = logIOEx        fn e
-  | isPermissionError   e = logIOEx        fn e
-  | otherwise             = logIOExRethrow fn e
+  | isAlreadyInUseError e = logIOEx fn e
+  | isDoesNotExistError e = logIOEx fn e
+  | isPermissionError   e = logIOEx fn e
+  | otherwise             = throwIO e
 
 
 -----

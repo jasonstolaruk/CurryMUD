@@ -14,7 +14,7 @@ import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Logging as L (logAndDispIOEx, logIOExRethrow, logNotice, logPlaExec, logPlaExecArgs)
+import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), pure)
@@ -24,7 +24,7 @@ import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
-import Control.Exception.Lifted (catch, throwIO, try)
+import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (both, over)
 import Control.Lens.Getter (view)
 import Control.Monad (replicateM, replicateM_)
@@ -55,10 +55,6 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols = L.logAndDispIOEx mq cols "Mud.Cmds.Debug"
-
-
-logIOExRethrow :: T.Text -> IOException -> MudStack ()
-logIOExRethrow = L.logIOExRethrow "Mud.Cmds.Debug"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
@@ -92,7 +88,6 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
     , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
                                                                                \put into a sack on the ground." }
-    , Cmd { cmdName = prefixDebugCmd "rethrow", action = debugRethrow, cmdDesc = "Log and rethrow an exception." }
     , Cmd { cmdName = prefixDebugCmd "rotate", action = debugRotate, cmdDesc = "Send the signal to rotate your player \
                                                                                \log." }
     , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
@@ -302,16 +297,6 @@ debugRemPut p = withoutArgs debugRemPut p
 
 fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
 fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
-
-
------
-
-
-debugRethrow :: Action
-debugRethrow (NoArgs'' i) = do
-    logPlaExec (prefixDebugCmd "rethrow") i
-    throwIO DivideByZero `catch` logIOExRethrow "debugRethrow"
-debugRethrow p = withoutArgs debugRethrow p
 
 
 -----

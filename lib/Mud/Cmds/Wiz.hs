@@ -168,7 +168,6 @@ wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 -----
 
 
--- TODO: Why use "try"?
 wizProfanity :: Action
 wizProfanity (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "profanity") i

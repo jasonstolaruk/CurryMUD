@@ -9,7 +9,6 @@ module Mud.Logging ( closeLogs
                    , logError
                    , logExMsg
                    , logIOEx
-                   , logIOExRethrow
                    , logNotice
                    , logPla
                    , logPlaExec
@@ -30,7 +29,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
-import Control.Exception.Lifted (catch, throwIO)
+import Control.Exception.Lifted (catch)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
@@ -190,12 +189,6 @@ logIOEx modName funName (dblQuote . showText -> e) = logError . T.concat $ [ mod
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> T.Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols modName funName (dblQuote . showText -> e)
   | msg <- T.concat [ modName, " ", funName, ": ", e ] = logError msg >> wrapSend mq cols msg
-
-
-logIOExRethrow :: T.Text -> T.Text -> IOException -> MudStack ()
-logIOExRethrow modName funName e = do
-    logError . T.concat $ [ modName, " ", funName, ": unexpected exception; rethrowing." ]
-    liftIO . throwIO $ e
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
