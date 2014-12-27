@@ -41,7 +41,6 @@ import Data.IntMap.Lazy ((!))
 import Data.List ((\\), foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
-import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
 

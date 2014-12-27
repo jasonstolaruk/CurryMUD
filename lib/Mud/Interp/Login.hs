@@ -94,10 +94,11 @@ checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) >>= \profanitie
           return True
 
 
+-- TODO: Also check that we are handling exceptions everywhere that we are doing file IO.
 logProfanity :: CmdName -> HostName -> IO ()
 logProfanity cn (T.pack -> hn) = mkTimestamp >>= \ts ->
     let newEntry = T.concat [ ts, " ", hn, " ", cn ]
-    in getLogConts >>= T.writeFile profanityLogFile . T.unlines . sort . (newEntry :) -- TODO: Ex handling.
+    in getLogConts >>= T.writeFile profanityLogFile . T.unlines . sort . (newEntry :) -- TODO: Handle ex.
   where
     getLogConts = doesFileExist profanityLogFile >>= \case
       True  -> T.lines <$> T.readFile profanityLogFile

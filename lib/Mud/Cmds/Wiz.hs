@@ -169,14 +169,20 @@ wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 
 
 wizProfanity :: Action
-wizProfanity (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "profanity") i
-    (liftIO . doesFileExist $ profanityLogFile) >>= \case
-      True  -> try helper >>= eitherRet (\e -> readFileExHandler "wizProfanity" e >> sendGenericErrorMsg mq cols)
-      False -> wrapSend mq cols "No profanities have been logged."
+wizProfanity (NoArgs i mq cols) = logPlaExec (prefixWizCmd "profanity") i >> showProfanityLog mq cols
+wizProfanity p                  = withoutArgs wizProfanity p
+
+
+showProfanityLog :: MsgQueue -> Cols -> MudStack () -- TODO: Confirm that ex handling works.
+showProfanityLog mq cols = send mq =<< helper
   where
-    helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ profanityLogFile)
-wizProfanity p = withoutArgs wizProfanity p
+    helper           = (try . liftIO $ readProfanityLog) >>= eitherRet handler
+    readProfanityLog = doesFileExist profanityLogFile >>= \case
+      True  -> return . multiWrap cols . T.lines =<< T.readFile profanityLogFile
+      False -> return . wrapUnlinesNl cols $ "No profanities have been logged."
+    handler e        = do
+        readFileExHandler "showProfanityLog" e
+        return . wrapUnlinesNl cols $ "Unfortunately, the profanity log could not be retrieved."
 
 
 -----

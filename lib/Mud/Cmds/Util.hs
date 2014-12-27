@@ -81,7 +81,7 @@ prefixCmd (T.singleton -> prefix) cn = prefix <> cn
 -----
 
 
-readFileExHandler :: T.Text -> IOException -> MudStack ()
+readFileExHandler :: T.Text -> IOException -> MudStack () -- TODO: Rename?
 readFileExHandler fn e
   | isAlreadyInUseError e = logIOEx fn e
   | isDoesNotExistError e = logIOEx fn e

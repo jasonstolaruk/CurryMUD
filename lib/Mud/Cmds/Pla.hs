@@ -8,7 +8,6 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , mkCmdListWithNonStdRmLinks
                     , mkSerializedNonStdDesig
                     , plaCmds
-                    , readFileExHandler
                     , showMotd ) where
 
 import Mud.Cmds.Util
@@ -803,7 +802,7 @@ showMotd mq cols = send mq =<< helper
     helper    = (try . liftIO $ readMotd) >>= eitherRet handler
     readMotd  = return . frame cols . multiWrap cols . T.lines =<< T.readFile motdFile
     handler e = do
-        readFileExHandler "getMotdTxt" e
+        readFileExHandler "showMotd" e
         return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
 
 
@@ -1536,7 +1535,7 @@ getUptime = round <$> diff
 -----
 
 
--- TODO: Disambiguate player names.
+-- TODO: Disambiguate player names?
 what :: Action
 what p@AdviseNoArgs            = advise p ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
                                                      \in " <> dblQuote "what up" <> "."
