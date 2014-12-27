@@ -30,6 +30,7 @@ import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch)
+import Control.Exception.Lifted (throwIO)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
@@ -42,6 +43,8 @@ import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
 import System.Directory (doesFileExist, renameFile)
+import System.IO (stderr)
+import System.IO.Error (isAlreadyInUseError, isPermissionError)
 import System.Log (Priority(..))
 import System.Log.Formatter (simpleLogFormatter)
 import System.Log.Handler (close, setFormatter)
@@ -50,7 +53,7 @@ import System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandl
 import System.Posix.Files (fileSize, getFileStatus)
 import qualified Data.IntMap.Lazy as IM (elems, lookup)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (appendFile)
+import qualified Data.Text.IO as T (appendFile, hPutStrLn)
 
 
 -- ==================================================
@@ -111,7 +114,13 @@ loggingThreadExHandler n e = case fromException e of
                          , parensQuote $ "inside " <> dblQuote n
                          , ". "
                          , dblQuote . showText $ e ]
-      in T.appendFile loggingExLogFile . nl $ msg
+      in (T.appendFile loggingExLogFile . nl $ msg) `catch` handler msg
+  where
+    handler msg e' | isAlreadyInUseError e' = showIt -- TODO: Confirm that this works.
+                   | isPermissionError   e' = showIt
+                   | otherwise              = throwIO e'
+      where
+        showIt = T.hPutStrLn stderr msg
 
 
 logRotationFlagger :: LogQueue -> IO ()

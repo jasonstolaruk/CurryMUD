@@ -149,7 +149,10 @@ loadDictFile = \case
   Nothing -> return Nothing
   Just fn -> do
       logNotice "loadDictFile" $ "loading dictionary " <> (dblQuote . T.pack $ fn) <> "."
-      Just . S.fromList . T.lines . T.toLower <$> (liftIO . T.readFile $ fn)
+      helper fn `catch` handler
+  where
+    helper fn = Just . S.fromList . T.lines . T.toLower <$> (liftIO . T.readFile $ fn)
+    handler e = fileIOExHandler "loadDictFile" e >> return Nothing -- TODO: Confirm that ex handling works.
 
 
 -- ==================================================
@@ -260,9 +263,9 @@ setDfltColor = flip send dfltColorANSI
 
 
 dumpTitle :: MsgQueue -> MudStack ()
-dumpTitle mq = liftIO getFilename >>= try . takeADump >>= eitherRet (readFileExHandler "dumpTitle")
+dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
-    getFilename  = ("title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
+    mkFilename   = ("title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
     takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
 
 
@@ -344,7 +347,7 @@ sendPrompt h = liftIO . T.hPutStrLn h
 
 
 cowbye :: Handle -> MudStack ()
-cowbye h = liftIO takeADump `catch` readFileExHandler "cowbye"
+cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
   where
     takeADump = T.hPutStrLn h =<< T.readFile cowbyeFile
 

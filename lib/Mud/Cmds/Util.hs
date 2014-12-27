@@ -4,8 +4,8 @@
 module Mud.Cmds.Util ( HelpTopic
                      , advise
                      , dispCmdList
+                     , fileIOExHandler
                      , prefixCmd
-                     , readFileExHandler
                      , sendGenericErrorMsg
                      , withoutArgs ) where
 
@@ -74,19 +74,21 @@ mkCmdListText = sort . T.lines . T.concat . foldl' helper []
 -----
 
 
-prefixCmd :: Char -> CmdName -> T.Text
-prefixCmd (T.singleton -> prefix) cn = prefix <> cn
+fileIOExHandler :: T.Text -> IOException -> MudStack ()
+fileIOExHandler fn e
+  | isAlreadyInUseError e = logIt
+  | isDoesNotExistError e = logIt
+  | isPermissionError   e = logIt
+  | otherwise             = throwIO e
+  where
+    logIt = logIOEx fn e
 
 
 -----
 
 
-readFileExHandler :: T.Text -> IOException -> MudStack () -- TODO: Rename?
-readFileExHandler fn e
-  | isAlreadyInUseError e = logIOEx fn e
-  | isDoesNotExistError e = logIOEx fn e
-  | isPermissionError   e = logIOEx fn e
-  | otherwise             = throwIO e
+prefixCmd :: Char -> CmdName -> T.Text
+prefixCmd (T.singleton -> prefix) cn = prefix <> cn
 
 
 -----

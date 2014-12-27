@@ -4,6 +4,7 @@
 module Mud.Interp.Login (interpName) where
 
 import Mud.Cmds.Pla
+import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
@@ -21,6 +22,7 @@ import qualified Mud.Util as U (patternMatchFail)
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (putTMVar)
+import Control.Exception.Lifted (try)
 import Control.Lens (at)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
@@ -34,7 +36,7 @@ import Network (HostName)
 import System.Directory (doesFileExist)
 import qualified Data.Set as S (member)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text.IO as T (readFile, writeFile)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -82,24 +84,27 @@ promptRetryName mq msg = do
 
 
 checkProfanity :: CmdName -> Id -> MsgQueue -> MudStack Bool
-checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) >>= \profanities ->
-    if cn `notElem` T.lines profanities
+checkProfanity cn i mq =
+    try (liftIO . T.readFile $ profanitiesFile) >>= either (\e -> fileIOExHandler "checkProfanity" e >> return False)
+                                                           helper
+  where
+    helper profanities = if cn `notElem` T.lines profanities
       then return False
       else do
           (view entTbl -> parensQuote . view sing . (! i) -> n) <- readWSTMVar
           logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", n, " due to profanity." ]
-          liftIO . logProfanity cn . view hostName =<< getPla i
+          logProfanity cn . view hostName =<< getPla i
           send mq . nl' $ "Nice try. Your IP address has been logged. Keep this up and you'll get banned."
           sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
           return True
 
 
--- TODO: Also check that we are handling exceptions everywhere that we are doing file IO.
-logProfanity :: CmdName -> HostName -> IO ()
-logProfanity cn (T.pack -> hn) = mkTimestamp >>= \ts ->
-    let newEntry = T.concat [ ts, " ", hn, " ", cn ]
-    in getLogConts >>= T.writeFile profanityLogFile . T.unlines . sort . (newEntry :) -- TODO: Handle ex.
+logProfanity :: CmdName -> HostName -> MudStack ()
+logProfanity cn (T.pack -> hn) =
+    liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "logProfanity")
   where
+    helper ts = let newEntry = T.concat [ ts, " ", hn, " ", cn ]
+                in getLogConts >>= T.writeFile profanityLogFile . T.unlines . sort . (newEntry :)
     getLogConts = doesFileExist profanityLogFile >>= \case
       True  -> T.lines <$> T.readFile profanityLogFile
       False -> return []

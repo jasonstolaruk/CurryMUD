@@ -140,7 +140,7 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 about :: Action
 about (NoArgs i mq cols) = do
     logPlaExec "about" i
-    try helper >>= eitherRet (\e -> readFileExHandler "about" e >> sendGenericErrorMsg mq cols)
+    try helper >>= eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
     helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ aboutFile)
 about p = withoutArgs about p
@@ -573,7 +573,7 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 
 help :: Action
 help (NoArgs i mq cols) = do
-    try helper >>= eitherRet (\e -> readFileExHandler "help" e >> sendGenericErrorMsg mq cols)
+    try helper >>= eitherRet (\e -> fileIOExHandler "help" e >> sendGenericErrorMsg mq cols)
     logPla "help" i "read the root help file."
   where
     helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
@@ -597,7 +597,7 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(ge
     getHelpTopic t  = (try . helper $ t) >>= eitherRet handler
       where
         handler e = do
-            readFileExHandler "getHelpTopicByName" e
+            fileIOExHandler "getHelpTopicByName" e
             return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."
 
 
@@ -802,7 +802,7 @@ showMotd mq cols = send mq =<< helper
     helper    = (try . liftIO $ readMotd) >>= eitherRet handler
     readMotd  = return . frame cols . multiWrap cols . T.lines =<< T.readFile motdFile
     handler e = do
-        readFileExHandler "showMotd" e
+        fileIOExHandler "showMotd" e
         return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
 
 
@@ -1520,7 +1520,7 @@ uptimeHelper ut = helper <$> getRecordUptime
 
 getRecordUptime :: MudStack (Maybe Integer)
 getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
-  True  -> liftIO readUptime `catch` (\e -> readFileExHandler "getRecordUptime" e >> return Nothing)
+  True  -> liftIO readUptime `catch` (\e -> fileIOExHandler "getRecordUptime" e >> return Nothing)
   False -> return Nothing
   where
     readUptime = Just . read <$> readFile uptimeFile
