@@ -42,75 +42,119 @@ getObj i = (! i) <$> getObjTbl
 -----
 
 
+getClothTbl :: MudStack (IM.IntMap Cloth)
+getClothTbl = view clothTbl <$> readWSTMVar
+
+
 getCloth :: Id -> MudStack Cloth
-getCloth i = (! i) . view clothTbl <$> readWSTMVar
+getCloth i = (! i) <$> getClothTbl
 
 
 -----
+
+
+getInvTbl :: MudStack (IM.IntMap Inv)
+getInvTbl = view invTbl <$> readWSTMVar
 
 
 getInv :: Id -> MudStack Inv
-getInv i = (! i) . view invTbl <$> readWSTMVar
+getInv i = (! i) <$> getInvTbl
 
 
 -----
+
+
+getCoinsTbl :: MudStack (IM.IntMap Coins)
+getCoinsTbl = view coinsTbl <$> readWSTMVar
 
 
 getCoins :: Id -> MudStack Coins
-getCoins i = (! i) . view coinsTbl <$> readWSTMVar
+getCoins i = (! i) <$> getCoinsTbl
 
 
 -----
+
+
+getConTbl :: MudStack (IM.IntMap Con)
+getConTbl = view conTbl <$> readWSTMVar
 
 
 getCon :: Id -> MudStack Con
-getCon i = (! i) . view conTbl <$> readWSTMVar
+getCon i = (! i) <$> getConTbl
 
 
 -----
+
+
+getWpnTbl :: MudStack (IM.IntMap Wpn)
+getWpnTbl = view wpnTbl <$> readWSTMVar
 
 
 getWpn :: Id -> MudStack Wpn
-getWpn i = (! i) . view wpnTbl <$> readWSTMVar
+getWpn i = (! i) <$> getWpnTbl
 
 
 -----
+
+
+getArmTbl :: MudStack (IM.IntMap Arm)
+getArmTbl = view armTbl <$> readWSTMVar
 
 
 getArm :: Id -> MudStack Arm
-getArm i = (! i) . view armTbl <$> readWSTMVar
+getArm i = (! i) <$> getArmTbl
 
 
 -----
+
+
+getEqTbl :: MudStack (IM.IntMap EqMap)
+getEqTbl = view eqTbl <$> readWSTMVar
 
 
 getEq :: Id -> MudStack EqMap
-getEq i = (! i) . view eqTbl <$> readWSTMVar
+getEq i = (! i) <$> getEqTbl
 
 
 -----
+
+
+getMobTbl :: MudStack (IM.IntMap Mob)
+getMobTbl = view mobTbl <$> readWSTMVar
 
 
 getMob :: Id -> MudStack Mob
-getMob i = (! i) . view mobTbl <$> readWSTMVar
+getMob i = (! i) <$> getMobTbl
 
 
 -----
+
+
+getPCTbl :: MudStack (IM.IntMap PC)
+getPCTbl = view pcTbl <$> readWSTMVar
 
 
 getPC :: Id -> MudStack PC
-getPC i = (! i) . view pcTbl <$> readWSTMVar
+getPC i = (! i) <$> getPCTbl
 
 
 -----
+
+
+getRmTbl :: MudStack (IM.IntMap Rm)
+getRmTbl = view rmTbl <$> readWSTMVar
 
 
 getRm :: Id -> MudStack Rm
-getRm i = (! i) . view rmTbl <$> readWSTMVar
+getRm i = (! i) <$> getRmTbl
 
 
 -----
 
 
+getTypeTbl :: MudStack (IM.IntMap Type)
+getTypeTbl = view typeTbl <$> readWSTMVar
+
+
 getType :: Id -> MudStack Type
-getType i = (! i) . view typeTbl <$> readWSTMVar
+getType i = (! i) <$> getTypeTbl
