@@ -71,6 +71,7 @@ sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
 sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
 
 
+-- TODO: I wonder if this can/should be refactored?
 bcast :: [Broadcast] -> MudStack ()
 bcast bs = getMqtPt >>= \(mqt, pt) -> do
     let helper msg i | mq <- mqt ! i, cols <- (pt ! i)^.columns = readWSTMVar >>= \ws ->

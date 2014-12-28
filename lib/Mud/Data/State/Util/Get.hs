@@ -172,9 +172,29 @@ getPCRmId :: Id -> MudStack Id
 getPCRmId i = view rmId <$> getPC i
 
 
+getPCRmId' :: Id -> MudStack (WorldState, Id)
+getPCRmId' i = readWSTMVar >>= \ws@(view rmId . (! i) . view pcTbl -> ri) ->
+    return (ws, ri)
+
+
 getPCRm :: Id -> MudStack Rm
-getPCRm i = readWSTMVar >>= \ws@(view rmId . (! i) . view pcTbl -> ri) ->
+getPCRm i = getPCRmId' i >>= \(ws, ri) ->
     return . (! ri) . view rmTbl $ ws
+
+
+getPCRm' :: Id -> MudStack (WorldState, Rm)
+getPCRm' i = getPCRmId' i >>= \(ws, ri) ->
+    return (ws, (! ri) . view rmTbl $ ws)
+
+
+getPCRmIdRm :: Id -> MudStack (Id, Rm)
+getPCRmIdRm i = getPCRmId' i >>= \(ws, ri) ->
+    return (ri, (! ri) . view rmTbl $ ws)
+
+
+getPCRmIdRm' :: Id -> MudStack (WorldState, (Id, Rm))
+getPCRmIdRm' i = getPCRmId' i >>= \(ws, ri) ->
+    return (ws, (ri, (! ri) . view rmTbl $ ws))
 
 
 -----

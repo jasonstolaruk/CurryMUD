@@ -8,15 +8,13 @@ import Mud.Cmds.Pla
 import Mud.Cmds.Wiz
 import Mud.Data.Misc
 import Mud.Data.State.State
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.STM
+import Mud.Data.State.Util.Pla
 import Mud.TopLvlDefs.Misc
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Util as U (patternMatchFail)
 
-import Control.Lens.Getter (view)
-import Control.Lens.Operators ((^.))
-import Data.IntMap.Lazy ((!))
 import qualified Data.Text as T
 
 
@@ -37,15 +35,14 @@ centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
-findAction i (T.toLower -> cn) = readWSTMVar >>= \ws ->
-    readTMVarInNWS plaTblTMVar >>= \((! i) -> p) ->
-        let (view rmId -> ri) = (ws^.pcTbl) ! i
-            r                 = (ws^.rmTbl) ! ri
-            cmds              = mkCmdListWithNonStdRmLinks r ++
-                                (if p^.isWiz then wizCmds   else []) ++
-                                (if isDebug  then debugCmds else [])
-        in maybe (return Nothing)
-                 (\fn -> return . Just . findActionForFullName fn $ cmds)
-                 (findFullNameForAbbrev cn [ cmdName cmd | cmd <- cmds ])
+findAction i (T.toLower -> cn) = do
+    r  <- getPCRm     i
+    iw <- getPlaIsWiz i
+    let cmds = mkCmdListWithNonStdRmLinks r              ++
+               (if iw            then wizCmds   else []) ++
+               (if iw && isDebug then debugCmds else [])
+    maybe (return Nothing)
+          (\fn -> return . Just . findActionForFullName fn $ cmds)
+          (findFullNameForAbbrev cn [ cmdName cmd | cmd <- cmds ])
   where
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)

@@ -707,11 +707,9 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 
 look :: Action
-look (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let (view rmId -> ri) = (ws^.pcTbl) ! i
-        r                 = (ws^.rmTbl) ! ri
-        primary           = multiWrap cols [ r^.rmName, r^.rmDesc ]
-        suppl             = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
+look (NoArgs i mq cols) = getPCRmIdRm' i >>= \(ws, (ri, r)) ->
+    let primary = multiWrap cols [ r^.rmName, r^.rmDesc ]
+        suppl   = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
 look (LowerNub i mq cols as) = helper >>= \case
   (Left  msg, _           ) -> send mq msg
@@ -1535,10 +1533,8 @@ getUptime = round <$> diff
 what :: Action
 what p@AdviseNoArgs            = advise p ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
                                                      \in " <> dblQuote "what up" <> "."
-what   (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
-    let (view rmId -> ri) = (ws^.pcTbl) ! i
-        r                 = (ws^.rmTbl) ! ri
-    in logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
+what   (LowerNub i mq cols as) = getPCRm' i >>= \(ws, r) ->
+    logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
   where
     helper ws r n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ws it n | it <- [ PCInv, PCEq, RmInv ] ]
 what p = patternMatchFail "what" [ showText p ]
