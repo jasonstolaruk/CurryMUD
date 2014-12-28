@@ -7,6 +7,7 @@ import Mud.Cmds.Pla
 import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Modify
 import Mud.Data.State.Util.Output
@@ -91,8 +92,8 @@ checkProfanity cn i mq =
     helper profanities = if cn `notElem` T.lines profanities
       then return False
       else do
-          (view entTbl -> parensQuote . view sing . (! i) -> n) <- readWSTMVar
-          logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", n, " due to profanity." ]
+          (parensQuote -> s) <- getEntSing i
+          logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
           logProfanity cn . view hostName =<< getPla i
           send mq . nl' $ "Nice try. Your IP address has been logged. Keep this up and you'll get banned."
           sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
@@ -170,9 +171,8 @@ yesNo (T.toLower -> a) | a `T.isPrefixOf` "yes" = Just True
 
 
 notifyArrival :: Id -> MudStack ()
-notifyArrival i = readWSTMVar >>= \ws ->
-    let (view sing -> s) = (ws^.entTbl) ! i
-    in bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
+notifyArrival i = getEntSing' i >>= \(ws, s) ->
+    bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()

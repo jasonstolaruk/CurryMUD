@@ -8,17 +8,35 @@ import Mud.Data.State.Util.STM
 import Control.Applicative ((<$>))
 import Control.Lens.Getter (view)
 import Data.IntMap.Lazy ((!))
+import qualified Data.IntMap.Lazy as IM (IntMap)
+
+
+getEntTbl :: MudStack (IM.IntMap Ent)
+getEntTbl = view entTbl <$> readWSTMVar
 
 
 getEnt :: Id -> MudStack Ent
-getEnt i = (! i) . view entTbl <$> readWSTMVar
+getEnt i = (! i) <$> getEntTbl
+
+
+getEntSing :: Id -> MudStack Sing
+getEntSing i = view sing <$> getEnt i
+
+
+getEntSing' :: Id -> MudStack (WorldState, Sing)
+getEntSing' i = readWSTMVar >>= \ws ->
+    return (ws, view sing . (! i) . view entTbl $ ws)
 
 
 -----
 
 
+getObjTbl :: MudStack (IM.IntMap Obj)
+getObjTbl = view objTbl <$> readWSTMVar
+
+
 getObj :: Id -> MudStack Obj
-getObj i = (! i) . view objTbl <$> readWSTMVar
+getObj i = (! i) <$> getObjTbl
 
 
 -----

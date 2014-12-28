@@ -9,6 +9,7 @@ import Mud.Cmds.Util
 import Mud.Color
 import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
@@ -32,7 +33,6 @@ import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, readTQueue, tryReadTQ
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
-import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
 import Control.Monad (forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -292,8 +292,8 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
           Just itm -> case itm of StopTimer  -> return ()
                                   ResetTimer -> loop 0
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = do
-        (view entTbl -> parensQuote . view sing . (! i) -> n) <- readWSTMVar
-        logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", n, " due to inactivity." ]
+        (parensQuote -> s) <- getEntSing i
+        logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", s, " due to inactivity." ]
         logPla "inacTimer" i $ "booted due to inactivity " <> secs <>  "."
         liftIO . atomically . writeTQueue mq $ InacBoot
 

@@ -6,6 +6,7 @@ module Mud.Cmds.Wiz (wizCmds) where
 import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.STM
@@ -22,7 +23,6 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
@@ -105,8 +105,7 @@ wizBoot p@AdviseNoArgs = advise p [prefixWizCmd "boot"] "Please specify the full
                                                         \followed optionally by a message."
 wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
-    (view entTbl -> et) <- readWSTMVar
-    case [ i' | i' <- is, (et ! i')^.sing == n ] of
+    getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == n ] of
       []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote n <> " is currently logged in."
       [i'] -> let n'  = (et  ! i )^.sing
                   mq' = (mqt ! i')
@@ -142,10 +141,8 @@ wizDate p = withoutArgs wizDate p
 wizName :: Action
 wizName (NoArgs i mq cols) = do
     logPlaExec (prefixWizCmd "name") i
-    readWSTMVar >>= \ws ->
-        let (view sing -> s)       = (ws^.entTbl) ! i
-            (pp *** pp -> (s', r)) = getSexRace i ws
-        in wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
+    (getSexRace i -> pp *** pp -> (s', r), s) <- getEntSing' i
+    wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
 wizName p = withoutArgs wizName p
 
 
@@ -159,7 +156,7 @@ wizPrint p@AdviseNoArgs = advise p [prefixWizCmd "print"] advice
              " Is anybody home?") <> "."
 wizPrint (WithArgs i mq _ as) = do
     logPlaExecArgs (prefixWizCmd "print") as i
-    (view entTbl -> view sing . (! i) -> s) <- readWSTMVar
+    s <- getEntSing i
     liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
     ok mq
 wizPrint p = patternMatchFail "wizPrint" [ showText p ]
@@ -191,7 +188,7 @@ showProfanityLog mq cols = send mq =<< helper
 wizShutdown :: Action
 wizShutdown (NoArgs' i mq) = do
     logPlaExecArgs (prefixWizCmd "shutdown") [] i
-    (view entTbl -> view sing . (! i) -> s) <- readWSTMVar
+    s <- getEntSing i
     massSend dfltShutdownMsg
     massLogPla "wizShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
                                         , s
@@ -206,7 +203,7 @@ wizShutdown (NoArgs' i mq) = do
     liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown (WithArgs i mq _ as) = do
     logPlaExecArgs (prefixWizCmd "shutdown") as i
-    (view entTbl -> view sing . (! i) -> s) <- readWSTMVar
+    s <- getEntSing i
     let msg = T.intercalate " " as
     massSend msg
     massLogPla "wizShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
