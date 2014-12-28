@@ -38,6 +38,7 @@ library
                        Mud.Data.State.State,
                        Mud.Data.State.StateInIORefT,
                        Mud.Data.State.Util.Coins,
+                       Mud.Data.State.Util.Get,
                        Mud.Data.State.Util.Misc,
                        Mud.Data.State.Util.Modify,
                        Mud.Data.State.Util.Output,

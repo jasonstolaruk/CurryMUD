@@ -9,17 +9,20 @@ import Control.Lens (at)
 import Control.Lens.Operators ((&), (?~))
 
 
--- TODO: Also make a "Get" module.
-
-
 putObj :: Id -> Ent -> Obj -> MudStack ()
 putObj i e o = modifyWS $ \ws ->
     ws & typeTbl.at i ?~ ObjType & entTbl.at i ?~ e & objTbl.at i ?~ o
 
 
+-----
+
+
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
 putCloth i e o c = modifyWS $ \ws ->
     ws & typeTbl.at i ?~ ClothType & entTbl.at i ?~ e & objTbl.at i ?~ o & clothTbl.at i ?~ c
+
+
+-----
 
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
@@ -32,14 +35,23 @@ putCon i e o is coi con = modifyWS $ \ws ->
        & conTbl.at i   ?~ con
 
 
+-----
+
+
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
 putWpn i e o w = modifyWS $ \ws ->
     ws & typeTbl.at i ?~ WpnType & entTbl.at i ?~ e & objTbl.at i ?~ o & wpnTbl.at i ?~ w
 
 
+-----
+
+
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
 putArm i e o a = modifyWS $ \ws ->
     ws & typeTbl.at i ?~ ArmType & entTbl.at i ?~ e & objTbl.at i ?~ o & armTbl.at i ?~ a
+
+
+-----
 
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
@@ -52,6 +64,9 @@ putMob i e is c em m = modifyWS $ \ws ->
        & mobTbl.at i   ?~ m
 
 
+-----
+
+
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
 putPC i e is c em m p = modifyWS $ \ws ->
     ws & typeTbl.at i  ?~ PCType
@@ -61,6 +76,9 @@ putPC i e is c em m p = modifyWS $ \ws ->
        & eqTbl.at i    ?~ em
        & mobTbl.at i   ?~ m
        & pcTbl.at i    ?~ p
+
+
+-----
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
