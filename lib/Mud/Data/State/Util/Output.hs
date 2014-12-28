@@ -64,7 +64,7 @@ wrapSend mq cols = send mq . wrapUnlinesNl cols
 
 
 multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
-multiWrapSend mq cols = send mq . nl . multiWrap cols
+multiWrapSend mq cols = send mq . multiWrapNl cols
 
 
 sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()

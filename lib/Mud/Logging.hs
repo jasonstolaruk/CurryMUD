@@ -73,7 +73,7 @@ type LogName    = T.Text
 type LoggingFun = String -> String -> IO ()
 
 
-spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync -- TODO: Can we split this up?
+spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
 spawnLogger fn p (T.unpack -> ln) f q =
     async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler "spawnLogger")
                   (logRotationFlagger q `catch` loggingThreadExHandler "logRotationFlagger")

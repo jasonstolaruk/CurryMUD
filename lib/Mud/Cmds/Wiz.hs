@@ -178,8 +178,8 @@ showProfanityLog mq cols = send mq =<< helper
   where
     helper           = (try . liftIO $ readProfanityLog) >>= eitherRet handler
     readProfanityLog = doesFileExist profanityLogFile >>= \case
-      True  -> return . nl . multiWrap cols . T.lines =<< T.readFile profanityLogFile -- TODO: Make "multiWrapNl"?
-      False -> return . wrapUnlinesNl cols $ "No profanities have been logged." -- TODO: Are we using the "~Nl" functions everywhere we should?
+      True  -> return . multiWrapNl   cols . T.lines =<< T.readFile profanityLogFile
+      False -> return . wrapUnlinesNl cols $ "No profanities have been logged."
     handler e        = do
         fileIOExHandler "showProfanityLog" e
         return . wrapUnlinesNl cols $ "Unfortunately, the profanity log could not be retrieved."

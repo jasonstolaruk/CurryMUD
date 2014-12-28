@@ -26,6 +26,7 @@ module Mud.Util ( aOrAn
                 , mkOrdinal
                 , mkTimestamp
                 , multiWrap
+                , multiWrapNl
                 , nl
                 , nl'
                 , nlnl
@@ -109,6 +110,10 @@ wrapUnlinesNl cols = nl . wrapUnlines cols
 
 multiWrap :: Int -> [T.Text] -> T.Text
 multiWrap cols = T.unlines . concatMap (wordWrap cols)
+
+
+multiWrapNl :: Int -> [T.Text] -> T.Text
+multiWrapNl cols = nl . multiWrap cols
 
 
 wordWrapIndent :: Int -> Int -> T.Text -> [T.Text]

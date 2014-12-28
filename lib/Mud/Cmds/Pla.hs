@@ -621,7 +621,7 @@ inv (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
   where
     helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
     helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
-    helperEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
+    helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 inv p = patternMatchFail "inv" [ showText p ]
 
@@ -753,7 +753,7 @@ look (LowerNub i mq cols as) = helper >>= \case
                                           , Nothing )
     helperLookEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
     helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
-    helperLookEitherCoins  acc (Left  msgs) = (acc <>) . nl . multiWrap cols . intersperse "" $ msgs
+    helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 look p = patternMatchFail "look" [ showText p ]
 
