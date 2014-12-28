@@ -3,7 +3,6 @@
 
 module Mud.Data.Misc ( AOrThe(..)
                      , Action
-                     , ActionParams(..)
                      , Amount
                      , Args
                      , Broadcast

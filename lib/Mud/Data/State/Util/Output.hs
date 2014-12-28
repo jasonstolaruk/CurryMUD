@@ -71,12 +71,16 @@ sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
 sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
 
 
--- TODO: I wonder if this can/should be refactored?
 bcast :: [Broadcast] -> MudStack ()
-bcast bs = getMqtPt >>= \(mqt, pt) -> do
-    let helper msg i | mq <- mqt ! i, cols <- (pt ! i)^.columns = readWSTMVar >>= \ws ->
-          send mq . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg
-    forM_ bs $ \(msg, is) -> mapM_ (helper msg) is
+bcast bs = readWSTMVar >>= \ws -> do
+    mqtPt <- getMqtPt
+    forM_ bs $ \(msg, is) -> mapM_ (helper ws mqtPt msg) is
+  where
+    helper ws (mqt, pt) msg i | mq   <- mqt ! i
+                              , cols <- view columns (pt ! i)
+                              = sendIt mq cols
+      where
+        sendIt mq cols = send mq . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg
 
 
 parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
@@ -144,7 +148,7 @@ massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
 massSend :: T.Text -> MudStack ()
 massSend msg = getMqtPt >>= \(mqt, pt) -> do
     let helper i = let mq   = mqt ! i
-                       cols = (pt ! i)^.columns
+                       cols = view columns (pt ! i)
                    in send mq . nl' . frame cols . wrapUnlines cols $ msg
     forM_ (IM.keys pt) helper
 

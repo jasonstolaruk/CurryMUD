@@ -91,7 +91,7 @@ getMqtPt = do
     liftIO . atomically $  (,) <$> readTMVar mqtTMVar         <*> readTMVar ptTMVar
 
 
-getSexRace :: Id -> WorldState -> (Sex, Race)
+getSexRace :: Id -> WorldState -> (Sex, Race) -- TODO: Move?
 getSexRace i ws = (view sex *** view race) . (((ws^.mobTbl) !) *** ((ws^.pcTbl) !)) . dup $ i
 
 
