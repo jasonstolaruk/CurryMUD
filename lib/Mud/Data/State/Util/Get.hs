@@ -1,11 +1,14 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Mud.Data.State.Util.Get where
 
 import Mud.Data.State.State
 import Mud.Data.State.Util.STM
+import Mud.Util
 
 import Control.Applicative ((<$>))
+import Control.Arrow ((***))
 import Control.Lens.Getter (view)
 import Data.IntMap.Lazy ((!))
 import qualified Data.IntMap.Lazy as IM (IntMap)
@@ -19,13 +22,18 @@ getEnt :: Id -> MudStack Ent
 getEnt i = (! i) <$> getEntTbl
 
 
+getEnt' :: Id -> MudStack (WorldState, Ent)
+getEnt' i = readWSTMVar >>= \ws@((! i) . view entTbl -> e) ->
+    return (ws, e)
+
+
 getEntSing :: Id -> MudStack Sing
 getEntSing i = view sing <$> getEnt i
 
 
 getEntSing' :: Id -> MudStack (WorldState, Sing)
-getEntSing' i = readWSTMVar >>= \ws ->
-    return (ws, view sing . (! i) . view entTbl $ ws)
+getEntSing' i = readWSTMVar >>= \ws@(view sing . (! i) . view entTbl -> s) ->
+    return (ws, s)
 
 
 -----
@@ -59,6 +67,19 @@ getInvTbl = view invTbl <$> readWSTMVar
 
 getInv :: Id -> MudStack Inv
 getInv i = (! i) <$> getInvTbl
+
+
+getInvCoins :: Id -> MudStack (Inv, Coins)
+getInvCoins i = readWSTMVar >>= return . getInvCoinsHelper i
+
+
+getInvCoinsHelper :: Id -> WorldState -> (Inv, Coins)
+getInvCoinsHelper i = (((! i) . view invTbl) *** ((! i) . view coinsTbl)) . dup
+
+
+getInvCoins' :: Id -> MudStack (WorldState, (Inv, Coins))
+getInvCoins' i = readWSTMVar >>= \ws@(getInvCoinsHelper i -> invCoins) ->
+    return (ws, invCoins)
 
 
 -----
@@ -116,6 +137,11 @@ getEq :: Id -> MudStack EqMap
 getEq i = (! i) <$> getEqTbl
 
 
+getEq' :: Id -> MudStack (WorldState, EqMap)
+getEq' i = readWSTMVar >>= \ws@((! i) . view eqTbl -> em) ->
+    return (ws, em)
+
+
 -----
 
 
@@ -136,6 +162,19 @@ getPCTbl = view pcTbl <$> readWSTMVar
 
 getPC :: Id -> MudStack PC
 getPC i = (! i) <$> getPCTbl
+
+
+getPCIntroduced :: Id -> MudStack [Sing]
+getPCIntroduced i = view introduced <$> getPC i
+
+
+getPCRmId :: Id -> MudStack Id
+getPCRmId i = view rmId <$> getPC i
+
+
+getPCRm :: Id -> MudStack Rm
+getPCRm i = readWSTMVar >>= \ws@(view rmId . (! i) . view pcTbl -> ri) ->
+    return . (! ri) . view rmTbl $ ws
 
 
 -----

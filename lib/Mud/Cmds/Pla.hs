@@ -14,6 +14,7 @@ import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Coins
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.STM
@@ -326,12 +327,11 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 equip :: Action
-equip (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let e = (ws^.entTbl) ! i
-    in send mq . nl . mkEqDesc i cols ws i e $ PCType
-equip (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
-    let em@(M.elems -> is) = (ws^.eqTbl) ! i
-    in send mq $ if not . M.null $ em
+equip (NoArgs i mq cols) = getEnt' i >>= \(ws, e) ->
+    send mq . nl . mkEqDesc i cols ws i e $ PCType
+equip (LowerNub i mq cols as) = do
+    (ws, em@(M.elems -> is)) <- getEq' i
+    send mq $ if not . M.null $ em
       then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws as is mempty
                eiss                         = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
                invDesc                      = foldl' (helperEitherInv ws) "" eiss
@@ -433,10 +433,8 @@ mkPCDescHeader i ws | (pp *** pp -> (s, r)) <- getSexRace i ws = T.concat [ "You
 
 
 exits :: Action
-exits (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    let (view rmId -> ri) = (ws^.pcTbl) ! i
-        r                 = (ws^.rmTbl) ! ri
-    in logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
+exits (NoArgs i mq cols) = getPCRm i >>= \r ->
+    logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
 exits p = withoutArgs exits p
 
 
@@ -605,12 +603,10 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(ge
 
 
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv (NoArgs i mq cols) = readWSTMVar >>= \ws ->
-    send mq . nl . mkInvCoinsDesc i cols ws i $ (ws^.entTbl) ! i
-inv (LowerNub i mq cols as) = readWSTMVar >>= \ws ->
-    let is = (ws^.invTbl)   ! i
-        c  = (ws^.coinsTbl) ! i
-    in send mq $ if (not . null $ is) || (c /= mempty)
+inv (NoArgs i mq cols) = getEnt' i >>= \(ws, e) ->
+    send mq . nl . mkInvCoinsDesc i cols ws i $ e
+inv (LowerNub i mq cols as) = getInvCoins' i >>= \(ws, (is, c)) ->
+    send mq $ if (not . null $ is) || (c /= mempty)
       then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
                eiss               = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
                ecs                = map procReconciledCoinsPCInv rcs
@@ -631,7 +627,7 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 intro :: Action
 intro (NoArgs i mq cols) = do
-    (view pcTbl -> view introduced . (! i) -> intros) <- readWSTMVar
+    intros <- getPCIntroduced i
     if null intros
       then let introsTxt = "No one has introduced themselves to you yet." in do
           wrapSend mq cols introsTxt
