@@ -116,6 +116,7 @@ multiWrapNl :: Int -> [T.Text] -> T.Text
 multiWrapNl cols = nl . multiWrap cols
 
 
+-- TODO: Consider how to wrap lines with ANSI color codes.
 wordWrapIndent :: Int -> Int -> T.Text -> [T.Text]
 wordWrapIndent n cols = map leadingFillerToSpcs . wrapIt . leadingSpcsToFiller
   where

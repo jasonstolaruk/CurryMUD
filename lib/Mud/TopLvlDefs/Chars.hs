@@ -35,6 +35,16 @@ telnetSB  = '\250'
 telnetSE  = '\240'
 
 
+-- ==================================================
+-- ANSI escape sequence characters:
+
+
+ansiBracket, ansiEsc, ansiSGRDelimiter :: Char
+ansiBracket      = '\91'
+ansiEsc          = '\27'
+ansiSGRDelimiter = '\109'
+
+
 -- ============================================================
 -- Characters used in the serialization of "PCDesig":
 

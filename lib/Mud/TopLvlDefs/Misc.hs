@@ -3,6 +3,8 @@
 
 module Mud.TopLvlDefs.Misc where
 
+import Mud.TopLvlDefs.Chars
+
 import System.Posix.Types (FileOffset)
 import qualified Data.Text as T
 
@@ -13,6 +15,10 @@ aggregateCoinNames = [ "coin", "coins" ]
 
 allCoinNames :: [T.Text]
 allCoinNames = coinNames ++ aggregateCoinNames
+
+
+ansiCSI :: T.Text
+ansiCSI = T.pack $ [ ansiEsc, ansiBracket ]
 
 
 coinNames :: [T.Text]
