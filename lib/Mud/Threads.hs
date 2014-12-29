@@ -21,7 +21,8 @@ import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util
+import Mud.Util.Misc
+import Mud.Util.Quoting
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))

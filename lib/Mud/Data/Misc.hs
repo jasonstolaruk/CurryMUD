@@ -29,8 +29,9 @@ module Mud.Data.Misc ( AOrThe(..)
 
 import Mud.Data.State.State
 import Mud.TopLvlDefs.Chars
-import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Util as U (patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Quoting
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (both, over)
 import Data.Monoid ((<>))

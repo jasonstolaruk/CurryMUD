@@ -17,7 +17,8 @@ import Mud.TheWorld.TheWorld
 import Mud.Threads
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util
+import Mud.Util.Misc
+import Mud.Util.Quoting
 
 import Control.Monad (void)
 import Network (withSocketsDo)

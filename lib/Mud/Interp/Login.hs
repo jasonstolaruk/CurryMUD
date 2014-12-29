@@ -17,9 +17,10 @@ import Mud.Interp.CentralDispatch
 import Mud.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
-import Mud.Util hiding (patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Quoting
 import qualified Mud.Logging as L (logNotice, logPla)
-import qualified Mud.Util as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (putTMVar)

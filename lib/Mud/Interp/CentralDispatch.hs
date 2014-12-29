@@ -12,8 +12,8 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.TopLvlDefs.Misc
-import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Util as U (patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import qualified Data.Text as T
 

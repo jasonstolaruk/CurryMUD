@@ -25,8 +25,10 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
-import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Util as U (patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Quoting
+import Mud.Util.Wrapping
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar)

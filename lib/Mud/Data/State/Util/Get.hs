@@ -5,7 +5,7 @@ module Mud.Data.State.Util.Get where
 
 import Mud.Data.State.State
 import Mud.Data.State.Util.STM
-import Mud.Util
+import Mud.Util.Misc
 
 import Control.Applicative ((<$>))
 import Control.Arrow ((***))

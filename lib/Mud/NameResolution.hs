@@ -20,8 +20,9 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util hiding (blowUp, patternMatchFail)
-import qualified Mud.Util as U (blowUp, patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import Mud.Util.Quoting
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Lens (_1, _2, dropping, folded, over, to)
 import Control.Lens.Getter (view)

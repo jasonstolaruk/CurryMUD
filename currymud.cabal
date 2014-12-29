@@ -56,7 +56,11 @@ library
                        Mud.TopLvlDefs.FilePaths,
                        Mud.TopLvlDefs.Misc,
                        Mud.TopLvlDefs.Msgs,
-                       Mud.Util
+                       Mud.Util.ANSI,
+                       Mud.Util.Misc,
+                       Mud.Util.Padding,
+                       Mud.Util.Quoting,
+                       Mud.Util.Wrapping
   other-extensions:    FlexibleContexts,
                        FlexibleInstances,
                        GeneralizedNewtypeDeriving,

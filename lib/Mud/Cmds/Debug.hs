@@ -14,9 +14,12 @@ import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
-import Mud.Util hiding (patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Padding
+import Mud.Util.Quoting
+import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
-import qualified Mud.Util as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))

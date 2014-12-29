@@ -4,7 +4,7 @@
 module Mud.Data.State.State where
 
 import Mud.Data.State.StateInIORefT
-import Mud.Util
+import Mud.Util.Quoting
 
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)

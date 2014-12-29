@@ -14,9 +14,12 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
-import Mud.Util hiding (patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Padding
+import Mud.Util.Quoting
+import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logIOEx)
-import qualified Mud.Util as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)

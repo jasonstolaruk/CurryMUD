@@ -23,9 +23,12 @@ import Mud.NameResolution
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util hiding (blowUp, patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import Mud.Util.Padding
+import Mud.Util.Quoting
+import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
-import qualified Mud.Util as U (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***), first)
@@ -636,7 +639,7 @@ intro (NoArgs i mq cols) = do
           logPlaOut "intro" i [introsTxt]
       else let introsTxt = T.intercalate ", " intros in do
           multiWrapSend mq cols [ "You know the following names:", introsTxt ]
-          logPlaOut "intro" i [introsTxt]
+          logPlaOut "intro" i [introsTxt] -- TODO: Parse "PCDesig".
 intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "intro" i logMsgs
     bcast . map fromClassifiedBroadcast . sort $ cbs

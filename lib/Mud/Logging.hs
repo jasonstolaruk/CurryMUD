@@ -22,7 +22,8 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util
+import Mud.Util.Misc
+import Mud.Util.Quoting
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (threadDelay)

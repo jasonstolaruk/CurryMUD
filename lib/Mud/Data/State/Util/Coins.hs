@@ -6,8 +6,8 @@ module Mud.Data.State.Util.Coins ( mkCoinsFromList
                                  , negateCoins ) where
 
 import Mud.Data.State.State
-import Mud.Util hiding (patternMatchFail)
-import qualified Mud.Util as U (patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (each)
 import Control.Lens.Operators ((%~))
