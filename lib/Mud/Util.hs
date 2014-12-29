@@ -89,6 +89,9 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 -- ANSI escape sequence extraction and insertion:
 
 
+-- TODO: Write tests.
+
+
 type EscSeq = T.Text
 
 

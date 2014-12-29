@@ -12,6 +12,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util hiding (patternMatchFail)
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
@@ -391,17 +392,26 @@ debugWrap p@AdviseNoArgs             = advise p [ prefixDebugCmd "wrap" ] advice
   where
     advice = "Please specify line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
 debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String)]) of
-  []            -> sorry
+  []            -> sorryParse
   [(cols', "")] -> helper cols'
-  _             -> sorry
+  _             -> sorryParse
   where
-    sorry        = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-    helper cols' = do
-        logPlaExecArgs (prefixDebugCmd "wrap") [a] i
-        send mq . frame cols' . wrapUnlines cols' $ msg
-    msg          =
+    sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
+    helper cols'
+      | cols' < 0                          = sorryWtf
+      | cols' < minCols || cols' > maxCols = sorryRange
+      | otherwise                          = do
+          logPlaExecArgs (prefixDebugCmd "wrap") [a] i
+          send mq . frame cols' . wrapUnlines cols' $ msg
+    sorryWtf   = wrapSend mq cols "What the fuck is wrong with you? Are you trying to crash the server?"
+    sorryRange = wrapSend mq cols . T.concat $ [ "The line length must be between "
+                                               , showText minCols
+                                               , " and "
+                                               , showText maxCols
+                                               , " characters." ]
+    msg        =
         let ls = [ mkFgColorANSI (Dull, c) <> "This is " <> showText c <> " text." | c <- Black `delete` colors ]
-        in T.intercalate " " ls <> dfltColorANSI
+        in (<> dfltColorANSI) . T.intercalate " " $ ls ++ ls
 debugWrap p = advise p [ prefixDebugCmd "wrap" ] advice
   where
     advice = "Please provide just one argument: line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
