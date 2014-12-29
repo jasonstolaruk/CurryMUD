@@ -96,8 +96,8 @@ extractANSI :: T.Text -> [(T.Text, EscSeq)]
 extractANSI t
   | ansiCSI `notInfixOf` t = [(t, "")]
   | otherwise =
-      let (t',                                          rest)            = T.break (== ansiEsc)          t
-          ((<> T.singleton ansiSGRDelimiter) -> escSeq, T.tail -> rest') = T.break (== ansiSGRDelimiter) rest
+      let (t',                                    rest)            = T.break (== ansiEsc)          t
+          ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') = T.break (== ansiSGRDelimiter) rest
       in if T.null rest' then [(t', escSeq)] else (t', escSeq) : extractANSI rest'
 
 

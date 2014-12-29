@@ -77,7 +77,7 @@ prop_wrapLineWithIndentTag = forAll genCols                       $ \c ->
                              forAll (genTextOfRandLen (0, c * 2)) $ \t ->
                              forAll (choose (1, maxCols + 10))    $ \n ->
                              T.null t || (not . isDigit . T.last $ t) ==>
-    let res = wrapLineWithIndentTag c $ t <> showText n <> T.singleton indentTagChar
+    let res = wrapLineWithIndentTag c $ t <> showText n `T.snoc` indentTagChar
     in if T.length t <= c
       then res == [t]
       else resIsIndented (adjustIndent n c) res
@@ -213,7 +213,7 @@ test_stripTelnet_malformed3 = stripTelnet . T.pack $ telnetIAC : telnetSB : "tes
 
 
 test_stripTelnet_malformed4 :: T.Text
-test_stripTelnet_malformed4 = stripTelnet $ "test" <> T.singleton telnetIAC
+test_stripTelnet_malformed4 = stripTelnet $ "test" `T.snoc` telnetIAC
 
 
 test_stripTelnet_malformed5 :: T.Text
