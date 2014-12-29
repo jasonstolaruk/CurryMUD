@@ -58,6 +58,9 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- 3. Write tests for NameResolution and the Cmds modules.
 
 
+-- TODO: ^C?
+
+
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads"
 
@@ -221,7 +224,7 @@ adHoc mq host = do
         let pc   = PC iWelcome r [] []
         let ris  = (ws^.invTbl) ! iWelcome ++ [i]
         -----
-        let pla  = Pla True host 80 interpName
+        let pla  = Pla True host 30 interpName -- TODO
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e

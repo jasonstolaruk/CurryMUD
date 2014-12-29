@@ -54,6 +54,7 @@ module Mud.Util ( aOrAn
                 , xformLeading ) where
 
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
@@ -66,6 +67,9 @@ import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
 import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
+
+
+-- TODO: Consider breaking up this module.
 
 
 -- ==================================================
@@ -85,15 +89,55 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 -- Word wrapping and indenting:
 
 
--- TODO: Consider how to wrap lines with ANSI color codes.
+type EscSeq = T.Text
+
+
+extractANSI :: T.Text -> [(T.Text, EscSeq)]
+extractANSI t
+  | ansiCSI `notInfixOf` t = [(t, "")]
+  | otherwise =
+      let (t',                                          rest)            = T.break (== ansiEsc)          t
+          ((<> T.singleton ansiSGRDelimiter) -> escSeq, T.tail -> rest') = T.break (== ansiSGRDelimiter) rest
+      in if T.null rest' then [(t', escSeq)] else (t', escSeq) : extractANSI rest'
+
+
+concatExtracted :: [(T.Text, EscSeq)] -> T.Text
+concatExtracted = T.concat . map fst
+
+
+insertANSI :: [(T.Text, EscSeq)] -> [T.Text] -> [T.Text]
+insertANSI [(_, "")] wrapped                                        = wrapped
+insertANSI extracted (T.intercalate (T.singleton breakMarker) -> t) =
+    T.split (== breakMarker) . loopOverExtractedList extracted $ t
+
+
+loopOverExtractedList :: [(T.Text, EscSeq)] -> T.Text -> T.Text
+loopOverExtractedList []                  ys = ys
+loopOverExtractedList ((xs, escSeq):rest) ys = let left         = loopOverExtractedTxt xs ys
+                                                   (Just right) = T.stripPrefix left ys
+                                               in left <> escSeq <> loopOverExtractedList rest right
+
+
+loopOverExtractedTxt :: T.Text -> T.Text -> T.Text
+loopOverExtractedTxt "" ys = ys
+loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
+  | x == y           = x           `T.cons` loopOverExtractedTxt xs ys
+  | y == breakMarker = breakMarker `T.cons` loopOverExtractedTxt a  ys
+loopOverExtractedTxt a b = patternMatchFail "Mud.Util" "loopOverExtractedTxt" [ a, b ]
+
+
 wordWrap :: Int -> T.Text -> [T.Text]
-wordWrap cols t
-  | T.null afterMax                                 = [t]
-  | T.any isSpace beforeMax
-  , (beforeSpace, afterSpace) <- breakEnd beforeMax = beforeSpace : wordWrap cols (afterSpace <> afterMax)
-  | otherwise                                       = beforeMax   : wordWrap cols afterMax
+wordWrap cols t = let extracted = extractANSI t
+                      wrapped   = wrapIt . concatExtracted $ extracted
+                  in insertANSI extracted wrapped
   where
-    (beforeMax, afterMax) = T.splitAt cols t
+    wrapIt t'
+      | T.null afterMax                                 = [t']
+      | T.any isSpace beforeMax
+      , (beforeSpace, afterSpace) <- breakEnd beforeMax = beforeSpace : wrapIt (afterSpace <> afterMax)
+      | otherwise                                       = beforeMax   : wrapIt afterMax
+      where
+        (beforeMax, afterMax) = T.splitAt cols t'
 
 
 breakEnd :: T.Text -> (T.Text, T.Text)
@@ -140,7 +184,7 @@ leadingFillerToSpcs = xformLeading indentFiller ' '
 
 xformLeading :: Char -> Char -> T.Text -> T.Text
 xformLeading _ _                    ""                                        = ""
-xformLeading a (T.singleton -> b) (T.break (/= a) -> (T.length -> n, rest)) = T.replicate n b <> rest
+xformLeading a (T.singleton -> b) (T.span (== a) -> (T.length -> n, rest)) = T.replicate n b <> rest
 
 
 adjustIndent :: Int -> Int -> Int
@@ -374,11 +418,11 @@ stripControl = T.filter (\c -> c > '\31' && c < '\127')
 
 stripTelnet :: T.Text -> T.Text
 stripTelnet t
-  | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.span (/= telnetIAC) t = left <> helper right
+  | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.break (== telnetIAC) t = left <> helper right
   | otherwise = t
   where
     helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest))))
-      | x == telnetSB = case T.span (/= telnetSE) rest of (_, "")              -> ""
-                                                          (_, T.tail -> rest') -> stripTelnet rest'
+      | x == telnetSB = case T.break (== telnetSE) rest of (_, "")              -> ""
+                                                           (_, T.tail -> rest') -> stripTelnet rest'
       | otherwise     = stripTelnet rest
     helper _ = ""

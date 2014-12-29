@@ -100,7 +100,7 @@ parsePCDesig i ws | (view introduced -> intros) <- (ws^.pcTbl) ! i = helper intr
       , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter msg
       = left <> (if nonStdPCEntSing `elem` intros then nonStdPCEntSing else nonStdDesc) <> helper intros rest
       | otherwise = msg
-    extractPCDesigTxt c (T.span (/= c) -> (left, T.span (/= c) . T.tail -> (pcdTxt, T.tail -> rest)))
+    extractPCDesigTxt c (T.break (== c) -> (left, T.break (== c) . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith (T.singleton c) $ pcdTxt :: PCDesig = (left, pcd, rest)
 
 

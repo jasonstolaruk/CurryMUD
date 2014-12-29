@@ -56,9 +56,17 @@ stdDesigDelimiter    = '\130'
 
 
 -- ==================================================
+-- Characters concerning word wrapping:
+
+
+breakMarker :: Char
+breakMarker = '\128'
+
+
+-- ==================================================
 -- Characters concerning indentation:
 
 
 indentFiller, indentTagChar :: Char
-indentFiller  = '\128'
+indentFiller  = '\129'
 indentTagChar = '`'
