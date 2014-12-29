@@ -32,13 +32,14 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.Char (ord)
 import Data.IntMap.Lazy ((!))
-import Data.List (foldl', nub, sort)
+import Data.List (delete, foldl', nub, sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import System.CPUTime (getCPUTime)
+import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
@@ -95,7 +96,9 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
     , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
     , Cmd { cmdName = prefixDebugCmd "throwlog", action = debugThrowLog, cmdDesc = "Throw an exception on your player \
-                                                                                   \log thread." } ]
+                                                                                   \log thread." }
+    , Cmd { cmdName = prefixDebugCmd "wrap", action = debugWrap, cmdDesc = "Test the wrapping of a line containing \
+                                                                           \ANSI escape sequences." } ]
 
 
 prefixDebugCmd :: CmdName -> T.Text
@@ -378,3 +381,27 @@ debugThrowLog (NoArgs' i mq) = do
     liftIO . atomically . writeTQueue q $ Throw
     ok mq
 debugThrowLog p = withoutArgs debugThrowLog p
+
+
+-----
+
+
+debugWrap :: Action
+debugWrap p@AdviseNoArgs             = advise p [ prefixDebugCmd "wrap" ] advice
+  where
+    advice = "Please specify line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
+debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String)]) of
+  []            -> sorry
+  [(cols', "")] -> helper cols'
+  _             -> sorry
+  where
+    sorry        = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
+    helper cols' = do
+        logPlaExecArgs (prefixDebugCmd "wrap") [a] i
+        send mq . frame cols' . wrapUnlines cols' $ msg
+    msg          =
+        let ls = [ mkFgColorANSI (Dull, c) <> "This is " <> showText c <> " text." | c <- Black `delete` colors ]
+        in T.intercalate " " ls <> dfltColorANSI
+debugWrap p = advise p [ prefixDebugCmd "wrap" ] advice
+  where
+    advice = "Please provide just one argument: line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."

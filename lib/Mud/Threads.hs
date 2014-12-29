@@ -221,7 +221,7 @@ adHoc mq host = do
         let pc   = PC iWelcome r [] []
         let ris  = (ws^.invTbl) ! iWelcome ++ [i]
         -----
-        let pla  = Pla True host 30 interpName -- TODO
+        let pla  = Pla True host 80 interpName
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e

@@ -14,9 +14,21 @@ colors :: [Color]
 colors = [ Black .. White ]
 
 
+dfltFgColor :: (ColorIntensity, Color)
+dfltFgColor = (Vivid, White)
+
+
+dfltBgColor :: (ColorIntensity, Color)
+dfltBgColor = (Dull, Black)
+
+
 mkColorANSI :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> T.Text
 mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
 
 
+mkFgColorANSI :: (ColorIntensity, Color) -> T.Text
+mkFgColorANSI fg = mkColorANSI fg dfltBgColor
+
+
 dfltColorANSI :: T.Text
-dfltColorANSI = mkColorANSI (Vivid, White) (Dull, Black)
+dfltColorANSI = mkColorANSI dfltFgColor dfltBgColor

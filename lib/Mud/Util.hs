@@ -86,7 +86,7 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 
 
 -- ==================================================
--- Word wrapping and indenting:
+-- ANSI escape sequence extraction and insertion:
 
 
 type EscSeq = T.Text
@@ -95,14 +95,10 @@ type EscSeq = T.Text
 extractANSI :: T.Text -> [(T.Text, EscSeq)]
 extractANSI t
   | ansiCSI `notInfixOf` t = [(t, "")]
-  | otherwise =
+  | otherwise              =
       let (t',                                    rest)            = T.break (== ansiEsc)          t
           ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') = T.break (== ansiSGRDelimiter) rest
       in if T.null rest' then [(t', escSeq)] else (t', escSeq) : extractANSI rest'
-
-
-concatExtracted :: [(T.Text, EscSeq)] -> T.Text
-concatExtracted = T.concat . map fst
 
 
 insertANSI :: [(T.Text, EscSeq)] -> [T.Text] -> [T.Text]
@@ -113,22 +109,29 @@ insertANSI extracted (T.intercalate (T.singleton breakMarker) -> t) =
 
 loopOverExtractedList :: [(T.Text, EscSeq)] -> T.Text -> T.Text
 loopOverExtractedList []                  ys = ys
-loopOverExtractedList ((xs, escSeq):rest) ys = let left         = loopOverExtractedTxt xs ys
-                                                   (Just right) = T.stripPrefix left ys
-                                               in left <> escSeq <> loopOverExtractedList rest right
+loopOverExtractedList _                   "" = ""
+loopOverExtractedList ((xs, escSeq):rest) ys
+  | T.null xs = escSeq <> loopOverExtractedList rest ys
+  | otherwise = let left         = loopOverExtractedTxt xs ys
+                    (Just right) = left `T.stripPrefix` ys
+                in left <> escSeq <> loopOverExtractedList rest right
 
 
 loopOverExtractedTxt :: T.Text -> T.Text -> T.Text
-loopOverExtractedTxt "" ys = ys
 loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
   | x == y           = x           `T.cons` loopOverExtractedTxt xs ys
   | y == breakMarker = breakMarker `T.cons` loopOverExtractedTxt a  ys
-loopOverExtractedTxt a b = patternMatchFail "Mud.Util" "loopOverExtractedTxt" [ a, b ]
+loopOverExtractedTxt "" _ = ""
+loopOverExtractedTxt a  b = patternMatchFail "Mud.Util" "loopOverExtractedTxt" [ a, b ]
+
+
+-- ==================================================
+-- Wrapping and indenting:
 
 
 wordWrap :: Int -> T.Text -> [T.Text]
 wordWrap cols t = let extracted = extractANSI t
-                      wrapped   = wrapIt . concatExtracted $ extracted
+                      wrapped   = wrapIt . T.concat . map fst $ extracted
                   in insertANSI extracted wrapped
   where
     wrapIt t'

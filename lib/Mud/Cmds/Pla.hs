@@ -300,8 +300,9 @@ mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (s', r))
 
 
 dropAction :: Action
-dropAction p@AdviseNoArgs     = advise p ["drop"] $ "Please specify one or more things to drop, as \
-                                                    \in " <> dblQuote "drop sword" <> "."
+dropAction p@AdviseNoArgs     = advise p ["drop"] advice
+  where
+    advice = "Please specify one or more things to drop, as in " <> dblQuote "drop sword" <> "."
 dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "drop" i logMsgs
     bcastNl bs
@@ -457,8 +458,9 @@ isNonStdLink _               = False
 
 
 getAction :: Action
-getAction p@AdviseNoArgs     = advise p ["get"] $ "Please specify one or more items to pick up, as \
-                                                  \in " <> dblQuote "get sword" <> "."
+getAction p@AdviseNoArgs     = advise p ["get"] advice
+  where
+    advice = "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
 getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "get" i logMsgs
     bcastNl bs
@@ -804,11 +806,13 @@ showMotd mq cols = send mq =<< helper
 
 
 putAction :: Action
-putAction p@AdviseNoArgs     = advise p ["put"] $ "Please specify one or more things you want to put, followed by \
-                                                  \where you want to put them, as in " <> dblQuote "put doll \
-                                                  \sack" <> "."
-putAction p@(AdviseOneArg a) = advise p ["put"] $ "Please also specify where you want to put it, as \
-                                                  \in " <> dblQuote ("put " <> a <> " sack") <> "."
+putAction p@AdviseNoArgs     = advise p ["put"] advice
+  where
+    advice = "Please specify one or more things you want to put, followed by where you want to put them, as \
+             \in " <> dblQuote "put doll sack" <> "."
+putAction p@(AdviseOneArg a) = advise p ["put"] advice
+  where
+    advice = "Please also specify where you want to put it, as in " <> dblQuote ("put " <> a <> " sack") <> "."
 putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "put" i logMsgs
     bcastNl bs
@@ -1104,8 +1108,9 @@ notifyEgress i = readWSTMVar >>= \ws ->
 
 
 ready :: Action
-ready p@AdviseNoArgs            = advise p ["ready"] $ "Please specify one or more things to ready, as \
-                                                       \in " <> dblQuote "ready sword" <> "."
+ready p@AdviseNoArgs            = advise p ["ready"] advice
+  where
+    advice = "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
 ready   (LowerNub i mq cols as) = helper >>= \(msg, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "ready" i logMsgs
     send mq . nl $ msg
@@ -1372,11 +1377,14 @@ getDesigWpnSlot cols ws (view sing -> s) em rol
 
 
 remove :: Action
-remove p@AdviseNoArgs     = advise p ["remove"] $ "Please specify one or more things to remove, followed by the \
-                                                  \container you want to remove them from, as in " <> dblQuote "remove \
-                                                  \doll sack" <> "."
-remove p@(AdviseOneArg a) = advise p ["remove"] $ "Please also specify the container you want to remove it from, as \
-                                                  \in " <> dblQuote ("remove " <> a <> " sack") <> "."
+remove p@AdviseNoArgs     = advise p ["remove"] advice
+  where
+    advice = "Please specify one or more things to remove, followed by the container you want to remove them from, as \
+             \in " <> dblQuote "remove doll sack" <> "."
+remove p@(AdviseOneArg a) = advise p ["remove"] advice
+  where
+    advice = "Please also specify the container you want to remove it from, as \
+             \in " <> dblQuote ("remove " <> a <> " sack") <> "."
 remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "remove" i logMsgs
     bcastNl bs
@@ -1435,8 +1443,9 @@ shuffleRem i (t, ws) d cn icir as is c f
 
 
 unready :: Action
-unready p@AdviseNoArgs            = advise p ["unready"] $ "Please specify one or more things to unready, as \
-                                                           \in " <> dblQuote "unready sword" <> "."
+unready p@AdviseNoArgs            = advise p ["unready"] advice
+  where
+    advice = "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
 unready   (LowerNub i mq cols as) = helper >>= \(msg, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "unready" i logMsgs
     send mq . nl $ msg
@@ -1531,8 +1540,9 @@ getUptime = round <$> diff
 
 -- TODO: Disambiguate player names?
 what :: Action
-what p@AdviseNoArgs            = advise p ["what"] $ "Please specify one or more abbreviations to disambiguate, as \
-                                                     \in " <> dblQuote "what up" <> "."
+what p@AdviseNoArgs            = advise p ["what"] advice
+  where
+    advice = "Please specify one or more abbreviations to disambiguate, as in " <> dblQuote "what up" <> "."
 what   (LowerNub i mq cols as) = getPCRm' i >>= \(ws, r) ->
     logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
   where
