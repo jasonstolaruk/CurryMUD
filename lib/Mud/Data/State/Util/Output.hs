@@ -81,7 +81,7 @@ bcast bs = readWSTMVar >>= \ws -> do
     helper ws (mqt, pt) msg i
       | mq   <- mqt ! i
       , cols <- view columns (pt ! i)
-      = send mq . T.unlines . concatMap (wordWrap cols) . T.lines . parsePCDesig i ws $ msg
+      = send mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ws $ msg
 
 
 parsePCDesig :: Id -> WorldState -> T.Text -> T.Text

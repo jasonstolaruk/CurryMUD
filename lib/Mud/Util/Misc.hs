@@ -1,7 +1,35 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.Misc where
+module Mud.Util.Misc ( aOrAn
+                     , appendIfUnique
+                     , blowUp
+                     , capitalize
+                     , uncapitalize
+                     , countOcc
+                     , deleteFirstOfEach
+                     , dropBlanks
+                     , dup
+                     , eitherRet
+                     , findFullNameForAbbrev
+                     , grepTextList
+                     , headTail
+                     , headTail'
+                     , isVowel
+                     , maybeRet
+                     , maybeVoid
+                     , mkCountList
+                     , mkOrdinal
+                     , mkTimestamp
+                     , nl
+                     , nlnl
+                     , nl'
+                     , notInfixOf
+                     , patternMatchFail
+                     , reverseLookup
+                     , showText
+                     , stripControl
+                     , stripTelnet ) where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Quoting

@@ -1,7 +1,13 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.Wrapping where
+module Mud.Util.Wrapping ( wrap
+                         , wrapUnlines
+                         , wrapUnlinesNl
+                         , multiWrap
+                         , multiWrapNl
+                         , wrapIndent
+                         , wrapLines ) where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.ANSI
@@ -13,13 +19,10 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
--- TODO: Rename functions - remove "word" from function names.
-
-
-wordWrap :: Int -> T.Text -> [T.Text]
-wordWrap cols t = let extracted = extractANSI t
-                      wrapped   = wrapIt . T.concat . map fst $ extracted
-                  in insertANSI extracted wrapped
+wrap :: Int -> T.Text -> [T.Text]
+wrap cols t = let extracted = extractANSI t
+                  wrapped   = wrapIt . T.concat . map fst $ extracted
+              in insertANSI extracted wrapped
   where
     wrapIt t'
       | T.null afterMax                                 = [t']
@@ -38,7 +41,7 @@ breakEnd (T.break isSpace . T.reverse -> (after, before)) = over both T.reverse 
 
 
 wrapUnlines :: Int -> T.Text -> T.Text
-wrapUnlines cols = T.unlines . wordWrap cols
+wrapUnlines cols = T.unlines . wrap cols
 
 
 wrapUnlinesNl :: Int -> T.Text -> T.Text
@@ -49,7 +52,7 @@ wrapUnlinesNl cols = nl . wrapUnlines cols
 
 
 multiWrap :: Int -> [T.Text] -> T.Text
-multiWrap cols = T.unlines . concatMap (wordWrap cols)
+multiWrap cols = T.unlines . concatMap (wrap cols)
 
 
 multiWrapNl :: Int -> [T.Text] -> T.Text
@@ -60,14 +63,14 @@ multiWrapNl cols = nl . multiWrap cols
 
 
 -- TODO: Consider how to wrap lines with ANSI color codes.
-wordWrapIndent :: Int -> Int -> T.Text -> [T.Text]
-wordWrapIndent n cols = map leadingFillerToSpcs . wrapIt . leadingSpcsToFiller
+wrapIndent :: Int -> Int -> T.Text -> [T.Text]
+wrapIndent n cols = map leadingFillerToSpcs . wrapIt . leadingSpcsToFiller
   where
     wrapIt t
       | T.null afterMax = [t]
       | T.any isSpace beforeMax, (beforeSpace, afterSpace) <- breakEnd beforeMax =
-                    beforeSpace : wordWrapIndent n cols (leadingIndent <> afterSpace <> afterMax)
-      | otherwise = beforeMax   : wordWrapIndent n cols (leadingIndent <> afterMax)
+                    beforeSpace : wrapIndent n cols (leadingIndent <> afterSpace <> afterMax)
+      | otherwise = beforeMax   : wrapIndent n cols (leadingIndent <> afterMax)
       where
         (beforeMax, afterMax) = T.splitAt cols t
         leadingIndent         = T.replicate (adjustIndent n cols) . T.singleton $ indentFiller
@@ -93,18 +96,18 @@ adjustIndent n cols = if n >= cols then pred cols else n
 -----
 
 
-wordWrapLines :: Int -> [T.Text] -> [[T.Text]]
-wordWrapLines _    []                     = []
-wordWrapLines cols [t]                    = [ wordWrapIndent (numOfLeadingSpcs t) cols t ]
-wordWrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
-                              | otherwise = helper a : wrapNext
+wrapLines :: Int -> [T.Text] -> [[T.Text]]
+wrapLines _    []                     = []
+wrapLines cols [t]                    = [ wrapIndent (numOfLeadingSpcs t) cols t ]
+wrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
+                          | otherwise = helper a : wrapNext
   where
-    wrapNext         = wordWrapLines cols $ b : rest
+    wrapNext         = wrapLines cols $ b : rest
     helper
       | hasIndentTag = wrapLineWithIndentTag cols
-      | nolsa > 0    = wordWrapIndent nolsa  cols
-      | nolsb > 0    = wordWrapIndent nolsb  cols
-      | otherwise    = wordWrap cols
+      | nolsa > 0    = wrapIndent nolsa  cols
+      | nolsb > 0    = wrapIndent nolsb  cols
+      | otherwise    = wrap cols
     hasIndentTag     = T.last a == indentTagChar
     (nolsa, nolsb)   = over both numOfLeadingSpcs (a, b)
 
@@ -114,7 +117,7 @@ numOfLeadingSpcs = T.length . T.takeWhile isSpace
 
 
 wrapLineWithIndentTag :: Int -> T.Text -> [T.Text]
-wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wordWrapIndent n cols t
+wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wrapIndent n cols t
   where
     (numTxt, t) = over both T.reverse broken
     readsRes    = reads . T.unpack $ numTxt :: [(Int, String)]

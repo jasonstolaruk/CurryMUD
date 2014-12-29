@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.ANSI where
+module Mud.Util.ANSI ( extractANSI
+                     , insertANSI ) where
 
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc

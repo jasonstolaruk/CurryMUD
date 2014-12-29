@@ -62,9 +62,9 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 dispCmdList :: [Cmd] -> Action
 dispCmdList cmds (NoArgs   _ mq cols) =
-    send mq . nl . T.unlines . concatMap (wordWrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
+    send mq . nl . T.unlines . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
 dispCmdList cmds (LowerNub _ mq cols as) | matches <- [ grepTextList a . mkCmdListText $ cmds | a <- as ] =
-    send mq . nl . T.unlines . concatMap (wordWrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
+    send mq . nl . T.unlines . concatMap (wrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
 dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
 
 

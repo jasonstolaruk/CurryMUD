@@ -353,7 +353,7 @@ equip p = patternMatchFail "equip" [ showText p ]
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
 mkEqDesc i cols ws ei (view sing -> s) t | descs <- map mkDesc . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei =
     case descs of [] -> none
-                  _  -> (header <>) . T.unlines . concatMap (wordWrapIndent 15 cols) $ descs
+                  _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
   where
     mkSlotNameIdList = map (first pp)
     mkDesc (T.breakOn " finger" -> (sn, _), i')
@@ -406,7 +406,7 @@ dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 
 mkEntsInInvDesc :: Id -> Cols -> WorldState -> Inv -> T.Text
-mkEntsInInvDesc i cols ws = T.unlines . concatMap (wordWrapIndent ind cols . helper) . mkNameCountBothList i ws
+mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper) . mkNameCountBothList i ws
   where
     helper (bracketPad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
     helper (bracketPad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
@@ -417,12 +417,12 @@ mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper [ mkNameAmt cn c' | cn <- coinNames | c' <- mkListFromCoins c ]
   where
     mkNameAmt (bracketQuote -> cn) a = if a == 0 then "" else showText a <> " " <> cn
-    helper                           = T.unlines . wordWrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
+    helper                           = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
 mkCoinsDesc cols (Coins (cop, sil, gol)) =
-    T.unlines . intercalate [""] . map (wordWrap cols) . filter (not . T.null) $ [ copDesc, silDesc, golDesc ]
+    T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ copDesc, silDesc, golDesc ]
   where -- TODO: Come up with good descriptions.
     copDesc = if cop /= 0 then "The copper piece is round and shiny." else ""
     silDesc = if sil /= 0 then "The silver piece is round and shiny." else ""
@@ -446,7 +446,7 @@ mkExitsSummary :: Cols -> Rm -> T.Text
 mkExitsSummary cols (view rmLinks -> rls)
   | stdNames    <- [ rl^.linkDir.to linkDirToCmdName | rl <- rls, not . isNonStdLink $ rl ]
   , customNames <- [ rl^.linkName                    | rl <- rls,       isNonStdLink   rl ]
-  = T.unlines . wordWrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
+  = T.unlines . wrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"
     summarize std cus = T.intercalate ", " . (std ++) $ cus
@@ -579,12 +579,12 @@ help (NoArgs i mq cols) = do
     try helper >>= eitherRet (\e -> fileIOExHandler "help" e >> sendGenericErrorMsg mq cols)
     logPla "help" i "read the root help file."
   where
-    helper   = send mq . nl . T.unlines . concat . wordWrapLines cols . T.lines =<< readRoot
+    helper   = send mq . nl . T.unlines . concat . wrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
 help (LowerNub i mq cols as) =
     send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
   where
-    getTopics = mapM (\a -> concat . wordWrapLines cols . T.lines <$> getHelpTopicByName i cols a) as
+    getTopics = mapM (\a -> concat . wrapLines cols . T.lines <$> getHelpTopicByName i cols a) as
 help p = patternMatchFail "help" [ showText p ]
 
 
@@ -761,8 +761,8 @@ look p = patternMatchFail "look" [ showText p ]
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
     let (splitRmInv ws -> ((i `delete`) -> pis, ois)) = (ws^.invTbl) ! ri
-        pcDescs    = T.unlines . concatMap (wordWrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
-        otherDescs = T.unlines . concatMap (wordWrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
+        pcDescs    = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
+        otherDescs = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
         c          = (ws^.coinsTbl) ! ri
     in (if not . null $ pis then pcDescs               else "") <>
        (if not . null $ ois then otherDescs            else "") <>

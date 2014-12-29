@@ -157,12 +157,12 @@ debugBuffCheck (NoArgs i mq cols) = do
     helper = do
         (fn@(dblQuote . T.pack -> fn'), h) <- liftIO $ flip openTempFile "temp" =<< getTemporaryDirectory
         (dblQuote . showText -> mode)      <- liftIO . hGetBuffering $ h
-        send mq . nl . T.unlines . wordWrapIndent 2 cols . T.concat $ [ parensQuote "Default"
-                                                                      , " buffering mode for temp file "
-                                                                      , fn'
-                                                                      , " is "
-                                                                      , mode
-                                                                      , "." ]
+        send mq . nl . T.unlines . wrapIndent 2 cols . T.concat $ [ parensQuote "Default"
+                                                                  , " buffering mode for temp file "
+                                                                  , fn'
+                                                                  , " is "
+                                                                  , mode
+                                                                  , "." ]
         liftIO $ hClose h >> removeFile fn
 debugBuffCheck p = withoutArgs debugBuffCheck p
 
@@ -222,7 +222,7 @@ debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
 mkAssocListTxt cols = T.concat . map helper
   where
-    helper  = T.unlines . wordWrapIndent 2 cols . uncurry builder . (unquote . showText *** showText)
+    helper  = T.unlines . wrapIndent 2 cols . uncurry builder . (unquote . showText *** showText)
     builder = sformat $ stext % ": " % stext
 
 
