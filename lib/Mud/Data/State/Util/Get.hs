@@ -70,7 +70,7 @@ getInv i = (! i) <$> getInvTbl
 
 
 getInvCoins :: Id -> MudStack (Inv, Coins)
-getInvCoins i = readWSTMVar >>= return . getInvCoinsHelper i
+getInvCoins i = getInvCoinsHelper i <$> readWSTMVar
 
 
 getInvCoinsHelper :: Id -> WorldState -> (Inv, Coins)

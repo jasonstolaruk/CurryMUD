@@ -124,7 +124,7 @@ debugBoot p              = withoutArgs debugBoot p
 debugBroad :: Action
 debugBroad (NoArgs'' i) = do
     logPlaExec (prefixDebugCmd "broad") i
-    bcast . mkBroadcast i $ msg -- TODO: Needs a nl?
+    bcastNl . mkBroadcast i $ msg
   where
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\

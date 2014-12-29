@@ -18,7 +18,7 @@ allCoinNames = coinNames ++ aggregateCoinNames
 
 
 ansiCSI :: T.Text
-ansiCSI = T.pack $ [ ansiEsc, ansiBracket ]
+ansiCSI = T.pack [ ansiEsc, ansiBracket ]
 
 
 coinNames :: [T.Text]

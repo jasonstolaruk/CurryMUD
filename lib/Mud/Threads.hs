@@ -58,9 +58,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -- 3. Write tests for NameResolution and the Cmds modules.
 
 
--- TODO: ^C?
-
-
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads"
 
