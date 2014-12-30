@@ -639,7 +639,7 @@ intro (NoArgs i mq cols) = do
           logPlaOut "intro" i [introsTxt]
       else let introsTxt = T.intercalate ", " intros in do
           multiWrapSend mq cols [ "You know the following names:", introsTxt ]
-          logPlaOut "intro" i [introsTxt] -- TODO: Parse "PCDesig".
+          logPlaOut "intro" i [introsTxt]
 intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "intro" i logMsgs
     bcast . map fromClassifiedBroadcast . sort $ cbs
@@ -675,7 +675,9 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                         in over _2 (++ mkNTBroadcast i msg) a'
                    else let p         = targetPC & introduced .~ sort (s : intros)
                             ws'       = ws & pcTbl.at targetId ?~ p
-                            srcMsg    = nlnl $ "You introduce yourself to " <> targetDesig <> "."
+                            msg       = "You introduce yourself to " <> targetDesig <> "."
+                            logMsg    = parsePCDesig i ws msg
+                            srcMsg    = nlnl $ msg
                             srcDesig  = StdDesig { stdPCEntSing = Nothing
                                                  , isCap        = True
                                                  , pcEntName    = mkUnknownPCEntName i ws
@@ -696,7 +698,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                             cbs = [ NonTargetBroadcast (srcMsg,    [i])
                                   , TargetBroadcast    (targetMsg, [targetId])
                                   , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
-                        in set _1 ws' . over _2 (++ cbs) . over _3 (++ [srcMsg]) $ a'
+                        in set _1 ws' . over _2 (++ cbs) . over _3 (++ [logMsg]) $ a'
           _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
                  -> over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) =
