@@ -31,13 +31,13 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (both, over)
 import Control.Lens.Getter (view)
-import Control.Monad (replicateM, replicateM_)
+import Control.Monad (replicateM, replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.Char (ord)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, foldl', nub, sort)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>))
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
@@ -405,53 +405,64 @@ debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, Stri
     sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     helper cols'
       | cols' < 0                          = sorryWtf
-      | cols' < minCols || cols' > maxCols = sorryRange
+      | cols' < minCols || cols' > maxCols = sorryLineLen
       | otherwise                          = do
           logPlaExecArgs (prefixDebugCmd "wrap") [a] i
           send mq . frame cols' . wrapUnlines cols' $ msg
-    sorryWtf   = wrapSend mq cols "What the fuck is wrong with you? Are you trying to make me crash?"
-    sorryRange = wrapSend mq cols . T.concat $ [ "The line length must be between "
-                                               , showText minCols
-                                               , " and "
-                                               , showText maxCols
-                                               , " characters." ]
+    sorryWtf     = wrapSend mq cols "What the fuck is wrong with you? Are you trying to make me crash?"
+    sorryLineLen = wrapSend mq cols . T.concat $ [ "The line length must be between "
+                                                 , showText minCols
+                                                 , " and "
+                                                 , showText maxCols
+                                                 , " characters." ]
     msg        =
         let ls = [ mkFgColorANSI (Dull, c) <> "This is " <> showText c <> " text." | c <- Black `delete` colors ]
         in (<> dfltColorANSI) . T.intercalate " " $ ls ++ ls
 debugWrap p = advise p [ prefixDebugCmd "wrap" ] advice
   where
-    advice = "Please provide just one argument: line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
+    advice = "Please provide one argument: line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
 
 
 -----
 
 
 debugWrapIndent :: Action
-debugWrapIndent p@AdviseNoArgs             = advise p [ prefixDebugCmd "wrapindent" ] advice
+debugWrapIndent p@AdviseNoArgs                = advise p [ prefixDebugCmd "wrapindent" ] advice
   where
-    advice = "Please specify line length, as in " <> dblQuote (prefixDebugCmd "wrapindent" <> " 40") <> "."
-debugWrapIndent   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String)]) of
-  []            -> sorryParse
-  [(cols', "")] -> helper cols'
-  _             -> sorryParse
+    advice = "Please specify line length followed by indent amount, as in " <>
+             dblQuote (prefixDebugCmd "wrapindent" <> " 40 4") <> "."
+debugWrapIndent p@(AdviseOneArg _)            = advise p [ prefixDebugCmd "wrapindent" ] advice
   where
-    sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-    helper cols'
-      | cols' < 0                          = sorryWtf
-      | cols' < minCols || cols' > maxCols = sorryRange
+    advice = "Please also specify indent amount, as in " <>
+             dblQuote (prefixDebugCmd "wrapindent" <> " 40 4") <> "."
+debugWrapIndent   (WithArgs i mq cols [a, b]) = do
+    parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
+    unless (uncurry (||) . (over both isNothing) $ parsed) . uncurry helper . (over both fromJust) $ parsed
+  where
+    parse txt sorry   = case (reads . T.unpack $ txt :: [(Int, String)]) of
+      []        -> sorry >> return Nothing
+      [(x, "")] -> return . Just $ x
+      _         -> sorry >> return Nothing
+    sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
+    sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
+    helper cols' indent
+      | cols' < 0 || indent < 0            = sorryWtf
+      | cols' < minCols || cols' > maxCols = sorryLineLen
+      | indent >= cols'                    = sorryIndent
       | otherwise                          = do
-          logPlaExecArgs (prefixDebugCmd "wrapindent") [a] i
-          send mq . frame cols' . T.unlines . wrapIndent 4 cols' $ msg
-    sorryWtf   = wrapSend mq cols "What the fuck is wrong with you? Are you trying to make me crash?"
-    sorryRange = wrapSend mq cols . T.concat $ [ "The line length must be between "
-                                               , showText minCols
-                                               , " and "
-                                               , showText maxCols
-                                               , " characters." ]
-    msg        =
+          logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
+          send mq . frame cols' . T.unlines . wrapIndent indent cols' $ msg
+    sorryWtf      = wrapSend mq cols "What the fuck is wrong with you? Are you trying to make me crash?"
+    sorryLineLen  = wrapSend mq cols . T.concat $ [ "The line length must be between "
+                                                  , showText minCols
+                                                  , " and "
+                                                  , showText maxCols
+                                                  , " characters." ]
+    sorryIndent   = wrapSend mq cols "The indent amount must be less than the line length."
+    msg           =
         let ls = [ mkFgColorANSI (Dull, c) <> "This is " <> showText c <> " text." | c <- Black `delete` colors ]
         in (<> dfltColorANSI) . T.intercalate " " $ ls ++ ls
 debugWrapIndent p = advise p [ prefixDebugCmd "wrapindent" ] advice
   where
-    advice = "Please provide just one argument: line length, as in " <>
-             dblQuote (prefixDebugCmd "wrapindent" <> " 40") <> "."
+    advice = "Please provide two arguments: line length and indent amount, as in " <>
+             dblQuote (prefixDebugCmd "wrapindent" <> " 40 4") <> "."

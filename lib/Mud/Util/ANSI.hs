@@ -13,9 +13,6 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
--- TODO: Write tests.
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Util.ANSI"
 
