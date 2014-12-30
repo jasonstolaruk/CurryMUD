@@ -53,7 +53,8 @@ loopOverExtractedList ((xs, escSeq):rest) ys
 
 loopOverExtractedTxt :: T.Text -> T.Text -> T.Text
 loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
-  | x == y           = x           `T.cons` loopOverExtractedTxt xs ys
-  | y == breakMarker = breakMarker `T.cons` loopOverExtractedTxt a  ys
+  | x == y            = x            `T.cons` loopOverExtractedTxt xs ys
+  | y == indentFiller = indentFiller `T.cons` loopOverExtractedTxt a  ys
+  | y == breakMarker  = breakMarker  `T.cons` loopOverExtractedTxt a  ys
 loopOverExtractedTxt "" _ = ""
 loopOverExtractedTxt a  b = patternMatchFail "loopOverExtractedTxt" [ a, b ]

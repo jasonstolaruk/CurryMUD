@@ -34,7 +34,7 @@ logRotationFlaggerDelay = 60 * 5
 
 
 maxCmdLen :: Int
-maxCmdLen = 10
+maxCmdLen = 11
 
 
 maxCols, minCols :: Int

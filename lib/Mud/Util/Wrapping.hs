@@ -74,17 +74,19 @@ multiWrapNl cols = nl . multiWrap cols
 -----
 
 
--- TODO: Consider how to wrap lines with ANSI color codes.
 wrapIndent :: Int -> Int -> T.Text -> [T.Text]
-wrapIndent n cols = map leadingFillerToSpcs . wrapIt . leadingSpcsToFiller
+wrapIndent n cols t = let extracted = extractANSI t
+                          wrapped   = helper . T.concat . map fst $ extracted
+                      in map leadingFillerToSpcs . insertANSI extracted $ wrapped
   where
-    wrapIt t
-      | T.null afterMax = [t]
+    helper = wrapIt . leadingSpcsToFiller
+    wrapIt t'
+      | T.null afterMax = [t']
       | T.any isSpace beforeMax, (beforeSpace, afterSpace) <- breakEnd beforeMax =
-                    beforeSpace : wrapIndent n cols (leadingIndent <> afterSpace <> afterMax)
-      | otherwise = beforeMax   : wrapIndent n cols (leadingIndent <> afterMax)
+                      beforeSpace : helper (leadingIndent <> afterSpace <> afterMax)
+      | otherwise   = beforeMax   : helper (leadingIndent               <> afterMax)
       where
-        (beforeMax, afterMax) = T.splitAt cols t
+        (beforeMax, afterMax) = T.splitAt cols t'
         leadingIndent         = T.replicate (adjustIndent n cols) . T.singleton $ indentFiller
 
 
@@ -97,7 +99,7 @@ leadingFillerToSpcs = xformLeading indentFiller ' '
 
 
 xformLeading :: Char -> Char -> T.Text -> T.Text
-xformLeading _ _                    ""                                        = ""
+xformLeading _ _                  ""                                       = ""
 xformLeading a (T.singleton -> b) (T.span (== a) -> (T.length -> n, rest)) = T.replicate n b <> rest
 
 
