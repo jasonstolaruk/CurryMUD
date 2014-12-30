@@ -11,6 +11,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , showMotd ) where
 
 import Mud.Cmds.Util
+import Mud.Color
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Coins
@@ -589,15 +590,15 @@ help p = patternMatchFail "help" [ showText p ]
 
 
 getHelpTopicByName :: Id -> Cols -> HelpTopic -> MudStack T.Text
-getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(getTopics -> topics) ->
+getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(getTopics -> topics) -> -- TODO: Move the getDirectoryContents operation to the "help" function.
     maybe sorry
           (\t -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote t <> ".") >> getHelpTopic t)
           (findFullNameForAbbrev r topics)
   where
     getTopics       = (^..folded.packed) . drop 2 . sort . delete "root"
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
-    helper          = liftIO . T.readFile . (helpDir ++) . T.unpack
-    getHelpTopic t  = (try . helper $ t) >>= eitherRet handler
+    helper       t  = parseColorCodes <$> (T.readFile . (helpDir ++) . T.unpack $ t)
+    getHelpTopic t  = (try . liftIO . helper $ t) >>= eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpTopicByName" e
