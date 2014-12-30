@@ -5,7 +5,7 @@ module MudTests.Data.Misc where
 
 import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
-import Mud.Util
+import Mud.Util.Quoting
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T

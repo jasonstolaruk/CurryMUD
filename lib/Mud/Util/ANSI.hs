@@ -6,13 +6,21 @@ module Mud.Util.ANSI ( extractANSI
 
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
 -- TODO: Write tests.
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Util.ANSI"
+
+
+-- ==================================================
 
 
 type EscSeq = T.Text
@@ -48,4 +56,4 @@ loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
   | x == y           = x           `T.cons` loopOverExtractedTxt xs ys
   | y == breakMarker = breakMarker `T.cons` loopOverExtractedTxt a  ys
 loopOverExtractedTxt "" _ = ""
-loopOverExtractedTxt a  b = patternMatchFail "Mud.Util" "loopOverExtractedTxt" [ a, b ]
+loopOverExtractedTxt a  b = patternMatchFail "loopOverExtractedTxt" [ a, b ]

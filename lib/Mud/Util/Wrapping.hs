@@ -1,22 +1,34 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.Wrapping ( wrap
-                         , wrapUnlines
-                         , wrapUnlinesNl
+module Mud.Util.Wrapping ( adjustIndent
+                         , calcIndent
                          , multiWrap
                          , multiWrapNl
+                         , wrap
                          , wrapIndent
-                         , wrapLines ) where
+                         , wrapLineWithIndentTag
+                         , wrapLines
+                         , wrapUnlines
+                         , wrapUnlinesNl
+                         , xformLeading ) where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.ANSI
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (both, over)
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Util.Wrapping"
+
+
+-- ==================================================
 
 
 wrap :: Int -> T.Text -> [T.Text]
@@ -123,7 +135,7 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
     readsRes    = reads . T.unpack $ numTxt :: [(Int, String)]
     extractInt []               = 0
     extractInt [(x, _)] | x > 0 = x
-    extractInt xs               = patternMatchFail "Mud.Util" "wrapLineWithIndentTag extractInt" [ showText xs ]
+    extractInt xs               = patternMatchFail "wrapLineWithIndentTag extractInt" [ showText xs ]
     indent          = extractInt readsRes
     n | indent == 0 = calcIndent t
       | otherwise   = adjustIndent indent cols

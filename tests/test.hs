@@ -3,11 +3,13 @@
 
 import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
-import Mud.Util
+import Mud.Util.Quoting
 import MudTests.Data.Misc
 import MudTests.Data.State.Util.Misc
 import MudTests.TheWorld.TheWorld
-import MudTests.Util
+import MudTests.Util.Misc
+import MudTests.Util.Padding
+import MudTests.Util.Wrapping
 
 import Data.Monoid ((<>))
 import Test.Tasty (TestTree, defaultMain, testGroup)
@@ -19,7 +21,7 @@ import qualified Data.Text as T
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
------
+-- ==================================================
 
 
 main :: IO ()
@@ -36,7 +38,9 @@ tests = testGroup "tests" [ propertyTests, unitTests ]
 propertyTests :: TestTree
 propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Misc
                                            , propTests_Mud_TheWorld_TheWorld
-                                           , propTests_Mud_Util ]
+                                           , propTests_Mud_Util_Misc
+                                           , propTests_Mud_Util_Padding
+                                           , propTests_Mud_Util_Wrapping ]
 
 
 -- --------------------------------------------------
@@ -58,19 +62,9 @@ propTests_Mud_TheWorld_TheWorld = testGroup "property tests Mud.TheWorld.TheWorl
 -- --------------------------------------------------
 
 
-propTests_Mud_Util :: TestTree
-propTests_Mud_Util = testGroup "property tests Mud.Util"
-    [ QC.testProperty "prop_wordWrap" prop_wordWrap
-    , QC.testProperty "prop_wordWrapIndent_wraps" prop_wordWrapIndent_wraps
-    , QC.testProperty "prop_wordWrapIndent_indents" prop_wordWrapIndent_indents
-    , QC.testProperty "prop_xformLeading" prop_xformLeading
-    , QC.testProperty "prop_wrapLineWithIndentTag" prop_wrapLineWithIndentTag
-    , QC.testProperty "prop_calcIndent" prop_calcIndent
-    , QC.testProperty "prop_quoteWithAndPad_length" prop_quoteWithAndPad_length
-    , QC.testProperty "prop_quoteWithAndPad_quotes" prop_quoteWithAndPad_quotes
-    , QC.testProperty "prop_padOrTrunc_pads" prop_padOrTrunc_pads
-    , QC.testProperty "prop_padOrTrunc_truncates" prop_padOrTrunc_truncates
-    , QC.testProperty "prop_aOrAn" prop_aOrAn
+propTests_Mud_Util_Misc :: TestTree
+propTests_Mud_Util_Misc = testGroup "property tests Mud.Util.Misc"
+    [ QC.testProperty "prop_aOrAn" prop_aOrAn
     , QC.testProperty "prop_countOcc" prop_countOcc
     , QC.testProperty "prop_deleteFirstOfEach" prop_deleteFirstOfEach
     , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
@@ -78,11 +72,36 @@ propTests_Mud_Util = testGroup "property tests Mud.Util"
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 
 
+-- --------------------------------------------------
+
+
+propTests_Mud_Util_Padding :: TestTree
+propTests_Mud_Util_Padding = testGroup "property tests Mud.Util.Padding"
+    [ QC.testProperty "prop_quoteWithAndPad_length" prop_quoteWithAndPad_length
+    , QC.testProperty "prop_quoteWithAndPad_quotes" prop_quoteWithAndPad_quotes
+    , QC.testProperty "prop_padOrTrunc_pads" prop_padOrTrunc_pads
+    , QC.testProperty "prop_padOrTrunc_truncates" prop_padOrTrunc_truncates ]
+
+
+-- --------------------------------------------------
+
+
+propTests_Mud_Util_Wrapping :: TestTree
+propTests_Mud_Util_Wrapping = testGroup "property tests Mud.Util.Wrapping"
+    [ QC.testProperty "prop_wrap" prop_wrap
+    , QC.testProperty "prop_wrapIndent_wraps" prop_wrapIndent_wraps
+    , QC.testProperty "prop_wrapIndent_indents" prop_wrapIndent_indents
+    , QC.testProperty "prop_xformLeading" prop_xformLeading
+    , QC.testProperty "prop_wrapLineWithIndentTag" prop_wrapLineWithIndentTag
+    , QC.testProperty "prop_calcIndent" prop_calcIndent ]
+
+
 -- ==================================================
 
 
 unitTests :: TestTree
-unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc, unitTests_Mud_Util ]
+unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
+                                   , unitTests_Mud_Util_Misc ]
 
 
 -- --------------------------------------------------
@@ -107,8 +126,8 @@ unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
 -- --------------------------------------------------
 
 
-unitTests_Mud_Util :: TestTree
-unitTests_Mud_Util = testGroup "unit tests Mud.Util"
+unitTests_Mud_Util_Misc :: TestTree
+unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
     [ testCase "stripControl"                   $ test_stripControl                   @?= "test"
     , testCase "stripTelnet_null"               $ test_stripTelnet_null               @?= ""
     , testCase "stripTelnet_telnetCodes"        $ test_stripTelnet_telnetCodes        @?= ""
