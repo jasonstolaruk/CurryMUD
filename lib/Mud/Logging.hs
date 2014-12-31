@@ -56,6 +56,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, hPutStrLn)
 
 
+default (Int)
+
+
 -- ==================================================
 -- Starting logs:
 

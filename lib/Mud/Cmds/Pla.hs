@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
@@ -576,6 +576,7 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 -----
 
 
+-- TODO: Implement paging.
 help :: Action
 help (NoArgs i mq cols) = do
     try helper >>= eitherRet (\e -> fileIOExHandler "help" e >> sendGenericErrorMsg mq cols)
