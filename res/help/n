@@ -8,7 +8,7 @@ DESCRIPTION:
 Move north, optionally followed by more movement.
 
 EXAMPLES:
-"n" to move north.
-"n u s" to move north, then up, then south.
+"n" to move north.`
+"n u s" to move north, then up, then south.`
 
 SEE ALSO:

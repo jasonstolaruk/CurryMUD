@@ -32,8 +32,8 @@ colors :: [Color]
 colors = [ Black .. White ]
 
 
-dfltFgColor :: (ColorIntensity, Color)
-dfltFgColor = (Vivid, White)
+-- dfltFgColor :: (ColorIntensity, Color)
+-- dfltFgColor = (Vivid, White)
 
 
 dfltBgColor :: (ColorIntensity, Color)
@@ -49,7 +49,7 @@ mkFgColorANSI fg = mkColorANSI fg dfltBgColor
 
 
 dfltColorANSI :: T.Text
-dfltColorANSI = mkColorANSI dfltFgColor dfltBgColor
+dfltColorANSI = reset -- mkColorANSI dfltFgColor dfltBgColor
 
 
 parseColorCodes :: T.Text -> T.Text
@@ -60,6 +60,7 @@ parseColorCodes t
                 in left <> colorCodeToANSI code <> parseColorCodes right
 
 
+-- TODO: Move?
 colorCodeDelimiter :: Char
 colorCodeDelimiter = '\\'
 

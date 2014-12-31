@@ -8,7 +8,7 @@ DESCRIPTION:
 Move northwest, optionally followed by more movement.
 
 EXAMPLES:
-"nw" to move northwest.
-"nw u n" to move northwest, then up, then north.
+"nw" to move northwest.`
+"nw u n" to move northwest, then up, then north.`
 
 SEE ALSO:

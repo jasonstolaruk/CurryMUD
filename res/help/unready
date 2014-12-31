@@ -1,0 +1,19 @@
+UNREADY
+=======
+
+USAGE:
+unready item ...
+
+DESCRIPTION:
+Move one or more items from your readied equipment to your inventory.
+
+EXAMPLES:
+"unready sword" to stop wielding your sword.`
+"unready sword ring" to stop wielding your sword and take off your ring.`
+"unready 2#iring" to take off your second ring.`
+"unready 2#mring" to take off your first two rings.`
+"unready 3#iring 3#mbracelet" to take off your third ring and first three bracelets.`
+"unready #aring" to take off all your rings.`
+"unready #a" to unready all your equipment. (You'll be naked!)`
+
+SEE ALSO:

@@ -8,7 +8,7 @@ DESCRIPTION:
 Move up, optionally followed by more movement.
 
 EXAMPLES:
-"u" to move up.
-"u n e" to move up, then north, then east.
+"u" to move up.`
+"u n e" to move up, then north, then east.`
 
 SEE ALSO:
