@@ -1,0 +1,21 @@
+REMOVE
+======
+
+USAGE:
+remove item ... container
+
+DESCRIPTION:
+Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in the room).
+
+EXAMPLES:
+"remove ring sack" to remove a ring from your sack.`
+"remove ring #rsack" to remove a ring from the sack in the room.`
+"remove ring bracelet sack" to remove a ring and a bracelet from your sack.`
+"remove 2#iring #rsack" to remove the second ring from the sack in the room.`
+"remove 2#mring sack" to remove the first two rings from your sack.`
+"remove 3#iring 3#mbracelet #rsack" to remove the third ring and the first three bracelets from the sack in the room.`
+"remove #aring sack" to remove all the rings from your sack.`
+"remove #a #rsack" to remove everything from the sack in the room.`
+"remove #a #r2#isack" to remove everything from the second sack in the room.`
+
+SEE ALSO:
