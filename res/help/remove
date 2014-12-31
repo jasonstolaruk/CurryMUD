@@ -17,5 +17,7 @@ EXAMPLES:
 "remove #aring sack" to remove all the rings from your sack.`
 "remove #a #rsack" to remove everything from the sack in the room.`
 "remove #a #r2#isack" to remove everything from the second sack in the room.`
+"remove 5#mgp 10#msp sack" to remove five gold pieces and ten silver pieces from your sack.`
+"remove #acoin #rsack" to remove all the coins from the sack in the room.`
 
 SEE ALSO:

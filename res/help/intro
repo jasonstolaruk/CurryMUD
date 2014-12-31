@@ -1,0 +1,21 @@
+INTRO
+=====
+
+USAGE:
+intro [person ...]
+
+DESCRIPTION:
+Introduce yourself to one or more people, who will then know you by name.
+When no arguments are provided, you'll get a list of all the people who have introduced themselves to you.
+
+EXAMPLES:
+"intro" to get a list of all the names you know.`
+"intro taro" to introduce yourself to Taro.`
+"intro taro hanako" to introduce yourself to Taro and Hanako.`
+"intro 2#imelf" to introduce yourself to the second male elf.`
+"intro 2#mmelf" to introduce yourself to the first two male elves.`
+"intro 3#ifhuman 3#mflagomorph" to introduce yourself to the third female human and the first three female lagomorphs.`
+"intro #amdwarf" to introduce yourself to all the male dwarves in the room.`
+"intro #a" to introduce yourself to everybody in the room.`
+
+SEE ALSO:

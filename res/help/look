@@ -1,0 +1,22 @@
+LOOK
+====
+
+USAGE:
+look [object ...]
+
+DESCRIPTION:
+Get a description of your current location ("room"), or examine one or more objects in the room.
+
+EXAMPLES:
+"look" to get a description of your current room followed by a list of its contents.`
+"look sword" to examine the sword in the room.`
+"look sword melf" to examine the sword and the male elf in the room.`
+"look 2#isack" to examine the second sack in the room.`
+"look 2#mring" to examine the first two rings in the room.`
+"look 3#iring 3#mbracelet" to examine the third ring and the first three bracelets in the room.`
+"look #aring" to examine all the rings in the room.`
+"look #a" to examine everything in the room.`
+"look gp sp" to examine a gold piece and a silver piece in the room.`
+"look 'coin" to examine all the coins in the room.`
+
+SEE ALSO:
