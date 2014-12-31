@@ -1,0 +1,10 @@
+MOTD
+====
+
+USAGE:
+motd
+
+DESCRIPTION:
+Show the "message of the day" (announcements and such from the CurryMUD administrators).
+
+SEE ALSO:
