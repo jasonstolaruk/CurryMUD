@@ -1,10 +1,10 @@
-\ht\UPTIME\r\
+UPTIME
 ======
 
-\hh\USAGE:\r\
+USAGE:
 uptime
 
-\hh\DESCRIPTION:\r\
-Display how long the game server has been up.
+DESCRIPTION:
+Display how long CurryMUD has been up.
 
-\hh\SEE ALSO:\r\
+SEE ALSO:

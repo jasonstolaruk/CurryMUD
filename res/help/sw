@@ -1,0 +1,14 @@
+SW
+==
+
+USAGE:
+sw [direction ...]
+
+DESCRIPTION:
+Move southwest, optionally followed by more movement.
+
+EXAMPLES:
+"sw" to move southwest.
+"sw u n" to move southwest, then up, then north.
+
+SEE ALSO:

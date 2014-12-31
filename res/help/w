@@ -1,0 +1,14 @@
+W
+=
+
+USAGE:
+w [direction ...]
+
+DESCRIPTION:
+Move west, optionally followed by more movement.
+
+EXAMPLES:
+"w" to move west.
+"w u n" to move west, then up, then north.
+
+SEE ALSO:

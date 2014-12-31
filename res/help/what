@@ -2,7 +2,7 @@ WHAT
 ====
 
 USAGE:
-what abbrev...
+what abbreviation...
 
 DESCRIPTION:
 Disambiguate one or more abbreviations.

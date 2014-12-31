@@ -1,0 +1,14 @@
+SE
+==
+
+USAGE:
+se [direction ...]
+
+DESCRIPTION:
+Move southeast, optionally followed by more movement.
+
+EXAMPLES:
+"se" to move southeast.
+"se u n" to move southeast, then up, then north.
+
+SEE ALSO:

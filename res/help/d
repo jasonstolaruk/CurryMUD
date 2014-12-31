@@ -1,0 +1,14 @@
+D
+=
+
+USAGE:
+d [direction ...]
+
+DESCRIPTION:
+Move down, optionally followed by more movement.
+
+EXAMPLES:
+"d" to move down.
+"d n e" to move down, then north, then east.
+
+SEE ALSO:

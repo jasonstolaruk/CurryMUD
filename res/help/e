@@ -1,0 +1,14 @@
+E
+=
+
+USAGE:
+e [direction ...]
+
+DESCRIPTION:
+Move east, optionally followed by more movement.
+
+EXAMPLES:
+"e" to move east.
+"e u n" to move east, then up, then north.
+
+SEE ALSO:
