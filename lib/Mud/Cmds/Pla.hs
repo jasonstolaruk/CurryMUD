@@ -11,7 +11,6 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , showMotd ) where
 
 import Mud.Cmds.Util
-import Mud.Color
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Coins
@@ -24,6 +23,7 @@ import Mud.NameResolution
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Help
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -43,7 +43,6 @@ import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
 import Control.Monad (forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.Char (toLower)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort, sortBy)
 import Data.Maybe (catMaybes, fromJust, isNothing)
@@ -605,30 +604,6 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(ge
         handler e = do
             fileIOExHandler "getHelpTopicByName" e
             return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."
-
-
--- TODO: Move.
-parseCharCodes :: T.Text -> T.Text
-parseCharCodes t
-  | T.singleton charCodeDelimiter `notInfixOf` t = t
-  | otherwise = let (left, headTail' . T.tail -> (c, right)) = T.break (== charCodeDelimiter) t
-                in left <> charCodeToTxt c <> parseCharCodes right
-
-
--- TODO: Move.
-charCodeDelimiter :: Char
-charCodeDelimiter = '#'
-
-
--- TODO: Move.
-charCodeToTxt :: Char -> T.Text
-charCodeToTxt (toLower -> code) = T.singleton $ case code of
-  'a' -> allChar
-  'i' -> indexChar
-  'm' -> amountChar
-  'r' -> rmChar
-  's' -> slotChar
-  x   -> patternMatchFail "charCodeToTxt" [ T.singleton x ]
 
 
 -----

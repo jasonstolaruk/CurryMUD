@@ -34,7 +34,6 @@ import Control.Lens.Getter (view)
 import Control.Monad (replicateM, replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
-import Data.Char (ord)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, foldl', nub, sort)
 import Data.Maybe (fromJust, isNothing)
@@ -184,9 +183,12 @@ debugColor (NoArgs' i mq) = do
         let fg   = (fgi, fgc)
         let bg   = (bgi, bgc)
         let ansi = mkColorANSI fg bg
-        return . nl . T.concat $ [ mkANSICodeList ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColorANSI ]
+        return . nl . T.concat $ [ padOrTrunc 15 . showText $ ansi
+                                 , mkColorDesc fg bg
+                                 , ansi
+                                 , " CurryMUD "
+                                 , dfltColorANSI ]
   where
-    mkANSICodeList = padOrTrunc 28 . T.concatMap ((<> " ") . showText . ord)
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName = uncurry (<>) . (padOrTrunc 6 . showText *** padOrTrunc 8 . showText)
 debugColor p = withoutArgs debugColor p

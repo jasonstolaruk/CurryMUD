@@ -59,14 +59,16 @@ stdDesigDelimiter    = '\130'
 -- Characters concerning word wrapping:
 
 
-breakMarker :: Char
-breakMarker = '\128'
+breakMarker, indentFiller :: Char
+breakMarker  = '\128'
+indentFiller = '\129'
 
 
 -- ==================================================
--- Characters concerning indentation:
+-- Denotative characters used in help files:
 
 
-indentFiller, indentTagChar :: Char
-indentFiller  = '\129'
-indentTagChar = '`'
+charCodeDelimiter, colorCodeDelimiter, indentTagChar :: Char
+charCodeDelimiter  = '#'
+colorCodeDelimiter = '\\'
+indentTagChar      = '`'

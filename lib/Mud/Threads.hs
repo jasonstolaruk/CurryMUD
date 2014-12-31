@@ -6,7 +6,6 @@ module Mud.Threads (listenWrapper) where
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Cmds.Util
-import Mud.Color
 import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
 import Mud.Data.State.Util.Get
@@ -199,7 +198,6 @@ talk h host = helper `finally` cleanUp
         handle (plaThreadExHandler "talk" i) $ do
             logNotice "talk helper" $ "new ID for incoming player: " <> showText i <> "."
             liftIO configBuffer
-            setDfltColor mq
             dumpTitle    mq
             prompt       mq "By what name are you known?"
             s <- statefulFork . inacTimer i mq $ itq
@@ -263,10 +261,6 @@ plaThreadExHandler n i e
   | otherwise                            = do
       logExMsg "plaThreadExHandler" ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
       liftIO . flip throwTo e =<< getListenThreadId
-
-
-setDfltColor :: MsgQueue -> MudStack ()
-setDfltColor = flip send dfltColorANSI
 
 
 dumpTitle :: MsgQueue -> MudStack ()
