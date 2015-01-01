@@ -1,16 +1,16 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 
-module Mud.Color ( colors
-                 , dfltColorANSI
-                 , headingColorANSI
-                 , intensities
-                 , mkBgColorANSI
-                 , mkColorANSI
-                 , mkFgColorANSI
-                 , noUnderlineANSI
-                 , resetANSI
-                 , topicColorANSI
-                 , underlineANSI ) where
+module Mud.ANSI ( colors
+                , dfltColorANSI
+                , headingColorANSI
+                , intensities
+                , mkBgColorANSI
+                , mkColorANSI
+                , mkFgColorANSI
+                , noUnderlineANSI
+                , resetANSI
+                , topicColorANSI
+                , underlineANSI ) where
 
 
 import Mud.TopLvlDefs.Chars
@@ -67,7 +67,6 @@ topicColorANSI = mkColorANSI (Dull, White) (Dull, Cyan)
 -----
 
 
--- TODO: Consider changing the name of this module.
 underlineANSI :: T.Text
 underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
 

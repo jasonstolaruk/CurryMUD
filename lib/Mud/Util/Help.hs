@@ -6,7 +6,7 @@ module Mud.Util.Help ( charCodeToTxt
                      , parseCharCodes
                      , parseColorCodes ) where
 
-import Mud.Color
+import Mud.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc hiding (patternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)

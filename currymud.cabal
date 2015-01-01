@@ -29,11 +29,11 @@ executable             curry
 library
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
-  exposed-modules:     Mud.Cmds.Debug,
+  exposed-modules:     Mud.ANSI,
+                       Mud.Cmds.Debug,
                        Mud.Cmds.Pla,
                        Mud.Cmds.Util,
                        Mud.Cmds.Wiz,
-                       Mud.Color,
                        Mud.Data.Misc,
                        Mud.Data.State.State,
                        Mud.Data.State.StateInIORefT,
