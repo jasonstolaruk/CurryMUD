@@ -78,6 +78,10 @@ flip delete
 
 Use "null" instead of "(== [])".
 
+Use "on" where applicable in binary functions for sorting, etc.:
+sortBy (compare `on` fst)
+groupBy ((==) `on` clientName)
+
 Use record update syntax with your record data types.
 
 Prefer "maybe" over unwrapping a "Maybe" via pattern matching.
@@ -156,7 +160,7 @@ typeclasses of the underlying type wrapped by "newtype":
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 newtype MyMonoidList a = L { runList :: [a] } deriving (Monoid, Show)
 ml = L ['A'..'F']
-hex = Just ml `mappend` Just (L ['0'..'9']) `mappend` Nothing
+hex = Just ml <> Just (L ['0'..'9']) <> Nothing
 λ> runList . fromJust $ hex
 "ABCDEF0123456789"
 
@@ -287,31 +291,25 @@ True
 MONOIDS
 ==================================================
 
-Use the "Ordering" instance of "Monoid" to chain comparisons so as to prioritize them:
-λ> let x = "abc"
-λ> let y = "ABC"
-λ> (length x `compare` length y) `mappend` (x `compare` y)
-GT
-
 Use the "Ordering" instance of "Monoid" to sort by multiple criteria:
 sortBy mySort
   where
-    mySort (x, y) (x', y') = (x `compare` x') `mappend` (y `compare` y')
+    mySort (x, y) (x', y') = (x `compare` x') <> (y `compare` y')
 
 Use "First" or "Last" when you have a number of "Maybe" values and you want to check whether or
 not they are all "Nothing" (and get either the first or last "Just"):
-λ> getFirst $ First Nothing `mappend` First (Just 'a') `mappend` First Nothing
+λ> getFirst $ First Nothing <> First (Just 'a') <> First Nothing
 Just 'a'
-λ> getFirst $ First Nothing `mappend` First (Just 'a') `mappend` First (Just 'b')
+λ> getFirst $ First Nothing <> First (Just 'a') <> First (Just 'b')
 Just 'a'
-λ> getLast $ Last Nothing `mappend` Last (Just 'a') `mappend` Last (Just 'b')
+λ> getLast $ Last Nothing <> Last (Just 'a') <> Last (Just 'b')
 Just 'b'
 
 When you have a number of computations, each resulting in an instance of "Monoid" wrapped in
 "Maybe", you can use the "Maybe a" instance of "Monoid" to work with those results in a "monoidal"
 fashion, without directly dealing with the "Maybe" wrapper: 
 λ> let myMap = M.fromList [('a',[1..5]),('b',[6..10])] -- Note that "[a]" is a monoid.
-λ> M.lookup 'c' myMap `mappend` M.lookup 'd' myMap `mappend` M.lookup 'a' myMap
+λ> M.lookup 'c' myMap <> M.lookup 'd' myMap <> M.lookup 'a' myMap
 Just [1,2,3,4,5]
 
 Certain nested computations, where the second computation should take place if the first one
