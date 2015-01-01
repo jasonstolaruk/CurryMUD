@@ -7,7 +7,7 @@ se [direction ...]
 Move southeast, optionally followed by more movement.
 
 \u\EXAMPLES\n\
-"se" to move southeast.`
-"se u n" to move southeast, then up, then north.`
+\q\"se"\d\ to move southeast.`
+\q\"se u n"\d\ to move southeast, then up, then north.`
 
 \u\SEE ALSO\n\

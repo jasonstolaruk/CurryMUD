@@ -7,6 +7,7 @@ module Mud.ANSI ( colors
                 , mkColorANSI
                 , mkFgColorANSI
                 , noUnderlineANSI
+                , quoteColorANSI
                 , resetANSI
                 , topicColorANSI
                 , underlineANSI
@@ -21,10 +22,6 @@ import qualified Data.Text as T
 
 resetANSI :: T.Text
 resetANSI = T.pack . setSGRCode $ [Reset]
-
-
-dfltColorANSI :: T.Text
-dfltColorANSI = T.pack $ ansiEsc : ansiBracket : "39;49" ++ [ansiSGRDelimiter]
 
 
 -----
@@ -56,16 +53,24 @@ mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, un
 -----
 
 
+dfltColorANSI :: T.Text
+dfltColorANSI = T.pack $ ansiEsc : ansiBracket : "39;49" ++ [ansiSGRDelimiter]
+
+
+noUnderlineANSI :: T.Text
+noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
+
+
+quoteColorANSI :: T.Text
+quoteColorANSI = mkFgColorANSI (Vivid, White)
+
+
 topicColorANSI :: T.Text
 topicColorANSI = mkColorANSI (Dull, Black) (Dull, White)
 
 
 underlineANSI :: T.Text
 underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
-
-
-noUnderlineANSI :: T.Text
-noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
 
 
 zingColorANSI :: T.Text

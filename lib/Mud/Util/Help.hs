@@ -55,6 +55,7 @@ styleCodeToANSI :: T.Text -> T.Text
 styleCodeToANSI (T.toLower -> code) = case code of
   "d" -> dfltColorANSI
   "n" -> noUnderlineANSI
+  "q" -> quoteColorANSI
   "t" -> topicColorANSI
   "u" -> underlineANSI
   "z" -> zingColorANSI

@@ -7,7 +7,7 @@ nw [direction ...]
 Move northwest, optionally followed by more movement.
 
 \u\EXAMPLES\n\
-"nw" to move northwest.`
-"nw u n" to move northwest, then up, then north.`
+\q\"nw"\d\ to move northwest.`
+\q\"nw u n"\d\ to move northwest, then up, then north.`
 
 \u\SEE ALSO\n\

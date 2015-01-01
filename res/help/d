@@ -7,7 +7,7 @@ d [direction ...]
 Move down, optionally followed by more movement.
 
 \u\EXAMPLES\n\
-"d" to move down.`
-"d n e" to move down, then north, then east.`
+\q\"d"\d\ to move down.`
+\q\"d n e"\d\ to move down, then north, then east.`
 
 \u\SEE ALSO\n\

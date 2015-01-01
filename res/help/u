@@ -7,7 +7,7 @@ u [direction ...]
 Move up, optionally followed by more movement.
 
 \u\EXAMPLES\n\
-"u" to move up.`
-"u n e" to move up, then north, then east.`
+\q\"u"\d\ to move up.`
+\q\"u n e"\d\ to move up, then north, then east.`
 
 \u\SEE ALSO\n\

@@ -7,7 +7,7 @@ n [direction ...]
 Move north, optionally followed by more movement.
 
 \u\EXAMPLES\n\
-"n" to move north.`
-"n u s" to move north, then up, then south.`
+\q\"n"\d\ to move north.`
+\q\"n u s"\d\ to move north, then up, then south.`
 
 \u\SEE ALSO\n\

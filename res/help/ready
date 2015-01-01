@@ -7,28 +7,28 @@ ready item[#slocation] ...
 Move one or more items from your inventory to your readied equipment.
 
 For many items, you may optionally specify location by appending a suffix to the item name:
-"#sr" for right (hand, wrist, or ear)
-"#sl" for left  (hand, wrist, or ear)
+\q\"#sr"\d\ for right (hand, wrist, or ear)
+\q\"#sl"\d\ for left  (hand, wrist, or ear)
 
 For rings, you may optionally specify which finger of which hand. This is accomplished with a three-character suffix: either "#sr" for right hand or "#sl" for left hand, followed by:
-"i" for index finger
-"m" for middle finger
-"r" for ring finger
-"p" for pinky finger
+\q\"i"\d\ for index finger
+\q\"m"\d\ for middle finger
+\q\"r"\d\ for ring finger
+\q\"p"\d\ for pinky finger
 
 If you do not provide a location suffix, the location will be chosen for you.
 
 \u\EXAMPLES\n\
-"ready sword" to wield your sword.`
-"ready sword#sr" to wield your sword with your right hand.`
-"ready sword#sl ring" to wield your sword with your left hand and put on your ring.`
-"ready ring#srm" to put your ring on your right hand middle finger.`
-"ready 2#iring" to put on your second ring.`
-"ready 2#iring#slp" to put your second ring on your left pinky finger.`
-"ready 2#mring" to put on your first two rings.`
-"ready 2#mearring:l" to wear your first two earrings on your left ear.`
-"ready 3#mbracelet#sr" to wear your first three bracelets on your right wrist.`
-"ready #aring" to put on all your rings.`
-"ready #a" to ready all the items in your inventory.`
+\q\"ready sword"\d\ to wield your sword.`
+\q\"ready sword#sr"\d\ to wield your sword with your right hand.`
+\q\"ready sword#sl ring"\d\ to wield your sword with your left hand and put on your ring.`
+\q\"ready ring#srm"\d\ to put your ring on your right hand middle finger.`
+\q\"ready 2#iring"\d\ to put on your second ring.`
+\q\"ready 2#iring#slp"\d\ to put your second ring on your left pinky finger.`
+\q\"ready 2#mring"\d\ to put on your first two rings.`
+\q\"ready 2#mearring:l"\d\ to wear your first two earrings on your left ear.`
+\q\"ready 3#mbracelet#sr"\d\ to wear your first three bracelets on your right wrist.`
+\q\"ready #aring"\d\ to put on all your rings.`
+\q\"ready #a"\d\ to ready all the items in your inventory.`
 
 \u\SEE ALSO\n\

@@ -8,13 +8,13 @@ Introduce yourself to one or more people, who will then know you by name.
 When no arguments are provided, you'll get a list of all the people who have introduced themselves to you.
 
 \u\EXAMPLES\n\
-"intro" to get a list of all the names you know.`
-"intro taro" to introduce yourself to Taro.`
-"intro taro hanako" to introduce yourself to Taro and Hanako.`
-"intro 2#imelf" to introduce yourself to the second male elf.`
-"intro 2#mmelf" to introduce yourself to the first two male elves.`
-"intro 3#ifhuman 3#mflagomorph" to introduce yourself to the third female human and the first three female lagomorphs.`
-"intro #amdwarf" to introduce yourself to all the male dwarves in the room.`
-"intro #a" to introduce yourself to everybody in the room.`
+\q\"intro"\d\ to get a list of all the names you know.`
+\q\"intro taro"\d\ to introduce yourself to Taro.`
+\q\"intro taro hanako"\d\ to introduce yourself to Taro and Hanako.`
+\q\"intro 2#imelf"\d\ to introduce yourself to the second male elf.`
+\q\"intro 2#mmelf"\d\ to introduce yourself to the first two male elves.`
+\q\"intro 3#ifhuman 3#mflagomorph"\d\ to introduce yourself to the third female human and the first three female lagomorphs.`
+\q\"intro #amdwarf"\d\ to introduce yourself to all the male dwarves in the room.`
+\q\"intro #a"\d\ to introduce yourself to everybody in the room.`
 
 \u\SEE ALSO\n\

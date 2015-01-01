@@ -7,14 +7,14 @@ drop item ...
 Drop one or more items; move item(s) from your inventory to your current location ("room").
 
 \u\EXAMPLES\n\
-"drop sword" to drop your sword.`
-"drop sword bread" to drop your sword and your bread.`
-"drop 2#isack" to drop your second sack.`
-"drop 2#mring" to drop your first two rings.`
-"drop 3#iring 3#mbracelet" to drop your third ring and your first three bracelets.`
-"drop #aring" to drop all your rings.`
-"drop #a" to drop everything in your inventory.`
-"drop 5#mgp #asp" to drop five of your gold pieces and all of your silver pieces.`
-"drop 'coin" to drop all your coins.`
+\q\"drop sword"\d\ to drop your sword.`
+\q\"drop sword bread"\d\ to drop your sword and your bread.`
+\q\"drop 2#isack"\d\ to drop your second sack.`
+\q\"drop 2#mring"\d\ to drop your first two rings.`
+\q\"drop 3#iring 3#mbracelet"\d\ to drop your third ring and your first three bracelets.`
+\q\"drop #aring"\d\ to drop all your rings.`
+\q\"drop #a"\d\ to drop everything in your inventory.`
+\q\"drop 5#mgp #asp"\d\ to drop five of your gold pieces and all of your silver pieces.`
+\q\"drop 'coin"\d\ to drop all your coins.`
 
 \u\SEE ALSO\n\

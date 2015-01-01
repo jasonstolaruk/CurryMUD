@@ -7,7 +7,7 @@ sw [direction ...]
 Move southwest, optionally followed by more movement.
 
 \u\EXAMPLES\n\
-"sw" to move southwest.`
-"sw u n" to move southwest, then up, then north.`
+\q\"sw"\d\ to move southwest.`
+\q\"sw u n"\d\ to move southwest, then up, then north.`
 
 \u\SEE ALSO\n\
