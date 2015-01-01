@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -43,6 +43,7 @@ import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
 import Control.Monad (forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
+import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort, sortBy)
 import Data.Maybe (catMaybes, fromJust, isNothing)
@@ -1568,9 +1569,7 @@ whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(dblQuote -> n
 
 mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
 mkCmdListWithNonStdRmLinks (view rmLinks -> rls) =
-    sortBy sorter $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
-  where
-    sorter c = uncurry compare . over both cmdName . (c,)
+    sortBy (compare `on` cmdName) $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
 
 
 mkCmdForRmLink :: RmLink -> Cmd
