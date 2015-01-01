@@ -57,4 +57,5 @@ styleCodeToANSI (T.toLower -> code) = case code of
   "n" -> noUnderlineANSI
   "t" -> topicColorANSI
   "u" -> underlineANSI
+  "z" -> zingColorANSI
   x   -> patternMatchFail "styleCodeToANSI" [x]

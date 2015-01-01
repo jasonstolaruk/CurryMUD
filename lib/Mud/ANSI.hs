@@ -9,7 +9,8 @@ module Mud.ANSI ( colors
                 , noUnderlineANSI
                 , resetANSI
                 , topicColorANSI
-                , underlineANSI ) where
+                , underlineANSI
+                , zingColorANSI ) where
 
 
 import Mud.TopLvlDefs.Chars
@@ -65,3 +66,7 @@ underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
 
 noUnderlineANSI :: T.Text
 noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
+
+
+zingColorANSI :: T.Text
+zingColorANSI = mkFgColorANSI (Dull, Red)
