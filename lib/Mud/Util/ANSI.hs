@@ -40,7 +40,7 @@ insertANSI extracted (T.intercalate (T.singleton breakMarker) -> t) =
 
 loopOverExtractedList :: [(T.Text, EscSeq)] -> T.Text -> T.Text
 loopOverExtractedList []                  ys = ys
-loopOverExtractedList _                   "" = ""
+loopOverExtractedList [("", escSeq)]      "" = escSeq
 loopOverExtractedList ((xs, escSeq):rest) ys
   | T.null xs = escSeq <> loopOverExtractedList rest ys
   | otherwise = let left         = loopOverExtractedTxt xs ys

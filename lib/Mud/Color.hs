@@ -7,14 +7,15 @@ module Mud.Color ( colors
                  , mkBgColorANSI
                  , mkColorANSI
                  , mkFgColorANSI
+                 , noUnderlineANSI
                  , resetANSI
-                 , topicColorANSI ) where
+                 , topicColorANSI
+                 , underlineANSI ) where
 
 
 import Mud.TopLvlDefs.Chars
 
-import Data.Monoid ((<>))
-import System.Console.ANSI (Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), setSGRCode)
+import System.Console.ANSI (Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
 import qualified Data.Text as T
 
 
@@ -49,7 +50,7 @@ mkBgColorANSI bg = T.pack . setSGRCode $ [ uncurry (SetColor Background) bg ]
 
 
 mkColorANSI :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> T.Text
-mkColorANSI fg bg = mkFgColorANSI fg <> mkBgColorANSI bg
+mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
 
 
 -----
@@ -61,3 +62,15 @@ headingColorANSI = mkColorANSI (Dull, Black) (Dull, White)
 
 topicColorANSI :: T.Text
 topicColorANSI = mkColorANSI (Dull, White) (Dull, Cyan)
+
+
+-----
+
+
+-- TODO: Consider changing the name of this module.
+underlineANSI :: T.Text
+underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
+
+
+noUnderlineANSI :: T.Text
+noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]

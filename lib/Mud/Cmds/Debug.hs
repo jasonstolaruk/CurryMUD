@@ -100,6 +100,7 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
     , Cmd { cmdName = prefixDebugCmd "throwlog", action = debugThrowLog, cmdDesc = "Throw an exception on your player \
                                                                                    \log thread." }
+    , Cmd { cmdName = prefixDebugCmd "underline", action = debugUnderline, cmdDesc = "Perform an underline test." }
     , Cmd { cmdName = prefixDebugCmd "wrap", action = debugWrap, cmdDesc = "Test the wrapping of a line containing \
                                                                            \ANSI escape sequences." }
     , Cmd { cmdName = prefixDebugCmd "wrapindent", action = debugWrapIndent, cmdDesc = "Test the indented wrapping of \
@@ -395,6 +396,22 @@ debugThrowLog p = withoutArgs debugThrowLog p
 -----
 
 
+debugUnderline :: Action
+debugUnderline (NoArgs i mq cols) = do
+    logPlaExec (prefixDebugCmd "underline") i
+    wrapSend mq cols underlined
+  where
+    underlined = T.concat [ showText underlineANSI
+                          , underlineANSI
+                          , " This text is underlined. "
+                          , noUnderlineANSI
+                          , showText noUnderlineANSI ]
+debugUnderline p = withoutArgs debugUnderline p
+
+
+-----
+
+
 debugWrap :: Action
 debugWrap p@AdviseNoArgs             = advise p [ prefixDebugCmd "wrap" ] advice
   where
@@ -418,8 +435,12 @@ debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, Stri
                                                  , showText maxCols
                                                  , " characters." ]
     msg        =
-        let ls = [ mkFgColorANSI (Dull, c) <> "This is " <> showText c <> " text." | c <- Black `delete` colors ]
-        in (<> dfltColorANSI) . T.intercalate " " $ ls ++ ls
+        let ls = [ T.concat [ u
+                            , mkFgColorANSI (Dull, c)
+                            , "This is "
+                            , showText c
+                            , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
+        in (<> dfltColorANSI) . T.intercalate " " $ ls
 debugWrap p = advise p [ prefixDebugCmd "wrap" ] advice
   where
     advice = "Please provide one argument: line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
@@ -462,8 +483,13 @@ debugWrapIndent   (WithArgs i mq cols [a, b]) = do
                                                   , " characters." ]
     sorryIndent   = wrapSend mq cols "The indent amount must be less than the line length."
     msg           =
-        let ls = [ mkFgColorANSI (Dull, c) <> "This is " <> showText c <> " text." | c <- Black `delete` colors ]
-        in (<> dfltColorANSI) . T.intercalate " " $ ls ++ ls
+        let ls = [ T.concat [ u
+                            , mkFgColorANSI (Dull, c)
+                            , "This is "
+                            , showText c
+                            , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
+        in (<> dfltColorANSI) . T.intercalate " " $ ls
+
 debugWrapIndent p = advise p [ prefixDebugCmd "wrapindent" ] advice
   where
     advice = "Please provide two arguments: line length and indent amount, as in " <>
