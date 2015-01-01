@@ -1,13 +1,12 @@
-LOOK
-====
+\t\LOOK\d\
 
-USAGE:
+\u\USAGE\n\
 look [object ...]
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Get a description of your current location ("room"), or examine one or more objects in the room.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "look" to get a description of your current room followed by a list of its contents.`
 "look sword" to examine the sword in the room.`
 "look sword melf" to examine the sword and the male elf in the room.`
@@ -19,4 +18,4 @@ EXAMPLES:
 "look gp sp" to examine a gold piece and a silver piece in the room.`
 "look 'coin" to examine all the coins in the room.`
 
-SEE ALSO:
+\u\SEE ALSO\n\

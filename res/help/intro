@@ -1,14 +1,13 @@
-INTRO
-=====
+\t\INTRO\d\
 
-USAGE:
+\u\USAGE\n\
 intro [person ...]
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Introduce yourself to one or more people, who will then know you by name.
 When no arguments are provided, you'll get a list of all the people who have introduced themselves to you.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "intro" to get a list of all the names you know.`
 "intro taro" to introduce yourself to Taro.`
 "intro taro hanako" to introduce yourself to Taro and Hanako.`
@@ -18,4 +17,4 @@ EXAMPLES:
 "intro #amdwarf" to introduce yourself to all the male dwarves in the room.`
 "intro #a" to introduce yourself to everybody in the room.`
 
-SEE ALSO:
+\u\SEE ALSO\n\

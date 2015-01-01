@@ -1,13 +1,12 @@
-PUT
-===
+\t\PUT\d\
 
-USAGE:
+\u\USAGE\n\
 put item ... container
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Put one or more items into a container (by default, into a container in your inventory; optionally, into a container in the room).
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "put ring sack" to put your ring in your sack.`
 "put ring #rsack" to put your ring in the sack in the room.`
 "put ring bracelet sack" to put your ring and your bracelet in your sack.`
@@ -20,4 +19,4 @@ EXAMPLES:
 "put 5#mgp 10#msp sack" to put five gold pieces and ten silver pieces in your sack.`
 "put #acoin #rsack" to put all your coins in the sack in the room.`
 
-SEE ALSO:
+\u\SEE ALSO\n\

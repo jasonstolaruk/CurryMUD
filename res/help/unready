@@ -1,13 +1,12 @@
-UNREADY
-=======
+\t\UNREADY\d\
 
-USAGE:
+\u\USAGE\n\
 unready item ...
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Move one or more items from your readied equipment to your inventory.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "unready sword" to stop wielding your sword.`
 "unready sword ring" to stop wielding your sword and take off your ring.`
 "unready 2#iring" to take off your second ring.`
@@ -16,4 +15,4 @@ EXAMPLES:
 "unready #aring" to take off all your rings.`
 "unready #a" to unready all your equipment. (You'll be naked!)`
 
-SEE ALSO:
+\u\SEE ALSO\n\

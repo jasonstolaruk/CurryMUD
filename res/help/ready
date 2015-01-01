@@ -1,10 +1,9 @@
-READY
-=====
+\t\READY\d\
 
-USAGE:
+\u\USAGE\n\
 ready item[#slocation] ...
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Move one or more items from your inventory to your readied equipment.
 
 For many items, you may optionally specify location by appending a suffix to the item name:
@@ -19,7 +18,7 @@ For rings, you may optionally specify which finger of which hand. This is accomp
 
 If you do not provide a location suffix, the location will be chosen for you.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "ready sword" to wield your sword.`
 "ready sword#sr" to wield your sword with your right hand.`
 "ready sword#sl ring" to wield your sword with your left hand and put on your ring.`
@@ -32,4 +31,4 @@ EXAMPLES:
 "ready #aring" to put on all your rings.`
 "ready #a" to ready all the items in your inventory.`
 
-SEE ALSO:
+\u\SEE ALSO\n\

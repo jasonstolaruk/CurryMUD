@@ -1,13 +1,12 @@
-REMOVE
-======
+\t\REMOVE\d\
 
-USAGE:
+\u\USAGE\n\
 remove item ... container
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in the room).
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "remove ring sack" to remove a ring from your sack.`
 "remove ring #rsack" to remove a ring from the sack in the room.`
 "remove ring bracelet sack" to remove a ring and a bracelet from your sack.`
@@ -20,4 +19,4 @@ EXAMPLES:
 "remove 5#mgp 10#msp sack" to remove five gold pieces and ten silver pieces from your sack.`
 "remove #acoin #rsack" to remove all the coins from the sack in the room.`
 
-SEE ALSO:
+\u\SEE ALSO\n\

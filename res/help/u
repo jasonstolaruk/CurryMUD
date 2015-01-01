@@ -1,14 +1,13 @@
-U
-=
+\t\U\d\
 
-USAGE:
+\u\USAGE\n\
 u [direction ...]
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Move up, optionally followed by more movement.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "u" to move up.`
 "u n e" to move up, then north, then east.`
 
-SEE ALSO:
+\u\SEE ALSO\n\

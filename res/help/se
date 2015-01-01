@@ -1,14 +1,13 @@
-SE
-==
+\t\SE\d\
 
-USAGE:
+\u\USAGE\n\
 se [direction ...]
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Move southeast, optionally followed by more movement.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "se" to move southeast.`
 "se u n" to move southeast, then up, then north.`
 
-SEE ALSO:
+\u\SEE ALSO\n\

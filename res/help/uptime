@@ -1,10 +1,9 @@
-UPTIME
-======
+\t\UPTIME\d\
 
-USAGE:
+\u\USAGE\n\
 uptime
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Display how long CurryMUD has been up.
 
-SEE ALSO:
+\u\SEE ALSO\n\

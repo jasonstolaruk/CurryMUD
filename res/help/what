@@ -1,14 +1,13 @@
-WHAT
-====
+\t\WHAT\d\
 
-USAGE:
+\u\USAGE\n\
 what abbreviation ...
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Disambiguate one or more abbreviations.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "what up" to determine what, if anything, "up" is an abbreviation for.`
 "what re rem" to differentiate meanings of "re" and "rem".`
 
-SEE ALSO:
+\u\SEE ALSO\n\

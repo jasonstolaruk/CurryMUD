@@ -56,7 +56,7 @@ mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, un
 
 
 topicColorANSI :: T.Text
-topicColorANSI = mkColorANSI (Dull, White) (Dull, Cyan)
+topicColorANSI = mkColorANSI (Dull, Black) (Dull, White)
 
 
 underlineANSI :: T.Text

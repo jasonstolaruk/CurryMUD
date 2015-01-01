@@ -1,14 +1,13 @@
-SW
-==
+\t\SW\d\
 
-USAGE:
+\u\USAGE\n\
 sw [direction ...]
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Move southwest, optionally followed by more movement.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "sw" to move southwest.`
 "sw u n" to move southwest, then up, then north.`
 
-SEE ALSO:
+\u\SEE ALSO\n\

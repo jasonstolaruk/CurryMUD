@@ -1,14 +1,13 @@
-NE
-==
+\t\NE\d\
 
-USAGE:
+\u\USAGE\n\
 ne [direction ...]
 
-DESCRIPTION:
+\u\DESCRIPTION\n\
 Move northeast, optionally followed by more movement.
 
-EXAMPLES:
+\u\EXAMPLES\n\
 "ne" to move northeast.`
 "ne u n" to move northeast, then up, then north.`
 
-SEE ALSO:
+\u\SEE ALSO\n\
