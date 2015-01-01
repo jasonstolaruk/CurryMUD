@@ -1,0 +1,19 @@
+\t\EQUIP\d\
+
+\u\USAGE\n\
+equip [item ...]
+
+\u\DESCRIPTION\n\
+Get a list of the items in your readied equipment, or examine one or more items in your readied equipment.
+
+\u\EXAMPLES\n\
+"equip" to get a list of the items you have readied.`
+"equip sword" to examine the sword you are wielding.`
+"equip sword boots" to examine the sword you are wielding and the boots you are wearing.`
+"equip 2#inecklace" to examine the second necklace you are wearing.`
+"equip 2#mring" to examine the first two rings you are wearing.`
+"equip 3#iring 3#mbracelet" to examine the third ring and the first three bracelets you are wearing.`
+"equip #aring" to examine all the rings you are wearing.`
+"equip #a" to examine everything you have readied.`
+
+\u\SEE ALSO\n\

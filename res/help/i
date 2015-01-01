@@ -1,0 +1,21 @@
+\t\I\d\
+
+\u\USAGE\n\
+i [item ...]
+
+\u\DESCRIPTION\n\
+Get a list of the items in your inventory, or examine one or more items in your inventory.
+
+\u\EXAMPLES\n\
+"i" to get a list of the items in your inventory.`
+"i sword" to examine the sword in your inventory.`
+"i sword bread" to examine the sword and the bread in your inventory.`
+"i 2#isack" to examine the second sack in your inventory.`
+"i 2#mring" to examine the first two rings in your inventory.`
+"i 3#iring 3#mbracelet" to examine the third ring and the first three bracelets in your inventory.`
+"i #aring" to examine all the rings in your inventory.`
+"i #a" to examine everything in your inventory.`
+"i gp sp" to examine a gold piece and a silver piece in your inventory.`
+"i 'coin" to examine all the coins in your inventory.`
+
+\u\SEE ALSO\n\
