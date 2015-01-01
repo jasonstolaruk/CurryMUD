@@ -54,7 +54,7 @@ mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, un
 
 
 dfltColorANSI :: T.Text
-dfltColorANSI = T.pack $ ansiEsc : ansiBracket : "39;49" ++ [ansiSGRDelimiter]
+dfltColorANSI = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelimiter
 
 
 noUnderlineANSI :: T.Text
@@ -62,7 +62,7 @@ noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
 
 
 quoteColorANSI :: T.Text
-quoteColorANSI = mkFgColorANSI (Vivid, White)
+quoteColorANSI = mkFgColorANSI (Dull, Cyan)
 
 
 topicColorANSI :: T.Text
