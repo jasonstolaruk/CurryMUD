@@ -1,0 +1,9 @@
+\t\EXITS\d\
+
+\u\USAGE\n\
+exits
+
+\u\DESCRIPTION\n\
+Get a list of the directions you can go from your current location ("room").
+
+\u\SEE ALSO\n\

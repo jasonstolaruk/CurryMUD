@@ -1,0 +1,20 @@
+\t\GET\d\
+
+\u\USAGE\n\
+get item ...
+
+\u\DESCRIPTION\n\
+Pick up one or more items in your current location ("room"); move item(s) from the room to your inventory.
+
+\u\EXAMPLES\n\
+"get sword" to pick up the sword in the room.`
+"get sword bread" to pick up the sword and the bread in the room.`
+"get 2#isack" to pick up the second sack in the room.`
+"get 2#mring" to pick up the first two rings in the room.`
+"get 3#iring 3#mbracelet" to pick up the third ring and the first three bracelets in the room.`
+"get #aring" to pick up all the rings in the room.`
+"get #a" to pick up everything in the room.`
+"get 5#mgp #asp" to pick up five of the gold pieces and all of the silver pieces in the room.`
+"get 'coin" to pick up all the coins in the room.`
+
+\u\SEE ALSO\n\

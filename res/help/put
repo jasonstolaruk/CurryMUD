@@ -4,7 +4,7 @@
 put item ... container
 
 \u\DESCRIPTION\n\
-Put one or more items into a container (by default, into a container in your inventory; optionally, into a container in the room).
+Put one or more items into a container (by default, into a container in your inventory; optionally, into a container in your current location or "room").
 
 \u\EXAMPLES\n\
 "put ring sack" to put your ring in your sack.`
@@ -16,7 +16,7 @@ Put one or more items into a container (by default, into a container in your inv
 "put #aring sack" to put all your rings in your sack.`
 "put #a #rsack" to put all the items in your inventory in the sack in the room.`
 "put #a #r2#isack" to put all the items in your inventory in the second sack in the room.`
-"put 5#mgp 10#msp sack" to put five gold pieces and ten silver pieces in your sack.`
+"put 5#mgp #asp sack" to put five of your gold pieces and all your silver pieces in your sack.`
 "put #acoin #rsack" to put all your coins in the sack in the room.`
 
 \u\SEE ALSO\n\

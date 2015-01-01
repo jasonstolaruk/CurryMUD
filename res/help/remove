@@ -4,7 +4,7 @@
 remove item ... container
 
 \u\DESCRIPTION\n\
-Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in the room).
+Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in your current location or "room").
 
 \u\EXAMPLES\n\
 "remove ring sack" to remove a ring from your sack.`
@@ -16,7 +16,7 @@ Remove one or more items from a container (by default, from a container in your 
 "remove #aring sack" to remove all the rings from your sack.`
 "remove #a #rsack" to remove everything from the sack in the room.`
 "remove #a #r2#isack" to remove everything from the second sack in the room.`
-"remove 5#mgp 10#msp sack" to remove five gold pieces and ten silver pieces from your sack.`
+"remove 5#mgp #asp sack" to remove five of the gold pieces and all of the silver pieces from your sack.`
 "remove #acoin #rsack" to remove all the coins from the sack in the room.`
 
 \u\SEE ALSO\n\
