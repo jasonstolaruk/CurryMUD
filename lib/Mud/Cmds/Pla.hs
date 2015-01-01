@@ -585,26 +585,28 @@ help (NoArgs i mq cols) = do
     helper   = send mq . nl . T.unlines . concat . wrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
 help (LowerNub i mq cols as) =
-    send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getTopics
+    send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getHelp
   where
-    getTopics = mapM (\a -> concat . wrapLines cols . T.lines <$> getHelpTopicByName i cols a) as
+    getHelp = do
+      dirCont <- liftIO . getDirectoryContents $ helpDir
+      let topics = (^..folded.packed) . drop 2 . sort . delete "root" $ dirCont
+      mapM (\a -> concat . wrapLines cols . T.lines <$> getHelpTopicByName i cols topics a) as
 help p = patternMatchFail "help" [ showText p ]
 
 
-getHelpTopicByName :: Id -> Cols -> HelpTopic -> MudStack T.Text
-getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(getTopics -> topics) -> -- TODO: Move the "getDirectoryContents" operation to the "help" function.
+getHelpTopicByName :: Id -> Cols -> [HelpTopic] -> HelpTopic -> MudStack T.Text
+getHelpTopicByName i cols topics topic =
     maybe sorry
           (\t -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote t <> ".") >> getHelpTopic t)
-          (findFullNameForAbbrev r topics)
+          (findFullNameForAbbrev topic topics)
   where
-    getTopics       = (^..folded.packed) . drop 2 . sort . delete "root"
-    sorry           = return $ "No help is available on " <> dblQuote r <> "."
-    helper       t  = parseCharCodes . parseStyleCodes <$> (T.readFile . (helpDir ++) . T.unpack $ t)
-    getHelpTopic t  = (try . liftIO . helper $ t) >>= eitherRet handler
+    sorry          = return $ "No help is available on " <> dblQuote topic <> "."
+    getHelpTopic t = (try . liftIO . helper $ t) >>= eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpTopicByName" e
             return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."
+    helper t = parseCharCodes . parseStyleCodes <$> (T.readFile . (helpDir ++) . T.unpack $ t)
 
 
 -----
