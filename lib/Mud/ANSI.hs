@@ -2,7 +2,6 @@
 
 module Mud.ANSI ( colors
                 , dfltColorANSI
-                , headingColorANSI
                 , intensities
                 , mkBgColorANSI
                 , mkColorANSI
@@ -56,15 +55,8 @@ mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, un
 -----
 
 
-headingColorANSI :: T.Text
-headingColorANSI = mkColorANSI (Dull, Black) (Dull, White)
-
-
 topicColorANSI :: T.Text
 topicColorANSI = mkColorANSI (Dull, White) (Dull, Cyan)
-
-
------
 
 
 underlineANSI :: T.Text

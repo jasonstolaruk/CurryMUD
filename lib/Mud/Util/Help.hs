@@ -2,9 +2,9 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Help ( charCodeToTxt
-                     , colorCodeToANSI
                      , parseCharCodes
-                     , parseColorCodes ) where
+                     , parseStyleCodes
+                     , styleCodeToANSI ) where
 
 import Mud.ANSI
 import Mud.TopLvlDefs.Chars
@@ -43,17 +43,18 @@ charCodeToTxt (toLower -> code) = T.singleton $ case code of
 -----
 
 
-parseColorCodes :: T.Text -> T.Text
-parseColorCodes t
-  | T.singleton colorCodeDelimiter `notInfixOf` t = t
-  | otherwise = let (left, T.tail -> rest)  = T.break (== colorCodeDelimiter) t
-                    (code, T.tail -> right) = T.break (== colorCodeDelimiter) rest
-                in left <> colorCodeToANSI code <> parseColorCodes right
+parseStyleCodes :: T.Text -> T.Text
+parseStyleCodes t
+  | T.singleton styleCodeDelimiter `notInfixOf` t = t
+  | otherwise = let (left, T.tail -> rest)  = T.break (== styleCodeDelimiter) t
+                    (code, T.tail -> right) = T.break (== styleCodeDelimiter) rest
+                in left <> styleCodeToANSI code <> parseStyleCodes right
 
 
-colorCodeToANSI :: T.Text -> T.Text
-colorCodeToANSI (T.toLower -> code) = case code of
-  "d"  -> dfltColorANSI
-  "hh" -> headingColorANSI
-  "ht" -> topicColorANSI
-  x    -> patternMatchFail "colorCodeToANSI" [x]
+styleCodeToANSI :: T.Text -> T.Text
+styleCodeToANSI (T.toLower -> code) = case code of
+  "d" -> dfltColorANSI
+  "n" -> noUnderlineANSI
+  "t" -> topicColorANSI
+  "u" -> underlineANSI
+  x   -> patternMatchFail "styleCodeToANSI" [x]

@@ -68,7 +68,7 @@ indentFiller = '\129'
 -- Denotative characters used in help files:
 
 
-charCodeDelimiter, colorCodeDelimiter, indentTagChar :: Char
+charCodeDelimiter, indentTagChar, styleCodeDelimiter :: Char
 charCodeDelimiter  = '#'
-colorCodeDelimiter = '\\'
 indentTagChar      = '`'
+styleCodeDelimiter = '\\'

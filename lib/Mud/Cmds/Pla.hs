@@ -598,7 +598,7 @@ getHelpTopicByName i cols r = (liftIO . getDirectoryContents $ helpDir) >>= \(ge
   where
     getTopics       = (^..folded.packed) . drop 2 . sort . delete "root"
     sorry           = return $ "No help is available on " <> dblQuote r <> "."
-    helper       t  = parseCharCodes . parseColorCodes <$> (T.readFile . (helpDir ++) . T.unpack $ t)
+    helper       t  = parseCharCodes . parseStyleCodes <$> (T.readFile . (helpDir ++) . T.unpack $ t)
     getHelpTopic t  = (try . liftIO . helper $ t) >>= eitherRet handler
       where
         handler e = do
