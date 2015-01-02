@@ -7,7 +7,6 @@ import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
@@ -20,7 +19,6 @@ import qualified Mud.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPl
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
@@ -78,7 +76,6 @@ wizCmds =
     [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
     , Cmd { cmdName = prefixWizCmd "boot", action = wizBoot, cmdDesc = "Boot a player." }
     , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
-    , Cmd { cmdName = prefixWizCmd "name", action = wizName, cmdDesc = "Verify your PC name." }
     , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message to the server console." }
     , Cmd { cmdName = prefixWizCmd "profanity", action = wizProfanity, cmdDesc = "Dump the profanity log." }
     , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down CurryMUD." }
@@ -135,17 +132,6 @@ wizDate (NoArgs' i mq) = do
     logPlaExec (prefixWizCmd "date") i
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 wizDate p = withoutArgs wizDate p
-
-
------
-
-
-wizName :: Action
-wizName (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "name") i
-    (getSexRace i -> pp *** pp -> (s', r), s) <- getEntSing' i
-    wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
-wizName p = withoutArgs wizName p
 
 
 -----

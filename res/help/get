@@ -7,14 +7,14 @@ get item ...
 Pick up one or more items in your current location ("room"); move item(s) from the room to your inventory.
 
 \u\EXAMPLES\n\
-\q\"get sword"\d\ to pick up the sword in the room.`
-\q\"get sword bread"\d\ to pick up the sword and the bread in the room.`
-\q\"get 2#isack"\d\ to pick up the second sack in the room.`
-\q\"get 2#mring"\d\ to pick up the first two rings in the room.`
-\q\"get 3#iring 3#mbracelet"\d\ to pick up the third ring and the first three bracelets in the room.`
-\q\"get #aring"\d\ to pick up all the rings in the room.`
-\q\"get #a"\d\ to pick up everything in the room.`
-\q\"get 5#mgp #asp"\d\ to pick up five of the gold pieces and all of the silver pieces in the room.`
-\q\"get 'coin"\d\ to pick up all the coins in the room.`
+\q\"get sword"\d\ to pick up the sword in the room.4`
+\q\"get sword bread"\d\ to pick up the sword and the bread in the room.4`
+\q\"get 2#isack"\d\ to pick up the second sack in the room.4`
+\q\"get 2#mring"\d\ to pick up the first two rings in the room.4`
+\q\"get 3#iring 3#mbracelet"\d\ to pick up the third ring and the first three bracelets in the room.4`
+\q\"get #aring"\d\ to pick up all the rings in the room.4`
+\q\"get #a"\d\ to pick up everything in the room.4`
+\q\"get 5#mgp #asp"\d\ to pick up five of the gold pieces and all of the silver pieces in the room.4`
+\q\"get 'coin"\d\ to pick up all the coins in the room.4`
 
 \u\SEE ALSO\n\

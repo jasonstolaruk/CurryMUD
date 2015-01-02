@@ -7,16 +7,16 @@ remove item ... container
 Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in your current location or "room").
 
 \u\EXAMPLES\n\
-\q\"remove ring sack"\d\ to remove a ring from your sack.`
-\q\"remove ring #rsack"\d\ to remove a ring from the sack in the room.`
-\q\"remove ring bracelet sack"\d\ to remove a ring and a bracelet from your sack.`
-\q\"remove 2#iring #rsack"\d\ to remove the second ring from the sack in the room.`
-\q\"remove 2#mring sack"\d\ to remove the first two rings from your sack.`
-\q\"remove 3#iring 3#mbracelet #rsack"\d\ to remove the third ring and the first three bracelets from the sack in the room.`
-\q\"remove #aring sack"\d\ to remove all the rings from your sack.`
-\q\"remove #a #rsack"\d\ to remove everything from the sack in the room.`
-\q\"remove #a #r2#isack"\d\ to remove everything from the second sack in the room.`
-\q\"remove 5#mgp #asp sack"\d\ to remove five of the gold pieces and all of the silver pieces from your sack.`
-\q\"remove #acoin #rsack"\d\ to remove all the coins from the sack in the room.`
+\q\"remove ring sack"\d\ to remove a ring from your sack.4`
+\q\"remove ring #rsack"\d\ to remove a ring from the sack in the room.4`
+\q\"remove ring bracelet sack"\d\ to remove a ring and a bracelet from your sack.4`
+\q\"remove 2#iring #rsack"\d\ to remove the second ring from the sack in the room.4`
+\q\"remove 2#mring sack"\d\ to remove the first two rings from your sack.4`
+\q\"remove 3#iring 3#mbracelet #rsack"\d\ to remove the third ring and the first three bracelets from the sack in the room.4`
+\q\"remove #aring sack"\d\ to remove all the rings from your sack.4`
+\q\"remove #a #rsack"\d\ to remove everything from the sack in the room.4`
+\q\"remove #a #r2#isack"\d\ to remove everything from the second sack in the room.4`
+\q\"remove 5#mgp #asp sack"\d\ to remove five of the gold pieces and all of the silver pieces from your sack.4`
+\q\"remove #acoin #rsack"\d\ to remove all the coins from the sack in the room.4`
 
 \u\SEE ALSO\n\

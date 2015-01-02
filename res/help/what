@@ -7,7 +7,7 @@ what abbreviation ...
 Disambiguate one or more abbreviations.
 
 \u\EXAMPLES\n\
-\q\"what up"\d\ to determine what, if anything, "up" is an abbreviation for.`
-\q\"what re rem"\d\ to differentiate meanings of "re" and "rem".`
+\q\"what up"\d\ to determine what, if anything, "up" is an abbreviation for.4`
+\q\"what re rem"\d\ to differentiate meanings of "re" and "rem".4`
 
 \u\SEE ALSO\n\

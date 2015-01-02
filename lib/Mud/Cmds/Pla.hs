@@ -129,7 +129,8 @@ plaCmds =
     , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
     , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long CurryMUD has been running." }
     , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
-    , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." } ]
+    , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." }
+    , Cmd { cmdName = "whoami", action = whoAmI, cmdDesc = "Confirm you name, sex, and race." } ]
 
 
 -----
@@ -1704,3 +1705,14 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) rc
       | gol == 1  = "1 gold piece"
       | gol /= 0  = showText gol <> " gold pieces"
       | otherwise = blowUp "whatInvCoins mkTxtForCoinsWithAmt" "attempted to make text for empty coins" [ showText c ]
+
+
+-----
+
+
+whoAmI :: Action
+whoAmI (NoArgs i mq cols) = do
+    logPlaExec "whoami" i
+    (getSexRace i -> pp *** pp -> (s', r), s) <- getEntSing' i
+    wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
+whoAmI p = withoutArgs whoAmI p
