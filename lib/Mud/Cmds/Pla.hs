@@ -724,7 +724,7 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 look :: Action
 look (NoArgs i mq cols) = getPCRmIdRm' i >>= \(ws, (ri, r)) ->
-    let primary = multiWrap cols [ underlineANSI <> r^.rmName <> noUnderlineANSI, r^.rmDesc ]
+    let primary = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
         suppl   = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
 look (LowerNub i mq cols as) = helper >>= \case
