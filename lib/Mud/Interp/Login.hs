@@ -37,7 +37,6 @@ import Data.IntMap.Lazy ((!))
 import Data.List (delete, sort)
 import Data.Monoid ((<>))
 import Network (HostName)
-import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (doesFileExist)
 import qualified Data.Set as S (member)
 import qualified Data.Text as T
@@ -99,7 +98,6 @@ checkProfanity cn i mq =
           (parensQuote -> s) <- getEntSing i
           logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
           logProfanity cn . view hostName =<< getPla i
-          let red = mkFgColorANSI (Dull, Red)
           send mq . nl' $ red                                                                              <>
                           "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
                           dfltColorANSI

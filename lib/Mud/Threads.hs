@@ -3,6 +3,7 @@
 
 module Mud.Threads (listenWrapper) where
 
+import Mud.ANSI
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Cmds.Util
@@ -336,11 +337,13 @@ handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
 
 
 sendInacBootMsg :: Handle -> MudStack ()
-sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ "You are being disconnected from CurryMUD due to inactivity."
+sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ red                                                           <>
+                                                        "You are being disconnected from CurryMUD due to inactivity." <>
+                                                        dfltColorANSI
 
 
 boot :: Handle -> T.Text -> MudStack ()
-boot h = liftIO . T.hPutStrLn h . nl' . nl
+boot h = liftIO . T.hPutStrLn h . nl' . nl . (<> dfltColorANSI) . (red <>)
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()

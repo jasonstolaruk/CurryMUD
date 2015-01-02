@@ -10,6 +10,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , plaCmds
                     , showMotd ) where
 
+import Mud.ANSI
 import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
@@ -23,6 +24,7 @@ import Mud.NameResolution
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.Util.ANSI
 import Mud.Util.Help
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Padding
@@ -130,7 +132,7 @@ plaCmds =
     , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long CurryMUD has been running." }
     , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
     , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." }
-    , Cmd { cmdName = "whoami", action = whoAmI, cmdDesc = "Confirm you name, sex, and race." } ]
+    , Cmd { cmdName = "whoami", action = whoAmI, cmdDesc = "Confirm your name, sex, and race." } ]
 
 
 -----
@@ -447,8 +449,8 @@ exits p = withoutArgs exits p
 
 mkExitsSummary :: Cols -> Rm -> T.Text
 mkExitsSummary cols (view rmLinks -> rls)
-  | stdNames    <- [ rl^.linkDir.to linkDirToCmdName | rl <- rls, not . isNonStdLink $ rl ]
-  , customNames <- [ rl^.linkName                    | rl <- rls,       isNonStdLink   rl ]
+  | stdNames    <- [ cyan <> rl^.linkDir.to linkDirToCmdName <> dfltColorANSI | rl <- rls, not . isNonStdLink $ rl ]
+  , customNames <- [ cyan <> rl^.linkName                    <> dfltColorANSI | rl <- rls,       isNonStdLink   rl ]
   = T.unlines . wrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"
@@ -692,7 +694,9 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                                                           , " introduces "
                                                           , himHerself
                                                           , " to you as "
+                                                          , green
                                                           , s
+                                                          , dfltColorANSI
                                                           , "." ]
                             othersMsg = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
                                                           , " introduces "
@@ -775,7 +779,9 @@ mkRmInvCoinsDesc i cols ws ri =
        (if not . null $ ois then otherDescs            else "") <>
        (if c /= mempty      then mkCoinsSummary cols c else "")
   where
-    mkPCDesc    (bracketQuote -> en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s then s else aOrAn s
+    mkPCDesc    (bracketQuote -> en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
+                                                             then green  <> s       <> dfltColorANSI
+                                                             else yellow <> aOrAn s <> dfltColorANSI
     mkPCDesc    a                                        = mkOtherDesc a
     mkOtherDesc (bracketQuote -> en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
     mkOtherDesc (bracketQuote -> en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
@@ -806,7 +812,7 @@ showMotd :: MsgQueue -> Cols -> MudStack ()
 showMotd mq cols = send mq =<< helper
   where
     helper    = (try . liftIO $ readMotd) >>= eitherRet handler
-    readMotd  = return . frame cols . multiWrap cols . T.lines =<< T.readFile motdFile
+    readMotd  = return . frame cols . multiWrap cols . T.lines . colorizeFileTxt yellow =<< T.readFile motdFile
     handler e = do
         fileIOExHandler "showMotd" e
         return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
@@ -1525,7 +1531,10 @@ uptimeHelper ut = helper <$> getRecordUptime
                    Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
                                                         _  -> mkRecTxt rut
     mkUptimeTxt                = mkTxtHelper "."
-    mkNewRecTxt                = mkTxtHelper " - it's a new record!"
+    mkNewRecTxt                = mkTxtHelper . T.concat $ [ " - "
+                                                          , magenta
+                                                          , "it's a new record!"
+                                                          , dfltColorANSI ]
     mkRecTxt (renderIt -> rut) = mkTxtHelper $ " (record uptime: " <> rut <> ")."
     mkTxtHelper                = ("Up " <>) . (renderIt ut <>)
     renderIt                   = T.pack . renderSecs
@@ -1714,5 +1723,5 @@ whoAmI :: Action
 whoAmI (NoArgs i mq cols) = do
     logPlaExec "whoami" i
     (getSexRace i -> pp *** pp -> (s', r), s) <- getEntSing' i
-    wrapSend mq cols . T.concat $ [ "You are ", s, " (a ", s', " ", r, ")." ]
+    wrapSend mq cols . T.concat $ [ "You are ", cyan, s, dfltColorANSI, " (a ", s', " ", r, ")." ]
 whoAmI p = withoutArgs whoAmI p

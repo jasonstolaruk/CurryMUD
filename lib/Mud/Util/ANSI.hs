@@ -1,9 +1,11 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.ANSI ( extractANSI
+module Mud.Util.ANSI ( colorizeFileTxt
+                     , extractANSI
                      , insertANSI ) where
 
+import Mud.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -20,6 +22,14 @@ patternMatchFail = U.patternMatchFail "Mud.Util.ANSI"
 -- ==================================================
 
 
+colorizeFileTxt :: T.Text -> T.Text -> T.Text
+colorizeFileTxt c t | T.last t == '\n' = nl . T.concat $ [ c, T.init t, dfltColorANSI ]
+                    | otherwise        = c <> t <> dfltColorANSI
+
+
+-----
+
+
 type EscSeq = T.Text
 
 
@@ -30,6 +40,9 @@ extractANSI t
       let (t',                                    rest)            = T.break (== ansiEsc)          t
           ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') = T.break (== ansiSGRDelimiter) rest
       in if T.null rest' then [(t', escSeq)] else (t', escSeq) : extractANSI rest'
+
+
+-----
 
 
 insertANSI :: [(T.Text, EscSeq)] -> [T.Text] -> [T.Text]

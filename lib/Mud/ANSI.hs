@@ -1,18 +1,25 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.ANSI ( colors
+module Mud.ANSI ( blue
+                , colors
+                , cyan
                 , dfltColorANSI
+                , green
                 , intensities
+                , magenta
                 , mkBgColorANSI
                 , mkColorANSI
                 , mkFgColorANSI
                 , noUnderlineANSI
                 , promptColorANSI
                 , quoteColorANSI
+                , red
                 , resetANSI
                 , topicColorANSI
                 , underlineANSI
+                , white
+                , yellow
                 , zingColorANSI ) where
 
 
@@ -55,6 +62,19 @@ mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, un
 -----
 
 
+blue, cyan, green, magenta, red, white, yellow :: T.Text
+blue    = mkFgColorANSI (Dull, Blue)
+cyan    = mkFgColorANSI (Dull, Cyan)
+green   = mkFgColorANSI (Dull, Green)
+magenta = mkFgColorANSI (Dull, Magenta)
+red     = mkFgColorANSI (Dull, Red)
+white   = mkFgColorANSI (Dull, White)
+yellow  = mkFgColorANSI (Dull, Yellow)
+
+
+-----
+
+
 dfltColorANSI :: T.Text
 dfltColorANSI = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelimiter
 
@@ -64,11 +84,11 @@ noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
 
 
 promptColorANSI :: T.Text
-promptColorANSI = mkFgColorANSI (Dull, Yellow)
+promptColorANSI = yellow
 
 
 quoteColorANSI :: T.Text
-quoteColorANSI = mkFgColorANSI (Dull, Cyan)
+quoteColorANSI = cyan
 
 
 topicColorANSI :: T.Text
@@ -80,4 +100,4 @@ underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
 
 
 zingColorANSI :: T.Text
-zingColorANSI = mkFgColorANSI (Dull, Red)
+zingColorANSI = red
