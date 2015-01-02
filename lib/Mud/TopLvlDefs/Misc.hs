@@ -3,8 +3,10 @@
 
 module Mud.TopLvlDefs.Misc where
 
+import Mud.ANSI
 import Mud.TopLvlDefs.Chars
 
+import Data.Monoid ((<>))
 import System.Posix.Types (FileOffset)
 import qualified Data.Text as T
 
@@ -23,6 +25,10 @@ ansiCSI = T.pack [ ansiEsc, ansiBracket ]
 
 coinNames :: [T.Text]
 coinNames = [ "cp", "sp", "gp" ]
+
+
+dfltPrompt :: T.Text
+dfltPrompt = promptColorANSI <> ">" <> dfltColorANSI
 
 
 isDebug :: Bool

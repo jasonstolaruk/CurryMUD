@@ -8,6 +8,7 @@ module Mud.ANSI ( colors
                 , mkColorANSI
                 , mkFgColorANSI
                 , noUnderlineANSI
+                , promptColorANSI
                 , quoteColorANSI
                 , resetANSI
                 , topicColorANSI
@@ -60,6 +61,10 @@ dfltColorANSI = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDe
 
 noUnderlineANSI :: T.Text
 noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
+
+
+promptColorANSI :: T.Text
+promptColorANSI = mkFgColorANSI (Dull, Yellow)
 
 
 quoteColorANSI :: T.Text

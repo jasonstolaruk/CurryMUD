@@ -28,7 +28,7 @@ patternMatchFail = U.patternMatchFail "Mud.Interp.CentralDispatch"
 centralDispatch :: Interp
 centralDispatch cn p@(WithArgs i mq _ _) = do
     findAction i cn >>= maybe sorry (\act -> act p)
-    prompt mq ">"
+    prompt mq dfltPrompt
   where
     sorry = send mq . nlnl $ "What?"
 centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]

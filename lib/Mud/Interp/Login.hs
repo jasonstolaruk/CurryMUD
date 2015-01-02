@@ -3,6 +3,7 @@
 
 module Mud.Interp.Login (interpName) where
 
+import Mud.ANSI
 import Mud.Cmds.Pla
 import Mud.Cmds.Util
 import Mud.Data.Misc
@@ -17,6 +18,7 @@ import Mud.Interp.CentralDispatch
 import Mud.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting
 import qualified Mud.Logging as L (logNotice, logPla)
@@ -35,6 +37,7 @@ import Data.IntMap.Lazy ((!))
 import Data.List (delete, sort)
 import Data.Monoid ((<>))
 import Network (HostName)
+import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (doesFileExist)
 import qualified Data.Set as S (member)
 import qualified Data.Text as T
@@ -96,8 +99,11 @@ checkProfanity cn i mq =
           (parensQuote -> s) <- getEntSing i
           logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
           logProfanity cn . view hostName =<< getPla i
-          send mq . nl' $ "Nice try. Your IP address has been logged. Keep this up and you'll get banned."
-          sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
+          let red = mkFgColorANSI (Dull, Red)
+          send mq . nl' $ red                                                                              <>
+                          "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
+                          dfltColorANSI
+          sendMsgBoot mq . Just $ red <> "Come back when you're ready to act like an adult!" <> dfltColorANSI
           return True
 
 
@@ -147,7 +153,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
                         , plaMsgQueue = mq
                         , plaCols     = cols
                         , args        = [] }
-      prompt mq ">"
+      prompt mq dfltPrompt
   Just False -> promptRetryName mq "" >> (void . modifyPla i interp $ interpName)
   Nothing    -> promptRetryYesNo mq
   where
