@@ -3,6 +3,7 @@
 
 module Mud.Cmds.Wiz (wizCmds) where
 
+import Mud.ANSI
 import Mud.Cmds.Util
 import Mud.Data.Misc
 import Mud.Data.State.State
@@ -145,7 +146,7 @@ wizPrint p@AdviseNoArgs         = advise p [ prefixWizCmd "print" ] advice
 wizPrint   (WithArgs i mq _ as) = do
     logPlaExecArgs (prefixWizCmd "print") as i
     s <- getEntSing i
-    liftIO . T.putStrLn $ bracketQuote s <> " " <> T.intercalate " " as
+    liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", red, T.intercalate " " as, dfltColorANSI ]
     ok mq
 wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 
