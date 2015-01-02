@@ -38,8 +38,6 @@ import Data.IntMap.Lazy ((!))
 import Data.List (delete, foldl', nub, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>))
-import Formatting ((%), sformat)
-import Formatting.Formatters (stext)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import System.CPUTime (getCPUTime)
 import System.Console.ANSI (Color(..), ColorIntensity(..))
@@ -228,8 +226,8 @@ debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
 mkAssocListTxt cols = T.concat . map helper
   where
-    helper  = T.unlines . wrapIndent 2 cols . uncurry builder . (unquote . showText *** showText)
-    builder = sformat $ stext % ": " % stext
+    helper            = T.unlines . wrapIndent 2 cols . mkAssocTxt . (unquote . showText *** showText)
+    mkAssocTxt (a, b) = T.concat [ cyan, a, ": ", dfltColorANSI, b ]
 
 
 -----
