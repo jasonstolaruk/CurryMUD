@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Mud.ANSI ( colors
                 , dfltColorANSI

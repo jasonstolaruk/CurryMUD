@@ -587,10 +587,9 @@ help (NoArgs i mq cols) = do
 help (LowerNub i mq cols as) =
     send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getHelp
   where
-    getHelp = do
-      dirCont <- liftIO . getDirectoryContents $ helpDir
+    getHelp = (liftIO . getDirectoryContents $ helpDir) >>= \dirCont ->
       let topics = (^..folded.packed) . drop 2 . sort . delete "root" $ dirCont
-      mapM (\a -> concat . wrapLines cols . T.lines <$> getHelpTopicByName i cols topics a) as
+      in mapM (\a -> concat . wrapLines cols . T.lines <$> getHelpTopicByName i cols topics a) as
 help p = patternMatchFail "help" [ showText p ]
 
 

@@ -14,6 +14,7 @@ module Mud.Util.Wrapping ( adjustIndent
                          , xformLeading ) where
 
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 import Mud.Util.ANSI
 import Mud.Util.Misc hiding (patternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -119,8 +120,8 @@ wrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
     wrapNext         = wrapLines cols $ b : rest
     helper
       | hasIndentTag = wrapLineWithIndentTag cols
-      | nolsa > 0    = wrapIndent nolsa  cols
-      | nolsb > 0    = wrapIndent nolsb  cols
+      | nolsa > 0    = wrapIndent nolsa cols
+      | nolsb > 0    = wrapIndent nolsb cols
       | otherwise    = wrap cols
     hasIndentTag     = T.last a == indentTagChar
     (nolsa, nolsb)   = over both numOfLeadingSpcs (a, b)
@@ -139,8 +140,16 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
     extractInt [(x, _)] | x > 0 = x
     extractInt xs               = patternMatchFail "wrapLineWithIndentTag extractInt" [ showText xs ]
     indent          = extractInt readsRes
-    n | indent == 0 = calcIndent t
+    n | indent == 0 = calcIndent . dropANSI $ t
       | otherwise   = adjustIndent indent cols
+
+
+dropANSI :: T.Text -> T.Text
+dropANSI t | ansiCSI `notInfixOf` t = t
+           | otherwise              =
+               let (left, rest)      = T.break     (== ansiEsc)          t
+                   (T.tail -> right) = T.dropWhile (/= ansiSGRDelimiter) rest
+               in if T.null right then left else left <> dropANSI right
 
 
 calcIndent :: T.Text -> Int
