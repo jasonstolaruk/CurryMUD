@@ -35,9 +35,13 @@ interpPager :: PageLen -> EntireTxtLen -> ([T.Text], [T.Text]) -> Interp
 interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
     case cn of
       ""  -> next
-      "n" -> next
       "b" -> prev
+      "d" -> next
+      "f" -> next
+      "n" -> next
+      "p" -> prev
       "q" -> (prompt mq . nl' $ dfltPrompt) >> (void . modifyPla i interp $ Nothing)
+      "u" -> prev
       _   -> promptRetry mq cols
   where
     next = if length right + 3 <= pageLen
@@ -84,14 +88,13 @@ sendPagerPrompt mq pageLen txtLen =
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()
-promptRetry mq cols = send mq . wrapUnlines cols $ p -- TODO: Looks bad when wrapped.
+promptRetry mq cols = do
+    send mq . wrapUnlines cols $ p
   where
-    p = T.concat [ pagerPromptColorANSI
-                 , " Blank line or "
+    p = T.concat [ "Enter a blank line or "
                  , dblQuote "n"
-                 , " for nxt pg, "
+                 , " for the next page, "
                  , dblQuote "b"
-                 , " for prev pg, "
+                 , " for the previous page, or "
                  , dblQuote "q"
-                 , " to stop. "
-                 , dfltColorANSI ]
+                 , " to stop reading." ]
