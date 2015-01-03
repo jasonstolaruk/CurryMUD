@@ -45,12 +45,12 @@ interpPager pageLen txtLen rs (T.toLower -> cn) (NoArgs i mq cols) =
                    sendPagerPrompt mq (pageLen - 2) txtLen
                    void . modifyPla i interp . Just $ interpPager pageLen txtLen rest
       _   -> promptRetry mq cols
-interpPager _ _ _ _ (WithArgs _ mq cols _) = promptRetry mq cols
-interpPager pageLen txtLen rs cn p = patternMatchFail "interpPager" [ showText pageLen
-                                                                    , showText txtLen
-                                                                    , showText rs
-                                                                    , cn
-                                                                    , showText p ]
+interpPager _       _      _  _  (WithArgs _ mq cols _) = promptRetry mq cols
+interpPager pageLen txtLen rs cn p                      = patternMatchFail "interpPager" [ showText pageLen
+                                                                                         , showText txtLen
+                                                                                         , showText rs
+                                                                                         , cn
+                                                                                         , showText p ]
 
 
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()
@@ -70,5 +70,10 @@ sendPagerPrompt mq pageLen txtLen =
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()
-promptRetry mq cols = send mq . wrapUnlines cols $ "Enter a blank line to continue reading, or " <> dblQuote "q" <> " \
-                                                   \to stop."
+promptRetry mq cols = send mq . wrapUnlines cols $ p
+  where
+    p = T.concat [ pagerPromptColorANSI
+                 , " Enter a blank line to continue reading, or "
+                 , dblQuote "q"
+                 , " to stop. "
+                 , dfltColorANSI ]

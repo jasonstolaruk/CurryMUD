@@ -97,7 +97,7 @@ quoteColorANSI = cyan
 
 
 topicColorANSI :: T.Text
-topicColorANSI = mkColorANSI (Dull, Black) (Dull, White)
+topicColorANSI = mkColorANSI (Dull, White) (Dull, Red)
 
 
 underlineANSI :: T.Text
