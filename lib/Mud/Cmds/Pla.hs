@@ -592,10 +592,10 @@ help (LowerNub i mq cols as) =
     (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= \helpTxt@(length -> helpLen) ->
         getPlaPageLines i >>= \pageLen -> if helpLen + 3 <= pageLen
           then send mq . nl . T.unlines $ helpTxt
-          else let (T.unlines -> page, rest) = splitAt (pageLen - 2) helpTxt in do
-            send mq page
+          else let (page, rest) = splitAt (pageLen - 2) helpTxt in do
+            send mq . T.unlines $ page
             sendPagerPrompt mq (pageLen - 2) helpLen
-            void . modifyPla i interp . Just $ interpPager pageLen helpLen rest
+            void . modifyPla i interp . Just $ interpPager pageLen helpLen (page, rest)
   where
     getHelp = (liftIO . getDirectoryContents $ helpDir) >>= \dirCont ->
       let topics = (^..folded.packed) . drop 2 . sort . delete "root" $ dirCont

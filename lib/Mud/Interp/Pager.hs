@@ -14,6 +14,7 @@ import Mud.Util.Quoting
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Lens (both, over)
 import Control.Monad (void)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -28,29 +29,42 @@ patternMatchFail = U.patternMatchFail "Mud.Interp.Pager"
 
 type PageLen      = Int
 type EntireTxtLen = Int
-type RemainingTxt = [T.Text]
 
 
-interpPager :: PageLen -> EntireTxtLen -> RemainingTxt -> Interp
-interpPager pageLen txtLen rs (T.toLower -> cn) (NoArgs i mq cols) =
+interpPager :: PageLen -> EntireTxtLen -> ([T.Text], [T.Text]) -> Interp
+interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
     case cn of
+      ""  -> next
+      "n" -> next
+      "b" -> prev
       "q" -> (prompt mq . nl' $ dfltPrompt) >> (void . modifyPla i interp $ Nothing)
-      ""  -> if length rs + 3 <= pageLen
-               then do
-                   send mq . nl . T.unlines $ rs
-                   prompt mq dfltPrompt
-                   void . modifyPla i interp $ Nothing
-               else let (T.unlines -> page, rest) = splitAt (pageLen - 2) rs in do
-                   send mq page
-                   sendPagerPrompt mq (pageLen - 2) txtLen
-                   void . modifyPla i interp . Just $ interpPager pageLen txtLen rest
       _   -> promptRetry mq cols
-interpPager _       _      _  _  (WithArgs _ mq cols _) = promptRetry mq cols
-interpPager pageLen txtLen rs cn p                      = patternMatchFail "interpPager" [ showText pageLen
-                                                                                         , showText txtLen
-                                                                                         , showText rs
-                                                                                         , cn
-                                                                                         , showText p ]
+  where
+    next = if length right + 3 <= pageLen
+      then do
+          send mq . nl . T.unlines $ right
+          prompt mq dfltPrompt
+          void . modifyPla i interp $ Nothing
+      else let (page, right') = splitAt (pageLen - 2) right in do
+          send mq . T.unlines $ page
+          sendPagerPrompt mq (length left + pageLen - 2) txtLen
+          void . modifyPla i interp . Just $ interpPager pageLen txtLen (left ++ page, right')
+    prev | length left == pageLen - 2 = do
+             send mq . T.unlines $ left
+             sendPagerPrompt mq (pageLen - 2) txtLen
+         | otherwise = let (reverse -> currPage, left') = splitAt (pageLen - 2) . reverse $ left
+                           (prevPage, left'') = over both reverse . splitAt (pageLen - 2) $ left'
+                       in do
+                           send mq . T.unlines $ prevPage
+                           sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
+                           void . modifyPla i interp . Just $ interpPager pageLen txtLen ( left'' ++ prevPage
+                                                                                         , currPage ++ right )
+interpPager _       _      _   _  (WithArgs _ mq cols _) = promptRetry mq cols
+interpPager pageLen txtLen txt cn p                      = patternMatchFail "interpPager" [ showText pageLen
+                                                                                          , showText txtLen
+                                                                                          , showText txt
+                                                                                          , cn
+                                                                                          , showText p ]
 
 
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()
@@ -70,10 +84,14 @@ sendPagerPrompt mq pageLen txtLen =
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()
-promptRetry mq cols = send mq . wrapUnlines cols $ p
+promptRetry mq cols = send mq . wrapUnlines cols $ p -- TODO: Looks bad when wrapped.
   where
     p = T.concat [ pagerPromptColorANSI
-                 , " Enter a blank line to continue reading, or "
+                 , " Blank line or "
+                 , dblQuote "n"
+                 , " for nxt pg, "
+                 , dblQuote "b"
+                 , " for prev pg, "
                  , dblQuote "q"
                  , " to stop. "
                  , dfltColorANSI ]
