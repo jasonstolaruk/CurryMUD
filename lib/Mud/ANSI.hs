@@ -12,6 +12,7 @@ module Mud.ANSI ( blue
                 , mkColorANSI
                 , mkFgColorANSI
                 , noUnderlineANSI
+                , pagerPromptColorANSI
                 , promptColorANSI
                 , quoteColorANSI
                 , red
@@ -81,6 +82,10 @@ dfltColorANSI = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDe
 
 noUnderlineANSI :: T.Text
 noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
+
+
+pagerPromptColorANSI :: T.Text
+pagerPromptColorANSI = mkColorANSI (Dull, Black) (Dull, White)
 
 
 promptColorANSI :: T.Text

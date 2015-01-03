@@ -12,6 +12,7 @@ import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (?~), (.~))
 import Control.Lens.Setter (ASetter)
 import Data.IntMap.Lazy ((!))
+import Data.Maybe (isNothing)
 
 
 getPla :: Id -> MudStack Pla
@@ -24,6 +25,14 @@ getPlaColumns i = view columns <$> getPla i
 
 getPlaIsWiz :: Id -> MudStack Bool
 getPlaIsWiz i = view isWiz <$> getPla i
+
+
+getPlaPageLines :: Id -> MudStack Int
+getPlaPageLines i = view pageLines <$> getPla i
+
+
+isDfltPrompt :: Id -> MudStack Bool
+isDfltPrompt i = isNothing . view interp <$> getPla i
 
 
 -----

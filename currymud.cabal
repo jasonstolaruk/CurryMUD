@@ -47,6 +47,7 @@ library
                        Mud.Data.State.Util.STM,
                        Mud.Interp.CentralDispatch
                        Mud.Interp.Login,
+                       Mud.Interp.Pager,
                        Mud.Logging,
                        Mud.NameResolution,
                        Mud.TheWorld.Ids,

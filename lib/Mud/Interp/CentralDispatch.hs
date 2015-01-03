@@ -15,6 +15,7 @@ import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Monad (when)
 import qualified Data.Text as T
 
 
@@ -28,7 +29,8 @@ patternMatchFail = U.patternMatchFail "Mud.Interp.CentralDispatch"
 centralDispatch :: Interp
 centralDispatch cn p@(WithArgs i mq _ _) = do
     findAction i cn >>= maybe sorry (\act -> act p)
-    prompt mq dfltPrompt
+    idp <- isDfltPrompt i
+    when idp $ prompt mq dfltPrompt
   where
     sorry = send mq . nlnl $ "What?"
 centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]

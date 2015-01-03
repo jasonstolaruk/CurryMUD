@@ -5,7 +5,6 @@ module Mud.Util.Misc ( aOrAn
                      , appendIfUnique
                      , blowUp
                      , capitalize
-                     , uncapitalize
                      , countOcc
                      , deleteFirstOfEach
                      , dropBlanks
@@ -22,14 +21,15 @@ module Mud.Util.Misc ( aOrAn
                      , mkOrdinal
                      , mkTimestamp
                      , nl
-                     , nlnl
                      , nl'
+                     , nlnl
                      , notInfixOf
                      , patternMatchFail
                      , reverseLookup
                      , showText
                      , stripControl
-                     , stripTelnet ) where
+                     , stripTelnet
+                     , uncapitalize ) where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Quoting

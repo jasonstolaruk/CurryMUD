@@ -14,7 +14,6 @@ import Mud.Data.State.Util.Modify
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
-import Mud.Interp.CentralDispatch
 import Mud.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
@@ -74,7 +73,7 @@ interpName (T.toLower -> cn) (NoArgs' i mq)
               isWord <- checkWordsDict cn mq
               unless isWord $ let cn' = capitalize cn in do
                   prompt mq . nl' $ "Your name will be " <> dblQuote cn' <> ", is that OK? [yes/no]"
-                  void . modifyPla i interp $ interpConfirmName cn'
+                  void . modifyPla i interp . Just $ interpConfirmName cn'
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
 interpName _  (WithArgs _ mq _ _) = promptRetryName mq "Your name must be a single word."
@@ -140,7 +139,7 @@ interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True -> do
       void . modifyEnt i sing $ s
-      (views hostName T.pack -> host) <- modifyPla i interp centralDispatch
+      (views hostName T.pack -> host) <- modifyPla i interp Nothing
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> host <> "."
       movePC
@@ -152,7 +151,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
                         , plaCols     = cols
                         , args        = [] }
       prompt mq dfltPrompt
-  Just False -> promptRetryName mq "" >> (void . modifyPla i interp $ interpName)
+  Just False -> promptRetryName mq "" >> (void . modifyPla i interp . Just $ interpName)
   Nothing    -> promptRetryYesNo mq
   where
     movePC = onWS $ \(t, ws) ->

@@ -14,6 +14,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
+import Mud.Interp.CentralDispatch
 import Mud.Interp.Login
 import Mud.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.TheWorld.Ids
@@ -227,7 +228,7 @@ adHoc mq host = do
         let pc   = PC iWelcome r [] []
         let ris  = (ws^.invTbl) ! iWelcome ++ [i]
         -----
-        let pla  = Pla True host 80 interpName
+        let pla  = Pla True host 80 24 (Just interpName)
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
@@ -324,16 +325,17 @@ sayonara i itq = (liftIO . atomically . writeTQueue itq $ StopTimer) >> handleEg
 
 
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = unless (T.null msg) $ do
-    liftIO . atomically . writeTQueue itq $ ResetTimer
-    handleInp i mq msg
-
-
-handleInp :: Id -> MsgQueue -> T.Text -> MudStack ()
-handleInp i mq (headTail . T.words -> (cn, as)) = getPla i >>= \p ->
+handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
     let cols = p^.columns
-        f    = p^.interp
-    in f cn . WithArgs i mq cols $ as
+    in case p^.interp of
+      Nothing -> unless (T.null msg) $ let (cn, as) = headTail . T.words $ msg in do
+          resetInacTimer
+          centralDispatch cn . WithArgs i mq cols $ as
+      Just f  -> let (cn, as) = if T.null msg then ("", []) else headTail . T.words $ msg in do
+          resetInacTimer
+          f cn . WithArgs i mq cols $ as
+  where
+    resetInacTimer = liftIO . atomically . writeTQueue itq $ ResetTimer
 
 
 sendInacBootMsg :: Handle -> MudStack ()

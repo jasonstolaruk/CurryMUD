@@ -18,7 +18,9 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
+import Mud.Interp.Pager
 import Mud.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.NameResolution
 import Mud.TopLvlDefs.Chars
@@ -43,7 +45,7 @@ import Control.Lens (_1, _2, _3, at, both, folded, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
 import Control.Lens.Setter (set)
-import Control.Monad (forM_, guard, mplus, unless)
+import Control.Monad (forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -579,16 +581,21 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 -----
 
 
--- TODO: Implement paging.
 help :: Action
-help (NoArgs i mq cols) = do
+help (NoArgs i mq cols) = do -- TODO: Paging.
     try helper >>= eitherRet (\e -> fileIOExHandler "help" e >> sendGenericErrorMsg mq cols)
     logPla "help" i "read the root help file."
   where
     helper   = send mq . nl . T.unlines . concat . wrapLines cols . T.lines =<< readRoot
     readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
 help (LowerNub i mq cols as) =
-    send mq . nl . T.unlines . intercalate [ "", mkDividerTxt cols, "" ] =<< getHelp
+    (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= \helpTxt@(length -> helpLen) ->
+        getPlaPageLines i >>= \pageLen -> if helpLen + 3 <= pageLen
+          then send mq . nl . T.unlines $ helpTxt
+          else let (T.unlines -> page, rest) = splitAt (pageLen - 2) helpTxt in do
+            send mq page
+            sendPagerPrompt mq (pageLen - 2) helpLen
+            void . modifyPla i interp . Just $ interpPager pageLen helpLen rest
   where
     getHelp = (liftIO . getDirectoryContents $ helpDir) >>= \dirCont ->
       let topics = (^..folded.packed) . drop 2 . sort . delete "root" $ dirCont
