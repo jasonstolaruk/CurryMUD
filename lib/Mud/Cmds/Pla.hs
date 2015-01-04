@@ -589,15 +589,17 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
         wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
     helper helpTxt = do
         logPla "help" i ("read root help file.")
-        dispHelp i mq . concat . wrapLines cols . T.lines . parseCharCodes . parseStyleCodes $ helpTxt
-help (LowerNub i mq cols as) = do
-    helpTxt <- intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp
-    dispHelp i mq helpTxt
+        dispHelp i mq . parseHelpTxt cols $ helpTxt
+help (LowerNub i mq cols as) = (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= dispHelp i mq
   where
     getHelp = (liftIO . getDirectoryContents $ helpDir) >>= \dirCont ->
       let topics = (^..folded.packed) . drop 2 . sort . delete "root" $ dirCont
-      in mapM (\a -> concat . wrapLines cols . T.lines . parseCharCodes . parseStyleCodes <$> getHelpTopicByName i cols topics a) as
+      in mapM (\a -> parseHelpTxt cols <$> getHelpTopicByName i cols topics a) as
 help p = patternMatchFail "help" [ showText p ]
+
+
+parseHelpTxt :: Cols -> T.Text -> [T.Text]
+parseHelpTxt cols = concat . wrapLines cols . T.lines . parseCharCodes . parseStyleCodes
 
 
 dispHelp :: Id -> MsgQueue -> [T.Text] -> MudStack ()
@@ -617,12 +619,11 @@ getHelpTopicByName i cols topics topic =
           (findFullNameForAbbrev topic topics)
   where
     sorry          = return $ "No help is available on " <> dblQuote topic <> "."
-    readHelpFile t = (try . liftIO . helper $ t) >>= eitherRet handler
+    readHelpFile t = (try . liftIO . T.readFile . (helpDir ++) . T.unpack $ t) >>= eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpTopicByName" e
             return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."
-    helper t = parseCharCodes . parseStyleCodes <$> (T.readFile . (helpDir ++) . T.unpack $ t)
 
 
 -----
