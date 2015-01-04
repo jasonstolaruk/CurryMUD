@@ -357,16 +357,32 @@ equip (LowerNub i mq cols as) = do
 equip p = patternMatchFail "equip" [ showText p ]
 
 
+-- TODO: Implement abbreviation highlighting elsewhere.
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ws ei (view sing -> s) t | descs <- map mkDesc . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei =
-    case descs of [] -> none
-                  _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
+mkEqDesc i cols ws ei (view sing -> s) t =
+    let f     = if ei == i then mkDescsSelf else mkDescsOther
+        descs = f . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei
+    in case descs of [] -> none
+                     _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
   where
-    mkSlotNameIdList = map (first pp)
-    mkDesc (T.breakOn " finger" -> (sn, _), i')
-      | e' <- (ws^.entTbl) ! i'
-      , en <- if ei == i then (" " <>) . bracketQuote . fromJust $ e'^.entName else ""
-      = parensPad 15 sn <> e'^.sing <> en
+    mkSlotNameIdList        = map (first pp)
+    mkDescsSelf slotNameIds = let descWithEntNames = map mkDescWithEntName slotNameIds
+                                  ens              = sort . nub . map snd $ descWithEntNames
+                                  abbrevs          = mkAbbrevs "" ens
+                              in map (styleEntName abbrevs) descWithEntNames
+    mkDescWithEntName (T.breakOn " finger" -> (sn, _), i') = let e = (ws^.entTbl) ! i'
+                                                             in (parensPad 15 sn <> e^.sing, fromJust $ e^.entName)
+    styleEntName abbrevs (desc, en) = let [match]        = filter ((== en) . fst) abbrevs
+                                          (abbrev, rest) = snd match
+                                          styledName     = bracketQuote . T.concat $ [ abbrevColorANSI
+                                                                                     , abbrev
+                                                                                     , dfltColorANSI
+                                                                                     , rest ]
+                                      in desc <> " " <> styledName
+    mkDescsOther = map helper
+      where
+        helper (T.breakOn " finger" -> (sn, _), i') = let e = (ws^.entTbl) ! i'
+                                                      in parensPad 15 sn <> e^.sing
     none = wrapUnlines cols $ if
       | ei == i      -> dudeYou'reNaked
       | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
@@ -376,6 +392,20 @@ mkEqDesc i cols ws ei (view sing -> s) t | descs <- map mkDesc . mkSlotNameIdLis
       | t  == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
       | otherwise    -> "The " <> s <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig ei ws s The
+
+
+mkAbbrevs :: T.Text -> [T.Text] -> [(T.Text, (T.Text, T.Text))]
+mkAbbrevs _    []       = []
+mkAbbrevs ""   (en:ens) = (en, over _1 T.singleton $ headTail' $ en) : mkAbbrevs en ens
+mkAbbrevs prev (en:ens) = let abbrev = calcAbbrev en prev
+                          in (en, (abbrev, fromJust $ abbrev `T.stripPrefix` en)) : mkAbbrevs en ens
+
+
+calcAbbrev :: T.Text -> T.Text -> T.Text
+calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
+calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.singleton x <> calcAbbrev xs ys
+                                                                 | x /= y = T.singleton x
+calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" [ x, y ]
 
 
 dudeYou'reNaked :: T.Text
@@ -783,7 +813,6 @@ look (LowerNub i mq cols as) = helper >>= \case
 look p = patternMatchFail "look" [ showText p ]
 
 
--- TODO: Consider implementing a color scheme for lists like these such that the least significant characters of each name are highlighted or bolded somehow.
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
     let (splitRmInv ws -> ((i `delete`) -> pis, ois)) = (ws^.invTbl) ! ri

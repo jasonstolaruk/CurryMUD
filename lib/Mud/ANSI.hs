@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.ANSI ( blue
+module Mud.ANSI ( abbrevColorANSI
+                , blue
                 , colors
                 , cyan
                 , dfltColorANSI
@@ -74,6 +75,10 @@ yellow  = mkFgColorANSI (Dull, Yellow)
 
 
 -----
+
+
+abbrevColorANSI :: T.Text
+abbrevColorANSI = cyan
 
 
 dfltColorANSI :: T.Text
