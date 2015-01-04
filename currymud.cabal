@@ -58,10 +58,10 @@ library
                        Mud.TopLvlDefs.Misc,
                        Mud.TopLvlDefs.Msgs,
                        Mud.Util.ANSI,
-                       Mud.Util.Help,
                        Mud.Util.Misc,
                        Mud.Util.Padding,
                        Mud.Util.Quoting,
+                       Mud.Util.Token,
                        Mud.Util.Wrapping
   other-extensions:    FlexibleContexts,
                        FlexibleInstances,

@@ -27,10 +27,10 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.ANSI
-import Mud.Util.Help
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
+import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
@@ -599,7 +599,7 @@ help p = patternMatchFail "help" [ showText p ]
 
 
 parseHelpTxt :: Cols -> T.Text -> [T.Text]
-parseHelpTxt cols = concat . wrapLines cols . T.lines . parseCharCodes . parseStyleCodes
+parseHelpTxt cols = concat . wrapLines cols . T.lines . parseCharTokens . parseStyleTokens
 
 
 dispHelp :: Id -> MsgQueue -> [T.Text] -> MudStack ()
