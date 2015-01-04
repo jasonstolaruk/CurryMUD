@@ -7,8 +7,10 @@ module Mud.Cmds.Util ( HelpTopic
                      , fileIOExHandler
                      , prefixCmd
                      , sendGenericErrorMsg
+                     , styleAbbrevs
                      , withoutArgs ) where
 
+import Mud.ANSI
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
@@ -23,7 +25,9 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)
-import Data.List (foldl', intercalate, sort)
+import Control.Lens (_1, over)
+import Data.List (foldl', intercalate, nub, sort)
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 import qualified Data.Text as T
@@ -99,6 +103,44 @@ prefixCmd (T.singleton -> prefix) cn = prefix <> cn
 
 sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
+
+
+-----
+
+
+type FullWord = T.Text
+
+
+styleAbbrevs :: [FullWord] -> [FullWord]
+styleAbbrevs fws = let abbrevs   = mkAbbrevs fws
+                       helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
+                                   in bracketQuote . T.concat $ [ abbrevColorANSI
+                                                                , abbrev
+                                                                , dfltColorANSI
+                                                                , rest ]
+                   in map helper fws
+
+
+type Abbrev         = T.Text
+type Rest           = T.Text
+type PrevWordInList = T.Text
+
+
+mkAbbrevs :: [FullWord] -> [(FullWord, (Abbrev, Rest))]
+mkAbbrevs = helper "" . sort . nub
+  where
+    helper :: PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
+    helper _    []       = []
+    helper ""   (en:ens) = (en, over _1 T.singleton $ headTail' $ en) : helper en ens
+    helper prev (en:ens) = let abbrev = calcAbbrev en prev
+                           in (en, (abbrev, fromJust $ abbrev `T.stripPrefix` en)) : helper  en ens
+
+
+calcAbbrev :: T.Text -> T.Text -> T.Text
+calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
+calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.singleton x <> calcAbbrev xs ys
+                                                                 | x /= y = T.singleton x
+calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" [ x, y ]
 
 
 -----

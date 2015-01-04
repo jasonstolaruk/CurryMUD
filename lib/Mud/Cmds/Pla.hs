@@ -36,7 +36,7 @@ import qualified Mud.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Arrow ((***), first)
+import Control.Arrow ((***))
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -360,29 +360,25 @@ equip p = patternMatchFail "equip" [ showText p ]
 -- TODO: Implement abbreviation highlighting elsewhere.
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
 mkEqDesc i cols ws ei (view sing -> s) t =
-    let f     = if ei == i then mkDescsSelf else mkDescsOther
-        descs = f . mkSlotNameIdList . M.toList $ (ws^.eqTbl) ! ei
+    let descs = if ei == i then mkDescsSelf else mkDescsOther
     in case descs of [] -> none
                      _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
   where
-    mkSlotNameIdList        = map (first pp)
-    mkDescsSelf slotNameIds = let descWithEntNames = map mkDescWithEntName slotNameIds
-                                  ens              = sort . nub . map snd $ descWithEntNames
-                                  abbrevs          = mkAbbrevs "" ens
-                              in map (styleEntName abbrevs) descWithEntNames
-    mkDescWithEntName (T.breakOn " finger" -> (sn, _), i') = let e = (ws^.entTbl) ! i'
-                                                             in (parensPad 15 sn <> e^.sing, fromJust $ e^.entName)
-    styleEntName abbrevs (desc, en) = let [match]        = filter ((== en) . fst) abbrevs
-                                          (abbrev, rest) = snd match
-                                          styledName     = bracketQuote . T.concat $ [ abbrevColorANSI
-                                                                                     , abbrev
-                                                                                     , dfltColorANSI
-                                                                                     , rest ]
-                                      in desc <> " " <> styledName
-    mkDescsOther = map helper
+    mkDescsSelf = let (ss, is) = unzip . M.toList $ (ws^.eqTbl) ! i
+                      sns      = [ pp s'                 | s' <- ss ]
+                      es       = [ (ws^.entTbl) ! i'     | i' <- is ]
+                      ess      = [ e^.sing               | e  <- es ]
+                      ens      = [ fromJust $ e^.entName | e  <- es ]
+                      styleds  = styleAbbrevs ens
+                  in map helper . zip3 sns ess $ styleds
       where
-        helper (T.breakOn " finger" -> (sn, _), i') = let e = (ws^.entTbl) ! i'
-                                                      in parensPad 15 sn <> e^.sing
+        helper (T.breakOn " finger" -> (sn, _), es, styled) = T.concat [ parensPad 15 sn, es, " ", styled ]
+    mkDescsOther = let (ss, is) = unzip . M.toList $ (ws^.eqTbl) ! i
+                       sns      = [ pp s' | s' <- ss ]
+                       ess      = [ let e = (ws^.entTbl) ! i' in e^.sing | i' <- is ]
+                   in map helper . zip sns $ ess
+      where
+        helper (T.breakOn " finger" -> (sn, _), es) = parensPad 15 sn <> es
     none = wrapUnlines cols $ if
       | ei == i      -> dudeYou'reNaked
       | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
@@ -392,20 +388,6 @@ mkEqDesc i cols ws ei (view sing -> s) t =
       | t  == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
       | otherwise    -> "The " <> s <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig ei ws s The
-
-
-mkAbbrevs :: T.Text -> [T.Text] -> [(T.Text, (T.Text, T.Text))]
-mkAbbrevs _    []       = []
-mkAbbrevs ""   (en:ens) = (en, over _1 T.singleton $ headTail' $ en) : mkAbbrevs en ens
-mkAbbrevs prev (en:ens) = let abbrev = calcAbbrev en prev
-                          in (en, (abbrev, fromJust $ abbrev `T.stripPrefix` en)) : mkAbbrevs en ens
-
-
-calcAbbrev :: T.Text -> T.Text -> T.Text
-calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
-calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.singleton x <> calcAbbrev xs ys
-                                                                 | x /= y = T.singleton x
-calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" [ x, y ]
 
 
 dudeYou'reNaked :: T.Text
