@@ -11,7 +11,8 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , showMotd ) where
 
 import Mud.ANSI
-import Mud.Cmds.Util
+import Mud.Cmds.Util.Abbrev
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Coins

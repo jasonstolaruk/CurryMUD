@@ -6,7 +6,7 @@ module Mud.Threads (listenWrapper) where
 import Mud.ANSI
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
-import Mud.Cmds.Util
+import Mud.Cmds.Util.Misc
 import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
 import Mud.Data.State.Util.Get
