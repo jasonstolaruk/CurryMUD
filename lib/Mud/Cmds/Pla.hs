@@ -582,35 +582,42 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 
 
 help :: Action
-help (NoArgs i mq cols) = do -- TODO: Paging.
-    try helper >>= eitherRet (\e -> fileIOExHandler "help" e >> sendGenericErrorMsg mq cols)
-    logPla "help" i "read the root help file."
+help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= either handler helper
   where
-    helper   = send mq . nl . T.unlines . concat . wrapLines cols . T.lines =<< readRoot
-    readRoot = liftIO . T.readFile . (helpDir ++) $ "root"
-help (LowerNub i mq cols as) =
-    (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= \helpTxt@(length -> helpLen) ->
-        getPlaPageLines i >>= \pageLen -> if helpLen + 3 <= pageLen
-          then send mq . nl . T.unlines $ helpTxt
-          else let (page, rest) = splitAt (pageLen - 2) helpTxt in do
-            send mq . T.unlines $ page
-            sendPagerPrompt mq (pageLen - 2) helpLen
-            void . modifyPla i interp . Just $ interpPager pageLen helpLen (page, rest)
+    handler e      = do
+        fileIOExHandler "help" e
+        wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
+    helper helpTxt = do
+        logPla "help" i ("read root help file.")
+        dispHelp i mq . concat . wrapLines cols . T.lines . parseCharCodes . parseStyleCodes $ helpTxt
+help (LowerNub i mq cols as) = do
+    helpTxt <- intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp
+    dispHelp i mq helpTxt
   where
     getHelp = (liftIO . getDirectoryContents $ helpDir) >>= \dirCont ->
       let topics = (^..folded.packed) . drop 2 . sort . delete "root" $ dirCont
-      in mapM (\a -> concat . wrapLines cols . T.lines <$> getHelpTopicByName i cols topics a) as
+      in mapM (\a -> concat . wrapLines cols . T.lines . parseCharCodes . parseStyleCodes <$> getHelpTopicByName i cols topics a) as
 help p = patternMatchFail "help" [ showText p ]
+
+
+dispHelp :: Id -> MsgQueue -> [T.Text] -> MudStack ()
+dispHelp i mq helpTxt@(length -> helpLen) = getPlaPageLines i >>= \pageLen ->
+    if helpLen + 3 <= pageLen
+      then send mq . nl . T.unlines $ helpTxt
+      else let (page, rest) = splitAt (pageLen - 2) helpTxt in do
+        send mq . T.unlines $ page
+        sendPagerPrompt mq (pageLen - 2) helpLen
+        void . modifyPla i interp . Just $ interpPager pageLen helpLen (page, rest)
 
 
 getHelpTopicByName :: Id -> Cols -> [HelpTopic] -> HelpTopic -> MudStack T.Text
 getHelpTopicByName i cols topics topic =
     maybe sorry
-          (\t -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote t <> ".") >> getHelpTopic t)
+          (\t -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote t <> ".") >> readHelpFile t)
           (findFullNameForAbbrev topic topics)
   where
     sorry          = return $ "No help is available on " <> dblQuote topic <> "."
-    getHelpTopic t = (try . liftIO . helper $ t) >>= eitherRet handler
+    readHelpFile t = (try . liftIO . helper $ t) >>= eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpTopicByName" e
