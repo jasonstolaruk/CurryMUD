@@ -146,7 +146,7 @@ wizPrint p@AdviseNoArgs         = advise p [ prefixWizCmd "print" ] advice
 wizPrint   (WithArgs i mq _ as) = do
     logPlaExecArgs (prefixWizCmd "print") as i
     s <- getEntSing i
-    liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", magenta, T.intercalate " " as, dfltColorANSI ]
+    liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, T.intercalate " " as, dfltColor ]
     ok mq
 wizPrint p = patternMatchFail "wizPrint" [ showText p ]
 
@@ -178,7 +178,7 @@ wizShutdown :: Action
 wizShutdown (NoArgs' i mq) = do
     logPlaExecArgs (prefixWizCmd "shutdown") [] i
     s <- getEntSing i
-    massSend $ red <> dfltShutdownMsg <> dfltColorANSI
+    massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
     massLogPla "wizShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
                                         , s
                                         , " "
@@ -194,7 +194,7 @@ wizShutdown (WithArgs i mq _ as) = do
     logPlaExecArgs (prefixWizCmd "shutdown") as i
     s <- getEntSing i
     let msg = T.intercalate " " as
-    massSend $ red <> msg <> dfltColorANSI
+    massSend $ shutdownMsgColor <> msg <> dfltColor
     massLogPla "wizShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
                                           , s
                                           , "; message: "

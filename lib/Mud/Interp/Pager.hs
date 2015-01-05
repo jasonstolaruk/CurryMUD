@@ -73,7 +73,7 @@ interpPager pageLen txtLen txt cn p                      = patternMatchFail "int
 
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()
 sendPagerPrompt mq pageLen txtLen =
-    prompt mq . T.concat $ [ pagerPromptColorANSI
+    prompt mq . T.concat $ [ pagerPromptColor
                            , " [ "
                            , showText pageLen
                            , " of "
@@ -84,7 +84,7 @@ sendPagerPrompt mq pageLen txtLen =
                                  (l, r)   = T.break (== '.') . showText $ pageLen' / txtLen' * 100
                              in l <> T.take 2 r
                            , "%) ] "
-                           , dfltColorANSI ]
+                           , dfltColor ]
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()

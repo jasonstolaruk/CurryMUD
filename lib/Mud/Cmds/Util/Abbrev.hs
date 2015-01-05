@@ -21,15 +21,16 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrevs"
 
 -- ==================================================
 
+
 type FullWord = T.Text
 
 
 styleAbbrevs :: [FullWord] -> [FullWord]
 styleAbbrevs fws = let abbrevs   = mkAbbrevs fws
                        helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
-                                   in bracketQuote . T.concat $ [ abbrevColorANSI
+                                   in bracketQuote . T.concat $ [ abbrevColor
                                                                 , abbrev
-                                                                , dfltColorANSI
+                                                                , dfltColor
                                                                 , rest ]
                    in map helper fws
 

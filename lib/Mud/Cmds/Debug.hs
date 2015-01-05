@@ -186,7 +186,7 @@ debugColor (NoArgs' i mq) = do
                                  , mkColorDesc fg bg
                                  , ansi
                                  , " CurryMUD "
-                                 , dfltColorANSI ]
+                                 , dfltColor ]
   where
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName = uncurry (<>) . (padOrTrunc 6 . showText *** padOrTrunc 8 . showText)
@@ -223,11 +223,11 @@ debugDispEnv (WithArgs i mq cols (nub -> as)) = do
 debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 
 
-mkAssocListTxt :: (Show a, Show b) => Cols -> [(a, b)] -> T.Text
+mkAssocListTxt :: Cols -> [(String, String)] -> T.Text
 mkAssocListTxt cols = T.concat . map helper
   where
-    helper            = T.unlines . wrapIndent 2 cols . mkAssocTxt . (unquote . showText *** showText)
-    mkAssocTxt (a, b) = T.concat [ cyan, a, ": ", dfltColorANSI, b ]
+    helper            = T.unlines . wrapIndent 2 cols . mkAssocTxt . (unquote . T.pack *** T.pack)
+    mkAssocTxt (a, b) = T.concat [ envVarColor, a, ": ", dfltColor, b ]
 
 
 -----
@@ -399,11 +399,11 @@ debugUnderline (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "underline") i
     wrapSend mq cols underlined
   where
-    underlined = T.concat [ showText underlineANSI
-                          , underlineANSI
+    underlined = T.concat [ showText underline
+                          , underline
                           , " This text is underlined. "
-                          , noUnderlineANSI
-                          , showText noUnderlineANSI ]
+                          , noUnderline
+                          , showText noUnderline ]
 debugUnderline p = withoutArgs debugUnderline p
 
 
@@ -426,9 +426,9 @@ debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, Stri
       | otherwise                          = do
           logPlaExecArgs (prefixDebugCmd "wrap") [a] i
           send mq . frame cols' . wrapUnlines cols' $ msg
-    sorryWtf     = wrapSend mq cols $ magenta                                                             <>
+    sorryWtf     = wrapSend mq cols $ wtfColor                                                            <>
                                       "What the fuck is wrong with you? Are you trying to make me crash?" <>
-                                      dfltColorANSI
+                                      dfltColor
     sorryLineLen = wrapSend mq cols . T.concat $ [ "The line length must be between "
                                                  , showText minCols
                                                  , " and "
@@ -439,8 +439,8 @@ debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, Stri
                             , mkFgColorANSI (Dull, c)
                             , "This is "
                             , showText c
-                            , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
-        in (<> dfltColorANSI) . T.intercalate " " $ ls
+                            , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
+        in (<> dfltColor) . T.intercalate " " $ ls
 debugWrap p = advise p [ prefixDebugCmd "wrap" ] advice
   where
     advice = "Please provide one argument: line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
@@ -475,9 +475,9 @@ debugWrapIndent   (WithArgs i mq cols [a, b]) = do
       | otherwise                          = do
           logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
           send mq . frame cols' . T.unlines . wrapIndent indent cols' $ msg
-    sorryWtf     = wrapSend mq cols $ magenta                                                             <>
+    sorryWtf     = wrapSend mq cols $ wtfColor                                                            <>
                                       "What the fuck is wrong with you? Are you trying to make me crash?" <>
-                                      dfltColorANSI
+                                      dfltColor
     sorryLineLen = wrapSend mq cols . T.concat $ [ "The line length must be between "
                                                  , showText minCols
                                                  , " and "
@@ -489,8 +489,8 @@ debugWrapIndent   (WithArgs i mq cols [a, b]) = do
                             , mkFgColorANSI (Dull, c)
                             , "This is "
                             , showText c
-                            , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
-        in (<> dfltColorANSI) . T.intercalate " " $ ls
+                            , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
+        in (<> dfltColor) . T.intercalate " " $ ls
 
 debugWrapIndent p = advise p [ prefixDebugCmd "wrapindent" ] advice
   where

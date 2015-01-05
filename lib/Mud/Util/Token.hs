@@ -51,10 +51,10 @@ parseStyleTokens t
 
 styleCodeToANSI :: T.Text -> T.Text
 styleCodeToANSI (T.toLower -> code) = case code of
-  "d" -> dfltColorANSI
-  "n" -> noUnderlineANSI
-  "q" -> quoteColorANSI
-  "t" -> topicColorANSI
-  "u" -> underlineANSI
-  "z" -> zingColorANSI
+  "d" -> dfltColor
+  "n" -> noUnderline
+  "q" -> quoteColor
+  "t" -> topicColor
+  "u" -> underline
+  "z" -> zingColor
   x   -> patternMatchFail "styleCodeToANSI" [x]

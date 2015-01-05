@@ -23,8 +23,8 @@ patternMatchFail = U.patternMatchFail "Mud.Util.ANSI"
 
 
 colorizeFileTxt :: T.Text -> T.Text -> T.Text
-colorizeFileTxt c t | T.last t == '\n' = nl . T.concat $ [ c, T.init t, dfltColorANSI ]
-                    | otherwise        = c <> t <> dfltColorANSI
+colorizeFileTxt c t | T.last t == '\n' = nl . T.concat $ [ c, T.init t, dfltColor ]
+                    | otherwise        = c <> t <> dfltColor
 
 
 -----

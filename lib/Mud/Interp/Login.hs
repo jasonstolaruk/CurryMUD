@@ -97,10 +97,10 @@ checkProfanity cn i mq =
           (parensQuote -> s) <- getEntSing i
           logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
           logProfanity cn . view hostName =<< getPla i
-          send mq . nl' $ red                                                                              <>
+          send mq . nl' $ bootMsgColor                                                                     <>
                           "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
-                          dfltColorANSI
-          sendMsgBoot mq . Just $ red <> "Come back when you're ready to act like an adult!" <> dfltColorANSI
+                          dfltColor
+          sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
           return True
 
 

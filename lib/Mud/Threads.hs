@@ -339,13 +339,13 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getPla
 
 
 sendInacBootMsg :: Handle -> MudStack ()
-sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ red                                                           <>
+sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ bootMsgColor                                                  <>
                                                         "You are being disconnected from CurryMUD due to inactivity." <>
-                                                        dfltColorANSI
+                                                        dfltColor
 
 
 boot :: Handle -> T.Text -> MudStack ()
-boot h = liftIO . T.hPutStrLn h . nl' . nl . (<> dfltColorANSI) . (red <>)
+boot h = liftIO . T.hPutStrLn h . nl' . nl . (<> dfltColor) . (bootMsgColor <>)
 
 
 sendPrompt :: Handle -> T.Text -> MudStack ()

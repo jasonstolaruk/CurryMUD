@@ -28,7 +28,7 @@ coinNames = [ "cp", "sp", "gp" ]
 
 
 dfltPrompt :: T.Text
-dfltPrompt = promptColorANSI <> "->" <> dfltColorANSI
+dfltPrompt = promptColor <> "->" <> dfltColor
 
 
 isDebug :: Bool

@@ -464,8 +464,10 @@ exits p = withoutArgs exits p
 
 mkExitsSummary :: Cols -> Rm -> T.Text
 mkExitsSummary cols (view rmLinks -> rls)
-  | stdNames    <- [ cyan <> rl^.linkDir.to linkDirToCmdName <> dfltColorANSI | rl <- rls, not . isNonStdLink $ rl ]
-  , customNames <- [ cyan <> rl^.linkName                    <> dfltColorANSI | rl <- rls,       isNonStdLink   rl ]
+  | stdNames    <- [ exitsColor <> rl^.linkDir.to linkDirToCmdName <> dfltColor | rl <- rls
+                                                                                , not . isNonStdLink $ rl ]
+  , customNames <- [ exitsColor <> rl^.linkName                    <> dfltColor | rl <- rls
+                                                                                ,       isNonStdLink   rl ]
   = T.unlines . wrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"
@@ -722,9 +724,9 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                                                           , " introduces "
                                                           , himHerself
                                                           , " to you as "
-                                                          , green
+                                                          , knownNameColor
                                                           , s
-                                                          , dfltColorANSI
+                                                          , dfltColor
                                                           , "." ]
                             othersMsg = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
                                                           , " introduces "
@@ -752,7 +754,7 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 look :: Action
 look (NoArgs i mq cols) = getPCRmIdRm' i >>= \(ws, (ri, r)) ->
-    let primary = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
+    let primary = multiWrap cols [ T.concat [ underline, " ", r^.rmName, " ", noUnderline ], r^.rmDesc ]
         suppl   = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
 look (LowerNub i mq cols as) = helper >>= \case
@@ -807,8 +809,8 @@ mkRmInvCoinsDesc i cols ws ri =
        (if c /= mempty      then mkCoinsSummary cols c else "")
   where
     mkPCDesc    (bracketQuote -> en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
-                                                             then green  <> s       <> dfltColorANSI
-                                                             else yellow <> aOrAn s <> dfltColorANSI
+                                                             then knownNameColor   <> s       <> dfltColor
+                                                             else unknownNameColor <> aOrAn s <> dfltColor
     mkPCDesc    a                                        = mkOtherDesc a
     mkOtherDesc (bracketQuote -> en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
     mkOtherDesc (bracketQuote -> en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
@@ -839,7 +841,7 @@ showMotd :: MsgQueue -> Cols -> MudStack ()
 showMotd mq cols = send mq =<< helper
   where
     helper    = (try . liftIO $ readMotd) >>= eitherRet handler
-    readMotd  = return . frame cols . multiWrap cols . T.lines . colorizeFileTxt yellow =<< T.readFile motdFile
+    readMotd  = return . frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor =<< T.readFile motdFile
     handler e = do
         fileIOExHandler "showMotd" e
         return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
@@ -1559,9 +1561,9 @@ uptimeHelper ut = helper <$> getRecordUptime
                                                         _  -> mkRecTxt rut
     mkUptimeTxt                = mkTxtHelper "."
     mkNewRecTxt                = mkTxtHelper . T.concat $ [ " - "
-                                                          , magenta
+                                                          , newRecordColor
                                                           , "it's a new record!"
-                                                          , dfltColorANSI ]
+                                                          , dfltColor ]
     mkRecTxt (renderIt -> rut) = mkTxtHelper $ " (record uptime: " <> rut <> ")."
     mkTxtHelper                = ("Up " <>) . (renderIt ut <>)
     renderIt                   = T.pack . renderSecs
@@ -1750,5 +1752,5 @@ whoAmI :: Action
 whoAmI (NoArgs i mq cols) = do
     logPlaExec "whoami" i
     (getSexRace i -> pp *** pp -> (s', r), s) <- getEntSing' i
-    wrapSend mq cols . T.concat $ [ "You are ", cyan, s, dfltColorANSI, " (a ", s', " ", r, ")." ]
+    wrapSend mq cols . T.concat $ [ "You are ", knownNameColor, s, dfltColor, " (a ", s', " ", r, ")." ]
 whoAmI p = withoutArgs whoAmI p

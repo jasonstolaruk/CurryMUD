@@ -1,28 +1,31 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.ANSI ( abbrevColorANSI
-                , blue
+module Mud.ANSI ( abbrevColor
+                , bootMsgColor
                 , colors
-                , cyan
-                , dfltColorANSI
-                , green
+                , dfltColor
+                , envVarColor
+                , exitsColor
                 , intensities
-                , magenta
+                , knownNameColor
                 , mkBgColorANSI
                 , mkColorANSI
                 , mkFgColorANSI
-                , noUnderlineANSI
-                , pagerPromptColorANSI
-                , promptColorANSI
-                , quoteColorANSI
-                , red
+                , motdColor
+                , newRecordColor
+                , noUnderline
+                , pagerPromptColor
+                , printConsoleColor
+                , promptColor
+                , quoteColor
                 , resetANSI
-                , topicColorANSI
-                , underlineANSI
-                , white
-                , yellow
-                , zingColorANSI ) where
+                , shutdownMsgColor
+                , topicColor
+                , underline
+                , unknownNameColor
+                , wtfColor
+                , zingColor ) where
 
 
 import Mud.TopLvlDefs.Chars
@@ -64,50 +67,88 @@ mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, un
 -----
 
 
-blue, cyan, green, magenta, red, white, yellow :: T.Text
-blue    = mkFgColorANSI (Dull, Blue)
+cyan, green, magenta, red, yellow :: T.Text
 cyan    = mkFgColorANSI (Dull, Cyan)
 green   = mkFgColorANSI (Dull, Green)
 magenta = mkFgColorANSI (Dull, Magenta)
 red     = mkFgColorANSI (Dull, Red)
-white   = mkFgColorANSI (Dull, White)
 yellow  = mkFgColorANSI (Dull, Yellow)
 
 
 -----
 
 
-abbrevColorANSI :: T.Text
-abbrevColorANSI = cyan
+abbrevColor :: T.Text
+abbrevColor = cyan
 
 
-dfltColorANSI :: T.Text
-dfltColorANSI = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelimiter
+bootMsgColor :: T.Text
+bootMsgColor = red
 
 
-noUnderlineANSI :: T.Text
-noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
+dfltColor :: T.Text
+dfltColor = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelimiter
 
 
-pagerPromptColorANSI :: T.Text
-pagerPromptColorANSI = mkColorANSI (Dull, Black) (Dull, White)
+envVarColor :: T.Text
+envVarColor = cyan
 
 
-promptColorANSI :: T.Text
-promptColorANSI = yellow
+exitsColor :: T.Text
+exitsColor = magenta
 
 
-quoteColorANSI :: T.Text
-quoteColorANSI = cyan
+knownNameColor :: T.Text
+knownNameColor = green
 
 
-topicColorANSI :: T.Text
-topicColorANSI = mkColorANSI (Dull, White) (Dull, Red)
+motdColor :: T.Text
+motdColor = yellow
 
 
-underlineANSI :: T.Text
-underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
+newRecordColor :: T.Text
+newRecordColor = magenta
 
 
-zingColorANSI :: T.Text
-zingColorANSI = red
+noUnderline :: T.Text
+noUnderline = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
+
+
+pagerPromptColor :: T.Text
+pagerPromptColor = mkColorANSI (Dull, Black) (Dull, White)
+
+
+printConsoleColor :: T.Text
+printConsoleColor = magenta
+
+
+promptColor :: T.Text
+promptColor = yellow
+
+
+quoteColor :: T.Text
+quoteColor = cyan
+
+
+shutdownMsgColor :: T.Text
+shutdownMsgColor = red
+
+
+topicColor :: T.Text
+topicColor = mkColorANSI (Dull, White) (Dull, Red)
+
+
+underline :: T.Text
+underline = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
+
+
+unknownNameColor :: T.Text
+unknownNameColor = yellow
+
+
+wtfColor :: T.Text
+wtfColor = magenta
+
+
+zingColor :: T.Text
+zingColor = red
