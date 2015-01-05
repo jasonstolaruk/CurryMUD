@@ -36,12 +36,6 @@ prop_countOcc needle hay = countOcc needle hay == matches
     matches = length . elemIndices needle $ hay
 
 
-prop_deleteFirstOfEach :: [Int] -> [Int] -> Property
-prop_deleteFirstOfEach delThese fromThis = all (\x -> countOcc x fromThis < 2) delThese ==>
-  let res = deleteFirstOfEach delThese fromThis
-  in all (`notElem` res) delThese
-
-
 prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [T.Text] -> Property
 prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any (not . T.null) hay &&
                                                                             all (not . (needle `T.isInfixOf`)) hay ==>

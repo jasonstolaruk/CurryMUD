@@ -66,7 +66,6 @@ propTests_Mud_Util_Misc :: TestTree
 propTests_Mud_Util_Misc = testGroup "property tests Mud.Util.Misc"
     [ QC.testProperty "prop_aOrAn" prop_aOrAn
     , QC.testProperty "prop_countOcc" prop_countOcc
-    , QC.testProperty "prop_deleteFirstOfEach" prop_deleteFirstOfEach
     , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
     , QC.testProperty "prop_findFullNameForAbbrev_findsMatch" prop_findFullNameForAbbrev_findsMatch
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
