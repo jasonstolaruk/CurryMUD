@@ -14,7 +14,6 @@ module Mud.Util.Wrapping ( adjustIndent
                          , xformLeading ) where
 
 import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
 import Mud.Util.ANSI
 import Mud.Util.Misc hiding (patternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -142,14 +141,6 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
     indent          = extractInt readsRes
     n | indent == 0 = calcIndent . dropANSI $ t
       | otherwise   = adjustIndent indent cols
-
-
-dropANSI :: T.Text -> T.Text
-dropANSI t | ansiCSI `notInfixOf` t = t
-           | otherwise              =
-               let (left, rest)      = T.break     (== ansiEsc)          t
-                   (T.tail -> right) = T.dropWhile (/= ansiSGRDelimiter) rest
-               in if T.null right then left else left <> dropANSI right
 
 
 calcIndent :: T.Text -> Int

@@ -3,6 +3,7 @@
 
 module Mud.Util.Padding where
 
+import Mud.Util.ANSI
 import Mud.Util.Quoting
 
 import Control.Lens (folded, to)
@@ -20,6 +21,12 @@ quoteWithAndPad q x t = quoteWith' q t' <> T.replicate (x - T.length t' - 2) " "
 
 bracketPad :: Int -> T.Text -> T.Text
 bracketPad = quoteWithAndPad ("[", "]")
+
+
+pad :: Int -> T.Text -> T.Text
+pad x t@(T.length . dropANSI -> l)
+  | l >= x    = t
+  | otherwise = t <> T.replicate (x - l) " "
 
 
 parensPad :: Int -> T.Text -> T.Text

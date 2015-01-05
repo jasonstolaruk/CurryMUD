@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.ANSI ( colorizeFileTxt
+                     , dropANSI
                      , extractANSI
                      , insertANSI ) where
 
@@ -25,6 +26,17 @@ patternMatchFail = U.patternMatchFail "Mud.Util.ANSI"
 colorizeFileTxt :: T.Text -> T.Text -> T.Text
 colorizeFileTxt c t | T.last t == '\n' = nl . T.concat $ [ c, T.init t, dfltColor ]
                     | otherwise        = c <> t <> dfltColor
+
+
+-----
+
+
+dropANSI :: T.Text -> T.Text
+dropANSI t | ansiCSI `notInfixOf` t = t
+           | otherwise              =
+               let (left, rest)      = T.break     (== ansiEsc)          t
+                   (T.tail -> right) = T.dropWhile (/= ansiSGRDelimiter) rest
+               in if T.null right then left else left <> dropANSI right
 
 
 -----

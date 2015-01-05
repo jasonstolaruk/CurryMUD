@@ -426,18 +426,25 @@ dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 
 mkEntsInInvDesc :: Id -> Cols -> WorldState -> Inv -> T.Text
-mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper) . mkNameCountBothList i ws
+mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper) . mkStyledNameCountBothList i ws
   where
-    helper (bracketPad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
-    helper (bracketPad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
+    helper (pad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
+    helper (pad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
     ind = 11
+
+
+mkStyledNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkStyledNameCountBothList i ws is = let ens   = styleAbbrevs [ getEffName        i ws i' | i' <- is ]
+                                        ebgns =              [ getEffBothGramNos i ws i' | i' <- is ]
+                                        cs    = mkCountList ebgns
+                                    in nub . zip3 ens cs $ ebgns
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper [ mkNameAmt cn c' | cn <- coinNames | c' <- mkListFromCoins c ]
   where
     mkNameAmt cn a = if a == 0 then "" else showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
-    helper                           = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
+    helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
