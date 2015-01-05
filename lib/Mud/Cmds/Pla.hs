@@ -436,7 +436,7 @@ mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper)
 mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper [ mkNameAmt cn c' | cn <- coinNames | c' <- mkListFromCoins c ]
   where
-    mkNameAmt (bracketQuote -> cn) a = if a == 0 then "" else showText a <> " " <> cn
+    mkNameAmt cn a = if a == 0 then "" else showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
     helper                           = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
