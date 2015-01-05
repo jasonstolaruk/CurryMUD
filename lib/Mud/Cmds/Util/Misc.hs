@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( HelpTopic
                           , advise
@@ -9,6 +9,7 @@ module Mud.Cmds.Util.Misc ( HelpTopic
                           , sendGenericErrorMsg
                           , withoutArgs ) where
 
+import Mud.Cmds.Util.Abbrev
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
@@ -23,10 +24,16 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)
-import Data.List (foldl', intercalate, sort)
+import Data.List (intercalate)
 import Data.Monoid ((<>))
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 import qualified Data.Text as T
+
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -69,9 +76,9 @@ dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
 
 
 mkCmdListText :: [Cmd] -> [T.Text]
-mkCmdListText = sort . T.lines . T.concat . foldl' helper []
-  where
-    helper acc Cmd { .. } | cmdTxt <- nl $ padOrTrunc (succ maxCmdLen) cmdName <> cmdDesc = cmdTxt : acc
+mkCmdListText cmds = let (styleAbbrevs Don'tBracket -> cmdNames) = [ cmdName cmd | cmd <- cmds ]
+                         cmdDescs                                = [ cmdDesc cmd | cmd <- cmds ]
+                     in  [ pad (succ maxCmdLen) n <> d | n <- cmdNames | d <- cmdDescs ]
 
 
 -----

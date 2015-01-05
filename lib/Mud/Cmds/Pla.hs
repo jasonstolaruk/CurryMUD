@@ -358,7 +358,6 @@ equip (LowerNub i mq cols as) = do
 equip p = patternMatchFail "equip" [ showText p ]
 
 
--- TODO: Implement abbreviation highlighting elsewhere.
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
 mkEqDesc i cols ws ei (view sing -> s) t =
     let descs = if ei == i then mkDescsSelf else mkDescsOther
@@ -370,7 +369,7 @@ mkEqDesc i cols ws ei (view sing -> s) t =
                       es       = [ (ws^.entTbl) ! i'     | i' <- is ]
                       ess      = [ e^.sing               | e  <- es ]
                       ens      = [ fromJust $ e^.entName | e  <- es ]
-                      styleds  = styleAbbrevs ens
+                      styleds  = styleAbbrevs DoBracket ens
                   in map helper . zip3 sns ess $ styleds
       where
         helper (T.breakOn " finger" -> (sn, _), es, styled) = T.concat [ parensPad 15 sn, es, " ", styled ]
@@ -434,8 +433,8 @@ mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper)
 
 
 mkStyledNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkStyledNameCountBothList i ws is = let ens   = styleAbbrevs [ getEffName        i ws i' | i' <- is ]
-                                        ebgns =              [ getEffBothGramNos i ws i' | i' <- is ]
+mkStyledNameCountBothList i ws is = let ens   = styleAbbrevs DoBracket [ getEffName        i ws i' | i' <- is ]
+                                        ebgns =                        [ getEffBothGramNos i ws i' | i' <- is ]
                                         cs    = mkCountList ebgns
                                     in nub . zip3 ens cs $ ebgns
 
@@ -818,8 +817,8 @@ mkRmInvCoinsDesc i cols ws ri =
   where
     splitPCsOthers                       = over both (map snd) . span (\(i', _) -> (ws^.typeTbl) ! i' == PCType)
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
-                                                             then knownNameColor   <> s       <> dfltColor
-                                                             else unknownNameColor <> aOrAn s <> dfltColor
+                                             then knownNameColor   <> s       <> dfltColor
+                                             else unknownNameColor <> aOrAn s <> dfltColor
     mkPCDesc    a                        = mkOtherDesc a
     mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
     mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]

@@ -21,6 +21,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , PutOrRem(..)
                      , RightOrLeft(..)
                      , Serializable
+                     , ShouldBracketQuote(..)
                      , Verb(..)
                      , deserialize
                      , fromRol
@@ -38,6 +39,12 @@ import Data.Monoid ((<>))
 import Data.String (fromString)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
+
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -273,6 +280,12 @@ data RightOrLeft = R
                  | L
                  | RI | RM | RR | RP
                  | LI | LM | LR | LP deriving (Read, Show)
+
+
+-----
+
+
+data ShouldBracketQuote = DoBracket | Don'tBracket
 
 
 -----
