@@ -92,7 +92,7 @@ parsePCDesig i ws | (view introduced -> intros) <- (ws^.pcTbl) ! i = helper intr
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter msg
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
-          left <>
+          left                                                                                 <>
           (if pes `elem` intros then pes else expandPCEntName i ws isCap pcEntName pcId pcIds) <>
           helper intros rest
         StdDesig { stdPCEntSing = Nothing,  .. } ->

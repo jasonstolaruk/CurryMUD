@@ -66,8 +66,8 @@ getEffBothGramNos i ws i'
             , n                           <- e^.sing
             , (pp *** pp -> (s, r))       <- getSexRace i' ws
             -> if n `elem` intros
-                 then (n, "")
-                 else over both ((s <>) . (" " <>)) (r, pluralize r)
+              then (n, "")
+              else over both ((s <>) . (" " <>)) (r, pluralize r)
     Just _  -> (view sing *** view plur) . dup $ e
   where
     pluralize "dwarf" = "dwarves"

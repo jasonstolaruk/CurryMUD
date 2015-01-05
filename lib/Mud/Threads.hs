@@ -289,11 +289,10 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
     loop secs = do
         liftIO . threadDelay $ 10 ^ 6
         (liftIO . atomically . tryReadTQueue $ itq) >>= \case
-          Nothing  -> if secs >= maxInacSecs
-                        then inacBoot secs
-                        else loop . succ $ secs
-          Just itm -> case itm of StopTimer  -> return ()
-                                  ResetTimer -> loop 0
+          Nothing | secs >= maxInacSecs -> inacBoot secs
+                  | otherwise           -> loop . succ $ secs
+          Just itm                      -> case itm of StopTimer  -> return ()
+                                                       ResetTimer -> loop 0
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = do
         (parensQuote -> s) <- getEntSing i
         logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", s, " due to inactivity." ]
