@@ -148,9 +148,8 @@ massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
 
 massSend :: T.Text -> MudStack ()
 massSend msg = getMqtPt >>= \(mqt, pt) -> do
-    let helper i = let mq   = mqt ! i
-                       cols = view columns (pt ! i)
-                   in send mq . nl' . frame cols . wrapUnlines cols $ msg
+    let helper i | mq   <- mqt ! i
+                 , cols <- view columns (pt ! i) = send mq . nl' . frame cols . wrapUnlines cols $ msg
     forM_ (IM.keys pt) helper
 
 

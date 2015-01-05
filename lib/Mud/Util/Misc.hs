@@ -6,12 +6,10 @@ module Mud.Util.Misc ( aOrAn
                      , blowUp
                      , capitalize
                      , countOcc
-                     , deleteFirstOfEach
                      , dropBlanks
                      , dup
                      , eitherRet
                      , findFullNameForAbbrev
-                     , grepTextList
                      , headTail
                      , headTail'
                      , isVowel
@@ -38,7 +36,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Monad (guard)
 import Data.Char (toLower, toUpper)
-import Data.List (delete, foldl', sort)
+import Data.List (foldl', sort)
 import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
 import qualified Data.Map.Lazy as M (Map, assocs)
@@ -77,10 +75,6 @@ countOcc :: (Eq a) => a -> [a] -> Int
 countOcc needle = foldl' (\acc x -> if x == needle then succ acc else acc) 0
 
 
-deleteFirstOfEach :: (Eq a) => [a] -> [a] -> [a]
-deleteFirstOfEach delThese fromThis = foldl' (flip delete) fromThis delThese
-
-
 dropBlanks :: [T.Text] -> [T.Text]
 dropBlanks []      = []
 dropBlanks ("":xs) =     dropBlanks xs
@@ -99,10 +93,6 @@ findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
 findFullNameForAbbrev needle hay = guard (not . null $ res) >> (Just . head $ res)
   where
     res = sort . filter (needle `T.isPrefixOf`) $ hay
-
-
-grepTextList :: T.Text -> [T.Text] -> [T.Text]
-grepTextList needle = filter (needle `T.isInfixOf`)
 
 
 headTail :: [a] -> (a, [a])

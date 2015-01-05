@@ -107,9 +107,8 @@ wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
     getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == n ] of
       []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote n <> " is currently logged in."
-      [i'] -> let n'  = (et  ! i )^.sing
-                  mq' = (mqt ! i')
-              in do
+      [i'] |  n'  <- (et  ! i )^.sing
+           ,  mq' <- (mqt ! i') -> do
                   logPlaExecArgs (prefixWizCmd "boot") as i
                   ok mq
                   case rest of [] -> dfltMsg   i' n' mq'
@@ -119,7 +118,7 @@ wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     dfltMsg   i' n' mq' = do
         logPla "wizBoot dfltMsg" i' $ T.concat [ "booted by ", n', " ", parensQuote "no message given", "." ]
         sendMsgBoot mq' Nothing
-    customMsg i' n' mq' = let msg = T.intercalate " " rest in do
+    customMsg i' n' mq' | msg <- T.intercalate " " rest = do
         logPla "wizBoot customMsg" i' $ T.concat [ "booted by ", n', "; message: ", msg ]
         sendMsgBoot mq' . Just $ msg
 wizBoot p = patternMatchFail "wizBoot" [ showText p ]

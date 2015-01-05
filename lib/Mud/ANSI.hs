@@ -2,11 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.ANSI ( abbrevColor
+                , asteriskColor
                 , bootMsgColor
                 , colors
                 , dfltColor
                 , envVarColor
                 , exitsColor
+                , headerColor
                 , intensities
                 , knownNameColor
                 , mkBgColorANSI
@@ -21,7 +23,6 @@ module Mud.ANSI ( abbrevColor
                 , quoteColor
                 , resetANSI
                 , shutdownMsgColor
-                , topicColor
                 , underline
                 , unknownNameColor
                 , wtfColor
@@ -82,6 +83,10 @@ abbrevColor :: T.Text
 abbrevColor = cyan
 
 
+asteriskColor :: T.Text
+asteriskColor = magenta
+
+
 bootMsgColor :: T.Text
 bootMsgColor = red
 
@@ -96,6 +101,10 @@ envVarColor = cyan
 
 exitsColor :: T.Text
 exitsColor = magenta
+
+
+headerColor :: T.Text
+headerColor = mkColorANSI (Dull, White) (Dull, Red)
 
 
 knownNameColor :: T.Text
@@ -127,15 +136,11 @@ promptColor = yellow
 
 
 quoteColor :: T.Text
-quoteColor = cyan
+quoteColor = green
 
 
 shutdownMsgColor :: T.Text
 shutdownMsgColor = red
-
-
-topicColor :: T.Text
-topicColor = mkColorANSI (Dull, White) (Dull, Red)
 
 
 underline :: T.Text

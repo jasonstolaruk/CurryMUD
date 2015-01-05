@@ -434,13 +434,12 @@ debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, Stri
                                                  , " and "
                                                  , showText maxCols
                                                  , " characters." ]
-    msg        =
-        let ls = [ T.concat [ u
-                            , mkFgColorANSI (Dull, c)
-                            , "This is "
-                            , showText c
-                            , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
-        in (<> dfltColor) . T.intercalate " " $ ls
+    msg | ls <- [ T.concat [ u
+                           , mkFgColorANSI (Dull, c)
+                           , "This is "
+                           , showText c
+                           , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
+        = (<> dfltColor) . T.intercalate " " $ ls
 debugWrap p = advise p [ prefixDebugCmd "wrap" ] advice
   where
     advice = "Please provide one argument: line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
@@ -484,13 +483,12 @@ debugWrapIndent   (WithArgs i mq cols [a, b]) = do
                                                  , showText maxCols
                                                  , " characters." ]
     sorryIndent  = wrapSend mq cols "The indent amount must be less than the line length."
-    msg          =
-        let ls = [ T.concat [ u
-                            , mkFgColorANSI (Dull, c)
-                            , "This is "
-                            , showText c
-                            , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
-        in (<> dfltColor) . T.intercalate " " $ ls
+    msg | ls <- [ T.concat [ u
+                           , mkFgColorANSI (Dull, c)
+                           , "This is "
+                           , showText c
+                           , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
+        = (<> dfltColor) . T.intercalate " " $ ls
 
 debugWrapIndent p = advise p [ prefixDebugCmd "wrapindent" ] advice
   where

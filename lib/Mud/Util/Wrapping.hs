@@ -32,9 +32,8 @@ patternMatchFail = U.patternMatchFail "Mud.Util.Wrapping"
 
 
 wrap :: Int -> T.Text -> [T.Text]
-wrap cols t = let extracted = extractANSI t
-                  wrapped   = wrapIt . T.concat . map fst $ extracted
-              in insertANSI extracted wrapped
+wrap cols t | extracted <- extractANSI t
+            , wrapped   <- wrapIt . T.concat . map fst $ extracted = insertANSI extracted wrapped
   where
     wrapIt t'
       | T.null afterMax                                 = [t']

@@ -33,10 +33,9 @@ colorizeFileTxt c t | T.last t == '\n' = nl . T.concat $ [ c, T.init t, dfltColo
 
 dropANSI :: T.Text -> T.Text
 dropANSI t | ansiCSI `notInfixOf` t = t
-           | otherwise              =
-               let (left, rest)      = T.break     (== ansiEsc)          t
-                   (T.tail -> right) = T.dropWhile (/= ansiSGRDelimiter) rest
-               in if T.null right then left else left <> dropANSI right
+           | otherwise              = let (left, rest)      = T.break     (== ansiEsc)          t
+                                          (T.tail -> right) = T.dropWhile (/= ansiSGRDelimiter) rest
+                                      in if T.null right then left else left <> dropANSI right
 
 
 -----
@@ -48,10 +47,9 @@ type EscSeq = T.Text
 extractANSI :: T.Text -> [(T.Text, EscSeq)]
 extractANSI t
   | ansiCSI `notInfixOf` t = [(t, "")]
-  | otherwise              =
-      let (t',                                    rest)            = T.break (== ansiEsc)          t
-          ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') = T.break (== ansiSGRDelimiter) rest
-      in if T.null rest' then [(t', escSeq)] else (t', escSeq) : extractANSI rest'
+  | (t',                                    rest)            <- T.break (== ansiEsc)          t
+  , ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') <- T.break (== ansiSGRDelimiter) rest
+  = if T.null rest' then [(t', escSeq)] else (t', escSeq) : extractANSI rest'
 
 
 -----
@@ -68,9 +66,9 @@ loopOverExtractedList []                  ys = ys
 loopOverExtractedList [("", escSeq)]      "" = escSeq
 loopOverExtractedList ((xs, escSeq):rest) ys
   | T.null xs = escSeq <> loopOverExtractedList rest ys
-  | otherwise = let left         = loopOverExtractedTxt xs ys
-                    (Just right) = left `T.stripPrefix` ys
-                in left <> escSeq <> loopOverExtractedList rest right
+  | left         <- loopOverExtractedTxt xs ys
+  , (Just right) <- left `T.stripPrefix` ys = left <> escSeq <> loopOverExtractedList rest right
+loopOverExtractedList xs ys = patternMatchFail "loopOverExtractedList" [ showText xs, ys ]
 
 
 loopOverExtractedTxt :: T.Text -> T.Text -> T.Text

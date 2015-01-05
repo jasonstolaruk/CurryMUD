@@ -42,18 +42,17 @@ import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, at, both, folded, over, to)
+import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((&), (?~), (.~), (^.), (^..))
+import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Lens.Setter (set)
-import Control.Monad (forM_, guard, mplus, unless, void)
+import Control.Monad (forM, forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, sort, sortBy)
+import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
-import Data.Text.Strict.Lens (packed)
 import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (pi)
 import System.Console.ANSI (clearScreenCode)
@@ -359,24 +358,21 @@ equip p = patternMatchFail "equip" [ showText p ]
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ws ei (view sing -> s) t =
-    let descs = if ei == i then mkDescsSelf else mkDescsOther
-    in case descs of [] -> none
-                     _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
+mkEqDesc i cols ws ei (view sing -> s) t | descs <- if ei == i then mkDescsSelf else mkDescsOther =
+    case descs of [] -> none
+                  _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
   where
-    mkDescsSelf = let (ss, is) = unzip . M.toList $ (ws^.eqTbl) ! i
-                      sns      = [ pp s'                 | s' <- ss ]
-                      es       = [ (ws^.entTbl) ! i'     | i' <- is ]
-                      ess      = [ e^.sing               | e  <- es ]
-                      ens      = [ fromJust $ e^.entName | e  <- es ]
-                      styleds  = styleAbbrevs DoBracket ens
-                  in map helper . zip3 sns ess $ styleds
+    mkDescsSelf | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! i
+                , sns      <- [ pp s'                 | s' <- ss ]
+                , es       <- [ (ws^.entTbl) ! i'     | i' <- is ]
+                , ess      <- [ e^.sing               | e  <- es ]
+                , ens      <- [ fromJust $ e^.entName | e  <- es ]
+                , styleds  <- styleAbbrevs DoBracket ens = map helper . zip3 sns ess $ styleds
       where
         helper (T.breakOn " finger" -> (sn, _), es, styled) = T.concat [ parensPad 15 sn, es, " ", styled ]
-    mkDescsOther = let (ss, is) = unzip . M.toList $ (ws^.eqTbl) ! i
-                       sns      = [ pp s' | s' <- ss ]
-                       ess      = [ let e = (ws^.entTbl) ! i' in e^.sing | i' <- is ]
-                   in map helper . zip sns $ ess
+    mkDescsOther | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! i
+                 , sns      <- [ pp s' | s' <- ss ]
+                 , ess      <- [ let e = (ws^.entTbl) ! i' in e^.sing | i' <- is ] = map helper . zip sns $ ess
       where
         helper (T.breakOn " finger" -> (sn, _), es) = parensPad 15 sn <> es
     none = wrapUnlines cols $ if
@@ -433,10 +429,9 @@ mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper)
 
 
 mkStyledNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkStyledNameCountBothList i ws is = let ens   = styleAbbrevs DoBracket [ getEffName        i ws i' | i' <- is ]
-                                        ebgns =                        [ getEffBothGramNos i ws i' | i' <- is ]
-                                        cs    = mkCountList ebgns
-                                    in nub . zip3 ens cs $ ebgns
+mkStyledNameCountBothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffName        i ws i' | i' <- is ]
+                                  , ebgns <-                        [ getEffBothGramNos i ws i' | i' <- is ]
+                                  , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
@@ -529,7 +524,7 @@ helperGetDropEitherInv :: Id                                  ->
 helperGetDropEitherInv i d god fi ti a@(ws, _, _) = \case
   Left  (mkBroadcast i -> b) -> over _2 (++ b) a
   Right is | (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
-           , ws'             <- ws & invTbl.at fi ?~ deleteFirstOfEach is fis
+           , ws'             <- ws & invTbl.at fi ?~ fis \\ is
                                    & invTbl.at ti ?~ sortInv ws (tis ++ is)
            , (bs', logMsgs') <- mkGetDropInvDesc i ws' d god is
            -> set _1 ws' . over _2 (++ bs') . over _3 (++ logMsgs') $ a
@@ -550,10 +545,9 @@ mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap
 
 
 mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkNameCountBothList i ws is = let ens   = [ getEffName        i ws i' | i' <- is ]
-                                  ebgns = [ getEffBothGramNos i ws i' | i' <- is ]
-                                  cs    = mkCountList ebgns
-                              in nub . zip3 ens cs $ ebgns
+mkNameCountBothList i ws is | ens   <- [ getEffName        i ws i' | i' <- is ]
+                            , ebgns <- [ getEffBothGramNos i ws i' | i' <- is ]
+                            , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
 
 
 extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
@@ -605,18 +599,42 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
 help :: Action
 help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= either handler helper
   where
-    handler e      = do
+    handler e = do
         fileIOExHandler "help" e
         wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
-    helper helpTxt = do
-        logPla "help" i ("read root help file.")
-        dispHelp i mq . parseHelpTxt cols $ helpTxt
+    helper rootHelpTxt = mkHelpData i >>= \(sortBy (compare `on` helpName) -> hs) ->
+        let styledHelps                    = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
+            (helpCmdNames, helpTopicNames) = over both (T.concat . mkHelpNames) . partition (isCmdHelp . snd) $ styledHelps
+            helpTxt                        = T.concat [ nl rootHelpTxt
+                                                      , nl "Help is available on the following commands:"
+                                                      , nlnl helpCmdNames
+                                                      , nlnl "Help is available on the following topics:"
+                                                      , helpTopicNames
+                                                      , footnote hs ]
+        in logPla "help" i ("read root help file.") >> (dispHelp i mq . parseHelpTxt cols $ helpTxt)
+    mkHelpNames styledHelps = [ pad 13 $ styled <> if isWizHelp h then asterisk else "" | (styled, h) <- styledHelps ]
+    asterisk                = asteriskColor <> "*" <> dfltColor
+    footnote hs             = if (length . filter isWizHelp $ hs) > 0
+      then nlnl $ asterisk <> " indicates help that is available only to wizards."
+      else ""
 help (LowerNub i mq cols as) = (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= dispHelp i mq
   where
-    getHelp = (liftIO . getDirectoryContents $ helpDir) >>= \dirCont ->
-      let topics = (^..folded.packed) . drop 2 . sort . delete "root" $ dirCont
-      in mapM (\a -> parseHelpTxt cols <$> getHelpTopicByName i cols topics a) as
+    getHelp = mkHelpData i >>= \hs ->
+        forM as (\a -> parseHelpTxt cols <$> getHelpByName i cols hs a)
 help p = patternMatchFail "help" [ showText p ]
+
+
+mkHelpData :: Id -> MudStack [Help]
+mkHelpData i = getPlaIsWiz i >>= \iw -> do
+    [ plaHelpCmdNames, plaHelpTopicNames, wizHelpCmdNames, wizHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
+    let plaHelpCmds   = [ Help (T.pack                phcn) (plaHelpCmdsDir   ++ phcn) True  False | phcn <- plaHelpCmdNames   ]
+    let plaHelpTopics = [ Help (T.pack                phtn) (plaHelpTopicsDir ++ phtn) False False | phtn <- plaHelpTopicNames ]
+    let wizHelpCmds   = [ Help (T.pack $ wizCmdChar : whcn) (wizHelpCmdsDir   ++ whcn) True  True  | whcn <- wizHelpCmdNames   ]
+    let wizHelpTopics = [ Help (T.pack                whtn) (wizHelpTopicsDir ++ whtn) False True  | whtn <- wizHelpTopicNames ]
+    return $ plaHelpCmds ++ plaHelpTopics ++ if iw then wizHelpCmds ++ wizHelpTopics else []
+  where
+    helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, wizHelpCmdsDir, wizHelpTopicsDir ]
+    getHelpDirectoryContents dir = drop 2 . sort <$> (liftIO . getDirectoryContents $ dir)
 
 
 parseHelpTxt :: Cols -> T.Text -> [T.Text]
@@ -633,18 +651,19 @@ dispHelp i mq helpTxt@(length -> helpLen) = getPlaPageLines i >>= \pageLen ->
         void . modifyPla i interp . Just $ interpPager pageLen helpLen (page, rest)
 
 
-getHelpTopicByName :: Id -> Cols -> [HelpTopic] -> HelpTopic -> MudStack T.Text
-getHelpTopicByName i cols topics topic =
-    maybe sorry
-          (\t -> logPla "getHelpTopicByName" i ("read help on " <> dblQuote t <> ".") >> readHelpFile t)
-          (findFullNameForAbbrev topic topics)
+getHelpByName :: Id -> Cols -> [Help] -> HelpName -> MudStack T.Text
+getHelpByName i cols hs name =
+    maybe sorry found . findFullNameForAbbrev name $ [ helpName h | h <- hs ]
   where
-    sorry          = return $ "No help is available on " <> dblQuote topic <> "."
-    readHelpFile t = (try . liftIO . T.readFile . (helpDir ++) . T.unpack $ t) >>= eitherRet handler
+    sorry           = return $ "No help is available on " <> dblQuote name <> "."
+    found hn        | h <- head . filter ((== hn) . helpName) $ hs = do
+                        logPla "getHelpByName" i $ "read help on " <> dblQuote hn <> "."
+                        readHelpFile . helpFilePath $ h
+    readHelpFile hf = (try . liftIO . T.readFile $ hf) >>= eitherRet handler
       where
         handler e = do
-            fileIOExHandler "getHelpTopicByName" e
-            return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote t <> " help file could not be retrieved."
+            fileIOExHandler "getHelpByName" e
+            return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote name <> " help file could not be retrieved."
 
 
 -----
@@ -742,7 +761,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                                                           , "." ]
                             cbs = [ NonTargetBroadcast (srcMsg,    [i])
                                   , TargetBroadcast    (targetMsg, [targetId])
-                                  , NonTargetBroadcast (othersMsg, deleteFirstOfEach [ i, targetId ] pis) ]
+                                  , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
                         in set _1 ws' . over _2 (++ cbs) . over _3 (++ [logMsg]) $ a'
           _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
                  -> over _2 (`appendIfUnique` b) a'
@@ -805,15 +824,14 @@ look p = patternMatchFail "look" [ showText p ]
 
 
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
-mkRmInvCoinsDesc i cols ws ri =
-    let ((i `delete`) -> ris) = (ws^.invTbl) ! ri
-        (pcNcbs, otherNcbs)   = splitPCsOthers . zip ris . mkStyledNameCountBothList i ws $ ris
-        pcDescs    = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
-        otherDescs = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
-        c          = (ws^.coinsTbl) ! ri
-    in (if not . null $ pcNcbs    then pcDescs               else "") <>
-       (if not . null $ otherNcbs then otherDescs            else "") <>
-       (if c /= mempty            then mkCoinsSummary cols c else "")
+mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
+                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . zip ris . mkStyledNameCountBothList i ws $ ris
+                              , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
+                              , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
+                              , c          <- (ws^.coinsTbl) ! ri
+                              = (if not . null $ pcNcbs    then pcDescs               else "") <>
+                                (if not . null $ otherNcbs then otherDescs            else "") <>
+                                (if c /= mempty            then mkCoinsSummary cols c else "")
   where
     splitPCsOthers                       = over both (map snd) . span (\(i', _) -> (ws^.typeTbl) ! i' == PCType)
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
@@ -955,7 +973,7 @@ helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
                                   then (filter (/= ti) is, bs ++ [sorry])
                                   else (is, bs)
            , (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
-           , ws'             <- ws & invTbl.at fi ?~ deleteFirstOfEach is' fis
+           , ws'             <- ws & invTbl.at fi ?~ fis \\ is'
                                    & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
            , (bs'', logMsgs) <- mkPutRemInvDesc i ws' d por mnom is' te
            -> set _1 ws' . set _2 (bs' ++ bs'') . over _3 (++ logMsgs) $ a
@@ -1197,13 +1215,12 @@ readyDispatcher :: Id                             ->
                    (WorldState, T.Text, [T.Text]) ->
                    Id                             ->
                    (WorldState, T.Text, [T.Text])
-readyDispatcher i cols mrol a@(ws, _, _) ei =
-    let e = (ws^.entTbl)  ! ei
-        t = (ws^.typeTbl) ! ei
-    in case t of
-      ClothType -> readyCloth i cols mrol a ei e
-      WpnType   -> readyWpn   i cols mrol a ei e
-      _         -> over _2 (<> (wrapUnlines cols $ "You can't ready a " <> e^.sing <> ".")) a
+readyDispatcher i cols mrol a@(ws, _, _) ei
+  | e <- (ws^.entTbl)  ! ei
+  , t <- (ws^.typeTbl) ! ei = case t of
+    ClothType -> readyCloth i cols mrol a ei e
+    WpnType   -> readyWpn   i cols mrol a ei e
+    _         -> over _2 (<> (wrapUnlines cols $ "You can't ready a " <> e^.sing <> ".")) a
 
 
 -- Helpers for the entity type-specific ready functions:

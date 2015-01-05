@@ -29,7 +29,7 @@ import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.), (^..))
 import Data.Char (isDigit, toUpper)
 import Data.IntMap.Lazy ((!))
-import Data.List (foldl')
+import Data.List ((\\), foldl')
 import Data.Monoid ((<>), mempty)
 import Data.String (fromString)
 import Data.Text.Internal.Builder (Builder)
@@ -101,9 +101,9 @@ extractMesFromGecr = \case Mult    { entsRes = Just es } -> Just es
 
 
 pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
-pruneDupIds _       []                                              = []
-pruneDupIds uniques (Nothing : rest)                                = Nothing : pruneDupIds uniques rest
-pruneDupIds uniques (Just (deleteFirstOfEach uniques -> is) : rest) = Just is : pruneDupIds (is ++ uniques) rest
+pruneDupIds _       []               = []
+pruneDupIds uniques (Nothing : rest) = Nothing : pruneDupIds uniques rest
+pruneDupIds uniques (Just is : rest) = let is' = is \\ uniques in Just is' : pruneDupIds (is' ++ uniques) rest
 
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]

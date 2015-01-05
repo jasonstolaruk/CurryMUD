@@ -1,8 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
 
-module Mud.Cmds.Util.Misc ( HelpTopic
-                          , advise
+module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
                           , fileIOExHandler
                           , prefixCmd
@@ -15,6 +14,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
+import Mud.Util.ANSI
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -50,10 +50,7 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 -- ==================================================
 
 
-type HelpTopic = T.Text
-
-
-advise :: ActionParams -> [HelpTopic] -> T.Text -> MudStack ()
+advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
 advise (Advising mq cols) []  msg = wrapSend mq cols msg
 advise (Advising mq cols) [h] msg
   | msgs <- [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ] = multiWrapSend mq cols msgs
@@ -67,11 +64,14 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 -----
 
 
-dispCmdList :: [Cmd] -> Action
+dispCmdList :: [Cmd] -> Action -- TODO: Pager.
 dispCmdList cmds (NoArgs   _ mq cols) =
     send mq . nl . T.unlines . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds (LowerNub _ mq cols as) | matches <- [ grepTextList a . mkCmdListText $ cmds | a <- as ] =
+dispCmdList cmds (LowerNub _ mq cols as) | matches <- [ grepCmdList a . mkCmdListText $ cmds | a <- as ] =
     send mq . nl . T.unlines . concatMap (wrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
+  where
+    grepCmdList needle haystack = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
+                                  in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
 dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
 
 

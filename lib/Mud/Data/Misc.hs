@@ -14,6 +14,8 @@ module Mud.Data.Misc ( AOrThe(..)
                      , FromRol
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)
+                     , Help(..)
+                     , HelpName
                      , Index
                      , InvType(..)
                      , PCDesig(..)
@@ -251,6 +253,17 @@ data GetOrDrop = Get | Drop
 
 -----
 
+
+type HelpName = T.Text
+
+
+data Help = Help { helpName     :: HelpName
+                 , helpFilePath :: FilePath
+                 , isCmdHelp    :: Bool
+                 , isWizHelp    :: Bool }
+
+
+-----
 
 data InvType = PCInv | PCEq | RmInv deriving Eq
 
