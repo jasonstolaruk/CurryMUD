@@ -807,20 +807,22 @@ look p = patternMatchFail "look" [ showText p ]
 
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri =
-    let (splitRmInv ws -> ((i `delete`) -> pis, ois)) = (ws^.invTbl) ! ri
-        pcDescs    = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) . mkNameCountBothList i ws $ pis
-        otherDescs = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) . mkNameCountBothList i ws $ ois
+    let ((i `delete`) -> ris) = (ws^.invTbl) ! ri
+        (pcNcbs, otherNcbs)   = splitPCsOthers . zip ris . mkStyledNameCountBothList i ws $ ris
+        pcDescs    = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
+        otherDescs = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
         c          = (ws^.coinsTbl) ! ri
-    in (if not . null $ pis then pcDescs               else "") <>
-       (if not . null $ ois then otherDescs            else "") <>
-       (if c /= mempty      then mkCoinsSummary cols c else "")
+    in (if not . null $ pcNcbs    then pcDescs               else "") <>
+       (if not . null $ otherNcbs then otherDescs            else "") <>
+       (if c /= mempty            then mkCoinsSummary cols c else "")
   where
-    mkPCDesc    (bracketQuote -> en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
+    splitPCsOthers                       = over both (map snd) . span (\(i', _) -> (ws^.typeTbl) ! i' == PCType)
+    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
                                                              then knownNameColor   <> s       <> dfltColor
                                                              else unknownNameColor <> aOrAn s <> dfltColor
-    mkPCDesc    a                                        = mkOtherDesc a
-    mkOtherDesc (bracketQuote -> en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
-    mkOtherDesc (bracketQuote -> en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
+    mkPCDesc    a                        = mkOtherDesc a
+    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
+    mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
 
 
 isKnownPCSing :: Sing -> Bool

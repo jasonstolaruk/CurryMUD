@@ -15,7 +15,6 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , mkReflexive
                                 , mkUnknownPCEntName
                                 , sortInv
-                                , splitRmInv
                                 , statefulFork
                                 , statefulFork_ ) where
 
@@ -139,10 +138,6 @@ sortInv ws is | (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) <- [ (ws^.t
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
     sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing               | i <- is' ]
-
-
-splitRmInv :: WorldState -> Inv -> (Inv, Inv)
-splitRmInv ws = span (\i -> (ws^.typeTbl) ! i == PCType)
 
 
 statefulFork :: StateInIORefT MudState IO () -> MudStack MudState
