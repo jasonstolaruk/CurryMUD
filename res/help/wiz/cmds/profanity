@@ -4,7 +4,6 @@
 #wprofanity
 
 \u\DESCRIPTION\n\
-Dump the profanity log.
-(When a player attempts to create a character with an obscene name, a record of the attempt is written to the profanity log.)
+Dump the profanity log. (When a player attempts to create a character with an obscene name, a record of the attempt is written to the profanity log.)
 
 \u\SEE ALSO\n\

@@ -315,7 +315,11 @@ mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (s', r))
 dropAction :: Action
 dropAction p@AdviseNoArgs     = advise p ["drop"] advice
   where
-    advice = "Please specify one or more things to drop, as in " <> dblQuote "drop sword" <> "."
+    advice = T.concat [ "Please specify one or more items to drop, as in "
+                      , quoteColor
+                      , dblQuote "drop sword"
+                      , dfltColor
+                      , "." ]
 dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "drop" i logMsgs
     bcastNl bs
@@ -489,7 +493,11 @@ isNonStdLink _               = False
 getAction :: Action
 getAction p@AdviseNoArgs     = advise p ["get"] advice
   where
-    advice = "Please specify one or more items to pick up, as in " <> dblQuote "get sword" <> "."
+    advice = T.concat [ "Please specify one or more items to pick up, as in "
+                      , quoteColor
+                      , dblQuote "get sword"
+                      , dfltColor
+                      , "." ]
 getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "get" i logMsgs
     bcastNl bs
@@ -644,7 +652,7 @@ mkHelpData i = getPlaIsWiz i >>= \iw -> do
 
 
 parseHelpTxt :: Cols -> T.Text -> [T.Text]
-parseHelpTxt cols = concat . wrapLines cols . T.lines . parseCharTokens . parseStyleTokens
+parseHelpTxt cols = concat . wrapLines cols . T.lines . parseCharTokens . parseMsgTokens . parseStyleTokens
 
 
 dispHelp :: Id -> MsgQueue -> [T.Text] -> MudStack ()
@@ -885,11 +893,19 @@ showMotd mq cols = send mq =<< helper
 putAction :: Action
 putAction p@AdviseNoArgs     = advise p ["put"] advice
   where
-    advice = "Please specify one or more things you want to put, followed by where you want to put them, as \
-             \in " <> dblQuote "put doll sack" <> "."
+    advice = T.concat [ "Please specify one or more items you want to put, followed by where you want to put them, as \
+                        \in "
+                      , quoteColor
+                      , dblQuote "put doll sack"
+                      , dfltColor
+                      , "." ]
 putAction p@(AdviseOneArg a) = advise p ["put"] advice
   where
-    advice = "Please also specify where you want to put it, as in " <> dblQuote ("put " <> a <> " sack") <> "."
+    advice = T.concat [ "Please also specify where you want to put it, as in "
+                      , quoteColor
+                      , dblQuote $ "put " <> a <> " sack"
+                      , dfltColor
+                      , "." ]
 putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "put" i logMsgs
     bcastNl bs
@@ -1187,7 +1203,11 @@ notifyEgress i = readWSTMVar >>= \ws ->
 ready :: Action
 ready p@AdviseNoArgs            = advise p ["ready"] advice
   where
-    advice = "Please specify one or more things to ready, as in " <> dblQuote "ready sword" <> "."
+    advice = T.concat [ "Please specify one or more items to ready, as in "
+                      , quoteColor
+                      , dblQuote "ready sword"
+                      , dfltColor
+                      , "." ]
 ready   (LowerNub i mq cols as) = helper >>= \(msg, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "ready" i logMsgs
     send mq . nl $ msg
@@ -1455,12 +1475,19 @@ getDesigWpnSlot cols ws (view sing -> s) em rol
 remove :: Action
 remove p@AdviseNoArgs     = advise p ["remove"] advice
   where
-    advice = "Please specify one or more things to remove, followed by the container you want to remove them from, as \
-             \in " <> dblQuote "remove doll sack" <> "."
+    advice = T.concat [ "Please specify one or more items to remove, followed by the container you want to remove \
+                        \them from, as in "
+                      , quoteColor
+                      , dblQuote "remove doll sack"
+                      , dfltColor
+                      , "." ]
 remove p@(AdviseOneArg a) = advise p ["remove"] advice
   where
-    advice = "Please also specify the container you want to remove it from, as \
-             \in " <> dblQuote ("remove " <> a <> " sack") <> "."
+    advice = T.concat [ "Please also specify the container you want to remove it from, as in "
+                      , quoteColor
+                      , dblQuote $ "remove " <> a <> " sack"
+                      , dfltColor
+                      , "." ]
 remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "remove" i logMsgs
     bcastNl bs
@@ -1521,7 +1548,11 @@ shuffleRem i (t, ws) d cn icir as is c f
 unready :: Action
 unready p@AdviseNoArgs            = advise p ["unready"] advice
   where
-    advice = "Please specify one or more things to unready, as in " <> dblQuote "unready sword" <> "."
+    advice = T.concat [ "Please specify one or more items to unready, as in "
+                      , quoteColor
+                      , dblQuote "unready sword"
+                      , dfltColor
+                      , "." ]
 unready   (LowerNub i mq cols as) = helper >>= \(msg, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "unready" i logMsgs
     send mq . nl $ msg
@@ -1618,7 +1649,11 @@ getUptime = (-) <$> (sec <$> (liftIO . getTime $ Monotonic)) <*> (sec <$> getNWS
 what :: Action
 what p@AdviseNoArgs            = advise p ["what"] advice
   where
-    advice = "Please specify one or more abbreviations to disambiguate, as in " <> dblQuote "what up" <> "."
+    advice = T.concat [ "Please specify one or more abbreviations to disambiguate, as in "
+                      , quoteColor
+                      , dblQuote "what up"
+                      , dfltColor
+                      , "." ]
 what   (LowerNub i mq cols as) = getPCRm' i >>= \(ws, r) ->
     logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
   where

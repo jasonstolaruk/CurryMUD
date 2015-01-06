@@ -411,9 +411,13 @@ debugUnderline p = withoutArgs debugUnderline p
 
 
 debugWrap :: Action
-debugWrap p@AdviseNoArgs             = advise p [ prefixDebugCmd "wrap" ] advice
+debugWrap p@AdviseNoArgs             = advise p [] advice
   where
-    advice = "Please specify line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
+    advice = T.concat [ "Please specify line length, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "wrap" <> " 40"
+                      , dfltColor
+                      , "." ]
 debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String)]) of
   []            -> sorryParse
   [(cols', "")] -> helper cols'
@@ -440,23 +444,33 @@ debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, Stri
                            , showText c
                            , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
         = (<> dfltColor) . T.intercalate " " $ ls
-debugWrap p = advise p [ prefixDebugCmd "wrap" ] advice
+debugWrap p = advise p [] advice
   where
-    advice = "Please provide one argument: line length, as in " <> dblQuote (prefixDebugCmd "wrap" <> " 40") <> "."
+    advice = T.concat [ "Please provide one argument: line length, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "wrap" <> " 40"
+                      , dfltColor
+                      , "." ]
 
 
 -----
 
 
 debugWrapIndent :: Action
-debugWrapIndent p@AdviseNoArgs                = advise p [ prefixDebugCmd "wrapindent" ] advice
+debugWrapIndent p@AdviseNoArgs                = advise p [] advice
   where
-    advice = "Please specify line length followed by indent amount, as in " <>
-             dblQuote (prefixDebugCmd "wrapindent" <> " 40 4") <> "."
-debugWrapIndent p@(AdviseOneArg _)            = advise p [ prefixDebugCmd "wrapindent" ] advice
+    advice = T.concat [ "Please specify line length followed by indent amount, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "wrapindent" <> " 40 4"
+                      , dfltColor
+                      , "." ]
+debugWrapIndent p@(AdviseOneArg _)            = advise p [] advice
   where
-    advice = "Please also specify indent amount, as in " <>
-             dblQuote (prefixDebugCmd "wrapindent" <> " 40 4") <> "."
+    advice = T.concat [ "Please also specify indent amount, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "wrapindent" <> " 40 4"
+                      , dfltColor
+                      , "." ]
 debugWrapIndent   (WithArgs i mq cols [a, b]) = do
     parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
     unless (uncurry (||) . (over both isNothing) $ parsed) . uncurry helper . (over both fromJust) $ parsed
@@ -490,7 +504,10 @@ debugWrapIndent   (WithArgs i mq cols [a, b]) = do
                            , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
         = (<> dfltColor) . T.intercalate " " $ ls
 
-debugWrapIndent p = advise p [ prefixDebugCmd "wrapindent" ] advice
+debugWrapIndent p = advise p [] advice
   where
-    advice = "Please provide two arguments: line length and indent amount, as in " <>
-             dblQuote (prefixDebugCmd "wrapindent" <> " 40 4") <> "."
+    advice = T.concat [ "Please provide two arguments: line length and indent amount, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "wrapindent" <> " 40 4"
+                      , dfltColor
+                      , "." ]

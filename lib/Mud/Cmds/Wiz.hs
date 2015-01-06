@@ -100,8 +100,8 @@ wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
 
 
 wizBoot :: Action
-wizBoot p@AdviseNoArgs = advise p [ prefixWizCmd "boot" ] "Please specify the full name of the PC you wish to boot, \
-                                                          \followed optionally by a message."
+wizBoot p@AdviseNoArgs = advise p [ prefixWizCmd "boot" ] "Please specify the full PC name of the player you wish to \
+                                                          \boot, followed optionally by a custom message."
 wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
     getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == n ] of
@@ -141,8 +141,11 @@ wizDate p = withoutArgs wizDate p
 wizPrint :: Action
 wizPrint p@AdviseNoArgs         = advise p [ prefixWizCmd "print" ] advice
   where
-    advice = "You must provide a message to print to the server console, as in " <> dblQuote (prefixWizCmd "print" <>
-             " Is anybody home?") <> "."
+    advice = T.concat [ "You must provide a message to print to the server console, as in "
+                      , quoteColor
+                      , dblQuote $ prefixWizCmd "print" <> " Is anybody home?"
+                      , dfltColor
+                      , "." ]
 wizPrint   (WithArgs i mq _ as) = do
     logPlaExecArgs (prefixWizCmd "print") as i
     s <- getEntSing i

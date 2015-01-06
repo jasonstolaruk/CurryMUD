@@ -6,7 +6,7 @@
 \u\DESCRIPTION\n\
 Boot a player, optionally with a custom message.
 The player's PC name may not be abbreviated.
-If you do not provide a custom message, the default message will be sent.
+If you do not provide a custom message, the default message will be sent. (The default message is: "@b")
 
 \u\EXAMPLES\n\
 \q\"#wboot taro"\d\ to boot Taro.4`

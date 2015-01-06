@@ -8,6 +8,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , sendGenericErrorMsg
                           , withoutArgs ) where
 
+import Mud.ANSI
 import Mud.Cmds.Util.Abbrev
 import Mud.Data.Misc
 import Mud.Data.State.State
@@ -52,10 +53,16 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
 advise (Advising mq cols) []  msg = wrapSend mq cols msg
-advise (Advising mq cols) [h] msg
-  | msgs <- [ msg, "For more information, type " <> (dblQuote . ("help " <>) $ h) <> "." ] = multiWrapSend mq cols msgs
-advise (Advising mq cols) hs  msg
-  | msgs <- [ msg, "See also the following help topics: " <> helpTopics <> "." ]           = multiWrapSend mq cols msgs
+advise (Advising mq cols) [h] msg =
+    let msgs = [ msg, T.concat [ "For more information, type "
+                               , quoteColor
+                               , dblQuote $ "help " <> h
+                               , dfltColor
+                               , "." ] ]
+    in multiWrapSend mq cols msgs
+advise (Advising mq cols) hs  msg =
+    let msgs = [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
+    in multiWrapSend mq cols msgs
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]

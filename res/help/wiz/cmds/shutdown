@@ -5,7 +5,7 @@
 
 \u\DESCRIPTION\n\
 Shut down CurryMUD, optionally with a custom message.
-If you do not provide a custom message, the default message will be sent.
+If you do not provide a custom message, the default message will be sent. (The default message is: "@s")
 
 \u\EXAMPLES\n\
 \q\"#wshutdown"\d\ to shut down CurryMUD.4`
