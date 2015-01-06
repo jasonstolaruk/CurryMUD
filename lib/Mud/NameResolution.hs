@@ -77,7 +77,7 @@ resolveEntCoinNames i ws (map T.toLower -> as) is c = expandGecrs c [ mkGecr i w
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
   | mess <- map extractMesFromGecr gecrs
-  , miss <- pruneDupIds [] . (fmap . fmap . fmap) (view entId) $ mess
+  , miss <- pruneDupIds . (fmap . fmap . fmap) (view entId) $ mess
   , rcs  <- reconcileCoins c . distillEnscs $ enscs
   = (gecrs, miss, rcs)
 
@@ -100,10 +100,17 @@ extractMesFromGecr = \case Mult    { entsRes = Just es } -> Just es
                            _                             -> Nothing
 
 
-pruneDupIds :: Inv -> [Maybe Inv] -> [Maybe Inv]
-pruneDupIds _       []               = []
-pruneDupIds uniques (Nothing : rest) = Nothing : pruneDupIds uniques rest
-pruneDupIds uniques (Just is : rest) = let is' = is \\ uniques in Just is' : pruneDupIds (is' ++ uniques) rest
+pruneDupIds :: [Maybe Inv] -> [Maybe Inv]
+pruneDupIds = dropJustNulls . pruneThem []
+  where
+    pruneThem _       []               = []
+    pruneThem uniques (Nothing : rest) = Nothing : pruneThem uniques rest
+    pruneThem uniques (Just is : rest) = let is' = is \\ uniques in Just is' : pruneThem (is' ++ uniques) rest
+    dropJustNulls                      = foldr helper []
+      where
+        helper   Nothing   acc = Nothing : acc
+        helper   (Just []) acc = acc
+        helper a@(Just _ ) acc = a : acc
 
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
