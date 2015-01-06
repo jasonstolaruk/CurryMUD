@@ -108,11 +108,13 @@ wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == n ] of
       []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote n <> " is currently logged in."
       [i'] | n'  <- (et  ! i )^.sing
-           , mq' <- (mqt ! i') -> do
-               logPlaExecArgs (prefixWizCmd "boot") as i
-               ok mq
-               case rest of [] -> dfltMsg   i' n' mq'
-                            _  -> customMsg i' n' mq'
+           , mq' <- (mqt ! i') -> if n' == n
+             then wrapSend mq cols $ wtfColor <> "Think you're being funny? No." <> dfltColor
+             else do
+                 logPlaExecArgs (prefixWizCmd "boot") as i
+                 ok mq
+                 case rest of [] -> dfltMsg   i' n' mq'
+                              _  -> customMsg i' n' mq'
       xs   -> patternMatchFail "wizBoot" [ showText xs ]
   where
     dfltMsg   i' n' mq' = do
