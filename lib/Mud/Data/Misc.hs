@@ -7,14 +7,14 @@ module Mud.Data.Misc ( AOrThe(..) -- TODO: Use of "(..)"?
                      , Args
                      , Broadcast
                      , ClassifiedBroadcast(..)
-                     , Cmd
+                     , Cmd(..)
                      , CmdName
                      , Cols
                      , EmptyNoneSome(..)
                      , FromRol
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)
-                     , Help
+                     , Help(..)
                      , HelpName
                      , Index
                      , InvType(..)

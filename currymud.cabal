@@ -86,6 +86,7 @@ library
                        ansi-terminal >=0.6 && <0.7,
                        async >=2.0 && <3.0,
                        base >=4.7 && <5.0,
+                       clock >=0.4 && <0.5,
                        containers >=0.5 && <0.6,
                        directory >=1.2 && <2.0,
                        formatting >=5.4 && <6.0,

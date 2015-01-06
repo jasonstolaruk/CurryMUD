@@ -14,11 +14,11 @@ import Control.Lens (makeLenses)
 import Data.List (nub)
 import Data.Monoid (Monoid, mappend, mempty)
 import Data.String (fromString)
-import Data.Time.Clock (UTCTime)
 import Formatting ((%), sformat)
 import Formatting.Formatters (string)
 import Network (HostName)
 import Prelude hiding ((>>))
+import System.Clock (TimeSpec)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Set as S (Set)
@@ -317,7 +317,7 @@ data NonWorldState = NonWorldState { _dicts             :: !Dicts
                                    , _noticeLog         :: !(Maybe LogService)
                                    , _plaLogTblTMVar    :: !(TMVar (IM.IntMap LogService))
                                    , _plaTblTMVar       :: !(TMVar (IM.IntMap Pla))
-                                   , _startTime         :: !UTCTime
+                                   , _startTime         :: !TimeSpec
                                    , _talkAsyncTblTMVar :: !(TMVar TalkAsyncTbl)
                                    , _threadTblTMVar    :: !(TMVar ThreadTbl) }
 

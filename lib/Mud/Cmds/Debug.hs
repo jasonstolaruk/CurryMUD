@@ -77,7 +77,7 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 
 debugCmds :: [Cmd]
 debugCmds =
-    [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display this command list." }
+    [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
     , Cmd { cmdName = prefixDebugCmd "broad", action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line \
                                                                              \message." }

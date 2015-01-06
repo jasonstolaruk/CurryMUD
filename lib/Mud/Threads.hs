@@ -97,8 +97,8 @@ graceful :: MudStack ()
 graceful = getUptime >>= saveUptime >> closeLogs
 
 
-saveUptime :: Integer -> MudStack ()
-saveUptime ut@(T.pack . renderSecs -> utTxt) = getRecordUptime >>= \case
+saveUptime :: Int -> MudStack ()
+saveUptime ut@(T.pack . renderSecs . toInteger -> utTxt) = getRecordUptime >>= \case
   Nothing  -> saveIt >> logIt
   Just rut -> case ut `compare` rut of GT -> saveIt >> logRec
                                        _  -> logIt
@@ -106,7 +106,7 @@ saveUptime ut@(T.pack . renderSecs -> utTxt) = getRecordUptime >>= \case
     saveIt    = (liftIO . writeFile uptimeFile . show $ ut) `catch` logIOEx "saveUptime saveIt"
     logIt     = logHelper "."
     logRec    = logHelper " - it's a new record!"
-    logHelper = logNotice "saveUptime" . ("the MUD was up for " <>) . (utTxt <>)
+    logHelper = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (utTxt <>)
 
 
 listen :: MudStack ()

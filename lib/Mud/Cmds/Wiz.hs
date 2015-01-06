@@ -74,15 +74,14 @@ massLogPla = L.massLogPla "Mud.Cmds.Wiz"
 
 wizCmds :: [Cmd]
 wizCmds =
-    [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display this command list." }
+    [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = prefixWizCmd "boot", action = wizBoot, cmdDesc = "Boot a player." }
-    , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the date." }
-    , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message to the server console." }
+    , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the current system date." }
+    , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message on the server console." }
     , Cmd { cmdName = prefixWizCmd "profanity", action = wizProfanity, cmdDesc = "Dump the profanity log." }
     , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down CurryMUD." }
-    , Cmd { cmdName = prefixWizCmd "start", action = wizStart, cmdDesc = "Display the CurryMUD start time." }
     , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
-    , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the server uptime." } ]
+    , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the system uptime." } ]
 
 
 prefixWizCmd :: CmdName -> T.Text
@@ -203,16 +202,6 @@ wizShutdown (WithArgs i mq _ as) = do
     logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg, "." ]
     liftIO . atomically . writeTQueue mq $ Shutdown
 wizShutdown _ = patternMatchFail "wizShutdown" []
-
-
------
-
-
-wizStart :: Action
-wizStart (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "start") i
-    wrapSend mq cols . showText =<< getNWSRec startTime
-wizStart p = withoutArgs wizStart p
 
 
 -----

@@ -54,8 +54,8 @@ import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, interspers
 import Data.List.Split (chunksOf)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
-import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (pi)
+import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.Time.Utils (renderSecs)
@@ -106,25 +106,27 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
 plaCmds :: [Cmd]
 plaCmds =
-    [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display this command list." }
+    [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About CurryMUD." }
     , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }
     , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-    , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items on the ground." }
+    , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items." }
     , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-    , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display readied equipment." }
+    , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display your readied equipment, or examine items in your \
+                                                         \readied equipment." }
     , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
-    , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick items up off the ground." }
-    , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on topics or commands." }
-    , Cmd { cmdName = "i", action = inv, cmdDesc = "Inventory." }
+    , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick up items." }
+    , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on commands or topics." }
+    , Cmd { cmdName = "i", action = inv, cmdDesc = "Display your inventory, or examine items in your inventory." }
     , Cmd { cmdName = "intro", action = intro, cmdDesc = "Introduce yourself." }
-    , Cmd { cmdName = "look", action = look, cmdDesc = "Look." }
+    , Cmd { cmdName = "look", action = look, cmdDesc = "Display a description of your current location, or examine \
+                                                       \items in your current location." }
     , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
     , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
     , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
     , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
     , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
-    , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit." }
+    , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit playing CurryMUD." }
     , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
     , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
     , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
@@ -1582,12 +1584,11 @@ uptime (NoArgs i mq cols) = do
 uptime p = withoutArgs uptime p
 
 
-uptimeHelper :: Integer -> MudStack T.Text
+uptimeHelper :: Int -> MudStack T.Text
 uptimeHelper ut = helper <$> getRecordUptime
   where
-    helper = \case Nothing  -> mkUptimeTxt
-                   Just rut -> case ut `compare` rut of GT -> mkNewRecTxt
-                                                        _  -> mkRecTxt rut
+    helper                     = \case Nothing  -> mkUptimeTxt
+                                       Just rut -> if ut > rut then mkNewRecTxt else mkRecTxt rut
     mkUptimeTxt                = mkTxtHelper "."
     mkNewRecTxt                = mkTxtHelper . T.concat $ [ " - "
                                                           , newRecordColor
@@ -1595,10 +1596,10 @@ uptimeHelper ut = helper <$> getRecordUptime
                                                           , dfltColor ]
     mkRecTxt (renderIt -> rut) = mkTxtHelper $ " (record uptime: " <> rut <> ")."
     mkTxtHelper                = ("Up " <>) . (renderIt ut <>)
-    renderIt                   = T.pack . renderSecs
+    renderIt                   = T.pack . renderSecs . toInteger
 
 
-getRecordUptime :: MudStack (Maybe Integer)
+getRecordUptime :: MudStack (Maybe Int)
 getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
   True  -> liftIO readUptime `catch` (\e -> fileIOExHandler "getRecordUptime" e >> return Nothing)
   False -> return Nothing
@@ -1606,10 +1607,8 @@ getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
     readUptime = Just . read <$> readFile uptimeFile
 
 
-getUptime :: MudStack Integer
-getUptime = round <$> diff
-  where
-    diff = diffUTCTime <$> liftIO getCurrentTime <*> getNWSRec startTime
+getUptime :: MudStack Int
+getUptime = (-) <$> (sec <$> (liftIO . getTime $ Monotonic)) <*> (sec <$> getNWSRec startTime)
 
 
 -----

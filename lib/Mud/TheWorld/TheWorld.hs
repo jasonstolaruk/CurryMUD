@@ -15,9 +15,9 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Data.Monoid (mempty)
-import Data.Time.Clock (getCurrentTime)
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
+import System.Clock (Clock(..), getTime)
 import qualified Data.IntMap.Lazy as IM (empty, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
@@ -33,7 +33,7 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 initMudState :: IO MudState
 initMudState = do
     let dictionaries = Dicts Nothing Nothing
-    start <- getCurrentTime
+    start <- getTime Monotonic
     (mqtTMVar, pltTMVar, ptTMVar, tatTMVar, ttTMVar, wsTMVar) <- (,,,,,) <$> newTMVarIO IM.empty
                                                                          <*> newTMVarIO IM.empty
                                                                          <*> newTMVarIO IM.empty
