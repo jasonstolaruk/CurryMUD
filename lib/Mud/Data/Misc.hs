@@ -1,20 +1,20 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
-module Mud.Data.Misc ( AOrThe(..)
+module Mud.Data.Misc ( AOrThe(..) -- TODO: Use of "(..)"?
                      , Action
                      , Amount
                      , Args
                      , Broadcast
                      , ClassifiedBroadcast(..)
-                     , Cmd(..)
+                     , Cmd
                      , CmdName
                      , Cols
                      , EmptyNoneSome(..)
                      , FromRol
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)
-                     , Help(..)
+                     , Help
                      , HelpName
                      , Index
                      , InvType(..)

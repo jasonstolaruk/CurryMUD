@@ -8,7 +8,7 @@ Display a list of available wizard commands and their descriptions. Optionally, 
 
 \u\EXAMPLES\n\
 \q\"#w?"\d\ to display the full command list.4`
-\q\"#w? up"\d\ to display entries containing the word "up".4`
-\q\"#w? up down"\d\ to display entries containing the word "up", followed by entries containing the word "down".4`
+\q\"#w? up"\d\ to display entries containing "up".4`
+\q\"#w? up down"\d\ to display entries containing "up", followed by entries containing "down".4`
 
 \u\SEE ALSO\n\
