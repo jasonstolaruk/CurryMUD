@@ -28,7 +28,6 @@ module Mud.ANSI ( abbrevColor
                 , wtfColor
                 , zingColor ) where
 
-
 import Mud.TopLvlDefs.Chars
 
 import System.Console.ANSI (Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)

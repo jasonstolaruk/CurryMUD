@@ -1,13 +1,13 @@
-\h\ SW \d\
+\h SW \d
 
-\u\USAGE\n\
+\uUSAGE\n
 sw [direction ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Move southwest, optionally followed by more movement.
 
-\u\EXAMPLES\n\
-\q\"sw"\d\ to move southwest.4`
-\q\"sw u n"\d\ to move southwest, then up, then north.4`
+\uEXAMPLES\n
+\q"sw"\d to move southwest.4`
+\q"sw u n"\d to move southwest, then up, then north.4`
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

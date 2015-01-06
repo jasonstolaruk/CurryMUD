@@ -1,21 +1,21 @@
-\h\ I \d\
+\h I \d
 
-\u\USAGE\n\
+\uUSAGE\n
 i [item ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Get a list of the items in your inventory, or examine one or more items in your inventory.
 
-\u\EXAMPLES\n\
-\q\"i"\d\ to get a list of the items in your inventory.4`
-\q\"i sword"\d\ to examine the sword in your inventory.4`
-\q\"i sword bread"\d\ to examine the sword and the bread in your inventory.4`
-\q\"i 2#isack"\d\ to examine the second sack in your inventory.4`
-\q\"i 2#mring"\d\ to examine the first two rings in your inventory.4`
-\q\"i 3#iring 3#mbracelet"\d\ to examine the third ring and the first three bracelets in your inventory.4`
-\q\"i #aring"\d\ to examine all the rings in your inventory.4`
-\q\"i #a"\d\ to examine everything in your inventory.4`
-\q\"i gp sp"\d\ to examine a gold piece and a silver piece in your inventory.4`
-\q\"i 'coin"\d\ to examine all the coins in your inventory.4`
+\uEXAMPLES\n
+\q"i"\d to get a list of the items in your inventory.4`
+\q"i sword"\d to examine the sword in your inventory.4`
+\q"i sword bread"\d to examine the sword and the bread in your inventory.4`
+\q"i 2#isack"\d to examine the second sack in your inventory.4`
+\q"i 2#mring"\d to examine the first two rings in your inventory.4`
+\q"i 3#iring 3#mbracelet"\d to examine the third ring and the first three bracelets in your inventory.4`
+\q"i #aring"\d to examine all the rings in your inventory.4`
+\q"i #a"\d to examine everything in your inventory.4`
+\q"i gp sp"\d to examine a gold piece and a silver piece in your inventory.4`
+\q"i 'coin"\d to examine all the coins in your inventory.4`
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

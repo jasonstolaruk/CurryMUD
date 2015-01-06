@@ -1,14 +1,14 @@
-\h\ #w? \d\
+\h #w? \d
 
-\u\USAGE\n\
+\uUSAGE\n
 #w? [term ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Display a list of available wizard commands and their descriptions. Optionally, search the list for one or more terms.
 
-\u\EXAMPLES\n\
-\q\"#w?"\d\ to display the full command list.4`
-\q\"#w? up"\d\ to display entries containing "up".4`
-\q\"#w? up down"\d\ to display entries containing "up", followed by entries containing "down".4`
+\uEXAMPLES\n
+\q"#w?"\d to display the full command list.4`
+\q"#w? up"\d to display entries containing "up".4`
+\q"#w? up down"\d to display entries containing "up", followed by entries containing "down".4`
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

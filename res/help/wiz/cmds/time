@@ -1,9 +1,9 @@
-\h\ #wTIME \d\
+\h #wTIME \d
 
-\u\USAGE\n\
+\uUSAGE\n
 #wTIME
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Display the current system time.
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

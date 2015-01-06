@@ -1,12 +1,12 @@
-\h\ HELP \d\
+\h HELP \d
 
-\u\USAGE\n\
+\uUSAGE\n
 help [keyword ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Get help on one or more commands or topics.
 
-\u\EXAMPLES\n\
-\q\"help intro"\d\ to get help on the "intro" command.4`
-\q\"help abbreviation"\d\ to get help on the topic of "abbreviation".4`
-\q\"help intro abbreviation"\d\ to get help on the "intro" command and the topic of "abbreviation".4`
+\uEXAMPLES\n
+\q"help intro"\d to get help on the "intro" command.4`
+\q"help abbreviation"\d to get help on the topic of "abbreviation".4`
+\q"help intro abbreviation"\d to get help on the "intro" command and the topic of "abbreviation".4`

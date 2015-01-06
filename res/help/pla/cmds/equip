@@ -1,19 +1,19 @@
-\h\ EQUIP \d\
+\h EQUIP \d
 
-\u\USAGE\n\
+\uUSAGE\n
 equip [item ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Get a list of the items in your readied equipment, or examine one or more items in your readied equipment.
 
-\u\EXAMPLES\n\
-\q\"equip"\d\ to get a list of the items you have readied.4`
-\q\"equip sword"\d\ to examine the sword you are wielding.4`
-\q\"equip sword boots"\d\ to examine the sword you are wielding and the boots you are wearing.4`
-\q\"equip 2#inecklace"\d\ to examine the second necklace you are wearing.4`
-\q\"equip 2#mring"\d\ to examine the first two rings you are wearing.4`
-\q\"equip 3#iring 3#mbracelet"\d\ to examine the third ring and the first three bracelets you are wearing.4`
-\q\"equip #aring"\d\ to examine all the rings you are wearing.4`
-\q\"equip #a"\d\ to examine everything you have readied.4`
+\uEXAMPLES\n
+\q"equip"\d to get a list of the items you have readied.4`
+\q"equip sword"\d to examine the sword you are wielding.4`
+\q"equip sword boots"\d to examine the sword you are wielding and the boots you are wearing.4`
+\q"equip 2#inecklace"\d to examine the second necklace you are wearing.4`
+\q"equip 2#mring"\d to examine the first two rings you are wearing.4`
+\q"equip 3#iring 3#mbracelet"\d to examine the third ring and the first three bracelets you are wearing.4`
+\q"equip #aring"\d to examine all the rings you are wearing.4`
+\q"equip #a"\d to examine everything you have readied.4`
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

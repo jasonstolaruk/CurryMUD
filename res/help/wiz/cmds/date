@@ -1,9 +1,9 @@
-\h\ #wDATE \d\
+\h #wDATE \d
 
-\u\USAGE\n\
+\uUSAGE\n
 #wdate
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Display the current system date.
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

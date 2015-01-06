@@ -1,10 +1,10 @@
-\h\ CLEAR \d\
+\h CLEAR \d
 
-\u\USAGE\n\
+\uUSAGE\n
 clear
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Clear your screen.
 Note that your client software may not support screen clearing, in which case this command will have no effect.
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

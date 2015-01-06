@@ -1,13 +1,13 @@
-\h\ U\ d\
+\h U \d
 
-\u\USAGE\n\
+\uUSAGE\n
 u [direction ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Move up, optionally followed by more movement.
 
-\u\EXAMPLES\n\
-\q\"u"\d\ to move up.4`
-\q\"u n e"\d\ to move up, then north, then east.4`
+\uEXAMPLES\n
+\q"u"\d to move up.4`
+\q"u n e"\d to move up, then north, then east.4`
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

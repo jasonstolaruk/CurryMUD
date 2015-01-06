@@ -1,13 +1,13 @@
-\h\ W\ d\
+\h W \d
 
-\u\USAGE\n\
+\uUSAGE\n
 w [direction ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Move west, optionally followed by more movement.
 
-\u\EXAMPLES\n\
-\q\"w"\d\ to move west.4`
-\q\"w u n"\d\ to move west, then up, then north.4`
+\uEXAMPLES\n
+\q"w"\d to move west.4`
+\q"w u n"\d to move west, then up, then north.4`
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

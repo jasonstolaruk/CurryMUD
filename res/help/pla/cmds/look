@@ -1,21 +1,21 @@
-\h\ LOOK \d\
+\h LOOK \d
 
-\u\USAGE\n\
+\uUSAGE\n
 look [object ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Get a description of your current location ("room"), or examine one or more objects in the room.
 
-\u\EXAMPLES\n\
-\q\"look"\d\ to get a description of your current room followed by a list of its contents.4`
-\q\"look sword"\d\ to examine the sword in the room.4`
-\q\"look sword melf"\d\ to examine the sword and the male elf in the room.4`
-\q\"look 2#isack"\d\ to examine the second sack in the room.4`
-\q\"look 2#mring"\d\ to examine the first two rings in the room.4`
-\q\"look 3#iring 3#mbracelet"\d\ to examine the third ring and the first three bracelets in the room.4`
-\q\"look #aring"\d\ to examine all the rings in the room.4`
-\q\"look #a"\d\ to examine everything in the room.4`
-\q\"look gp sp"\d\ to examine a gold piece and a silver piece in the room.4`
-\q\"look 'coin"\d\ to examine all the coins in the room.4`
+\uEXAMPLES\n
+\q"look"\d to get a description of your current room followed by a list of its contents.4`
+\q"look sword"\d to examine the sword in the room.4`
+\q"look sword melf"\d to examine the sword and the male elf in the room.4`
+\q"look 2#isack"\d to examine the second sack in the room.4`
+\q"look 2#mring"\d to examine the first two rings in the room.4`
+\q"look 3#iring 3#mbracelet"\d to examine the third ring and the first three bracelets in the room.4`
+\q"look #aring"\d to examine all the rings in the room.4`
+\q"look #a"\d to examine everything in the room.4`
+\q"look gp sp"\d to examine a gold piece and a silver piece in the room.4`
+\q"look 'coin"\d to examine all the coins in the room.4`
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

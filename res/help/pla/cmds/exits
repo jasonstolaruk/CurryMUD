@@ -1,9 +1,9 @@
-\h\ EXITS \d\
+\h EXITS \d
 
-\u\USAGE\n\
+\uUSAGE\n
 exits
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Get a list of the directions you can go from your current location ("room").
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

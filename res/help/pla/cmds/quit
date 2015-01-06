@@ -1,9 +1,9 @@
-\h\ QUIT \d\
+\h QUIT \d
 
-\u\USAGE\n\
+\uUSAGE\n
 quit
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Quit playing CurryMUD... until next time!
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

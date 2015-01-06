@@ -1,9 +1,9 @@
-\h\ MOTD \d\
+\h MOTD \d
 
-\u\USAGE\n\
+\uUSAGE\n
 motd
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Show the "message of the day" (announcements and such from the CurryMUD administrators).
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n

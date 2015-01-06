@@ -21,12 +21,12 @@ As you can see, \q"club"\d may be abbreviated down to \q"c"\d, and \q"sack"\d ma
 The shortest possible abbreviation can be easily ascertained, as it is indicated by \athis color\d in the inventory listing. In fact, whenever you see a word that is partially written in \athis color\d, you know that it may be abbreviated.
 
 Referring back to our example... The names of commands may also be abbreviated. Thus any of the following are valid:
-\q
-"look c s"
-"loo c s"
-"lo c s"
-"l c s"
-\d
+
+\q"look c s"\d
+\q"loo c s"\d
+\q"lo c s"\d
+\q"l c s"\d
+
 Note that the identifiers for coins (listed below) may NOT be abbreviated:
 \q"cp"\d (for copper pieces), \q"sp"\d (for silver pieces), \q"gp"\d (for gold pieces), \q"coin"\d, and \q"coins"\d
 

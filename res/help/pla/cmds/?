@@ -1,14 +1,14 @@
-\h\ ? \d\
+\h ? \d
 
-\u\USAGE\n\
+\uUSAGE\n
 ? [term ...]
 
-\u\DESCRIPTION\n\
+\uDESCRIPTION\n
 Display a list of available commands and their descriptions. Optionally, search the list for one or more terms.
 
-\u\EXAMPLES\n\
-\q\"?"\d\ to display the full command list.4`
-\q\"? up"\d\ to display entries containing "up".4`
-\q\"? up down"\d\ to display entries containing "up", followed by entries containing "down".4`
+\uEXAMPLES\n
+\q"?"\d to display the full command list.4`
+\q"? up"\d to display entries containing "up".4`
+\q"? up down"\d to display entries containing "up", followed by entries containing "down".4`
 
-\u\SEE ALSO\n\
+\uSEE ALSO\n
