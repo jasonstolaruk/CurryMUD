@@ -48,6 +48,10 @@ maxCols = 200
 minCols = 30
 
 
+maxHelpTopicLen :: Int
+maxHelpTopicLen = 12
+
+
 maxInacSecs :: Integer
 maxInacSecs = 60 * 10
 

@@ -51,6 +51,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy)
+import Data.List.Split (chunksOf)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -604,18 +605,21 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
         wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
     helper rootHelpTxt = mkHelpData i >>= \(sortBy (compare `on` helpName) -> hs) ->
         let styledHelps                    = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
-            (helpCmdNames, helpTopicNames) = over both (T.concat . mkHelpNames) . partition (isCmdHelp . snd) $ styledHelps
+            (helpCmdNames, helpTopicNames) = over both (formatHelpNames . mkHelpNames) . partition (isCmdHelp . snd) $ styledHelps
             helpTxt                        = T.concat [ nl rootHelpTxt
                                                       , nl "Help is available on the following commands:"
-                                                      , nlnl helpCmdNames
-                                                      , nlnl "Help is available on the following topics:"
+                                                      , nl helpCmdNames
+                                                      , nl "Help is available on the following topics:"
                                                       , helpTopicNames
                                                       , footnote hs ]
         in logPla "help" i ("read root help file.") >> (dispHelp i mq . parseHelpTxt cols $ helpTxt)
-    mkHelpNames styledHelps = [ pad 13 $ styled <> if isWizHelp h then asterisk else "" | (styled, h) <- styledHelps ]
+    mkHelpNames styledHelps = [ pad padding $ styled <> if isWizHelp h then asterisk else "" | (styled, h) <- styledHelps ]
+    padding                 = maxHelpTopicLen + 2
     asterisk                = asteriskColor <> "*" <> dfltColor
+    formatHelpNames names   = let wordsPerLine = cols `div` padding
+                              in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote hs             = if (length . filter isWizHelp $ hs) > 0
-      then nlnl $ asterisk <> " indicates help that is available only to wizards."
+      then nl' $ asterisk <> " indicates help that is available only to wizards."
       else ""
 help (LowerNub i mq cols as) = (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= dispHelp i mq
   where

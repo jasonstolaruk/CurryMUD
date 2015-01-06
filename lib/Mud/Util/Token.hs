@@ -35,6 +35,7 @@ charCodeToTxt (toLower -> code) = T.singleton $ case code of
   'm' -> amountChar
   'r' -> rmChar
   's' -> slotChar
+  'w' -> wizCmdChar
   x   -> patternMatchFail "charCodeToTxt" [ T.singleton x ]
 
 

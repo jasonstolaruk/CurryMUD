@@ -99,6 +99,7 @@ library
                        old-locale >=1.0 && <2.0,
                        process >=1.2 && <2.0,
                        random >=1.1 && <2.0,
+                       split >=0.2 && <0.3,
                        stm >=2.4 && <3.0,
                        text >=1.1 && <2.0,
                        time >=1.4 && <2.0,
