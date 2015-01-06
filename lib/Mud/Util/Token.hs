@@ -1,9 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.Token ( parseCharTokens
-                      , parseMsgTokens
-                      , parseStyleTokens ) where
+module Mud.Util.Token (parseTokens) where
 
 import Mud.ANSI
 import Mud.TopLvlDefs.Chars
@@ -23,58 +21,67 @@ patternMatchFail = U.patternMatchFail "Mud.Util.Token"
 -- ==================================================
 
 
+parseTokens :: T.Text -> T.Text
+parseTokens = parseCharTokens . parseMsgTokens . parseStyleTokens
+
+
+-----
+
+
+type Delimiter = Char
+
+parser :: (Char -> T.Text) -> Delimiter -> T.Text -> T.Text
+parser f d t
+  | T.singleton d `notInfixOf` t = t
+  | (left, headTail' . T.tail -> (c, right)) <- T.break (== d) t = left <> f c <> parser f d right
+
+
+-----
+
+
 parseCharTokens :: T.Text -> T.Text
-parseCharTokens t
-  | T.singleton charTokenDelimiter `notInfixOf` t = t
-  | (left, headTail' . T.tail -> (c, right)) <- T.break (== charTokenDelimiter) t
-  = left <> charCodeToTxt c <> parseCharTokens right
+parseCharTokens = parser expandCharCode charTokenDelimiter
 
 
-charCodeToTxt :: Char -> T.Text
-charCodeToTxt (toLower -> code) = T.singleton $ case code of
+expandCharCode :: Char -> T.Text
+expandCharCode (toLower -> code) = T.singleton $ case code of
   'a' -> allChar
   'i' -> indexChar
   'm' -> amountChar
   'r' -> rmChar
   's' -> slotChar
   'w' -> wizCmdChar
-  x   -> patternMatchFail "charCodeToTxt" [ T.singleton x ]
+  x   -> patternMatchFail "expandCharCode" [ T.singleton x ]
 
 
 -----
 
 
 parseMsgTokens :: T.Text -> T.Text
-parseMsgTokens t
-  | T.singleton msgTokenDelimiter `notInfixOf` t = t
-  | (left, headTail' . T.tail -> (c, right)) <- T.break (== msgTokenDelimiter) t
-  = left <> msgCodeToTxt c <> parseMsgTokens right
+parseMsgTokens = parser expandMsgCode msgTokenDelimiter
 
 
-msgCodeToTxt :: Char -> T.Text
-msgCodeToTxt (toLower -> code) = case code of
+expandMsgCode :: Char -> T.Text
+expandMsgCode (toLower -> code) = case code of
   'b' -> dfltBootMsg
   's' -> dfltShutdownMsg
-  x   -> patternMatchFail "msgCodeToTxt" [ T.singleton x ]
+  x   -> patternMatchFail "expandMsgCode" [ T.singleton x ]
 
 
 -----
 
 
 parseStyleTokens :: T.Text -> T.Text
-parseStyleTokens t
-  | T.singleton styleTokenDelimiter `notInfixOf` t = t
-  | (left, T.tail -> rest)  <- T.break (== styleTokenDelimiter) t
-  , (code, T.tail -> right) <- T.break (== styleTokenDelimiter) rest
-  = left <> styleCodeToANSI code <> parseStyleTokens right
+parseStyleTokens = parser expandStyleCode styleTokenDelimiter
 
 
-styleCodeToANSI :: T.Text -> T.Text
-styleCodeToANSI (T.toLower -> code) = case code of
-  "d" -> dfltColor
-  "h" -> headerColor
-  "n" -> noUnderline
-  "q" -> quoteColor
-  "u" -> underline
-  "z" -> zingColor
-  x   -> patternMatchFail "styleCodeToANSI" [x]
+expandStyleCode :: Char -> T.Text
+expandStyleCode (toLower -> code) = case code of
+  'a' -> abbrevColor
+  'd' -> dfltColor
+  'h' -> headerColor
+  'n' -> noUnderline
+  'q' -> quoteColor
+  'u' -> underline
+  'z' -> zingColor
+  x   -> patternMatchFail "expandStyleCode" [ T.singleton x ]

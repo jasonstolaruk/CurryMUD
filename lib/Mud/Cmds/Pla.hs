@@ -21,7 +21,6 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
-import Mud.Interp.Pager
 import Mud.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.NameResolution
 import Mud.TopLvlDefs.Chars
@@ -46,7 +45,7 @@ import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Lens.Setter (set)
-import Control.Monad (forM, forM_, guard, mplus, unless, void)
+import Control.Monad (forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -622,7 +621,7 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
                                                       , nl "Help is available on the following topics:"
                                                       , helpTopicNames
                                                       , footnote hs ]
-        in logPla "help" i ("read root help file.") >> (dispHelp i mq . parseHelpTxt cols $ helpTxt)
+        in logPla "help" i ("read root help file.") >> (pager i mq . parseHelpTxt cols $ helpTxt)
     mkHelpNames styledHelps = [ pad padding $ styled <> if isWizHelp h then asterisk else "" | (styled, h) <- styledHelps ]
     padding                 = maxHelpTopicLen + 2
     asterisk                = asteriskColor <> "*" <> dfltColor
@@ -631,7 +630,7 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
     footnote hs             = if (length . filter isWizHelp $ hs) > 0
       then nl' $ asterisk <> " indicates help that is available only to wizards."
       else ""
-help (LowerNub i mq cols as) = (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= dispHelp i mq
+help (LowerNub i mq cols as) = (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= pager i mq
   where
     getHelp = mkHelpData i >>= \hs ->
         forM as (\a -> parseHelpTxt cols <$> getHelpByName i cols hs a)
@@ -652,17 +651,7 @@ mkHelpData i = getPlaIsWiz i >>= \iw -> do
 
 
 parseHelpTxt :: Cols -> T.Text -> [T.Text]
-parseHelpTxt cols = concat . wrapLines cols . T.lines . parseCharTokens . parseMsgTokens . parseStyleTokens
-
-
-dispHelp :: Id -> MsgQueue -> [T.Text] -> MudStack ()
-dispHelp i mq helpTxt@(length -> helpLen) = getPlaPageLines i >>= \pageLen ->
-    if helpLen + 3 <= pageLen
-      then send mq . nl . T.unlines $ helpTxt
-      else let (page, rest) = splitAt (pageLen - 2) helpTxt in do
-        send mq . T.unlines $ page
-        sendPagerPrompt mq (pageLen - 2) helpLen
-        void . modifyPla i interp . Just $ interpPager pageLen helpLen (page, rest)
+parseHelpTxt cols = concat . wrapLines cols . T.lines . parseTokens
 
 
 getHelpByName :: Id -> Cols -> [Help] -> HelpName -> MudStack T.Text

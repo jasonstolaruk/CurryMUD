@@ -1,14 +1,33 @@
-ABBREVIATING
-============
+\h ABBREVIATION \d
 
-The names of commands may be abbreviated down to their least significant characters.
-This means, for example, that the "remove" command may be written "remove", "remov", "remo", or "rem"; "re", however, is an abbreviation of the "ready" command (this is due to the fact that "ready" alphabetically precedes "remove").
-The names of things in the game world may also be abbreviated. Say, for example, you have the following items in your inventory:
+Nearly all identifiers in CurryMUD may be abbreviated. This means that in many cases you need not type the entire name of an item, a player character, a command, or a help article.
 
-[sack]     1 cloth sack`
-[sword]    1 short sword`
+Say, for example, the following items are in your current location ("room"):
 
-"sack" can be abbreviated to "s", and "sword" can be abbreviated to "sw".
-To disambiguate what one or more given abbreviations may refer to, use the "what" command. "what re rem", for example, will explain the different meanings of "re" and "rem".
+a wooden club [\ac\dlub]`
+a cloth sack [\as\dack]`
+a two-handed long sword [\asw\dord]`
+5 [\agp\d]`
 
-SEE ALSO:
+(Each item is listed with a word in brackets: the bracketed word is the word you must use to refer to that item in commands.)
+Imagine that you'd like to examine the club and the sack. This is accomplished with the \q"look"\d command. Any of the following are valid:
+
+\q"look club sack"\d
+\q"look clu sac"\d
+\q"look cl sa"\d
+\q"look c s"\d
+
+As you can see, \q"club"\d may be abbreviated down to \q"c"\d, and \q"sack"\d may be abbreviated down to \q"s"\d.
+The shortest possible abbreviation can be easily ascertained, as it is indicated by \athis color\d in the inventory listing. In fact, whenever you see a word that is partially written in \athis color\d, you know that it may be abbreviated.
+
+Referring back to our example... The names of commands may also be abbreviated. Thus any of the following are valid:
+\q
+"look c s"
+"loo c s"
+"lo c s"
+"l c s"
+\d
+Note that the identifiers for coins (listed below) may NOT be abbreviated:
+\q"cp"\d (for copper pieces), \q"sp"\d (for silver pieces), \q"gp"\d (for gold pieces), \q"coin"\d, and \q"coins"\d
+
+\uSEE ALSO\n

@@ -4,6 +4,7 @@
 module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
                           , fileIOExHandler
+                          , pager
                           , prefixCmd
                           , sendGenericErrorMsg
                           , withoutArgs ) where
@@ -13,6 +14,8 @@ import Mud.Cmds.Util.Abbrev
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Pla
+import Mud.Interp.Pager
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.ANSI
@@ -25,6 +28,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)
+import Control.Monad (void)
 import Data.List (intercalate)
 import Data.Monoid ((<>))
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
@@ -71,11 +75,11 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 -----
 
 
-dispCmdList :: [Cmd] -> Action -- TODO: Pager.
-dispCmdList cmds (NoArgs   _ mq cols) =
-    send mq . nl . T.unlines . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds (LowerNub _ mq cols as) | matches <- [ grepCmdList a . mkCmdListText $ cmds | a <- as ] =
-    send mq . nl . T.unlines . concatMap (wrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
+dispCmdList :: [Cmd] -> Action
+dispCmdList cmds (NoArgs   i mq cols) =
+    pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
+dispCmdList cmds (LowerNub i mq cols as) | matches <- [ grepCmdList a . mkCmdListText $ cmds | a <- as ] =
+    pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
   where
     grepCmdList needle haystack = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
                                   in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
@@ -99,6 +103,19 @@ fileIOExHandler fn e
   | otherwise             = throwIO e
   where
     logIt = logIOEx fn e
+
+
+-----
+
+
+pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
+pager i mq txt@(length -> txtLen) = getPlaPageLines i >>= \pageLen ->
+    if txtLen + 3 <= pageLen
+      then send mq . nl . T.unlines $ txt
+      else let (page, rest) = splitAt (pageLen - 2) txt in do
+        send mq . T.unlines $ page
+        sendPagerPrompt mq (pageLen - 2) txtLen
+        void . modifyPla i interp . Just $ interpPager pageLen txtLen (page, rest)
 
 
 -----

@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
-module Mud.Data.Misc ( AOrThe(..) -- TODO: Use of "(..)"?
+module Mud.Data.Misc ( AOrThe(..)
                      , Action
                      , Amount
                      , Args
