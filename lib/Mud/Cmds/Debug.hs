@@ -17,6 +17,7 @@ import Mud.TopLvlDefs.Msgs
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
+import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -78,14 +79,15 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 debugCmds :: [Cmd]
 debugCmds =
     [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display or search this command list." }
-    , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players." }
+    , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players (including yourself)." }
     , Cmd { cmdName = prefixDebugCmd "broad", action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line \
                                                                              \message." }
     , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering \
-                                                                                  \mode." }
-    , Cmd { cmdName = prefixDebugCmd "color", action = debugColor, cmdDesc = "Perform a color test." }
+                                                                                  \mode for file handles." }
+    , Cmd { cmdName = prefixDebugCmd "color", action = debugColor, cmdDesc = "Test colors." }
     , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
-    , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display system environment variables." }
+    , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display or search system environment \
+                                                                             \variables." }
     , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
     , Cmd { cmdName = prefixDebugCmd "params", action = debugParams, cmdDesc = "Show \"ActionParams\"." }
     , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
@@ -98,7 +100,8 @@ debugCmds =
     , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
     , Cmd { cmdName = prefixDebugCmd "throwlog", action = debugThrowLog, cmdDesc = "Throw an exception on your player \
                                                                                    \log thread." }
-    , Cmd { cmdName = prefixDebugCmd "underline", action = debugUnderline, cmdDesc = "Perform an underline test." }
+    , Cmd { cmdName = prefixDebugCmd "token", action = debugToken, cmdDesc = "Test token expansion." }
+    , Cmd { cmdName = prefixDebugCmd "underline", action = debugUnderline, cmdDesc = "Test underlining." }
     , Cmd { cmdName = prefixDebugCmd "wrap", action = debugWrap, cmdDesc = "Test the wrapping of a line containing \
                                                                            \ANSI escape sequences." }
     , Cmd { cmdName = prefixDebugCmd "wrapindent", action = debugWrapIndent, cmdDesc = "Test the indented wrapping of \
@@ -389,6 +392,33 @@ debugThrowLog (NoArgs' i mq) = do
     liftIO . atomically . writeTQueue q $ Throw
     ok mq
 debugThrowLog p = withoutArgs debugThrowLog p
+
+
+-----
+
+
+debugToken :: Action
+debugToken (NoArgs i mq cols) = do
+    logPlaExec (prefixDebugCmd "token") i
+    multiWrapSend mq cols . T.lines . parseCharTokens . parseMsgTokens . parseStyleTokens . T.unlines $ tokenTxts
+  where
+    tokenTxts = [ charTokenDelimiter `T.cons` "a allChar"
+                , charTokenDelimiter `T.cons` "i indexChar"
+                , charTokenDelimiter `T.cons` "m amountChar"
+                , charTokenDelimiter `T.cons` "r rmChar"
+                , charTokenDelimiter `T.cons` "s slotChar"
+                , charTokenDelimiter `T.cons` "w wizCmdChar"
+                , "dfltBootMsg "     <> (msgTokenDelimiter `T.cons` "b")
+                , "dfltShutdownMsg " <> (msgTokenDelimiter `T.cons` "s")
+                , mkStyleToken 'd' <> "dfltColor"   <> dfltColorStyleToken
+                , mkStyleToken 'h' <> "headerColor" <> dfltColorStyleToken
+                , mkStyleToken 'q' <> "quoteColor"  <> dfltColorStyleToken
+                , mkStyleToken 'u' <> "underline"   <> dfltColorStyleToken
+                , mkStyleToken 'n' <> "noUnderline" <> dfltColorStyleToken
+                , mkStyleToken 'z' <> "zingColor"   <> dfltColorStyleToken ]
+    mkStyleToken c      = T.pack $ styleTokenDelimiter : c   : [styleTokenDelimiter]
+    dfltColorStyleToken = T.pack $ styleTokenDelimiter : 'd' : [styleTokenDelimiter]
+debugToken p = withoutArgs debugToken p
 
 
 -----
