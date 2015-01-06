@@ -1,0 +1,13 @@
+\h\ #wPRINT \d\
+
+\u\USAGE\n\
+#wprint message
+
+\u\DESCRIPTION\n\
+Print a message to the server console (along with your PC name).
+This functionality is offered as a way to attempt to get in touch with the server administrator.
+
+\u\EXAMPLES\n\
+\q\"#wprint Is anybody home?"\d\ to print "Is anybody home?" to the server console.4`
+
+\u\SEE ALSO\n\
