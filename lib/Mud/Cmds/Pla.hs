@@ -1650,7 +1650,7 @@ what p = patternMatchFail "what" [ showText p ]
 
 
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
-whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(dblQuote -> n')) =
+whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(whatQuote -> n')) =
     wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n . filter isPlaCmd $ [ cmdName cmd | cmd <- cmds ]
   where
     isPlaCmd               = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
@@ -1672,6 +1672,10 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
                                                NonStdLink { .. } -> _linkName
 
 
+whatQuote :: T.Text -> T.Text
+whatQuote = (<> dfltColor) . (quoteColor <>) . dblQuote
+
+
 whatInv :: Id -> Cols -> WorldState -> InvType -> T.Text -> T.Text
 whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
   then whatInvEnts i cols ws it n (head gecrs) is
@@ -1685,9 +1689,9 @@ whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
 
 
 whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
-whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) gecr is = wrapUnlines cols $ case gecr of
+whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is = wrapUnlines cols $ case gecr of
   Mult { entsRes = (Just es), .. }
-    | nameSearchedFor == acp -> T.concat [ dblQuote acp
+    | nameSearchedFor == acp -> T.concat [ whatQuote acp
                                          , " may refer to everything "
                                          , locTxt
                                          , supplement
@@ -1741,7 +1745,7 @@ getLocTxtForInvType = \case PCInv -> "in your inventory"
 
 
 whatInvCoins :: Cols -> InvType -> T.Text -> ReconciledCoins -> T.Text
-whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) rc
+whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
   | it == PCEq = ""
   | otherwise  = wrapUnlines cols $ case rc of
     Left  Empty                                 -> T.concat [ r
@@ -1767,7 +1771,7 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (dblQuote -> r) rc
                                                             , supplementNotEnough cn
                                                             , "." ]
     Right (SomeOf (mkTxtForCoinsWithAmt -> cn)) -> T.concat [ r
-                                                            , " may refer to the "
+                                                            , " may refer to "
                                                             , cn
                                                             , " "
                                                             , locTxt
