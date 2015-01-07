@@ -45,7 +45,7 @@ import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Lens.Setter (set)
-import Control.Monad (forM, forM_, guard, mplus, unless)
+import Control.Monad (forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -630,10 +630,10 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
     footnote hs           = if (length . filter isWizHelp $ hs) > 0
       then nl' $ asterisk <> " indicates help that is available only to wizards."
       else ""
-help (LowerNub i mq cols as) = (intercalate [ "", mkDividerTxt cols, "" ] <$> getHelp) >>= pager i mq
-  where
-    getHelp = mkHelpData i >>= \hs ->
-        forM as (\a -> parseHelpTxt cols <$> getHelpByName i cols hs a)
+help (LowerNub i mq cols as) = mkHelpData i >>= \hs -> do
+    (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> mapM (getHelpByName cols hs) as
+    unless (null hns) (logPla "help" i $ "read help on: " <> T.intercalate ", " hns)
+    pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
 help p = patternMatchFail "help" [ showText p ]
 
 
@@ -654,19 +654,18 @@ parseHelpTxt :: Cols -> T.Text -> [T.Text]
 parseHelpTxt cols = concat . wrapLines cols . T.lines . parseTokens
 
 
-getHelpByName :: Id -> Cols -> [Help] -> HelpName -> MudStack T.Text
-getHelpByName i cols hs name =
+getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (T.Text, T.Text)
+getHelpByName cols hs name =
     maybe sorry found . findFullNameForAbbrev name $ [ helpName h | h <- hs ]
   where
-    sorry           = return $ "No help is available on " <> dblQuote name <> "."
-    found hn        | h <- head . filter ((== hn) . helpName) $ hs = do
-                        logPla "getHelpByName" i $ "read help on " <> dblQuote hn <> "."
-                        readHelpFile . helpFilePath $ h
-    readHelpFile hf = (try . liftIO . T.readFile $ hf) >>= eitherRet handler
+    sorry           = return ("No help is available on " <> dblQuote name <> ".", "")
+    found hn        | h <- head . filter ((== hn) . helpName) $ hs =
+                        (,) <$> (readHelpFile (hn, helpFilePath h)) <*> (return . dblQuote $ hn)
+    readHelpFile (hn, hf) = (try . liftIO . T.readFile $ hf) >>= eitherRet handler
       where
         handler e = do
-            fileIOExHandler "getHelpByName" e
-            return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote name <> " help file could not be retrieved."
+            fileIOExHandler "getHelpByName readHelpFile" e
+            return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote hn <> " help file could not be retrieved."
 
 
 -----
