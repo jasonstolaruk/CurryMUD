@@ -75,6 +75,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Wiz"
 wizCmds :: [Cmd]
 wizCmds =
     [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display or search this command list." }
+    , Cmd { cmdName = prefixWizCmd "announce", action = wizAnnounce, cmdDesc = "Send a message to all players." }
     , Cmd { cmdName = prefixWizCmd "boot", action = wizBoot, cmdDesc = "Boot a player." }
     , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the current system date." }
     , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message to the server console." }
@@ -94,6 +95,25 @@ prefixWizCmd = prefixCmd wizCmdChar
 wizDispCmdList :: Action
 wizDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixWizCmd "?") as i >> dispCmdList wizCmds p
 wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
+
+
+-----
+
+
+wizAnnounce :: Action
+wizAnnounce p@AdviseNoArgs         = advise p [ prefixWizCmd "announce" ] advice
+  where
+    advice = T.concat [ "You must provide a message to send, as in "
+                      , quoteColor
+                      , dblQuote $ prefixWizCmd "announce" <> " CurryMUD will be shutting down for maintenance in 30 \
+                                                \minutes."
+                      , dfltColor
+                      , "." ]
+wizAnnounce   (WithArgs i mq _ as) = do
+    logPlaExecArgs (prefixWizCmd "announce") as i
+    ok mq
+    massSend $ announceColor <> T.unwords as <> dfltColor
+wizAnnounce p = patternMatchFail "wizAnnounce" [ showText p ]
 
 
 -----

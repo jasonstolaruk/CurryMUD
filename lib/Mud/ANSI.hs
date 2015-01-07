@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.ANSI ( abbrevColor
+                , announceColor
                 , asteriskColor
                 , bootMsgColor
                 , colors
@@ -80,6 +81,10 @@ yellow  = mkFgColorANSI (Dull, Yellow)
 
 abbrevColor :: T.Text
 abbrevColor = cyan
+
+
+announceColor :: T.Text
+announceColor = magenta
 
 
 asteriskColor :: T.Text

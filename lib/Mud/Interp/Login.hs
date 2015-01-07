@@ -60,7 +60,6 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
--- TODO: Boot a player who tries too many times?
 interpName :: Interp
 interpName (T.toLower -> cn) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
