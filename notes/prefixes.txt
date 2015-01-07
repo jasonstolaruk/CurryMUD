@@ -1,0 +1,35 @@
+ITEM PREFIXES
+=============
+
+The names of items may be prefixed with special numbers and symbols.
+
+Consider a room with the following contents:
+
+an azure earring [earring]2`
+a coral earring [earring]2`
+a mithril earring [earring]2`
+a sea green earring [earring]2`
+3 nose rings [nose]2`
+
+The bracketed words indicate the names by which the items should be referred to in commands. We can see that there are three different earrings, though they all go by the same name ("earring"). Furthermore, there are three identical nose rings ("nose").
+In situations like this, item prefixes can be used to disambiguate items with the same names.
+
+Use a period to indicate "a single specific item":
+"get 3.earring 3.nose" to pick up the third earring and the third nose ring.
+
+Use a slash to indicate "a number of items":
+"get 2/earring 2/nose" to pick up the first two earrings and the first two nose rings.
+
+Furthermore, the single quote offers a convenient shortcut to refer to "all of something."
+"get 'earring" to pick up all three of the earrings.
+The single quote may also be used alone: "get '" to pick up everything in the room.
+
+The above item prefixes may be used in any commands that accept item names.
+
+The dash is a special prefix that may be used with the "put" and "remove" commands to specify a container in your current room (as opposed to one in your inventory):
+"put ring -sack" to put your ring into the sack on the ground.
+"remove ring -sack" to remove (acquire) the ring from the sack on the ground.
+The dash should precede any other item prefixes:
+"remove ring -2.sack" to remove (acquire) the ring from the SECOND sack on the ground.
+
+SEE ALSO:
