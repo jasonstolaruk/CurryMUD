@@ -11,6 +11,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , getUnusedId
                                 , mkPlur
                                 , mkPlurFromBoth
+                                , mkPossPronoun
                                 , mkPronoun
                                 , mkReflexive
                                 , mkUnknownPCEntName
@@ -109,6 +110,12 @@ type BothGramNos = (Sing, Plur)
 mkPlurFromBoth :: BothGramNos -> Plur
 mkPlurFromBoth (s, "") = s <> "s"
 mkPlurFromBoth (_, p ) = p
+
+
+mkPossPronoun :: Sex -> T.Text
+mkPossPronoun Male   = "his"
+mkPossPronoun Female = "her"
+mkPossPronoun s      = patternMatchFail "mkPossPronoun" [ showText s ]
 
 
 mkPronoun :: Sex -> T.Text

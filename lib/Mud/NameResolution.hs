@@ -14,6 +14,7 @@ module Mud.NameResolution ( ReconciledCoins
                           , resolveEntCoinNamesWithRols
                           , ringHelp ) where
 
+import Mud.ANSI
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Coins
@@ -318,15 +319,15 @@ sorryBadSlot n
 
 
 mkSlotTxt :: T.Text -> T.Text
-mkSlotTxt = dblQuote . (T.singleton slotChar <>)
+mkSlotTxt = (<> dfltColor) . (quoteColor <>) . dblQuote . (T.singleton slotChar <>)
 
 
 ringHelp :: T.Text
 ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", nl " immediately followed by:"
-                    , dblQuote "i", nl " for index finger,"
-                    , dblQuote "m", nl " for middle finger,"
-                    , dblQuote "r", nl " for ring finger, or"
-                    , dblQuote "p", nl " for pinky finger." ]
+                    , quoteColor, dblQuote "i", dfltColor, nl " for index finger,"
+                    , quoteColor, dblQuote "m", dfltColor, nl " for middle finger,"
+                    , quoteColor, dblQuote "r", dfltColor, nl " for ring finger, or"
+                    , quoteColor, dblQuote "p", dfltColor, nl " for pinky finger." ]
 
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
