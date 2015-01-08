@@ -1216,7 +1216,7 @@ ready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
                    bs                        = if null rcs then [] else mkBroadcast i "You can't ready coins."
                    (ws', bs', logMsgs)       = foldl' (helperReady i d) (ws, bs, []) . zip eiss $ mrols
                in putTMVar t ws' >> return (bs', logMsgs)
-          else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+          else    putTMVar t ws  >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 ready p = patternMatchFail "ready" [ showText p ]
 
 
@@ -1551,56 +1551,69 @@ shuffleRem i (t, ws) d cn icir as is c f
 
 
 unready :: Action
-unready p@AdviseNoArgs            = advise p ["unready"] advice
+unready p@AdviseNoArgs     = advise p ["unready"] advice
   where
     advice = T.concat [ "Please specify one or more items to unready, as in "
                       , quoteColor
                       , dblQuote "unready sword"
                       , dfltColor
                       , "." ]
-unready   (LowerNub i mq cols as) = helper >>= \(msg, logMsgs) -> do
+unready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) $ logPlaOut "unready" i logMsgs
-    send mq . nl $ msg
+    bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let em = (ws^.eqTbl) ! i
-            is = M.elems em
+        let (view sing -> s)  = (ws^.entTbl)   ! i
+            (view rmId -> ri) = (ws^.pcTbl)    ! i
+            ris               = (ws^.invTbl)   ! ri
+            em                = (ws^.eqTbl) ! i
+            is                = M.elems em
+            d                 = mkStdDesig i ws s True ris
         in if not . null $ is
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is mempty
-                   eiss                  = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
-                   msg                   = if null rcs then "" else nl "You can't unready coins."
-                   (ws', msg', logMsgs)  = foldl' (helperUnready i cols em) (ws, msg, []) eiss
-               in putTMVar t ws' >> return (msg', logMsgs)
-          else putTMVar t ws >> return (wrapUnlines cols dudeYou'reNaked, [])
+          then let (gecrs, miss, rcs)  = resolveEntCoinNames i ws as is mempty
+                   eiss                = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
+                   bs                  = if null rcs then [] else mkBroadcast i "You can't unready coins."
+                   (ws', bs', logMsgs) = foldl' (helperUnready i d em) (ws, bs, []) eiss
+               in putTMVar t ws' >> return (bs', logMsgs)
+          else    putTMVar t ws  >> return (mkBroadcast i dudeYou'reNaked, [])
 unready p = patternMatchFail "unready" [ showText p ]
 
 
-helperUnready :: Id                             ->
-                 Cols                           ->
-                 EqMap                          ->
-                 (WorldState, T.Text, [T.Text]) ->
-                 Either T.Text Inv              ->
-                 (WorldState, T.Text, [T.Text])
-helperUnready i cols em a@(ws, _, _) = \case
-  Left  msg -> over _2 (<> wrapUnlines cols msg) a
-  Right is | pis  <- (ws^.invTbl) ! i
-           , ws'  <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
-                        & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
-           , msgs <- mkUnreadyDescs i ws' is
-           -> set _1 ws' . over _2 (<> (T.concat . map (wrapUnlines cols) $ msgs)) . over _3 (++ msgs) $ a
+helperUnready :: Id                                  ->
+                 PCDesig                             ->
+                 EqMap                               ->
+                 (WorldState, [Broadcast], [T.Text]) ->
+                 Either T.Text Inv                   ->
+                 (WorldState, [Broadcast], [T.Text])
+helperUnready i d em a@(ws, _, _) = \case
+  Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+  Right is | pis        <- (ws^.invTbl) ! i
+           , ws'        <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
+                              & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
+           , (bs, msgs) <- mkUnreadyDescs i ws' d is
+           -> set _1 ws' . over _2 (++ bs) . over _3 (++ msgs) $ a
 
 
-mkUnreadyDescs :: Id -> WorldState -> Inv -> [T.Text]
-mkUnreadyDescs i ws is = [ helper icb | icb <- mkIdCountBothList i ws is ]
+mkUnreadyDescs :: Id -> WorldState -> PCDesig -> Inv -> ([Broadcast], [T.Text])
+mkUnreadyDescs i ws d is = over _1 concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ws is ]
   where
-    helper (verb -> v, c, b@(s, _)) = T.concat $ if c == 1
-      then [ "You ", v, " the ", s, "." ]
-      else [ "You ", v, " ", showText c, " ", mkPlurFromBoth b, "." ]
-    verb (((ws^.typeTbl) !) -> t) = case t of
-      ClothType -> unwearGenericVerb -- TODO
-      WpnType   -> "stop wielding"
+    helper (((ws^.typeTbl) !) -> t, c, b@(s, _)) = if c == 1
+      then let msg = T.concat [ "You ", mkVerb t SndPer, " the ", s, "." ] in
+          ( [ (msg, [i])
+            , (T.concat [ serialize d, " ", mkVerb t ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
+          , msg )
+      else let msg = T.concat [ "You ", mkVerb t SndPer, " ", showText c, " ", mkPlurFromBoth b, "." ] in
+          ( [ (msg, [i])
+            , ( T.concat [ serialize d, " ", mkVerb t ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ]
+              , otherPCIds ) ]
+          , msg )
+    mkVerb t p = case t of
+      ClothType | p == SndPer -> "take off" -- TODO: Why was there a "TODO" here (for "ClothType") before?
+                | p == ThrPer -> "takes off"
+      WpnType   | p == SndPer -> "stop wielding"
+                | p == ThrPer -> "stops wielding"
       _         -> undefined -- TODO
-    unwearGenericVerb = "take off"
+    otherPCIds = i `delete` pcIds d
 
 
 mkIdCountBothList :: Id -> WorldState -> Inv -> [(Id, Int, BothGramNos)]

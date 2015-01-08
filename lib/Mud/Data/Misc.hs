@@ -304,4 +304,4 @@ data ShouldBracketQuote = DoBracket | Don'tBracket
 -----
 
 
-data Verb = SndPer | ThrPer
+data Verb = SndPer | ThrPer deriving Eq
