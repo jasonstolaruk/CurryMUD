@@ -92,14 +92,6 @@ prefixWizCmd = prefixCmd wizCmdChar
 -----
 
 
-wizDispCmdList :: Action
-wizDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixWizCmd "?") as i >> dispCmdList wizCmds p
-wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
-
-
------
-
-
 wizAnnounce :: Action
 wizAnnounce p@AdviseNoArgs         = advise p [ prefixWizCmd "announce" ] advice
   where
@@ -153,6 +145,14 @@ wizDate (NoArgs' i mq) = do
     logPlaExec (prefixWizCmd "date") i
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 wizDate p = withoutArgs wizDate p
+
+
+-----
+
+
+wizDispCmdList :: Action
+wizDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixWizCmd "?") as i >> dispCmdList wizCmds p
+wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
 
 
 -----

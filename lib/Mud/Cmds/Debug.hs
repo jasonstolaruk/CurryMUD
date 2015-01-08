@@ -116,14 +116,6 @@ prefixDebugCmd = prefixCmd debugCmdChar
 -----
 
 
-debugDispCmdList :: Action
-debugDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixDebugCmd "?") as i >> dispCmdList debugCmds p
-debugDispCmdList p = patternMatchFail "debugDispCmdList" [ showText p ]
-
-
------
-
-
 debugBoot :: Action
 debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> (massMsg . MsgBoot $ dfltBootMsg)
 debugBoot p              = withoutArgs debugBoot p
@@ -206,6 +198,14 @@ debugCPU (NoArgs i mq cols) = do
   where
     cpuTime = showText . (/ fromIntegral (10 ^ 12)) . fromIntegral <$> getCPUTime
 debugCPU p = withoutArgs debugCPU p
+
+
+-----
+
+
+debugDispCmdList :: Action
+debugDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixDebugCmd "?") as i >> dispCmdList debugCmds p
+debugDispCmdList p = patternMatchFail "debugDispCmdList" [ showText p ]
 
 
 -----
