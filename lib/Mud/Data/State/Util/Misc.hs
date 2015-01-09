@@ -141,10 +141,10 @@ sortInv ws is | (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) <- [ (ws^.t
   where
     helper a (i, t) | t == PCType      = over _1 (++ [i]) a
                     | otherwise        = over _2 (++ [i]) a
-    sortNonPCs is'                     = map (view _1) . sortBy nameThenSing . zip3 is' (names is') . sings $ is'
+    sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
-    names is'                          = [ let e = (ws^.entTbl) ! i in fromJust $ e^.entName | i <- is' ]
-    sings is'                          = [ let e = (ws^.entTbl) ! i in e^.sing               | i <- is' ]
+    zipped is'                         = [ let e = (ws^.entTbl) ! i
+                                           in (i, fromJust $ e^.entName, e^.sing) | i <- is' ]
 
 
 statefulFork :: StateInIORefT MudState IO () -> MudStack MudState

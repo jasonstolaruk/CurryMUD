@@ -313,9 +313,9 @@ mkEqDesc i cols ws i' (view sing -> s) t | descs <- if i' == i then mkDescsSelf 
         helper (T.breakOn " finger" -> (sn, _), es, styled) = T.concat [ parensPad 15 sn, es, " ", styled ]
     mkDescsOther | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! i'
                  , sns      <- [ pp s' | s' <- ss ]
-                 , ess      <- [ let e = (ws^.entTbl) ! ei in e^.sing | ei <- is ] = map helper . zip sns $ ess
+                 , ess      <- [ view sing $ (ws^.entTbl) ! ei | ei <- is ] = zipWith helper sns ess
       where
-        helper (T.breakOn " finger" -> (sn, _), es) = parensPad 15 sn <> es
+        helper (T.breakOn " finger" -> (sn, _)) es = parensPad 15 sn <> es
     none = wrapUnlines cols $ if
       | i' == i      -> dudeYou'reNaked
       | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
@@ -613,13 +613,13 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
                                               , nl "Help is available on the following topics:"
                                               , topicNames
                                               , footnote hs ]
-        in logPla "help" i ("read root help file.") >> (pager i mq . parseHelpTxt cols $ helpTxt)
+        in logPla "help" i "read root help file." >> (pager i mq . parseHelpTxt cols $ helpTxt)
     mkHelpNames styleds   = [ pad padding $ styled <> if isWizHelp h then asterisk else "" | (styled, h) <- styleds ]
     padding               = maxHelpTopicLen + 2
     asterisk              = asteriskColor <> "*" <> dfltColor
     formatHelpNames names = let wordsPerLine = cols `div` padding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
-    footnote hs           = if (length . filter isWizHelp $ hs) > 0
+    footnote hs           = if any isWizHelp hs
       then nl' $ asterisk <> " indicates help that is available only to wizards."
       else ""
 help (LowerNub i mq cols as) = mkHelpData i >>= \hs -> do
@@ -652,7 +652,7 @@ getHelpByName cols hs name =
   where
     sorry           = return ("No help is available on " <> dblQuote name <> ".", "")
     found hn        | h <- head . filter ((== hn) . helpName) $ hs =
-                        (,) <$> (readHelpFile (hn, helpFilePath h)) <*> (return . dblQuote $ hn)
+                        (,) <$> readHelpFile (hn, helpFilePath h) <*> (return . dblQuote $ hn)
     readHelpFile (hn, hf) = (try . liftIO . T.readFile $ hf) >>= eitherRet handler
       where
         handler e = do
@@ -710,7 +710,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                             ws'       = ws & pcTbl.at targetId ?~ p
                             msg       = "You introduce yourself to " <> targetDesig <> "."
                             logMsg    = parsePCDesig i ws msg
-                            srcMsg    = nlnl $ msg
+                            srcMsg    = nlnl msg
                             srcDesig  = StdDesig { stdPCEntSing = Nothing
                                                  , isCap        = True
                                                  , pcEntName    = mkUnknownPCEntName i ws
@@ -1394,7 +1394,7 @@ getDesigClothSlot ws (view sing -> s) c em rol
                      (em^.at slotFromRol)
     _       -> undefined -- TODO
   where
-    sorryCantWearThere     = T.concat $ [ "You can't wear a ", s, " on your ", pp rol, "." ]
+    sorryCantWearThere     = T.concat [ "You can't wear a ", s, " on your ", pp rol, "." ]
     findSlotFromList rs ls = findAvailSlot em $ case rol of
       R -> rs
       L -> ls
@@ -1850,6 +1850,6 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
 whoAmI :: Action
 whoAmI (NoArgs i mq cols) = do
     logPlaExec "whoami" i
-    (getSexRace i -> pp *** pp -> (s', r), s) <- getEntSing' i
+    ((pp *** pp) . getSexRace i -> (s', r), s) <- getEntSing' i
     wrapSend mq cols . T.concat $ [ "You are ", knownNameColor, s, dfltColor, " (a ", s', " ", r, ")." ]
 whoAmI p = withoutArgs whoAmI p
