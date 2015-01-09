@@ -218,7 +218,10 @@ debugDispEnv (NoArgs i mq cols) = do
 debugDispEnv (WithArgs i mq cols (nub -> as)) = do
     logPlaExecArgs (prefixDebugCmd "env") as i
     env <- liftIO getEnvironment
-    send mq . T.unlines $ [ helper a env | a <- as ]
+    let matches = filter (not . T.null) [ helper a env | a <- as ]
+    if null matches
+      then wrapSend mq cols "No matches found."
+      else send mq . T.unlines $ matches
   where
     helper a = mkAssocListTxt cols . filter grepPair
       where
