@@ -277,19 +277,19 @@ wizUptime p = withoutArgs wizUptime p
 wizWho :: Action
 wizWho (NoArgs i mq cols) = do
     logPlaExecArgs (prefixWizCmd "who") [] i
-    (mkPlaList i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
+    (mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
 wizWho (LowerNub i mq cols as) = do
     logPlaExecArgs (prefixWizCmd "who") as i
-    plaList <- mkPlaList i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
-    let matches = filter (not . null) $ [ grep a plaList | a <- as ]
+    plaListTxt <- mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
+    let matches = filter (not . null) $ [ grep a plaListTxt | a <- as ]
     if null matches
       then wrapSend mq cols "No matches found."
       else pager i mq . concatMap (wrapIndent 20 cols) . intercalate [""] $ matches
 wizWho _ = patternMatchFail "wizWho" []
 
 
-mkPlaList :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
-mkPlaList i ws pt =
+mkPlaListTxt :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
+mkPlaListTxt i ws pt =
     let pis  = i `delete` IM.keys pt
         piss = sortBy (compare `on` snd) . zip pis $ [ view sing $ (ws^.entTbl) ! pi | pi <- pis ]
         pias = [ (pi, a) | (pi, _) <- piss | a <- styleAbbrevs Don'tBracket . map snd $ piss ]

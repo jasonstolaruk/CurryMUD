@@ -36,7 +36,7 @@ import Control.Monad (replicateM, replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, foldl', nub, sort)
+import Data.List (delete, foldl', intercalate, nub, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>))
 import GHC.Conc (ThreadStatus(..), threadStatus)
@@ -214,25 +214,20 @@ debugDispCmdList p = patternMatchFail "debugDispCmdList" [ showText p ]
 debugDispEnv :: Action
 debugDispEnv (NoArgs i mq cols) = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
-    send mq . nl =<< (mkAssocListTxt cols <$> liftIO getEnvironment)
+    pager i mq =<< (concatMap (wrapIndent 2 cols) . mkEnvListTxt <$> liftIO getEnvironment)
 debugDispEnv (WithArgs i mq cols (nub -> as)) = do
     logPlaExecArgs (prefixDebugCmd "env") as i
-    env <- liftIO getEnvironment
-    let matches = filter (not . T.null) [ helper a env | a <- as ]
+    envListTxt <- mkEnvListTxt <$> liftIO getEnvironment -- TODO: Maybe this can be refactored out?
+    let matches = filter (not . null) $ [ grep a envListTxt | a <- as ]
     if null matches
-      then wrapSend mq cols "No matches found."
-      else send mq . T.unlines $ matches
-  where
-    helper a = mkAssocListTxt cols . filter grepPair
-      where
-        grepPair = uncurry (||) . over both ((a `T.isInfixOf`) . T.pack)
+      then wrapSend mq cols "No matches found." -- TODO: Make a top lvl def?
+      else pager i mq . concatMap (wrapIndent 2 cols) . intercalate [""] $ matches
 debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 
 
-mkAssocListTxt :: Cols -> [(String, String)] -> T.Text
-mkAssocListTxt cols = T.concat . map helper
+mkEnvListTxt :: [(String, String)] -> [T.Text]
+mkEnvListTxt = map (mkAssocTxt . (T.pack *** T.pack))
   where
-    helper            = T.unlines . wrapIndent 2 cols . mkAssocTxt . (unquote . T.pack *** T.pack)
     mkAssocTxt (a, b) = T.concat [ envVarColor, a, ": ", dfltColor, b ]
 
 
