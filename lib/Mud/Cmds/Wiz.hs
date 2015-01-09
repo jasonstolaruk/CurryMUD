@@ -33,7 +33,7 @@ import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List (sortBy)
+import Data.List (delete, intercalate, sortBy)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
@@ -41,7 +41,7 @@ import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
@@ -274,27 +274,30 @@ wizUptime p = withoutArgs wizUptime p
 
 
 -- TODO: Help.
--- TODO: Clean up.
--- TODO: Self should not be abbreviated...
 wizWho :: Action
 wizWho (NoArgs i mq cols) = do
     logPlaExecArgs (prefixWizCmd "who") [] i
-    ws <- readWSTMVar
-    pt <- readTMVarInNWS plaTblTMVar
-    let pis  = IM.keys $ ws^.pcTbl
-    let piss = sortBy (compare `on` snd) [ (pi, view sing $ (ws^.entTbl) ! pi) | pi <- pis ]
-    let pias = [ (pi, a) | (pi, _) <- piss | a <- styleAbbrevs Don'tBracket . map snd $ piss ]
-    multiWrapSend mq cols $ map (helper ws pt) pias ++ [ numOfPlayers pis <> " logged in." ]
+    (mkPlaList i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
+wizWho (LowerNub i mq cols as) = do -- TODO: What if there are no matches?
+    logPlaExecArgs (prefixWizCmd "who") as i
+    plaList <- mkPlaList i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
+    pager i mq . concatMap (wrapIndent 20 cols) . intercalate [""] $ [ grep a plaList | a <- as ]
+wizWho _ = patternMatchFail "wizWho" []
+
+
+mkPlaList :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
+mkPlaList i ws pt =
+    let pis  = i `delete` IM.keys pt
+        piss = sortBy (compare `on` snd) . zip pis $ [ view sing $ (ws^.entTbl) ! pi | pi <- pis ]
+        pias = [ (pi, a) | (pi, _) <- piss | a <- styleAbbrevs Don'tBracket . map snd $ piss ]
+        self = (i, selfColor <> (view sing $ (ws^.entTbl) ! i) <> dfltColor)
+    in map helper (self : pias) ++ [ numOfPlayers (i : pis) <> " logged in." ]
   where
-    helper ws pt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
-                               (view isWiz -> iw)      = pt ! pi
-                           in T.concat [ pad 13 a
-                                       , padOrTrunc 7  s
-                                       , padOrTrunc 10 r
-                                       , if iw then wizColor <> "wiz" <> dfltColor else "" ]
+    helper (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
+                         (view isWiz  -> iw)     = pt ! pi
+                     in T.concat [ pad 13 a
+                                 , padOrTrunc 7  s
+                                 , padOrTrunc 10 r
+                                 , if iw then wizColor <> "wiz" <> dfltColor else "" ]
     numOfPlayers (length -> nop) | nop == 1  = "1 player"
                                  | otherwise = showText nop <> " players"
-wizWho (WithArgs i mq _ as) = do
-    logPlaExecArgs (prefixWizCmd "who") as i
-    ok mq -- TODO
-wizWho _ = patternMatchFail "wizWho" []

@@ -23,6 +23,7 @@ module Mud.ANSI ( abbrevColor
                 , promptColor
                 , quoteColor
                 , resetANSI
+                , selfColor
                 , shutdownMsgColor
                 , underline
                 , unknownNameColor
@@ -142,6 +143,10 @@ promptColor = yellow
 
 quoteColor :: T.Text
 quoteColor = green
+
+
+selfColor :: T.Text
+selfColor = green
 
 
 shutdownMsgColor :: T.Text

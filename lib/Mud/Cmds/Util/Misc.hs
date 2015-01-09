@@ -4,6 +4,7 @@
 module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
                           , fileIOExHandler
+                          , grep
                           , pager
                           , prefixCmd
                           , sendGenericErrorMsg
@@ -78,11 +79,8 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 dispCmdList :: [Cmd] -> Action
 dispCmdList cmds (NoArgs   i mq cols) =
     pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds (LowerNub i mq cols as) | matches <- [ grepCmdList a . mkCmdListText $ cmds | a <- as ] =
+dispCmdList cmds (LowerNub i mq cols as) | matches <- [ grep a . mkCmdListText $ cmds | a <- as ] =
     pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
-  where
-    grepCmdList needle haystack = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
-                                  in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
 dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
 
 
@@ -103,6 +101,14 @@ fileIOExHandler fn e
   | otherwise             = throwIO e
   where
     logIt = logIOEx fn e
+
+
+-----
+
+
+grep :: T.Text -> [T.Text] -> [T.Text]
+grep needle haystack = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
+                       in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
 
 
 -----
