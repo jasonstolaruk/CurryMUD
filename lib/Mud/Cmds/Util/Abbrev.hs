@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Cmds.Util.Abbrev ( styleAbbrevs ) where
+module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
 
 import Mud.ANSI
 import Mud.Data.Misc
@@ -44,10 +44,10 @@ mkAbbrevs :: [FullWord] -> [(FullWord, (Abbrev, Rest))]
 mkAbbrevs = helper "" . sort . nub
   where
     helper :: PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
-    helper _    []       = []
-    helper ""   (en:ens) = (en, over _1 T.singleton . headTail' $ en) : helper en ens
-    helper prev (en:ens) = let abbrev = calcAbbrev en prev
-                           in (en, (abbrev, fromJust $ abbrev `T.stripPrefix` en)) : helper  en ens
+    helper _    []     = []
+    helper ""   (x:xs) = (x, over _1 T.singleton . headTail' $ x) : helper x xs
+    helper prev (x:xs) = let abbrev = calcAbbrev x prev
+                         in (x, (abbrev, fromJust $ abbrev `T.stripPrefix` x)) : helper x xs
 
 
 calcAbbrev :: T.Text -> T.Text -> T.Text

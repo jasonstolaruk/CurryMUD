@@ -1,41 +1,55 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Wiz (wizCmds) where
 
 import Mud.ANSI
+import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
+import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
+import Data.Function (on)
 import Data.IntMap.Lazy ((!))
+import Data.List (sortBy)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
+import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
+
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -82,7 +96,9 @@ wizCmds =
     , Cmd { cmdName = prefixWizCmd "profanity", action = wizProfanity, cmdDesc = "Dump the profanity log." }
     , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down CurryMUD." }
     , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
-    , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the system uptime." } ]
+    , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the system uptime." }
+    , Cmd { cmdName = prefixWizCmd "who", action = wizWho, cmdDesc = "Display or search a list of all the players \
+                                                                     \logged in." } ]
 
 
 prefixWizCmd :: CmdName -> T.Text
@@ -252,3 +268,33 @@ wizUptime (NoArgs i mq cols) = do
   where
     runUptime = T.pack <$> readProcess "uptime" [] ""
 wizUptime p = withoutArgs wizUptime p
+
+
+-----
+
+
+-- TODO: Help.
+-- TODO: Clean up.
+-- TODO: Self should not be abbreviated...
+wizWho :: Action
+wizWho (NoArgs i mq cols) = do
+    logPlaExecArgs (prefixWizCmd "who") [] i
+    ws <- readWSTMVar
+    pt <- readTMVarInNWS plaTblTMVar
+    let pis  = IM.keys $ ws^.pcTbl
+    let piss = sortBy (compare `on` snd) [ (pi, view sing $ (ws^.entTbl) ! pi) | pi <- pis ]
+    let pias = [ (pi, a) | (pi, _) <- piss | a <- styleAbbrevs Don'tBracket . map snd $ piss ]
+    multiWrapSend mq cols $ map (helper ws pt) pias ++ [ numOfPlayers pis <> " logged in." ]
+  where
+    helper ws pt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
+                               (view isWiz -> iw)      = pt ! pi
+                           in T.concat [ pad 13 a
+                                       , padOrTrunc 7  s
+                                       , padOrTrunc 10 r
+                                       , if iw then wizColor <> "wiz" <> dfltColor else "" ]
+    numOfPlayers (length -> nop) | nop == 1  = "1 player"
+                                 | otherwise = showText nop <> " players"
+wizWho (WithArgs i mq _ as) = do
+    logPlaExecArgs (prefixWizCmd "who") as i
+    ok mq -- TODO
+wizWho _ = patternMatchFail "wizWho" []
