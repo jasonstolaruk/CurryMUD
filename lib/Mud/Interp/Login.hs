@@ -166,6 +166,7 @@ interpConfirmName s cn p                   = patternMatchFail "interpConfirmName
 
 
 yesNo :: T.Text -> Maybe Bool
+yesNo ""                                        = Nothing
 yesNo (T.toLower -> a) | a `T.isPrefixOf` "yes" = Just True
                        | a `T.isPrefixOf` "no"  = Just False
                        | otherwise              = Nothing
