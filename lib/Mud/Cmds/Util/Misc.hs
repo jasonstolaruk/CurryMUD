@@ -3,6 +3,7 @@
 
 module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
+                          , dispMatches
                           , fileIOExHandler
                           , grep
                           , pager
@@ -77,20 +78,27 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 
 dispCmdList :: [Cmd] -> Action
-dispCmdList cmds (NoArgs   i mq cols) =
+dispCmdList cmds (NoArgs i mq cols) =
     pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds (LowerNub i mq cols as)
-  | cmdListTxt                       <- mkCmdListText cmds
-  , (filter (not . null) -> matches) <- [ grep a cmdListTxt | a <- as ] = if null matches
-    then wrapSend mq cols "No matches found."
-    else pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
-dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
+dispCmdList cmds p                  = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
 
 
 mkCmdListText :: [Cmd] -> [T.Text]
 mkCmdListText cmds = let (styleAbbrevs Don'tBracket -> cmdNames) = [ cmdName cmd | cmd <- cmds ]
                          cmdDescs                                = [ cmdDesc cmd | cmd <- cmds ]
                      in  [ pad (succ maxCmdLen) n <> d | n <- cmdNames | d <- cmdDescs ]
+
+
+-----
+
+
+dispMatches :: ActionParams -> Int -> [T.Text] -> MudStack ()
+dispMatches (LowerNub i mq cols needles) indent haystack =
+    let (filter (not . null) -> matches) = [ grep needle haystack | needle <- needles ]
+    in if null matches
+      then wrapSend mq cols "No matches found."
+      else pager i mq . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
+dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, showText indent, showText haystack ]
 
 
 -----

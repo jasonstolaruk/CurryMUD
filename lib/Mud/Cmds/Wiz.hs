@@ -33,7 +33,7 @@ import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, intercalate, sortBy)
+import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
@@ -275,16 +275,12 @@ wizUptime p = withoutArgs wizUptime p
 
 -- TODO: Help.
 wizWho :: Action
-wizWho (NoArgs i mq cols) = do
+wizWho   (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixWizCmd "who") [] i
     (mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
-wizWho (LowerNub i mq cols as) = do
+wizWho p@(WithArgs i _ _ as) = do
     logPlaExecArgs (prefixWizCmd "who") as i
-    plaListTxt <- mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
-    let matches = filter (not . null) $ [ grep a plaListTxt | a <- as ]
-    if null matches
-      then wrapSend mq cols "No matches found."
-      else pager i mq . concatMap (wrapIndent 20 cols) . intercalate [""] $ matches
+    dispMatches p 20 =<< (mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
 wizWho _ = patternMatchFail "wizWho" []
 
 
@@ -293,7 +289,7 @@ mkPlaListTxt i ws pt =
     let pis  = i `delete` IM.keys pt
         piss = sortBy (compare `on` snd) . zip pis $ [ view sing $ (ws^.entTbl) ! pi | pi <- pis ]
         pias = [ (pi, a) | (pi, _) <- piss | a <- styleAbbrevs Don'tBracket . map snd $ piss ]
-        self = (i, selfColor <> (view sing $ (ws^.entTbl) ! i) <> dfltColor)
+        self = (i, selfColor <> view sing ((ws^.entTbl) ! i) <> dfltColor)
     in map helper (self : pias) ++ [ numOfPlayers (i : pis) <> " logged in." ]
   where
     helper (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws

@@ -36,7 +36,7 @@ import Control.Monad (replicateM, replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, foldl', intercalate, nub, sort)
+import Data.List (delete, foldl', sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>))
 import GHC.Conc (ThreadStatus(..), threadStatus)
@@ -212,16 +212,12 @@ debugDispCmdList p = patternMatchFail "debugDispCmdList" [ showText p ]
 
 
 debugDispEnv :: Action
-debugDispEnv (NoArgs i mq cols) = do
+debugDispEnv   (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
     pager i mq =<< (concatMap (wrapIndent 2 cols) . mkEnvListTxt <$> liftIO getEnvironment)
-debugDispEnv (WithArgs i mq cols (nub -> as)) = do
+debugDispEnv p@(WithArgs i _ _ as) = do
     logPlaExecArgs (prefixDebugCmd "env") as i
-    envListTxt <- mkEnvListTxt <$> liftIO getEnvironment -- TODO: Maybe this can be refactored out?
-    let matches = filter (not . null) $ [ grep a envListTxt | a <- as ]
-    if null matches
-      then wrapSend mq cols "No matches found." -- TODO: Make a top lvl def?
-      else pager i mq . concatMap (wrapIndent 2 cols) . intercalate [""] $ matches
+    dispMatches p 2 . mkEnvListTxt =<< liftIO getEnvironment
 debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 
 

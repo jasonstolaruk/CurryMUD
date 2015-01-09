@@ -639,7 +639,7 @@ mkHelpData i = getPlaIsWiz i >>= \iw -> do
     return $ plaHelpCmds ++ plaHelpTopics ++ if iw then wizHelpCmds ++ wizHelpTopics else []
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, wizHelpCmdsDir, wizHelpTopicsDir ]
-    getHelpDirectoryContents dir = drop 2 . sort <$> (liftIO . getDirectoryContents $ dir)
+    getHelpDirectoryContents dir = delete ".DS_Store" . drop 2 . sort <$> (liftIO . getDirectoryContents $ dir)
 
 
 parseHelpTxt :: Cols -> T.Text -> [T.Text]
