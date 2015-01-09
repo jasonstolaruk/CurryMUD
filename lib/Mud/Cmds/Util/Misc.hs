@@ -109,9 +109,10 @@ fileIOExHandler fn e
 -----
 
 
+-- TODO: Since we're lowering here, we only need to nub caller-side...
 grep :: T.Text -> [T.Text] -> [T.Text]
-grep needle haystack = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
-                       in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
+grep (T.toLower -> needle) haystack = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
+                                      in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
 
 
 -----
