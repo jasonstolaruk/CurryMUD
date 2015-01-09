@@ -53,7 +53,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
 -- TODO: Here's the plan:
--- 1. Implement the broadcasting of messages.
+-- [DONE] 1. Implement the broadcasting of messages.
 -- 2. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
 --   a. Code reduction.
 --   b. Consistency in binding names.

@@ -1188,9 +1188,6 @@ notifyEgress i = readWSTMVar >>= \ws ->
 -----
 
 
--- TODO: Consider moving the helper functions to another module.
-
-
 ready :: Action
 ready p@AdviseNoArgs     = advise p ["ready"] advice
   where
@@ -1300,15 +1297,22 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyMsgs slot $ c
   where
     mkReadyMsgs (pp -> slot) = \case
-        NoseC   -> putOnMsgs
-        NeckC   -> putOnMsgs
-        FingerC -> (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
-                   , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-        _       -> wearMsgs
+        NoseC     -> putOnMsgs
+        NeckC     -> putOnMsgs
+        FingerC   -> (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
+                     , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
+        UpBodyC   -> donMsgs
+        LowBodyC  -> donMsgs
+        FullBodyC -> donMsgs
+        BackC     -> putOnMsgs
+        FeetC     -> putOnMsgs
+        _         -> wearMsgs
       where
         putOnMsgs  = ( "You put on the " <> s <> "."
                      , (T.concat [ serialize d, " puts on ", aOrAn s, "." ], otherPCIds) )
         p          = mkPossPronoun . view sex $ (ws^.mobTbl) ! i
+        donMsgs    = ( "You don the " <> s <> "."
+                     , (T.concat [ serialize d, " dons ", aOrAn s, "." ], otherPCIds) )
         otherPCIds = i `delete` pcIds d
         wearMsgs   = (  T.concat [ "You wear the ", s, " on your ", slot, "." ]
                      , (T.concat [ serialize d, " wears ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
@@ -1597,23 +1601,33 @@ helperUnready i d em a@(ws, _, _) = \case
 mkUnreadyDescs :: Id -> WorldState -> PCDesig -> Inv -> ([Broadcast], [T.Text])
 mkUnreadyDescs i ws d is = over _1 concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ws is ]
   where
-    helper (((ws^.typeTbl) !) -> t, c, b@(s, _)) = if c == 1
-      then let msg = T.concat [ "You ", mkVerb t SndPer, " the ", s, "." ] in
+    helper (ei, c, b@(s, _)) = if c == 1
+      then let msg = T.concat [ "You ", mkVerb ei SndPer, " the ", s, "." ] in
           ( [ (msg, [i])
-            , (T.concat [ serialize d, " ", mkVerb t ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
+            , (T.concat [ serialize d, " ", mkVerb ei ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
           , msg )
-      else let msg = T.concat [ "You ", mkVerb t SndPer, " ", showText c, " ", mkPlurFromBoth b, "." ] in
+      else let msg = T.concat [ "You ", mkVerb ei SndPer, " ", showText c, " ", mkPlurFromBoth b, "." ] in
           ( [ (msg, [i])
-            , ( T.concat [ serialize d, " ", mkVerb t ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ]
+            , ( T.concat [ serialize d, " ", mkVerb ei ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ]
               , otherPCIds ) ]
           , msg )
-    mkVerb t p = case t of
-      ClothType | p == SndPer -> "take off" -- TODO: Why was there a "TODO" here (for "ClothType") before?
-                | p == ThrPer -> "takes off"
-      WpnType   | p == SndPer -> "stop wielding"
-                | p == ThrPer -> "stops wielding"
-      _         -> undefined -- TODO
-    otherPCIds = i `delete` pcIds d
+    mkVerb ei p =  case (ws^.typeTbl)  ! ei of
+      ClothType -> case (ws^.clothTbl) ! ei of
+        EarC                -> mkVerbRemove p
+        NoseC               -> mkVerbRemove p
+        UpBodyC             -> mkVerbDoff   p
+        LowBodyC            -> mkVerbDoff   p
+        FullBodyC           -> mkVerbDoff   p
+        _     | p == SndPer -> "take off"
+              | otherwise   -> "takes off"
+      WpnType | p == SndPer -> "stop wielding"
+              | otherwise   -> "stops wielding"
+      _                     -> undefined -- TODO
+    mkVerbRemove = \case SndPer -> "remove"
+                         ThrPer -> "removes"
+    mkVerbDoff   = \case SndPer -> "doff"
+                         ThrPer -> "doffs"
+    otherPCIds   = i `delete` pcIds d
 
 
 mkIdCountBothList :: Id -> WorldState -> Inv -> [(Id, Int, BothGramNos)]

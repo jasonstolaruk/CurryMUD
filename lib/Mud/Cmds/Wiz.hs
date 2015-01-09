@@ -119,7 +119,7 @@ wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == n ] of
       []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote n <> " is currently logged in."
       [i'] | n'  <- (et  ! i )^.sing
-           , mq' <- (mqt ! i') -> if n' == n
+           , mq' <- mqt ! i' -> if n' == n
              then wrapSend mq cols "You can't boot yourself."
              else do
                  logPlaExecArgs (prefixWizCmd "boot") as i

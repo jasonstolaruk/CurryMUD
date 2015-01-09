@@ -45,7 +45,7 @@ mkAbbrevs = helper "" . sort . nub
   where
     helper :: PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
     helper _    []       = []
-    helper ""   (en:ens) = (en, over _1 T.singleton $ headTail' $ en) : helper en ens
+    helper ""   (en:ens) = (en, over _1 T.singleton . headTail' $ en) : helper en ens
     helper prev (en:ens) = let abbrev = calcAbbrev en prev
                            in (en, (abbrev, fromJust $ abbrev `T.stripPrefix` en)) : helper  en ens
 

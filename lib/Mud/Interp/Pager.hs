@@ -88,8 +88,7 @@ sendPagerPrompt mq pageLen txtLen =
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()
-promptRetry mq cols = do
-    send mq . wrapUnlines cols $ p
+promptRetry mq cols = send mq . wrapUnlines cols $ p
   where
     p = T.concat [ "Enter a blank line or "
                  , dblQuote "n"

@@ -504,7 +504,7 @@ debugWrapIndent p@(AdviseOneArg _)            = advise p [] advice
                       , "." ]
 debugWrapIndent   (WithArgs i mq cols [a, b]) = do
     parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
-    unless (uncurry (||) . (over both isNothing) $ parsed) . uncurry helper . (over both fromJust) $ parsed
+    unless (uncurry (||) . over both isNothing $ parsed) . uncurry helper . over both fromJust $ parsed
   where
     parse txt sorry   = case (reads . T.unpack $ txt :: [(Int, String)]) of
       []        -> sorry >> return Nothing
