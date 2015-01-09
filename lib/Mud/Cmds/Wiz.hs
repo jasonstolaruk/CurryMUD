@@ -273,7 +273,6 @@ wizUptime p = withoutArgs wizUptime p
 -----
 
 
--- TODO: Help.
 wizWho :: Action
 wizWho   (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixWizCmd "who") [] i
