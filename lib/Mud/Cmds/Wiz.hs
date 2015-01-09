@@ -281,8 +281,8 @@ wizWho (NoArgs i mq cols) = do
 wizWho (LowerNub i mq cols as) = do
     logPlaExecArgs (prefixWizCmd "who") as i
     plaList <- mkPlaList i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
-    let matches = [ grep a plaList | a <- as ]
-    if null . concat $ matches
+    let matches = filter (not . null) $ [ grep a plaList | a <- as ]
+    if null matches
       then wrapSend mq cols "No matches found."
       else pager i mq . concatMap (wrapIndent 20 cols) . intercalate [""] $ matches
 wizWho _ = patternMatchFail "wizWho" []

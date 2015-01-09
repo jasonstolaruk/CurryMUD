@@ -79,8 +79,11 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 dispCmdList :: [Cmd] -> Action
 dispCmdList cmds (NoArgs   i mq cols) =
     pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds (LowerNub i mq cols as) | matches <- [ grep a . mkCmdListText $ cmds | a <- as ] =
-    pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
+dispCmdList cmds (LowerNub i mq cols as)
+  | cmdListTxt                       <- mkCmdListText cmds
+  , (filter (not . null) -> matches) <- [ grep a cmdListTxt | a <- as ] = if null matches
+    then wrapSend mq cols "No matches found."
+    else pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . intercalate [""] $ matches
 dispCmdList _ p = patternMatchFail "dispCmdList" [ showText p ]
 
 
