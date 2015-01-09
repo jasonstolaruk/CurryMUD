@@ -278,10 +278,13 @@ wizWho :: Action
 wizWho (NoArgs i mq cols) = do
     logPlaExecArgs (prefixWizCmd "who") [] i
     (mkPlaList i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
-wizWho (LowerNub i mq cols as) = do -- TODO: What if there are no matches?
+wizWho (LowerNub i mq cols as) = do
     logPlaExecArgs (prefixWizCmd "who") as i
     plaList <- mkPlaList i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
-    pager i mq . concatMap (wrapIndent 20 cols) . intercalate [""] $ [ grep a plaList | a <- as ]
+    let matches = [ grep a plaList | a <- as ]
+    if null . concat $ matches
+      then wrapSend mq cols "No matches found."
+      else pager i mq . concatMap (wrapIndent 20 cols) . intercalate [""] $ matches
 wizWho _ = patternMatchFail "wizWho" []
 
 
