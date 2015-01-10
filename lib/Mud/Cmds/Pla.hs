@@ -175,11 +175,10 @@ dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (s, ri, pis, ris) = getSing_RmId_Inv_RmInv i ws
-            pc                = (ws^.coinsTbl) ! i
-            d                 = mkStdDesig i ws s True ris
-        in if (not . null $ pis) || (pc /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as pis pc
+        let (ri, is, d) = getRmId_Inv_PCDesig i ws
+            c           = (ws^.coinsTbl) ! i
+        in if (not . null $ is) || (c /= mempty)
+          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is c
                    eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
                    ecs                   = map procReconciledCoinsPCInv rcs
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
@@ -190,11 +189,12 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 -- TODO: Move.
-getSing_RmId_Inv_RmInv :: Id -> WorldState -> (Sing, Id, Inv, Inv)
-getSing_RmId_Inv_RmInv i ws = let (view sing -> s)  = (ws^.entTbl) ! i
-                                  (view rmId -> ri) = (ws^.pcTbl)  ! i
-                                  (pis, ris)        = over both ((ws^.invTbl) !) (i, ri)
-                              in (s, ri, pis, ris)
+getRmId_Inv_PCDesig :: Id -> WorldState -> (Id, Inv, PCDesig)
+getRmId_Inv_PCDesig i ws = let (view sing -> s)  = (ws^.entTbl) ! i
+                               (view rmId -> ri) = (ws^.pcTbl)  ! i
+                               (pis, ris)        = over both ((ws^.invTbl) !) (i, ri)
+                               d                 = mkStdDesig i ws s True ris
+                           in (ri, pis, d)
 
 
 type FromId = Id
@@ -911,17 +911,16 @@ putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (s, ri, pis, ris)        = getSing_RmId_Inv_RmInv i ws
-          ris'                     = i `delete` ris
+      let (ri, pis, d)             = getRmId_Inv_PCDesig i ws
+          ris                      = i `delete` (pcIds d)
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
           cn                       = last as
           (init -> argsWithoutCon) = case as of [_, _] -> as
                                                 _      -> (++ [cn]) . nub . init $ as
-          d                        = mkStdDesig i ws s True ris
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar && cn /= T.singleton rmChar
-          then if not . null $ ris'
-            then shufflePut i (t, ws) d (T.tail cn) True argsWithoutCon ris' rc pis pc procGecrMisRm
+          then if not . null $ ris
+            then shufflePut i (t, ws) d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
           else shufflePut i (t, ws) d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
         else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
@@ -1508,16 +1507,15 @@ remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (s, ri, pis, ris)        = getSing_RmId_Inv_RmInv i ws
+      let (ri, pis, d)             = getRmId_Inv_PCDesig i ws
+          ris                      = i `delete` (pcIds d)
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
-          ris'                     = i `delete` ris
           cn                       = last as
           (init -> argsWithoutCon) = case as of [_, _] -> as
                                                 _      -> (++ [cn]) . nub . init $ as
-          d                        = mkStdDesig i ws s True ris
       in if T.head cn == rmChar && cn /= T.singleton rmChar
-        then if not . null $ ris'
-          then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris' rc procGecrMisRm
+        then if not . null $ ris
+          then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
           else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
         else shuffleRem i (t, ws) d cn False argsWithoutCon pis pc procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
