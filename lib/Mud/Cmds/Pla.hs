@@ -689,9 +689,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
             is'               = i `delete` is
             c                 = (ws^.coinsTbl) ! ri
         in if (not . null $ is') || (c /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is' c
-                   eiss                  = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
-                   ecs                   = map procReconciledCoinsRm rcs
+          then let (eiss, ecs)           = resolveRm i ws as is' c
                    (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
                    (     cbs', logMsgs') = foldl' helperIntroEitherCoins      (    cbs, logMsgs) ecs
                in putTMVar t ws' >> return (cbs', logMsgs')
@@ -806,13 +804,11 @@ look (LowerNub i mq cols as) = helper >>= \case
     helper = onWS $ \(t, ws) ->
         let (_, is@((i `delete`) -> is'), c, d) = getRmId_RmInv_RmCoins_PCDesig i ws
         in if (not . null $ is') || (c /= mempty)
-          then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is' c
-                   eiss               = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
-                   ecs                = map procReconciledCoinsRm rcs
-                   invDesc            = foldl' (helperLookEitherInv ws) "" eiss
-                   coinsDesc          = foldl' helperLookEitherCoins    "" ecs
-                   ds                 = [ let (view sing -> s') = (ws^.entTbl) ! pi
-                                          in mkStdDesig pi ws s' False is | pi <- extractPCIdsFromEiss ws eiss ]
+          then let (eiss, ecs) = resolveRm i ws as is' c
+                   invDesc     = foldl' (helperLookEitherInv ws) "" eiss
+                   coinsDesc   = foldl' helperLookEitherCoins    "" ecs
+                   ds          = [ let (view sing -> s') = (ws^.entTbl) ! pi
+                                   in mkStdDesig pi ws s' False is | pi <- extractPCIdsFromEiss ws eiss ]
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
           else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
                                           , Nothing )
@@ -821,6 +817,14 @@ look (LowerNub i mq cols as) = helper >>= \case
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 look p = patternMatchFail "look" [ showText p ]
+
+
+-- TODO: Move.
+resolveRm :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolveRm i ws as is c = let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
+                             eiss               = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
+                             ecs                = map procReconciledCoinsRm rcs
+                         in (eiss, ecs)
 
 
 -- TODO: Move.
