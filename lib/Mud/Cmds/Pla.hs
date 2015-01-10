@@ -178,9 +178,7 @@ dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
         let (ri, is, d) = getRmId_Inv_PCDesig i ws
             c           = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is c
-                   eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
-                   ecs                   = map procReconciledCoinsPCInv rcs
+          then let (eiss, ecs)           = resolvePCInv i ws as is c
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
