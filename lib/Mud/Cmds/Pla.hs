@@ -809,12 +809,8 @@ look (LowerNub i mq cols as) = helper >>= \case
               logPla "look" i ("looked at " <> es <> ".")
   where
     helper = onWS $ \(t, ws) ->
-        let (view sing -> s ) = (ws^.entTbl)   ! i
-            (view rmId -> ri) = (ws^.pcTbl)    ! i
-            ris               = (ws^.invTbl)   ! ri
-            ris'              = i `delete` ris
-            c                 = (ws^.coinsTbl) ! ri
-            d                 = mkStdDesig i ws s True ris
+        let (ris, c, d) = getRmInv_RmCoins_PCDesig i ws
+            ris'        = i `delete` ris
         in if (not . null $ ris') || (c /= mempty)
           then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as ris' c
                    eiss               = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
@@ -831,6 +827,17 @@ look (LowerNub i mq cols as) = helper >>= \case
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 look p = patternMatchFail "look" [ showText p ]
+
+
+-- TODO: Line 450.
+-- TODO: Move.
+getRmInv_RmCoins_PCDesig :: Id -> WorldState -> (Inv, Coins, PCDesig)
+getRmInv_RmCoins_PCDesig i ws = let (view sing -> s ) = (ws^.entTbl)   ! i
+                                    (view rmId -> ri) = (ws^.pcTbl)    ! i
+                                    is                = (ws^.invTbl)   ! ri
+                                    c                 = (ws^.coinsTbl) ! ri
+                                    d                 = mkStdDesig i ws s True is
+                                in (is, c, d)
 
 
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
