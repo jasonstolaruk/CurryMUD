@@ -175,24 +175,16 @@ dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (ri, is, d) = getRmId_Inv_PCDesig i ws
-            c           = (ws^.coinsTbl) ! i
+        let (d, ri, _) = mkCapStdDesig i ws
+            is         = (ws^.invTbl)   ! i
+            c          = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
-          then let (eiss, ecs)           = resolvePCInv i ws as is c
+          then let (eiss, ecs)           = resolvePCInvCoins i ws as is c
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
           else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 dropAction p = patternMatchFail "dropAction" [ showText p ]
-
-
--- TODO: Move.
-getRmId_Inv_PCDesig :: Id -> WorldState -> (Id, Inv, PCDesig)
-getRmId_Inv_PCDesig i ws = let (view sing -> s)  = (ws^.entTbl) ! i
-                               (view rmId -> ri) = (ws^.pcTbl)  ! i
-                               (pis, ris)        = over both ((ws^.invTbl) !) (i, ri)
-                               d                 = mkStdDesig i ws s True ris
-                           in (ri, pis, d)
 
 
 type FromId = Id
@@ -447,11 +439,10 @@ getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (ri, (i `delete`) -> is, c, d) = getRmId_RmInv_RmCoins_PCDesig i ws
-        in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as is c
-                   eiss                  = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
-                   ecs                   = map procReconciledCoinsRm rcs
+        let (d, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
+            rc                           = (ws^.coinsTbl) ! ri
+        in if (not . null $ ris) || (rc /= mempty)
+          then let (eiss, ecs)           = resolveRmInvCoins i ws as ris rc
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ws', bs, logMsgs) ecs
                in putTMVar t ws'' >> return (bs', logMsgs')
@@ -558,12 +549,21 @@ linkDirToCmdName Up        = "u"
 linkDirToCmdName Down      = "d"
 
 
+-- TODO: Move?
 mkStdDesig :: Id -> WorldState -> Sing -> Bool -> Inv -> PCDesig
 mkStdDesig i ws s ic ris = StdDesig { stdPCEntSing = Just s
                                     , isCap        = ic
                                     , pcEntName    = mkUnknownPCEntName i ws
                                     , pcId         = i
                                     , pcIds        = findPCIds ws ris }
+
+
+-- TODO: Move?
+mkCapStdDesig :: Id -> WorldState -> (PCDesig, Id, Inv)
+mkCapStdDesig i ws = let (view sing -> s)  = (ws^.entTbl) ! i
+                         (view rmId -> ri) = (ws^.pcTbl)  ! i
+                         ris               = (ws^.invTbl) ! ri
+                     in (mkStdDesig i ws s True ris, ri, ris)
 
 
 expandLinkName :: T.Text -> T.Text
@@ -689,7 +689,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
             is'               = i `delete` is
             c                 = (ws^.coinsTbl) ! ri
         in if (not . null $ is') || (c /= mempty)
-          then let (eiss, ecs)           = resolveRm i ws as is' c
+          then let (eiss, ecs)           = resolveRmInvCoins i ws as is' c
                    (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
                    (     cbs', logMsgs') = foldl' helperIntroEitherCoins      (    cbs, logMsgs) ecs
                in putTMVar t ws' >> return (cbs', logMsgs')
@@ -756,7 +756,7 @@ inv (NoArgs i mq cols) = getEnt' i >>= \(ws, e) ->
     send mq . nl . mkInvCoinsDesc i cols ws i $ e
 inv (LowerNub i mq cols as) = getInvCoins' i >>= \(ws, (is, c)) ->
     send mq $ if (not . null $ is) || (c /= mempty)
-      then let (eiss, ecs) = resolvePCInv i ws as is c
+      then let (eiss, ecs) = resolvePCInvCoins i ws as is c
                invDesc     = foldl' (helperEitherInv ws) "" eiss
                coinsDesc   = foldl' helperEitherCoins    "" ecs
            in invDesc <> coinsDesc
@@ -770,11 +770,10 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 -- TODO: Move.
-resolvePCInv :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolvePCInv i ws as is c = let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
-                                eiss               = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
-                                ecs                = map procReconciledCoinsPCInv rcs
-                            in (eiss, ecs)
+resolvePCInvCoins :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolvePCInvCoins i ws as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ws as is c
+                               , eiss               <- [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
+                               , ecs                <- map procReconciledCoinsPCInv rcs = (eiss, ecs)
 
 
 -----
@@ -802,13 +801,14 @@ look (LowerNub i mq cols as) = helper >>= \case
               logPla "look" i ("looked at " <> es <> ".")
   where
     helper = onWS $ \(t, ws) ->
-        let (_, is@((i `delete`) -> is'), c, d) = getRmId_RmInv_RmCoins_PCDesig i ws
-        in if (not . null $ is') || (c /= mempty)
-          then let (eiss, ecs) = resolveRm i ws as is' c
+        let (d, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
+            rc                                  = (ws^.coinsTbl) ! ri
+        in if (not . null $ ris') || (rc /= mempty)
+          then let (eiss, ecs) = resolveRmInvCoins i ws as ris' rc
                    invDesc     = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc   = foldl' helperLookEitherCoins    "" ecs
                    ds          = [ let (view sing -> s') = (ws^.entTbl) ! pi
-                                   in mkStdDesig pi ws s' False is | pi <- extractPCIdsFromEiss ws eiss ]
+                                   in mkStdDesig pi ws s' False ris | pi <- extractPCIdsFromEiss ws eiss ]
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
           else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
                                           , Nothing )
@@ -820,21 +820,10 @@ look p = patternMatchFail "look" [ showText p ]
 
 
 -- TODO: Move.
-resolveRm :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolveRm i ws as is c = let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
-                             eiss               = [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
-                             ecs                = map procReconciledCoinsRm rcs
-                         in (eiss, ecs)
-
-
--- TODO: Move.
-getRmId_RmInv_RmCoins_PCDesig :: Id -> WorldState -> (Id, Inv, Coins, PCDesig)
-getRmId_RmInv_RmCoins_PCDesig i ws = let (view sing -> s ) = (ws^.entTbl)   ! i
-                                         (view rmId -> ri) = (ws^.pcTbl)    ! i
-                                         ris               = (ws^.invTbl)   ! ri
-                                         rc                = (ws^.coinsTbl) ! ri
-                                         d                 = mkStdDesig i ws s True ris
-                                     in (ri, ris, rc, d)
+resolveRmInvCoins :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolveRmInvCoins i ws as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ws as is c
+                               , eiss               <- [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
+                               , ecs                <- map procReconciledCoinsRm rcs = (eiss, ecs)
 
 
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
@@ -919,11 +908,12 @@ putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (ri, pis, d@(delete i . pcIds -> ris)) = getRmId_Inv_PCDesig i ws
-          (pc, rc)                               = over both ((ws^.coinsTbl) !) (i, ri)
-          cn                                     = last as
-          (init -> argsWithoutCon)               = case as of [_, _] -> as
-                                                              _      -> (++ [cn]) . nub . init $ as
+      let (d, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
+          pis                          = (ws^.invTbl) ! i
+          (pc, rc)                     = over both ((ws^.coinsTbl) !) (i, ri)
+          cn                           = last as
+          (init -> argsWithoutCon)     = case as of [_, _] -> as
+                                                    _      -> (++ [cn]) . nub . init $ as
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
@@ -1514,11 +1504,12 @@ remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (ri, pis, d@(delete i . pcIds -> ris)) = getRmId_Inv_PCDesig i ws
-          (pc, rc)                               = over both ((ws^.coinsTbl) !) (i, ri)
-          cn                                     = last as
-          (init -> argsWithoutCon)               = case as of [_, _] -> as
-                                                              _      -> (++ [cn]) . nub . init $ as
+      let (d, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
+          pis                          = (ws^.invTbl) ! i
+          (pc, rc)                     = over both ((ws^.coinsTbl) !) (i, ri)
+          cn                           = last as
+          (init -> argsWithoutCon)     = case as of [_, _] -> as
+                                                    _      -> (++ [cn]) . nub . init $ as
       in if T.head cn == rmChar && cn /= T.singleton rmChar
         then if not . null $ ris
           then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
