@@ -175,9 +175,7 @@ dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (view sing -> s)  = (ws^.entTbl)   ! i
-            (view rmId -> ri) = (ws^.pcTbl)    ! i
-            (pis, ris)        = over both ((ws^.invTbl) !) (i, ri)
+        let (s, ri, pis, ris) = getSing_RmId_Inv_RmInv i ws
             pc                = (ws^.coinsTbl) ! i
             d                 = mkStdDesig i ws s True ris
         in if (not . null $ pis) || (pc /= mempty)
@@ -189,6 +187,14 @@ dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
                in putTMVar t ws'' >> return (bs', logMsgs')
           else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 dropAction p = patternMatchFail "dropAction" [ showText p ]
+
+
+-- TODO: Move.
+getSing_RmId_Inv_RmInv :: Id -> WorldState -> (Sing, Id, Inv, Inv)
+getSing_RmId_Inv_RmInv i ws = let (view sing -> s)  = (ws^.entTbl) ! i
+                                  (view rmId -> ri) = (ws^.pcTbl)  ! i
+                                  (pis, ris)        = over both ((ws^.invTbl) !) (i, ri)
+                              in (s, ri, pis, ris)
 
 
 type FromId = Id
@@ -261,11 +267,8 @@ helperGetDropEitherCoins i d god fi ti a@(ws, _, _) = \case
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
-mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ [ c, s, g ] = (bs, extractLogMsgs i bs)
+mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
-    c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
-    s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
-    g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
     helper a cn | a == 1 =
         [ (T.concat [ "You ",           mkGodVerb god SndPer, " a ", cn, "." ], [i])
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ", cn, "." ], otherPCIds) ]
@@ -273,6 +276,15 @@ mkGetDropCoinsDesc i d god (Coins (cop, sil, gol)) | bs <- concat . catMaybes $ 
         [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
     otherPCIds = i `delete` pcIds d
+
+
+-- TODO: Move.
+mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
+mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
+  where
+    c = if cop /= 0 then Just . f cop $ "copper piece" else Nothing
+    s = if sil /= 0 then Just . f sil $ "silver piece" else Nothing
+    g = if gol /= 0 then Just . f gol $ "gold piece"   else Nothing
 
 
 -----
@@ -899,9 +911,7 @@ putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (view sing -> s)         = (ws^.entTbl)   ! i
-          (view rmId -> ri)        = (ws^.pcTbl)    ! i
-          (pis, ris)               = over both ((ws^.invTbl)   !) (i, ri)
+      let (s, ri, pis, ris)        = getSing_RmId_Inv_RmInv i ws
           ris'                     = i `delete` ris
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
           cn                       = last as
@@ -1086,12 +1096,8 @@ helperPutRemEitherCoins i d por mnom fi ti te a@(ws, _, _) = \case
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescs i d por mnom (Coins (cop, sil, gol)) (view sing -> ts) | bs <- concat . catMaybes $ [ c, s, g ]
-                                                                          = (bs, extractLogMsgs i bs)
+mkPutRemCoinsDescs i d por mnom c (view sing -> ts) | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
-    c = if cop /= 0 then Just . helper cop $ "copper piece" else Nothing
-    s = if sil /= 0 then Just . helper sil $ "silver piece" else Nothing
-    g = if gol /= 0 then Just . helper gol $ "gold piece"   else Nothing
     helper a cn | a == 1 =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
@@ -1502,9 +1508,7 @@ remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (view sing -> s)         = (ws^.entTbl) ! i
-          (view rmId -> ri)        = (ws^.pcTbl)  ! i
-          (pis, ris)               = over both ((ws^.invTbl)   !) (i, ri)
+      let (s, ri, pis, ris)        = getSing_RmId_Inv_RmInv i ws
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
           ris'                     = i `delete` ris
           cn                       = last as

@@ -52,14 +52,6 @@ import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
--- TODO: Here's the plan:
--- [DONE] 1. Implement the broadcasting of messages.
--- 2. Review your coding guide, and undertake a refactoring of the entire codebase. Consider the following:
---   a. Code reduction.
---   b. Consistency in binding names.
--- 3. Write tests for NameResolution and the Cmds modules.
-
-
 default (Int)
 
 
