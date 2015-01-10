@@ -901,12 +901,7 @@ putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
-          pis                                = (ws^.invTbl) ! i
-          (pc, rc)                           = over both ((ws^.coinsTbl) !) (i, ri)
-          cn                                 = last as
-          (init -> argsWithoutCon)           = case as of [_, _] -> as
-                                                          _      -> (++ [cn]) . nub . init $ as
+      let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ws as
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
@@ -1491,18 +1486,24 @@ remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
-          pis                                = (ws^.invTbl) ! i
-          (pc, rc)                           = over both ((ws^.coinsTbl) !) (i, ri)
-          cn                                 = last as
-          (init -> argsWithoutCon)           = case as of [_, _] -> as
-                                                          _      -> (++ [cn]) . nub . init $ as
+      let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ws as
       in if T.head cn == rmChar && cn /= T.singleton rmChar
         then if not . null $ ris
           then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
           else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
         else shuffleRem i (t, ws) d cn False argsWithoutCon pis pc procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
+
+
+-- TODO: Move.
+mkPutRemBindings :: Id -> WorldState -> Args -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
+mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
+                               pis                                = (ws^.invTbl) ! i
+                               (pc, rc)                           = over both ((ws^.coinsTbl) !) (i, ri)
+                               cn                                 = last as
+                               (init -> argsWithoutCon)           = case as of [_, _] -> as
+                                                                               _      -> (++ [cn]) . nub . init $ as
+                           in (d, ris, rc, pis, pc, cn, argsWithoutCon)
 
 
 shuffleRem :: Id                                                  ->
