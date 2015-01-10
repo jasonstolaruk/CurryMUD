@@ -765,11 +765,9 @@ inv (NoArgs i mq cols) = getEnt' i >>= \(ws, e) ->
     send mq . nl . mkInvCoinsDesc i cols ws i $ e
 inv (LowerNub i mq cols as) = getInvCoins' i >>= \(ws, (is, c)) ->
     send mq $ if (not . null $ is) || (c /= mempty)
-      then let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
-               eiss               = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
-               ecs                = map procReconciledCoinsPCInv rcs
-               invDesc            = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc          = foldl' helperEitherCoins    "" ecs
+      then let (eiss, ecs) = resolvePCInv i ws as is c
+               invDesc     = foldl' (helperEitherInv ws) "" eiss
+               coinsDesc   = foldl' helperEitherCoins    "" ecs
            in invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
@@ -778,6 +776,14 @@ inv (LowerNub i mq cols as) = getInvCoins' i >>= \(ws, (is, c)) ->
     helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 inv p = patternMatchFail "inv" [ showText p ]
+
+
+-- TODO: Move.
+resolvePCInv :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolvePCInv i ws as is c = let (gecrs, miss, rcs) = resolveEntCoinNames i ws as is c
+                                eiss               = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
+                                ecs                = map procReconciledCoinsPCInv rcs
+                            in (eiss, ecs)
 
 
 -----
@@ -912,7 +918,7 @@ putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
   where
     helper = onWS $ \(t, ws) ->
       let (ri, pis, d)             = getRmId_Inv_PCDesig i ws
-          ris                      = i `delete` (pcIds d)
+          ris                      = i `delete` pcIds d
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
           cn                       = last as
           (init -> argsWithoutCon) = case as of [_, _] -> as
@@ -1508,7 +1514,7 @@ remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
   where
     helper = onWS $ \(t, ws) ->
       let (ri, pis, d)             = getRmId_Inv_PCDesig i ws
-          ris                      = i `delete` (pcIds d)
+          ris                      = i `delete` pcIds d
           (pc, rc)                 = over both ((ws^.coinsTbl) !) (i, ri)
           cn                       = last as
           (init -> argsWithoutCon) = case as of [_, _] -> as
