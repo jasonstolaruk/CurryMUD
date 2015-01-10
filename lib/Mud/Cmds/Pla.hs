@@ -175,9 +175,9 @@ dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (d, ri, _) = mkCapStdDesig i ws
-            is         = (ws^.invTbl)   ! i
-            c          = (ws^.coinsTbl) ! i
+        let (d, _, _, ri, _) = mkCapStdDesig i ws
+            is               = (ws^.invTbl)   ! i
+            c                = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
           then let (eiss, ecs)           = resolvePCInvCoins i ws as is c
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
@@ -439,8 +439,8 @@ getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (d, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
-            rc                           = (ws^.coinsTbl) ! ri
+        let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
+            rc                                 = (ws^.coinsTbl) ! ri
         in if (not . null $ ris) || (rc /= mempty)
           then let (eiss, ecs)           = resolveRmInvCoins i ws as ris rc
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
@@ -473,40 +473,35 @@ tryMove i mq cols dir = helper >>= \case
                                                                                    , args        = [] }
   where
     helper = onWS $ \(t, ws) ->
-        let (view sing -> s) = (ws^.entTbl) ! i
-            p                = (ws^.pcTbl)  ! i
-            ri               = p^.rmId
-            r                = (ws^.rmTbl)  ! ri
-            originIs         = (ws^.invTbl) ! ri
-        in case findExit r dir of
+        let (d, s, p, originRi, (i `delete`) -> originIs) = mkCapStdDesig i ws
+            originRm                                      = (ws^.rmTbl) ! originRi
+        in case findExit originRm dir of
           Nothing -> putTMVar t ws >> (return . Left $ sorry)
-          Just (linkTxt, ri', mom, mdm)
-            | p'          <- p & rmId .~ ri'
-            , r'          <- (ws^.rmTbl)  ! ri'
-            , originIs'   <- i `delete` originIs
-            , destIs      <- (ws^.invTbl) ! ri'
+          Just (linkTxt, destRi, mom, mdm)
+            | p'          <- p & rmId .~ destRi
+            , destRm      <- (ws^.rmTbl)  ! destRi
+            , destIs      <- (ws^.invTbl) ! destRi
             , destIs'     <- sortInv ws $ destIs ++ [i]
-            , originPis   <- findPCIds ws originIs'
+            , originPis   <- i `delete` pcIds d
             , destPis     <- findPCIds ws destIs
-            , msgAtOrigin <- let d = serialize . mkStdDesig i ws s True $ originIs
-                             in nlnl $ case mom of
-                               Nothing -> T.concat [ d, " ", verb, " ", expandLinkName dir, "." ]
-                               Just f  -> f d
-            , msgAtDest   <- let d = mkSerializedNonStdDesig i ws s A
+            , msgAtOrigin <- nlnl $ case mom of
+                               Nothing -> T.concat [ serialize d, " ", verb, " ", expandLinkName dir, "." ]
+                               Just f  -> f . serialize $ d
+            , msgAtDest   <- let d' = mkSerializedNonStdDesig i ws s A
                              in nlnl $ case mdm of
-                               Nothing -> T.concat [ d, " arrives from ", expandOppLinkName dir, "." ]
-                               Just f  -> f d
+                               Nothing -> T.concat [ d', " arrives from ", expandOppLinkName dir, "." ]
+                               Just f  -> f d'
             , logMsg      <- T.concat [ "moved "
                                       , linkTxt
                                       , " from room "
-                                      , showRm ri r
+                                      , showRm originRi originRm
                                       , " to room "
-                                      , showRm ri' r'
+                                      , showRm destRi   destRm
                                       , "." ]
             -> do
-                putTMVar t (ws & pcTbl.at  i   ?~ p'
-                               & invTbl.at ri  ?~ originIs'
-                               & invTbl.at ri' ?~ destIs')
+                putTMVar t (ws & pcTbl.at  i        ?~ p'
+                               & invTbl.at originRi ?~ originIs
+                               & invTbl.at destRi   ?~ destIs')
                 return . Right $ (logMsg, [ (msgAtOrigin, originPis), (msgAtDest, destPis) ])
     sorry | dir `elem` stdLinkNames = "You can't go that way."
           | otherwise               = dblQuote dir <> " is not a valid exit."
@@ -559,11 +554,10 @@ mkStdDesig i ws s ic ris = StdDesig { stdPCEntSing = Just s
 
 
 -- TODO: Move?
-mkCapStdDesig :: Id -> WorldState -> (PCDesig, Id, Inv)
-mkCapStdDesig i ws = let (view sing -> s)  = (ws^.entTbl) ! i
-                         (view rmId -> ri) = (ws^.pcTbl)  ! i
-                         ris               = (ws^.invTbl) ! ri
-                     in (mkStdDesig i ws s True ris, ri, ris)
+mkCapStdDesig :: Id -> WorldState -> (PCDesig, Sing, PC, Id, Inv)
+mkCapStdDesig i ws | (view sing -> s)    <- (ws^.entTbl) ! i
+                   , p@(view rmId -> ri) <- (ws^.pcTbl)  ! i
+                   , ris                 <- (ws^.invTbl) ! ri = (mkStdDesig i ws s True ris, s, p, ri, ris)
 
 
 expandLinkName :: T.Text -> T.Text
@@ -801,14 +795,14 @@ look (LowerNub i mq cols as) = helper >>= \case
               logPla "look" i ("looked at " <> es <> ".")
   where
     helper = onWS $ \(t, ws) ->
-        let (d, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
-            rc                                  = (ws^.coinsTbl) ! ri
+        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
+            rc                                        = (ws^.coinsTbl) ! ri
         in if (not . null $ ris') || (rc /= mempty)
           then let (eiss, ecs) = resolveRmInvCoins i ws as ris' rc
                    invDesc     = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc   = foldl' helperLookEitherCoins    "" ecs
-                   ds          = [ let (view sing -> s') = (ws^.entTbl) ! pi
-                                   in mkStdDesig pi ws s' False ris | pi <- extractPCIdsFromEiss ws eiss ]
+                   ds          = [ let (view sing -> s) = (ws^.entTbl) ! pi
+                                   in mkStdDesig pi ws s False ris | pi <- extractPCIdsFromEiss ws eiss ]
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
           else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
                                           , Nothing )
@@ -908,12 +902,12 @@ putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (d, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
-          pis                          = (ws^.invTbl) ! i
-          (pc, rc)                     = over both ((ws^.coinsTbl) !) (i, ri)
-          cn                           = last as
-          (init -> argsWithoutCon)     = case as of [_, _] -> as
-                                                    _      -> (++ [cn]) . nub . init $ as
+      let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
+          pis                                = (ws^.invTbl) ! i
+          (pc, rc)                           = over both ((ws^.coinsTbl) !) (i, ri)
+          cn                                 = last as
+          (init -> argsWithoutCon)           = case as of [_, _] -> as
+                                                          _      -> (++ [cn]) . nub . init $ as
       in if (not . null $ pis) || (pc /= mempty)
         then if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
@@ -1504,12 +1498,12 @@ remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-      let (d, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
-          pis                          = (ws^.invTbl) ! i
-          (pc, rc)                     = over both ((ws^.coinsTbl) !) (i, ri)
-          cn                           = last as
-          (init -> argsWithoutCon)     = case as of [_, _] -> as
-                                                    _      -> (++ [cn]) . nub . init $ as
+      let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
+          pis                                = (ws^.invTbl) ! i
+          (pc, rc)                           = over both ((ws^.coinsTbl) !) (i, ri)
+          cn                                 = last as
+          (init -> argsWithoutCon)           = case as of [_, _] -> as
+                                                          _      -> (++ [cn]) . nub . init $ as
       in if T.head cn == rmChar && cn /= T.singleton rmChar
         then if not . null $ ris
           then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
