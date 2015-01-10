@@ -677,11 +677,10 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
     bcast . map fromClassifiedBroadcast . sort $ cbs
   where
     helper = onWS $ \(t, ws) ->
-        let (view sing -> s)  = (ws^.entTbl)   ! i
-            (view rmId -> ri) = (ws^.pcTbl)    ! i
-            is                = (ws^.invTbl)   ! ri
-            is'               = i `delete` is
-            c                 = (ws^.coinsTbl) ! ri
+        let (view sing -> s)         = (ws^.entTbl)   ! i
+            (view rmId -> ri)        = (ws^.pcTbl)    ! i
+            is@((i `delete`) -> is') = (ws^.invTbl)   ! ri
+            c                        = (ws^.coinsTbl) ! ri
         in if (not . null $ is') || (c /= mempty)
           then let (eiss, ecs)           = resolveRmInvCoins i ws as is' c
                    (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
@@ -696,7 +695,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
       where
         tryIntro a'@(ws, _, _) targetId | targetType                <- (ws^.typeTbl) ! targetId
                                         , (view sing -> targetSing) <- (ws^.entTbl)  ! targetId = case targetType of
-          PCType | targetPC@(view introduced -> intros)  <- (ws^.pcTbl) ! targetId
+          PCType | targetPC@(view introduced -> intros)  <- (ws^.pcTbl)  ! targetId
                  , pis                                   <- findPCIds ws ris
                  , targetDesig                           <- serialize . mkStdDesig targetId ws targetSing False $ ris
                  , (views sex mkReflexive -> himHerself) <- (ws^.mobTbl) ! i
@@ -1173,12 +1172,9 @@ handleEgress i = do
 
 notifyEgress :: Id -> MudStack ()
 notifyEgress i = readWSTMVar >>= \ws ->
-    let (view sing    -> s)   = (ws^.entTbl) ! i
-        (view rmId    -> ri)  = (ws^.pcTbl)  ! i
-        ris                   = (ws^.invTbl) ! ri
-        ((i `delete`) -> pis) = findPCIds ws ris
-        d                     = serialize . mkStdDesig i ws s True $ ris
-    in bcast [(nlnl $ d <> " has left the game.", pis)]
+    let (d, _, _, _, _) = mkCapStdDesig i ws
+        pis             = i `delete` pcIds d
+    in bcast [(nlnl $ serialize d <> " has left the game.", pis)]
 
 
 -----
@@ -1197,12 +1193,9 @@ ready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (view sing -> s)  = (ws^.entTbl)   ! i
-            (view rmId -> ri) = (ws^.pcTbl)    ! i
-            ris               = (ws^.invTbl)   ! ri
-            is                = (ws^.invTbl)   ! i
-            c                 = (ws^.coinsTbl) ! i
-            d                 = mkStdDesig i ws s True ris
+        let (d, _, _, _, _) = mkCapStdDesig i ws
+            is              = (ws^.invTbl)   ! i
+            c               = (ws^.coinsTbl) ! i
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
                    eiss                      = [ curry procGecrMisReady gecr mis | gecr <- gecrs | mis <- miss ]
@@ -1560,12 +1553,9 @@ unready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (view sing -> s)  = (ws^.entTbl)   ! i
-            (view rmId -> ri) = (ws^.pcTbl)    ! i
-            ris               = (ws^.invTbl)   ! ri
-            em                = (ws^.eqTbl) ! i
-            is                = M.elems em
-            d                 = mkStdDesig i ws s True ris
+        let (d, _, _, _, _) = mkCapStdDesig i ws
+            em              = (ws^.eqTbl) ! i
+            is              = M.elems em
         in if not . null $ is
           then let (gecrs, miss, rcs)  = resolveEntCoinNames i ws as is mempty
                    eiss                = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
