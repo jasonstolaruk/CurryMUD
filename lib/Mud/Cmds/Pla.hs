@@ -175,9 +175,7 @@ dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (d, _, _, ri, _) = mkCapStdDesig i ws
-            is               = (ws^.invTbl)   ! i
-            c                = (ws^.coinsTbl) ! i
+        let (d, ri, is, c) = mkDropReadyBindings i ws
         in if (not . null $ is) || (c /= mempty)
           then let (eiss, ecs)           = resolvePCInvCoins i ws as is c
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
@@ -185,6 +183,12 @@ dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
                in putTMVar t ws'' >> return (bs', logMsgs')
           else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 dropAction p = patternMatchFail "dropAction" [ showText p ]
+
+
+mkDropReadyBindings :: Id -> WorldState -> (PCDesig, Id, Inv, Coins)
+mkDropReadyBindings i ws | (d, _, _, ri, _) <- mkCapStdDesig i ws
+                         , is               <- (ws^.invTbl)   ! i
+                         , c                <- (ws^.coinsTbl) ! i = (d, ri, is, c)
 
 
 mkCapStdDesig :: Id -> WorldState -> (PCDesig, Sing, PC, Id, Inv)
@@ -458,8 +462,7 @@ getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
-            rc                                 = (ws^.coinsTbl) ! ri
+        let (d, ri, _, ris, rc) = mkGetLookBindings i ws
         in if (not . null $ ris) || (rc /= mempty)
           then let (eiss, ecs)           = resolveRmInvCoins i ws as ris rc
                    (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
@@ -467,6 +470,11 @@ getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
                in putTMVar t ws'' >> return (bs', logMsgs')
           else putTMVar t ws >> return (mkBroadcast i "You don't see anything here to pick up.", [])
 getAction p = patternMatchFail "getAction" [ showText p ]
+
+
+mkGetLookBindings :: Id -> WorldState -> (PCDesig, Id, Inv, Inv, Coins)
+mkGetLookBindings i ws | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i ws
+                       , rc                                        <- (ws^.coinsTbl) ! ri = (d, ri, ris, ris', rc)
 
 
 resolveRmInvCoins :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
@@ -796,8 +804,7 @@ look (LowerNub i mq cols as) = helper >>= \case
               logPla "look" i ("looked at " <> es <> ".")
   where
     helper = onWS $ \(t, ws) ->
-        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
-            rc                                        = (ws^.coinsTbl) ! ri
+        let (d, _, ris, ris', rc) = mkGetLookBindings i ws
         in if (not . null $ ris') || (rc /= mempty)
           then let (eiss, ecs) = resolveRmInvCoins i ws as ris' rc
                    invDesc     = foldl' (helperLookEitherInv ws) "" eiss
@@ -1193,9 +1200,7 @@ ready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (d, _, _, _, _) = mkCapStdDesig i ws
-            is              = (ws^.invTbl)   ! i
-            c               = (ws^.coinsTbl) ! i
+        let (d, _, is, c) = mkDropReadyBindings i ws
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
                    eiss                      = [ curry procGecrMisReady gecr mis | gecr <- gecrs | mis <- miss ]
