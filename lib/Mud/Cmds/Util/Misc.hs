@@ -5,7 +5,6 @@ module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
-                          , grep
                           , pager
                           , prefixCmd
                           , sendGenericErrorMsg
@@ -94,10 +93,13 @@ mkCmdListText cmds = let (styleAbbrevs Don'tBracket -> cmdNames) = [ cmdName cmd
 
 dispMatches :: ActionParams -> Int -> [T.Text] -> MudStack ()
 dispMatches (LowerNub i mq cols needles) indent haystack =
-    let (filter (not . null) -> matches) = [ grep needle haystack | needle <- needles ]
+    let (filter (not . null) -> matches) = map grep needles
     in if null matches
       then wrapSend mq cols "No matches found."
       else pager i mq . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
+  where
+    grep needle = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
+                  in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
 dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, showText indent, showText haystack ]
 
 
@@ -112,15 +114,6 @@ fileIOExHandler fn e
   | otherwise             = throwIO e
   where
     logIt = logIOEx fn e
-
-
------
-
-
--- TODO: Since we're lowering here, we only need to nub caller-side...
-grep :: T.Text -> [T.Text] -> [T.Text]
-grep (T.toLower -> needle) haystack = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
-                                      in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
 
 
 -----
