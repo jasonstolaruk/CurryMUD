@@ -5,47 +5,34 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , IsConInRm
                          , dudeYou'reNaked
                          , dudeYourHandsAreEmpty
-                         , expandLinkName
-                         , expandOppLinkName
                          , findAvailSlot
                          , helperGetDropEitherCoins
                          , helperGetDropEitherInv
                          , helperPutRemEitherCoins
                          , helperPutRemEitherInv
-                         , isKnownPCSing
                          , isNonStdLink
                          , isRingRol
                          , isSlotAvail
                          , linkDirToCmdName
                          , mkCapStdDesig
-                         , mkCoinsBroadcasts
                          , mkCoinsDesc
                          , mkCoinsSummary
                          , mkDropReadyBindings
-                         , mkEntDesc
                          , mkEntDescs
-                         , mkEntsInInvDesc
                          , mkEqDesc
                          , mkExitsSummary
                          , mkGetDropCoinsDesc
                          , mkGetDropInvDesc
                          , mkGetLookBindings
-                         , mkGodVerb
                          , mkInvCoinsDesc
                          , mkMaybeNthOfM
-                         , mkNameCountBothList
-                         , mkPCDescHeader
-                         , mkPorPrep
-                         , mkPorVerb
                          , mkPutRemBindings
                          , mkPutRemCoinsDescs
                          , mkPutRemInvDesc
-                         , mkRmInvCoinsDesc
                          , mkSerializedNonStdDesig
                          , mkStdDesig
                          , mkStyledNameCountBothList
                          , moveReadiedItem
-                         , onTheGround
                          , otherHand
                          , resolvePCInvCoins
                          , resolveRmInvCoins ) where
@@ -59,11 +46,10 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.NameResolution
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Wrapping
-import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***))
 import Control.Lens (_1, _2, _3, at, both, over, to)
@@ -78,18 +64,7 @@ import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
 
 
--- TODO: Review the export list. Are we exporting only what we need to? Does this module contain any functions that are only used by one function in the Cmds.Pla module?
--- TODO: Organize function definition order as needed.
-
-
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
-patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Pla"
 
 
 -- ==================================================
@@ -352,59 +327,6 @@ linkDirToCmdName West      = "w"
 linkDirToCmdName Northwest = "nw"
 linkDirToCmdName Up        = "u"
 linkDirToCmdName Down      = "d"
-
-
-expandLinkName :: T.Text -> T.Text
-expandLinkName "n"  = "north"
-expandLinkName "ne" = "northeast"
-expandLinkName "e"  = "east"
-expandLinkName "se" = "southeast"
-expandLinkName "s"  = "south"
-expandLinkName "sw" = "southwest"
-expandLinkName "w"  = "west"
-expandLinkName "nw" = "northwest"
-expandLinkName "u"  = "up"
-expandLinkName "d"  = "down"
-expandLinkName x    = patternMatchFail "expandLinkName" [x]
-
-
-expandOppLinkName :: T.Text -> T.Text
-expandOppLinkName "n"  = "the south"
-expandOppLinkName "ne" = "the southwest"
-expandOppLinkName "e"  = "the west"
-expandOppLinkName "se" = "the northwest"
-expandOppLinkName "s"  = "the north"
-expandOppLinkName "sw" = "the northeast"
-expandOppLinkName "w"  = "the east"
-expandOppLinkName "nw" = "the southeast"
-expandOppLinkName "u"  = "below"
-expandOppLinkName "d"  = "above"
-expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
-
-
-mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
-mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
-                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . zip ris . mkStyledNameCountBothList i ws $ ris
-                              , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
-                              , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
-                              , c          <- (ws^.coinsTbl) ! ri
-                              = (if not . null $ pcNcbs    then pcDescs               else "") <>
-                                (if not . null $ otherNcbs then otherDescs            else "") <>
-                                (if c /= mempty            then mkCoinsSummary cols c else "")
-  where
-    splitPCsOthers                       = over both (map snd) . span (\(i', _) -> (ws^.typeTbl) ! i' == PCType)
-    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
-                                             then knownNameColor   <> s       <> dfltColor
-                                             else unknownNameColor <> aOrAn s <> dfltColor
-    mkPCDesc    a                        = mkOtherDesc a
-    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
-    mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
-
-
-isKnownPCSing :: Sing -> Bool
-isKnownPCSing (T.words -> ss) = case ss of [ "male",   _ ] -> False
-                                           [ "female", _ ] -> False
-                                           _               -> True
 
 
 mkPutRemBindings :: Id -> WorldState -> Args -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)

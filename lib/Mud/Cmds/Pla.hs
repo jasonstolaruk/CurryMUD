@@ -317,6 +317,34 @@ findExit (view rmLinks -> rls) ln =
     getDestMsg   _                 = Nothing
 
 
+expandLinkName :: T.Text -> T.Text
+expandLinkName "n"  = "north"
+expandLinkName "ne" = "northeast"
+expandLinkName "e"  = "east"
+expandLinkName "se" = "southeast"
+expandLinkName "s"  = "south"
+expandLinkName "sw" = "southwest"
+expandLinkName "w"  = "west"
+expandLinkName "nw" = "northwest"
+expandLinkName "u"  = "up"
+expandLinkName "d"  = "down"
+expandLinkName x    = patternMatchFail "expandLinkName" [x]
+
+
+expandOppLinkName :: T.Text -> T.Text
+expandOppLinkName "n"  = "the south"
+expandOppLinkName "ne" = "the southwest"
+expandOppLinkName "e"  = "the west"
+expandOppLinkName "se" = "the northwest"
+expandOppLinkName "s"  = "the north"
+expandOppLinkName "sw" = "the northeast"
+expandOppLinkName "w"  = "the east"
+expandOppLinkName "nw" = "the southeast"
+expandOppLinkName "u"  = "below"
+expandOppLinkName "d"  = "above"
+expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
+
+
 -----
 
 
@@ -525,6 +553,31 @@ look (LowerNub i mq cols as) = helper >>= \case
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 look p = patternMatchFail "look" [ showText p ]
+
+
+mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
+mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
+                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . zip ris . mkStyledNameCountBothList i ws $ ris
+                              , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
+                              , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
+                              , c          <- (ws^.coinsTbl) ! ri
+                              = (if not . null $ pcNcbs    then pcDescs               else "") <>
+                                (if not . null $ otherNcbs then otherDescs            else "") <>
+                                (if c /= mempty            then mkCoinsSummary cols c else "")
+  where
+    splitPCsOthers                       = over both (map snd) . span (\(i', _) -> (ws^.typeTbl) ! i' == PCType)
+    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
+                                             then knownNameColor   <> s       <> dfltColor
+                                             else unknownNameColor <> aOrAn s <> dfltColor
+    mkPCDesc    a                        = mkOtherDesc a
+    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
+    mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
+
+
+isKnownPCSing :: Sing -> Bool
+isKnownPCSing (T.words -> ss) = case ss of [ "male",   _ ] -> False
+                                           [ "female", _ ] -> False
+                                           _               -> True
 
 
 extractPCIdsFromEiss :: WorldState -> [Either T.Text Inv] -> [Id]
