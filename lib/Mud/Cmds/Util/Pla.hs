@@ -102,6 +102,37 @@ helperGetDropEitherCoins i d god fi ti a@(ws, _, _) = \case
           -> set _1 ws' . over _2 (++ bs) . over _3 (++ logMsgs) $ a
 
 
+mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
+mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+  where
+    helper a cn | a == 1 =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " a ", cn, "." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ", cn, "." ], otherPCIds) ]
+    helper a cn =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
+    otherPCIds = i `delete` pcIds d
+
+
+mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
+mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
+  where
+    c = if cop /= 0 then Just . f cop $ "copper piece" else Nothing
+    s = if sil /= 0 then Just . f sil $ "silver piece" else Nothing
+    g = if gol /= 0 then Just . f gol $ "gold piece"   else Nothing
+
+
+extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
+extractLogMsgs i bs = [ fst b | b <- bs, snd b == [i] ]
+
+
+mkGodVerb :: GetOrDrop -> Verb -> T.Text
+mkGodVerb Get  SndPer = "pick up"
+mkGodVerb Get  ThrPer = "picks up"
+mkGodVerb Drop SndPer = "drop"
+mkGodVerb Drop ThrPer = "drops"
+
+
 -----
 
 
@@ -120,6 +151,26 @@ helperGetDropEitherInv i d god fi ti a@(ws, _, _) = \case
                                    & invTbl.at ti ?~ sortInv ws (tis ++ is)
            , (bs', logMsgs') <- mkGetDropInvDesc i ws' d god is
            -> set _1 ws' . over _2 (++ bs') . over _3 (++ logMsgs') $ a
+
+
+mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
+mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap helper ncbs = (bs, extractLogMsgs i bs)
+  where
+    helper (_, c, (s, _))
+      | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s, "." ], [i])
+                 , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ",   s, "." ], otherPCIds) ]
+    helper (_, c, b) =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
+      where
+        rest = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
+    otherPCIds = i `delete` pcIds d
+
+
+mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkNameCountBothList i ws is | ens   <- [ getEffName        i ws i' | i' <- is ]
+                            , ebgns <- [ getEffBothGramNos i ws i' | i' <- is ]
+                            , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
 
 
 -----
@@ -148,6 +199,77 @@ helperPutRemEitherCoins i d por mnom fi ti te a@(ws, _, _) = \case
           -> set _1 ws' . over _2 (++ bs) . over _3 (++ logMsgs) $ a
 
 
+mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
+mkPutRemCoinsDescs i d por mnom c (view sing -> ts) | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+  where
+    helper a cn | a == 1 =
+        [ (T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , " a "
+                    , cn
+                    , " "
+                    , mkPorPrep por SndPer mnom
+                    , rest ], [i])
+        , (T.concat [ serialize d
+                    , " "
+                    , mkPorVerb por ThrPer
+                    , " a "
+                    , cn
+                    , " "
+                    , mkPorPrep por ThrPer mnom
+                    , rest ], otherPCIds) ]
+    helper a cn =
+        [ (T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , " "
+                    , showText a
+                    , " "
+                    , cn
+                    , "s "
+                    , mkPorPrep por SndPer mnom
+                    , rest ], [i])
+        , (T.concat [ serialize d
+                    , " "
+                    , mkPorVerb por ThrPer
+                    , " "
+                    , showText a
+                    , " "
+                    , cn
+                    , "s "
+                    , mkPorPrep por ThrPer mnom
+                    , rest ], otherPCIds) ]
+    rest       = T.concat [ " ", ts, onTheGround mnom, "." ]
+    otherPCIds = i `delete` pcIds d
+
+
+mkPorVerb :: PutOrRem -> Verb -> T.Text
+mkPorVerb Put SndPer = "put"
+mkPorVerb Put ThrPer = "puts"
+mkPorVerb Rem SndPer = "remove"
+mkPorVerb Rem ThrPer = "removes"
+
+
+mkPorPrep :: PutOrRem -> Verb -> Maybe NthOfM -> T.Text
+mkPorPrep Put SndPer Nothing       = "in the"
+mkPorPrep Put SndPer (Just (n, m)) = "in the"   <> descNthOfM n m
+mkPorPrep Rem SndPer Nothing       = "from the"
+mkPorPrep Rem SndPer (Just (n, m)) = "from the" <> descNthOfM n m
+mkPorPrep Put ThrPer Nothing       = "in a"
+mkPorPrep Put ThrPer (Just (n, m)) = "in the"   <> descNthOfM n m
+mkPorPrep Rem ThrPer Nothing       = "from a"
+mkPorPrep Rem ThrPer (Just (n, m)) = "from the" <> descNthOfM n m
+
+
+descNthOfM :: Int -> Int -> T.Text
+descNthOfM 1 1 = ""
+descNthOfM n _ = " " <> mkOrdinal n
+
+
+onTheGround :: Maybe NthOfM -> T.Text
+onTheGround Nothing = ""
+onTheGround _       = " on the ground"
+
+
 -----
 
 
@@ -173,6 +295,53 @@ helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
            -> set _1 ws' . set _2 (bs' ++ bs'') . over _3 (++ logMsgs) $ a
   where
     sorry = ("You can't put the " <> te^.sing <> " inside itself.", [i])
+
+
+mkPutRemInvDesc :: Id -> WorldState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToEnt -> ([Broadcast], [T.Text])
+mkPutRemInvDesc i ws d por mnom is (view sing -> ts) | bs <- concatMap helper . mkNameCountBothList i ws $ is
+                                                     = (bs, extractLogMsgs i bs)
+  where
+    helper (_, c, (s, _)) | c == 1 =
+        [ (T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , mkArticle
+                    , s
+                    , " "
+                    , mkPorPrep por SndPer mnom
+                    , rest ], [i])
+        , (T.concat [ serialize d
+                    , " "
+                    , mkPorVerb por ThrPer
+                    , " a "
+                    , s
+                    , " "
+                    , mkPorPrep por ThrPer mnom
+                    , rest ], otherPCIds) ]
+      where
+        mkArticle | por == Put = " the "
+                  | otherwise  = " a "
+    helper (_, c, b) =
+        [ (T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , " "
+                    , showText c
+                    , " "
+                    , mkPlurFromBoth b
+                    , " "
+                    , mkPorPrep por SndPer mnom
+                    , rest ], [i])
+        , (T.concat [ serialize d
+                    , " "
+                    , mkPorVerb por ThrPer
+                    , " "
+                    , showText c
+                    , " "
+                    , mkPlurFromBoth b
+                    , " "
+                    , mkPorPrep por ThrPer mnom
+                    , rest ], otherPCIds) ]
+    rest       = T.concat [ " ", ts, onTheGround mnom, "."  ]
+    otherPCIds = i `delete` pcIds d
 
 
 -----
@@ -238,6 +407,43 @@ mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(views entDesc (wrapUnlines 
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
     mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ws = T.concat [ "You see a ", s, " ", r, "." ]
+
+
+mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
+mkInvCoinsDesc i cols ws i' (view sing -> s) | is <- (ws^.invTbl)   ! i'
+                                             , c  <- (ws^.coinsTbl) ! i' = case (not . null $ is, c /= mempty) of
+  (False, False) -> wrapUnlines cols $ if i' == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
+  (True,  False) -> header <> mkEntsInInvDesc i cols ws is
+  (False, True ) -> header <>                                 mkCoinsSummary cols c
+  (True,  True ) -> header <> mkEntsInInvDesc i cols ws is <> mkCoinsSummary cols c
+  where
+    header | i' == i   = nl "You are carrying:"
+           | otherwise = wrapUnlines cols $ "The " <> s <> " contains:"
+
+
+dudeYourHandsAreEmpty :: T.Text
+dudeYourHandsAreEmpty = "You aren't carrying anything."
+
+
+mkEntsInInvDesc :: Id -> Cols -> WorldState -> Inv -> T.Text
+mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper) . mkStyledNameCountBothList i ws
+  where
+    helper (pad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
+    helper (pad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
+    ind = 11
+
+
+mkStyledNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkStyledNameCountBothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffName        i ws i' | i' <- is ]
+                                  , ebgns <-                        [ getEffBothGramNos i ws i' | i' <- is ]
+                                  , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
+
+
+mkCoinsSummary :: Cols -> Coins -> T.Text
+mkCoinsSummary cols c = helper [ mkNameAmt cn c' | cn <- coinNames | c' <- mkListFromCoins c ]
+  where
+    mkNameAmt cn a = if a == 0 then "" else showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
+    helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
@@ -315,106 +521,9 @@ isNonStdLink _               = False
 -----
 
 
-mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
-mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
-  where
-    helper a cn | a == 1 =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " a ", cn, "." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ", cn, "." ], otherPCIds) ]
-    helper a cn =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
-    otherPCIds = i `delete` pcIds d
-
-
-mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
-mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
-  where
-    c = if cop /= 0 then Just . f cop $ "copper piece" else Nothing
-    s = if sil /= 0 then Just . f sil $ "silver piece" else Nothing
-    g = if gol /= 0 then Just . f gol $ "gold piece"   else Nothing
-
-
-extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
-extractLogMsgs i bs = [ fst b | b <- bs, snd b == [i] ]
-
-
-mkGodVerb :: GetOrDrop -> Verb -> T.Text
-mkGodVerb Get  SndPer = "pick up"
-mkGodVerb Get  ThrPer = "picks up"
-mkGodVerb Drop SndPer = "drop"
-mkGodVerb Drop ThrPer = "drops"
-
-
------
-
-
-mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
-mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap helper ncbs = (bs, extractLogMsgs i bs)
-  where
-    helper (_, c, (s, _))
-      | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s, "." ], [i])
-                 , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ",   s, "." ], otherPCIds) ]
-    helper (_, c, b) =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
-      where
-        rest = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
-    otherPCIds = i `delete` pcIds d
-
-
-mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkNameCountBothList i ws is | ens   <- [ getEffName        i ws i' | i' <- is ]
-                            , ebgns <- [ getEffBothGramNos i ws i' | i' <- is ]
-                            , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
-
-
------
-
-
 mkGetLookBindings :: Id -> WorldState -> (PCDesig, Id, Inv, Inv, Coins)
 mkGetLookBindings i ws | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i ws
                        , rc                                        <- (ws^.coinsTbl) ! ri = (d, ri, ris, ris', rc)
-
-
------
-
-
-mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
-mkInvCoinsDesc i cols ws i' (view sing -> s) | is <- (ws^.invTbl)   ! i'
-                                             , c  <- (ws^.coinsTbl) ! i' = case (not . null $ is, c /= mempty) of
-  (False, False) -> wrapUnlines cols $ if i' == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
-  (True,  False) -> header <> mkEntsInInvDesc i cols ws is
-  (False, True ) -> header <>                                 mkCoinsSummary cols c
-  (True,  True ) -> header <> mkEntsInInvDesc i cols ws is <> mkCoinsSummary cols c
-  where
-    header | i' == i   = nl "You are carrying:"
-           | otherwise = wrapUnlines cols $ "The " <> s <> " contains:"
-
-
-dudeYourHandsAreEmpty :: T.Text
-dudeYourHandsAreEmpty = "You aren't carrying anything."
-
-
-mkEntsInInvDesc :: Id -> Cols -> WorldState -> Inv -> T.Text
-mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper) . mkStyledNameCountBothList i ws
-  where
-    helper (pad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
-    helper (pad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
-    ind = 11
-
-
-mkStyledNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkStyledNameCountBothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffName        i ws i' | i' <- is ]
-                                  , ebgns <-                        [ getEffBothGramNos i ws i' | i' <- is ]
-                                  , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
-
-
-mkCoinsSummary :: Cols -> Coins -> T.Text
-mkCoinsSummary cols c = helper [ mkNameAmt cn c' | cn <- coinNames | c' <- mkListFromCoins c ]
-  where
-    mkNameAmt cn a = if a == 0 then "" else showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
-    helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
 -----
@@ -442,130 +551,6 @@ mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesi
                                (init -> argsWithoutCon)           = case as of [_, _] -> as
                                                                                _      -> (++ [cn]) . nub . init $ as
                            in (d, ris, rc, pis, pc, cn, argsWithoutCon)
-
-
------
-
-
-mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescs i d por mnom c (view sing -> ts) | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
-  where
-    helper a cn | a == 1 =
-        [ (T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , " a "
-                    , cn
-                    , " "
-                    , mkPorPrep por SndPer mnom
-                    , rest ], [i])
-        , (T.concat [ serialize d
-                    , " "
-                    , mkPorVerb por ThrPer
-                    , " a "
-                    , cn
-                    , " "
-                    , mkPorPrep por ThrPer mnom
-                    , rest ], otherPCIds) ]
-    helper a cn =
-        [ (T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , " "
-                    , showText a
-                    , " "
-                    , cn
-                    , "s "
-                    , mkPorPrep por SndPer mnom
-                    , rest ], [i])
-        , (T.concat [ serialize d
-                    , " "
-                    , mkPorVerb por ThrPer
-                    , " "
-                    , showText a
-                    , " "
-                    , cn
-                    , "s "
-                    , mkPorPrep por ThrPer mnom
-                    , rest ], otherPCIds) ]
-    rest       = T.concat [ " ", ts, onTheGround mnom, "." ]
-    otherPCIds = i `delete` pcIds d
-
-
-mkPorVerb :: PutOrRem -> Verb -> T.Text
-mkPorVerb Put SndPer = "put"
-mkPorVerb Put ThrPer = "puts"
-mkPorVerb Rem SndPer = "remove"
-mkPorVerb Rem ThrPer = "removes"
-
-
-mkPorPrep :: PutOrRem -> Verb -> Maybe NthOfM -> T.Text
-mkPorPrep Put SndPer Nothing       = "in the"
-mkPorPrep Put SndPer (Just (n, m)) = "in the"   <> descNthOfM n m
-mkPorPrep Rem SndPer Nothing       = "from the"
-mkPorPrep Rem SndPer (Just (n, m)) = "from the" <> descNthOfM n m
-mkPorPrep Put ThrPer Nothing       = "in a"
-mkPorPrep Put ThrPer (Just (n, m)) = "in the"   <> descNthOfM n m
-mkPorPrep Rem ThrPer Nothing       = "from a"
-mkPorPrep Rem ThrPer (Just (n, m)) = "from the" <> descNthOfM n m
-
-
-descNthOfM :: Int -> Int -> T.Text
-descNthOfM 1 1 = ""
-descNthOfM n _ = " " <> mkOrdinal n
-
-
-onTheGround :: Maybe NthOfM -> T.Text
-onTheGround Nothing = ""
-onTheGround _       = " on the ground"
-
-
------
-
-
-mkPutRemInvDesc :: Id -> WorldState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i ws d por mnom is (view sing -> ts) | bs <- concatMap helper . mkNameCountBothList i ws $ is
-                                                     = (bs, extractLogMsgs i bs)
-  where
-    helper (_, c, (s, _)) | c == 1 =
-        [ (T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , mkArticle
-                    , s
-                    , " "
-                    , mkPorPrep por SndPer mnom
-                    , rest ], [i])
-        , (T.concat [ serialize d
-                    , " "
-                    , mkPorVerb por ThrPer
-                    , " a "
-                    , s
-                    , " "
-                    , mkPorPrep por ThrPer mnom
-                    , rest ], otherPCIds) ]
-      where
-        mkArticle | por == Put = " the "
-                  | otherwise  = " a "
-    helper (_, c, b) =
-        [ (T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , " "
-                    , showText c
-                    , " "
-                    , mkPlurFromBoth b
-                    , " "
-                    , mkPorPrep por SndPer mnom
-                    , rest ], [i])
-        , (T.concat [ serialize d
-                    , " "
-                    , mkPorVerb por ThrPer
-                    , " "
-                    , showText c
-                    , " "
-                    , mkPlurFromBoth b
-                    , " "
-                    , mkPorPrep por ThrPer mnom
-                    , rest ], otherPCIds) ]
-    rest       = T.concat [ " ", ts, onTheGround mnom, "."  ]
-    otherPCIds = i `delete` pcIds d
 
 
 -----
