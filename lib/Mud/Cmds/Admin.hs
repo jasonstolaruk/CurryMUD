@@ -114,7 +114,7 @@ adminAnnounce p@AdviseNoArgs         = advise p [ prefixAdminCmd "announce" ] ad
     advice = T.concat [ "You must provide a message to send, as in "
                       , quoteColor
                       , dblQuote $ prefixAdminCmd "announce" <> " CurryMUD will be shutting down for maintenance in 30 \
-                                                  \minutes."
+                                                  \minutes"
                       , dfltColor
                       , "." ]
 adminAnnounce   (WithArgs i mq _ as) = do
@@ -238,7 +238,7 @@ adminShutdown (WithArgs i mq _ as) = do
                                             , s
                                             , "; message: "
                                             , msg ]
-    logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg, "." ]
+    logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg ]
     liftIO . atomically . writeTQueue mq $ Shutdown
 adminShutdown _ = patternMatchFail "adminShutdown" []
 

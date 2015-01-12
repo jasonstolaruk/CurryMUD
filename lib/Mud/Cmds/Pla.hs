@@ -107,6 +107,7 @@ plaCmds :: [Cmd]
 plaCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About CurryMUD." }
+    , Cmd { cmdName = "admin", action = admin, cmdDesc = "Send a message to an administrator." }
     , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }
     , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
     , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items." }
@@ -151,6 +152,42 @@ about (NoArgs i mq cols) = do
   where
     helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ aboutFile)
 about p = withoutArgs about p
+
+
+-----
+
+
+admin :: Action
+admin p@AdviseNoArgs     = advise p ["admin"] advice
+  where
+    advice = T.concat [ "Please specify the name of an administrator, followed by a message, as in "
+                      , quoteColor
+                      , dblQuote "admin jason are you available? I need your assistance"
+                      , dfltColor
+                      , "." ]
+admin p@(AdviseOneArg a) = advise p ["admin"] advice
+  where
+    advice = T.concat [ "Please also a message to send, as in "
+                      , quoteColor
+                      , dblQuote $ "admin " <> a <> " are you available? I need your assistance"
+                      , dfltColor
+                      , "." ]
+{-
+admin   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
+    unless (null logMsgs) $ logPlaOut "put" i logMsgs
+    bcastNl bs
+  where
+    helper = onWS $ \(t, ws) ->
+      let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ws as
+      in if (not . null $ pis) || (pc /= mempty)
+        then if T.head cn == rmChar && cn /= T.singleton rmChar
+          then if not . null $ ris
+            then shufflePut i (t, ws) d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
+            else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
+          else shufflePut i (t, ws) d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
+        else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+-}
+admin p = patternMatchFail "admin" [ showText p ]
 
 
 -----

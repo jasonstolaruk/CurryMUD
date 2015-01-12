@@ -4,6 +4,7 @@
 module Mud.Data.State.State where
 
 import Mud.Data.State.StateInIORefT
+import Mud.Util.Misc
 import Mud.Util.Quoting
 
 import Control.Concurrent (ThreadId)
@@ -11,7 +12,9 @@ import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
+import Data.Char
 import Data.List (nub)
+import Data.Monoid ((<>))
 import Data.Monoid (Monoid, mappend, mempty)
 import Data.String (fromString)
 import Formatting ((%), sformat)
@@ -412,6 +415,29 @@ pattern WithArgs i mq cols as = ActionParams { plaId       = i
                                              , plaMsgQueue = mq
                                              , plaCols     = cols
                                              , args        = as }
+
+
+-- TODO: Move?
+pattern Msg i mq cols msg <- WithArgs i mq cols (formatMsgArgs -> msg)
+
+
+-- TODO: Move?
+formatMsgArgs :: Args -> Args
+formatMsgArgs ((capitalize . T.toLower -> n):rest) = [ n, helper rest ]
+  where
+    helper [x] = punctuateIt . capsIt $ x
+    helper xs  | h <- head xs, l <- last xs = T.concat $ h : (init . tail $ xs) ++ [l]
+    punctuateIt x@(T.uncons -> Just (c, "")) | c `elem` ".?!" = x
+                                             | otherwise      = c `T.cons` "."
+    punctuateIt x@(T.last   -> c)            | c `elem` ".?!" = x
+                                             | otherwise      = x <> "."
+    capsIt x@(T.uncons         -> Just (_, "")) = T.toUpper  x
+    capsIt   (T.break isLetter ->      ("", x)) = capitalize x
+    capsIt   (T.break isLetter ->      (x, "")) = x
+    capsIt x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` "('\"" = c `T.cons` capitalize y
+                                                                 | otherwise       = x
+    capsIt _ = undefined -- TODO
+formatMsgArgs _ = undefined -- TODO
 
 
 pattern NoArgs i mq cols = WithArgs i mq cols []
