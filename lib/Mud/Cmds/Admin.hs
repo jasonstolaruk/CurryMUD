@@ -33,7 +33,7 @@ import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, sortBy)
+import Data.List (sortBy)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
@@ -277,20 +277,19 @@ adminUptime p = withoutArgs adminUptime p
 adminWho :: Action
 adminWho   (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
-    (mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
+    (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
 adminWho p@(WithArgs i _ _ as) = do
     logPlaExecArgs (prefixAdminCmd "who") as i
-    dispMatches p 20 =<< (mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
+    dispMatches p 20 =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
 adminWho _ = patternMatchFail "adminWho" []
 
 
-mkPlaListTxt :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
-mkPlaListTxt i ws pt =
-    let pis  = i `delete` IM.keys pt
+mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]
+mkPlaListTxt ws pt =
+    let pis  = [ pi | pi <- IM.keys pt, not $ (pt ! pi)^.isAdmin ]
         piss = sortBy (compare `on` snd) . zip pis $ [ view sing $ (ws^.entTbl) ! pi | pi <- pis ]
         pias = [ (pi, a) | (pi, _) <- piss | a <- styleAbbrevs Don'tBracket . map snd $ piss ]
-        self = (i, selfColor <> view sing ((ws^.entTbl) ! i) <> dfltColor)
-    in map helper (self : pias) ++ [ numOfPlayers (i : pis) <> " logged in." ]
+    in map helper pias ++ [ numOfPlayers pis <> " logged in." ]
   where
     helper (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
                      in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
