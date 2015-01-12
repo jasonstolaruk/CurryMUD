@@ -92,7 +92,7 @@ getMqtPt = do
 
 
 getSexRace :: Id -> WorldState -> (Sex, Race)
-getSexRace i ws = (view sex *** view race) . (((ws^.mobTbl) !) *** ((ws^.pcTbl) !)) . dup $ i
+getSexRace i ws = (view sex *** view race) . (views mobTbl (!) ws *** views pcTbl (!) ws) . dup $ i
 
 
 getUnusedId :: WorldState -> Id

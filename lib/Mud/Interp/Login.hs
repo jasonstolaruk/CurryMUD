@@ -96,7 +96,7 @@ checkProfanity cn i mq =
       else do
           (parensQuote -> s) <- getEntSing i
           logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
-          logProfanity cn . view hostName =<< getPla i
+          views hostName (logProfanity cn) =<< getPla i
           send mq . nl' $ bootMsgColor                                                                     <>
                           "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
                           dfltColor

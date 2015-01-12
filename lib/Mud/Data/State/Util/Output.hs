@@ -80,7 +80,7 @@ bcast bs = readWSTMVar >>= \ws -> do
   where
     helper ws (mqt, pt) msg i
       | mq   <- mqt ! i
-      , cols <- view columns (pt ! i)
+      , cols <- (pt ! i)^.columns
       = send mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ws $ msg
 
 
@@ -149,7 +149,7 @@ massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
 massSend :: T.Text -> MudStack ()
 massSend msg = getMqtPt >>= \(mqt, pt) -> do
     let helper i | mq   <- mqt ! i
-                 , cols <- view columns (pt ! i) = send mq . nl' . frame cols . wrapUnlines cols $ msg
+                 , cols <- (pt ! i)^.columns = send mq . nl' . frame cols . wrapUnlines cols $ msg
     forM_ (IM.keys pt) helper
 
 

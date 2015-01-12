@@ -54,7 +54,7 @@ prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (n
 prop_mkCountList :: [Int] -> Bool
 prop_mkCountList xs = mkCountList xs == mkCountList' xs
   where
-    mkCountList' xs'@(group . sort -> grouped) | ((`map` grouped) -> elemCountList) <- (,) <$> head <*> length =
+    mkCountList' xs'@(group . sort -> grouped) | ((flip map grouped) -> elemCountList) <- (,) <$> head <*> length =
       let getCountForElem x = snd (head . filter ((== x) . fst) $ elemCountList)
       in map getCountForElem xs'
 

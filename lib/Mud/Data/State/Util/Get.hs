@@ -9,7 +9,7 @@ import Mud.Util.Misc
 
 import Control.Applicative ((<$>))
 import Control.Arrow ((***))
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Data.IntMap.Lazy ((!))
 import qualified Data.IntMap.Lazy as IM (IntMap)
 
@@ -23,7 +23,7 @@ getEnt i = (! i) <$> getEntTbl
 
 
 getEnt' :: Id -> MudStack (WorldState, Ent)
-getEnt' i = readWSTMVar >>= \ws@((! i) . view entTbl -> e) ->
+getEnt' i = readWSTMVar >>= \ws@(views entTbl (! i) -> e) ->
     return (ws, e)
 
 
@@ -32,7 +32,7 @@ getEntSing i = view sing <$> getEnt i
 
 
 getEntSing' :: Id -> MudStack (WorldState, Sing)
-getEntSing' i = readWSTMVar >>= \ws@(view sing . (! i) . view entTbl -> s) ->
+getEntSing' i = readWSTMVar >>= \ws@(view sing . views entTbl (! i) -> s) ->
     return (ws, s)
 
 
@@ -74,7 +74,7 @@ getInvCoins i = getInvCoinsHelper i <$> readWSTMVar
 
 
 getInvCoinsHelper :: Id -> WorldState -> (Inv, Coins)
-getInvCoinsHelper i = (((! i) . view invTbl) *** ((! i) . view coinsTbl)) . dup
+getInvCoinsHelper i = (views invTbl (! i) *** views coinsTbl (! i)) . dup
 
 
 getInvCoins' :: Id -> MudStack (WorldState, (Inv, Coins))
@@ -138,7 +138,7 @@ getEq i = (! i) <$> getEqTbl
 
 
 getEq' :: Id -> MudStack (WorldState, EqMap)
-getEq' i = readWSTMVar >>= \ws@((! i) . view eqTbl -> em) ->
+getEq' i = readWSTMVar >>= \ws@(views eqTbl (! i) -> em) ->
     return (ws, em)
 
 
@@ -173,28 +173,28 @@ getPCRmId i = view rmId <$> getPC i
 
 
 getPCRmId' :: Id -> MudStack (WorldState, Id)
-getPCRmId' i = readWSTMVar >>= \ws@(view rmId . (! i) . view pcTbl -> ri) ->
+getPCRmId' i = readWSTMVar >>= \ws@(view rmId . views pcTbl (! i) -> ri) ->
     return (ws, ri)
 
 
 getPCRm :: Id -> MudStack Rm
 getPCRm i = getPCRmId' i >>= \(ws, ri) ->
-    return . (! ri) . view rmTbl $ ws
+    views rmTbl (return . (! ri)) ws
 
 
 getPCRm' :: Id -> MudStack (WorldState, Rm)
 getPCRm' i = getPCRmId' i >>= \(ws, ri) ->
-    return (ws, (! ri) . view rmTbl $ ws)
+    return (ws, views rmTbl (! ri) ws)
 
 
 getPCRmIdRm :: Id -> MudStack (Id, Rm)
 getPCRmIdRm i = getPCRmId' i >>= \(ws, ri) ->
-    return (ri, (! ri) . view rmTbl $ ws)
+    return (ri, views rmTbl (! ri) ws)
 
 
 getPCRmIdRm' :: Id -> MudStack (WorldState, (Id, Rm))
 getPCRmIdRm' i = getPCRmId' i >>= \(ws, ri) ->
-    return (ws, (ri, (! ri) . view rmTbl $ ws))
+    return (ws, (ri, views rmTbl (! ri) ws))
 
 
 -----

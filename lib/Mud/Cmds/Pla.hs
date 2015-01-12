@@ -725,19 +725,19 @@ handleEgress i = do
         mqt <- takeTMVar mqtTMVar
         pt  <- takeTMVar ptTMVar
         -----
-        let (view sing     -> s)   = (ws^.entTbl) ! i
-        let (view rmId     -> ri)  = (ws^.pcTbl)  ! i
-        let ((i `delete`)  -> ris) = (ws^.invTbl) ! ri
-        let ws'                    = ws  & typeTbl.at  i  .~ Nothing
-                                         & entTbl.at   i  .~ Nothing
-                                         & invTbl.at   i  .~ Nothing
-                                         & coinsTbl.at i  .~ Nothing
-                                         & eqTbl.at    i  .~ Nothing
-                                         & mobTbl.at   i  .~ Nothing
-                                         & pcTbl.at    i  .~ Nothing
-                                         & invTbl.at   ri ?~ ris
-        let mqt'                   = mqt & at i .~ Nothing
-        let pt'                    = pt  & at i .~ Nothing
+        let (view sing    -> s)   = (ws^.entTbl) ! i
+        let (view rmId    -> ri)  = (ws^.pcTbl)  ! i
+        let ((i `delete`) -> ris) = (ws^.invTbl) ! ri
+        let ws'                   = ws  & typeTbl.at  i  .~ Nothing
+                                        & entTbl.at   i  .~ Nothing
+                                        & invTbl.at   i  .~ Nothing
+                                        & coinsTbl.at i  .~ Nothing
+                                        & eqTbl.at    i  .~ Nothing
+                                        & mobTbl.at   i  .~ Nothing
+                                        & pcTbl.at    i  .~ Nothing
+                                        & invTbl.at   ri ?~ ris
+        let mqt'                  = mqt & at i .~ Nothing
+        let pt'                   = pt  & at i .~ Nothing
         -----
         putTMVar wsTMVar  ws'
         putTMVar mqtTMVar mqt'
@@ -836,7 +836,7 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
       where
         putOnMsgs  = ( "You put on the " <> s <> "."
                      , (T.concat [ serialize d, " puts on ", aOrAn s, "." ], otherPCIds) )
-        p          = mkPossPronoun . view sex $ (ws^.mobTbl) ! i
+        p          = views sex mkPossPronoun $ (ws^.mobTbl) ! i
         donMsgs    = ( "You don the " <> s <> "."
                      , (T.concat [ serialize d, " dons ", aOrAn s, "." ], otherPCIds) )
         otherPCIds = i `delete` pcIds d
@@ -972,15 +972,15 @@ readyWpn i d mrol a@(ws, _, _) ei e@(view sing -> s) | em  <- (ws^.eqTbl)  ! i
         | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> s <> "."
                        in over _2 (++ b) a
   where
-    p          = mkPossPronoun . view sex $ (ws^.mobTbl) ! i
+    p          = views sex mkPossPronoun $ (ws^.mobTbl) ! i
     otherPCIds = i `delete` pcIds d
 
 
 getAvailWpnSlot :: WorldState -> Id -> EqMap -> Either T.Text Slot
-getAvailWpnSlot ws i em | (view hand -> h) <- (ws^.mobTbl) ! i =
+getAvailWpnSlot ws i em | (view hand -> h@(otherHand -> h')) <- (ws^.mobTbl) ! i =
     maybe (Left "You're already wielding two weapons.")
           Right
-          (findAvailSlot em . map getSlotForHand $ [ h, otherHand h ])
+          (findAvailSlot em . map getSlotForHand $ [ h, h' ])
   where
     getSlotForHand h = case h of RHand -> RHandS
                                  LHand -> LHandS

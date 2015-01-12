@@ -537,7 +537,7 @@ mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe Nth
 mkMaybeNthOfM False _  _ _                _  = Nothing
 mkMaybeNthOfM True  ws i (view sing -> s) is = Just . (succ . fromJust . elemIndex i *** length) . dup $ matches
   where
-    matches = filter (\i' -> let (view sing -> s') = (ws^.entTbl) ! i' in s' == s) is
+    matches = filter (\i' -> views sing (== s) $ (ws^.entTbl) ! i') is
 
 
 -----

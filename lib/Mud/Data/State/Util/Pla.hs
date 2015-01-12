@@ -8,7 +8,7 @@ import Mud.Data.State.Util.STM
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Lens (at)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~))
 import Control.Lens.Setter (ASetter)
 import Data.IntMap.Lazy ((!))
@@ -32,7 +32,7 @@ getPlaPageLines i = view pageLines <$> getPla i
 
 
 isDfltPrompt :: Id -> MudStack Bool
-isDfltPrompt i = isNothing . view interp <$> getPla i
+isDfltPrompt i = views interp isNothing <$> getPla i
 
 
 -----

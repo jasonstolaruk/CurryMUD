@@ -31,7 +31,7 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (both, over)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Monad (replicateM, replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
@@ -365,7 +365,7 @@ getLogAsyncs :: MudStack (LogAsync, LogAsync)
 getLogAsyncs = helper <$> gets (view nonWorldState)
   where
     helper     = (getAsync noticeLog *** getAsync errorLog) . dup
-    getAsync l = fst . fromJust . view l
+    getAsync l = views l (fst . fromJust)
 
 
 -----
