@@ -109,7 +109,7 @@ prefixAdminCmd = prefixCmd adminCmdChar
 
 
 adminAnnounce :: Action
-adminAnnounce p@AdviseNoArgs         = advise p [ prefixAdminCmd "announce" ] advice
+adminAnnounce p@AdviseNoArgs     = advise p [ prefixAdminCmd "announce" ] advice
   where
     advice = T.concat [ "You must provide a message to send, as in "
                       , quoteColor
@@ -117,10 +117,11 @@ adminAnnounce p@AdviseNoArgs         = advise p [ prefixAdminCmd "announce" ] ad
                                                   \minutes"
                       , dfltColor
                       , "." ]
-adminAnnounce   (WithArgs i mq _ as) = do
-    logPlaExecArgs (prefixAdminCmd "announce") as i
+adminAnnounce   (Msg i mq _ msg) = getEntSing i >>= \s -> do
+    logPla (prefixAdminCmd "announce") i $ "hear ye, hear ye! " <> dblQuote msg
+    logNotice "adminAnnounce" $ s <> " announced, " <> dblQuote msg
     ok mq
-    massSend $ announceColor <> T.unwords as <> dfltColor
+    massSend $ announceColor <> msg <> dfltColor
 adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 
 
@@ -130,25 +131,25 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
+adminBoot   (MsgWithTarget i mq cols target msg) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
-    getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == n ] of
-      []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote n <> " is currently logged in."
-      [i'] | n'  <- (et  ! i )^.sing
-           , mq' <- mqt ! i' -> if n' == n
+    getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == target ] of
+      []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently logged in."
+      [i'] | s <- (et ! i)^.sing -> if s == target
              then wrapSend mq cols "You can't boot yourself."
-             else do
-                 logPlaExecArgs (prefixAdminCmd "boot") as i
+             else let mq' = mqt ! i' in do
                  ok mq
-                 case rest of [] -> dfltMsg   i' n' mq'
-                              _  -> customMsg i' n' mq'
+                 case msg of "" -> dfltMsg   i' s mq'
+                             _  -> customMsg i' s mq'
       xs   -> patternMatchFail "adminBoot" [ showText xs ]
   where
-    dfltMsg   i' n' mq' = do
-        logPla "adminBoot dfltMsg" i' $ T.concat [ "booted by ", n', " ", parensQuote "no message given", "." ]
+    dfltMsg   i' s mq' = do
+        logPla "adminBoot dfltMsg"   i  $ T.concat [ "booted ", target, " ", parensQuote "no message given", "." ]
+        logPla "adminBoot dfltMsg"   i' $ T.concat [ "booted by ", s,   " ", parensQuote "no message given", "." ]
         sendMsgBoot mq' Nothing
-    customMsg i' n' mq' | msg <- T.intercalate " " rest = do
-        logPla "adminBoot customMsg" i' $ T.concat [ "booted by ", n', "; message: ", msg ]
+    customMsg i' s mq' = do
+        logPla "adminBoot customMsg" i  $ T.concat [ "booted ", target, "; message: ", dblQuote msg ]
+        logPla "adminBoot customMsg" i' $ T.concat [ "booted by ", s,   "; message: ", dblQuote msg ]
         sendMsgBoot mq' . Just $ msg
 adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
@@ -214,9 +215,8 @@ showProfanityLog mq cols = send mq =<< helper
 
 
 adminShutdown :: Action
-adminShutdown (NoArgs' i mq) = do
+adminShutdown (NoArgs' i mq) = getEntSing i >>= \s -> do
     logPlaExecArgs (prefixAdminCmd "shutdown") [] i
-    s <- getEntSing i
     massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
     massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
                                           , s
@@ -229,9 +229,8 @@ adminShutdown (NoArgs' i mq) = do
                                           , parensQuote "no message given"
                                           , "." ]
     liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown (WithArgs i mq _ as) = do
+adminShutdown (WithArgs i mq _ as) = getEntSing i >>= \s -> do
     logPlaExecArgs (prefixAdminCmd "shutdown") as i
-    s <- getEntSing i
     let msg = T.intercalate " " as
     massSend $ shutdownMsgColor <> msg <> dfltColor
     massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "

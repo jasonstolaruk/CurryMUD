@@ -422,22 +422,37 @@ pattern Msg i mq cols msg <- WithArgs i mq cols (formatMsgArgs -> msg)
 
 
 -- TODO: Move?
-formatMsgArgs :: Args -> Args
-formatMsgArgs ((capitalize . T.toLower -> n):rest) = [ n, helper rest ]
-  where
-    helper [x] = punctuateIt . capsIt $ x
-    helper xs  | h <- head xs, l <- last xs = T.concat $ h : (init . tail $ xs) ++ [l]
-    punctuateIt x@(T.uncons -> Just (c, "")) | c `elem` ".?!" = x
-                                             | otherwise      = c `T.cons` "."
-    punctuateIt x@(T.last   -> c)            | c `elem` ".?!" = x
-                                             | otherwise      = x <> "."
-    capsIt x@(T.uncons         -> Just (_, "")) = T.toUpper  x
-    capsIt   (T.break isLetter ->      ("", x)) = capitalize x
-    capsIt   (T.break isLetter ->      (x, "")) = x
-    capsIt x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` "('\"" = c `T.cons` capitalize y
-                                                                 | otherwise       = x
-    capsIt _ = undefined -- TODO
-formatMsgArgs _ = undefined -- TODO
+pattern MsgWithTarget i mq cols target msg <- WithArgs i mq cols (formatMsgWithTargetArgs -> (target, msg))
+
+
+-- TODO: Move?
+formatMsgArgs :: Args -> T.Text
+formatMsgArgs [] = ""
+formatMsgArgs as = capitalizeMsg . punctuateMsg . T.intercalate " " $ as
+
+
+-- TODO: Move?
+capitalizeMsg :: T.Text -> T.Text
+capitalizeMsg x@(T.uncons         -> Just (_, "")) = T.toUpper  x
+capitalizeMsg   (T.break isLetter ->      ("", x)) = capitalize x
+capitalizeMsg   (T.break isLetter ->      (x, "")) = x
+capitalizeMsg x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` "('\"" = c `T.cons` capitalize y
+                                                                    | otherwise       = x
+capitalizeMsg _ = undefined -- TODO
+
+
+-- TODO: Move?
+punctuateMsg :: T.Text -> T.Text
+punctuateMsg x@(T.uncons -> Just (c, "")) | c `elem` ".?!" = x
+                                          | otherwise      = c `T.cons` "."
+punctuateMsg x@(T.last   -> c)            | c `elem` ".?!" = x
+                                          | otherwise      = x <> "."
+
+
+-- TODO: Move?
+formatMsgWithTargetArgs :: Args -> (T.Text, T.Text)
+formatMsgWithTargetArgs ((capitalize . T.toLower -> target):(formatMsgArgs -> msg)) = (target, msg)
+formatMsgWithTargetArgs _ = undefined -- TODO
 
 
 pattern NoArgs i mq cols = WithArgs i mq cols []
