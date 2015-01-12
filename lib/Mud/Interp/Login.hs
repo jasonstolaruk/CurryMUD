@@ -137,7 +137,11 @@ interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True -> do
       void . modifyEnt i sing $ s
-      (views hostName T.pack -> host) <- modifyPla i interp Nothing
+      -- (views hostName T.pack -> host) <- modifyPla i interp Nothing
+      (views hostName T.pack -> host) <- onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+          let p  = pt ! i
+              p' = p & interp .~ Nothing & isAdmin .~ (T.head s /= 'Z')
+          in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> host <> "."
       movePC

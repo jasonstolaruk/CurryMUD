@@ -63,6 +63,12 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
+
+
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
 blowUp = U.blowUp "Mud.Cmds.Pla"
 
@@ -560,7 +566,7 @@ look p = patternMatchFail "look" [ showText p ]
 
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
-                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . mkIsPC_StyledNameCountBothList' i ws $ ris
+                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . mkIsPC_StyledNameCountBothList i ws $ ris
                               , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
                               , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
                               , c          <- (ws^.coinsTbl) ! ri
@@ -583,11 +589,11 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
     mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
 
 
-mkIsPC_StyledNameCountBothList' :: Id -> WorldState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
-mkIsPC_StyledNameCountBothList' i ws is | ips   <-                        [ (ws^.typeTbl) ! i' == PCType | i' <- is ]
-                                        , ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'    | i' <- is ]
-                                        , ebgns <-                        [ getEffBothGramNos i ws i'    | i' <- is ]
-                                        , cs    <- mkCountList ebgns = nub . zip ips . zip3 ens cs $ ebgns
+mkIsPC_StyledNameCountBothList :: Id -> WorldState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
+mkIsPC_StyledNameCountBothList i ws is | ips   <-                        [ (ws^.typeTbl) ! i' == PCType | i' <- is ]
+                                       , ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'    | i' <- is ]
+                                       , ebgns <-                        [ getEffBothGramNos i ws i'    | i' <- is ]
+                                       , cs    <- mkCountList ebgns = nub . zip ips . zip3 ens cs $ ebgns
 
 
 isKnownPCSing :: Sing -> Bool
@@ -1366,10 +1372,12 @@ whoAdmin p = withoutArgs whoAdmin p
 mkAdminListTxt :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
 mkAdminListTxt i ws pt =
     let ais                         = [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ]
-        (ais', self) | i `elem` ais = (i `delete` ais, selfColor <> (view sing $ (ws^.entTbl) ! i) <> dfltColor)
+        (ais', self) | i `elem` ais = (i `delete` ais, selfColor <> view sing ((ws^.entTbl) ! i) <> dfltColor)
                      | otherwise    = (ais, "")
         aas                         = styleAbbrevs Don'tBracket . sort $ [ view sing $ (ws^.entTbl) ! ai | ai <- ais' ]
-    in T.intercalate ", " (dropBlanks $ self : aas) : [ numOfAdmins ais <> " logged in." ]
+        aas'                        = dropBlanks $ self : aas
+        footer                      = [ numOfAdmins ais <> " logged in." ]
+    in if null aas' then footer else T.intercalate ", " aas' : footer
   where
     numOfAdmins (length -> noa) | noa == 1  = "1 administrator"
                                 | otherwise = showText noa <> " administrators"
