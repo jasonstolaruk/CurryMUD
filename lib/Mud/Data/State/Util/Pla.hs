@@ -23,8 +23,8 @@ getPlaColumns :: Id -> MudStack Int
 getPlaColumns i = view columns <$> getPla i
 
 
-getPlaIsWiz :: Id -> MudStack Bool
-getPlaIsWiz i = view isWiz <$> getPla i
+getPlaIsAdmin :: Id -> MudStack Bool
+getPlaIsAdmin i = view isAdmin <$> getPla i
 
 
 getPlaPageLines :: Id -> MudStack Int

@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
 
-module Mud.Cmds.Wiz (wizCmds) where
+module Mud.Cmds.Admin (adminCmds) where
 
 import Mud.ANSI
 import Mud.Cmds.Util.Abbrev
@@ -53,84 +53,84 @@ import qualified Data.Text.IO as T (putStrLn, readFile)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Wiz"
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Admin"
 
 
 -----
 
 
 logIOEx :: T.Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Cmds.Wiz"
+logIOEx = L.logIOEx "Mud.Cmds.Admin"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Cmds.Wiz"
+logNotice = L.logNotice "Mud.Cmds.Admin"
 
 
 logPla :: T.Text -> Id -> T.Text -> MudStack ()
-logPla = L.logPla "Mud.Cmds.Wiz"
+logPla = L.logPla "Mud.Cmds.Admin"
 
 
 logPlaExec :: CmdName -> Id -> MudStack ()
-logPlaExec = L.logPlaExec "Mud.Cmds.Wiz"
+logPlaExec = L.logPlaExec "Mud.Cmds.Admin"
 
 
 logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
-logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Wiz"
+logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Admin"
 
 
 massLogPla :: T.Text -> T.Text -> MudStack ()
-massLogPla = L.massLogPla "Mud.Cmds.Wiz"
+massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
 -- ==================================================
 
 
-wizCmds :: [Cmd]
-wizCmds =
-    [ Cmd { cmdName = prefixWizCmd "?", action = wizDispCmdList, cmdDesc = "Display or search this command list." }
-    , Cmd { cmdName = prefixWizCmd "announce", action = wizAnnounce, cmdDesc = "Send a message to all players." }
-    , Cmd { cmdName = prefixWizCmd "boot", action = wizBoot, cmdDesc = "Boot a player." }
-    , Cmd { cmdName = prefixWizCmd "date", action = wizDate, cmdDesc = "Display the current system date." }
-    , Cmd { cmdName = prefixWizCmd "print", action = wizPrint, cmdDesc = "Print a message to the server console." }
-    , Cmd { cmdName = prefixWizCmd "profanity", action = wizProfanity, cmdDesc = "Dump the profanity log." }
-    , Cmd { cmdName = prefixWizCmd "shutdown", action = wizShutdown, cmdDesc = "Shut down CurryMUD." }
-    , Cmd { cmdName = prefixWizCmd "time", action = wizTime, cmdDesc = "Display the current system time." }
-    , Cmd { cmdName = prefixWizCmd "uptime", action = wizUptime, cmdDesc = "Display the system uptime." }
-    , Cmd { cmdName = prefixWizCmd "who", action = wizWho, cmdDesc = "Display or search a list of all the players \
-                                                                     \logged in." } ]
+adminCmds :: [Cmd]
+adminCmds =
+    [ Cmd { cmdName = prefixAdminCmd "?", action = adminDispCmdList, cmdDesc = "Display or search this command list." }
+    , Cmd { cmdName = prefixAdminCmd "announce", action = adminAnnounce, cmdDesc = "Send a message to all players." }
+    , Cmd { cmdName = prefixAdminCmd "boot", action = adminBoot, cmdDesc = "Boot a player." }
+    , Cmd { cmdName = prefixAdminCmd "date", action = adminDate, cmdDesc = "Display the current system date." }
+    , Cmd { cmdName = prefixAdminCmd "print", action = adminPrint, cmdDesc = "Print a message to the server console." }
+    , Cmd { cmdName = prefixAdminCmd "profanity", action = adminProfanity, cmdDesc = "Dump the profanity log." }
+    , Cmd { cmdName = prefixAdminCmd "shutdown", action = adminShutdown, cmdDesc = "Shut down CurryMUD." }
+    , Cmd { cmdName = prefixAdminCmd "time", action = adminTime, cmdDesc = "Display the current system time." }
+    , Cmd { cmdName = prefixAdminCmd "uptime", action = adminUptime, cmdDesc = "Display the system uptime." }
+    , Cmd { cmdName = prefixAdminCmd "who", action = adminWho, cmdDesc = "Display or search a list of all the players \
+                                                                         \logged in." } ]
 
 
-prefixWizCmd :: CmdName -> T.Text
-prefixWizCmd = prefixCmd wizCmdChar
+prefixAdminCmd :: CmdName -> T.Text
+prefixAdminCmd = prefixCmd adminCmdChar
 
 
 -----
 
 
-wizAnnounce :: Action
-wizAnnounce p@AdviseNoArgs         = advise p [ prefixWizCmd "announce" ] advice
+adminAnnounce :: Action
+adminAnnounce p@AdviseNoArgs         = advise p [ prefixAdminCmd "announce" ] advice
   where
     advice = T.concat [ "You must provide a message to send, as in "
                       , quoteColor
-                      , dblQuote $ prefixWizCmd "announce" <> " CurryMUD will be shutting down for maintenance in 30 \
-                                                \minutes."
+                      , dblQuote $ prefixAdminCmd "announce" <> " CurryMUD will be shutting down for maintenance in 30 \
+                                                  \minutes."
                       , dfltColor
                       , "." ]
-wizAnnounce   (WithArgs i mq _ as) = do
-    logPlaExecArgs (prefixWizCmd "announce") as i
+adminAnnounce   (WithArgs i mq _ as) = do
+    logPlaExecArgs (prefixAdminCmd "announce") as i
     ok mq
     massSend $ announceColor <> T.unwords as <> dfltColor
-wizAnnounce p = patternMatchFail "wizAnnounce" [ showText p ]
+adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 
 
 -----
 
 
-wizBoot :: Action
-wizBoot p@AdviseNoArgs = advise p [ prefixWizCmd "boot" ] "Please specify the full PC name of the player you wish to \
-                                                          \boot, followed optionally by a custom message."
-wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
+adminBoot :: Action
+adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
+                                                              \to boot, followed optionally by a custom message."
+adminBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
     getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == n ] of
       []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote n <> " is currently logged in."
@@ -138,64 +138,64 @@ wizBoot (WithArgs i mq cols as@((capitalize . T.toLower -> n):rest)) = do
            , mq' <- mqt ! i' -> if n' == n
              then wrapSend mq cols "You can't boot yourself."
              else do
-                 logPlaExecArgs (prefixWizCmd "boot") as i
+                 logPlaExecArgs (prefixAdminCmd "boot") as i
                  ok mq
                  case rest of [] -> dfltMsg   i' n' mq'
                               _  -> customMsg i' n' mq'
-      xs   -> patternMatchFail "wizBoot" [ showText xs ]
+      xs   -> patternMatchFail "adminBoot" [ showText xs ]
   where
     dfltMsg   i' n' mq' = do
-        logPla "wizBoot dfltMsg" i' $ T.concat [ "booted by ", n', " ", parensQuote "no message given", "." ]
+        logPla "adminBoot dfltMsg" i' $ T.concat [ "booted by ", n', " ", parensQuote "no message given", "." ]
         sendMsgBoot mq' Nothing
     customMsg i' n' mq' | msg <- T.intercalate " " rest = do
-        logPla "wizBoot customMsg" i' $ T.concat [ "booted by ", n', "; message: ", msg ]
+        logPla "adminBoot customMsg" i' $ T.concat [ "booted by ", n', "; message: ", msg ]
         sendMsgBoot mq' . Just $ msg
-wizBoot p = patternMatchFail "wizBoot" [ showText p ]
+adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
 
 -----
 
 
-wizDate :: Action
-wizDate (NoArgs' i mq) = do
-    logPlaExec (prefixWizCmd "date") i
+adminDate :: Action
+adminDate (NoArgs' i mq) = do
+    logPlaExec (prefixAdminCmd "date") i
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
-wizDate p = withoutArgs wizDate p
+adminDate p = withoutArgs adminDate p
 
 
 -----
 
 
-wizDispCmdList :: Action
-wizDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixWizCmd "?") as i >> dispCmdList wizCmds p
-wizDispCmdList p = patternMatchFail "wizDispCmdList" [ showText p ]
+adminDispCmdList :: Action
+adminDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixAdminCmd "?") as i >> dispCmdList adminCmds p
+adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ showText p ]
 
 
 -----
 
 
-wizPrint :: Action
-wizPrint p@AdviseNoArgs         = advise p [ prefixWizCmd "print" ] advice
+adminPrint :: Action
+adminPrint p@AdviseNoArgs         = advise p [ prefixAdminCmd "print" ] advice
   where
     advice = T.concat [ "You must provide a message to print to the server console, as in "
                       , quoteColor
-                      , dblQuote $ prefixWizCmd "print" <> " Is anybody home?"
+                      , dblQuote $ prefixAdminCmd "print" <> " Is anybody home?"
                       , dfltColor
                       , "." ]
-wizPrint   (WithArgs i mq _ as) = do
-    logPlaExecArgs (prefixWizCmd "print") as i
+adminPrint   (WithArgs i mq _ as) = do
+    logPlaExecArgs (prefixAdminCmd "print") as i
     s <- getEntSing i
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, T.intercalate " " as, dfltColor ]
     ok mq
-wizPrint p = patternMatchFail "wizPrint" [ showText p ]
+adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 
 -----
 
 
-wizProfanity :: Action
-wizProfanity (NoArgs i mq cols) = logPlaExec (prefixWizCmd "profanity") i >> showProfanityLog mq cols
-wizProfanity p                  = withoutArgs wizProfanity p
+adminProfanity :: Action
+adminProfanity (NoArgs i mq cols) = logPlaExec (prefixAdminCmd "profanity") i >> showProfanityLog mq cols
+adminProfanity p                  = withoutArgs adminProfanity p
 
 
 showProfanityLog :: MsgQueue -> Cols -> MudStack ()
@@ -213,74 +213,75 @@ showProfanityLog mq cols = send mq =<< helper
 -----
 
 
-wizShutdown :: Action
-wizShutdown (NoArgs' i mq) = do
-    logPlaExecArgs (prefixWizCmd "shutdown") [] i
+adminShutdown :: Action
+adminShutdown (NoArgs' i mq) = do
+    logPlaExecArgs (prefixAdminCmd "shutdown") [] i
     s <- getEntSing i
     massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
-    massLogPla "wizShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
-                                        , s
-                                        , " "
-                                        , parensQuote "no message given"
-                                        , "." ]
-    logNotice  "wizShutdown" $ T.concat [ "server shutdown initiated by "
-                                        , s
-                                        , " "
-                                        , parensQuote "no message given"
-                                        , "." ]
+    massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
+                                          , s
+                                          , " "
+                                          , parensQuote "no message given"
+                                          , "." ]
+    logNotice  "adminShutdown" $ T.concat [ "server shutdown initiated by "
+                                          , s
+                                          , " "
+                                          , parensQuote "no message given"
+                                          , "." ]
     liftIO . atomically . writeTQueue mq $ Shutdown
-wizShutdown (WithArgs i mq _ as) = do
-    logPlaExecArgs (prefixWizCmd "shutdown") as i
+adminShutdown (WithArgs i mq _ as) = do
+    logPlaExecArgs (prefixAdminCmd "shutdown") as i
     s <- getEntSing i
     let msg = T.intercalate " " as
     massSend $ shutdownMsgColor <> msg <> dfltColor
-    massLogPla "wizShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
-                                          , s
-                                          , "; message: "
-                                          , msg ]
-    logNotice  "wizShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg, "." ]
+    massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
+                                            , s
+                                            , "; message: "
+                                            , msg ]
+    logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg, "." ]
     liftIO . atomically . writeTQueue mq $ Shutdown
-wizShutdown _ = patternMatchFail "wizShutdown" []
+adminShutdown _ = patternMatchFail "adminShutdown" []
 
 
 -----
 
 
-wizTime :: Action
-wizTime (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "time") i
+adminTime :: Action
+adminTime (NoArgs i mq cols) = do
+    logPlaExec (prefixAdminCmd "time") i
     (ct, zt) <- (,) <$> liftIO (formatThat `fmap` getCurrentTime) <*> liftIO (formatThat `fmap` getZonedTime)
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
     formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
       | time <- T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
       = T.concat [ zone, ": ", date, " ", time ]
-wizTime p = withoutArgs wizTime p
+adminTime p = withoutArgs adminTime p
 
 
 -----
 
 
-wizUptime :: Action
-wizUptime (NoArgs i mq cols) = do
-    logPlaExec (prefixWizCmd "uptime") i
-    (try . send mq . nl =<< liftIO runUptime) >>= eitherRet (\e -> logIOEx "wizUptime" e >> sendGenericErrorMsg mq cols)
+adminUptime :: Action
+adminUptime (NoArgs i mq cols) = do
+    logPlaExec (prefixAdminCmd "uptime") i
+    (try . send mq . nl =<< liftIO runUptime) >>= eitherRet handler
   where
     runUptime = T.pack <$> readProcess "uptime" [] ""
-wizUptime p = withoutArgs wizUptime p
+    handler e = logIOEx "adminUptime" e >> sendGenericErrorMsg mq cols
+adminUptime p = withoutArgs adminUptime p
 
 
 -----
 
 
-wizWho :: Action
-wizWho   (NoArgs i mq cols)  = do
-    logPlaExecArgs (prefixWizCmd "who") [] i
+adminWho :: Action
+adminWho   (NoArgs i mq cols)  = do
+    logPlaExecArgs (prefixAdminCmd "who") [] i
     (mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
-wizWho p@(WithArgs i _ _ as) = do
-    logPlaExecArgs (prefixWizCmd "who") as i
+adminWho p@(WithArgs i _ _ as) = do
+    logPlaExecArgs (prefixAdminCmd "who") as i
     dispMatches p 20 =<< (mkPlaListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
-wizWho _ = patternMatchFail "wizWho" []
+adminWho _ = patternMatchFail "adminWho" []
 
 
 mkPlaListTxt :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
@@ -292,10 +293,6 @@ mkPlaListTxt i ws pt =
     in map helper (self : pias) ++ [ numOfPlayers (i : pis) <> " logged in." ]
   where
     helper (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
-                         (view isWiz  -> iw)     = pt ! pi
-                     in T.concat [ pad 13 a
-                                 , padOrTrunc 7  s
-                                 , padOrTrunc 10 r
-                                 , if iw then wizColor <> "wiz" <> dfltColor else "" ]
+                     in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
     numOfPlayers (length -> nop) | nop == 1  = "1 player"
                                  | otherwise = showText nop <> " players"

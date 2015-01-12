@@ -1,14 +1,14 @@
-\h #wWHO \d
+\h #dWHO \d
 
 \uUSAGE\n
-#wwho [term ...]
+#dwho [term ...]
 
 \uDESCRIPTION\n
 Display a list of all the players logged in. Optionally, search the list for one or more terms.
 You'll find your character displayed at the top of the list.
 
 \uEXAMPLES\n
-\q"#wwho"\d to display the full player list.4`
-\q"#wwho male"\d to display a list of all the male characters logged in.4`
+\q"#dwho"\d to display the full player list.4`
+\q"#dwho male"\d to display a list of all the male characters logged in.4`
 
 \uSEE ALSO\n

@@ -1,7 +1,7 @@
-\h #wTIME \d
+\h #dTIME \d
 
 \uUSAGE\n
-#wTIME
+#dTIME
 
 \uDESCRIPTION\n
 Display the current system time.

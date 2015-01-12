@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -364,13 +364,13 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
                                               , topicNames
                                               , footnote hs ]
         in logPla "help" i "read root help file." >> (pager i mq . parseHelpTxt cols $ helpTxt)
-    mkHelpNames styleds   = [ pad padding $ styled <> if isWizHelp h then asterisk else "" | (styled, h) <- styleds ]
+    mkHelpNames styleds   = [ pad padding $ styled <> if isAdminHelp h then asterisk else "" | (styled, h) <- styleds ]
     padding               = maxHelpTopicLen + 2
     asterisk              = asteriskColor <> "*" <> dfltColor
     formatHelpNames names = let wordsPerLine = cols `div` padding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
-    footnote hs           = if any isWizHelp hs
-      then nl' $ asterisk <> " indicates help that is available only to wizards."
+    footnote hs           = if any isAdminHelp hs
+      then nl' $ asterisk <> " indicates help that is available only to administrators."
       else ""
 help (LowerNub i mq cols as) = mkHelpData i >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> mapM (getHelpByName cols hs) as
@@ -380,15 +380,15 @@ help p = patternMatchFail "help" [ showText p ]
 
 
 mkHelpData :: Id -> MudStack [Help]
-mkHelpData i = getPlaIsWiz i >>= \iw -> do
-    [ plaHelpCmdNames, plaHelpTopicNames, wizHelpCmdNames, wizHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
-    let plaHelpCmds   = [ Help (T.pack                phcn) (plaHelpCmdsDir   ++ phcn) True  False | phcn <- plaHelpCmdNames   ]
-    let plaHelpTopics = [ Help (T.pack                phtn) (plaHelpTopicsDir ++ phtn) False False | phtn <- plaHelpTopicNames ]
-    let wizHelpCmds   = [ Help (T.pack $ wizCmdChar : whcn) (wizHelpCmdsDir   ++ whcn) True  True  | whcn <- wizHelpCmdNames   ]
-    let wizHelpTopics = [ Help (T.pack                whtn) (wizHelpTopicsDir ++ whtn) False True  | whtn <- wizHelpTopicNames ]
-    return $ plaHelpCmds ++ plaHelpTopics ++ if iw then wizHelpCmds ++ wizHelpTopics else []
+mkHelpData i = getPlaIsAdmin i >>= \ia -> do
+    [ plaHelpCmdNames, plaHelpTopicNames, adminHelpCmdNames, adminHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
+    let plaHelpCmds     = [ Help (T.pack                  phcn) (plaHelpCmdsDir   ++ phcn) True  False | phcn <- plaHelpCmdNames     ]
+    let plaHelpTopics   = [ Help (T.pack                  phtn) (plaHelpTopicsDir ++ phtn) False False | phtn <- plaHelpTopicNames   ]
+    let adminHelpCmds   = [ Help (T.pack $ adminCmdChar : whcn) (adminHelpCmdsDir ++ whcn) True  True  | whcn <- adminHelpCmdNames   ]
+    let adminHelpTopics = [ Help (T.pack                whtn) (adminHelpTopicsDir ++ whtn) False True  | whtn <- adminHelpTopicNames ]
+    return $ plaHelpCmds ++ plaHelpTopics ++ if ia then adminHelpCmds ++ adminHelpTopics else []
   where
-    helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, wizHelpCmdsDir, wizHelpTopicsDir ]
+    helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
     getHelpDirectoryContents dir = delete ".DS_Store" . drop 2 . sort <$> (liftIO . getDirectoryContents $ dir)
 
 
@@ -1190,7 +1190,7 @@ whatCmd :: Cols -> Rm -> T.Text -> T.Text
 whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(whatQuote -> n')) =
     wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n . filter isPlaCmd $ [ cmdName cmd | cmd <- cmds ]
   where
-    isPlaCmd               = (`notElem` [ wizCmdChar, debugCmdChar ]) . T.head
+    isPlaCmd               = (`notElem` [ adminCmdChar, debugCmdChar ]) . T.head
     notFound               = n' <> " doesn't refer to any commands."
     found (dblQuote -> cn) = T.concat [ n', " may refer to the ", cn, " command." ]
 

@@ -1,0 +1,12 @@
+\h #dANNOUNCE \d
+
+\uUSAGE\n
+#dannounce message
+
+\uDESCRIPTION\n
+Send a message to all players.
+
+\uEXAMPLES\n
+\q"#dannounce CurryMUD will be shutting down for maintenance in 30 minutes."\d4`
+
+\uSEE ALSO\n

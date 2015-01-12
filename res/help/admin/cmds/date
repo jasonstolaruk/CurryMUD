@@ -1,7 +1,7 @@
-\h #wDATE \d
+\h #dDATE \d
 
 \uUSAGE\n
-#wdate
+#ddate
 
 \uDESCRIPTION\n
 Display the current system date.

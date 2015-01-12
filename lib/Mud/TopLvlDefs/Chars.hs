@@ -7,9 +7,9 @@ module Mud.TopLvlDefs.Chars where
 -- Command prefixes:
 
 
-debugCmdChar, wizCmdChar :: Char
+adminCmdChar, debugCmdChar :: Char
+adminCmdChar = ':'
 debugCmdChar = '!'
-wizCmdChar   = ':'
 
 
 -- ==================================================

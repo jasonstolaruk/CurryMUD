@@ -3,9 +3,9 @@
 
 module Mud.Interp.CentralDispatch (centralDispatch) where
 
+import Mud.Cmds.Admin
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
-import Mud.Cmds.Wiz
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Get
@@ -38,10 +38,10 @@ centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
 findAction i (T.toLower -> cn) = do
-    r  <- getPCRm     i
-    iw <- getPlaIsWiz i
+    r  <- getPCRm       i
+    iw <- getPlaIsAdmin i
     let cmds = mkCmdListWithNonStdRmLinks r              ++
-               (if iw            then wizCmds   else []) ++
+               (if iw            then adminCmds else []) ++
                (if iw && isDebug then debugCmds else [])
     maybe (return Nothing)
           (\fn -> return . Just . findActionForFullName fn $ cmds)

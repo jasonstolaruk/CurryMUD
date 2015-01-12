@@ -1,7 +1,7 @@
-\h #wPROFANITY \d
+\h #dPROFANITY \d
 
 \uUSAGE\n
-#wprofanity
+#dprofanity
 
 \uDESCRIPTION\n
 Dump the profanity log. (When a player attempts to create a character with an obscene name, a record of the attempt is written to the profanity log.)

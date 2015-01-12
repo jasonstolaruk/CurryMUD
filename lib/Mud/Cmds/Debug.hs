@@ -397,11 +397,11 @@ debugToken (NoArgs i mq cols) = do
     multiWrapSend mq cols . T.lines . parseTokens . T.unlines $ tokenTxts
   where
     tokenTxts = [ charTokenDelimiter  `T.cons` "a allChar"
+                , charTokenDelimiter  `T.cons` "d adminCmdChar"
                 , charTokenDelimiter  `T.cons` "i indexChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "r rmChar"
                 , charTokenDelimiter  `T.cons` "s slotChar"
-                , charTokenDelimiter  `T.cons` "w wizCmdChar"
                 , styleTokenDelimiter `T.cons` ("aabbrevColor" <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("ddfltColor"   <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("hheaderColor" <> dfltColorStyleToken  )

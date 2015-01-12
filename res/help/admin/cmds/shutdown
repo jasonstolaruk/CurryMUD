@@ -1,0 +1,14 @@
+\h #dSHUTDOWN \d
+
+\uUSAGE\n
+#dshutdown [message]
+
+\uDESCRIPTION\n
+Shut down CurryMUD, optionally with a custom message.
+If you do not provide a custom message, the default message will be sent. (The default message is: "@s")
+
+\uEXAMPLES\n
+\q"#dshutdown"\d to shut down CurryMUD.4`
+\q"#dshutdown We are shutting down to reboot with new bug fixes in place. Come back in 5 mins. Thanks!"\d to shut down CurryMUD with a custom message.4`
+
+\uSEE ALSO\n

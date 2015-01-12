@@ -1,7 +1,7 @@
-\h #wBOOT \d
+\h #dBOOT \d
 
 \uUSAGE\n
-#wboot name [message]
+#dboot name [message]
 
 \uDESCRIPTION\n
 Boot a player, optionally with a custom message.
@@ -9,7 +9,7 @@ The player's PC name may not be abbreviated.
 If you do not provide a custom message, the default message will be sent. (The default message is: "@b")
 
 \uEXAMPLES\n
-\q"#wboot taro"\d to boot Taro.4`
-\q"#wboot taro Come back when you're ready to act like an adult!"\d to boot Taro with a custom message.4`
+\q"#dboot taro"\d to boot Taro.4`
+\q"#dboot taro Come back when you're ready to act like an adult!"\d to boot Taro with a custom message.4`
 
 \uSEE ALSO\n

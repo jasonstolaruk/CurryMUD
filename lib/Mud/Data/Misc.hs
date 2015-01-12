@@ -260,7 +260,7 @@ type HelpName = T.Text
 data Help = Help { helpName     :: HelpName
                  , helpFilePath :: FilePath
                  , isCmdHelp    :: Bool
-                 , isWizHelp    :: Bool }
+                 , isAdminHelp  :: Bool }
 
 
 -----

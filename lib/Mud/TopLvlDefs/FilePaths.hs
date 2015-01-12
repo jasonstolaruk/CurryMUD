@@ -25,9 +25,9 @@ miscDir  = resDir ++ "misc/"
 titleDir = resDir ++ "titles/"
 
 
-plaHelpDir, wizHelpDir :: FilePath
-plaHelpDir = helpDir ++ "pla/"
-wizHelpDir = helpDir ++ "wiz/"
+adminHelpDir, plaHelpDir :: FilePath
+adminHelpDir = helpDir ++ "admin/"
+plaHelpDir   = helpDir ++ "pla/"
 
 
 plaHelpCmdsDir, plaHelpTopicsDir :: FilePath
@@ -35,9 +35,9 @@ plaHelpCmdsDir   = plaHelpDir ++ "cmds/"
 plaHelpTopicsDir = plaHelpDir ++ "topics/"
 
 
-wizHelpCmdsDir, wizHelpTopicsDir :: FilePath
-wizHelpCmdsDir   = wizHelpDir ++ "cmds/"
-wizHelpTopicsDir = wizHelpDir ++ "topics/"
+adminHelpCmdsDir, adminHelpTopicsDir :: FilePath
+adminHelpCmdsDir   = adminHelpDir ++ "cmds/"
+adminHelpTopicsDir = adminHelpDir ++ "topics/"
 
 
 -- ==================================================

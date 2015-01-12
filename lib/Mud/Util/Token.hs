@@ -46,11 +46,11 @@ parseCharTokens = parser expandCharCode charTokenDelimiter
 expandCharCode :: Char -> T.Text
 expandCharCode (toLower -> code) = T.singleton $ case code of
   'a' -> allChar
+  'd' -> adminCmdChar
   'i' -> indexChar
   'm' -> amountChar
   'r' -> rmChar
   's' -> slotChar
-  'w' -> wizCmdChar
   x   -> patternMatchFail "expandCharCode" [ T.singleton x ]
 
 
