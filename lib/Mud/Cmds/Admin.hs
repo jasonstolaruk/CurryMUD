@@ -97,8 +97,8 @@ adminCmds =
     , Cmd { cmdName = prefixAdminCmd "shutdown", action = adminShutdown, cmdDesc = "Shut down CurryMUD." }
     , Cmd { cmdName = prefixAdminCmd "time", action = adminTime, cmdDesc = "Display the current system time." }
     , Cmd { cmdName = prefixAdminCmd "uptime", action = adminUptime, cmdDesc = "Display the system uptime." }
-    , Cmd { cmdName = prefixAdminCmd "who", action = adminWho, cmdDesc = "Display or search a list of all the players \
-                                                                         \logged in." } ]
+    , Cmd { cmdName = prefixAdminCmd "who", action = adminWho, cmdDesc = "Display or search a list of the players who \
+                                                                         \are currently logged in." } ]
 
 
 prefixAdminCmd :: CmdName -> T.Text

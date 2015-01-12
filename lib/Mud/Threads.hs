@@ -216,8 +216,8 @@ adHoc mq host = do
         let is   = []
         let co   = mempty
         let em   = M.empty
-        let m    = Mob s 10 10 10 10 10 10 0 RHand
-        let pc   = PC iWelcome r [] []
+        let m    = Mob Male 10 10 10 10 10 10 0 RHand -- TODO
+        let pc   = PC iWelcome Human [] [] -- TODO
         let ris  = (ws^.invTbl) ! iWelcome ++ [i]
         -----
         let pla  = Pla True host 80 24 (Just interpName)

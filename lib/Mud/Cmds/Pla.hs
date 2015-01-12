@@ -48,7 +48,7 @@ import Control.Monad (forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, foldl', intercalate, intersperse, nubBy, partition, sort, sortBy)
+import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), mempty)
@@ -57,6 +57,7 @@ import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.Time.Utils (renderSecs)
+import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -129,6 +130,8 @@ plaCmds =
     , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long CurryMUD has been running." }
     , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
     , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." }
+    , Cmd { cmdName = "whoadmin", action = whoAdmin, cmdDesc = "Display a list of the administrators who are currently \
+                                                               \logged in." }
     , Cmd { cmdName = "whoami", action = whoAmI, cmdDesc = "Confirm your name, sex, and race." } ]
 
 
@@ -557,7 +560,7 @@ look p = patternMatchFail "look" [ showText p ]
 
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
-                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . zip ris . mkStyledNameCountBothList i ws $ ris
+                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . mkIsPC_StyledNameCountBothList' i ws $ ris
                               , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
                               , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
                               , c          <- (ws^.coinsTbl) ! ri
@@ -565,13 +568,26 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
                                 (if not . null $ otherNcbs then otherDescs            else "") <>
                                 (if c /= mempty            then mkCoinsSummary cols c else "")
   where
-    splitPCsOthers                       = over both (map snd) . span (\(i', _) -> (ws^.typeTbl) ! i' == PCType)
+    splitPCsOthers                       = over both (map snd) . span fst
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
                                              then knownNameColor   <> s       <> dfltColor
                                              else unknownNameColor <> aOrAn s <> dfltColor
-    mkPCDesc    a                        = mkOtherDesc a
+    mkPCDesc    (en, c, b     )          = T.concat [ unknownNameColor
+                                                    , showText c
+                                                    , " "
+                                                    , mkPlurFromBoth b
+                                                    , dfltColor
+                                                    , " "
+                                                    , en ]
     mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
     mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
+
+
+mkIsPC_StyledNameCountBothList' :: Id -> WorldState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
+mkIsPC_StyledNameCountBothList' i ws is | ips   <-                        [ (ws^.typeTbl) ! i' == PCType | i' <- is ]
+                                        , ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'    | i' <- is ]
+                                        , ebgns <-                        [ getEffBothGramNos i ws i'    | i' <- is ]
+                                        , cs    <- mkCountList ebgns = nub . zip ips . zip3 ens cs $ ebgns
 
 
 isKnownPCSing :: Sing -> Bool
@@ -1335,6 +1351,28 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
       | gol == 1  = "1 gold piece"
       | gol /= 0  = showText gol <> " gold pieces"
       | otherwise = blowUp "whatInvCoins mkTxtForCoinsWithAmt" "attempted to make text for empty coins" [ showText c ]
+
+
+-----
+
+
+whoAdmin :: Action
+whoAdmin (NoArgs i mq cols) = do
+    logPlaExec "whoadmin" i
+    (mkAdminListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= multiWrapSend mq cols
+whoAdmin p = withoutArgs whoAdmin p
+
+
+mkAdminListTxt :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
+mkAdminListTxt i ws pt =
+    let ais                         = [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ]
+        (ais', self) | i `elem` ais = (i `delete` ais, selfColor <> (view sing $ (ws^.entTbl) ! i) <> dfltColor)
+                     | otherwise    = (ais, "")
+        aas                         = styleAbbrevs Don'tBracket . sort $ [ view sing $ (ws^.entTbl) ! ai | ai <- ais' ]
+    in T.intercalate ", " (dropBlanks $ self : aas) : [ numOfAdmins ais <> " logged in." ]
+  where
+    numOfAdmins (length -> noa) | noa == 1  = "1 administrator"
+                                | otherwise = showText noa <> " administrators"
 
 
 -----

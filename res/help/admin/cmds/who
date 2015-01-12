@@ -4,7 +4,7 @@
 #dwho [term ...]
 
 \uDESCRIPTION\n
-Display a list of all the players logged in. Optionally, search the list for one or more terms.
+Display a list of the players who are currently logged in. Optionally, search the list for one or more terms.
 
 \uEXAMPLES\n
 \q"#dwho"\d to display the full player list.4`
