@@ -3,6 +3,7 @@
 
 module Mud.ANSI ( abbrevColor
                 , announceColor
+                , adminMsgColor
                 , asteriskColor
                 , bootMsgColor
                 , colors
@@ -82,6 +83,10 @@ yellow  = mkFgColorANSI (Dull, Yellow)
 
 abbrevColor :: T.Text
 abbrevColor = cyan
+
+
+adminMsgColor :: T.Text
+adminMsgColor = magenta
 
 
 announceColor :: T.Text

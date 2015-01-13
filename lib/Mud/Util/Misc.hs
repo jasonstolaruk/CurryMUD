@@ -90,7 +90,7 @@ eitherRet = flip either return
 
 
 findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
-findFullNameForAbbrev needle hay = guard (not . null $ res) >> (Just . head $ res)
+findFullNameForAbbrev needle hay = guard (not . null $ res) >> (Just . head $ res) -- TODO: Look for more places to use "guard".
   where
     res = sort . filter (needle `T.isPrefixOf`) $ hay
 

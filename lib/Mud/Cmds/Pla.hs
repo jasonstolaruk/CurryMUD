@@ -157,6 +157,7 @@ about p = withoutArgs about p
 -----
 
 
+-- TODO: Help.
 admin :: Action
 admin p@AdviseNoArgs                         = advise p ["admin"] advice
   where
@@ -172,11 +173,31 @@ admin p@(AdviseOneArg a)                     = advise p ["admin"] advice
                       , dblQuote $ "admin " <> a <> " are you available? I need your assistance"
                       , dfltColor
                       , "." ]
-admin   (MsgWithTarget i mq _ target msg) = getEntSing i >>= \s -> do
-    logPla    "admin" i . T.concat $ [     "sent message to ", target, ": ", dblQuote msg ]
-    logNotice "admin"   . T.concat $ [ s, " sent message to ", target, ": ", dblQuote msg ]
-    ok mq
+admin   (MsgWithTarget i mq cols target msg) = do
+    ws        <- readWSTMVar
+    (mqt, pt) <- getMqtPt
+    let aiss = mkAdminIdsSingsList i ws pt
+    let s    = view sing $ (ws^.entTbl) ! i
+    let notFound    | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
+                    | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
+                                                                  dblQuote target                    <>
+                                                                  " is currently logged in."
+    let found match | (i', target') <- head . filter ((== match) . snd) $ aiss
+                    , mq'           <- mqt ! i'
+                    , cols'         <- (pt ! i')^.columns = do
+                       logNotice "admin"    . T.concat $ [ s, " sent message to ",   target', ": ", dblQuote msg ]
+                       logPla    "admin" i  . T.concat $ [     "sent message to "  , target', ": ", dblQuote msg ]
+                       logPla    "admin" i' . T.concat $ [ "received message from ", s,       ": ", dblQuote msg ]
+                       wrapSend mq  cols    . T.concat $ [ "You send ",              target', ": ", dblQuote msg ]
+                       wrapSend mq' cols'   . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor    ]
+    maybe notFound found . findFullNameForAbbrev target . map snd $ aiss
 admin p = patternMatchFail "admin" [ showText p ]
+
+
+mkAdminIdsSingsList :: Id -> WorldState -> IM.IntMap Pla -> [(Id, Sing)]
+mkAdminIdsSingsList i ws pt = sortBy (compare `on` snd) [ (pi, view sing $ (ws^.entTbl) ! pi) | pi <- IM.keys pt
+                                                                                              , (pt ! pi)^.isAdmin
+                                                                                              , pi /= i ]
 
 
 -----
