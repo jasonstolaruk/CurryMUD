@@ -181,7 +181,7 @@ registerMsg msg q = liftIO . atomically . writeTQueue q . LogMsg $ msg
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
-logNotice modName funName msg = maybeVoid helper =<< gets (view (nonWorldState.noticeLog))
+logNotice modName (dblQuote -> funName) msg = maybeVoid helper =<< gets (view (nonWorldState.noticeLog))
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ]) . snd
 
@@ -191,21 +191,29 @@ logError msg = maybeVoid (registerMsg msg . snd) =<< gets (view (nonWorldState.e
 
 
 logExMsg :: T.Text -> T.Text -> T.Text -> SomeException -> MudStack ()
-logExMsg modName funName msg (dblQuote . showText -> e) =
+logExMsg modName (dblQuote -> funName) msg (dblQuote . showText -> e) =
     logError . T.concat $ [ modName, " ", funName, ": ", msg, ". ", e ]
 
 
 logIOEx :: T.Text -> T.Text -> IOException -> MudStack ()
-logIOEx modName funName (dblQuote . showText -> e) = logError . T.concat $ [ modName, " ", funName, ": ", e ]
+logIOEx modName (dblQuote -> funName) (dblQuote . showText -> e) = logError . T.concat $ [ modName
+                                                                                         , " "
+                                                                                         , funName
+                                                                                         , ": "
+                                                                                         , e ]
 
 
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> T.Text -> IOException -> MudStack ()
-logAndDispIOEx mq cols modName funName (dblQuote . showText -> e)
+logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showText -> e)
   | msg <- T.concat [ modName, " ", funName, ": ", e ] = logError msg >> wrapSend mq cols msg
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
-logPla modName funName i msg = doIfLogging i $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
+logPla modName (dblQuote -> funName) i msg = doIfLogging i . registerMsg . T.concat $ [ modName
+                                                                                      , " "
+                                                                                      , funName
+                                                                                      , ": "
+                                                                                      , msg ]
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
@@ -230,7 +238,7 @@ getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
 
 
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
-massLogPla modName funName msg = readTMVarInNWS plaLogTblTMVar >>= helper
+massLogPla modName (dblQuote -> funName) msg = readTMVarInNWS plaLogTblTMVar >>= helper
   where
     helper (map snd . IM.elems -> logQueues) =
         forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])

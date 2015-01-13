@@ -167,7 +167,7 @@ admin p@AdviseNoArgs     = advise p ["admin"] advice
                       , "." ]
 admin p@(AdviseOneArg a) = advise p ["admin"] advice
   where
-    advice = T.concat [ "Please also a message to send, as in "
+    advice = T.concat [ "Please also provide a message to send, as in "
                       , quoteColor
                       , dblQuote $ "admin " <> a <> " are you available? I need your assistance"
                       , dfltColor
