@@ -235,7 +235,7 @@ debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
     helper       = replicateM 100 . statefulFork_ $ heavyLogging
     heavyLogging = liftIO myThreadId >>=
-        replicateM_ 100 . logNotice "debugLog" . (<> ".") . ("Logging from " <>) . showText
+        replicateM_ 100 . logNotice "debugLog heavyLogging" . (<> ".") . ("Logging from " <>) . showText
 debugLog p = withoutArgs debugLog p
 
 

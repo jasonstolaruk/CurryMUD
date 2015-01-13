@@ -228,7 +228,7 @@ logPlaExecArgs modName cn@(dblQuote -> cn') as i = logPla modName cn' i $ "execu
 
 
 logPlaOut :: T.Text -> CmdName -> Id -> [T.Text] -> MudStack ()
-logPlaOut modName cn i (T.intercalate " / " -> msgs) = helper =<< getPlaLogQueue i
+logPlaOut modName (dblQuote -> cn) i (T.intercalate " / " -> msgs) = helper =<< getPlaLogQueue i
   where
     helper = registerMsg (T.concat [ modName, " ", cn, " (output): ", msgs ])
 

@@ -120,8 +120,8 @@ adminAnnounce p@AdviseNoArgs   = advise p [ prefixAdminCmd "announce" ] advice
                       , dfltColor
                       , "." ]
 adminAnnounce   (Msg i mq msg) = getEntSing i >>= \s -> do
-    logPla (prefixAdminCmd "announce") i $ "announced " <> dblQuote msg
-    logNotice "adminAnnounce" $ s <> " announced, " <> dblQuote msg
+    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
+    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
     ok mq
     massSend $ announceColor <> msg <> dfltColor
 adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
@@ -186,8 +186,8 @@ adminPrint p@AdviseNoArgs   = advise p [ prefixAdminCmd "print" ] advice
                       , dfltColor
                       , "." ]
 adminPrint   (Msg i mq msg) = getEntSing i >>= \s -> do
-    logPla (prefixAdminCmd "print") i $ "printed " <> dblQuote msg
-    logNotice "adminPrint" $ s <> " printed, " <> dblQuote msg
+    logPla    "adminPrint" i $       "printed "  <> dblQuote msg
+    logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
     ok mq
 adminPrint p = patternMatchFail "adminPrint" [ showText p ]
@@ -218,7 +218,7 @@ showProfanityLog mq cols = send mq =<< helper
 
 adminShutdown :: Action
 adminShutdown (NoArgs' i mq) = getEntSing i >>= \s -> do
-    logPla (prefixAdminCmd "shutdown") i $ "initiating shutdown " <> parensQuote "no message given" <> "."
+    logPla "adminShutdown" i $ "initiating shutdown " <> parensQuote "no message given" <> "."
     massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
     massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
                                           , s
@@ -232,7 +232,7 @@ adminShutdown (NoArgs' i mq) = getEntSing i >>= \s -> do
                                           , "." ]
     liftIO . atomically . writeTQueue mq $ Shutdown
 adminShutdown (Msg i mq msg) = getEntSing i >>= \s -> do
-    logPla (prefixAdminCmd "shutdown") i $ "initiating shutdown; message: " <> dblQuote msg
+    logPla "adminShutdown" i $ "initiating shutdown; message: " <> dblQuote msg
     massSend $ shutdownMsgColor <> msg <> dfltColor
     massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
                                             , s
