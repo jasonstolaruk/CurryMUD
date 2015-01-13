@@ -4,7 +4,7 @@
 put item ... container
 
 \uDESCRIPTION\n
-Put one or more items into a container (by default, into a container in your inventory; optionally, into a container in your current location or "room").
+Put one or more items into a container (by default, into a container in your inventory; optionally, into a container in your current location).
 
 \uEXAMPLES\n
 \q"put ring sack"\d to put your ring in your sack.4`

@@ -4,7 +4,7 @@
 remove item ... container
 
 \uDESCRIPTION\n
-Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in your current location or "room").
+Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in your current location).
 
 \uEXAMPLES\n
 \q"remove ring sack"\d to remove a ring from your sack.4`

@@ -4,10 +4,10 @@
 look [object ...]
 
 \uDESCRIPTION\n
-Get a description of your current location ("room"), or examine one or more objects in the room.
+Display a description of your current location, or examine one or more objects in your current location.
 
 \uEXAMPLES\n
-\q"look"\d to get a description of your current room followed by a list of its contents.4`
+\q"look"\d to get a description of the room followed by a list of its contents.4`
 \q"look sword"\d to examine the sword in the room.4`
 \q"look sword melf"\d to examine the sword and the male elf in the room.4`
 \q"look 2#isack"\d to examine the second sack in the room.4`

@@ -4,7 +4,7 @@
 unready item ...
 
 \uDESCRIPTION\n
-Move one or more items from your readied equipment to your inventory.
+Unready one or more items; move item(s) from your readied equipment to your inventory.
 
 \uEXAMPLES\n
 \q"unready sword"\d to stop wielding your sword.4`

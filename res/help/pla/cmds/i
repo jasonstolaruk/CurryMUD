@@ -4,7 +4,7 @@
 i [item ...]
 
 \uDESCRIPTION\n
-Get a list of the items in your inventory, or examine one or more items in your inventory.
+Display your inventory, or examine one or more items in your inventory.
 
 \uEXAMPLES\n
 \q"i"\d to get a list of the items in your inventory.4`

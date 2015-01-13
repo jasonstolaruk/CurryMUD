@@ -4,7 +4,7 @@
 equip [item ...]
 
 \uDESCRIPTION\n
-Get a list of the items in your readied equipment, or examine one or more items in your readied equipment.
+Display your readied equipment, or examine one or more items in your readied equipment.
 
 \uEXAMPLES\n
 \q"equip"\d to get a list of the items you have readied.4`

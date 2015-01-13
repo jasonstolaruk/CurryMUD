@@ -4,7 +4,7 @@
 ready item[#slocation] ...
 
 \uDESCRIPTION\n
-Move one or more items from your inventory to your readied equipment.
+Ready one or more items; move item(s) from your inventory to your readied equipment.
 
 For many items, you may optionally specify location by appending a suffix to the item name:
 \q"#sr"\d for right (hand, wrist, or ear)2`
