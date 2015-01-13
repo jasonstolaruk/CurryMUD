@@ -1,0 +1,12 @@
+\h ADMIN \d
+
+\uUSAGE\n
+admin name message
+
+\uDESCRIPTION\n
+Send a message to an administrator.
+
+\uEXAMPLES\n
+\q"admin jason are you available? I need your assistance"\d4`
+
+\uSEE ALSO\n
