@@ -157,7 +157,6 @@ about p = withoutArgs about p
 -----
 
 
--- TODO: Help.
 admin :: Action
 admin p@AdviseNoArgs                         = advise p ["admin"] advice
   where

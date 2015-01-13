@@ -256,15 +256,15 @@ mkGecrWithRol i ws is c n@(T.break (== slotChar) -> (a, b))
 
 
 -- "DupIdsNull" applies when nothing is left after having eliminated duplicate IDs.
-pattern DupIdsNull       <- (_,                                                                          Just [])
-pattern SorryOne     n   <- (Mult { amount = 1, nameSearchedFor = (aOrAn -> n), entsRes = Nothing },     Nothing)
-pattern NoneMult     n   <- (Mult {             nameSearchedFor = n,            entsRes = Nothing },     Nothing)
-pattern FoundMult    res <- (Mult {                                             entsRes = Just _  },     Just (Right -> res))
-pattern NoneIndexed  n   <- (Indexed {                          nameSearchedFor = n, entRes = Left "" }, Nothing)
-pattern SorryIndexed x p <- (Indexed { index = x,                                    entRes = Left p  }, Nothing)
-pattern FoundIndexed res <- (Indexed {                                               entRes = Right _ }, Just (Right -> res))
-pattern SorryCoins       <- (SorryIndexedCoins,                                                          Nothing)
-pattern GenericSorry n   <- (Sorry { nameSearchedFor = (aOrAn -> n) },                                   Nothing)
+pattern DupIdsNull       <- (_,                                                                        Just [])
+pattern SorryOne     n   <- (Mult { amount = 1,   nameSearchedFor = (aOrAn -> n), entsRes = Nothing }, Nothing)
+pattern NoneMult     n   <- (Mult {               nameSearchedFor = n,            entsRes = Nothing }, Nothing)
+pattern FoundMult    res <- (Mult {                                               entsRes = Just _  }, Just (Right -> res))
+pattern NoneIndexed  n   <- (Indexed {            nameSearchedFor = n,            entRes  = Left "" }, Nothing)
+pattern SorryIndexed x p <- (Indexed { index = x,                                 entRes  = Left p  }, Nothing)
+pattern FoundIndexed res <- (Indexed {                                            entRes  = Right _ }, Just (Right -> res))
+pattern SorryCoins       <- (SorryIndexedCoins,                                                        Nothing)
+pattern GenericSorry n   <- (Sorry   {            nameSearchedFor = (aOrAn -> n)                    }, Nothing)
 
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv

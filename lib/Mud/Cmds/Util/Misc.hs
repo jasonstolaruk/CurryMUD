@@ -85,7 +85,7 @@ dispCmdList cmds p                  = dispMatches p (succ maxCmdLen) . mkCmdList
 mkCmdListText :: [Cmd] -> [T.Text]
 mkCmdListText cmds = let (styleAbbrevs Don'tBracket -> cmdNames) = [ cmdName cmd | cmd <- cmds ]
                          cmdDescs                                = [ cmdDesc cmd | cmd <- cmds ]
-                     in  [ pad (succ maxCmdLen) n <> d | n <- cmdNames | d <- cmdDescs ]
+                     in [ pad (succ maxCmdLen) n <> d | n <- cmdNames | d <- cmdDescs ]
 
 
 -----

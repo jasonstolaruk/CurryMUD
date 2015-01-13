@@ -268,6 +268,9 @@ dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHand
 -- "Inactivity timer" threads:
 
 
+-- TODO: Admins shouldn't be booted for inactivity...
+
+
 type InacTimerQueue = TQueue InacTimerMsg
 
 
