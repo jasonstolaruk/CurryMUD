@@ -418,7 +418,7 @@ pattern WithArgs i mq cols as = ActionParams { plaId       = i
 
 
 -- TODO: Move?
-pattern Msg i mq cols msg <- WithArgs i mq cols (formatMsgArgs -> msg)
+pattern Msg i mq cols msg <- WithArgs i mq cols (formatMsgArgs -> msg) -- TODO: Do we need cols?
 
 
 -- TODO: Move?

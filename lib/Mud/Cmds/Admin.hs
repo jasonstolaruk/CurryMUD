@@ -90,11 +90,13 @@ adminCmds :: [Cmd]
 adminCmds =
     [ Cmd { cmdName = prefixAdminCmd "?", action = adminDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = prefixAdminCmd "announce", action = adminAnnounce, cmdDesc = "Send a message to all players." }
-    , Cmd { cmdName = prefixAdminCmd "boot", action = adminBoot, cmdDesc = "Boot a player." }
+    , Cmd { cmdName = prefixAdminCmd "boot", action = adminBoot, cmdDesc = "Boot a player, optionally with a custom \
+                                                                           \message." }
     , Cmd { cmdName = prefixAdminCmd "date", action = adminDate, cmdDesc = "Display the current system date." }
     , Cmd { cmdName = prefixAdminCmd "print", action = adminPrint, cmdDesc = "Print a message to the server console." }
     , Cmd { cmdName = prefixAdminCmd "profanity", action = adminProfanity, cmdDesc = "Dump the profanity log." }
-    , Cmd { cmdName = prefixAdminCmd "shutdown", action = adminShutdown, cmdDesc = "Shut down CurryMUD." }
+    , Cmd { cmdName = prefixAdminCmd "shutdown", action = adminShutdown, cmdDesc = "Shut down CurryMUD, optionally \
+                                                                                   \with a custom message." }
     , Cmd { cmdName = prefixAdminCmd "time", action = adminTime, cmdDesc = "Display the current system time." }
     , Cmd { cmdName = prefixAdminCmd "uptime", action = adminUptime, cmdDesc = "Display the system uptime." }
     , Cmd { cmdName = prefixAdminCmd "who", action = adminWho, cmdDesc = "Display or search a list of the players who \
@@ -118,7 +120,7 @@ adminAnnounce p@AdviseNoArgs     = advise p [ prefixAdminCmd "announce" ] advice
                       , dfltColor
                       , "." ]
 adminAnnounce   (Msg i mq _ msg) = getEntSing i >>= \s -> do
-    logPla (prefixAdminCmd "announce") i $ "hear ye, hear ye! " <> dblQuote msg
+    logPla (prefixAdminCmd "announce") i $ "announced " <> dblQuote msg
     logNotice "adminAnnounce" $ s <> " announced, " <> dblQuote msg
     ok mq
     massSend $ announceColor <> msg <> dfltColor
@@ -183,10 +185,10 @@ adminPrint p@AdviseNoArgs         = advise p [ prefixAdminCmd "print" ] advice
                       , dblQuote $ prefixAdminCmd "print" <> " Is anybody home?"
                       , dfltColor
                       , "." ]
-adminPrint   (WithArgs i mq _ as) = do
-    logPlaExecArgs (prefixAdminCmd "print") as i
-    s <- getEntSing i
-    liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, T.intercalate " " as, dfltColor ]
+adminPrint   (Msg i mq _ msg) = getEntSing i >>= \s -> do
+    logPla (prefixAdminCmd "print") i $ "printed " <> dblQuote msg
+    logNotice "adminPrint" $ s <> " printed, " <> dblQuote msg
+    liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
     ok mq
 adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
@@ -216,7 +218,7 @@ showProfanityLog mq cols = send mq =<< helper
 
 adminShutdown :: Action
 adminShutdown (NoArgs' i mq) = getEntSing i >>= \s -> do
-    logPlaExecArgs (prefixAdminCmd "shutdown") [] i
+    logPla (prefixAdminCmd "shutdown") i $ "initiating shutdown " <> parensQuote "no message given" <> "."
     massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
     massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
                                           , s
@@ -229,15 +231,14 @@ adminShutdown (NoArgs' i mq) = getEntSing i >>= \s -> do
                                           , parensQuote "no message given"
                                           , "." ]
     liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown (WithArgs i mq _ as) = getEntSing i >>= \s -> do
-    logPlaExecArgs (prefixAdminCmd "shutdown") as i
-    let msg = T.intercalate " " as
+adminShutdown (Msg i mq _ msg) = getEntSing i >>= \s -> do
+    logPla (prefixAdminCmd "shutdown") i $ "initiating shutdown; message: " <> dblQuote msg
     massSend $ shutdownMsgColor <> msg <> dfltColor
     massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
                                             , s
                                             , "; message: "
-                                            , msg ]
-    logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", msg ]
+                                            , dblQuote msg ]
+    logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", dblQuote msg ]
     liftIO . atomically . writeTQueue mq $ Shutdown
 adminShutdown _ = patternMatchFail "adminShutdown" []
 
