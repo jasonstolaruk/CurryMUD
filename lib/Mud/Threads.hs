@@ -44,6 +44,7 @@ import Control.Monad.State (get)
 import Data.IntMap.Lazy ((!))
 import Data.Monoid ((<>), mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
+import Prelude hiding (pi)
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)
@@ -250,10 +251,11 @@ adHoc mq host = do
                        & eqTbl.at    i ?~ M.empty
                        & mobTbl.at   i ?~ m
                        & pcTbl.at    i ?~ pc
+        let ris  = sortInv ws' $ (ws^.invTbl) ! iWelcome ++ [i]
         let mqt' = mqt & at i ?~ mq
         let pt'  = pt  & at i ?~ pla
         -----
-        putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ (sortInv ws' $ (ws^.invTbl) ! iWelcome ++ [i])
+        putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ ris
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         -----
@@ -330,7 +332,7 @@ server h i mq itq = (registerThread . Server $ i) >> loop `catch` plaThreadExHan
       InacBoot       -> sendInacBootMsg h             >> sayonara i itq
       MsgBoot msg    -> boot h msg                    >> sayonara i itq
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)  >> loop
-      Prompt  p      -> sendPrompt h p                >> loop -- TODO: Prompts need peeping...?
+      Prompt  p      -> sendPrompt i h p              >> loop
       Quit           -> cowbye h                      >> sayonara i itq
       Shutdown       -> shutDown                      >> loop
       SilentBoot     ->                                  sayonara i itq
@@ -348,9 +350,8 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getPla
   where
     interpret p f cn as = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
-        resetInacTimer
+        liftIO . atomically . writeTQueue itq $ ResetTimer
         f cn . WithArgs i mq (p^.columns) $ as
-    resetInacTimer = liftIO . atomically . writeTQueue itq $ ResetTimer
 
 
 forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> T.Text -> MudStack ()
@@ -363,7 +364,6 @@ forwardToPeepers i peeperIds toOrFrom msg = do
     mkPeepedMsg s = Peeped $ case toOrFrom of
       ToThePeeped   ->      T.concat   [ toPeepedColor,   " ", bracketQuote s, " ", dfltColor, " ", msg ]
       FromThePeeped -> nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
-
 
 
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
@@ -382,8 +382,10 @@ boot :: Handle -> T.Text -> MudStack ()
 boot h = liftIO . T.hPutStrLn h . nl' . nl . (<> dfltColor) . (bootMsgColor <>)
 
 
-sendPrompt :: Handle -> T.Text -> MudStack ()
-sendPrompt h = liftIO . T.hPutStrLn h
+sendPrompt :: Id -> Handle -> T.Text -> MudStack ()
+sendPrompt i h p = getPla i >>= \(view peepers -> peeperIds) -> do
+    forwardToPeepers i peeperIds ToThePeeped . nl $ p
+    liftIO . T.hPutStrLn h $ p
 
 
 cowbye :: Handle -> MudStack ()
