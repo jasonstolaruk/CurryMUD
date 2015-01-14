@@ -7,6 +7,7 @@ import Mud.ANSI
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
+import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
 import Mud.Data.State.Util.Get
@@ -27,7 +28,6 @@ import Mud.Util.Quoting
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Arrow ((***))
 import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
@@ -340,41 +340,35 @@ sayonara :: Id -> InacTimerQueue -> MudStack ()
 sayonara i itq = (liftIO . atomically . writeTQueue itq $ StopTimer) >> handleEgress i
 
 
--- TODO: Clean up?
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
     case p^.interp of
-      Nothing -> unless (T.null msg) $ let (cn, as) = headTail . T.words $ msg in do
-          forwardToPeepers i p FromThePeeped msg
-          resetInacTimer
-          centralDispatch cn . WithArgs i mq (p^.columns) $ as
-      Just f  -> let (cn, as) = if T.null msg then ("", []) else headTail . T.words $ msg in do
-          forwardToPeepers i p FromThePeeped msg
-          resetInacTimer
-          f cn . WithArgs i mq (p^.columns) $ as
+      Nothing -> unless (T.null msg) $ uncurry (interpret p centralDispatch) (headTail . T.words $ msg)
+      Just f  -> uncurry (interpret p f) $ if T.null msg then ("", []) else (headTail . T.words $ msg)
   where
+    interpret p f cn as = do
+        forwardToPeepers i (p^.peepers) FromThePeeped msg
+        resetInacTimer
+        f cn . WithArgs i mq (p^.columns) $ as
     resetInacTimer = liftIO . atomically . writeTQueue itq $ ResetTimer
 
 
-data ToOrFromThePeeped = ToThePeeped | FromThePeeped -- TODO: Move.
-
-
-forwardToPeepers :: Id -> Pla -> ToOrFromThePeeped -> T.Text -> MudStack ()
-forwardToPeepers i p toOrFrom msg = do
+forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> T.Text -> MudStack ()
+forwardToPeepers i peeperIds toOrFrom msg = do
     mqt <- readTMVarInNWS msgQueueTblTMVar
-    let peepMqs = [ mqt ! pi | pi <- p^.peepres ]
+    let peepMqs = map (mqt !) peeperIds
     s   <- getEntSing i
     liftIO . atomically . forM_ peepMqs $ flip writeTQueue (mkPeepedMsg s)
   where
-    mkPeepedMsg s = Peeped $ case toOrFrom
+    mkPeepedMsg s = Peeped $ case toOrFrom of
       ToThePeeped   ->      T.concat   [ toPeepedColor,   " ", bracketQuote s, " ", dfltColor, " ", msg ]
       FromThePeeped -> nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
 
 
 
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
-handleFromServer i h msg = getPla i >>= \p -> do
-    forwardToPeepers i p ToThePeeped msg
+handleFromServer i h msg = getPla i >>= \(view peepers -> peeperIds) -> do
+    forwardToPeepers i peeperIds ToThePeeped msg
     liftIO . T.hPutStr h $ msg
 
 

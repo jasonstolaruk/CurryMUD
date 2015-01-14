@@ -24,6 +24,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , RightOrLeft(..)
                      , Serializable
                      , ShouldBracketQuote(..)
+                     , ToOrFromThePeeped(..)
                      , Verb(..)
                      , deserialize
                      , fromRol
@@ -299,6 +300,12 @@ data RightOrLeft = R
 
 
 data ShouldBracketQuote = DoBracket | Don'tBracket
+
+
+-----
+
+
+data ToOrFromThePeeped = ToThePeeped | FromThePeeped
 
 
 -----
