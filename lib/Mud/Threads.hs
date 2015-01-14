@@ -213,14 +213,27 @@ adHoc mq host = do
         -----
         let i    = getUnusedId ws
         -----
-        let desc = capitalize $ mkPronoun s <> " is an ad-hoc player character."
-        let e    = Ent i Nothing (showText r <> showText i) "" desc 0 -- TODO: Write records.
-        let is   = []
-        let co   = mempty
-        let em   = M.empty
-        let m    = Mob s 10 10 10 10 10 10 0 RHand -- TODO: Write records.
-        let pc   = PC iWelcome r [] [] -- TODO: Write records.
-        let ris  = (ws^.invTbl) ! iWelcome ++ [i]
+        let e    = Ent { _entId    = i
+                       , _entName  = Nothing
+                       , _sing     = showText r <> showText i
+                       , _plur     = ""
+                       , _entDesc  = capitalize $ mkPronoun s <> " is an ad-hoc player character."
+                       , _entFlags = 0 }
+        -----
+        let m    = Mob { _sex  = s
+                       , _st   = 10
+                       , _dx   = 10
+                       , _iq   = 10
+                       , _ht   = 10
+                       , _hp   = 10
+                       , _fp   = 10
+                       , _xp   = 0
+                       , _hand = RHand }
+        -----
+        let pc   = PC  { _rmId       = iWelcome
+                       , _race       = r
+                       , _introduced = []
+                       , _linked     = [] }
         -----
         let pla  = Pla { _columns   = 80
                        , _hostName  = host
@@ -232,15 +245,15 @@ adHoc mq host = do
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
-                       & invTbl.at   i ?~ is
-                       & coinsTbl.at i ?~ co
-                       & eqTbl.at    i ?~ em
+                       & invTbl.at   i ?~ []
+                       & coinsTbl.at i ?~ mempty
+                       & eqTbl.at    i ?~ M.empty
                        & mobTbl.at   i ?~ m
                        & pcTbl.at    i ?~ pc
         let mqt' = mqt & at i ?~ mq
         let pt'  = pt  & at i ?~ pla
         -----
-        putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ sortInv ws' ris
+        putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ (sortInv ws' $ (ws^.invTbl) ! iWelcome ++ [i])
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         -----

@@ -189,7 +189,7 @@ adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify on
                                                               \you wish to start or stop peeping."
 adminPeep   (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, logMsgs) -> do
     multiWrapSend mq cols msgs
-    forM_ logMsgs $ uncurry (logPla "adminPeep")
+    forM_ logMsgs $ uncurry (logPla "adminPeep") -- TODO: Consolidate into one log statement for the peeper.
   where
     helper = getEntTbl >>= \et -> onNWS plaTblTMVar $ \(ptTMVar, pt) ->
         let s                    = (et ! i)^.sing

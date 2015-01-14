@@ -28,6 +28,9 @@ import qualified Data.Set as S (Set)
 import qualified Data.Text as T
 
 
+-- TODO: Define records in alphabetical order.
+
+
 ifThenElse :: Bool -> a -> a -> a
 ifThenElse True  x _ = x
 ifThenElse False _ y = y
