@@ -25,15 +25,19 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
+import Control.Lens (_1, _2, _3, at, over)
 import Control.Lens.Getter (view)
-import Control.Lens.Operators ((^.))
+import Control.Lens.Operators ((&), (?~), (^.))
+import Control.Lens.Setter (set)
+import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List (sortBy)
+import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
@@ -93,6 +97,8 @@ adminCmds =
     , Cmd { cmdName = prefixAdminCmd "boot", action = adminBoot, cmdDesc = "Boot a player, optionally with a custom \
                                                                            \message." }
     , Cmd { cmdName = prefixAdminCmd "date", action = adminDate, cmdDesc = "Display the current system date." }
+    , Cmd { cmdName = prefixAdminCmd "peep", action = adminPeep, cmdDesc = "Start or stop peeping one or more \
+                                                                           \players." }
     , Cmd { cmdName = prefixAdminCmd "print", action = adminPrint, cmdDesc = "Print a message to the server console." }
     , Cmd { cmdName = prefixAdminCmd "profanity", action = adminProfanity, cmdDesc = "Dump the profanity log." }
     , Cmd { cmdName = prefixAdminCmd "shutdown", action = adminShutdown, cmdDesc = "Shut down CurryMUD, optionally \
@@ -100,7 +106,7 @@ adminCmds =
     , Cmd { cmdName = prefixAdminCmd "time", action = adminTime, cmdDesc = "Display the current system time." }
     , Cmd { cmdName = prefixAdminCmd "uptime", action = adminUptime, cmdDesc = "Display the system uptime." }
     , Cmd { cmdName = prefixAdminCmd "who", action = adminWho, cmdDesc = "Display or search a list of the players who \
-                                                                         \are currently logged in." } ]
+                                                                         \are currently connected." } ]
 
 
 prefixAdminCmd :: CmdName -> T.Text
@@ -136,7 +142,7 @@ adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify th
 adminBoot   (MsgWithTarget i mq cols target msg) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
     getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == target ] of
-      []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently logged in."
+      []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected."
       [i'] | s <- (et ! i)^.sing -> if s == target
              then wrapSend mq cols "You can't boot yourself."
              else let mq' = mqt ! i' in do
@@ -172,6 +178,47 @@ adminDate p = withoutArgs adminDate p
 adminDispCmdList :: Action
 adminDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixAdminCmd "?") as i >> dispCmdList adminCmds p
 adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ showText p ]
+
+
+-----
+
+
+-- TODO: Help.
+adminPeep :: Action
+adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify one or more PC names of the player(s) \
+                                                              \you wish to start or stop peeping."
+adminPeep   (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, logMsgs) -> do
+    multiWrapSend mq cols msgs
+    forM_ logMsgs $ uncurry (logPla "adminPeep")
+  where
+    helper = getEntTbl >>= \et -> onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+        let s                    = (et ! i)^.sing
+            piss                 = mkPlaIdsSingsList et pt
+            (pt', msgs, logMsgs) = foldr (peep s piss) (pt, [], []) as
+        in putTMVar ptTMVar pt' >> return (msgs, logMsgs)
+    peep s piss target a@(pt, _, _) =
+        let notFound    = over _2 ("No player by the name of " <> dblQuote target <> " is currently connected." :) a
+            found match | (i', target') <- head . filter ((== match) . snd) $ piss
+                        , thePeeper     <- pt ! i
+                        , thePeeped     <- pt ! i' = if i' `notElem` thePeeper^.peeping
+                          then let pt'     = pt & at i  ?~ over peeping (i' :) thePeeper
+                                                & at i' ?~ over peepers (i  :) thePeeped
+                                   msg     = "You are now peeping " <> target' <> "."
+                                   logMsgs = [ (i, "started peeping " <> target' <> ".")
+                                             , (i', s <> " started peeping.") ]
+                               in set _1 pt' . over _2 (msg :) . over _3 (logMsgs ++) $ a
+                          else let pt'     = pt & at i  ?~ over peeping (i' `delete`) thePeeper
+                                                & at i' ?~ over peepers (i  `delete`) thePeeped
+                                   msg     = "You are no longer peeping " <> target' <> "."
+                                   logMsgs = [ (i, "stopped peeping " <> target' <> ".")
+                                             , (i', s <> " stopped peeping.") ]
+                               in set _1 pt' . over _2 (msg :) . over _3 (logMsgs ++) $ a
+        in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
+adminPeep p = patternMatchFail "adminPeep" [ showText p ]
+
+
+mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
+mkPlaIdsSingsList et pt = sortBy (compare `on` snd) [ (i, (et ! i)^.sing) | i <- IM.keys pt, not $ (pt ! i)^.isAdmin ]
 
 
 -----
@@ -289,7 +336,7 @@ mkPlaListTxt ws pt =
     let pis  = [ pi | pi <- IM.keys pt, not $ (pt ! pi)^.isAdmin ]
         piss = sortBy (compare `on` snd) . zip pis $ [ view sing $ (ws^.entTbl) ! pi | pi <- pis ]
         pias = [ (pi, a) | (pi, _) <- piss | a <- styleAbbrevs Don'tBracket . map snd $ piss ]
-    in map helper pias ++ [ numOfPlayers pis <> " logged in." ]
+    in map helper pias ++ [ numOfPlayers pis <> " connected." ]
   where
     helper (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
                      in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]

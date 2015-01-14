@@ -27,6 +27,7 @@ import Mud.Util.Quoting
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Arrow ((***))
 import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
@@ -35,8 +36,9 @@ import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, readTQueue, tryReadTQ
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
+import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
-import Control.Monad (forever, unless, void)
+import Control.Monad (forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.IntMap.Lazy ((!))
@@ -192,8 +194,8 @@ talk h host = helper `finally` cleanUp
         handle (plaThreadExHandler "talk" i) $ do
             logNotice "talk helper" $ "new ID for incoming player: " <> showText i <> "."
             liftIO configBuffer
-            dumpTitle    mq
-            prompt       mq "By what name are you known?"
+            dumpTitle mq
+            prompt    mq "By what name are you known?"
             s <- statefulFork . inacTimer i mq $ itq
             liftIO $ race_ (runStateInIORefT (server  h i mq itq) s)
                            (runStateInIORefT (receive h i mq)     s)
@@ -212,15 +214,21 @@ adHoc mq host = do
         let i    = getUnusedId ws
         -----
         let desc = capitalize $ mkPronoun s <> " is an ad-hoc player character."
-        let e    = Ent i Nothing (showText r <> showText i) "" desc 0
+        let e    = Ent i Nothing (showText r <> showText i) "" desc 0 -- TODO: Write records.
         let is   = []
         let co   = mempty
         let em   = M.empty
-        let m    = Mob s 10 10 10 10 10 10 0 RHand
-        let pc   = PC iWelcome r [] []
+        let m    = Mob s 10 10 10 10 10 10 0 RHand -- TODO: Write records.
+        let pc   = PC iWelcome r [] [] -- TODO: Write records.
         let ris  = (ws^.invTbl) ! iWelcome ++ [i]
         -----
-        let pla  = Pla False host 80 24 (Just interpName)
+        let pla  = Pla { _columns   = 80
+                       , _hostName  = host
+                       , _interp    = Just interpName
+                       , _isAdmin   = False
+                       , _pageLines = 24
+                       , _peepers   = []
+                       , _peeping   = [] }
         -----
         let ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
@@ -305,10 +313,11 @@ server h i mq itq = (registerThread . Server $ i) >> loop `catch` plaThreadExHan
     loop = (liftIO . atomically . readTQueue $ mq) >>= \case
       Dropped        ->                                  sayonara i itq
       FromClient msg -> handleFromClient i mq itq msg >> loop
-      FromServer msg -> (liftIO . T.hPutStr h $ msg)  >> loop
+      FromServer msg -> handleFromServer i h msg      >> loop
       InacBoot       -> sendInacBootMsg h             >> sayonara i itq
       MsgBoot msg    -> boot h msg                    >> sayonara i itq
-      Prompt p       -> sendPrompt h p                >> loop
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)  >> loop
+      Prompt  p      -> sendPrompt h p                >> loop
       Quit           -> cowbye h                      >> sayonara i itq
       Shutdown       -> shutDown                      >> loop
       SilentBoot     ->                                  sayonara i itq
@@ -318,11 +327,15 @@ sayonara :: Id -> InacTimerQueue -> MudStack ()
 sayonara i itq = (liftIO . atomically . writeTQueue itq $ StopTimer) >> handleEgress i
 
 
+-- TODO: Clean up?
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
-    let cols = p^.columns
-    in case p^.interp of
+handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = do
+    p   <- getPla i
+    mqt <- readTMVarInNWS msgQueueTblTMVar
+    let (cols, map (mqt !) -> peeps) = (view columns *** view peepers) . dup $ p
+    case p^.interp of
       Nothing -> unless (T.null msg) $ let (cn, as) = headTail . T.words $ msg in do
+          liftIO . atomically . forM_ peeps $ flip writeTQueue (Peeped msg)
           resetInacTimer
           centralDispatch cn . WithArgs i mq cols $ as
       Just f  -> let (cn, as) = if T.null msg then ("", []) else headTail . T.words $ msg in do
@@ -330,6 +343,15 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getPla
           f cn . WithArgs i mq cols $ as
   where
     resetInacTimer = liftIO . atomically . writeTQueue itq $ ResetTimer
+
+
+-- TODO: Clean up?
+handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
+handleFromServer i h msg = do
+    mqt                                      <- readTMVarInNWS msgQueueTblTMVar
+    (view peepers -> (map (mqt !) -> peeps)) <- getPla i
+    liftIO . atomically . forM_ peeps $ flip writeTQueue (Peeped msg) -- TODO: Refactor out?
+    liftIO . T.hPutStr h $ msg
 
 
 sendInacBootMsg :: Handle -> MudStack ()

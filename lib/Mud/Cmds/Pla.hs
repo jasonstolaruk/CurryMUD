@@ -110,33 +110,34 @@ plaCmds =
     , Cmd { cmdName = "admin", action = admin, cmdDesc = "Send a message to an administrator." }
     , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }
     , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
-    , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop items." }
+    , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop one or more items." }
     , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
-    , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display your readied equipment, or examine items in your \
-                                                         \readied equipment." }
+    , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display your readied equipment, or examine one or more items \
+                                                         \in your readied equipment." }
     , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
-    , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick up items." }
-    , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on commands or topics." }
-    , Cmd { cmdName = "i", action = inv, cmdDesc = "Display your inventory, or examine items in your inventory." }
+    , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick up one or more items." }
+    , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on one or more commands or topics." }
+    , Cmd { cmdName = "i", action = inv, cmdDesc = "Display your inventory, or examine one or more items in your \
+                                                   \inventory." }
     , Cmd { cmdName = "intro", action = intro, cmdDesc = "Introduce yourself." }
-    , Cmd { cmdName = "look", action = look, cmdDesc = "Display a description of your current location, or examine \
-                                                       \items in your current location." }
+    , Cmd { cmdName = "look", action = look, cmdDesc = "Display a description of your current location, or examine one \
+                                                       \or more items in your current location." }
     , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
     , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
     , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
     , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
-    , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put items in a container." }
+    , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put one or more items into a container." }
     , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit playing CurryMUD." }
-    , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready items." }
-    , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove items from a container." }
+    , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready one or more items." }
+    , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove one or more items from a container." }
     , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
     , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
     , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
     , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
-    , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready items." }
+    , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready one or more items." }
     , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long CurryMUD has been running." }
     , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
-    , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate abbreviations." }
+    , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate one or more abbreviations." }
     , Cmd { cmdName = "whoadmin", action = whoAdmin, cmdDesc = "Display a list of the administrators who are currently \
                                                                \logged in." }
     , Cmd { cmdName = "whoami", action = whoAmI, cmdDesc = "Confirm your name, sex, and race." } ]

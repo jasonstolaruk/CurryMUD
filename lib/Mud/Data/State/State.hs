@@ -360,6 +360,7 @@ data Msg = Dropped
          | FromServer T.Text
          | InacBoot
          | MsgBoot    T.Text
+         | Peeped     T.Text
          | Prompt     T.Text
          | Quit
          | Shutdown
@@ -374,11 +375,13 @@ type CmdName = T.Text
 type Interp  = (CmdName -> ActionParams -> MudStack ())
 
 
-data Pla = Pla { _isAdmin   :: !Bool
+data Pla = Pla { _columns   :: !Int
                , _hostName  :: !HostName
-               , _columns   :: !Int
+               , _interp    :: !(Maybe Interp)
+               , _isAdmin   :: !Bool
                , _pageLines :: !Int
-               , _interp    :: !(Maybe Interp) }
+               , _peepers   :: !Inv
+               , _peeping   :: !Inv }
 
 
 -- ==================================================
