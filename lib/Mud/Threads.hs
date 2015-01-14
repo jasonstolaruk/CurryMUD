@@ -317,7 +317,7 @@ server h i mq itq = (registerThread . Server $ i) >> loop `catch` plaThreadExHan
       InacBoot       -> sendInacBootMsg h             >> sayonara i itq
       MsgBoot msg    -> boot h msg                    >> sayonara i itq
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)  >> loop
-      Prompt  p      -> sendPrompt h p                >> loop
+      Prompt  p      -> sendPrompt h p                >> loop -- TODO: Prompts need peeping...?
       Quit           -> cowbye h                      >> sayonara i itq
       Shutdown       -> shutDown                      >> loop
       SilentBoot     ->                                  sayonara i itq
@@ -335,10 +335,12 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = do
     let (cols, map (mqt !) -> peeps) = (view columns *** view peepers) . dup $ p
     case p^.interp of
       Nothing -> unless (T.null msg) $ let (cn, as) = headTail . T.words $ msg in do
-          liftIO . atomically . forM_ peeps $ flip writeTQueue (Peeped msg)
+          s <- getEntSing i -- TODO: Refactor out the peeping?
+          let peepedMsg = nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
+          liftIO . atomically . forM_ peeps $ flip writeTQueue (Peeped peepedMsg)
           resetInacTimer
           centralDispatch cn . WithArgs i mq cols $ as
-      Just f  -> let (cn, as) = if T.null msg then ("", []) else headTail . T.words $ msg in do
+      Just f  -> let (cn, as) = if T.null msg then ("", []) else headTail . T.words $ msg in do -- TODO: Peeping?
           resetInacTimer
           f cn . WithArgs i mq cols $ as
   where
@@ -350,7 +352,9 @@ handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
 handleFromServer i h msg = do
     mqt                                      <- readTMVarInNWS msgQueueTblTMVar
     (view peepers -> (map (mqt !) -> peeps)) <- getPla i
-    liftIO . atomically . forM_ peeps $ flip writeTQueue (Peeped msg) -- TODO: Refactor out?
+    s                                        <- getEntSing i
+    let peepedMsg = T.concat [ toPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
+    liftIO . atomically . forM_ peeps $ flip writeTQueue (Peeped peepedMsg)
     liftIO . T.hPutStr h $ msg
 
 
