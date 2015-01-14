@@ -142,7 +142,8 @@ adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify th
 adminBoot   (MsgWithTarget i mq cols target msg) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
     getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == target ] of
-      []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected."
+      []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
+                                 \you must specify the full PC name of the player you wish to boot.)"
       [i'] | s <- (et ! i)^.sing -> if s == target
              then wrapSend mq cols "You can't boot yourself."
              else let mq' = mqt ! i' in do

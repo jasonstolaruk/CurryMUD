@@ -8,6 +8,7 @@ module Mud.ANSI ( abbrevColor
                 , bootMsgColor
                 , colors
                 , dfltColor
+                , dfltColor'
                 , envVarColor
                 , exitsColor
                 , fromPeepedColor
@@ -104,7 +105,11 @@ bootMsgColor = red
 
 
 dfltColor :: T.Text
-dfltColor = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelimiter
+dfltColor = resetANSI
+
+
+dfltColor' :: T.Text
+dfltColor' = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelimiter
 
 
 envVarColor :: T.Text
@@ -116,7 +121,7 @@ exitsColor = magenta
 
 
 fromPeepedColor :: T.Text
-fromPeepedColor = mkColorANSI (Vivid, White) (Vivid, Blue)
+fromPeepedColor = mkColorANSI (Vivid, White) (Dull, Blue)
 
 
 headerColor :: T.Text
@@ -164,7 +169,7 @@ shutdownMsgColor = red
 
 
 toPeepedColor :: T.Text
-toPeepedColor = mkColorANSI (Vivid, White) (Vivid, Green)
+toPeepedColor = mkColorANSI (Vivid, White) (Dull, Green)
 
 
 underline :: T.Text

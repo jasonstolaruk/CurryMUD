@@ -768,29 +768,39 @@ handleEgress i = getPCRmId i >>= \ri -> do
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
-    (parensQuote -> n) <- liftIO . atomically $ do
+    (parensQuote -> n, peeperBs) <- liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
         pt  <- takeTMVar ptTMVar
         -----
-        let (view sing    -> s)   = (ws^.entTbl) ! i
-        let (view rmId    -> ri') = (ws^.pcTbl)  ! i
+        let (view sing -> s)   = (ws^.entTbl) ! i
+        let (view rmId -> ri') = (ws^.pcTbl)  ! i
+
+        let p    = pt ! i
+        let pt'  = foldr (\peepedId ptAcc -> let thePeeped = ptAcc ! peepedId
+                                             in ptAcc & at peepedId ?~ over peepers (i `delete`) thePeeped) pt  $ p^.peeping
+        let peeperIds = p^.peepers
+        let pt'' = foldr (\peeperId ptAcc -> let thePeeper = ptAcc ! peeperId
+                                             in ptAcc & at peeperId ?~ over peeping (i `delete`) thePeeper) pt' $ peeperIds
+        let peeperBs = [ (T.concat [ "You are no longer peeping ", s, " ", parensQuote $ s <> " has disconnected", "." ], [peeperId]) | peeperId <- peeperIds ]
+
         let ((i `delete`) -> ris) = (ws^.invTbl) ! ri'
-        let ws'                   = ws  & typeTbl.at  i   .~ Nothing
-                                        & entTbl.at   i   .~ Nothing
-                                        & invTbl.at   i   .~ Nothing
-                                        & coinsTbl.at i   .~ Nothing
-                                        & eqTbl.at    i   .~ Nothing
-                                        & mobTbl.at   i   .~ Nothing
-                                        & pcTbl.at    i   .~ Nothing
-                                        & invTbl.at   ri' ?~ ris
-        let mqt'                  = mqt & at i .~ Nothing
-        let pt'                   = pt  & at i .~ Nothing
+        let ws'                   = ws   & typeTbl.at  i   .~ Nothing
+                                         & entTbl.at   i   .~ Nothing
+                                         & invTbl.at   i   .~ Nothing
+                                         & coinsTbl.at i   .~ Nothing
+                                         & eqTbl.at    i   .~ Nothing
+                                         & mobTbl.at   i   .~ Nothing
+                                         & pcTbl.at    i   .~ Nothing
+                                         & invTbl.at   ri' ?~ ris
+        let mqt'                  = mqt  & at i .~ Nothing
+        let pt'''                 = pt'' & at i .~ Nothing
         -----
         putTMVar wsTMVar  ws'
         putTMVar mqtTMVar mqt'
-        putTMVar ptTMVar  pt'
-        return s
+        putTMVar ptTMVar  pt'''
+        return (s, peeperBs)
+    bcastNl peeperBs
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", n, " has left the game." ]
     closePlaLog i
 
