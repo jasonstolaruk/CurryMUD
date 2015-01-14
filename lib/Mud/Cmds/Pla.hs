@@ -22,6 +22,7 @@ import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
 import Mud.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.NameResolution
+import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
@@ -762,8 +763,8 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 
 
 handleEgress :: Id -> MudStack ()
-handleEgress i = do
-    notifyEgress i
+handleEgress i = getPCRmId i >>= \ri -> do
+    unless (ri == iWelcome) $ notifyEgress i
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
@@ -773,16 +774,16 @@ handleEgress i = do
         pt  <- takeTMVar ptTMVar
         -----
         let (view sing    -> s)   = (ws^.entTbl) ! i
-        let (view rmId    -> ri)  = (ws^.pcTbl)  ! i
-        let ((i `delete`) -> ris) = (ws^.invTbl) ! ri
-        let ws'                   = ws  & typeTbl.at  i  .~ Nothing
-                                        & entTbl.at   i  .~ Nothing
-                                        & invTbl.at   i  .~ Nothing
-                                        & coinsTbl.at i  .~ Nothing
-                                        & eqTbl.at    i  .~ Nothing
-                                        & mobTbl.at   i  .~ Nothing
-                                        & pcTbl.at    i  .~ Nothing
-                                        & invTbl.at   ri ?~ ris
+        let (view rmId    -> ri') = (ws^.pcTbl)  ! i
+        let ((i `delete`) -> ris) = (ws^.invTbl) ! ri'
+        let ws'                   = ws  & typeTbl.at  i   .~ Nothing
+                                        & entTbl.at   i   .~ Nothing
+                                        & invTbl.at   i   .~ Nothing
+                                        & coinsTbl.at i   .~ Nothing
+                                        & eqTbl.at    i   .~ Nothing
+                                        & mobTbl.at   i   .~ Nothing
+                                        & pcTbl.at    i   .~ Nothing
+                                        & invTbl.at   ri' ?~ ris
         let mqt'                  = mqt & at i .~ Nothing
         let pt'                   = pt  & at i .~ Nothing
         -----

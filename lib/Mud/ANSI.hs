@@ -116,7 +116,7 @@ exitsColor = magenta
 
 
 fromPeepedColor :: T.Text
-fromPeepedColor = mkColorANSI (Vivid, White) (Vivid, Red)
+fromPeepedColor = mkColorANSI (Vivid, White) (Vivid, Blue)
 
 
 headerColor :: T.Text
