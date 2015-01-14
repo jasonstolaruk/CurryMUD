@@ -762,7 +762,7 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
     msg = "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
 
-handleEgress :: Id -> MudStack ()
+handleEgress :: Id -> MudStack () -- TODO: Notify admins.
 handleEgress i = getPCRmId i >>= \ri -> do
     unless (ri == iWelcome) $ notifyEgress i
     wsTMVar  <- getWSTMVar
@@ -776,6 +776,7 @@ handleEgress i = getPCRmId i >>= \ri -> do
         let (view sing -> s)   = (ws^.entTbl) ! i
         let (view rmId -> ri') = (ws^.pcTbl)  ! i
 
+        -- TODO: Clean up. Logging.
         let p    = pt ! i
         let pt'  = foldr (\peepedId ptAcc -> let thePeeped = ptAcc ! peepedId
                                              in ptAcc & at peepedId ?~ over peepers (i `delete`) thePeeped) pt  $ p^.peeping

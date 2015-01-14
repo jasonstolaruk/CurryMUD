@@ -28,9 +28,6 @@ import qualified Data.Set as S (Set)
 import qualified Data.Text as T
 
 
--- TODO: Define records in alphabetical order.
-
-
 ifThenElse :: Bool -> a -> a -> a
 ifThenElse True  x _ = x
 ifThenElse False _ y = y
@@ -378,11 +375,11 @@ type CmdName = T.Text
 type Interp  = (CmdName -> ActionParams -> MudStack ())
 
 
-data Pla = Pla { _columns   :: !Int
-               , _hostName  :: !HostName
-               , _interp    :: !(Maybe Interp)
+data Pla = Pla { _hostName  :: !HostName
                , _isAdmin   :: !Bool
+               , _columns   :: !Int
                , _pageLines :: !Int
+               , _interp    :: !(Maybe Interp)
                , _peepers   :: !Inv
                , _peeping   :: !Inv }
 
