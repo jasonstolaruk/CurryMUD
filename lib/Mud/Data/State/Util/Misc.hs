@@ -29,8 +29,6 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Concurrent (forkIO)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (readTMVar)
 import Control.Lens (_1, _2, both, over)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
@@ -86,9 +84,7 @@ getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
 
 
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
-getMqtPt = do
-    (mqtTMVar, ptTMVar) <- (,) <$> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    liftIO . atomically $  (,) <$> readTMVar mqtTMVar         <*> readTMVar ptTMVar
+getMqtPt = (,) <$> readTMVarInNWS msgQueueTblTMVar <*> readTMVarInNWS plaTblTMVar
 
 
 getSexRace :: Id -> WorldState -> (Sex, Race)

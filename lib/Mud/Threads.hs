@@ -342,32 +342,39 @@ sayonara i itq = (liftIO . atomically . writeTQueue itq $ StopTimer) >> handleEg
 
 -- TODO: Clean up?
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = do
-    p   <- getPla i
-    mqt <- readTMVarInNWS msgQueueTblTMVar
-    let (cols, map (mqt !) -> peeps) = (view columns *** view peepers) . dup $ p
+handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
     case p^.interp of
       Nothing -> unless (T.null msg) $ let (cn, as) = headTail . T.words $ msg in do
-          s <- getEntSing i -- TODO: Refactor out the peeping?
-          let peepedMsg = nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
-          liftIO . atomically . forM_ peeps $ flip writeTQueue (Peeped peepedMsg)
+          forwardToPeepers i p FromThePeeped msg
           resetInacTimer
-          centralDispatch cn . WithArgs i mq cols $ as
-      Just f  -> let (cn, as) = if T.null msg then ("", []) else headTail . T.words $ msg in do -- TODO: Peeping?
+          centralDispatch cn . WithArgs i mq (p^.columns) $ as
+      Just f  -> let (cn, as) = if T.null msg then ("", []) else headTail . T.words $ msg in do
+          forwardToPeepers i p FromThePeeped msg
           resetInacTimer
-          f cn . WithArgs i mq cols $ as
+          f cn . WithArgs i mq (p^.columns) $ as
   where
     resetInacTimer = liftIO . atomically . writeTQueue itq $ ResetTimer
 
 
--- TODO: Clean up?
+data ToOrFromThePeeped = ToThePeeped | FromThePeeped -- TODO: Move.
+
+
+forwardToPeepers :: Id -> Pla -> ToOrFromThePeeped -> T.Text -> MudStack ()
+forwardToPeepers i p toOrFrom msg = do
+    mqt <- readTMVarInNWS msgQueueTblTMVar
+    let peepMqs = [ mqt ! pi | pi <- p^.peepres ]
+    s   <- getEntSing i
+    liftIO . atomically . forM_ peepMqs $ flip writeTQueue (mkPeepedMsg s)
+  where
+    mkPeepedMsg s = Peeped $ case toOrFrom
+      ToThePeeped   ->      T.concat   [ toPeepedColor,   " ", bracketQuote s, " ", dfltColor, " ", msg ]
+      FromThePeeped -> nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
+
+
+
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
-handleFromServer i h msg = do
-    mqt                                      <- readTMVarInNWS msgQueueTblTMVar
-    (view peepers -> (map (mqt !) -> peeps)) <- getPla i
-    s                                        <- getEntSing i
-    let peepedMsg = T.concat [ toPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
-    liftIO . atomically . forM_ peeps $ flip writeTQueue (Peeped peepedMsg)
+handleFromServer i h msg = getPla i >>= \p -> do
+    forwardToPeepers i p ToThePeeped msg
     liftIO . T.hPutStr h $ msg
 
 
