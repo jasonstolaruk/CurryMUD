@@ -38,6 +38,7 @@ import Data.List (delete, sort)
 import Data.Monoid ((<>))
 import Network (HostName)
 import System.Directory (doesFileExist)
+import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Set as S (member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile, writeFile)
@@ -72,7 +73,7 @@ interpName (T.toLower -> cn) (NoArgs' i mq)
           unless isPropName $ do
               isWord <- checkWordsDict cn mq
               unless isWord $ let cn' = capitalize cn in do
-                  prompt mq . nl' $ "Your name will be " <> dblQuote cn' <> ", is that OK? [yes/no]"
+                  prompt mq . nl' $ "Your name will be " <> (dblQuote $ cn' <> ",") <> " is that OK? [yes/no]"
                   void . modifyPla i interp . Just $ interpConfirmName cn'
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
@@ -137,15 +138,15 @@ interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True -> do
       void . modifyEnt i sing $ s
-      -- (views hostName T.pack -> host) <- modifyPla i interp Nothing
-      (views hostName T.pack -> host) <- onNWS plaTblTMVar $ \(ptTMVar, pt) ->
-          let p  = pt ! i
-              p' = p & interp .~ Nothing & isAdmin .~ (T.head s == 'Z')
-          in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
+      (pt, views hostName T.pack -> host) <- onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+          let p   = pt ! i
+              p'  = p & interp .~ Nothing & isAdmin .~ (T.head s == 'Z')
+              pt' = pt & at i ?~ p'
+          in putTMVar ptTMVar pt' >> return (pt, p')
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> host <> "."
       movePC
-      notifyArrival i
+      notifyArrival i pt
       send mq . nl $ ""
       showMotd mq cols
       look ActionParams { plaId       = i
@@ -177,8 +178,9 @@ yesNo (T.toLower -> a) | a `T.isPrefixOf` "yes" = Just True
                        | otherwise              = Nothing
 
 
-notifyArrival :: Id -> MudStack ()
-notifyArrival i = getEntSing' i >>= \(ws, s) ->
+notifyArrival :: Id -> IM.IntMap Pla -> MudStack ()
+notifyArrival i pt = getEntSing' i >>= \(ws, s) -> do
+    bcastAdmins pt $ s <> " has logged on."
     bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
 
 
