@@ -236,8 +236,7 @@ adHoc mq host = do
                        , _introduced = []
                        , _linked     = [] }
         -----
-        let pla  = Pla {
-                       , _hostName  = host
+        let pla  = Pla { _hostName  = host
                        , _isAdmin   = False
                        , _columns   = 80
                        , _pageLines = 24
