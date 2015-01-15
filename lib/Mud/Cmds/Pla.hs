@@ -762,13 +762,13 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
     msg = "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
 
-handleEgress :: Id -> MudStack () -- TODO: Notify admins.
+handleEgress :: Id -> MudStack ()
 handleEgress i = getPCRmId i >>= \ri -> do
     unless (ri == iWelcome) $ notifyEgress i
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
-    (parensQuote -> n, bs, logMsgs) <- liftIO . atomically $ do
+    (s, bs, logMsgs, adminIds) <- liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
         pt  <- takeTMVar ptTMVar
@@ -792,11 +792,12 @@ handleEgress i = getPCRmId i >>= \ri -> do
         putTMVar wsTMVar  ws'
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt''
-        return (s, bs, logMsgs)
-    bcastNl bs
+        return (s, bs, logMsgs, [ pi | pi <- IM.keys pt'', (pt'' ! pi)^.isAdmin ])
     forM_ logMsgs $ uncurry (logPla "handleEgress")
-    logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", n, " has left the game." ]
+    logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
+    bcastNl bs
+    bcastNl [(T.concat [ adminNoticeColor, s, " has left the game.", dfltColor ], adminIds)]
   where
     peepHelper pt@((! i) -> p) s =
         let pt'       = stopPeeping

@@ -48,6 +48,7 @@ import Prelude hiding (pi)
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, empty)
 import qualified Data.Set as S (Set, fromList)
 import qualified Data.Text as T
@@ -121,7 +122,7 @@ listen = handle listenExHandler $ do
                                                                     , showText . NI.ipv4 $ n ] | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
     loop sock = do
-        (h, host, port') <- liftIO . accept $ sock -- TODO: Notify admins.
+        (h, host, port') <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
         a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
         modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
@@ -189,23 +190,25 @@ talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
     helper = do
-        (mq, itq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
-        i         <- adHoc mq host
+        (mq, itq)          <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
+        (i, dblQuote -> s) <- adHoc mq host
         registerThread . Talk $ i
-        handle (plaThreadExHandler "talk" i) $ do
-            logNotice "talk helper" $ "new ID for incoming player: " <> showText i <> "."
+        handle (plaThreadExHandler "talk" i) $ readTMVarInNWS plaTblTMVar >>= \pt -> do
+            logNotice "talk helper" $ "new PC name for incoming player: " <> s <> "."
+            -- TODO: Refactor for reuse:
+            bcastNl [(T.concat [ adminNoticeColor, "A new player has connected: ", s, ".", dfltColor ], [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ])]
             liftIO configBuffer
             dumpTitle mq
             prompt    mq "By what name are you known?"
-            s <- statefulFork . inacTimer i mq $ itq
-            liftIO $ race_ (runStateInIORefT (server  h i mq itq) s)
-                           (runStateInIORefT (receive h i mq)     s)
+            state <- statefulFork . inacTimer i mq $ itq
+            liftIO $ race_ (runStateInIORefT (server  h i mq itq) state)
+                           (runStateInIORefT (receive h i mq)     state)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
 
 
-adHoc :: MsgQueue -> HostName -> MudStack Id
+adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = do
     (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar       <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
     (s, r)                       <- (,)  <$> liftIO randomSex <*> liftIO randomRace
@@ -213,10 +216,11 @@ adHoc mq host = do
         (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
         -----
         let i    = getUnusedId ws
+        let s'   = showText r <> showText i
         -----
         let e    = Ent { _entId    = i
                        , _entName  = Nothing
-                       , _sing     = showText r <> showText i
+                       , _sing     = s'
                        , _plur     = ""
                        , _entDesc  = capitalize $ mkPronoun s <> " is an ad-hoc player character."
                        , _entFlags = 0 }
@@ -259,7 +263,7 @@ adHoc mq host = do
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         -----
-        return i
+        return (i, s')
 
 
 randomSex :: IO Sex
