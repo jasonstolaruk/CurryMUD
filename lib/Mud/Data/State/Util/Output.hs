@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.State.Util.Output ( bcast
+                                  , bcastAdmins
                                   , bcastNl
                                   , bcastOthersInRm
                                   , expandPCEntName
@@ -19,6 +20,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , sendMsgBoot
                                   , wrapSend ) where
 
+import Mud.ANSI
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
@@ -42,7 +44,7 @@ import Data.List (delete, elemIndex, nub)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (elems, keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, elems, keys)
 import qualified Data.Text as T
 
 
@@ -122,6 +124,10 @@ expandPCEntName i ws ic pen@(headTail' -> (h, t)) pi ((i `delete`) -> pis) =
 
 bcastNl :: [Broadcast] -> MudStack ()
 bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nub . concatMap snd $ bs ]
+
+
+bcastAdmins :: IM.IntMap Pla -> T.Text -> MudStack ()
+bcastAdmins pt msg = bcastNl [(adminNoticeColor <> msg <> dfltColor, [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ])]
 
 
 mkBroadcast :: Id -> T.Text -> [Broadcast]

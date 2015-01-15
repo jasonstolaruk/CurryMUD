@@ -768,7 +768,7 @@ handleEgress i = getPCRmId i >>= \ri -> do
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
-    (s, bs, logMsgs, adminIds) <- liftIO . atomically $ do
+    (s, bs, logMsgs, pt) <- liftIO . atomically $ do
         ws  <- takeTMVar wsTMVar
         mqt <- takeTMVar mqtTMVar
         pt  <- takeTMVar ptTMVar
@@ -792,12 +792,12 @@ handleEgress i = getPCRmId i >>= \ri -> do
         putTMVar wsTMVar  ws'
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt''
-        return (s, bs, logMsgs, [ pi | pi <- IM.keys pt'', (pt'' ! pi)^.isAdmin ])
+        return (s, bs, logMsgs, pt'')
     forM_ logMsgs $ uncurry (logPla "handleEgress")
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
     bcastNl bs
-    bcastNl [(T.concat [ adminNoticeColor, s, " has left the game.", dfltColor ], adminIds)]
+    bcastAdmins pt $ s <> " has left the game."
   where
     peepHelper pt@((! i) -> p) s =
         let pt'       = stopPeeping
