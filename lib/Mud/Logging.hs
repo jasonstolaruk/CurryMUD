@@ -110,7 +110,7 @@ spawnLogger fn p (T.unpack -> ln) f q =
 
 
 loggingThreadExHandler :: T.Text -> SomeException -> IO ()
-loggingThreadExHandler n e = guard (fromException e == Just ThreadKilled) >> mkTimestamp >>= \ts ->
+loggingThreadExHandler n e = guard (fromException e /= Just ThreadKilled) >> mkTimestamp >>= \ts ->
     let msg = T.concat [ ts
                        , " "
                        , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
