@@ -56,6 +56,7 @@ import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Lens.Setter (set)
+import Control.Monad (guard)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, find, intercalate, nub)
 import Data.Maybe (catMaybes, fromJust, isNothing)
@@ -534,9 +535,9 @@ type InvWithCon = Inv
 
 
 mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM False _  _ _                _  = Nothing
-mkMaybeNthOfM True  ws i (view sing -> s) is = Just . (succ . fromJust . elemIndex i *** length) . dup $ matches
+mkMaybeNthOfM icir ws i (view sing -> s) is = guard icir >> (Just . helper . dup $ matches)
   where
+    helper  = succ . fromJust . elemIndex i *** length
     matches = filter (\i' -> views sing (== s) $ (ws^.entTbl) ! i') is
 
 

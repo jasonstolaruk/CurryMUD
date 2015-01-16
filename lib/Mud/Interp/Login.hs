@@ -34,7 +34,7 @@ import Control.Exception.Lifted (try)
 import Control.Lens (at)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
-import Control.Monad (unless, void, when)
+import Control.Monad (guard, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
@@ -177,10 +177,11 @@ interpConfirmName s cn p                   = patternMatchFail "interpConfirmName
 
 
 yesNo :: T.Text -> Maybe Bool
-yesNo ""                                        = Nothing
-yesNo (T.toLower -> a) | a `T.isPrefixOf` "yes" = Just True
-                       | a `T.isPrefixOf` "no"  = Just False
-                       | otherwise              = Nothing
+yesNo (T.toLower -> a) = guard (not . T.null $ a) >> helper
+  where
+    helper | a `T.isPrefixOf` "yes" = Just True
+           | a `T.isPrefixOf` "no"  = Just False
+           | otherwise              = Nothing
 
 
 stopInacTimer :: Id -> MsgQueue -> MudStack ()

@@ -28,6 +28,7 @@ import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 import Control.Lens (_1, _2, dropping, folded, over, to)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.), (^..))
+import Control.Monad (guard)
 import Data.Char (isDigit, toUpper)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), foldl')
@@ -41,6 +42,7 @@ import Formatting.Formatters (int, stext)
 import Formatting.Holey (Holey)
 import Prelude hiding ((>>))
 import qualified Data.Text as T
+import qualified Prelude ((>>))
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -452,8 +454,7 @@ extractCoinsTxt (Just  x:xs) = x : extractCoinsTxt xs
 
 
 msgOnNonzero :: Int -> T.Text -> Maybe T.Text
-msgOnNonzero x msg | x /= 0    = Just msg
-                   | otherwise = Nothing
+msgOnNonzero x msg = guard (x /= 0) Prelude.>> Just msg
 
 
 procReconciledCoinsRm :: ReconciledCoins -> Either [T.Text] Coins
