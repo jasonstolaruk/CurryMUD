@@ -184,7 +184,6 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
--- TODO: Help.
 adminPeep :: Action
 adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify one or more PC names of the player(s) \
                                                               \you wish to start or stop peeping."
