@@ -31,6 +31,8 @@ module Mud.Data.Misc ( AOrThe(..)
                      , pp
                      , serialize ) where
 
+import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.State
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc hiding (patternMatchFail)

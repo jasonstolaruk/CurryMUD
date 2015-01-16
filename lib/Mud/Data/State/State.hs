@@ -1,36 +1,24 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, RebindableSyntax, RecordWildCards, TemplateHaskell, ViewPatterns #-}
+{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 
 module Mud.Data.State.State where
 
+import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.MsgQueue
 import Mud.Data.State.StateInIORefT
-import Mud.Util.Misc
-import Mud.Util.Quoting
 
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
-import Data.Char
-import Data.List (nub)
-import Data.Monoid ((<>))
 import Data.Monoid (Monoid, mappend, mempty)
-import Data.String (fromString)
-import Formatting ((%), sformat)
-import Formatting.Formatters (string)
 import Network (HostName)
-import Prelude hiding ((>>))
 import System.Clock (TimeSpec)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Set as S (Set)
 import qualified Data.Text as T
-
-
-ifThenElse :: Bool -> a -> a -> a
-ifThenElse True  x _ = x
-ifThenElse False _ y = y
 
 
 -- ==================================================
@@ -349,26 +337,6 @@ type LogService = (LogAsync, LogQueue)
 
 
 -- ==================================================
--- Message queue:
-
-
-type MsgQueue = TQueue Msg
-
-
-data Msg = Dropped
-         | FromClient T.Text
-         | FromServer T.Text
-         | InacBoot
-         | InacStop
-         | MsgBoot    T.Text
-         | Peeped     T.Text
-         | Prompt     T.Text
-         | Quit
-         | Shutdown
-         | SilentBoot
-
-
--- ==================================================
 -- Player:
 
 
@@ -383,113 +351,6 @@ data Pla = Pla { _hostName  :: !HostName
                , _interp    :: !(Maybe Interp)
                , _peepers   :: !Inv
                , _peeping   :: !Inv }
-
-
--- ==================================================
--- Action parameters:
-
-
-type Cols = Int
-type Args = [T.Text]
-
-
-data ActionParams = ActionParams { plaId       :: !Id
-                                 , plaMsgQueue :: !MsgQueue
-                                 , plaCols     :: !Cols
-                                 , args        :: !Args }
-
-
-instance Show ActionParams where
-  show ActionParams { .. } = showIt (show plaId) (show plaCols) (show args)
-    where
-      showIt i cols = T.unpack . sformat m i cols
-      m = do
-          "ActionParams {plaId = "
-          ", plaMsgQueue = elided, plaCols = "
-          ", args = "
-          "}"
-      a >> b = a % string % b
-
-
--- ==================================================
--- Patterns matching type "ActionParams":
-
-
-pattern WithArgs i mq cols as = ActionParams { plaId       = i
-                                             , plaMsgQueue = mq
-                                             , plaCols     = cols
-                                             , args        = as }
-
-
--- TODO: Move?
-pattern Msg i mq msg <- WithArgs i mq _ (formatMsgArgs -> msg)
-
-
--- TODO: Move?
-pattern MsgWithTarget i mq cols target msg <- WithArgs i mq cols (formatMsgWithTargetArgs -> (target, msg))
-
-
--- TODO: Move?
-formatMsgArgs :: Args -> T.Text
-formatMsgArgs [] = ""
-formatMsgArgs as = capitalizeMsg . punctuateMsg . T.intercalate " " $ as
-
-
--- TODO: Move?
-capitalizeMsg :: T.Text -> T.Text
-capitalizeMsg x@(T.uncons         -> Just (_, "")) = T.toUpper  x
-capitalizeMsg   (T.break isLetter ->      ("", x)) = capitalize x
-capitalizeMsg   (T.break isLetter ->      (x, "")) = x
-capitalizeMsg x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` "('\"" = c `T.cons` capitalize y
-                                                                    | otherwise       = x
-capitalizeMsg _ = undefined -- TODO
-
-
--- TODO: Move?
-punctuateMsg :: T.Text -> T.Text
-punctuateMsg x@(T.uncons -> Just (c, "")) | c `elem` ".?!" = x
-                                          | otherwise      = c `T.cons` "."
-punctuateMsg x@(T.last   -> c)            | c `elem` ".?!" = x
-                                          | otherwise      = x <> "."
-
-
--- TODO: Move?
-formatMsgWithTargetArgs :: Args -> (T.Text, T.Text)
-formatMsgWithTargetArgs ((capitalize . T.toLower -> target):(formatMsgArgs -> msg)) = (target, msg)
-formatMsgWithTargetArgs _ = undefined -- TODO
-
-
-pattern NoArgs i mq cols = WithArgs i mq cols []
-
-
-pattern NoArgs' i mq <- NoArgs i mq _
-
-
-pattern NoArgs'' i <- NoArgs' i _
-
-
-pattern Lower i mq cols as <- WithArgs i mq cols (map T.toLower -> as)
-
-
-pattern Lower' i as <- Lower i _ _ as
-
-
-pattern LowerNub i mq cols as <- WithArgs i mq cols (nub . map T.toLower -> as)
-
-
-pattern LowerNub' i as <- LowerNub i _ _ as
-
-
-pattern Ignoring mq cols as <- WithArgs _ mq cols (dblQuote . T.unwords -> as)
-
-
-pattern AdviseNoArgs <- NoArgs' _ _
-
-
-pattern AdviseOneArg a <- WithArgs _ _ _ [a]
-
-
-pattern Advising mq cols <- WithArgs _ mq cols _
 
 
 -- ==================================================

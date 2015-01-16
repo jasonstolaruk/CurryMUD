@@ -7,6 +7,8 @@ module Mud.Cmds.Debug ( debugCmds
 import Mud.ANSI
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
+import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output

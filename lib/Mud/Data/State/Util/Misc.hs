@@ -20,6 +20,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , statefulFork_ ) where
 
 import Mud.Data.Misc
+import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
 import Mud.Data.State.Util.STM
