@@ -122,8 +122,7 @@ pruneDupIds = dropJustNulls . pruneThem []
 
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
-reconcileCoins _                       []    = []
-reconcileCoins (Coins (cop, sil, gol)) enscs = concatMap helper enscs
+reconcileCoins (Coins (cop, sil, gol)) enscs = guard (not . null $ enscs) Prelude.>> concatMap helper enscs
   where
     helper Empty                               = [ Left Empty        ]
     helper (NoneOf c)                          = [ Left . NoneOf $ c ]
@@ -148,8 +147,7 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
     isSomeOf _          = False
     isNoneOf (NoneOf _) = True
     isNoneOf _          = False
-    distill  _ []                                         = []
-    distill  f (foldr ((<>) . fromEnsCoins) mempty -> cs) = [ f cs ]
+    distill  f enscs'   = guard (not . null $ enscs') Prelude.>> [ f . foldr ((<>) . fromEnsCoins) mempty $ enscs' ]
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]

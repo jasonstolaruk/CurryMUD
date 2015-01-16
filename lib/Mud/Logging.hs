@@ -35,7 +35,7 @@ import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.=), (?~))
-import Control.Monad (forM_, forever)
+import Control.Monad (forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Control.Monad.State (gets)
@@ -110,16 +110,14 @@ spawnLogger fn p (T.unpack -> ln) f q =
 
 
 loggingThreadExHandler :: T.Text -> SomeException -> IO ()
-loggingThreadExHandler n e = case fromException e of
-  Just ThreadKilled -> return ()
-  _                 -> mkTimestamp >>= \ts ->
-      let msg = T.concat [ ts
-                         , " "
-                         , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
-                         , parensQuote $ "inside " <> dblQuote n
-                         , ". "
-                         , dblQuote . showText $ e ]
-      in (T.appendFile loggingExLogFile . nl $ msg) `catch` handler msg
+loggingThreadExHandler n e = guard (fromException e == Just ThreadKilled) >> mkTimestamp >>= \ts ->
+    let msg = T.concat [ ts
+                       , " "
+                       , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
+                       , parensQuote $ "inside " <> dblQuote n
+                       , ". "
+                       , dblQuote . showText $ e ]
+    in (T.appendFile loggingExLogFile . nl $ msg) `catch` handler msg
   where
     handler msg e' | isAlreadyInUseError e' = showIt
                    | isPermissionError   e' = showIt
