@@ -322,35 +322,36 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
 
 
 server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-server h i mq itq = (registerThread . Server $ i) >> loop `catch` plaThreadExHandler "server" i
+server h i mq itq = (registerThread . Server $ i) >> loop (Just itq) `catch` plaThreadExHandler "server" i
   where
-    loop = (liftIO . atomically . readTQueue $ mq) >>= \case
-      Dropped        ->                                  sayonara i itq
-      FromClient msg -> handleFromClient i mq itq msg >> loop
-      FromServer msg -> handleFromServer i h msg      >> loop
-      InacBoot       -> sendInacBootMsg h             >> sayonara i itq
-      InacStop       -> stopInacThread itq            >> loop
-      MsgBoot msg    -> boot h msg                    >> sayonara i itq
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)  >> loop
-      Prompt  p      -> sendPrompt i h p              >> loop
-      Quit           -> cowbye h                      >> sayonara i itq
-      Shutdown       -> shutDown                      >> loop
-      SilentBoot     ->                                  sayonara i itq
+    loop mitq = (liftIO . atomically . readTQueue $ mq) >>= \case
+      Dropped        ->                                   sayonara i mitq
+      FromClient msg -> handleFromClient i mq mitq msg >> loop mitq
+      FromServer msg -> handleFromServer i h msg       >> loop mitq
+      InacBoot       -> sendInacBootMsg h              >> sayonara i mitq
+      InacStop       -> stopInacThread mitq            >> loop Nothing
+      MsgBoot msg    -> boot h msg                     >> sayonara i mitq
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)   >> loop mitq
+      Prompt  p      -> sendPrompt i h p               >> loop mitq
+      Quit           -> cowbye h                       >> sayonara i mitq
+      Shutdown       -> shutDown                       >> loop mitq
+      SilentBoot     ->                                   sayonara i mitq
 
 
-sayonara :: Id -> InacTimerQueue -> MudStack ()
-sayonara i itq = (liftIO . atomically . writeTQueue itq $ StopTimer) >> handleEgress i
+sayonara :: Id -> Maybe InacTimerQueue -> MudStack ()
+sayonara i (Just itq) = (liftIO . atomically . writeTQueue itq $ StopTimer) >> handleEgress i
+sayonara i Nothing    =                                                        handleEgress i
 
 
-handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
+handleFromClient :: Id -> MsgQueue -> Maybe InacTimerQueue -> T.Text -> MudStack ()
+handleFromClient i mq mitq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
     case p^.interp of
       Nothing -> unless (T.null msg) $ uncurry (interpret p centralDispatch) (headTail . T.words $ msg)
       Just f  -> uncurry (interpret p f) $ if T.null msg then ("", []) else headTail . T.words $ msg
   where
     interpret p f cn as = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
-        liftIO . atomically . writeTQueue itq $ ResetTimer
+        maybeVoid (liftIO . atomically . flip writeTQueue ResetTimer) mitq
         f cn . WithArgs i mq (p^.columns) $ as
 
 
@@ -378,8 +379,8 @@ sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ bootMsgColor            
                                                         dfltColor
 
 
-stopInacThread :: InacTimerQueue -> MudStack ()
-stopInacThread itq = liftIO . atomically . writeTQueue itq $ StopTimer
+stopInacThread :: Maybe InacTimerQueue -> MudStack ()
+stopInacThread = maybeVoid (liftIO . atomically . flip writeTQueue StopTimer)
 
 
 boot :: Handle -> T.Text -> MudStack ()
