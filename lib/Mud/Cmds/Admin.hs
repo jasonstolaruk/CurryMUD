@@ -189,7 +189,9 @@ adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify on
                                                               \you wish to start or stop peeping."
 adminPeep   (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, logMsgs) -> do
     multiWrapSend mq cols msgs
-    forM_ logMsgs $ uncurry (logPla "adminPeep") -- TODO: Consolidate into one log statement for the peeper.
+    let (logMsgsSelf, logMsgsOthers) = unzip logMsgs
+    logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
+    forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
   where
     helper = getEntTbl >>= \et -> onNWS plaTblTMVar $ \(ptTMVar, pt) ->
         let s                    = (et ! i)^.sing
@@ -204,14 +206,12 @@ adminPeep   (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, log
                           then let pt'     = pt & at i  ?~ over peeping (i' :) thePeeper
                                                 & at i' ?~ over peepers (i  :) thePeeped
                                    msg     = "You are now peeping " <> target' <> "."
-                                   logMsgs = [ (i, "started peeping " <> target' <> ".")
-                                             , (i', s <> " started peeping.") ]
+                                   logMsgs = [("started peeping " <> target', (i', s <> " started peeping."))]
                                in set _1 pt' . over _2 (msg :) . over _3 (logMsgs ++) $ a
                           else let pt'     = pt & at i  ?~ over peeping (i' `delete`) thePeeper
                                                 & at i' ?~ over peepers (i  `delete`) thePeeped
                                    msg     = "You are no longer peeping " <> target' <> "."
-                                   logMsgs = [ (i, "stopped peeping " <> target' <> ".")
-                                             , (i', s <> " stopped peeping.") ]
+                                   logMsgs = [("stopped peeping " <> target', (i', s <> " stopped peeping."))]
                                in set _1 pt' . over _2 (msg :) . over _3 (logMsgs ++) $ a
         in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
