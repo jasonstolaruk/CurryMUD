@@ -293,9 +293,6 @@ dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHand
 -- "Inactivity timer" threads:
 
 
--- TODO: Admins shouldn't be booted for inactivity...
-
-
 type InacTimerQueue = TQueue InacTimerMsg
 
 
@@ -332,6 +329,7 @@ server h i mq itq = (registerThread . Server $ i) >> loop `catch` plaThreadExHan
       FromClient msg -> handleFromClient i mq itq msg >> loop
       FromServer msg -> handleFromServer i h msg      >> loop
       InacBoot       -> sendInacBootMsg h             >> sayonara i itq
+      InacStop       -> stopInacThread itq            >> loop
       MsgBoot msg    -> boot h msg                    >> sayonara i itq
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)  >> loop
       Prompt  p      -> sendPrompt i h p              >> loop
@@ -378,6 +376,10 @@ sendInacBootMsg :: Handle -> MudStack ()
 sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ bootMsgColor                                                  <>
                                                         "You are being disconnected from CurryMUD due to inactivity." <>
                                                         dfltColor
+
+
+stopInacThread :: InacTimerQueue -> MudStack ()
+stopInacThread itq = liftIO . atomically . writeTQueue itq $ StopTimer
 
 
 boot :: Handle -> T.Text -> MudStack ()

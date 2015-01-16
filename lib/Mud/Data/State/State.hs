@@ -359,6 +359,7 @@ data Msg = Dropped
          | FromClient T.Text
          | FromServer T.Text
          | InacBoot
+         | InacStop
          | MsgBoot    T.Text
          | Peeped     T.Text
          | Prompt     T.Text

@@ -25,12 +25,14 @@ import qualified Mud.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>))
+import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar)
+import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
 import Control.Lens (at)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
-import Control.Monad (unless, void)
+import Control.Monad (unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
@@ -138,13 +140,14 @@ interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True -> do
       void . modifyEnt i sing $ s
-      (pt, views hostName T.pack -> host) <- onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+      (pt, p) <- onNWS plaTblTMVar $ \(ptTMVar, pt) ->
           let p   = pt ! i
               p'  = p & interp .~ Nothing & isAdmin .~ (T.head s == 'Z')
               pt' = pt & at i ?~ p'
           in putTMVar ptTMVar pt' >> return (pt, p')
       initPlaLog i s
-      logPla "interpConfirmName" i $ "new player logged on from " <> host <> "."
+      logPla "interpConfirmName" i $ "new player logged on from " <> (T.pack $ p^.hostName) <> "."
+      when (p^.isAdmin) $ stopInacTimer i mq
       movePC
       notifyArrival i pt
       send mq . nl $ ""
@@ -176,6 +179,12 @@ yesNo ""                                        = Nothing
 yesNo (T.toLower -> a) | a `T.isPrefixOf` "yes" = Just True
                        | a `T.isPrefixOf` "no"  = Just False
                        | otherwise              = Nothing
+
+
+stopInacTimer :: Id -> MsgQueue -> MudStack ()
+stopInacTimer i mq = do
+    logPla "stopInacTimer" i "stopping the inactivity timer."
+    liftIO . atomically . writeTQueue mq $ InacStop
 
 
 notifyArrival :: Id -> IM.IntMap Pla -> MudStack ()

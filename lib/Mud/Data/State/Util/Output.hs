@@ -127,7 +127,8 @@ bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nub . concat
 
 
 bcastAdmins :: IM.IntMap Pla -> T.Text -> MudStack ()
-bcastAdmins pt msg = bcastNl [(adminNoticeColor <> msg <> dfltColor, [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ])]
+bcastAdmins pt msg = bcastNl [( nl' $ adminNoticeColor <> msg <> dfltColor
+                              , [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ] )]
 
 
 mkBroadcast :: Id -> T.Text -> [Broadcast]
