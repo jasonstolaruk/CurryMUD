@@ -13,7 +13,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Modify
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
@@ -141,12 +140,17 @@ checkWordsDict cn mq = gets (view (nonWorldState.dicts.wordsDict)) >>= \case
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True -> do
-      void . modifyEnt i sing $ s
+      oldSing <- onWS $ \(t, ws) ->
+          let e       = (ws^.entTbl) ! i
+              oldSing = e^.sing
+              e'      = e & sing .~ s
+          in putTMVar t (ws & entTbl.at i ?~ e') >> return oldSing
       (pt, p) <- onNWS plaTblTMVar $ \(ptTMVar, pt) ->
           let p   = pt ! i
               p'  = p & interp .~ Nothing & isAdmin .~ (T.head s == 'Z')
               pt' = pt & at i ?~ p'
           in putTMVar ptTMVar pt' >> return (pt, p')
+      logNotice "interpConfirmName" $ dblQuote oldSing <> " has logged on as " <> s <> "."
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> (T.pack $ p^.hostName) <> "."
       when (p^.isAdmin) $ stopInacTimer i mq

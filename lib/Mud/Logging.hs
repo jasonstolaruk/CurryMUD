@@ -216,7 +216,7 @@ logPla modName (dblQuote -> funName) i msg = doIfLogging i . registerMsg . T.con
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
-logPlaExec modName cn i = logPla modName cn i $ "executed " <> cn <> "."
+logPlaExec modName (dblQuote -> cn) i = logPla modName cn i $ "executed " <> cn <> "."
 
 
 logPlaExecArgs :: T.Text -> CmdName -> Args -> Id -> MudStack ()
