@@ -58,6 +58,9 @@ READABILITY
 
 Consider using a list comprehension instead of "map".
 
+You may use "let" in a list comprehension, like so: (BH p.71)
+T.intercalate ", " [ y | x <- [1..10], let y = "Number " <> (T.pack . show $ x) ]
+
 Prefer the composition of library functions over rolling your own fold.
 
 Avoid explicit recursion when it is possible (and more readable) to use a fold.

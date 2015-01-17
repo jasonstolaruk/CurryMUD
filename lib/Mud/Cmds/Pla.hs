@@ -602,8 +602,8 @@ look (LowerNub i mq cols as) = helper >>= \case
           then let (eiss, ecs) = resolveRmInvCoins i ws as ris' rc
                    invDesc     = foldl' (helperLookEitherInv ws) "" eiss
                    coinsDesc   = foldl' helperLookEitherCoins    "" ecs
-                   ds          = [ let (view sing -> s) = (ws^.entTbl) ! pi
-                                   in mkStdDesig pi ws s False ris | pi <- extractPCIdsFromEiss ws eiss ]
+                   ds          = [ mkStdDesig pi ws s False ris | pi <- extractPCIdsFromEiss ws eiss
+                                 , let (view sing -> s) = (ws^.entTbl) ! pi ]
                in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
           else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
                                           , Nothing )
