@@ -82,6 +82,7 @@ library
                        RebindableSyntax,
                        RecordWildCards,
                        TemplateHaskell,
+                       TransformListComp,
                        TupleSections,
                        TypeFamilies,
                        UndecidableInstances,

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ParallelListComp, PatternSynonyms, TransformListComp, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 
@@ -43,6 +43,7 @@ import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
+import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
@@ -220,7 +221,10 @@ adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 
 mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
-mkPlaIdsSingsList et pt = sortBy (compare `on` snd) [ (i, (et ! i)^.sing) | i <- IM.keys pt, not $ (pt ! i)^.isAdmin ]
+mkPlaIdsSingsList et pt = [ (i, s) | i <- IM.keys pt
+                                   , not $ (pt ! i)^.isAdmin
+                                   , let s = (et ! i)^.sing
+                                   , then sortWith by s ]
 
 
 -----
