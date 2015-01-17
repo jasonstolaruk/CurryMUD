@@ -133,7 +133,7 @@ mkUnknownPCEntName i ws | (view sex  -> s) <- (ws^.mobTbl) ! i
 
 
 sortInv :: WorldState -> Inv -> Inv
-sortInv ws is | (foldl' helper ([], []) . zip is -> (pcIs, nonPCIs)) <- [ (ws^.typeTbl) ! i | i <- is ]
+sortInv ws is | (foldl' helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, (ws^.typeTbl) ! i) | i <- is ]
               = (pcIs ++) . sortNonPCs $ nonPCIs
   where
     helper a (i, t) | t == PCType      = over _1 (++ [i]) a

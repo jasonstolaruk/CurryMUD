@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -55,6 +55,7 @@ import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, pa
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), mempty)
+import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Console.ANSI (clearScreenCode)
@@ -198,9 +199,11 @@ admin p = patternMatchFail "admin" [ showText p ]
 
 
 mkAdminIdsSingsList :: Id -> WorldState -> IM.IntMap Pla -> [(Id, Sing)]
-mkAdminIdsSingsList i ws pt = sortBy (compare `on` snd) [ (pi, view sing $ (ws^.entTbl) ! pi) | pi <- IM.keys pt
-                                                                                              , (pt ! pi)^.isAdmin
-                                                                                              , pi /= i ]
+mkAdminIdsSingsList i ws pt = [ (pi, s) | pi <- IM.keys pt
+                                        , (pt ! pi)^.isAdmin
+                                        , pi /= i
+                                        , let s = view sing $ (ws^.entTbl) ! pi
+                                        , then sortWith by s ]
 
 
 -----
@@ -441,11 +444,11 @@ help p = patternMatchFail "help" [ showText p ]
 mkHelpData :: Id -> MudStack [Help]
 mkHelpData i = getPlaIsAdmin i >>= \ia -> do
     [ plaHelpCmdNames, plaHelpTopicNames, adminHelpCmdNames, adminHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
-    let plaHelpCmds     = [ Help (T.pack                  phcn) (plaHelpCmdsDir   ++ phcn) True  False | phcn <- plaHelpCmdNames     ]
-    let plaHelpTopics   = [ Help (T.pack                  phtn) (plaHelpTopicsDir ++ phtn) False False | phtn <- plaHelpTopicNames   ]
-    let adminHelpCmds   = [ Help (T.pack $ adminCmdChar : whcn) (adminHelpCmdsDir ++ whcn) True  True  | whcn <- adminHelpCmdNames   ]
-    let adminHelpTopics = [ Help (T.pack                whtn) (adminHelpTopicsDir ++ whtn) False True  | whtn <- adminHelpTopicNames ]
-    return $ plaHelpCmds ++ plaHelpTopics ++ if ia then adminHelpCmds ++ adminHelpTopics else []
+    let phcs = [ Help (T.pack                  phcn) (plaHelpCmdsDir     ++ phcn) True  False | phcn <- plaHelpCmdNames     ]
+    let phts = [ Help (T.pack                  phtn) (plaHelpTopicsDir   ++ phtn) False False | phtn <- plaHelpTopicNames   ]
+    let ahcs = [ Help (T.pack $ adminCmdChar : whcn) (adminHelpCmdsDir   ++ whcn) True  True  | whcn <- adminHelpCmdNames   ]
+    let ahts = [ Help (T.pack                  whtn) (adminHelpTopicsDir ++ whtn) False True  | whtn <- adminHelpTopicNames ]
+    return $ phcs ++ phts ++ (guard ia >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
     getHelpDirectoryContents dir = delete ".DS_Store" . drop 2 . sort <$> (liftIO . getDirectoryContents $ dir)
@@ -1290,7 +1293,9 @@ what p = patternMatchFail "what" [ showText p ]
 
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
 whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(whatQuote -> n')) =
-    wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n . filter isPlaCmd $ [ cmdName cmd | cmd <- cmds ]
+    wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n $ [ cn | cmd <- cmds
+                                                                             , let cn = cmdName cmd
+                                                                             , isPlaCmd cn ]
   where
     isPlaCmd               = (`notElem` [ adminCmdChar, debugCmdChar ]) . T.head
     notFound               = n' <> " doesn't refer to any commands."
@@ -1336,7 +1341,7 @@ whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr i
                                          , supplement
                                          , "." ]
     | e@(view sing -> s) <- head es, len <- length es -> if len > 1
-      then let ebgns@(head -> h)         = take len [ getEffBothGramNos i ws i' | (view entId -> i') <- es ]
+      then let ebgns@(head -> h)         = take len [ getEffBothGramNos i ws i' | e' <- es, let i' = e'^.entId ]
                target | all (== h) ebgns = mkPlurFromBoth h
                       | otherwise        = (<> "s") . bracketQuote . getEffName i ws $ e^.entId
            in T.concat [ r
@@ -1454,7 +1459,9 @@ mkAdminListTxt i ws pt =
     let ais                         = [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ]
         (ais', self) | i `elem` ais = (i `delete` ais, selfColor <> view sing ((ws^.entTbl) ! i) <> dfltColor)
                      | otherwise    = (ais, "")
-        aas                         = styleAbbrevs Don'tBracket . sort $ [ view sing $ (ws^.entTbl) ! ai | ai <- ais' ]
+        aas                         = styleAbbrevs Don'tBracket [ s | ai <- ais'
+                                                                    , let s = view sing $ (ws^.entTbl) ! ai
+                                                                    , then sortWith by s ]
         aas'                        = dropBlanks $ self : aas
         footer                      = [ numOfAdmins ais <> " logged in." ]
     in if null aas' then footer else T.intercalate ", " aas' : footer

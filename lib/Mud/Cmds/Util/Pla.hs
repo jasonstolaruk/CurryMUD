@@ -396,7 +396,7 @@ mkDropReadyBindings i ws | (d, _, _, ri, _) <- mkCapStdDesig i ws
 
 
 mkEntDescs :: Id -> Cols -> WorldState -> Inv -> T.Text
-mkEntDescs i cols ws eis = T.intercalate "\n" . map (mkEntDesc i cols ws) $ [ (ei, (ws^.entTbl) ! ei) | ei <- eis ]
+mkEntDescs i cols ws eis = T.intercalate "\n" [ mkEntDesc i cols ws (ei, e) | ei <- eis, let e = (ws^.entTbl) ! ei ]
 
 
 mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
@@ -462,7 +462,7 @@ mkEqDesc i cols ws i' (view sing -> s) t | descs <- if i' == i then mkDescsSelf 
         helper (T.breakOn " finger" -> (sn, _), es, styled) = T.concat [ parensPad 15 sn, es, " ", styled ]
     mkDescsOther | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! i'
                  , sns      <- [ pp s' | s' <- ss ]
-                 , ess      <- [ view sing $ (ws^.entTbl) ! ei | ei <- is ] = zipWith helper sns ess
+                 , ess      <- [ e^.sing | ei <- is, let e = (ws^.entTbl) ! ei ] = zipWith helper sns ess
       where
         helper (T.breakOn " finger" -> (sn, _)) es = parensPad 15 sn <> es
     none = wrapUnlines cols $ if

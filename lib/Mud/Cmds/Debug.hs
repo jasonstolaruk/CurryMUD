@@ -350,8 +350,7 @@ debugThread (NoArgs i mq cols) = do
     threadTblKvs <- M.assocs <$> readTMVarInNWS threadTblTMVar
     (es, ks)     <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
     let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
-    ds <- mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs
-    send mq . frame cols . multiWrap cols $ ds
+    send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
   where
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \(showText -> ts) ->
         return . T.concat $ [ padOrTrunc 16 . showText $ ti, tn, ts ]

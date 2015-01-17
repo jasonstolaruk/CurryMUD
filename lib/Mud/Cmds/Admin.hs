@@ -37,9 +37,8 @@ import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Lens.Setter (set)
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
-import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, sortBy)
+import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
@@ -339,9 +338,9 @@ adminWho _ = patternMatchFail "adminWho" []
 
 mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]
 mkPlaListTxt ws pt =
-    let pis  = [ pi | pi <- IM.keys pt, not $ (pt ! pi)^.isAdmin ]
-        piss = sortBy (compare `on` snd) . zip pis $ [ view sing $ (ws^.entTbl) ! pi | pi <- pis ]
-        pias = [ (pi, a) | (pi, _) <- piss | a <- styleAbbrevs Don'tBracket . map snd $ piss ]
+    let pis         = [ pi | pi <- IM.keys pt, not $ (pt ! pi)^.isAdmin ]
+        (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = view sing $ (ws^.entTbl) ! pi, then sortWith by s ]
+        pias        = [ (pi, a) | pi <- pis' | a <- styleAbbrevs Don'tBracket pss ]
     in map helper pias ++ [ numOfPlayers pis <> " connected." ]
   where
     helper (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws

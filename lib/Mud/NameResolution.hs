@@ -156,11 +156,11 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
 mkGecr i ws is c n@(headTail' -> (h, t))
   | n == T.singleton allChar
-  , es <- [ (ws^.entTbl) ! i' | i' <- is ]                  = Mult { amount          = length is
-                                                                   , nameSearchedFor = n
-                                                                   , entsRes         = Just es
-                                                                   , coinsRes        = Just . SomeOf $ c }
-  | h == allChar                                            = mkGecrMult i ws (maxBound :: Int) t is c
+  , es <- [ (ws^.entTbl) ! i' | i' <- is ] = Mult { amount          = length is
+                                                  , nameSearchedFor = n
+                                                  , entsRes         = Just es
+                                                  , coinsRes        = Just . SomeOf $ c }
+  | h == allChar = mkGecrMult i ws (maxBound :: Int) t is c
   | isDigit h
   , (numText, rest) <- T.span isDigit n
   , numInt <- either (oops numText) fst . decimal $ numText = if numText /= "0" then parse rest numInt else Sorry n
@@ -214,7 +214,7 @@ mkGecrMultForEnts i ws a n is | ens <- [ getEffName i ws i' | i' <- is ] =
   where
     notFound                    = (Nothing, Nothing)
     found (zip is -> zipped) fn = (Just . takeMatchingEnts zipped $ fn, Nothing)
-    takeMatchingEnts zipped  fn = take a [ (ws^.entTbl) ! i' | (i', _) <- filter ((== fn) . snd) zipped ]
+    takeMatchingEnts zipped  fn = take a [ (ws^.entTbl) ! i' | (i', en) <- zipped, en == fn ]
 
 
 mkGecrIndexed :: Id -> WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes

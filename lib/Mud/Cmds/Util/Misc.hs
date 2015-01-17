@@ -100,7 +100,7 @@ dispMatches (LowerNub i mq cols needles) indent haystack =
       then wrapSend mq cols "No matches found."
       else pager i mq . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
   where
-    grep needle = let haystack' = zip haystack [ T.toLower . dropANSI $ hay | hay <- haystack ]
+    grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
                   in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
 dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, showText indent, showText haystack ]
 
