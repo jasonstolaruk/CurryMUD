@@ -22,6 +22,7 @@ module Mud.Util.Misc ( aOrAn
                      , nl'
                      , nlnl
                      , notInfixOf
+                     , nubViaSet
                      , patternMatchFail
                      , reverseLookup
                      , showText
@@ -40,6 +41,7 @@ import Data.List (foldl', sort)
 import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
 import qualified Data.Map.Lazy as M (Map, assocs)
+import qualified Data.Set as S (fromList, toList)
 import qualified Data.Text as T
 
 
@@ -150,6 +152,10 @@ nl' = ("\n" <>)
 
 notInfixOf :: T.Text -> T.Text -> Bool
 notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
+
+
+nubViaSet :: (Ord a) => [a] -> [a]
+nubViaSet = S.toList . S.fromList
 
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a

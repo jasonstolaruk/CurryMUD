@@ -51,7 +51,7 @@ import Control.Monad (forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy)
+import Data.List ((\\), delete, foldl', intercalate, intersperse, nubBy, partition, sort, sortBy)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), mempty)
@@ -646,7 +646,7 @@ mkIsPC_StyledNameCountBothList :: Id -> WorldState -> Inv -> [(Bool, (T.Text, In
 mkIsPC_StyledNameCountBothList i ws is | ips   <-                        [ (ws^.typeTbl) ! i' == PCType | i' <- is ]
                                        , ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'    | i' <- is ]
                                        , ebgns <-                        [ getEffBothGramNos i ws i'    | i' <- is ]
-                                       , cs    <- mkCountList ebgns = nub . zip ips . zip3 ens cs $ ebgns
+                                       , cs    <- mkCountList ebgns = nubViaSet . zip ips . zip3 ens cs $ ebgns
 
 
 isKnownPCSing :: Sing -> Bool

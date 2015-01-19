@@ -41,7 +41,7 @@ import Control.Lens.Operators ((^.))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, elemIndex, nub)
+import Data.List (delete, elemIndex)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
@@ -124,7 +124,7 @@ expandPCEntName i ws ic pen@(headTail' -> (h, t)) pi ((i `delete`) -> pis) =
 
 
 bcastNl :: [Broadcast] -> MudStack ()
-bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nub . concatMap snd $ bs ]
+bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubViaSet . concatMap snd $ bs ]
 
 
 bcastAdmins :: IM.IntMap Pla -> T.Text -> MudStack ()

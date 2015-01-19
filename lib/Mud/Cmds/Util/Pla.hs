@@ -58,7 +58,7 @@ import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Lens.Setter (set)
 import Control.Monad (guard)
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, elemIndex, find, intercalate, nub)
+import Data.List ((\\), delete, elemIndex, find, intercalate)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
 import qualified Data.Map.Lazy as M (toList)
@@ -171,7 +171,7 @@ mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap
 mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
 mkNameCountBothList i ws is | ens   <- [ getEffName        i ws i' | i' <- is ]
                             , ebgns <- [ getEffBothGramNos i ws i' | i' <- is ]
-                            , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
+                            , cs    <- mkCountList ebgns = nubViaSet . zip3 ens cs $ ebgns
 
 
 -----
@@ -437,7 +437,7 @@ mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper)
 mkStyledNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
 mkStyledNameCountBothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffName        i ws i' | i' <- is ]
                                   , ebgns <-                        [ getEffBothGramNos i ws i' | i' <- is ]
-                                  , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
+                                  , cs    <- mkCountList ebgns = nubViaSet . zip3 ens cs $ ebgns
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
@@ -549,8 +549,9 @@ mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesi
                                pis                                = (ws^.invTbl) ! i
                                (pc, rc)                           = over both ((ws^.coinsTbl) !) (i, ri)
                                cn                                 = last as
-                               (init -> argsWithoutCon)           = case as of [_, _] -> as
-                                                                               _      -> (++ [cn]) . nub . init $ as
+                               (init -> argsWithoutCon)           = case as of
+                                                                      [_, _] -> as
+                                                                      _      -> (++ [cn]) . nubViaSet . init $ as
                            in (d, ris, rc, pis, pc, cn, argsWithoutCon)
 
 
