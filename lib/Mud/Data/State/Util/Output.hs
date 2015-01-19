@@ -25,6 +25,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
@@ -129,7 +130,7 @@ bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . co
 
 bcastAdmins :: IM.IntMap Pla -> T.Text -> MudStack ()
 bcastAdmins pt msg = bcastNl [( nl' $ adminNoticeColor <> msg <> dfltColor
-                              , [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ] )]
+                              , [ pi | pi <- IM.keys pt, plaIsAdmin (pt ! pi) ] )]
 
 
 mkBroadcast :: Id -> T.Text -> [Broadcast]

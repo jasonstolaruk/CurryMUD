@@ -24,6 +24,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
+import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
 import Mud.Util.Misc hiding (patternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -100,7 +101,7 @@ getUnusedId = head . (\\) [0..] . allKeys
 
 mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
 mkPlaIdsSingsList et pt = [ (i, s) | i <- IM.keys pt
-                                   , not $ (pt ! i)^.isAdmin
+                                   , not . plaIsAdmin $ (pt ! i)
                                    , let s = (et ! i)^.sing
                                    , then sortWith by s ]
 

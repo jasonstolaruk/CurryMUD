@@ -200,7 +200,7 @@ admin p = patternMatchFail "admin" [ showText p ]
 
 mkAdminIdsSingsList :: Id -> WorldState -> IM.IntMap Pla -> [(Id, Sing)]
 mkAdminIdsSingsList i ws pt = [ (pi, s) | pi <- IM.keys pt
-                                        , (pt ! pi)^.isAdmin
+                                        , plaIsAdmin (pt ! pi)
                                         , pi /= i
                                         , let s = view sing $ (ws^.entTbl) ! pi
                                         , then sortWith by s ]
@@ -1456,7 +1456,7 @@ whoAdmin p = withoutArgs whoAdmin p
 
 mkAdminListTxt :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
 mkAdminListTxt i ws pt =
-    let ais                         = [ pi | pi <- IM.keys pt, (pt ! pi)^.isAdmin ]
+    let ais                         = [ pi | pi <- IM.keys pt, plaIsAdmin (pt ! pi) ]
         (ais', self) | i `elem` ais = (i `delete` ais, selfColor <> view sing ((ws^.entTbl) ! i) <> dfltColor)
                      | otherwise    = (ais, "")
         aas                         = styleAbbrevs Don'tBracket [ s | ai <- ais'

@@ -346,7 +346,6 @@ type Interp  = (CmdName -> ActionParams -> MudStack ())
 
 data Pla = Pla { _hostName  :: !HostName
                , _plaFlags  :: !Int
-               , _isAdmin   :: !Bool
                , _columns   :: !Int
                , _pageLines :: !Int
                , _interp    :: !(Maybe Interp)

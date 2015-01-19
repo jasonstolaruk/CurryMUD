@@ -243,7 +243,6 @@ adHoc mq host = do
         -----
         let pla  = Pla { _hostName  = host
                        , _plaFlags  = zeroBits
-                       , _isAdmin   = False
                        , _columns   = 80
                        , _pageLines = 24
                        , _interp    = Just interpName

@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Mud.Data.State.Util.Pla where
 
@@ -7,10 +8,11 @@ import Mud.Data.State.Util.STM
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (putTMVar)
-import Control.Lens (at)
+import Control.Lens (at, over)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~))
 import Control.Lens.Setter (ASetter)
+import Data.Bits (clearBit, setBit, testBit)
 import Data.IntMap.Lazy ((!))
 import Data.Maybe (isNothing)
 
@@ -24,7 +26,7 @@ getPlaColumns i = view columns <$> getPla i
 
 
 getPlaIsAdmin :: Id -> MudStack Bool
-getPlaIsAdmin i = view isAdmin <$> getPla i
+getPlaIsAdmin i = plaIsAdmin <$> getPla i
 
 
 getPlaPageLines :: Id -> MudStack Int
@@ -51,3 +53,17 @@ modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
     let p  = pt ! i
         p' = p & lens .~ val
     in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
+
+
+-----
+
+
+plaIsAdmin :: Pla -> Bool
+plaIsAdmin (view plaFlags -> flags) = flags `testBit` 0
+
+
+setPlaIsAdmin :: Bool -> Pla -> Pla
+setPlaIsAdmin b = over plaFlags helper
+  where
+    helper flags = case b of True  -> flags `setBit`   0
+                             False -> flags `clearBit` 0

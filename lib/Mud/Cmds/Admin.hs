@@ -13,6 +13,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -374,7 +375,7 @@ adminWho _ = patternMatchFail "adminWho" []
 
 mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]
 mkPlaListTxt ws pt =
-    let pis         = [ pi | pi <- IM.keys pt, not $ (pt ! pi)^.isAdmin ]
+    let pis         = [ pi | pi <- IM.keys pt, not . plaIsAdmin $ (pt ! pi) ]
         (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = view sing $ (ws^.entTbl) ! pi, then sortWith by s ]
         pias        = [ (pi, a) | pi <- pis' | a <- styleAbbrevs Don'tBracket pss ]
     in map helper pias ++ [ numOfPlayers pis <> " connected." ]
