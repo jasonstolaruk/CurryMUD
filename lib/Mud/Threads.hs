@@ -43,6 +43,7 @@ import Control.Lens.Operators ((&), (.=), (?~), (^.))
 import Control.Monad (forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
+import Data.Bits (zeroBits)
 import Data.IntMap.Lazy ((!))
 import Data.Monoid ((<>), mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
@@ -223,7 +224,7 @@ adHoc mq host = do
                        , _sing     = s'
                        , _plur     = ""
                        , _entDesc  = capitalize $ mkPronoun s <> " is an ad-hoc player character."
-                       , _entFlags = 0 }
+                       , _entFlags = zeroBits }
         -----
         let m    = Mob { _sex  = s
                        , _st   = 10
@@ -241,6 +242,7 @@ adHoc mq host = do
                        , _linked     = [] }
         -----
         let pla  = Pla { _hostName  = host
+                       , _plaFlags  = zeroBits
                        , _isAdmin   = False
                        , _columns   = 80
                        , _pageLines = 24
