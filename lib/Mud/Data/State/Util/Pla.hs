@@ -31,8 +31,8 @@ getPlaPageLines :: Id -> MudStack Int
 getPlaPageLines i = view pageLines <$> getPla i
 
 
-isDfltPrompt :: Id -> MudStack Bool
-isDfltPrompt i = views interp isNothing <$> getPla i
+getPlaIsDfltPrompt :: Id -> MudStack Bool
+getPlaIsDfltPrompt i = views interp isNothing <$> getPla i
 
 
 -----
