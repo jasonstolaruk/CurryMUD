@@ -128,8 +128,11 @@ Don't shy away from composing a function with an infix operator:
 head . (\\) [0..]
 
 
-MODULES AND IMPORTING/EXPORTING
+PACKAGES, MODULES, AND IMPORTING/EXPORTING
 ==================================================
+
+The version numbers you assign to your packages should follow the official Package Versioning
+Policy. (BH p.81)
 
 Your main module should be named "Main" as opposed to "Foo.Main"; you may, however, put the 
 corresponding main ".hs" file in the "Foo" directory.
@@ -334,6 +337,9 @@ True
 
 FOLDS (see also PERFORMANCE)
 ==================================================
+
+Use "unfoldr" to build up a list from a seed. (BH p.74)
+unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
 
 The "Foldable" typeclass ("import qualified Data.Foldable as F") is useful when you want to fold
 over structures other than lists. (LYAH p.277)
