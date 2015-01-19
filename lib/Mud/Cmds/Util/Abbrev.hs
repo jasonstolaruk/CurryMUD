@@ -10,7 +10,6 @@ import Mud.Util.Quoting
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, over)
-import Data.List (sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -41,7 +40,7 @@ type PrevWordInList = T.Text
 
 
 mkAbbrevs :: [FullWord] -> [(FullWord, (Abbrev, Rest))]
-mkAbbrevs = helper "" . sort . nubViaSet
+mkAbbrevs = helper "" . nubSort
   where
     helper :: PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
     helper _    []     = []

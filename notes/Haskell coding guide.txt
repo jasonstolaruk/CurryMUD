@@ -439,7 +439,12 @@ In most cases, it's a good idea to prefer "Double" over "Float".
 Prefer types that have simple raw machine representations over more complex types that must be
 stored on the heap (for example, prefer "Int" over "Integer").
 
-Always compile using "-O2" for optimization.
+Converting to and from a set is more performant than using "nub". (BH p.88)
+S.toList . S.fromList $ ["list with duplicates", "list with duplicates"]
+Note that this will sort elements in ascending order.
+
+
+Compile using "-O2" for optimization.
 To make use of multiple cores, compile with "-threaded" and run with "+RTS -N".
 Alternatively, just put the following line in your ".cabal" file:
 ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N

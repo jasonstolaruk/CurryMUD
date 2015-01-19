@@ -20,9 +20,9 @@ module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
 
 import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MsgQueue
-import Mud.Util.Misc
 import Mud.Util.Quoting
 
+import Data.List (nub)
 import Data.String (fromString)
 import Formatting ((%), sformat)
 import Formatting.Formatters (string)
@@ -74,7 +74,7 @@ pattern Lower i mq cols as <- WithArgs i mq cols (map T.toLower -> as)
 pattern Lower' i as <- Lower i _ _ as
 
 
-pattern LowerNub i mq cols as <- WithArgs i mq cols (nubViaSet . map T.toLower -> as)
+pattern LowerNub i mq cols as <- WithArgs i mq cols (nub . map T.toLower -> as)
 
 
 pattern LowerNub' i as <- LowerNub i _ _ as

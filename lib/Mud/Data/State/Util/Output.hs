@@ -124,7 +124,7 @@ expandPCEntName i ws ic pen@(headTail' -> (h, t)) pi ((i `delete`) -> pis) =
 
 
 bcastNl :: [Broadcast] -> MudStack ()
-bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubViaSet . concatMap snd $ bs ]
+bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
 
 
 bcastAdmins :: IM.IntMap Pla -> T.Text -> MudStack ()

@@ -51,7 +51,7 @@ import Control.Monad (forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, foldl', intercalate, intersperse, nubBy, partition, sort, sortBy)
+import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), mempty)
@@ -619,7 +619,7 @@ look p = patternMatchFail "look" [ showText p ]
 
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
-                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . mkIsPC_StyledNameCountBothList i ws $ ris
+                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . mkIsPC_StyledName_Count_BothList i ws $ ris
                               , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
                               , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
                               , c          <- (ws^.coinsTbl) ! ri
@@ -642,11 +642,11 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
     mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
 
 
-mkIsPC_StyledNameCountBothList :: Id -> WorldState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
-mkIsPC_StyledNameCountBothList i ws is | ips   <-                        [ (ws^.typeTbl) ! i' == PCType | i' <- is ]
-                                       , ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'    | i' <- is ]
-                                       , ebgns <-                        [ getEffBothGramNos i ws i'    | i' <- is ]
-                                       , cs    <- mkCountList ebgns = nubViaSet . zip ips . zip3 ens cs $ ebgns
+mkIsPC_StyledName_Count_BothList :: Id -> WorldState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
+mkIsPC_StyledName_Count_BothList i ws is | ips   <-                        [ (ws^.typeTbl) ! i' == PCType | i' <- is ]
+                                         , ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'    | i' <- is ]
+                                         , ebgns <-                        [ getEffBothGramNos i ws i'    | i' <- is ]
+                                         , cs    <- mkCountList ebgns = nub . zip ips . zip3 ens cs $ ebgns
 
 
 isKnownPCSing :: Sing -> Bool

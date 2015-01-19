@@ -22,7 +22,7 @@ module Mud.Util.Misc ( aOrAn
                      , nl'
                      , nlnl
                      , notInfixOf
-                     , nubViaSet
+                     , nubSort
                      , patternMatchFail
                      , reverseLookup
                      , showText
@@ -154,8 +154,8 @@ notInfixOf :: T.Text -> T.Text -> Bool
 notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
 
 
-nubViaSet :: (Ord a) => [a] -> [a]
-nubViaSet = S.toList . S.fromList
+nubSort :: (Ord a) => [a] -> [a]
+nubSort = S.toList . S.fromList
 
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a
