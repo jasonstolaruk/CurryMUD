@@ -1,0 +1,12 @@
+\h #dTELL \d
+
+\uUSAGE\n
+#dtell name message
+
+\uDESCRIPTION\n
+Send a message to a player.
+
+\uEXAMPLES\n
+\q"#dtell taro thank you for reporting the bug you found"\d4`
+
+\uSEE ALSO\n

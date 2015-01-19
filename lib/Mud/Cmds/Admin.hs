@@ -292,7 +292,6 @@ adminShutdown _ = patternMatchFail "adminShutdown" []
 -----
 
 
--- TODO: Help.
 adminTell :: Action
 adminTell p@AdviseNoArgs     = advise p [ prefixAdminCmd "tell" ] advice
   where
