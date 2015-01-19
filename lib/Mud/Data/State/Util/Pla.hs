@@ -58,12 +58,24 @@ modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
 -----
 
 
+data PlaFlag = IsAdmin
+             | IsFirstAdminTell deriving Enum
+
+
+plaHasFlag :: PlaFlag -> Pla -> Bool
+plaHasFlag (fromEnum -> flagBitNum) (view plaFlags -> flags) = flags `testBit` flagBitNum
+
+
+setPlaFlag :: PlaFlag -> Bool -> Pla -> Pla
+setPlaFlag (fromEnum -> flagBitNum) b = over plaFlags (flip f flagBitNum)
+  where
+    f = case b of True  -> setBit
+                  False -> clearBit
+
+
 plaIsAdmin :: Pla -> Bool
-plaIsAdmin (view plaFlags -> flags) = flags `testBit` 0
+plaIsAdmin = plaHasFlag IsAdmin
 
 
 setPlaIsAdmin :: Bool -> Pla -> Pla
-setPlaIsAdmin b = over plaFlags helper
-  where
-    helper flags = case b of True  -> flags `setBit`   0
-                             False -> flags `clearBit` 0
+setPlaIsAdmin = setPlaFlag IsAdmin
