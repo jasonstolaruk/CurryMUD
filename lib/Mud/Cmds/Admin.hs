@@ -105,6 +105,7 @@ adminCmds =
     , Cmd { cmdName = prefixAdminCmd "profanity", action = adminProfanity, cmdDesc = "Dump the profanity log." }
     , Cmd { cmdName = prefixAdminCmd "shutdown", action = adminShutdown, cmdDesc = "Shut down CurryMUD, optionally \
                                                                                    \with a custom message." }
+    , Cmd { cmdName = prefixAdminCmd "tell", action = adminTell, cmdDesc = "Send a message to a player." }
     , Cmd { cmdName = prefixAdminCmd "time", action = adminTime, cmdDesc = "Display the current system time." }
     , Cmd { cmdName = prefixAdminCmd "uptime", action = adminUptime, cmdDesc = "Display the system uptime." }
     , Cmd { cmdName = prefixAdminCmd "who", action = adminWho, cmdDesc = "Display or search a list of the players who \
@@ -219,13 +220,6 @@ adminPeep   (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, log
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 
-mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
-mkPlaIdsSingsList et pt = [ (i, s) | i <- IM.keys pt
-                                   , not $ (pt ! i)^.isAdmin
-                                   , let s = (et ! i)^.sing
-                                   , then sortWith by s ]
-
-
 -----
 
 
@@ -298,6 +292,49 @@ adminShutdown _ = patternMatchFail "adminShutdown" []
 -----
 
 
+-- TODO: Help.
+adminTell :: Action
+adminTell p@AdviseNoArgs     = advise p [ prefixAdminCmd "tell" ] advice
+  where
+    advice = T.concat [ "Please specify the PC name of a player followed by a message, as in "
+                      , quoteColor
+                      , dblQuote $ prefixAdminCmd "tell" <> " taro thank you for reporting the bug you found"
+                      , dfltColor
+                      , "." ]
+adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
+  where
+    advice = T.concat [ "Please also provide a message to send, as in "
+                      , quoteColor
+                      , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
+                      , dfltColor
+                      , "." ]
+adminTell   (MsgWithTarget i mq cols target msg) = do
+    et        <- getEntTbl
+    (mqt, pt) <- getMqtPt
+    let (view sing -> s) = et ! i
+    let piss             = mkPlaIdsSingsList et pt
+    let notFound         = wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently \
+                                              \logged in."
+    let found match | (i', target') <- head . filter ((== match) . snd) $ piss
+                    , mq'           <- mqt ! i'
+                    , cols'         <- (pt ! i')^.columns = do
+                       logPla (prefixAdminCmd "tell") i  . T.concat $ [ "sent message to "
+                                                                      , target'
+                                                                      , ": "
+                                                                      , dblQuote msg ]
+                       logPla (prefixAdminCmd "tell") i' . T.concat $ [ "received message from "
+                                                                      , s
+                                                                      , ": "
+                                                                      , dblQuote msg ]
+                       wrapSend mq  cols  . T.concat $ [ "You send ", target', ": ", dblQuote msg ]
+                       wrapSend mq' cols' . T.concat $ [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+    maybe notFound found . findFullNameForAbbrev target . map snd $ piss
+adminTell p = patternMatchFail "adminTell" [ showText p ]
+
+
+-----
+
+
 adminTime :: Action
 adminTime (NoArgs i mq cols) = do
     logPlaExec (prefixAdminCmd "time") i
@@ -329,7 +366,7 @@ adminUptime p = withoutArgs adminUptime p
 adminWho :: Action
 adminWho   (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
-    (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= pager i mq . concatMap (wrapIndent 20 cols)
+    pager i mq . concatMap (wrapIndent 20 cols) =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
 adminWho p@(WithArgs i _ _ as) = do
     logPlaExecArgs (prefixAdminCmd "who") as i
     dispMatches p 20 =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)

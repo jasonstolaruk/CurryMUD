@@ -165,7 +165,7 @@ about p = withoutArgs about p
 admin :: Action
 admin p@AdviseNoArgs                         = advise p ["admin"] advice
   where
-    advice = T.concat [ "Please specify the name of an administrator, followed by a message, as in "
+    advice = T.concat [ "Please specify the name of an administrator followed by a message, as in "
                       , quoteColor
                       , dblQuote "admin jason are you available? I need your assistance"
                       , dfltColor
@@ -694,7 +694,7 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 putAction :: Action
 putAction p@AdviseNoArgs     = advise p ["put"] advice
   where
-    advice = T.concat [ "Please specify one or more items you want to put, followed by where you want to put them, as \
+    advice = T.concat [ "Please specify one or more items you want to put followed by where you want to put them, as \
                         \in "
                       , quoteColor
                       , dblQuote "put doll sack"
@@ -1093,7 +1093,7 @@ getDesigWpnSlot ws (view sing -> s) em rol
 remove :: Action
 remove p@AdviseNoArgs     = advise p ["remove"] advice
   where
-    advice = T.concat [ "Please specify one or more items to remove, followed by the container you want to remove \
+    advice = T.concat [ "Please specify one or more items to remove followed by the container you want to remove \
                         \them from, as in "
                       , quoteColor
                       , dblQuote "remove doll sack"

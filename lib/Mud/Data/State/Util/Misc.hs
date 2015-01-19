@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, TransformListComp, ViewPatterns #-}
 
 module Mud.Data.State.Util.Misc ( BothGramNos
                                 , allKeys
@@ -9,6 +9,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , getMqtPt
                                 , getSexRace
                                 , getUnusedId
+                                , mkPlaIdsSingsList
                                 , mkPlur
                                 , mkPlurFromBoth
                                 , mkPossPronoun
@@ -40,6 +41,7 @@ import Data.IntMap.Lazy ((!))
 import Data.List ((\\), foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
+import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
 
@@ -94,6 +96,13 @@ getSexRace i ws = (view sex *** view race) . (views mobTbl (!) ws *** views pcTb
 
 getUnusedId :: WorldState -> Id
 getUnusedId = head . (\\) [0..] . allKeys
+
+
+mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
+mkPlaIdsSingsList et pt = [ (i, s) | i <- IM.keys pt
+                                   , not $ (pt ! i)^.isAdmin
+                                   , let s = (et ! i)^.sing
+                                   , then sortWith by s ]
 
 
 mkPlur :: Ent -> Plur

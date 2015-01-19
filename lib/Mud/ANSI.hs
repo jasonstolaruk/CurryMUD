@@ -4,6 +4,7 @@
 module Mud.ANSI ( abbrevColor
                 , adminMsgColor
                 , adminNoticeColor
+                , adminTellColor
                 , announceColor
                 , asteriskColor
                 , bootMsgColor
@@ -95,6 +96,10 @@ adminMsgColor = magenta
 
 adminNoticeColor :: T.Text
 adminNoticeColor = yellow
+
+
+adminTellColor :: T.Text
+adminTellColor = magenta
 
 
 announceColor :: T.Text
