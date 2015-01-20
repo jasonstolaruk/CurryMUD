@@ -339,9 +339,11 @@ adminTell p = patternMatchFail "adminTell" [ showText p ]
 firstAdminTell :: Id -> Sing -> MudStack [T.Text]
 firstAdminTell i s = do
     void . modifyPlaFlag i IsNotFirstAdminTell $ True
-    return [ T.concat [ hintColor
+    return [ T.concat [ blink
+                      , underline
                       , "Hint: "
-                      , dfltColor
+                      , noUnderline
+                      , noBlink
                       , "the above is a message from "
                       , s
                       , ", a CurryMUD administrator. To reply, type "

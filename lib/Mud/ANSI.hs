@@ -7,6 +7,7 @@ module Mud.ANSI ( abbrevColor
                 , adminTellColor
                 , announceColor
                 , asteriskColor
+                , blink
                 , bootMsgColor
                 , colors
                 , dfltColor
@@ -15,7 +16,6 @@ module Mud.ANSI ( abbrevColor
                 , exitsColor
                 , fromPeepedColor
                 , headerColor
-                , hintColor
                 , intensities
                 , knownNameColor
                 , mkBgColorANSI
@@ -23,6 +23,7 @@ module Mud.ANSI ( abbrevColor
                 , mkFgColorANSI
                 , motdColor
                 , newRecordColor
+                , noBlink
                 , noUnderline
                 , pagerPromptColor
                 , printConsoleColor
@@ -39,7 +40,7 @@ module Mud.ANSI ( abbrevColor
 
 import Mud.TopLvlDefs.Chars
 
-import System.Console.ANSI (Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
+import System.Console.ANSI (BlinkSpeed(..), Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
 import qualified Data.Text as T
 
 
@@ -111,6 +112,10 @@ asteriskColor :: T.Text
 asteriskColor = magenta
 
 
+blink :: T.Text
+blink = T.pack . setSGRCode $ [ SetBlinkSpeed SlowBlink ]
+
+
 bootMsgColor :: T.Text
 bootMsgColor = red
 
@@ -139,10 +144,6 @@ headerColor :: T.Text
 headerColor = mkColorANSI (Dull, White) (Dull, Red)
 
 
-hintColor :: T.Text
-hintColor = magenta
-
-
 knownNameColor :: T.Text
 knownNameColor = green
 
@@ -153,6 +154,10 @@ motdColor = yellow
 
 newRecordColor :: T.Text
 newRecordColor = magenta
+
+
+noBlink :: T.Text
+noBlink = T.pack . setSGRCode $ [ SetBlinkSpeed NoBlink ]
 
 
 noUnderline :: T.Text

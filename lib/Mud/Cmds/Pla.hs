@@ -137,6 +137,7 @@ plaCmds =
     , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
     , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
     , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
+    , Cmd { cmdName = "take", action = takeAction, cmdDesc = "Pick up one or more items." }
     , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
     , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready one or more items." }
     , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long CurryMUD has been running." }
@@ -275,7 +276,6 @@ exits p = withoutArgs exits p
 -----
 
 
---TODO: Consider making "take" a synonym of "get".
 getAction :: Action
 getAction p@AdviseNoArgs     = advise p ["get"] advice
   where
@@ -1234,6 +1234,13 @@ mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i ws i' | i' <- is ], c
     nubBy equalCountsAndBoths . zip3 is cs $ ebgns
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
+
+
+-----
+
+
+takeAction :: Action
+takeAction = getAction
 
 
 -----
