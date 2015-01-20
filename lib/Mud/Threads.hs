@@ -377,9 +377,9 @@ handleFromServer i h msg = getPla i >>= \(view peepers -> peeperIds) -> do
 
 
 sendInacBootMsg :: Handle -> MudStack ()
-sendInacBootMsg h = liftIO . T.hPutStrLn h . nl' . nl $ bootMsgColor                                                  <>
-                                                        "You are being disconnected from CurryMUD due to inactivity." <>
-                                                        dfltColor
+sendInacBootMsg h = liftIO . T.hPutStrLn h . nl $ bootMsgColor                                                  <>
+                                                  "You are being disconnected from CurryMUD due to inactivity." <>
+                                                  dfltColor
 
 
 stopInacThread :: Maybe InacTimerQueue -> MudStack ()
@@ -387,7 +387,7 @@ stopInacThread = maybeVoid (liftIO . atomically . flip writeTQueue StopTimer)
 
 
 boot :: Handle -> T.Text -> MudStack ()
-boot h = liftIO . T.hPutStrLn h . nl' . nl . (<> dfltColor) . (bootMsgColor <>)
+boot h = liftIO . T.hPutStrLn h . nl . (<> dfltColor) . (bootMsgColor <>)
 
 
 sendPrompt :: Id -> Handle -> T.Text -> MudStack ()

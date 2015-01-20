@@ -128,7 +128,7 @@ bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . co
 
 
 bcastAdmins :: IM.IntMap Pla -> T.Text -> MudStack ()
-bcastAdmins pt msg = bcastNl [( nl' $ adminNoticeColor <> msg <> dfltColor
+bcastAdmins pt msg = bcastNl [( adminNoticeColor <> msg <> dfltColor
                               , [ pi | pi <- IM.keys pt, getPlaFlag IsAdmin (pt ! pi) ] )]
 
 
@@ -157,7 +157,7 @@ massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
 massSend :: T.Text -> MudStack ()
 massSend msg = getMqtPt >>= \(mqt, pt) -> do
     let helper i | mq   <- mqt ! i
-                 , cols <- (pt ! i)^.columns = send mq . nl' . frame cols . wrapUnlines cols $ msg
+                 , cols <- (pt ! i)^.columns = send mq . frame cols . wrapUnlines cols $ msg
     forM_ (IM.keys pt) helper
 
 
