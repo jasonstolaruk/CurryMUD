@@ -13,6 +13,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Pla
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -35,7 +36,7 @@ import Control.Lens (_1, _2, _3, at, over)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Lens.Setter (set)
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
@@ -316,7 +317,8 @@ adminTell   (MsgWithTarget i mq cols target msg) = do
                                               \logged in."
     let found match | (i', target') <- head . filter ((== match) . snd) $ piss
                     , mq'           <- mqt ! i'
-                    , cols'         <- (pt ! i')^.columns = do
+                    , p             <- pt ! i'
+                    , cols'         <- p^.columns = do
                        logPla (prefixAdminCmd "tell") i  . T.concat $ [ "sent message to "
                                                                       , target'
                                                                       , ": "
@@ -325,10 +327,29 @@ adminTell   (MsgWithTarget i mq cols target msg) = do
                                                                       , s
                                                                       , ": "
                                                                       , dblQuote msg ]
-                       wrapSend mq  cols  . T.concat $ [ "You send ", target', ": ", dblQuote msg ]
-                       wrapSend mq' cols' . T.concat $ [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+                       wrapSend mq cols . T.concat $ [ "You send ", target', ": ", dblQuote msg ]
+                       let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+                       if getFlag IsNotFirstAdminTell p
+                         then wrapSend mq' cols' targetMsg
+                         else multiWrapSend mq' cols' . (targetMsg :) =<< firstAdminTell i' s
     maybe notFound found . findFullNameForAbbrev target . map snd $ piss
 adminTell p = patternMatchFail "adminTell" [ showText p ]
+
+
+firstAdminTell :: Id -> Sing -> MudStack [T.Text]
+firstAdminTell i s = do
+    void . modifyPlaFlag i IsNotFirstAdminTell $ True
+    return [ T.concat [ "Note: the above is a message from "
+                      , s
+                      , ", a CurryMUD administrator. To reply, type "
+                      , quoteColor
+                      , dblQuote $ "admin " <> s <> " msg"
+                      , dfltColor
+                      , ", where "
+                      , quoteColor
+                      , dblQuote "msg"
+                      , dfltColor
+                      , " is your reply." ] ]
 
 
 -----
