@@ -88,3 +88,9 @@ iKnife1 = 40 :: Int
 iKnife2 = 41 :: Int
 
 iCap = 42 :: Int
+
+iBoots = 43 :: Int
+
+iSandals1 = 44 :: Int
+
+iSandals2 = 45 :: Int

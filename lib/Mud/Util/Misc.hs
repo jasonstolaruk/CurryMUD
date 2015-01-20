@@ -29,6 +29,7 @@ module Mud.Util.Misc ( aOrAn
                      , showText
                      , stripControl
                      , stripTelnet
+                     , toMaybe
                      , uncapitalize ) where
 
 import Mud.TopLvlDefs.Chars
@@ -190,3 +191,8 @@ stripTelnet t
                                                            (_, T.tail -> rest') -> stripTelnet rest'
       | otherwise     = stripTelnet rest
     helper _ = ""
+
+
+toMaybe :: Bool -> a -> Maybe a
+toMaybe False _ = Nothing
+toMaybe True  a = Just a

@@ -1113,9 +1113,9 @@ readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
 
 getAvailArmSlot :: ArmSub -> EqMap -> Either T.Text Slot
 getAvailArmSlot sub em = procMaybe $ case sub of
-  HeadA | isSlotAvail em HeadS -> Just HeadS
-        | otherwise            -> Nothing
-  _                            -> undefined -- TODO
+  HeadA -> toMaybe (isSlotAvail em HeadS) HeadS
+  FeetA -> toMaybe (isSlotAvail em FeetS) FeetS
+  _     -> undefined -- TODO
   where
     procMaybe = maybe (Left . sorryFullArmSlot $ sub) Right
 
