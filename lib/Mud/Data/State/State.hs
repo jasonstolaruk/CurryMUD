@@ -353,6 +353,10 @@ data Pla = Pla { _hostName  :: !HostName
                , _peeping   :: !Inv }
 
 
+data PlaFlag = IsAdmin
+             | IsFirstAdminTell deriving Enum
+
+
 -- ==================================================
 -- Talk async table:
 

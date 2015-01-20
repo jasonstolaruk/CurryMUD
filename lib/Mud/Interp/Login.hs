@@ -147,13 +147,13 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
           in putTMVar t (ws & entTbl.at i ?~ e') >> return oldSing
       (pt, p) <- onNWS plaTblTMVar $ \(ptTMVar, pt) ->
           let p   = pt ! i
-              p'  = setPlaIsAdmin (T.head s == 'Z') p & interp .~ Nothing
+              p'  = setFlag IsAdmin (T.head s == 'Z') p & interp .~ Nothing
               pt' = pt & at i ?~ p'
           in putTMVar ptTMVar pt' >> return (pt, p')
       logNotice "interpConfirmName" $ dblQuote oldSing <> " has logged on as " <> s <> "."
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> (T.pack $ p^.hostName) <> "."
-      when (plaIsAdmin p) $ stopInacTimer i mq
+      when (getFlag IsAdmin p) $ stopInacTimer i mq
       movePC
       notifyArrival i pt
       send mq . nl $ ""

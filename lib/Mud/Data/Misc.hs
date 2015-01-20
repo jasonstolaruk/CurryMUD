@@ -11,7 +11,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , CmdName
                      , Cols
                      , EmptyNoneSome(..)
-                     , FromRol
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)
                      , Help(..)
@@ -19,7 +18,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Index
                      , InvType(..)
                      , PCDesig(..)
-                     , Pretty
                      , PutOrRem(..)
                      , RightOrLeft(..)
                      , Serializable
@@ -28,8 +26,10 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Verb(..)
                      , deserialize
                      , fromRol
+                     , getFlag
                      , pp
-                     , serialize ) where
+                     , serialize
+                     , setFlag ) where
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
@@ -40,6 +40,10 @@ import Mud.Util.Quoting
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (both, over)
+import Control.Lens.Getter (Getting)
+import Control.Lens.Operators ((^.))
+import Control.Lens.Setter (Setting)
+import Data.Bits (clearBit, setBit, testBit)
 import Data.Monoid ((<>))
 import Data.String (fromString)
 import Prelude hiding ((>>), pi)
@@ -57,7 +61,7 @@ patternMatchFail = U.patternMatchFail "Mud.Data.Misc"
 
 
 -- ==================================================
--- Typeclasses and instances:
+-- Original typeclasses and instances:
 
 
 class FromRol a where
@@ -79,10 +83,34 @@ instance FromRol Slot where
 -----
 
 
-instance Ord ClassifiedBroadcast where
-  TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
-  NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
-  _                    `compare` _                    = EQ
+class HasFlags a where
+  flagGetter :: Getting Int a Int
+
+  flagSetter :: Setting (->) a a Int Int
+
+  getFlag :: (Enum e) => e -> a -> Bool
+  getFlag (fromEnum -> flagBitNum) a = (a^.flagGetter) `testBit` flagBitNum
+
+  setFlag :: (Enum e) => e -> Bool -> a -> a
+  setFlag (fromEnum -> flagBitNum) b = over flagSetter (flip f flagBitNum)
+    where
+      f = case b of True  -> setBit
+                    False -> clearBit
+
+
+instance HasFlags Ent where
+  flagGetter = entFlags
+  flagSetter = entFlags
+
+
+instance HasFlags Rm where
+  flagGetter = rmFlags
+  flagSetter = rmFlags
+
+
+instance HasFlags Pla where
+  flagGetter = plaFlags
+  flagSetter = plaFlags
 
 
 -----
@@ -212,6 +240,12 @@ type Broadcast = (T.Text, Inv)
 
 data ClassifiedBroadcast = TargetBroadcast    Broadcast
                          | NonTargetBroadcast Broadcast deriving Eq
+
+
+instance Ord ClassifiedBroadcast where
+  TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
+  NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
+  _                    `compare` _                    = EQ
 
 
 -----
