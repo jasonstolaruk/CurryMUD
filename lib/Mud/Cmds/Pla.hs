@@ -881,12 +881,15 @@ readyDispatcher :: Id                                  ->
                    (WorldState, [Broadcast], [T.Text]) ->
                    Id                                  ->
                    (WorldState, [Broadcast], [T.Text])
-readyDispatcher i d mrol a@(ws, _, _) ei
-  | e <- (ws^.entTbl)  ! ei
-  , t <- (ws^.typeTbl) ! ei = case t of
-    ClothType -> readyCloth i d mrol a ei e
-    WpnType   -> readyWpn   i d mrol a ei e
-    _         | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." -> over _2 (++ b) a
+readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = f i d mrol a ei e
+  where
+    f = case (ws^.typeTbl) ! ei of
+      ClothType -> readyCloth
+      WpnType   -> readyWpn
+      ArmType   -> readyArm
+      _         -> \_ _ _ _ _ _ -> let b = mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "."
+                                   in over _2 (++ b) a
+-- | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." -> over _2 (++ b) a
 
 
 -- Readying clothing:
@@ -907,16 +910,16 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyMsgs slot $ c
   where
     mkReadyMsgs (pp -> slot) = \case
-        NoseC     -> putOnMsgs
-        NeckC     -> putOnMsgs
-        FingerC   -> (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
-                     , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-        UpBodyC   -> donMsgs
-        LowBodyC  -> donMsgs
-        FullBodyC -> donMsgs
-        BackC     -> putOnMsgs
-        FeetC     -> putOnMsgs
-        _         -> wearMsgs
+      NoseC     -> putOnMsgs
+      NeckC     -> putOnMsgs
+      FingerC   -> (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
+                   , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
+      UpBodyC   -> donMsgs
+      LowBodyC  -> donMsgs
+      FullBodyC -> donMsgs
+      BackC     -> putOnMsgs
+      FeetC     -> putOnMsgs
+      _         -> wearMsgs
       where
         putOnMsgs  = ( "You put on the " <> s <> "."
                      , (T.concat [ serialize d, " puts on ", aOrAn s, "." ], otherPCIds) )
@@ -974,7 +977,7 @@ lWristSlots = [ LWrist1S .. LWrist3S ]
 
 
 sorryFullClothSlots :: Cloth -> T.Text
-sorryFullClothSlots c = "You can't wear any more " <> whatWhere c
+sorryFullClothSlots = ("You can't wear any more " <>) . whatWhere
   where
     whatWhere = \case
       EarC      -> aoy <> "ears."
@@ -993,8 +996,8 @@ sorryFullClothSlots c = "You can't wear any more " <> whatWhere c
 
 getDesigClothSlot :: WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigClothSlot ws (view sing -> s) c em rol
-  | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCantWearThere
-  | isRingRol rol, c /= FingerC                                           = Left sorryCantWearThere
+  | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCan'tWearThere
+  | isRingRol rol, c /= FingerC                                           = Left sorryCan'tWearThere
   | c == FingerC, not . isRingRol $ rol                                   = Left ringHelp
   | otherwise                                                             = case c of
     EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
@@ -1004,7 +1007,7 @@ getDesigClothSlot ws (view sing -> s) c em rol
                      (em^.at slotFromRol)
     _       -> undefined -- TODO
   where
-    sorryCantWearThere     = T.concat [ "You can't wear a ", s, " on your ", pp rol, "." ]
+    sorryCan'tWearThere    = T.concat [ "You can't wear a ", s, " on your ", pp rol, "." ]
     findSlotFromList rs ls = findAvailSlot em $ case rol of
       R -> rs
       L -> ls
@@ -1086,6 +1089,47 @@ getDesigWpnSlot ws (view sing -> s) em rol
     desigSlot               = case rol of R -> RHandS
                                           L -> LHandS
                                           _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
+
+
+-- Readying armor:
+
+
+readyArm :: Id                                  ->
+            PCDesig                             ->
+            Maybe RightOrLeft                   ->
+            (WorldState, [Broadcast], [T.Text]) ->
+            Id                                  ->
+            Ent                                 ->
+            (WorldState, [Broadcast], [T.Text])
+readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
+    let em                   = (ws^.eqTbl)  ! i
+        (view armSub -> sub) = (ws^.armTbl) ! ei
+    in case maybe (getAvailArmSlot sub em) sorryCan'tWearThere mrol of
+      Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+      Right slot                 -> moveReadiedItem i a em slot ei mkReadyMsgs
+  where
+    sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear a ", s, " on your ", pp rol, "." ]
+    mkReadyMsgs             = ( "You don the " <> s <> "."
+                              , (T.concat [ serialize d, " dons ", aOrAn s, "." ], i `delete` pcIds d) )
+
+
+getAvailArmSlot :: ArmSub -> EqMap -> Either T.Text Slot
+getAvailArmSlot sub em = procMaybe $ case sub of
+  HeadA | isSlotAvail em HeadS -> Just HeadS
+        | otherwise            -> Nothing
+  _                            -> undefined -- TODO
+  where
+    procMaybe = maybe (Left . sorryFullArmSlot $ sub) Right
+
+
+sorryFullArmSlot :: ArmSub -> T.Text
+sorryFullArmSlot = ("You're already wearing " <>) . whatWhere
+  where
+    whatWhere = \case
+      HeadA     -> "something on your head."
+      UpBodyA   -> "armor on your upper body."
+      LowBodyA  -> "armor on your lower body."
+      FullBodyA -> "full body armor."
 
 
 -----

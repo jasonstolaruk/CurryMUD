@@ -66,7 +66,7 @@ createWorld = do
     putRm iWelcome [] mempty (Rm "The welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [ StdLink Down iHill ])
     putRm iHill [ iGP1, iLongSword, iKewpie1, iBag1, iClub, iSword1, iSword2 ] (Coins (0, 0, 5)) (Rm "The hill" "You stand atop a tall hill." zeroBits [ StdLink Up iWelcome, StdLink East iCliff ])
     putRm iCliff [ iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4 ] mempty (Rm "The cliff" "You have reached the edge of a cliff. There is a sizeable hole in the ground. Next to the hole is a small hut." zeroBits [ StdLink West iHill, StdLink Down iHole, NonStdLink "hut" iHut (sformat $ stext % " enters the hut.") (sformat $ stext % " enters the hut.") ])
-    putRm iHole [ iNeck1, iNeck2, iNeck3, iNeck4, iHelm ] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. It's damp and smells of soil." zeroBits [ StdLink West iVoid, StdLink Up iCliff ])
+    putRm iHole [ iNeck1, iNeck2, iNeck3, iNeck4, iHelm, iCap ] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. It's damp and smells of soil." zeroBits [ StdLink West iVoid, StdLink Up iCliff ])
     putRm iVoid [ iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3 ] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." zeroBits [ StdLink East iHole ])
     putRm iHut [ iPaper ] (Coins (0, 5, 0)) (Rm "The hut" "The tiny hut is dusty and smells of mold." zeroBits [ NonStdLink "out" iCliff (sformat $ stext % " exits the hut.") (sformat $ stext % " exits the hut.") ])
 
@@ -110,6 +110,8 @@ createWorld = do
     putCloth iEar4 (Ent iEar4 (Just "earring") "mithril earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) EarC
 
     putArm iHelm (Ent iHelm (Just "helmet") "leather helmet" "" "Nothing to write home about. But it's better than nothing." zeroBits) (Obj 1 1) (Arm HeadA 1)
+
+    putArm iCap (Ent iCap (Just "cap") "knit cap" "" "It's a simple knit cap, designed to keep your head warm in cold weather." zeroBits) (Obj 1 1) (Arm HeadA 1)
 
     putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig. You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 25 NoHand)
 

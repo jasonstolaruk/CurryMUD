@@ -86,3 +86,5 @@ iPaper = 39 :: Int
 iKnife1 = 40 :: Int
 
 iKnife2 = 41 :: Int
+
+iCap = 42 :: Int

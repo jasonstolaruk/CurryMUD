@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module Mud.Data.State.Util.Pla where
 

@@ -76,7 +76,7 @@ interpName (T.toLower -> cn) (NoArgs' i mq)
           unless isPropName $ do
               isWord <- checkWordsDict cn mq
               unless isWord $ let cn' = capitalize cn in do
-                  prompt mq . nl' $ "Your name will be " <> (dblQuote $ cn' <> ",") <> " is that OK? [yes/no]"
+                  prompt mq . nl' $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
                   void . modifyPla i interp . Just $ interpConfirmName cn'
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
@@ -152,7 +152,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
           in putTMVar ptTMVar pt' >> return (pt, p')
       logNotice "interpConfirmName" $ dblQuote oldSing <> " has logged on as " <> s <> "."
       initPlaLog i s
-      logPla "interpConfirmName" i $ "new player logged on from " <> (T.pack $ p^.hostName) <> "."
+      logPla "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
       when (getPlaFlag IsAdmin p) $ stopInacTimer i mq
       movePC
       notifyArrival i pt

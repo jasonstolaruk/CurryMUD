@@ -96,10 +96,9 @@ class HasFlags a where
   getFlag (fromEnum -> flagBitNum) a = (a^.flagGetter) `testBit` flagBitNum
 
   setFlag :: (Enum e) => e -> Bool -> a -> a
-  setFlag (fromEnum -> flagBitNum) b = over flagSetter (flip f flagBitNum)
+  setFlag (fromEnum -> flagBitNum) b = over flagSetter (`f` flagBitNum)
     where
-      f = case b of True  -> setBit
-                    False -> clearBit
+      f = if b then setBit else clearBit
 
 
 instance HasFlags Ent where
