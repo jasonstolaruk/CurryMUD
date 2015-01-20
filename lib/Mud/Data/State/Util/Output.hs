@@ -129,7 +129,7 @@ bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . co
 
 bcastAdmins :: IM.IntMap Pla -> T.Text -> MudStack ()
 bcastAdmins pt msg = bcastNl [( nl' $ adminNoticeColor <> msg <> dfltColor
-                              , [ pi | pi <- IM.keys pt, getFlag IsAdmin (pt ! pi) ] )]
+                              , [ pi | pi <- IM.keys pt, getPlaFlag IsAdmin (pt ! pi) ] )]
 
 
 mkBroadcast :: Id -> T.Text -> [Broadcast]

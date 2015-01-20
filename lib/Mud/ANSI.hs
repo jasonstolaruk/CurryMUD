@@ -15,6 +15,7 @@ module Mud.ANSI ( abbrevColor
                 , exitsColor
                 , fromPeepedColor
                 , headerColor
+                , hintColor
                 , intensities
                 , knownNameColor
                 , mkBgColorANSI
@@ -136,6 +137,10 @@ fromPeepedColor = mkColorANSI (Vivid, White) (Dull, Blue)
 
 headerColor :: T.Text
 headerColor = mkColorANSI (Dull, White) (Dull, Red)
+
+
+hintColor :: T.Text
+hintColor = magenta
 
 
 knownNameColor :: T.Text

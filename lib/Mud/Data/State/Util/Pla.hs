@@ -26,7 +26,7 @@ getPlaColumns i = view columns <$> getPla i
 
 
 getPlaIsAdmin :: Id -> MudStack Bool
-getPlaIsAdmin i = getFlag IsAdmin <$> getPla i
+getPlaIsAdmin i = getPlaFlag IsAdmin <$> getPla i
 
 
 getPlaPageLines :: Id -> MudStack Int
@@ -55,11 +55,8 @@ modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
     in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
 
 
------
-
-
-modifyPlaFlag :: (Enum e) => Id -> e -> Bool -> MudStack Pla
-modifyPlaFlag i e b = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+modifyPlaFlag :: Id -> PlaFlags -> Bool -> MudStack Pla
+modifyPlaFlag i flag b = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
     let p  = pt ! i
-        p' = setFlag e b p
+        p' = setPlaFlag flag b p
     in putTMVar ptTMVar (pt & at i ?~ p') >> return p'

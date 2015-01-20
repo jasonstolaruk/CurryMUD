@@ -26,10 +26,14 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Verb(..)
                      , deserialize
                      , fromRol
-                     , getFlag
+                     , getEntFlag
+                     , getPlaFlag
+                     , getRmFlag
                      , pp
                      , serialize
-                     , setFlag ) where
+                     , setEntFlag
+                     , setPlaFlag
+                     , setRmFlag ) where
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
@@ -103,14 +107,38 @@ instance HasFlags Ent where
   flagSetter = entFlags
 
 
+getEntFlag :: EntFlags -> Ent -> Bool
+getEntFlag = getFlag
+
+
+setEntFlag :: EntFlags -> Bool -> Ent -> Ent
+setEntFlag = setFlag
+
+
 instance HasFlags Rm where
   flagGetter = rmFlags
   flagSetter = rmFlags
 
 
+getRmFlag :: RmFlags -> Rm -> Bool
+getRmFlag = getFlag
+
+
+setRmFlag :: RmFlags -> Bool -> Rm -> Rm
+setRmFlag = setFlag
+
+
 instance HasFlags Pla where
   flagGetter = plaFlags
   flagSetter = plaFlags
+
+
+getPlaFlag :: PlaFlags -> Pla -> Bool
+getPlaFlag = getFlag
+
+
+setPlaFlag :: PlaFlags -> Bool -> Pla -> Pla
+setPlaFlag = setFlag
 
 
 -----

@@ -72,6 +72,9 @@ data Ent = Ent { _entId    :: !Id
                , _entFlags :: !Int } deriving (Eq, Show)
 
 
+data EntFlags = EntFlagsTODO deriving Enum
+
+
 -- ==================================================
 -- Object:
 -- Has an entity.
@@ -284,6 +287,9 @@ data LinkDir = North
              | Down deriving (Eq, Show)
 
 
+data RmFlags = RmFlagsTODO deriving Enum
+
+
 -- ==================================================
 -- Types of world elements:
 
@@ -353,8 +359,8 @@ data Pla = Pla { _hostName  :: !HostName
                , _peeping   :: !Inv }
 
 
-data PlaFlag = IsAdmin
-             | IsNotFirstAdminTell deriving Enum
+data PlaFlags = IsAdmin
+              | IsNotFirstAdminTell deriving Enum
 
 
 -- ==================================================

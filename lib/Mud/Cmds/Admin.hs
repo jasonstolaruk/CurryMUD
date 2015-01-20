@@ -329,7 +329,7 @@ adminTell   (MsgWithTarget i mq cols target msg) = do
                                                                       , dblQuote msg ]
                        wrapSend mq cols . T.concat $ [ "You send ", target', ": ", dblQuote msg ]
                        let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
-                       if getFlag IsNotFirstAdminTell p
+                       if getPlaFlag IsNotFirstAdminTell p
                          then wrapSend mq' cols' targetMsg
                          else multiWrapSend mq' cols' . (targetMsg :) =<< firstAdminTell i' s
     maybe notFound found . findFullNameForAbbrev target . map snd $ piss
@@ -339,7 +339,10 @@ adminTell p = patternMatchFail "adminTell" [ showText p ]
 firstAdminTell :: Id -> Sing -> MudStack [T.Text]
 firstAdminTell i s = do
     void . modifyPlaFlag i IsNotFirstAdminTell $ True
-    return [ T.concat [ "Note: the above is a message from "
+    return [ T.concat [ hintColor
+                      , "Hint: "
+                      , dfltColor
+                      , "the above is a message from "
                       , s
                       , ", a CurryMUD administrator. To reply, type "
                       , quoteColor
@@ -349,7 +352,9 @@ firstAdminTell i s = do
                       , quoteColor
                       , dblQuote "msg"
                       , dfltColor
-                      , " is your reply." ] ]
+                      , " is the message you want to send to "
+                      , s
+                      , "." ] ]
 
 
 -----
@@ -395,7 +400,7 @@ adminWho _ = patternMatchFail "adminWho" []
 
 mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]
 mkPlaListTxt ws pt =
-    let pis         = [ pi | pi <- IM.keys pt, not . getFlag IsAdmin $ (pt ! pi) ]
+    let pis         = [ pi | pi <- IM.keys pt, not . getPlaFlag IsAdmin $ (pt ! pi) ]
         (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = view sing $ (ws^.entTbl) ! pi, then sortWith by s ]
         pias        = [ (pi, a) | pi <- pis' | a <- styleAbbrevs Don'tBracket pss ]
     in map helper pias ++ [ numOfPlayers pis <> " connected." ]

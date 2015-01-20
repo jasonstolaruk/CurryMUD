@@ -100,7 +100,7 @@ getUnusedId = head . (\\) [0..] . allKeys
 
 mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
 mkPlaIdsSingsList et pt = [ (i, s) | i <- IM.keys pt
-                                   , not . getFlag IsAdmin $ (pt ! i)
+                                   , not . getPlaFlag IsAdmin $ (pt ! i)
                                    , let s = (et ! i)^.sing
                                    , then sortWith by s ]
 
