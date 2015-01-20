@@ -97,8 +97,7 @@ data Cloth = EarC
            | UpBodyC
            | LowBodyC
            | FullBodyC
-           | BackC
-           | FeetC deriving (Eq, Show)
+           | BackC deriving (Eq, Show)
 
 
 -- ==================================================
@@ -168,7 +167,8 @@ data Arm = Arm { _armSub :: !ArmSub
 data ArmSub = HeadA
             | UpBodyA
             | LowBodyA
-            | FullBodyA deriving (Eq, Show)
+            | FullBodyA
+            | FeetA deriving (Eq, Show)
 
 
 -- ==================================================

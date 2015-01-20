@@ -918,7 +918,6 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
       LowBodyC  -> donMsgs
       FullBodyC -> donMsgs
       BackC     -> putOnMsgs
-      FeetC     -> putOnMsgs
       _         -> wearMsgs
       where
         putOnMsgs  = ( "You put on the " <> s <> "."
@@ -989,17 +988,16 @@ sorryFullClothSlots = ("You can't wear any more " <>) . whatWhere
       LowBodyC  -> coy <> "legs."
       FullBodyC -> "clothing about your body."
       BackC     -> "on your back."
-      FeetC     -> "footwear on your feet."
     aoy = "accessories on your "
     coy = "clothing on your "
 
 
 getDesigClothSlot :: WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigClothSlot ws (view sing -> s) c em rol
-  | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC, FeetC ] = Left sorryCan'tWearThere
-  | isRingRol rol, c /= FingerC                                           = Left sorryCan'tWearThere
-  | c == FingerC, not . isRingRol $ rol                                   = Left ringHelp
-  | otherwise                                                             = case c of
+  | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC ] = Left sorryCan'tWearThere
+  | isRingRol rol, c /= FingerC                                    = Left sorryCan'tWearThere
+  | c == FingerC, not . isRingRol $ rol                            = Left ringHelp
+  | otherwise                                                      = case c of
     EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
     WristC  -> maybe (Left sorryFullWrist) Right (findSlotFromList rWristSlots lWristSlots)
     FingerC -> maybe (Right slotFromRol)
@@ -1130,6 +1128,7 @@ sorryFullArmSlot = ("You're already wearing " <>) . whatWhere
       UpBodyA   -> "armor on your upper body."
       LowBodyA  -> "armor on your lower body."
       FullBodyA -> "full body armor."
+      FeetA     -> "something on your feet."
 
 
 -----

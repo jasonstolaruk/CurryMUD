@@ -12,6 +12,7 @@ module Mud.Util.Misc ( aOrAn
                      , findFullNameForAbbrev
                      , headTail
                      , headTail'
+                     , ifThenElse
                      , isVowel
                      , maybeRet
                      , maybeVoid
@@ -103,6 +104,11 @@ headTail = (,) <$> head <*> tail
 
 headTail' :: T.Text -> (Char, T.Text)
 headTail' = (T.head *** T.tail) . dup
+
+
+ifThenElse :: Bool -> a -> a -> a
+ifThenElse True  x _ = x
+ifThenElse False _ y = y
 
 
 isVowel :: Char -> Bool

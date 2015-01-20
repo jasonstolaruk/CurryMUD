@@ -55,11 +55,6 @@ import qualified Prelude ((>>))
 a >> b = a % stext % b
 
 
-ifThenElse :: Bool -> a -> a -> a
-ifThenElse True  x _ = x
-ifThenElse False _ y = y
-
-
 -----
 
 
