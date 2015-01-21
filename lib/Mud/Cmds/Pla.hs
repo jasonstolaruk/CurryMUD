@@ -136,7 +136,7 @@ plaCmds =
     , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove one or more items from a container." }
     , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
     , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
-    , Cmd { cmdName = "set", action = setAction, cmdDesc = "TODO" }
+    , Cmd { cmdName = "set", action = setAction, cmdDesc = "View or change settings." }
     , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
     , Cmd { cmdName = "take", action = takeAction, cmdDesc = "Pick up one or more items." }
     , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
@@ -882,15 +882,14 @@ readyDispatcher :: Id                                  ->
                    (WorldState, [Broadcast], [T.Text]) ->
                    Id                                  ->
                    (WorldState, [Broadcast], [T.Text])
-readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = f i d mrol a ei e
+readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = maybe sorry (\f -> f i d mrol a ei e) mf
   where
-    f = case (ws^.typeTbl) ! ei of
-      ClothType -> readyCloth
-      WpnType   -> readyWpn
-      ArmType   -> readyArm
-      _         -> \_ _ _ _ _ _ -> let b = mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "."
-                                   in over _2 (++ b) a
--- | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." -> over _2 (++ b) a
+    mf = case (ws^.typeTbl) ! ei of
+      ClothType -> Just readyCloth
+      WpnType   -> Just readyWpn
+      ArmType   -> Just readyArm
+      _         -> Nothing
+    sorry | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." = over _2 (++ b) a
 
 
 -- Readying clothing:
@@ -1200,7 +1199,6 @@ shuffleRem i (t, ws) d cn icir as is c f
 -----
 
 
--- TODO: Help.
 setAction :: Action
 setAction (NoArgs i mq cols) = do
     logPlaExecArgs "set" [] i
