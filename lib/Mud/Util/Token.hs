@@ -80,8 +80,8 @@ expandStyleCode (toLower -> code) = case code of
   'a' -> abbrevColor
   'd' -> dfltColor
   'h' -> headerColor
-  'n' -> noUnderline
+  'n' -> noUnderlineANSI
   'q' -> quoteColor
-  'u' -> underline
+  'u' -> underlineANSI
   'z' -> zingColor
   x   -> patternMatchFail "expandStyleCode" [ T.singleton x ]

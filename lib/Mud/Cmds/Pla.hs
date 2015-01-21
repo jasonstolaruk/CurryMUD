@@ -278,13 +278,25 @@ exits p = withoutArgs exits p
 
 
 getAction :: Action
-getAction p@AdviseNoArgs     = advise p ["get"] advice
+getAction p@AdviseNoArgs = advise p ["get"] advice
   where
     advice = T.concat [ "Please specify one or more items to pick up, as in "
                       , quoteColor
                       , dblQuote "get sword"
                       , dfltColor
                       , "." ]
+getAction   (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == "from" =
+    wrapSend mq cols . T.concat $ [ hintANSI
+                                  , "Hint:"
+                                  , noHintANSI
+                                  , " it appears that you want to remove an object from a container. In that case, \
+                                    \please use the "
+                                  , dblQuote "remove"
+                                  , " command. For example, to remove a ring from your sack, type "
+                                  , quoteColor
+                                  , dblQuote "remove ring sack"
+                                  , dfltColor
+                                  , "." ]
 getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "get" i $ logMsgs
     bcastNl bs
@@ -582,7 +594,7 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 look :: Action
 look (NoArgs i mq cols) = getPCRmIdRm' i >>= \(ws, (ri, r)) ->
-    let primary = multiWrap cols [ T.concat [ underline, " ", r^.rmName, " ", noUnderline ], r^.rmDesc ]
+    let primary = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
         suppl   = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
 look (LowerNub i mq cols as) = helper >>= \case

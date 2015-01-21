@@ -403,13 +403,13 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "r rmChar"
                 , charTokenDelimiter  `T.cons` "s slotChar"
-                , styleTokenDelimiter `T.cons` ("aabbrevColor" <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("ddfltColor"   <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("hheaderColor" <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("nnoUnderline" <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("qquoteColor"  <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("uunderline"   <> noUnderlineStyleToken)
-                , styleTokenDelimiter `T.cons` ("zzingColor"   <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("aabbrevColor"     <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("ddfltColor"       <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("hheaderColor"     <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("nnoUnderlineANSI" <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("qquoteColor"      <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("uunderlineANSI"   <> noUnderlineStyleToken)
+                , styleTokenDelimiter `T.cons` ("zzingColor"       <> dfltColorStyleToken  )
                 , "dfltBootMsg: "     <> (msgTokenDelimiter `T.cons` "b")
                 , "dfltShutdownMsg: " <> (msgTokenDelimiter `T.cons` "s") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"
@@ -425,11 +425,11 @@ debugUnderline (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "underline") i
     wrapSend mq cols underlined
   where
-    underlined = T.concat [ showText underline
-                          , underline
+    underlined = T.concat [ showText underlineANSI
+                          , underlineANSI
                           , " This text is underlined. "
-                          , noUnderline
-                          , showText noUnderline ]
+                          , noUnderlineANSI
+                          , showText noUnderlineANSI ]
 debugUnderline p = withoutArgs debugUnderline p
 
 
@@ -468,7 +468,7 @@ debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, Stri
                            , mkFgColorANSI (Dull, c)
                            , "This is "
                            , showText c
-                           , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
+                           , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
         = (<> dfltColor) . T.intercalate " " $ ls
 debugWrap p = advise p [] advice
   where
@@ -527,7 +527,7 @@ debugWrapIndent   (WithArgs i mq cols [a, b]) = do
                            , mkFgColorANSI (Dull, c)
                            , "This is "
                            , showText c
-                           , " text." ] | c <- Black `delete` colors, u <- [ underline, noUnderline ] ]
+                           , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
         = (<> dfltColor) . T.intercalate " " $ ls
 
 debugWrapIndent p = advise p [] advice

@@ -7,7 +7,7 @@ module Mud.ANSI ( abbrevColor
                 , adminTellColor
                 , announceColor
                 , asteriskColor
-                , blink
+                , blinkANSI
                 , bootMsgColor
                 , colors
                 , dfltColor
@@ -16,6 +16,7 @@ module Mud.ANSI ( abbrevColor
                 , exitsColor
                 , fromPeepedColor
                 , headerColor
+                , hintANSI
                 , intensities
                 , knownNameColor
                 , mkBgColorANSI
@@ -23,8 +24,9 @@ module Mud.ANSI ( abbrevColor
                 , mkFgColorANSI
                 , motdColor
                 , newRecordColor
-                , noBlink
-                , noUnderline
+                , noBlinkANSI
+                , noHintANSI
+                , noUnderlineANSI
                 , pagerPromptColor
                 , printConsoleColor
                 , promptColor
@@ -33,13 +35,14 @@ module Mud.ANSI ( abbrevColor
                 , selfColor
                 , shutdownMsgColor
                 , toPeepedColor
-                , underline
+                , underlineANSI
                 , unknownNameColor
                 , wtfColor
                 , zingColor ) where
 
 import Mud.TopLvlDefs.Chars
 
+import Data.Monoid ((<>))
 import System.Console.ANSI (BlinkSpeed(..), Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
 import qualified Data.Text as T
 
@@ -112,8 +115,8 @@ asteriskColor :: T.Text
 asteriskColor = magenta
 
 
-blink :: T.Text
-blink = T.pack . setSGRCode $ [ SetBlinkSpeed SlowBlink ]
+blinkANSI :: T.Text
+blinkANSI = T.pack . setSGRCode $ [ SetBlinkSpeed SlowBlink ]
 
 
 bootMsgColor :: T.Text
@@ -144,6 +147,10 @@ headerColor :: T.Text
 headerColor = mkColorANSI (Dull, White) (Dull, Red)
 
 
+hintANSI :: T.Text
+hintANSI = blinkANSI <> underlineANSI
+
+
 knownNameColor :: T.Text
 knownNameColor = green
 
@@ -156,12 +163,16 @@ newRecordColor :: T.Text
 newRecordColor = magenta
 
 
-noBlink :: T.Text
-noBlink = T.pack . setSGRCode $ [ SetBlinkSpeed NoBlink ]
+noBlinkANSI :: T.Text
+noBlinkANSI = T.pack . setSGRCode $ [ SetBlinkSpeed NoBlink ]
 
 
-noUnderline :: T.Text
-noUnderline = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
+noHintANSI :: T.Text
+noHintANSI = noUnderlineANSI <> noBlinkANSI
+
+
+noUnderlineANSI :: T.Text
+noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
 
 
 pagerPromptColor :: T.Text
@@ -192,8 +203,8 @@ toPeepedColor :: T.Text
 toPeepedColor = mkColorANSI (Vivid, White) (Dull, Green)
 
 
-underline :: T.Text
-underline = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
+underlineANSI :: T.Text
+underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
 
 
 unknownNameColor :: T.Text
