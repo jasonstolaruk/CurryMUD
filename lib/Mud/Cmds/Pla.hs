@@ -1229,8 +1229,17 @@ settings = [ "columns", "lines" ]
 helperSettings :: (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
 helperSettings a@(p, _, _) arg =
     if "=" `notInfixOf` arg || T.last arg == '='
-      then let msg = "TODO"
-           in over _2 (++ [msg]) a
+      then let msg    = dblQuote arg <> " is not a valid setting."
+               advice = T.concat [ " Please specify the setting you want to change, followed immediately by "
+                                 , dblQuote "="
+                                 , ", followed immediately by the new value you want to assign, as in "
+                                 , quoteColor
+                                 , dblQuote "set columns=80"
+                                 , dfltColor
+                                 , "." ]
+               msgs   = a^._2
+               f      = if any (advice `T.isInfixOf`) msgs then (++ [msg]) else (++ [ msg <> advice ])
+           in over _2 f a
       else let (n, T.tail -> v) = T.breakOn "=" arg -- TODO: Are there places I should use "breakOn" instead of "break"?
            in maybe notFound (found v) . findFullNameForAbbrev n $ settings
   where
