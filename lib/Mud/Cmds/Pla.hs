@@ -1207,11 +1207,11 @@ setAction (NoArgs i mq cols) = do
   where
     mkSettingsList = getPla i >>= \p ->
         let pl     = p^.pageLines
-            names  = styleAbbrevs Don'tBracket settings
+            names  = styleAbbrevs Don'tBracket settingNames
             values = map showText [ cols, pl ]
         in return [ pad 9 (n <> ": ") <> v | n <- names | v <- values ]
 setAction (LowerNub i mq cols as) = helper >>= \(msgs, logMsgs) -> do
-    unless (null logMsgs) $ logPlaOut "set" i logMsgs
+    unless (null logMsgs) . logPlaOut "set" i $ logMsgs -- TODO: All "unless" should have a "$" before the last arg.
     multiWrapSend mq cols msgs
   where
     helper = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
@@ -1222,45 +1222,43 @@ setAction (LowerNub i mq cols as) = helper >>= \(msgs, logMsgs) -> do
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
-settings :: [T.Text]
-settings = [ "columns", "lines" ]
+settingNames :: [T.Text]
+settingNames = [ "columns", "lines" ]
 
 
 helperSettings :: (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
-helperSettings a@(p, _, _) arg =
-    if "=" `notInfixOf` arg || T.last arg == '='
-      then let msg    = dblQuote arg <> " is not a valid setting."
-               advice = T.concat [ " Please specify the setting you want to change, followed immediately by "
-                                 , dblQuote "="
-                                 , ", followed immediately by the new value you want to assign, as in "
-                                 , quoteColor
-                                 , dblQuote "set columns=80"
-                                 , dfltColor
-                                 , "." ]
-               msgs   = a^._2
-               f      = if any (advice `T.isInfixOf`) msgs then (++ [msg]) else (++ [ msg <> advice ])
-           in over _2 f a
-      else let (n, T.tail -> v) = T.breakOn "=" arg -- TODO: Are there places I should use "breakOn" instead of "break"?
-           in maybe notFound (found v) . findFullNameForAbbrev n $ settings
+helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
+  | noOfEqs /= 1 || T.head arg == '=' || T.last arg == '='
+  , msg    <- dblQuote arg <> " is not a valid argument."
+  , advice <- T.concat [ " Please specify the setting you want to change, followed immediately by "
+                       , dblQuote "="
+                       , ", followed immediately by the new value you want to assign, as in "
+                       , quoteColor
+                       , dblQuote "set columns=80"
+                       , dfltColor
+                       , "." ]
+  , f      <- if any (advice `T.isInfixOf`) msgs then (++ [msg]) else (++ [ msg <> advice ]) = over _2 f a
+helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) = -- TODO: Are there places I should use "breakOn" instead of "break"?
+    maybe notFound found . findFullNameForAbbrev n $ settingNames
   where
-    notFound  = let msg = "TODO"
-                in over _2 (++ [msg]) a
-    found v n = case n of
-      "columns" -> either (\msg -> over _2 (++ [msg]) a) changeColumns   parseInt
-      "lines"   -> either (\msg -> over _2 (++ [msg]) a) changePageLines parseInt
-      t         -> patternMatchFail "helperSettings found" [t]
+    notFound    = appendMsg $ dblQuote n <> " is not a valid setting name."
+    appendMsg m = over _2 (++ [m]) a
+    found       = \case "columns" -> procEither changeColumns
+                        "lines"   -> procEither changePageLines
+                        t         -> patternMatchFail "helperSettings found" [t]
       where
-        parseInt = case (reads . T.unpack $ v :: [(Int, String)]) of
+        procEither f = either appendMsg f parseInt
+        parseInt     = case (reads . T.unpack $ v :: [(Int, String)]) of
           []        -> sorryParse
           [(x, "")] -> Right x
           _         -> sorryParse
-        sorryParse = Left . T.concat $ [ dblQuote v, " is not a valid value for the ", n, " setting." ]
+        sorryParse   = Left . T.concat $ [ dblQuote v, " is not a valid value for the ", dblQuote n, " setting." ]
     changeColumns   x = let p'  = p & columns .~ x
                             msg = "Set columns to " <> showText x <> "."
-                        in set _1 p' . over _2 (++ [msg]) . over _3 (++ [msg]) $ a
+                        in set _1 p' . over _3 (++ [msg]) . appendMsg $ msg
     changePageLines x = let p'  = p & pageLines .~ x
                             msg = "Set lines to " <> showText x <> "."
-                        in set _1 p' . over _2 (++ [msg]) . over _3 (++ [msg]) $ a
+                        in set _1 p' . over _3 (++ [msg]) . appendMsg $ msg
 
 
 -----
