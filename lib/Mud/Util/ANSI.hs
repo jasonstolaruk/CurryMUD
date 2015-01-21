@@ -33,7 +33,7 @@ colorizeFileTxt c t | T.last t == '\n' = nl . T.concat $ [ c, T.init t, dfltColo
 
 dropANSI :: T.Text -> T.Text
 dropANSI t | ansiCSI `notInfixOf` t = t
-           | otherwise              = let (left, rest)      = T.break     (== ansiEsc)          t
+           | otherwise              = let (left, rest)      = T.breakOn   (T.singleton ansiEsc) t
                                           (T.tail -> right) = T.dropWhile (/= ansiSGRDelimiter) rest
                                       in if T.null right then left else left <> dropANSI right
 
@@ -47,8 +47,8 @@ type EscSeq = T.Text
 extractANSI :: T.Text -> [(T.Text, EscSeq)]
 extractANSI t
   | ansiCSI `notInfixOf` t = [(t, "")]
-  | (t',                                    rest)            <- T.break (== ansiEsc)          t
-  , ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') <- T.break (== ansiSGRDelimiter) rest
+  | (t',                                    rest)            <- T.breakOn (T.singleton ansiEsc)          t
+  , ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') <- T.breakOn (T.singleton ansiSGRDelimiter) rest
   = if T.null rest' then [(t', escSeq)] else (t', escSeq) : extractANSI rest'
 
 

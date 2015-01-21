@@ -33,7 +33,7 @@ type Delimiter = Char
 parser :: (Char -> T.Text) -> Delimiter -> T.Text -> T.Text
 parser f d t
   | T.singleton d `notInfixOf` t = t
-  | (left, headTail' . T.tail -> (c, right)) <- T.break (== d) t = left <> f c <> parser f d right
+  | (left, headTail' . T.tail -> (c, right)) <- T.breakOn (T.singleton d) t = left <> f c <> parser f d right
 
 
 -----

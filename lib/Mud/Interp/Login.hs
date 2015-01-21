@@ -153,7 +153,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
       logNotice "interpConfirmName" $ dblQuote oldSing <> " has logged on as " <> s <> "."
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
-      when (getPlaFlag IsAdmin p) $ stopInacTimer i mq
+      when (getPlaFlag IsAdmin p) . stopInacTimer i $ mq
       movePC
       notifyArrival i pt
       send mq . nl $ ""

@@ -1239,7 +1239,7 @@ helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
                        , dfltColor
                        , "." ]
   , f      <- if any (advice `T.isInfixOf`) msgs then (++ [msg]) else (++ [ msg <> advice ]) = over _2 f a
-helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) = -- TODO: Are there places I should use "breakOn" instead of "break"?
+helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) =
     maybe notFound found . findFullNameForAbbrev n $ settingNames
   where
     notFound    = appendMsg $ dblQuote n <> " is not a valid setting name."

@@ -183,12 +183,12 @@ stripControl = T.filter (\c -> c > '\31' && c < '\127')
 
 stripTelnet :: T.Text -> T.Text
 stripTelnet t
-  | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.break (== telnetIAC) t = left <> helper right
+  | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.breakOn (T.singleton telnetIAC) t = left <> helper right
   | otherwise = t
   where
     helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest))))
-      | x == telnetSB = case T.break (== telnetSE) rest of (_, "")              -> ""
-                                                           (_, T.tail -> rest') -> stripTelnet rest'
+      | x == telnetSB = case T.breakOn (T.singleton telnetSE) rest of (_, "")              -> ""
+                                                                      (_, T.tail -> rest') -> stripTelnet rest'
       | otherwise     = stripTelnet rest
     helper _ = ""
 

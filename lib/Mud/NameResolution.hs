@@ -241,7 +241,7 @@ resolveEntCoinNamesWithRols i ws (map T.toLower -> as) is c
 
 
 mkGecrWithRol :: Id -> WorldState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
-mkGecrWithRol i ws is c n@(T.break (== slotChar) -> (a, b))
+mkGecrWithRol i ws is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
   | T.null b        = (mkGecr i ws is c n, Nothing)
   | T.length b == 1 = sorry
   | parsed <- reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [ (RightOrLeft, String) ] =

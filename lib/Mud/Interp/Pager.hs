@@ -83,7 +83,7 @@ sendPagerPrompt mq pageLen txtLen =
                            , " lines ("
                            , let txtLen'  = realToFrac txtLen
                                  pageLen' = realToFrac pageLen
-                                 (l, r)   = T.break (== '.') . showText $ pageLen' / txtLen' * 100
+                                 (l, r)   = T.breakOn "." . showText $ pageLen' / txtLen' * 100
                              in l <> T.take 2 r
                            , "%) ] "
                            , dfltColor ]
