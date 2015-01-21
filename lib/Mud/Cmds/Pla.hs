@@ -143,7 +143,7 @@ plaCmds =
     , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready one or more items." }
     , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long CurryMUD has been running." }
     , Cmd { cmdName = "w", action = go "w", cmdDesc = "Go west." }
-    , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate one or more abbreviations." }
+    , Cmd { cmdName = "what", action = what, cmdDesc = "Disambiguate one or more abbreviations or prefixed names." }
     , Cmd { cmdName = "whoadmin", action = whoAdmin, cmdDesc = "Display a list of the administrators who are currently \
                                                                \logged in." }
     , Cmd { cmdName = "whoami", action = whoAmI, cmdDesc = "Confirm your name, sex, and race." } ]
@@ -1395,7 +1395,6 @@ getUptime = (-) <$> (sec <$> (liftIO . getTime $ Monotonic)) <*> (sec <$> getNWS
 -----
 
 
--- TODO: Disambiguate player names?
 what :: Action
 what p@AdviseNoArgs            = advise p ["what"] advice
   where
