@@ -47,7 +47,7 @@ import Control.Lens (_1, _2, _3, at, both, over)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Lens.Setter (set)
-import Control.Monad (forM_, guard, mplus, unless)
+import Control.Monad (forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -597,7 +597,7 @@ look (NoArgs i mq cols) = getPCRmIdRm' i >>= \(ws, (ri, r)) ->
     let primary = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
         suppl   = mkExitsSummary cols r <>  mkRmInvCoinsDesc i cols ws ri
     in send mq . nl $ primary <> suppl
-look (LowerNub i mq cols as) = helper >>= \case
+look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
   (Left  msg, _           ) -> send mq msg
   (Right msg, Nothing     ) -> send mq msg
   (Right msg, Just (d, ds)) ->
@@ -629,6 +629,43 @@ look (LowerNub i mq cols as) = helper >>= \case
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 look p = patternMatchFail "look" [ showText p ]
+
+
+firstLook :: Id                                                          ->
+             Cols                                                        ->
+             (Either T.Text T.Text, Maybe (PCDesig, [PCDesig]))          ->
+             MudStack (Either T.Text T.Text, Maybe (PCDesig, [PCDesig]))
+firstLook i cols a = (getPlaFlag IsNotFirstLook <$> getPla i) >>= \infl -> if infl
+  then return a
+  else let msg = T.concat [ hintANSI
+                          , "Hint:"
+                          , noHintANSI
+                          , " use the "
+                          , dblQuote "look"
+                          , " command to examine one or more items in your current location. To examine items in \
+                            \your inventory, use the "
+                          , dblQuote "i"
+                          , " command "
+                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "i bread sack" <> dfltColor
+                          , ". To examine items in your readied equipment, use the "
+                          , dblQuote "equip"
+                          , " command "
+                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "equip sword boots" <> dfltColor
+                          , ". "
+                          , quoteColor
+                          , dblQuote "i"
+                          , dfltColor
+                          , " and "
+                          , quoteColor
+                          , dblQuote "equip"
+                          , dfltColor
+                          , " alone will list the items in your inventory and readied equipment, respectively." ]
+       in do
+           void . modifyPlaFlag i IsNotFirstLook $ True
+           return . over _1 (appendToEither . wrapUnlinesNl cols $ msg) $ a
+  where
+    appendToEither msg (Left msg') = Left $ msg' <> msg
+    appendToEither msg right       = (<> msg) <$> right
 
 
 mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text

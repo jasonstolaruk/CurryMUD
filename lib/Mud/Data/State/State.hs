@@ -360,7 +360,8 @@ data Pla = Pla { _hostName  :: !HostName
 
 
 data PlaFlags = IsAdmin
-              | IsNotFirstAdminTell deriving Enum
+              | IsNotFirstAdminTell
+              | IsNotFirstLook deriving Enum
 
 
 -- ==================================================
