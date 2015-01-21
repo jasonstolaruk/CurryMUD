@@ -136,6 +136,7 @@ plaCmds =
     , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove one or more items from a container." }
     , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
     , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
+    , Cmd { cmdName = "set", action = setAction, cmdDesc = "TODO" }
     , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
     , Cmd { cmdName = "take", action = takeAction, cmdDesc = "Pick up one or more items." }
     , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
@@ -1194,6 +1195,63 @@ shuffleRem i (t, ws) d cn icir as is c f
       Right _ -> do
           putTMVar t ws
           return (mkBroadcast i "You can only remove things from one container at a time.", [])
+
+
+-----
+
+
+setAction :: Action
+setAction (NoArgs i mq cols) = do
+    logPlaExecArgs "set" [] i
+    multiWrapSend mq cols =<< mkSettingsList
+  where
+    mkSettingsList = getPla i >>= \p ->
+        let pl     = p^.pageLines
+            names  = styleAbbrevs Don'tBracket settings
+            values = map showText [ cols, pl ]
+        in return [ pad 9 (n <> ": ") <> v | n <- names | v <- values ]
+setAction (LowerNub i mq cols as) = helper >>= \(msgs, logMsgs) -> do
+    unless (null logMsgs) $ logPlaOut "set" i logMsgs
+    multiWrapSend mq cols msgs
+  where
+    helper = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+        let p                   = pt ! i
+            (p', msgs, logMsgs) = foldl' helperSettings (p, [], []) as
+            pt'                 = pt & at i ?~ p'
+        in putTMVar ptTMVar pt' >> return (msgs, logMsgs)
+setAction p = patternMatchFail "setAction" [ showText p ]
+
+
+settings :: [T.Text]
+settings = [ "columns", "lines" ]
+
+
+helperSettings :: (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
+helperSettings a@(p, _, _) arg =
+    if "=" `notInfixOf` arg || T.last arg == '='
+      then let msg = "TODO"
+           in over _2 (++ [msg]) a
+      else let (n, T.tail -> v) = T.breakOn "=" arg -- TODO: Are there places I should use "breakOn" instead of "break"?
+           in maybe notFound (found v) . findFullNameForAbbrev n $ settings
+  where
+    notFound  = let msg = "TODO"
+                in over _2 (++ [msg]) a
+    found v n = case n of
+      "columns" -> either (\msg -> over _2 (++ [msg]) a) changeColumns   parseInt
+      "lines"   -> either (\msg -> over _2 (++ [msg]) a) changePageLines parseInt
+      t         -> patternMatchFail "helperSettings found" [t]
+      where
+        parseInt = case (reads . T.unpack $ v :: [(Int, String)]) of
+          []        -> sorryParse
+          [(x, "")] -> Right x
+          _         -> sorryParse
+        sorryParse = Left . T.concat $ [ dblQuote v, " is not a valid value for the ", n, " setting." ]
+    changeColumns   x = let p'  = p & columns .~ x
+                            msg = "Set columns to " <> showText x <> "."
+                        in set _1 p' . over _2 (++ [msg]) . over _3 (++ [msg]) $ a
+    changePageLines x = let p'  = p & pageLines .~ x
+                            msg = "Set lines to " <> showText x <> "."
+                        in set _1 p' . over _2 (++ [msg]) . over _3 (++ [msg]) $ a
 
 
 -----
