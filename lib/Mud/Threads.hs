@@ -349,7 +349,7 @@ sayonara i Nothing    =                                                        h
 handleFromClient :: Id -> MsgQueue -> Maybe InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq mitq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
     case p^.interp of
-      Nothing -> unless (T.null msg) $ uncurry (interpret p centralDispatch) (headTail . T.words $ msg)
+      Nothing -> unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
       Just f  -> uncurry (interpret p f) $ if T.null msg then ("", []) else headTail . T.words $ msg
   where
     interpret p f cn as = do

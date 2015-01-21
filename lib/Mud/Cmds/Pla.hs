@@ -228,7 +228,7 @@ dropAction p@AdviseNoArgs     = advise p ["drop"] advice
                       , dfltColor
                       , "." ]
 dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
-    unless (null logMsgs) $ logPlaOut "drop" i logMsgs
+    unless (null logMsgs) . logPlaOut "drop" i $ logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
@@ -286,7 +286,7 @@ getAction p@AdviseNoArgs     = advise p ["get"] advice
                       , dfltColor
                       , "." ]
 getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
-    unless (null logMsgs) $ logPlaOut "get" i logMsgs
+    unless (null logMsgs) . logPlaOut "get" i $ logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
@@ -438,7 +438,7 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
       else ""
 help (LowerNub i mq cols as) = mkHelpData i >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> mapM (getHelpByName cols hs) as
-    unless (null hns) (logPla "help" i $ "read help on: " <> T.intercalate ", " hns)
+    unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
 help p = patternMatchFail "help" [ showText p ]
 
@@ -488,7 +488,7 @@ intro (NoArgs i mq cols) = do
           multiWrapSend mq cols [ "You know the following names:", introsTxt ]
           logPlaOut "intro" i [introsTxt]
 intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
-    unless (null logMsgs) $ logPlaOut "intro" i logMsgs
+    unless (null logMsgs) . logPlaOut "intro" i $ logMsgs
     bcast . map fromClassifiedBroadcast . sort $ cbs
   where
     helper = onWS $ \(t, ws) ->
@@ -710,7 +710,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dfltColor
                       , "." ]
 putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
-    unless (null logMsgs) $ logPlaOut "put" i logMsgs
+    unless (null logMsgs) . logPlaOut "put" i $ logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
@@ -771,7 +771,7 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 
 handleEgress :: Id -> MudStack ()
 handleEgress i = getPCRmId i >>= \ri -> do
-    unless (ri == iWelcome) $ notifyEgress i
+    unless (ri == iWelcome) . notifyEgress $ i
     wsTMVar  <- getWSTMVar
     mqtTMVar <- getNWSRec msgQueueTblTMVar
     ptTMVar  <- getNWSRec plaTblTMVar
@@ -851,7 +851,7 @@ ready p@AdviseNoArgs     = advise p ["ready"] advice
                       , dfltColor
                       , "." ]
 ready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
-    unless (null logMsgs) $ logPlaOut "ready" i logMsgs
+    unless (null logMsgs) . logPlaOut "ready" i $ logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
@@ -1152,7 +1152,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dfltColor
                       , "." ]
 remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
-    unless (null logMsgs) $ logPlaOut "remove" i logMsgs
+    unless (null logMsgs) . logPlaOut "remove" i $ logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
@@ -1212,7 +1212,7 @@ setAction (NoArgs i mq cols) = do
             values = map showText [ cols, pl ]
         in return [ pad 9 (n <> ": ") <> v | n <- names | v <- values ]
 setAction (LowerNub i mq cols as) = helper >>= \(msgs, logMsgs) -> do
-    unless (null logMsgs) . logPlaOut "set" i $ logMsgs -- TODO: All "unless" should have a "$" before the last arg.
+    unless (null logMsgs) . logPlaOut "set" i $ logMsgs
     multiWrapSend mq cols msgs
   where
     helper = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
@@ -1279,7 +1279,7 @@ unready p@AdviseNoArgs     = advise p ["unready"] advice
                       , dfltColor
                       , "." ]
 unready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
-    unless (null logMsgs) $ logPlaOut "unready" i logMsgs
+    unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
     bcastNl bs
   where
     helper = onWS $ \(t, ws) ->
