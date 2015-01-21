@@ -1200,6 +1200,7 @@ shuffleRem i (t, ws) d cn icir as is c f
 -----
 
 
+-- TODO: Help.
 setAction :: Action
 setAction (NoArgs i mq cols) = do
     logPlaExecArgs "set" [] i
@@ -1253,12 +1254,17 @@ helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) = -- TODO: Are th
           [(x, "")] -> Right x
           _         -> sorryParse
         sorryParse   = Left . T.concat $ [ dblQuote v, " is not a valid value for the ", dblQuote n, " setting." ]
-    changeColumns   x = let p'  = p & columns .~ x
-                            msg = "Set columns to " <> showText x <> "."
-                        in set _1 p' . over _3 (++ [msg]) . appendMsg $ msg
-    changePageLines x = let p'  = p & pageLines .~ x
-                            msg = "Set lines to " <> showText x <> "."
-                        in set _1 p' . over _3 (++ [msg]) . appendMsg $ msg
+    changeColumns   = changeSetting minCols      maxCols      "columns" columns
+    changePageLines = changeSetting minPageLines maxPageLines "lines"   pageLines
+    changeSetting minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x@(showText -> xTxt)
+      | x < minVal || x > maxVal = appendMsg . T.concat $ [ capitalize settingName
+                                                          , " must be between "
+                                                          , minValTxt
+                                                          , " and "
+                                                          , maxValTxt
+                                                          , "." ]
+      | p'  <- p & lens .~ x, msg <- T.concat [ "Set ", settingName, " to ", xTxt, "." ]
+      = set _1 p' . over _3 (++ [msg]) . appendMsg $ msg
 
 
 -----
