@@ -180,10 +180,10 @@ admin p@(AdviseOneArg a)                     = advise p ["admin"] advice
                       , dfltColor
                       , "." ]
 admin   (MsgWithTarget i mq cols target msg) = do
-    ws        <- readWSTMVar
+    et        <- getEntTbl
     (mqt, pt) <- getMqtPt
-    let aiss = mkAdminIdsSingsList i ws pt
-    let s    = view sing $ (ws^.entTbl) ! i
+    let aiss = mkAdminIdsSingsList i et pt
+    let s    = (et ! i)^.sing
     let notFound    | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
                     | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
                                                                   dblQuote target                    <>
@@ -200,11 +200,11 @@ admin   (MsgWithTarget i mq cols target msg) = do
 admin p = patternMatchFail "admin" [ showText p ]
 
 
-mkAdminIdsSingsList :: Id -> WorldState -> IM.IntMap Pla -> [(Id, Sing)]
-mkAdminIdsSingsList i ws pt = [ (pi, s) | pi <- IM.keys pt
+mkAdminIdsSingsList :: Id -> IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
+mkAdminIdsSingsList i et pt = [ (pi, s) | pi <- IM.keys pt
                                         , getPlaFlag IsAdmin (pt ! pi)
                                         , pi /= i
-                                        , let s = view sing $ (ws^.entTbl) ! pi
+                                        , let s = (et ! pi)^.sing
                                         , then sortWith by s ]
 
 
@@ -1382,6 +1382,7 @@ mkUnreadyDescs i ws d is = over _1 concat . unzip $ [ helper icb | icb <- mkIdCo
               | otherwise   -> "takes off"
       WpnType | p == SndPer -> "stop wielding"
               | otherwise   -> "stops wielding"
+      ArmType               -> mkVerbDoff   p
       _                     -> undefined -- TODO
     mkVerbRemove = \case SndPer -> "remove"
                          ThrPer -> "removes"
