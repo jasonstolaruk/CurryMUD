@@ -94,3 +94,7 @@ iBoots = 43 :: Int
 iSandals1 = 44 :: Int
 
 iSandals2 = 45 :: Int
+
+iBackpack1 = 46 :: Int
+
+iBackpack2 = 47 :: Int

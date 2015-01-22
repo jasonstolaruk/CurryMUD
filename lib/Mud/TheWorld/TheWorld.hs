@@ -68,7 +68,7 @@ createWorld = do
     putRm iCliff [ iElephant, iBag2, iBracelet1, iBracelet2, iBracelet3, iBracelet4 ] mempty (Rm "The cliff" "You have reached the edge of a cliff. There is a sizeable hole in the ground. Next to the hole is a small hut." zeroBits [ StdLink West iHill, StdLink Down iHole, NonStdLink "hut" iHut (sformat $ stext % " enters the hut.") (sformat $ stext % " enters the hut.") ])
     putRm iHole [ iNeck1, iNeck2, iNeck3, iNeck4, iHelm, iCap, iBoots, iSandals1, iSandals2 ] (Coins (50, 0, 0)) (Rm "The hole" "You have climbed into a hole in the ground. There is barely enough room to move around. It's damp and smells of soil." zeroBits [ StdLink West iVoid, StdLink Up iCliff ])
     putRm iVoid [ iEar1, iEar2, iEar3, iEar4, iRockCavy, iNoseRing1, iNoseRing2, iNoseRing3 ] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." zeroBits [ StdLink East iHole ])
-    putRm iHut [ iPaper ] (Coins (0, 5, 0)) (Rm "The hut" "The tiny hut is dusty and smells of mold." zeroBits [ NonStdLink "out" iCliff (sformat $ stext % " exits the hut.") (sformat $ stext % " exits the hut.") ])
+    putRm iHut [ iPaper, iBackpack1 ] (Coins (0, 5, 0)) (Rm "The hut" "The tiny hut is dusty and smells of mold." zeroBits [ NonStdLink "out" iCliff (sformat $ stext % " exits the hut.") (sformat $ stext % " exits the hut.") ])
 
     putObj iKewpie1 (Ent iKewpie1 (Just "doll") "kewpie doll" "" "The red kewpie doll is disgustingly cute." zeroBits) (Obj 1 1)
     putObj iKewpie2 (Ent iKewpie2 (Just "doll") "kewpie doll" "" "The orange kewpie doll is disgustingly cute." zeroBits) (Obj 1 1)
@@ -79,8 +79,8 @@ createWorld = do
 
     putObj iElephant (Ent iElephant (Just "elephant") "elephant" "" "The elephant is huge and smells terrible." zeroBits) (Obj 1 1)
 
-    putCon iBag1 (Ent iBag1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's red." zeroBits) (Obj 1 1) [ iGP2, iGP3 ] (Coins (15, 10, 5)) (Con 10)
-    putCon iBag2 (Ent iBag2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's blue." zeroBits) (Obj 1 1) [ iKewpie2, iRing1, iRing2, iRing3, iRing4 ] (Coins (15, 10, 5)) (Con 10)
+    putCon iBag1 (Ent iBag1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's red." zeroBits) (Obj 1 1) [ iGP2, iGP3 ] (Coins (15, 10, 5)) Nothing (Con 10 False)
+    putCon iBag2 (Ent iBag2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding all your treasure. It's blue." zeroBits) (Obj 1 1) [ iKewpie2, iRing1, iRing2, iRing3, iRing4 ] (Coins (15, 10, 5)) Nothing (Con 10 False)
 
     putWpn iSword1 (Ent iSword1 (Just "sword") "short sword" "" "It's a sword; short but still sharp! It's silver." zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
     putWpn iSword2 (Ent iSword2 (Just "sword") "short sword" "" "It's a sword; short but still sharp! It's gold." zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
@@ -128,6 +128,9 @@ createWorld = do
 
     putWpn iKnife1 (Ent iKnife1 (Just "knife") "pocket knife" "pocket knives" "This small utility knife could be useful in a pinch." zeroBits) (Obj 1 1) (Wpn OneHanded 1 5)
     putWpn iKnife2 (Ent iKnife2 (Just "knife") "pocket knife" "pocket knives" "This small utility knife could be useful in a pinch." zeroBits) (Obj 1 1) (Wpn OneHanded 1 5)
+
+    putCon iBackpack1 (Ent iBackpack1 (Just "back") "backpack" "" "Every adventurer needs one of these." zeroBits) (Obj 1 1) [iBackpack2] (Coins (1, 1, 1)) (Just BackC) (Con 10 True)
+    putCon iBackpack2 (Ent iBackpack2 (Just "back") "backpack" "" "Every adventurer needs one of these." zeroBits) (Obj 1 1) [] (Coins (1, 1, 1)) (Just BackC) (Con 10 True)
 
 
 sortAllInvs :: MudStack ()

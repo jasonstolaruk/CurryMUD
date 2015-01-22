@@ -132,7 +132,8 @@ instance Monoid Coins where
 type Cap = Int
 
 
-newtype Con = Con Cap deriving (Eq, Show)
+data Con = Con { _cap     :: Cap
+               , _isCloth :: Bool } deriving (Eq, Show)
 
 
 type ConName = T.Text
@@ -398,6 +399,7 @@ makeLenses ''MudState
 makeLenses ''WorldState
 makeLenses ''Ent
 makeLenses ''Obj
+makeLenses ''Con
 makeLenses ''Wpn
 makeLenses ''Arm
 makeLenses ''Mob

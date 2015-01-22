@@ -6,7 +6,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.STM
 
 import Control.Lens (at)
-import Control.Lens.Operators ((&), (?~))
+import Control.Lens.Operators ((&), (?~), (.~))
 
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
@@ -25,13 +25,14 @@ putCloth i e o c = modifyWS $ \ws ->
 -----
 
 
-putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Con -> MudStack ()
-putCon i e o is coi con = modifyWS $ \ws ->
+putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Maybe Cloth -> Con -> MudStack ()
+putCon i e o is coi mc con = modifyWS $ \ws ->
     ws & typeTbl.at i  ?~ ConType
        & entTbl.at i   ?~ e
        & objTbl.at i   ?~ o
        & invTbl.at i   ?~ is
        & coinsTbl.at i ?~ coi
+       & clothTbl.at i .~ mc
        & conTbl.at i   ?~ con
 
 

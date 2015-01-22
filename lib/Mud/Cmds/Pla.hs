@@ -935,6 +935,7 @@ readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = maybe sorry (
   where
     mf = case (ws^.typeTbl) ! ei of
       ClothType -> Just readyCloth
+      ConType   -> toMaybe (view isCloth $ (ws^.conTbl) ! ei) readyCloth
       WpnType   -> Just readyWpn
       ArmType   -> Just readyArm
       _         -> Nothing
@@ -986,6 +987,7 @@ getAvailClothSlot ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.hand =
   NeckC   -> findAvailSlot em neckSlots
   WristC  -> getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
   FingerC -> getRingSlot s h
+  BackC   -> toMaybe (isSlotAvail em BackS) BackS
   _       -> undefined -- TODO
   where
     procMaybe             = maybe (Left . sorryFullClothSlots $ c) Right
@@ -1373,22 +1375,24 @@ mkUnreadyDescs i ws d is = over _1 concat . unzip $ [ helper icb | icb <- mkIdCo
           , msg )
     mkVerb ei p =  case (ws^.typeTbl)  ! ei of
       ClothType -> case (ws^.clothTbl) ! ei of
-        EarC                -> mkVerbRemove p
-        NoseC               -> mkVerbRemove p
-        UpBodyC             -> mkVerbDoff   p
-        LowBodyC            -> mkVerbDoff   p
-        FullBodyC           -> mkVerbDoff   p
-        _     | p == SndPer -> "take off"
-              | otherwise   -> "takes off"
+        EarC                -> mkVerbRemove  p
+        NoseC               -> mkVerbRemove  p
+        UpBodyC             -> mkVerbDoff    p
+        LowBodyC            -> mkVerbDoff    p
+        FullBodyC           -> mkVerbDoff    p
+        _                   -> mkVerbTakeOff p
+      ConType               -> mkVerbTakeOff p
       WpnType | p == SndPer -> "stop wielding"
               | otherwise   -> "stops wielding"
-      ArmType               -> mkVerbDoff   p
+      ArmType               -> mkVerbDoff    p
       _                     -> undefined -- TODO
-    mkVerbRemove = \case SndPer -> "remove"
-                         ThrPer -> "removes"
-    mkVerbDoff   = \case SndPer -> "doff"
-                         ThrPer -> "doffs"
-    otherPCIds   = i `delete` pcIds d
+    mkVerbRemove  = \case SndPer -> "remove"
+                          ThrPer -> "removes"
+    mkVerbDoff    = \case SndPer -> "doff"
+                          ThrPer -> "doffs"
+    mkVerbTakeOff = \case SndPer -> "take off"
+                          ThrPer -> "takes off"
+    otherPCIds    = i `delete` pcIds d
 
 
 mkIdCountBothList :: Id -> WorldState -> Inv -> [(Id, Int, BothGramNos)]
