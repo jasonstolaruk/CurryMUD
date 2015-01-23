@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ParallelListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Cmds.Util.Pla ( InvWithCon
                          , IsConInRm
@@ -440,7 +440,7 @@ mkStyledName_Count_BothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffNa
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
-mkCoinsSummary cols c = helper [ mkNameAmt cn c' | cn <- coinNames | c' <- mkListFromCoins c ]
+mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . mkListFromCoins $ c
   where
     mkNameAmt cn a = if a == 0 then "" else showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
     helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
@@ -586,7 +586,7 @@ otherHand NoHand = NoHand
 
 resolvePCInvCoins :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolvePCInvCoins i ws as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ws as is c
-                               , eiss               <- [ curry procGecrMisPCInv gecr mis | gecr <- gecrs | mis <- miss ]
+                               , eiss               <- zipWith (curry procGecrMisPCInv) gecrs miss
                                , ecs                <- map procReconciledCoinsPCInv rcs = (eiss, ecs)
 
 
@@ -595,5 +595,5 @@ resolvePCInvCoins i ws as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ws 
 
 resolveRmInvCoins :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolveRmInvCoins i ws as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ws as is c
-                               , eiss               <- [ curry procGecrMisRm gecr mis | gecr <- gecrs | mis <- miss ]
+                               , eiss               <- zipWith (curry procGecrMisRm) gecrs miss
                                , ecs                <- map procReconciledCoinsRm rcs = (eiss, ecs)

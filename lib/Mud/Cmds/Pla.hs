@@ -252,7 +252,7 @@ equip (LowerNub i mq cols as) = do
     (ws, em@(M.elems -> is)) <- getEq' i
     send mq $ if not . M.null $ em
       then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws as is mempty
-               eiss                         = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
+               eiss                         = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                      = foldl' (helperEitherInv ws) "" eiss
                coinsDesc | not . null $ rcs = wrapUnlinesNl cols "You don't have any coins among your readied \
                                                                  \equipment."
@@ -799,7 +799,7 @@ shufflePut i (t, ws) d cn icir as is c pis pc f | (gecrs, miss, rcs) <- resolveE
         Right [ci] | e <- (ws^.entTbl) ! ci, t' <- (ws^.typeTbl) ! ci -> if t' /= ConType
           then putTMVar t ws >> return (mkBroadcast i $ "The " <> e^.sing <> " isn't a container.", [])
           else let (gecrs', miss', rcs') = resolveEntCoinNames i ws as pis pc
-                   eiss                  = [ curry procGecrMisPCInv gecr mis | gecr <- gecrs' | mis <- miss' ]
+                   eiss                  = zipWith (curry procGecrMisPCInv) gecrs' miss'
                    ecs                   = map procReconciledCoinsPCInv rcs'
                    mnom                  = mkMaybeNthOfM icir ws ci e is
                    (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put mnom i ci e) (ws,  [], []     ) eiss
@@ -907,7 +907,7 @@ ready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
         let (d, _, is, c) = mkDropReadyBindings i ws
         in if (not . null $ is) || (c /= mempty)
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
-                   eiss                      = [ curry procGecrMisReady gecr mis | gecr <- gecrs | mis <- miss ]
+                   eiss                      = zipWith (curry procGecrMisReady) gecrs miss
                    bs                        = if null rcs then [] else mkBroadcast i "You can't ready coins."
                    (ws', bs', logMsgs)       = foldl' (helperReady i d) (ws, bs, []) . zip eiss $ mrols
                in putTMVar t ws' >> return (bs', logMsgs)
@@ -1337,7 +1337,7 @@ unready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
             is              = M.elems em
         in if not . null $ is
           then let (gecrs, miss, rcs)  = resolveEntCoinNames i ws as is mempty
-                   eiss                = [ curry procGecrMisPCEq gecr mis | gecr <- gecrs | mis <- miss ]
+                   eiss                = zipWith (curry procGecrMisPCEq) gecrs miss
                    bs                  = if null rcs then [] else mkBroadcast i "You can't unready coins."
                    (ws', bs', logMsgs) = foldl' (helperUnready i d em) (ws, bs, []) eiss
                in putTMVar t ws' >> return (bs', logMsgs)
