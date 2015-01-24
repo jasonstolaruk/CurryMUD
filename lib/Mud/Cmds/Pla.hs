@@ -1178,7 +1178,6 @@ sorryFullArmSlot = ("You're already wearing " <>) . whatWhere
       HeadA     -> "something on your head."
       UpBodyA   -> "armor on your upper body."
       LowBodyA  -> "armor on your lower body."
-      FullBodyA -> "full body armor."
       FeetA     -> "something on your feet."
 
 

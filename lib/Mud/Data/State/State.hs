@@ -168,7 +168,6 @@ data Arm = Arm { _armSub :: !ArmSub
 data ArmSub = HeadA
             | UpBodyA
             | LowBodyA
-            | FullBodyA
             | FeetA deriving (Eq, Show)
 
 
@@ -196,7 +195,6 @@ data Slot = HeadS
           | FullBodyCS
           | UpBodyAS
           | LowBodyAS
-          | FullBodyAS
           | BackS
           | FeetS deriving (Enum, Eq, Ord)
 

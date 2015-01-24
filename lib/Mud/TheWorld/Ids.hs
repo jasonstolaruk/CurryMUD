@@ -5,96 +5,96 @@ module Mud.TheWorld.Ids where
 
 iWelcome = 0 :: Int
 
-iHill = 1 :: Int
+iCentral = 1 :: Int
 
-iCliff = 2 :: Int
+iObjCloset = 2 :: Int
 
-iKewpie1 = 3 :: Int
+iClothCloset = 3 :: Int
 
-iKewpie2 = 4 :: Int
+iCoinsCloset = 4 :: Int
 
-iGP1 = 5 :: Int
+iConCloset = 5 :: Int
 
-iGP2 = 6 :: Int
+iWpnCloset = 6 :: Int
 
-iGP3 = 7 :: Int
+iArmCloset = 7 :: Int
 
-iElephant = 8 :: Int
+iMobCloset = 8 :: Int
 
-iBag1 = 9 :: Int
+iKewpie1 = 9 :: Int
 
-iBag2 = 10 :: Int
+iKewpie2 = 10 :: Int
 
-iSword1 = 11 :: Int
+iEar1 = 11 :: Int
 
-iSword2 = 12 :: Int
+iEar2 = 12 :: Int
 
-iClub = 13 :: Int
+iEar3 = 13 :: Int
 
-iLongSword = 14 :: Int
+iEar4 = 14 :: Int
 
-iBracelet1 = 15 :: Int
+iNoseRing1 = 15 :: Int
 
-iBracelet2 = 16 :: Int
+iNoseRing2 = 16 :: Int
 
-iBracelet3 = 17 :: Int
+iNoseRing3 = 17 :: Int
 
-iBracelet4 = 18 :: Int
+iNeck1 = 18 :: Int
 
-iRing1 = 19 :: Int
+iNeck2 = 19 :: Int
 
-iRing2 = 20 :: Int
+iNeck3 = 20 :: Int
 
-iRing3 = 21:: Int
+iNeck4 = 21 :: Int
 
-iRing4 = 22 :: Int
+iBracelet1 = 22 :: Int
 
-iHole = 23 :: Int
+iBracelet2 = 23 :: Int
 
-iNeck1 = 24 :: Int
+iBracelet3 = 24 :: Int
 
-iNeck2 = 25 :: Int
+iBracelet4 = 25 :: Int
 
-iNeck3 = 26 :: Int
+iRing1 = 26 :: Int
 
-iNeck4 = 27 :: Int
+iRing2 = 27 :: Int
 
-iEar1 = 28 :: Int
+iRing3 = 28:: Int
 
-iEar2 = 29 :: Int
+iRing4 = 29 :: Int
 
-iEar3 = 30 :: Int
+iBag1 = 30 :: Int
 
-iEar4 = 31 :: Int
+iBag2 = 31 :: Int
 
-iVoid = 32 :: Int
+iBackpack1 = 32 :: Int
 
-iHelm = 33 :: Int
+iBackpack2 = 33 :: Int
 
-iRockCavy = 34 :: Int
+iSword1 = 34 :: Int
 
-iNoseRing1 = 35 :: Int
+iSword2 = 35 :: Int
 
-iNoseRing2 = 36 :: Int
+iClub = 36 :: Int
 
-iNoseRing3 = 37 :: Int
+iLongSword = 37 :: Int
 
-iHut = 38 :: Int
+iKnife1 = 38 :: Int
 
-iPaper = 39 :: Int
+iKnife2 = 39 :: Int
 
-iKnife1 = 40 :: Int
+iCap = 40 :: Int
 
-iKnife2 = 41 :: Int
+iHelm = 41 :: Int
 
-iCap = 42 :: Int
+iSandals1 = 42 :: Int
 
-iBoots = 43 :: Int
+iSandals2 = 43 :: Int
 
-iSandals1 = 44 :: Int
+iBoots = 44 :: Int
 
-iSandals2 = 45 :: Int
+iRockCavy = 45 :: Int
 
-iBackpack1 = 46 :: Int
+iVoid = 46 :: Int
 
-iBackpack2 = 47 :: Int
+iLounge = 47 :: Int

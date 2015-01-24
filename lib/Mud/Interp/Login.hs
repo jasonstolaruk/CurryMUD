@@ -168,14 +168,14 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   where
     movePC = onWS $ \(t, ws) ->
         let p         = (ws^.pcTbl)  ! i
-            p'        = p & rmId .~ iHill
+            p'        = p & rmId .~ iCentral
             originIs  = (ws^.invTbl) ! iWelcome
             originIs' = i `delete` originIs
-            destIs    = (ws^.invTbl) ! iHill
+            destIs    = (ws^.invTbl) ! iCentral
             destIs'   = sortInv ws $ destIs ++ [i]
         in putTMVar t (ws & pcTbl.at  i        ?~ p'
                           & invTbl.at iWelcome ?~ originIs'
-                          & invTbl.at iHill    ?~ destIs')
+                          & invTbl.at iCentral ?~ destIs')
 interpConfirmName _ _  (WithArgs _ mq _ _) = promptRetryYesNo mq
 interpConfirmName s cn p                   = patternMatchFail "interpConfirmName" [ s, cn, showText p ]
 
