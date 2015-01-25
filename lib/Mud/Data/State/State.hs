@@ -192,9 +192,9 @@ data Slot = HeadS
           | BothHandsS
           | UpBodyCS
           | LowBodyCS
-          | FullBodyCS
           | UpBodyAS
           | LowBodyAS
+          | FullBodyS
           | BackS
           | FeetS deriving (Enum, Eq, Ord)
 

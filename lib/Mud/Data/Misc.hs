@@ -205,9 +205,9 @@ instance Pretty Slot where
   pp BothHandsS = "both hands"
   pp UpBodyCS   = "upper body"
   pp LowBodyCS  = "lower body"
-  pp FullBodyCS = "full body"
   pp UpBodyAS   = "upper body"
   pp LowBodyAS  = "lower body"
+  pp FullBodyS  = "full body"
   pp BackS      = "back"
   pp FeetS      = "feet"
 

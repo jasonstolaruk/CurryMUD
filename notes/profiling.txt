@@ -57,6 +57,7 @@ Strict text is marginally faster than lazy text.
 =====
 
 Comparing performance with and without multi-core compilation:
+NOTE: These tests were done when the MUD was still a single-player, single-threaded application.
 
 Compiling with RTS options on:
 ghc -O2 -rtsopts -fforce-recomp Mud/mud.hs
@@ -156,3 +157,15 @@ Next we run "hp2ps -e8in -c mud.hp" to get "mud.ps" (a PostScript file).
 
 There are a handful of other options available for creating heap graphs.
 
+=====
+
+More on profiling: Jan 2015
+
+Added the following field to my ".cabal" file under "executable" and "library":
+ghc-prof-options:    -fprof-auto
+
+Ran "cabal configue --enable-library-profiling --enable-executable-profiling".
+
+Ran "cabal run curry -- +RTS -p".
+
+-fno-prof-count-entries ?
