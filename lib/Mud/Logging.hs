@@ -216,13 +216,13 @@ logPla modName (dblQuote -> funName) i msg = doIfLogging i . registerMsg . T.con
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
-logPlaExec modName (dblQuote -> cn) i = logPla modName cn i $ "executed " <> cn <> "."
+logPlaExec modName cn i = logPla modName cn i $ "executed " <> dblQuote cn <> "."
 
 
 logPlaExecArgs :: T.Text -> CmdName -> Args -> Id -> MudStack ()
-logPlaExecArgs modName cn@(dblQuote -> cn') as i = logPla modName cn i $ "executed " <> helper <> "."
+logPlaExecArgs modName cn as i = logPla modName cn i $ "executed " <> helper <> "."
   where
-    helper = case as of [] -> cn' <> " with no arguments"
+    helper = case as of [] -> dblQuote cn <> " with no arguments"
                         _  -> dblQuote . T.intercalate " " $ cn : as
 
 

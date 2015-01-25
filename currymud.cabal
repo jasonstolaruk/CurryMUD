@@ -14,7 +14,21 @@ cabal-version:         >=1.10
 executable             curry
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
-  ghc-prof-options:    -fprof-auto
+  main-is:             Main.hs
+  other-extensions:    OverloadedStrings
+  build-depends:       base >=4.7 && <5.0,
+                       currymud,
+                       containers >=0.5 && <0.6,
+                       directory >=1.2 && <2.0,
+                       lens >=4.6 && <5.0,
+                       network >=2.6 && <3.0,
+                       stm >=2.4 && <3.0,
+                       text >=1.1 && <2.0
+  hs-source-dirs:      src
+
+executable             curry-prof
+  default-language:    Haskell2010
+  ghc-options:         -O2 -threaded -rtsopts "-with-rtsopts=-N -p -hy -sstderr" -fprof-auto -Wall -Werror
   main-is:             Main.hs
   other-extensions:    OverloadedStrings
   build-depends:       base >=4.7 && <5.0,
@@ -30,7 +44,6 @@ executable             curry
 library
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
-  ghc-prof-options:    -fprof-auto
   exposed-modules:     Mud.ANSI,
                        Mud.Cmds.Admin,
                        Mud.Cmds.Debug,

@@ -1,5 +1,3 @@
-Profiling hmud:
-
 Running "time cat sampleinput | Mud/mud"...
 
 Strict Maps:
@@ -159,13 +157,21 @@ There are a handful of other options available for creating heap graphs.
 
 =====
 
-More on profiling: Jan 2015
+How to profile a cabal project: (Jan 2015)
 
-Added the following field to my ".cabal" file under "executable" and "library":
-ghc-prof-options:    -fprof-auto
+In your cabal file, create a new "executable" (I named it "curry-prof") with the following field:
+ghc-options:         -O2 -threaded -rtsopts "-with-rtsopts=-N -p -hy -sstderr" -fprof-auto -Wall -Werror
 
-Ran "cabal configue --enable-library-profiling --enable-executable-profiling".
+Create a "cabal.config" file that contains the following line:
+library-profiling: True
 
-Ran "cabal run curry -- +RTS -p".
+Now that you've enabled library profiling, your dependencies must be re-installed.
+cabal sandbox delete
+cabal sandbox init
+cabal update
+cabal install cabal-install
+cabal install --only-dependencies --enable-tests
+cabal configure --enable-tests --enable-library-profiling --enable-executable-profiling
 
--fno-prof-count-entries ?
+Finally, run your profiling configuration:
+cabal run curry-prof && hp2ps -e8in -c curry-prof.hp
