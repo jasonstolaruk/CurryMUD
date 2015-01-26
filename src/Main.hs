@@ -4,7 +4,7 @@
 {-
 CurryMud - A Multi-User Dungeon by Jason Stolaruk.
 Copyright (c) 2015, Jason Stolaruk and Detroit Labs LLC
-jasonstolaruk (`at` gmail) . com
+currymud (`at` gmail) . com
 @JasonStolaruk
 https://github.com/jasonstolaruk/CurryMUD
 kickButt <$> take maxBound names

@@ -73,14 +73,14 @@ class FromRol a where
 
 
 instance FromRol Slot where
-  fromRol RI = RIndexFS
-  fromRol RM = RMidFS
-  fromRol RR = RRingFS
-  fromRol RP = RPinkyFS
-  fromRol LI = LIndexFS
-  fromRol LM = LMidFS
-  fromRol LR = LRingFS
-  fromRol LP = LPinkyFS
+  fromRol RI = RingRIS
+  fromRol RM = RingRMS
+  fromRol RR = RingRRS
+  fromRol RP = RingRPS
+  fromRol LI = RingLIS
+  fromRol LM = RingLMS
+  fromRol LR = RingLRS
+  fromRol LP = RingLPS
   fromRol s  = patternMatchFail "fromRol" [ showText s ]
 
 
@@ -152,6 +152,23 @@ instance Pretty AOrThe where
   pp The = "the"
 
 
+instance Pretty Cloth where
+  pp Earring  = "earring"
+  pp NoseRing = "nose ring"
+  pp Necklace = "necklace"
+  pp Bracelet = "bracelet"
+  pp Ring     = "ring"
+  pp Shirt    = "shirt"
+  pp Smock    = "smock"
+  pp Coat     = "coat"
+  pp Trousers = "pair of trousers"
+  pp Skirt    = "skirt"
+  pp Dress    = "dress"
+  pp FullBody = "something about your body"
+  pp Backpack = "backpack"
+  pp Cloak    = "cloak"
+
+
 instance Pretty Race where
   pp Dwarf     = "dwarf"
   pp Elf       = "elf"
@@ -176,40 +193,50 @@ instance Pretty Sex where
 
 
 instance Pretty Slot where
-  pp HeadS      = "head"
-  pp REar1S     = "right ear"
-  pp REar2S     = "right ear"
-  pp LEar1S     = "left ear"
-  pp LEar2S     = "left ear"
-  pp Nose1S     = "nose"
-  pp Nose2S     = "nose"
-  pp Neck1S     = "neck"
-  pp Neck2S     = "neck"
-  pp Neck3S     = "neck"
-  pp RWrist1S   = "right wrist"
-  pp RWrist2S   = "right wrist"
-  pp RWrist3S   = "right wrist"
-  pp LWrist1S   = "left wrist"
-  pp LWrist2S   = "left wrist"
-  pp LWrist3S   = "left wrist"
-  pp RIndexFS   = "right index finger"
-  pp RMidFS     = "right middle finger"
-  pp RRingFS    = "right ring finger"
-  pp RPinkyFS   = "right pinky finger"
-  pp LIndexFS   = "left index finger"
-  pp LMidFS     = "left middle finger"
-  pp LRingFS    = "left ring finger"
-  pp LPinkyFS   = "left pinky finger"
-  pp RHandS     = "right hand"
-  pp LHandS     = "left hand"
-  pp BothHandsS = "both hands"
-  pp UpBodyCS   = "upper body"
-  pp LowBodyCS  = "lower body"
-  pp UpBodyAS   = "upper body"
-  pp LowBodyAS  = "lower body"
-  pp FullBodyS  = "full body"
-  pp BackS      = "back"
-  pp FeetS      = "feet"
+  -- Clothing slots:
+  pp EarringR1S  = "right ear"
+  pp EarringR2S  = "right ear"
+  pp EarringL1S  = "left ear"
+  pp EarringL2S  = "left ear"
+  pp NoseRing1S  = "nose"
+  pp NoseRing2S  = "nose"
+  pp Necklace1S  = "neck"
+  pp Necklace2S  = "neck"
+  pp Necklace3S  = "neck"
+  pp BraceletR1S = "right wrist"
+  pp BraceletR2S = "right wrist"
+  pp BraceletR3S = "right wrist"
+  pp BraceletL1S = "left wrist"
+  pp BraceletL2S = "left wrist"
+  pp BraceletL3S = "left wrist"
+  pp RingRIS     = "right index finger"
+  pp RingRMS     = "right middle finger"
+  pp RingRRS     = "right ring finger"
+  pp RingRPS     = "right pinky finger"
+  pp RingLIS     = "left index finger"
+  pp RingLMS     = "left middle finger"
+  pp RingLRS     = "left ring finger"
+  pp RingLPS     = "left pinky finger"
+  pp ShirtS      = "[shirt slot]"
+  pp SmockS      = "[smock slot]"
+  pp CoatS       = "[coat slot]"
+  pp TrousersS   = "[trousers slot]"
+  pp SkirtS      = "[skirt slot]"
+  pp DressS      = "[dress slot]"
+  pp FullBodyS   = "[full body slot]"
+  pp BackpackS   = "[backpack slot]"
+  pp CloakS      = "[cloak slot]"
+  -- Armor slots:
+  pp HeadS       = "head"
+  pp TorsoS      = "torso"
+  pp ArmsS       = "arms"
+  pp HandsS      = "hands"
+  pp LowerBodyS  = "lower body"
+  pp FeetS       = "feet"
+  -- Weapon/shield slots:
+  pp RHandS      = "right hand"
+  pp LHandS      = "left hand"
+  pp BothHandsS  = "both hands"
 
 
 -----

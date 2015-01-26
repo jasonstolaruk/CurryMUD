@@ -89,15 +89,20 @@ data Obj = Obj { _weight :: !Int
 -- Has an object (and an entity).
 
 
-data Cloth = EarC
-           | NoseC
-           | NeckC
-           | WristC
-           | FingerC
-           | UpBodyC
-           | LowBodyC
-           | FullBodyC
-           | BackC deriving (Eq, Show)
+data Cloth = Earring
+           | NoseRing
+           | Necklace
+           | Bracelet
+           | Ring
+           | Shirt -- chemise, tunic, etc.
+           | Smock -- apron, tabard, etc.
+           | Coat -- covering upper body
+           | Trousers -- pants, breeches, etc.
+           | Skirt
+           | Dress
+           | FullBody -- robes, parka, trench coat, etc.
+           | Backpack
+           | Cloak deriving (Enum, Eq, Show)
 
 
 -- ==================================================
@@ -165,10 +170,14 @@ data Arm = Arm { _armSub :: !ArmSub
                , _ac     :: !AC } deriving (Eq, Show)
 
 
-data ArmSub = HeadA
-            | UpBodyA
-            | LowBodyA
-            | FeetA deriving (Eq, Show)
+data ArmSub = Head -- cap, helmet, etc.
+            | Torso
+            | Arms -- bracers, etc.
+            | Hands -- gloves, mittens
+            | LowerBody -- leggings, etc.
+            | Feet -- any footwear
+            | Shield
+            deriving (Eq, Show)
 
 
 -- ==================================================
@@ -178,25 +187,36 @@ data ArmSub = HeadA
 type EqMap = M.Map Slot Id
 
 
-data Slot = HeadS
-          | REar1S | REar2S
-          | LEar1S | LEar2S
-          | Nose1S | Nose2S
-          | Neck1S | Neck2S | Neck3S
-          | RWrist1S | RWrist2S | RWrist3S
-          | LWrist1S | LWrist2S | LWrist3S
-          | RIndexFS | RMidFS | RRingFS | RPinkyFS
-          | LIndexFS | LMidFS | LRingFS | LPinkyFS
+data Slot =
+          -- Clothing slots:
+            EarringR1S | EarringR2S
+          | EarringL1S | EarringL2S
+          | NoseRing1S | NoseRing2S
+          | Necklace1S | Necklace2S | Necklace3S
+          | BraceletR1S | BraceletR2S | BraceletR3S
+          | BraceletL1S | BraceletL2S | BraceletL3S
+          | RingRIS | RingRMS | RingRRS | RingRPS
+          | RingLIS | RingLMS | RingLRS | RingLPS
+          | ShirtS
+          | SmockS
+          | CoatS
+          | TrousersS
+          | SkirtS
+          | DressS
+          | FullBodyS
+          | BackpackS
+          | CloakS
+          -- Armor slots:
+          | HeadS
+          | TorsoS
+          | ArmsS
+          | HandsS
+          | LowerBodyS
+          | FeetS
+          -- Weapon/shield slots:
           | RHandS
           | LHandS
-          | BothHandsS
-          | UpBodyCS
-          | LowBodyCS
-          | UpBodyAS
-          | LowBodyAS
-          | FullBodyS
-          | BackS
-          | FeetS deriving (Enum, Eq, Ord)
+          | BothHandsS deriving (Enum, Eq, Ord)
 
 
 -- ==================================================

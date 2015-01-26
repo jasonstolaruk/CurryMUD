@@ -3,6 +3,8 @@
 
 module Mud.Cmds.Util.Pla ( InvWithCon
                          , IsConInRm
+                         , armSubToSlot
+                         , clothToSlot
                          , dudeYou'reNaked
                          , dudeYourHandsAreEmpty
                          , findAvailSlot
@@ -14,6 +16,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , isRingRol
                          , isSlotAvail
                          , linkDirToCmdName
+                         , maybeSingleSlot
                          , mkCapStdDesig
                          , mkCoinsDesc
                          , mkCoinsSummary
@@ -70,12 +73,38 @@ import qualified Data.Text as T
 -- ==================================================
 
 
-findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
-findAvailSlot em = find (isSlotAvail em)
+armSubToSlot :: ArmSub -> Slot
+armSubToSlot = \case Head      -> HeadS
+                     Torso     -> TorsoS
+                     Arms      -> ArmsS
+                     Hands     -> HandsS
+                     LowerBody -> LowerBodyS
+                     Feet      -> FeetS
+
+
+
+clothToSlot :: Cloth -> Slot
+clothToSlot = \case Shirt    -> ShirtS
+                    Smock    -> SmockS
+                    Coat     -> CoatS
+                    Trousers -> TrousersS
+                    Skirt    -> SkirtS
+                    Dress    -> DressS
+                    FullBody -> FullBodyS
+                    Backpack -> BackpackS
+                    Cloak    -> CloakS
+                    _        -> undefined
+
+
+-----
 
 
 isSlotAvail :: EqMap -> Slot -> Bool
 isSlotAvail em s = em^.at s.to isNothing
+
+
+findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
+findAvailSlot em = find (isSlotAvail em)
 
 
 -----
@@ -351,6 +380,13 @@ isRingRol :: RightOrLeft -> Bool
 isRingRol = \case R -> False
                   L -> False
                   _ -> True
+
+
+-----
+
+
+maybeSingleSlot :: EqMap -> Slot -> Maybe Slot
+maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
 
 
 -----

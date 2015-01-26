@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, TransformListComp, ViewPatterns #-}
 
 module Mud.Data.State.Util.Misc ( BothGramNos
                                 , allKeys

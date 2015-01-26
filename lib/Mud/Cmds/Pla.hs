@@ -43,7 +43,7 @@ import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, at, both, over)
+import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Lens.Setter (set)
@@ -960,53 +960,52 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyMsgs slot $ c
   where
     mkReadyMsgs (pp -> slot) = \case
-      NoseC     -> putOnMsgs
-      NeckC     -> putOnMsgs
-      FingerC   -> (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
-                   , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-      UpBodyC   -> donMsgs
-      LowBodyC  -> donMsgs
-      FullBodyC -> donMsgs
-      BackC     -> putOnMsgs
-      _         -> wearMsgs
+      Earring  -> wearMsgs
+      NoseRing -> putOnMsgs
+      Necklace -> putOnMsgs
+      Bracelet -> wearMsgs
+      Ring     -> slideMsgs
+      Backpack -> putOnMsgs
+      _        -> donMsgs
       where
-        putOnMsgs  = ( "You put on the " <> s <> "."
-                     , (T.concat [ serialize d, " puts on ", aOrAn s, "." ], otherPCIds) )
-        p          = views sex mkPossPronoun $ (ws^.mobTbl) ! i
-        donMsgs    = ( "You don the " <> s <> "."
-                     , (T.concat [ serialize d, " dons ", aOrAn s, "." ], otherPCIds) )
-        otherPCIds = i `delete` pcIds d
         wearMsgs   = (  T.concat [ "You wear the ", s, " on your ", slot, "." ]
                      , (T.concat [ serialize d, " wears ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
+        putOnMsgs  = ( "You put on the " <> s <> "."
+                     , (T.concat [ serialize d, " puts on ", aOrAn s, "." ], otherPCIds) )
+        slideMsgs  = (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
+                     , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
+        donMsgs    = ( "You don the " <> s <> "."
+                     , (T.concat [ serialize d, " dons ", aOrAn s, "." ], otherPCIds) )
+        p          = views sex mkPossPronoun $ (ws^.mobTbl) ! i
+        otherPCIds = i `delete` pcIds d
 
 
 getAvailClothSlot :: WorldState -> Id -> Cloth -> EqMap -> Either T.Text Slot
 getAvailClothSlot ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.hand = procMaybe $ case c of
-  EarC    -> getEarSlotForSex s `mplus` (getEarSlotForSex . otherSex $ s)
-  NoseC   -> findAvailSlot em noseSlots
-  NeckC   -> findAvailSlot em neckSlots
-  WristC  -> getWristSlotForHand h `mplus` (getWristSlotForHand . otherHand $ h)
-  FingerC -> getRingSlot s h
-  BackC   -> toMaybe (isSlotAvail em BackS) BackS
-  _       -> undefined -- TODO
+  Earring  -> getEarringSlotForSex s `mplus` (getEarringSlotForSex . otherSex $ s)
+  NoseRing -> findAvailSlot em noseRingSlots
+  Necklace -> findAvailSlot em necklaceSlots
+  Bracelet -> getBraceletSlotForHand h `mplus` (getBraceletSlotForHand . otherHand $ h)
+  Ring     -> getRingSlot s h
+  _        -> maybeSingleSlot clothToSlot
   where
-    procMaybe             = maybe (Left . sorryFullClothSlots $ c) Right
-    getEarSlotForSex s    = findAvailSlot em $ case s of
-      Male   -> lEarSlots
-      Female -> rEarSlots
-      _      -> patternMatchFail "getAvailClothSlot getEarSlotForSex"    [ showText s ]
-    getWristSlotForHand h = findAvailSlot em $ case h of
-      RHand  -> lWristSlots
-      LHand  -> rWristSlots
-      _      -> patternMatchFail "getAvailClothSlot getWristSlotForHand" [ showText h ]
-    getRingSlot s h       = findAvailSlot em $ case s of
+    procMaybe                = maybe (Left . sorryFullClothSlots ws c $ em) Right
+    getEarringSlotForSex s   = findAvailSlot em $ case s of
+      Male   -> lEarringSlots
+      Female -> rEarringSlots
+      _      -> patternMatchFail "getAvailClothSlot getEarringSlotForSex"   [ showText s ]
+    getBraceletSlotForHand h = findAvailSlot em $ case h of
+      RHand  -> lBraceletSlots
+      LHand  -> rBraceletSlots
+      _      -> patternMatchFail "getAvailClothSlot getBraceletSlotForHand" [ showText h ]
+    getRingSlot s h          = findAvailSlot em $ case s of
       Male    -> case h of
-        RHand -> [ LRingFS, LIndexFS, RRingFS, RIndexFS, LMidFS, RMidFS, LPinkyFS, RPinkyFS ]
-        LHand -> [ RRingFS, RIndexFS, LRingFS, LIndexFS, RMidFS, LMidFS, RPinkyFS, LPinkyFS ]
+        RHand -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLMS, RingRMS, RingLPS, RingRPS ]
+        LHand -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRMS, RingLMS, RingRPS, RingLPS ]
         _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
       Female  -> case h of
-        RHand -> [ LRingFS, LIndexFS, RRingFS, RIndexFS, LPinkyFS, RPinkyFS, LMidFS, RMidFS ]
-        LHand -> [ RRingFS, RIndexFS, LRingFS, LIndexFS, RPinkyFS, LPinkyFS, RMidFS, LMidFS ]
+        RHand -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLPS, RingRPS, RingLMS, RingRMS ]
+        LHand -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRPS, RingLPS, RingRMS, RingLMS ]
         _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
       _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText s ]
 
@@ -1017,44 +1016,36 @@ otherSex Female = Male
 otherSex NoSex  = NoSex
 
 
-rEarSlots, lEarSlots, noseSlots, neckSlots, rWristSlots, lWristSlots :: [Slot]
-rEarSlots   = [ REar1S, REar2S ]
-lEarSlots   = [ LEar1S, LEar2S ]
-noseSlots   = [ Nose1S, Nose2S ]
-neckSlots   = [ Neck1S   .. Neck3S   ]
-rWristSlots = [ RWrist1S .. RWrist3S ]
-lWristSlots = [ LWrist1S .. LWrist3S ]
+rEarringSlots, lEarringSlots, noseRingSlots, necklaceSlots, rBraceletSlots, lBraceletSlots :: [Slot]
+rEarringSlots  = [ EarringR1S, EarringR2S ]
+lEarringSlots  = [ EarringL1S, EarringL2S ]
+noseRingSlots  = [ NoseRing1S, NoseRing2S ]
+necklaceSlots  = [ Necklace1S .. Necklace2S ]
+rBraceletSlots = [ BraceletR1S .. BraceletR3S ]
+lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
 
 
-sorryFullClothSlots :: Cloth -> T.Text
-sorryFullClothSlots = ("You can't wear any more " <>) . whatWhere
-  where
-    whatWhere = \case
-      EarC      -> aoy <> "ears."
-      NoseC     -> "rings on your nose."
-      NeckC     -> aoy <> "neck."
-      WristC    -> aoy <> "wrists."
-      FingerC   -> aoy <> "fingers."
-      UpBodyC   -> coy <> "torso."
-      LowBodyC  -> coy <> "legs."
-      FullBodyC -> "clothing about your body."
-      BackC     -> "on your back."
-    aoy = "accessories on your "
-    coy = "clothing on your "
+sorryFullClothSlots :: WorldState -> Cloth -> EqMap -> T.Text
+sorryFullClothSlots ws c@(pp -> c') em
+  | c `elem` [ Earring .. Ring ]               = "You can't wear any more " <> c'       <> "s."
+  | c `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn c' <> "."
+  | otherwise = let i = em^.at (clothToSlot c).to fromJust
+                    e = (ws^.entTbl) ! i
+                in "You're already wearing " <> aOrAn (e^.sing) <> "."
 
 
 getDesigClothSlot :: WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigClothSlot ws (view sing -> s) c em rol
-  | c `elem` [ NoseC, NeckC, UpBodyC, LowBodyC, FullBodyC, BackC ] = Left sorryCan'tWearThere
-  | isRingRol rol, c /= FingerC                                    = Left sorryCan'tWearThere
-  | c == FingerC, not . isRingRol $ rol                            = Left ringHelp
-  | otherwise                                                      = case c of
-    EarC    -> maybe (Left sorryFullEar)   Right (findSlotFromList rEarSlots   lEarSlots)
-    WristC  -> maybe (Left sorryFullWrist) Right (findSlotFromList rWristSlots lWristSlots)
-    FingerC -> maybe (Right slotFromRol)
-                     (\i -> let e = (ws^.entTbl) ! i in Left . sorry slotFromRol $ e)
-                     (em^.at slotFromRol)
-    _       -> undefined -- TODO
+  | c `elem` [ NoseRing, Necklace ] ++ [ Shirt .. Cloak ] = Left sorryCan'tWearThere
+  | isRingRol rol, c /= Ring                              = Left sorryCan'tWearThere
+  | c == Ring, not . isRingRol $ rol                      = Left ringHelp
+  | otherwise                                             = case c of
+    Earring  -> maybe (Left  sorryEarring)  Right (findSlotFromList rEarringSlots  lEarringSlots)
+    Bracelet -> maybe (Left  sorryBracelet) Right (findSlotFromList rBraceletSlots lBraceletSlots)
+    Ring     -> maybe (Right slotFromRol)
+                      (\i -> let e = (ws^.entTbl) ! i in Left . sorryRing slotFromRol $ e)
+                      (em^.at slotFromRol)
+    _        -> undefined -- TODO
   where
     sorryCan'tWearThere    = T.concat [ "You can't wear a ", s, " on your ", pp rol, "." ]
     findSlotFromList rs ls = findAvailSlot em $ case rol of
@@ -1065,14 +1056,14 @@ getDesigClothSlot ws (view sing -> s) c em rol
       R -> rs
       L -> ls
       _ -> patternMatchFail "getDesigClothSlot getSlotFromList"  [ showText rol ]
-    sorryFullEar   = sorryFullClothSlotsOneSide . getSlotFromList rEarSlots   $ lEarSlots
-    sorryFullWrist = sorryFullClothSlotsOneSide . getSlotFromList rWristSlots $ lWristSlots
-    slotFromRol    = fromRol rol :: Slot
-    sorry (pp -> slot) (view sing -> s') = T.concat [ "You're already wearing a "
-                                                    , s'
-                                                    , " on your "
-                                                    , slot
-                                                    , "." ]
+    sorryEarring  = sorryFullClothSlotsOneSide . getSlotFromList rEarringSlots  $ lEarringSlots
+    sorryBracelet = sorryFullClothSlotsOneSide . getSlotFromList rBraceletSlots $ lBraceletSlots
+    slotFromRol   = fromRol rol :: Slot
+    sorryRing (pp -> slot) (view sing -> s') = T.concat [ "You're already wearing "
+                                                        , aOrAn s'
+                                                        , " on your "
+                                                        , slot
+                                                        , "." ]
 
 
 sorryFullClothSlotsOneSide :: Slot -> T.Text
@@ -1153,7 +1144,7 @@ readyArm :: Id                                  ->
 readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
     let em                   = (ws^.eqTbl)  ! i
         (view armSub -> sub) = (ws^.armTbl) ! ei
-    in case maybe (getAvailArmSlot sub em) sorryCan'tWearThere mrol of
+    in case maybe (getAvailArmSlot ws sub em) sorryCan'tWearThere mrol of
       Left  (mkBroadcast i -> b) -> over _2 (++ b) a
       Right slot                 -> moveReadiedItem i a em slot ei mkReadyMsgs
   where
@@ -1162,23 +1153,18 @@ readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
                               , (T.concat [ serialize d, " dons ", aOrAn s, "." ], i `delete` pcIds d) )
 
 
-getAvailArmSlot :: ArmSub -> EqMap -> Either T.Text Slot
-getAvailArmSlot sub em = procMaybe $ case sub of
-  HeadA -> toMaybe (isSlotAvail em HeadS) HeadS
-  FeetA -> toMaybe (isSlotAvail em FeetS) FeetS
-  _     -> undefined -- TODO
+-- TODO: Clean up?
+getAvailArmSlot :: WorldState -> ArmSub -> EqMap -> Either T.Text Slot
+getAvailArmSlot sub em = procMaybe . maybeSingleSlot . armSubToSlot $ sub
   where
-    procMaybe = maybe (Left . sorryFullArmSlot $ sub) Right
+    procMaybe = maybe (Left . sorryFullArmSlot ws sub $ em) Right
 
 
-sorryFullArmSlot :: ArmSub -> T.Text
-sorryFullArmSlot = ("You're already wearing " <>) . whatWhere
-  where
-    whatWhere = \case
-      HeadA     -> "something on your head."
-      UpBodyA   -> "armor on your upper body."
-      LowBodyA  -> "armor on your lower body."
-      FeetA     -> "something on your feet."
+-- TODO: Clean up?
+sorryFullArmSlot :: WorldState -> ArmSub -> EqMap -> T.Text
+sorryFullArmSlot ws sub em = let i = em^.at (armSubToSlot sub).to fromJust
+                                 e = (ws^.entTbl) ! i
+                             in "You're already wearing " <> aOrAn (e^.sing) <> "."
 
 
 -----
