@@ -7,6 +7,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , IsConInRm
                          , armSubToSlot
                          , clothToSlot
+                         , donMsgs
                          , dudeYou'reNaked
                          , dudeYourHandsAreEmpty
                          , findAvailSlot
@@ -34,9 +35,11 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkPutRemBindings
                          , mkPutRemCoinsDescs
                          , mkPutRemInvDesc
+                         , mkReadyMsgs
                          , mkStdDesig
                          , moveReadiedItem
                          , otherHand
+                         , putOnMsgs
                          , resolvePCInvCoins
                          , resolveRmInvCoins ) where
 
@@ -95,6 +98,22 @@ clothToSlot = \case Shirt    -> ShirtS
                     Backpack -> BackpackS
                     Cloak    -> CloakS
                     _        -> undefined
+
+
+-----
+
+
+donMsgs :: Id -> PCDesig -> Sing -> (T.Text, Broadcast)
+donMsgs = mkReadyMsgs "don" "dons"
+
+
+type SndPerVerb = T.Text
+type ThrPerVerb = T.Text
+
+
+mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> PCDesig -> Sing -> (T.Text, Broadcast)
+mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
+                            , (T.concat [ serialize d, " ", tpv, " ", aOrAn s, "." ], i `delete` pcIds d) )
 
 
 -----
@@ -610,6 +629,13 @@ otherHand :: Hand -> Hand
 otherHand RHand  = LHand
 otherHand LHand  = RHand
 otherHand NoHand = NoHand
+
+
+-----
+
+
+putOnMsgs :: Id -> PCDesig -> Sing -> (T.Text, Broadcast)
+putOnMsgs = mkReadyMsgs "put on" "puts on"
 
 
 -----

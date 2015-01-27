@@ -963,25 +963,21 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
         c  = (ws^.clothTbl) ! ei
     in case maybe (getAvailClothSlot ws i c em) (getDesigClothSlot ws e c em) mrol of
       Left  (mkBroadcast i -> b) -> over _2 (++ b) a
-      Right slot                 -> moveReadiedItem i a em slot ei . mkReadyMsgs slot $ c
+      Right slot                 -> moveReadiedItem i a em slot ei . mkReadyClothMsgs slot $ c
   where
-    mkReadyMsgs (pp -> slot) = \case
+    mkReadyClothMsgs (pp -> slot) = \case
       Earring  -> wearMsgs
-      NoseRing -> putOnMsgs
-      Necklace -> putOnMsgs
+      NoseRing -> putOnMsgs i d s
+      Necklace -> putOnMsgs i d s
       Bracelet -> wearMsgs
       Ring     -> slideMsgs
-      Backpack -> putOnMsgs
-      _        -> donMsgs
+      Backpack -> putOnMsgs i d s
+      _        -> donMsgs   i d s
       where
-        wearMsgs   = (  T.concat [ "You wear the ", s, " on your ", slot, "." ]
-                     , (T.concat [ serialize d, " wears ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-        putOnMsgs  = ( "You put on the " <> s <> "."
-                     , (T.concat [ serialize d, " puts on ", aOrAn s, "." ], otherPCIds) )
+        wearMsgs   = (  T.concat [ "You wear the ",  s, " on your ", slot, "." ]
+                     , (T.concat [ serialize d, " wears ",  aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
         slideMsgs  = (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
                      , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-        donMsgs    = ( "You don the " <> s <> "."
-                     , (T.concat [ serialize d, " dons ", aOrAn s, "." ], otherPCIds) )
         p          = views sex mkPossPronoun $ (ws^.mobTbl) ! i
         otherPCIds = i `delete` pcIds d
 
@@ -1162,22 +1158,15 @@ readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
         (view armSub -> sub) = (ws^.armTbl) ! ei
     in case maybe (getAvailArmSlot ws sub em) sorryCan'tWearThere mrol of
       Left  (mkBroadcast i -> b) -> over _2 (++ b) a
-      Right slot                 -> moveReadiedItem i a em slot ei . mkReadyMsgs $ sub
+      Right slot                 -> moveReadiedItem i a em slot ei . mkReadyArmMsgs $ sub
   where
     sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
-    mkReadyMsgs = \case
-      Head   -> putOnMsgs
-      Hands  -> putOnMsgs
-      Feet   -> putOnMsgs
-      Shield -> readyMsgs
-      _      -> donMsgs
-    putOnMsgs  = ( "You put on the " <> s <> "." -- TODO: Shared with ready clothing.
-                 , (T.concat [ serialize d, " puts on ", aOrAn s, "." ], otherPCIds) )
-    readyMsgs  = ( "You ready the " <> s <> "."
-                 , (T.concat [ serialize d, " readies ", aOrAn s, "." ], otherPCIds) )
-    donMsgs    = ( "You don the " <> s <> "." -- TODO: Shared with ready clothing.
-                 , (T.concat [ serialize d, " dons ",    aOrAn s, "." ], otherPCIds) )
-    otherPCIds = i `delete` pcIds d -- TODO: Shared with ready clothing.
+    mkReadyArmMsgs = \case
+      Head   -> putOnMsgs                     i d s
+      Hands  -> putOnMsgs                     i d s
+      Feet   -> putOnMsgs                     i d s
+      Shield -> mkReadyMsgs "ready" "readies" i d s
+      _      -> donMsgs                       i d s
 
 
 getAvailArmSlot :: WorldState -> ArmSub -> EqMap -> Either T.Text Slot
