@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 
-module MudTests.Data.State.Util.Misc where
+module MudTests.Threads where
 
-import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.STM
+import Mud.Threads
 import MudTests.TestUtil
 
 import Test.QuickCheck.Monadic (assert, monadicIO)

@@ -1,7 +1,9 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Threads (listenWrapper) where
+module Mud.Threads ( allKeys
+                   , getUnusedId
+                   , listenWrapper) where
 
 import Mud.ANSI
 import Mud.Cmds.Debug

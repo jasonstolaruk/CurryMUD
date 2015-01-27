@@ -5,8 +5,8 @@ import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Quoting
 import MudTests.Data.Misc
-import MudTests.Data.State.Util.Misc
 import MudTests.TheWorld.TheWorld
+import MudTests.Threads
 import MudTests.Util.Misc
 import MudTests.Util.Padding
 import MudTests.Util.Wrapping
@@ -36,8 +36,8 @@ tests = testGroup "tests" [ propertyTests, unitTests ]
 
 
 propertyTests :: TestTree
-propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Misc
-                                           , propTests_Mud_TheWorld_TheWorld
+propertyTests = testGroup "property tests" [ propTests_Mud_TheWorld_TheWorld
+                                           , propTests_Mud_Threads
                                            , propTests_Mud_Util_Misc
                                            , propTests_Mud_Util_Padding
                                            , propTests_Mud_Util_Wrapping ]
@@ -46,17 +46,17 @@ propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Misc
 -- --------------------------------------------------
 
 
-propTests_Mud_Data_State_Util_Misc :: TestTree
-propTests_Mud_Data_State_Util_Misc = testGroup "property tests Mud.Data.State.Util.Misc"
-    [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
+propTests_Mud_TheWorld_TheWorld :: TestTree
+propTests_Mud_TheWorld_TheWorld = testGroup "property tests Mud.TheWorld.TheWorld"
+    [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
 
 
 -- --------------------------------------------------
 
 
-propTests_Mud_TheWorld_TheWorld :: TestTree
-propTests_Mud_TheWorld_TheWorld = testGroup "property tests Mud.TheWorld.TheWorld"
-    [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
+propTests_Mud_Threads :: TestTree
+propTests_Mud_Threads = testGroup "property tests Mud.Threads"
+    [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
 
 
 -- --------------------------------------------------
