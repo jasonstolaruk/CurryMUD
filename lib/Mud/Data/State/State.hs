@@ -96,7 +96,7 @@ data Cloth = Earring
            | Ring
            | Shirt -- chemise, tunic, etc.
            | Smock -- apron, tabard, etc.
-           | Coat -- covering upper body
+           | Coat -- over the upper body
            | Trousers -- pants, breeches, etc.
            | Skirt
            | Dress

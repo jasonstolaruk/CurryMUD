@@ -987,7 +987,7 @@ getAvailClothSlot ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.hand =
   Necklace -> findAvailSlot em necklaceSlots
   Bracelet -> getBraceletSlotForHand h `mplus` (getBraceletSlotForHand . otherHand $ h)
   Ring     -> getRingSlot s h
-  _        -> maybeSingleSlot clothToSlot
+  _        -> maybeSingleSlot em . clothToSlot $ c
   where
     procMaybe                = maybe (Left . sorryFullClothSlots ws c $ em) Right
     getEarringSlotForSex s   = findAvailSlot em $ case s of
@@ -1045,9 +1045,9 @@ getDesigClothSlot ws (view sing -> s) c em rol
     Ring     -> maybe (Right slotFromRol)
                       (\i -> let e = (ws^.entTbl) ! i in Left . sorryRing slotFromRol $ e)
                       (em^.at slotFromRol)
-    _        -> undefined -- TODO
+    _        -> patternMatchFail "getDesigClothSlot" [ showText c ]
   where
-    sorryCan'tWearThere    = T.concat [ "You can't wear a ", s, " on your ", pp rol, "." ]
+    sorryCan'tWearThere    = T.concat [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
     findSlotFromList rs ls = findAvailSlot em $ case rol of
       R -> rs
       L -> ls
@@ -1056,8 +1056,8 @@ getDesigClothSlot ws (view sing -> s) c em rol
       R -> rs
       L -> ls
       _ -> patternMatchFail "getDesigClothSlot getSlotFromList"  [ showText rol ]
-    sorryEarring  = sorryFullClothSlotsOneSide . getSlotFromList rEarringSlots  $ lEarringSlots
-    sorryBracelet = sorryFullClothSlotsOneSide . getSlotFromList rBraceletSlots $ lBraceletSlots
+    sorryEarring  = sorryFullClothSlotsOneSide c . getSlotFromList rEarringSlots  $ lEarringSlots
+    sorryBracelet = sorryFullClothSlotsOneSide c . getSlotFromList rBraceletSlots $ lBraceletSlots
     slotFromRol   = fromRol rol :: Slot
     sorryRing (pp -> slot) (view sing -> s') = T.concat [ "You're already wearing "
                                                         , aOrAn s'
@@ -1066,8 +1066,12 @@ getDesigClothSlot ws (view sing -> s) c em rol
                                                         , "." ]
 
 
-sorryFullClothSlotsOneSide :: Slot -> T.Text
-sorryFullClothSlotsOneSide (pp -> s) = "You can't wear any more on your " <> s <> "."
+sorryFullClothSlotsOneSide :: Cloth -> Slot -> T.Text
+sorryFullClothSlotsOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more "
+                                                          , c
+                                                          , "s on your "
+                                                          , s
+                                                          , "." ]
 
 
 -- Readying weapons:
@@ -1116,13 +1120,13 @@ getAvailWpnSlot ws i em | (view hand -> h@(otherHand -> h')) <- (ws^.mobTbl) ! i
 
 getDesigWpnSlot :: WorldState -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigWpnSlot ws (view sing -> s) em rol
-  | isRingRol rol = Left $ "You can't wield a " <> s <> " with your finger!"
+  | isRingRol rol = Left $ "You can't wield " <> aOrAn s <> " with your finger!"
   | otherwise     = maybe (Right desigSlot)
                           (\i -> let e = (ws^.entTbl) ! i in Left . sorry $ e)
                           (em^.at desigSlot)
   where
-    sorry (view sing -> s') = T.concat [ "You're already wielding a "
-                                       , s'
+    sorry (view sing -> s') = T.concat [ "You're already wielding "
+                                       , aOrAn s'
                                        , " with your "
                                        , pp desigSlot
                                        , "." ]
@@ -1146,25 +1150,31 @@ readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
         (view armSub -> sub) = (ws^.armTbl) ! ei
     in case maybe (getAvailArmSlot ws sub em) sorryCan'tWearThere mrol of
       Left  (mkBroadcast i -> b) -> over _2 (++ b) a
-      Right slot                 -> moveReadiedItem i a em slot ei mkReadyMsgs
+      Right slot                 -> moveReadiedItem i a em slot ei . mkReadyMsgs $ sub
   where
-    sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear a ", s, " on your ", pp rol, "." ]
-    mkReadyMsgs             = ( "You don the " <> s <> "."
-                              , (T.concat [ serialize d, " dons ", aOrAn s, "." ], i `delete` pcIds d) )
+    sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
+    mkReadyMsgs = \case
+      Head   -> putOnMsgs
+      Hands  -> putOnMsgs
+      Feet   -> putOnMsgs
+      Shield -> readyMsgs
+      _      -> donMsgs
+    putOnMsgs  = ( "You put on the " <> s <> "." -- TODO: Shared with ready clothing.
+                 , (T.concat [ serialize d, " puts on ", aOrAn s, "." ], otherPCIds) )
+    readyMsgs  = ( "You ready the " <> s <> "."
+                 , (T.concat [ serialize d, " readies ", aOrAn s, "." ], otherPCIds) )
+    donMsgs    = ( "You don the " <> s <> "." -- TODO: Shared with ready clothing.
+                 , (T.concat [ serialize d, " dons ",    aOrAn s, "." ], otherPCIds) )
+    otherPCIds = i `delete` pcIds d -- TODO: Shared with ready clothing.
 
 
--- TODO: Clean up?
 getAvailArmSlot :: WorldState -> ArmSub -> EqMap -> Either T.Text Slot
-getAvailArmSlot sub em = procMaybe . maybeSingleSlot . armSubToSlot $ sub
+getAvailArmSlot ws sub em = procMaybe . maybeSingleSlot em . armSubToSlot $ sub
   where
-    procMaybe = maybe (Left . sorryFullArmSlot ws sub $ em) Right
-
-
--- TODO: Clean up?
-sorryFullArmSlot :: WorldState -> ArmSub -> EqMap -> T.Text
-sorryFullArmSlot ws sub em = let i = em^.at (armSubToSlot sub).to fromJust
-                                 e = (ws^.entTbl) ! i
-                             in "You're already wearing " <> aOrAn (e^.sing) <> "."
+    procMaybe        = maybe (Left sorryFullArmSlot) Right
+    sorryFullArmSlot = let i = em^.at (armSubToSlot sub).to fromJust
+                           e = (ws^.entTbl) ! i
+                       in "You're already wearing " <> aOrAn (e^.sing) <> "."
 
 
 -----
@@ -1345,6 +1355,7 @@ helperUnready i d em a@(ws, _, _) = \case
            -> set _1 ws' . over _2 (++ bs) . over _3 (++ msgs) $ a
 
 
+-- TODO: For ThrPer, instead of aOrAn, use "his"/"her"?
 mkUnreadyDescs :: Id -> WorldState -> PCDesig -> Inv -> ([Broadcast], [T.Text])
 mkUnreadyDescs i ws d is = over _1 concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ws is ]
   where
@@ -1360,23 +1371,31 @@ mkUnreadyDescs i ws d is = over _1 concat . unzip $ [ helper icb | icb <- mkIdCo
           , msg )
     mkVerb ei p =  case (ws^.typeTbl)  ! ei of
       ClothType -> case (ws^.clothTbl) ! ei of
-        EarC                -> mkVerbRemove  p
-        NoseC               -> mkVerbRemove  p
-        UpBodyC             -> mkVerbDoff    p
-        LowBodyC            -> mkVerbDoff    p
-        FullBodyC           -> mkVerbDoff    p
-        _                   -> mkVerbTakeOff p
-      ConType               -> mkVerbTakeOff p
+        Earring  -> mkVerbRemove  p
+        NoseRing -> mkVerbRemove  p
+        Necklace -> mkVerbTakeOff p
+        Bracelet -> mkVerbTakeOff p
+        Ring     -> mkVerbTakeOff p
+        Backpack -> mkVerbTakeOff p
+        _        -> mkVerbDoff    p
+      ConType -> mkVerbTakeOff p
       WpnType | p == SndPer -> "stop wielding"
               | otherwise   -> "stops wielding"
-      ArmType               -> mkVerbDoff    p
-      _                     -> undefined -- TODO
+      ArmType -> case view armSub $ (ws^.armTbl) ! ei of
+        Head   -> mkVerbTakeOff p
+        Hands  -> mkVerbTakeOff p
+        Feet   -> mkVerbTakeOff p
+        Shield -> mkVerbUnready p
+        _      -> mkVerbDoff    p
+      t       -> patternMatchFail "mkUnreadyDescs mkVerb" [ showText t ]
     mkVerbRemove  = \case SndPer -> "remove"
                           ThrPer -> "removes"
-    mkVerbDoff    = \case SndPer -> "doff"
-                          ThrPer -> "doffs"
     mkVerbTakeOff = \case SndPer -> "take off"
                           ThrPer -> "takes off"
+    mkVerbDoff    = \case SndPer -> "doff"
+                          ThrPer -> "doffs"
+    mkVerbUnready = \case SndPer -> "unready"
+                          ThrPer -> "unreadies"
     otherPCIds    = i `delete` pcIds d
 
 

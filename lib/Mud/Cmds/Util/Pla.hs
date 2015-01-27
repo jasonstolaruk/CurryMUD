@@ -80,7 +80,7 @@ armSubToSlot = \case Head      -> HeadS
                      Hands     -> HandsS
                      LowerBody -> LowerBodyS
                      Feet      -> FeetS
-
+                     Shield    -> undefined
 
 
 clothToSlot :: Cloth -> Slot
