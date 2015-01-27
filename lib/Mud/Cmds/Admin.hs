@@ -402,7 +402,7 @@ mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]
 mkPlaListTxt ws pt =
     let pis         = [ pi | pi <- IM.keys pt, not . getPlaFlag IsAdmin $ (pt ! pi) ]
         (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = view sing $ (ws^.entTbl) ! pi, then sortWith by s ]
-        pias        = zipWith (,) pis' . styleAbbrevs Don'tBracket $ pss -- [ (pi, a) | pi <- pis' | a <- styleAbbrevs Don'tBracket pss ]
+        pias        = zip pis' . styleAbbrevs Don'tBracket $ pss
     in map helper pias ++ [ numOfPlayers pis <> " connected." ]
   where
     helper (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
