@@ -1,20 +1,17 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, TransformListComp, ViewPatterns #-}
+
+-- This module contains state-related functions used by multiple modules.
 
 module Mud.Data.State.Util.Misc ( BothGramNos
-                                , allKeys
                                 , findPCIds
                                 , getEffBothGramNos
                                 , getEffName
                                 , getMqtPt
                                 , getSexRace
-                                , getUnusedId
                                 , mkPlaIdsSingsList
-                                , mkPlur
                                 , mkPlurFromBoth
-                                , mkPossPronoun
-                                , mkPronoun
-                                , mkReflexive
+                                , mkSerializedNonStdDesig
                                 , mkUnknownPCEntName
                                 , sortInv
                                 , statefulFork
@@ -25,8 +22,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
 import Mud.Data.State.Util.STM
-import Mud.Util.Misc hiding (patternMatchFail)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import Mud.Util.Misc
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
@@ -38,23 +34,12 @@ import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), foldl', sortBy)
+import Data.List (foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
-
-
-patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
-
-
--- ============================================================
-
-
-allKeys :: WorldState -> Inv
-allKeys = views typeTbl IM.keys
 
 
 findPCIds :: WorldState -> [Id] -> [Id]
@@ -94,20 +79,11 @@ getSexRace :: Id -> WorldState -> (Sex, Race)
 getSexRace i ws = (view sex *** view race) . (views mobTbl (!) ws *** views pcTbl (!) ws) . dup $ i
 
 
-getUnusedId :: WorldState -> Id
-getUnusedId = head . (\\) [0..] . allKeys
-
-
 mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
 mkPlaIdsSingsList et pt = [ (i, s) | i <- IM.keys pt
                                    , not . getPlaFlag IsAdmin $ (pt ! i)
                                    , let s = (et ! i)^.sing
                                    , then sortWith by s ]
-
-
-mkPlur :: Ent -> Plur
-mkPlur e@(view plur -> p) | T.null p  = e^.sing <> "s"
-                          | otherwise = p
 
 
 type BothGramNos = (Sing, Plur)
@@ -118,22 +94,10 @@ mkPlurFromBoth (s, "") = s <> "s"
 mkPlurFromBoth (_, p ) = p
 
 
-mkPossPronoun :: Sex -> T.Text
-mkPossPronoun Male   = "his"
-mkPossPronoun Female = "her"
-mkPossPronoun s      = patternMatchFail "mkPossPronoun" [ showText s ]
-
-
-mkPronoun :: Sex -> T.Text
-mkPronoun Male   = "he"
-mkPronoun Female = "she"
-mkPronoun s      = patternMatchFail "mkPronoun" [ showText s ]
-
-
-mkReflexive :: Sex -> T.Text
-mkReflexive Male   = "himself"
-mkReflexive Female = "herself"
-mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
+mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
+mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (s', r)) <- getSexRace i ws =
+    serialize NonStdDesig { nonStdPCEntSing = s
+                          , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
 
 
 mkUnknownPCEntName :: Id -> WorldState -> T.Text

@@ -25,9 +25,10 @@ import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
@@ -38,19 +39,21 @@ import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, readTQueue, tryReadTQ
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
 import Control.Monad (forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Bits (zeroBits)
 import Data.IntMap.Lazy ((!))
+import Data.List ((\\))
 import Data.Monoid ((<>), mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, empty)
 import qualified Data.Set as S (Set, fromList)
 import qualified Data.Text as T
@@ -59,6 +62,13 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
 default (Int)
+
+
+-----
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Threads"
 
 
 -----
@@ -275,6 +285,20 @@ randomSex = newStdGen >>= \g ->
 randomRace :: IO Race
 randomRace = newStdGen >>= \g ->
     let (x, _) = randomR (0, 7) g in return $ [ Dwarf .. Vulpenoid ] !! x
+
+
+getUnusedId :: WorldState -> Id
+getUnusedId = head . (\\) [0..] . allKeys
+
+
+allKeys :: WorldState -> Inv
+allKeys = views typeTbl IM.keys
+
+
+mkPronoun :: Sex -> T.Text
+mkPronoun Male   = "he"
+mkPronoun Female = "she"
+mkPronoun s      = patternMatchFail "mkPronoun" [ showText s ]
 
 
 plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()

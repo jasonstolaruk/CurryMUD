@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ViewPatterns #-}
 
+-- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla".
+
 module Mud.Cmds.Util.Pla ( InvWithCon
                          , IsConInRm
                          , armSubToSlot
@@ -32,7 +34,6 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkPutRemBindings
                          , mkPutRemCoinsDescs
                          , mkPutRemInvDesc
-                         , mkSerializedNonStdDesig
                          , mkStdDesig
                          , moveReadiedItem
                          , otherHand
@@ -513,12 +514,6 @@ mkEqDesc i cols ws i' (view sing -> s) t | descs <- if i' == i then mkDescsSelf 
 
 dudeYou'reNaked :: T.Text
 dudeYou'reNaked = "You don't have anything readied. You're naked!"
-
-
-mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
-mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (s', r)) <- getSexRace i ws =
-    serialize NonStdDesig { nonStdPCEntSing = s
-                          , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
 
 
 -----

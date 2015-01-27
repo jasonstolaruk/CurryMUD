@@ -568,6 +568,12 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
 intro p = patternMatchFail "intro" [ showText p ]
 
 
+mkReflexive :: Sex -> T.Text
+mkReflexive Male   = "himself"
+mkReflexive Female = "herself"
+mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
+
+
 -----
 
 
@@ -1072,6 +1078,12 @@ sorryFullClothSlotsOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any 
                                                           , "s on your "
                                                           , s
                                                           , "." ]
+
+
+mkPossPronoun :: Sex -> T.Text
+mkPossPronoun Male   = "his"
+mkPossPronoun Female = "her"
+mkPossPronoun s      = patternMatchFail "mkPossPronoun" [ showText s ]
 
 
 -- Readying weapons:
