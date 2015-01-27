@@ -98,3 +98,29 @@ iRockCavy = 45 :: Int
 iVoid = 46 :: Int
 
 iLounge = 47 :: Int
+
+iEar5 = 48 :: Int
+
+iEar6 = 49 :: Int
+
+iEar7 = 50 :: Int
+
+iEar8 = 51 :: Int
+
+iBracelet5 = 52 :: Int
+
+iBracelet6 = 53 :: Int
+
+iBracelet7 = 54 :: Int
+
+iBracelet8 = 55 :: Int
+
+iRing5 = 56 :: Int
+
+iRing6 = 57 :: Int
+
+iRing7 = 58 :: Int
+
+iRing8 = 59 :: Int
+
+iRing9 = 60 :: Int

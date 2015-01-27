@@ -592,6 +592,7 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
+-- TODO: 2+ rings should be displayed as "2 sets of ..."
 look :: Action
 look (NoArgs i mq cols) = getPCRmIdRm' i >>= \(ws, (ri, r)) ->
     let primary = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
