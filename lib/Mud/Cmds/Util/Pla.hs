@@ -135,8 +135,8 @@ mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Te
 mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
     helper a cn | a == 1 =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " a ", cn, "." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ", cn, "." ], otherPCIds) ]
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", aOrAn cn, "." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn cn, "." ], otherPCIds) ]
     helper a cn =
         [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
@@ -186,8 +186,8 @@ mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadca
 mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap helper ncbs = (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _))
-      | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s, "." ], [i])
-                 , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " a ",   s, "." ], otherPCIds) ]
+      | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], [i])
+                 , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
     helper (_, c, b) =
         [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], [i])
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
@@ -234,18 +234,18 @@ mkPutRemCoinsDescs i d por mnom c (view sing -> ts) | bs <- mkCoinsBroadcasts c 
     helper a cn | a == 1 =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
-                    , " a "
-                    , cn
                     , " "
-                    , mkPorPrep por SndPer mnom
+                    , aOrAn cn
+                    , " "
+                    , mkPorPrep por SndPer mnom ts
                     , rest ], [i])
         , (T.concat [ serialize d
                     , " "
                     , mkPorVerb por ThrPer
-                    , " a "
-                    , cn
                     , " "
-                    , mkPorPrep por ThrPer mnom
+                    , aOrAn cn
+                    , " "
+                    , mkPorPrep por ThrPer mnom ts
                     , rest ], otherPCIds) ]
     helper a cn =
         [ (T.concat [ "You "
@@ -255,7 +255,7 @@ mkPutRemCoinsDescs i d por mnom c (view sing -> ts) | bs <- mkCoinsBroadcasts c 
                     , " "
                     , cn
                     , "s "
-                    , mkPorPrep por SndPer mnom
+                    , mkPorPrep por SndPer mnom ts
                     , rest ], [i])
         , (T.concat [ serialize d
                     , " "
@@ -265,9 +265,9 @@ mkPutRemCoinsDescs i d por mnom c (view sing -> ts) | bs <- mkCoinsBroadcasts c 
                     , " "
                     , cn
                     , "s "
-                    , mkPorPrep por ThrPer mnom
+                    , mkPorPrep por ThrPer mnom ts
                     , rest ], otherPCIds) ]
-    rest       = T.concat [ " ", ts, onTheGround mnom, "." ]
+    rest       = onTheGround mnom <> "."
     otherPCIds = i `delete` pcIds d
 
 
@@ -278,20 +278,20 @@ mkPorVerb Rem SndPer = "remove"
 mkPorVerb Rem ThrPer = "removes"
 
 
-mkPorPrep :: PutOrRem -> Verb -> Maybe NthOfM -> T.Text
-mkPorPrep Put SndPer Nothing       = "in the"
-mkPorPrep Put SndPer (Just (n, m)) = "in the"   <> descNthOfM n m
-mkPorPrep Rem SndPer Nothing       = "from the"
-mkPorPrep Rem SndPer (Just (n, m)) = "from the" <> descNthOfM n m
-mkPorPrep Put ThrPer Nothing       = "in a"
-mkPorPrep Put ThrPer (Just (n, m)) = "in the"   <> descNthOfM n m
-mkPorPrep Rem ThrPer Nothing       = "from a"
-mkPorPrep Rem ThrPer (Just (n, m)) = "from the" <> descNthOfM n m
+mkPorPrep :: PutOrRem -> Verb -> Maybe NthOfM -> Sing -> T.Text
+mkPorPrep Put SndPer Nothing       = ("in the "   <>)
+mkPorPrep Put SndPer (Just (n, m)) = ("in the "   <>) . (descNthOfM n m <>)
+mkPorPrep Rem SndPer Nothing       = ("from the " <>)
+mkPorPrep Rem SndPer (Just (n, m)) = ("from the " <>) . (descNthOfM n m <>)
+mkPorPrep Put ThrPer Nothing       = ("in "       <>) . aOrAn
+mkPorPrep Put ThrPer (Just (n, m)) = ("in the "   <>) . (descNthOfM n m <>)
+mkPorPrep Rem ThrPer Nothing       = ("from "     <>) . aOrAn
+mkPorPrep Rem ThrPer (Just (n, m)) = ("from the " <>) . (descNthOfM n m <>)
 
 
 descNthOfM :: Int -> Int -> T.Text
 descNthOfM 1 1 = ""
-descNthOfM n _ = " " <> mkOrdinal n
+descNthOfM n _ = mkOrdinal n <> " "
 
 
 onTheGround :: Maybe NthOfM -> T.Text
@@ -333,22 +333,22 @@ mkPutRemInvDesc i ws d por mnom is (view sing -> ts) | bs <- concatMap helper . 
     helper (_, c, (s, _)) | c == 1 =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
-                    , mkArticle
-                    , s
                     , " "
-                    , mkPorPrep por SndPer mnom
+                    , withArticle
+                    , " "
+                    , mkPorPrep por SndPer mnom ts
                     , rest ], [i])
         , (T.concat [ serialize d
                     , " "
                     , mkPorVerb por ThrPer
-                    , " a "
-                    , s
                     , " "
-                    , mkPorPrep por ThrPer mnom
+                    , aOrAn s
+                    , " "
+                    , mkPorPrep por ThrPer mnom ts
                     , rest ], otherPCIds) ]
       where
-        mkArticle | por == Put = " the "
-                  | otherwise  = " a "
+        withArticle | por == Put = "the " <> s
+                    | otherwise  = aOrAn s
     helper (_, c, b) =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
@@ -357,7 +357,7 @@ mkPutRemInvDesc i ws d por mnom is (view sing -> ts) | bs <- concatMap helper . 
                     , " "
                     , mkPlurFromBoth b
                     , " "
-                    , mkPorPrep por SndPer mnom
+                    , mkPorPrep por SndPer mnom ts
                     , rest ], [i])
         , (T.concat [ serialize d
                     , " "
@@ -367,9 +367,9 @@ mkPutRemInvDesc i ws d por mnom is (view sing -> ts) | bs <- concatMap helper . 
                     , " "
                     , mkPlurFromBoth b
                     , " "
-                    , mkPorPrep por ThrPer mnom
+                    , mkPorPrep por ThrPer mnom ts
                     , rest ], otherPCIds) ]
-    rest       = T.concat [ " ", ts, onTheGround mnom, "."  ]
+    rest       = onTheGround mnom <> "."
     otherPCIds = i `delete` pcIds d
 
 

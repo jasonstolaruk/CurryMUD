@@ -557,7 +557,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                                   , TargetBroadcast    (targetMsg, [targetId])
                                   , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
                         in set _1 ws' . over _2 (++ cbs) . over _3 (++ [logMsg]) $ a'
-          _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to a " <> targetSing <> ".", [i])
+          _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to " <> aOrAn targetSing <> ".", [i])
                  -> over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) =
         over _1 (++ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]) a
