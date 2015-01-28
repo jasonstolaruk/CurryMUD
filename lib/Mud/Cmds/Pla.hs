@@ -1356,7 +1356,6 @@ helperUnready i d em a@(ws, _, _) = \case
            -> set _1 ws' . over _2 (++ bs) . over _3 (++ msgs) $ a
 
 
--- TODO: For ThrPer, instead of aOrAn, use "his"/"her"?
 mkUnreadyDescs :: Id -> WorldState -> PCDesig -> Inv -> ([Broadcast], [T.Text])
 mkUnreadyDescs i ws d is = over _1 concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ws is ]
   where
