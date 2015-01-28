@@ -652,11 +652,11 @@ firstLook i cols a = (getPlaFlag IsNotFirstLook <$> getPla i) >>= \infl -> if in
                             \your inventory, use the "
                           , dblQuote "i"
                           , " command "
-                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "i bread sack" <> dfltColor
+                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "i bread" <> dfltColor
                           , ". To examine items in your readied equipment, use the "
                           , dblQuote "equip"
                           , " command "
-                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "equip sword boots" <> dfltColor
+                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "equip sword" <> dfltColor
                           , ". "
                           , quoteColor
                           , dblQuote "i"
