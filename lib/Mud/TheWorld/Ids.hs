@@ -130,3 +130,7 @@ iAccessoriesCloset = 61 :: Int
 iChemise = 62 :: Int
 
 iTunic = 63 :: Int
+
+iApron = 64 :: Int
+
+iTabard = 65 :: Int
