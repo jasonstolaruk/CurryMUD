@@ -1323,14 +1323,12 @@ takeAction = getAction
 -----
 
 
--- TODO: Help.
 typo :: Action
 typo p@AdviseNoArgs   = advise p ["typo"] advice
   where
     advice = T.concat [ "Please describe the typo you've found, as in "
                       , quoteColor
-                      , dblQuote "typo in the small hut just outside the east woods, 'accross from the fireplace' \
-                        \should be 'across from the fireplace'"
+                      , dblQuote "typo 'accross from the fireplace' should be 'across from the fireplace'"
                       , dfltColor
                       , "." ]
 typo   (Msg i mq msg) = getEntSing' i >>= \(ws, s) ->
