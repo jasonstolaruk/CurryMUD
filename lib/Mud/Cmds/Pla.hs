@@ -64,7 +64,7 @@ import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile)
+import qualified Data.Text.IO as T (readFile, writeFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -139,6 +139,7 @@ plaCmds =
     , Cmd { cmdName = "set", action = setAction, cmdDesc = "View or change settings." }
     , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
     , Cmd { cmdName = "take", action = takeAction, cmdDesc = "Pick up one or more items." }
+    , Cmd { cmdName = "typo", action = typo, cmdDesc = "Report a typo." }
     , Cmd { cmdName = "u", action = go "u", cmdDesc = "Go up." }
     , Cmd { cmdName = "unready", action = unready, cmdDesc = "Unready one or more items." }
     , Cmd { cmdName = "uptime", action = uptime, cmdDesc = "Display how long CurryMUD has been running." }
@@ -1315,6 +1316,48 @@ helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) =
 -----
 
 
+takeAction :: Action
+takeAction = getAction
+
+
+-----
+
+
+-- TODO: Help.
+typo :: Action
+typo p@AdviseNoArgs   = advise p ["typo"] advice
+  where
+    advice = T.concat [ "Please describe the typo you've found, as in "
+                      , quoteColor
+                      , dblQuote "typo in the small hut just outside the east woods, 'accross from the fireplace' \
+                        \should be 'across from the fireplace'"
+                      , dfltColor
+                      , "." ]
+typo   (Msg i mq msg) = getEntSing' i >>= \(ws, s) ->
+    let p  = (ws^.pcTbl) ! i
+        ri = p^.rmId
+        r  = (ws^.rmTbl) ! ri
+        helper ts = let newEntry = T.concat [ ts
+                                            , " "
+                                            , s
+                                            , " "
+                                            , parensQuote $ showText ri <> " " <> (dblQuote $ r^.rmName)
+                                            , ": "
+                                            , msg ]
+                    in getLogConts >>= T.writeFile typoLogFile . T.unlines . sort . (newEntry :)
+    in do
+        liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "typo")
+        send mq $ nlnl "Thank you."
+  where
+    getLogConts = doesFileExist typoLogFile >>= \case
+      True  -> T.lines <$> T.readFile typoLogFile
+      False -> return []
+typo p = patternMatchFail "typo" [ showText p ]
+
+
+-----
+
+
 unready :: Action
 unready p@AdviseNoArgs     = advise p ["unready"] advice
   where
@@ -1404,13 +1447,6 @@ mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i ws i' | i' <- is ], c
     nubBy equalCountsAndBoths . zip3 is cs $ ebgns
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
-
-
------
-
-
-takeAction :: Action
-takeAction = getAction
 
 
 -----
