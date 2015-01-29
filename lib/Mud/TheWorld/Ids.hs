@@ -134,3 +134,7 @@ iTunic = 63 :: Int
 iApron = 64 :: Int
 
 iTabard = 65 :: Int
+
+iGreyCoat = 66 :: Int
+
+iFrockCoat = 67 :: Int
