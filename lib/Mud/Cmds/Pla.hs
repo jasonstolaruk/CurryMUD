@@ -1346,6 +1346,7 @@ typo   (Msg i mq msg) = getEntSing' i >>= \(ws, s) ->
                                             , msg ]
                     in getLogConts >>= T.writeFile typoLogFile . T.unlines . sort . (newEntry :)
     in do
+        logPlaExecArgs "typo" [msg] i
         liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "typo")
         send mq $ nlnl "Thank you."
   where

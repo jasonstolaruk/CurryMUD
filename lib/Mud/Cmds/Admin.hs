@@ -108,6 +108,7 @@ adminCmds =
                                                                                    \with a custom message." }
     , Cmd { cmdName = prefixAdminCmd "tell", action = adminTell, cmdDesc = "Send a message to a player." }
     , Cmd { cmdName = prefixAdminCmd "time", action = adminTime, cmdDesc = "Display the current system time." }
+    , Cmd { cmdName = prefixAdminCmd "typo", action = adminTypo, cmdDesc = "Dump the typo log." }
     , Cmd { cmdName = prefixAdminCmd "uptime", action = adminUptime, cmdDesc = "Display the system uptime." }
     , Cmd { cmdName = prefixAdminCmd "who", action = adminWho, cmdDesc = "Display or search a list of the players who \
                                                                          \are currently connected." } ]
@@ -244,20 +245,21 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 
 adminProfanity :: Action
-adminProfanity (NoArgs i mq cols) = logPlaExec (prefixAdminCmd "profanity") i >> showProfanityLog mq cols
-adminProfanity p                  = withoutArgs adminProfanity p
+adminProfanity (NoArgs i mq cols) =
+    logPlaExec (prefixAdminCmd "profanity") i >> dumpLog mq cols profanityLogFile ("profanity", "profanities")
+adminProfanity p = withoutArgs adminProfanity p
 
 
-showProfanityLog :: MsgQueue -> Cols -> MudStack ()
-showProfanityLog mq cols = send mq =<< helper
+dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
+dumpLog mq cols logFile (s, p) = send mq =<< helper
   where
-    helper           = (try . liftIO $ readProfanityLog) >>= eitherRet handler
-    readProfanityLog = doesFileExist profanityLogFile >>= \case
-      True  -> return . multiWrapNl   cols . T.lines =<< T.readFile profanityLogFile
-      False -> return . wrapUnlinesNl cols $ "No profanities have been logged."
+    helper           = (try . liftIO $ readLog) >>= eitherRet handler
+    readLog = doesFileExist logFile >>= \case
+      True  -> return . multiWrapNl   cols . T.lines =<< T.readFile logFile
+      False -> return . wrapUnlinesNl cols $ "No " <> p <> " have been logged."
     handler e        = do
-        fileIOExHandler "showProfanityLog" e
-        return . wrapUnlinesNl cols $ "Unfortunately, the profanity log could not be retrieved."
+        fileIOExHandler "dumpLog" e
+        return . wrapUnlinesNl cols $ "Unfortunately, the " <> s <> " log could not be retrieved."
 
 
 -----
@@ -370,6 +372,15 @@ adminTime (NoArgs i mq cols) = do
       | time <- T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
       = T.concat [ zone, ": ", date, " ", time ]
 adminTime p = withoutArgs adminTime p
+
+
+-----
+
+
+adminTypo :: Action
+adminTypo (NoArgs i mq cols) =
+    logPlaExec (prefixAdminCmd "typo") i >> dumpLog mq cols typoLogFile ("typo", "typos")
+adminTypo p = withoutArgs adminTypo p
 
 
 -----
