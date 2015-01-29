@@ -24,6 +24,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , ShouldBracketQuote(..)
                      , ToOrFromThePeeped(..)
                      , Verb(..)
+                     , WhichLog(..)
                      , deserialize
                      , fromRol
                      , getEntFlag
@@ -239,6 +240,11 @@ instance Pretty Slot where
   pp BothHandsS  = "both hands"
 
 
+instance Pretty WhichLog where
+  pp BugLog  = "bug"
+  pp TypoLog = "typo"
+
+
 -----
 
 
@@ -401,3 +407,9 @@ data ToOrFromThePeeped = ToThePeeped | FromThePeeped
 
 
 data Verb = SndPer | ThrPer deriving Eq
+
+
+-----
+
+
+data WhichLog = BugLog | TypoLog deriving Show

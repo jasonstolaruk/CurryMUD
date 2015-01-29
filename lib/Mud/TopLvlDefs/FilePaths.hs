@@ -44,7 +44,8 @@ adminHelpTopicsDir = adminHelpDir ++ "topics/"
 -- Log files:
 
 
-errorLogFile, loggingExLogFile, noticeLogFile, profanityLogFile, typoLogFile :: FilePath
+bugLogFile, errorLogFile, loggingExLogFile, noticeLogFile, profanityLogFile, typoLogFile :: FilePath
+bugLogFile       = logDir ++ "bug.log"
 errorLogFile     = logDir ++ "error.log"
 loggingExLogFile = logDir ++ "logging thread exception.log"
 noticeLogFile    = logDir ++ "notice.log"

@@ -112,6 +112,7 @@ plaCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About CurryMUD." }
     , Cmd { cmdName = "admin", action = admin, cmdDesc = "Send a message to an administrator." }
+    , Cmd { cmdName = "bug", action = bug, cmdDesc = "Report a bug." }
     , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }
     , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
     , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop one or more items." }
@@ -207,6 +208,48 @@ mkAdminIdsSingsList i et pt = [ (pi, s) | pi <- IM.keys pt
                                         , pi /= i
                                         , let s = (et ! pi)^.sing
                                         , then sortWith by s ]
+
+
+-----
+
+
+-- TODO: Help. Make admin dump cmd.
+bug :: Action
+bug p@AdviseNoArgs = advise p ["bug"] advice
+  where
+    advice = T.concat [ "Please describe the bug you've found, as in "
+                      , quoteColor
+                      , dblQuote "bug I've fallen and I can't get up"
+                      , dfltColor
+                      , "." ]
+bug p = bugTypoLogger p BugLog
+
+
+-- TODO: Move to Mud.Cmds.Util.Pla?
+bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
+bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getEntSing' i >>= \(ws, s) ->
+    let p  = (ws^.pcTbl) ! i
+        ri = p^.rmId
+        r  = (ws^.rmTbl) ! ri
+        helper ts = let newEntry = T.concat [ ts
+                                            , " "
+                                            , s
+                                            , " "
+                                            , parensQuote $ showText ri <> " " <> (dblQuote $ r^.rmName)
+                                            , ": "
+                                            , msg ]
+                    in T.writeFile logFile . T.unlines . sort . (newEntry :) =<< getLogConts
+    in do
+        logPlaExecArgs wl' [msg] i
+        liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "bugTypoLogger")
+        send mq $ nlnl "Thank you."
+        flip bcastAdmins (s <> " has logged a " <> wl' <> ".") =<< readTMVarInNWS plaTblTMVar
+  where
+    logFile     = case wl of BugLog  -> bugLogFile
+                             TypoLog -> typoLogFile
+    getLogConts = doesFileExist logFile >>= \case True  -> T.lines <$> T.readFile logFile
+                                                  False -> return []
+bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
 
 
 -----
@@ -1331,27 +1374,7 @@ typo p@AdviseNoArgs   = advise p ["typo"] advice
                       , dblQuote "typo 'accross from the fireplace' should be 'across from the fireplace'"
                       , dfltColor
                       , "." ]
-typo   (Msg i mq msg) = getEntSing' i >>= \(ws, s) ->
-    let p  = (ws^.pcTbl) ! i
-        ri = p^.rmId
-        r  = (ws^.rmTbl) ! ri
-        helper ts = let newEntry = T.concat [ ts
-                                            , " "
-                                            , s
-                                            , " "
-                                            , parensQuote $ showText ri <> " " <> (dblQuote $ r^.rmName)
-                                            , ": "
-                                            , msg ]
-                    in getLogConts >>= T.writeFile typoLogFile . T.unlines . sort . (newEntry :)
-    in do
-        logPlaExecArgs "typo" [msg] i
-        liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "typo")
-        send mq $ nlnl "Thank you."
-  where
-    getLogConts = doesFileExist typoLogFile >>= \case
-      True  -> T.lines <$> T.readFile typoLogFile
-      False -> return []
-typo p = patternMatchFail "typo" [ showText p ]
+typo p = bugTypoLogger p TypoLog
 
 
 -----

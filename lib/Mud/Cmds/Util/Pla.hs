@@ -87,6 +87,9 @@ armSubToSlot = \case Head      -> HeadS
                      Shield    -> undefined
 
 
+-----
+
+
 clothToSlot :: Cloth -> Slot
 clothToSlot = \case Shirt    -> ShirtS
                     Smock    -> SmockS
