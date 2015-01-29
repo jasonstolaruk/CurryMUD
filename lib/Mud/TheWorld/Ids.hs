@@ -124,3 +124,9 @@ iRing7 = 58 :: Int
 iRing8 = 59 :: Int
 
 iRing9 = 60 :: Int
+
+iAccessoriesCloset = 61 :: Int
+
+iChemise = 62 :: Int
+
+iTunic = 63 :: Int

@@ -66,7 +66,8 @@ createWorld = do
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [ StdLink Down iCentral ])
     putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Up iWelcome, StdLink Down iVoid ])
     putRm iObjCloset [ iKewpie1, iKewpie2 ] mempty (Rm "Object closet" "This closet holds objects." zeroBits [ StdLink Southwest iCentral ])
-    putRm iClothCloset [ iEar1, iEar2, iEar3, iEar4, iEar5, iEar6, iEar7, iEar8, iNoseRing1, iNoseRing2, iNoseRing3, iNeck1, iNeck2, iNeck3, iNeck4, iBracelet1, iBracelet2, iBracelet3, iBracelet4, iBracelet5, iBracelet6, iBracelet7, iBracelet8, iRing1, iRing2, iRing3, iRing4, iRing5, iRing6, iRing7, iRing8, iRing9 ] mempty (Rm "Clothing closet" "This closet holds clothing." zeroBits [ StdLink West iCentral ])
+    putRm iClothCloset [ iChemise, iTunic ] mempty (Rm "Clothing closet" "This closet holds clothing." zeroBits [ StdLink West iCentral, StdLink Down iAccessoriesCloset ])
+    putRm iAccessoriesCloset [ iEar1, iEar2, iEar3, iEar4, iEar5, iEar6, iEar7, iEar8, iNoseRing1, iNoseRing2, iNoseRing3, iNeck1, iNeck2, iNeck3, iNeck4, iBracelet1, iBracelet2, iBracelet3, iBracelet4, iBracelet5, iBracelet6, iBracelet7, iBracelet8, iRing1, iRing2, iRing3, iRing4, iRing5, iRing6, iRing7, iRing8, iRing9 ] mempty (Rm "Accessories closet" "This closet holds accessories." zeroBits [ StdLink Up iClothCloset ])
     putRm iCoinsCloset [] (Coins (100, 100, 100)) (Rm "Coin closet" "This closet holds coins." zeroBits [ StdLink Northwest iCentral ])
     putRm iConCloset [ iBag1, iBag2, iBackpack1, iBackpack2 ] mempty (Rm "Container closet" "This closet holds containers." zeroBits [ StdLink North iCentral ])
     putRm iWpnCloset [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ] mempty (Rm "Weapon closet" "This closet holds weapons." zeroBits [ StdLink Northeast iCentral ])
@@ -110,6 +111,8 @@ createWorld = do
     putCloth iRing7 (Ent iRing7 (Just "ring") "aquamarine ring" "" "It's a simple copper band prominently featuring a beautiful aquamarine stone." zeroBits) (Obj 1 1) Ring
     putCloth iRing8 (Ent iRing8 (Just "ring") "diamond ring" "" "It's a simple copper band prominently featuring a beautiful diamond stone." zeroBits) (Obj 1 1) Ring
     putCloth iRing9 (Ent iRing9 (Just "ring") "emerald ring" "" "It's a simple copper band prominently featuring a beautiful emerald stone." zeroBits) (Obj 1 1) Ring
+    putCloth iChemise (Ent iChemise (Just "chemise") "fine white chemise" "" "This voluminous frock, worn on the upper body, is fashioned out of thin, smooth linen. It hangs just below the waist, while its loose-cut, wide sleeves are elbow length." zeroBits) (Obj 1 1) Shirt
+    putCloth iTunic (Ent iTunic (Just "tunic") "cobalt blue wool tunic" "" "This heavy wool tunic is waist length with short sleeves. Decorative white embroidery along the neck, sleeves, and waist adds an eye-catching touch." zeroBits) (Obj 1 1) Shirt
 
     putCon iBag1 (Ent iBag1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's red." zeroBits) (Obj 1 1) [] mempty Nothing (Con 10 False)
     putCon iBag2 (Ent iBag2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's blue." zeroBits) (Obj 1 1) [] mempty Nothing (Con 10 False)
