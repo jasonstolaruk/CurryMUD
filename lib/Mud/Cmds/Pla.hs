@@ -213,16 +213,15 @@ mkAdminIdsSingsList i et pt = [ (pi, s) | pi <- IM.keys pt
 -----
 
 
--- TODO: Help. Make admin dump cmd.
 bug :: Action
 bug p@AdviseNoArgs = advise p ["bug"] advice
   where
     advice = T.concat [ "Please describe the bug you've found, as in "
                       , quoteColor
-                      , dblQuote "bug I've fallen and I can't get up"
+                      , dblQuote "bug I've fallen and I can't get up!"
                       , dfltColor
                       , "." ]
-bug p = bugTypoLogger p BugLog
+bug p              = bugTypoLogger p BugLog
 
 
 -----
@@ -1340,14 +1339,14 @@ takeAction = getAction
 
 
 typo :: Action
-typo p@AdviseNoArgs   = advise p ["typo"] advice
+typo p@AdviseNoArgs = advise p ["typo"] advice
   where
     advice = T.concat [ "Please describe the typo you've found, as in "
                       , quoteColor
                       , dblQuote "typo 'accross from the fireplace' should be 'across from the fireplace'"
                       , dfltColor
                       , "." ]
-typo p = bugTypoLogger p TypoLog
+typo p              = bugTypoLogger p TypoLog
 
 
 -----
