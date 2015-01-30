@@ -1,11 +1,12 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla".
 
 module Mud.Cmds.Util.Pla ( InvWithCon
                          , IsConInRm
                          , armSubToSlot
+                         , bugTypoLogger
                          , clothToSlot
                          , donMsgs
                          , dudeYou'reNaked
@@ -45,33 +46,59 @@ module Mud.Cmds.Util.Pla ( InvWithCon
 
 import Mud.ANSI
 import Mud.Cmds.Util.Abbrev
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
+import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.State
 import Mud.Data.State.Util.Coins
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.STM
 import Mud.NameResolution
+import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Wrapping
+import qualified Mud.Logging as L (logPla)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***))
+import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Lens.Setter (set)
 import Control.Monad (guard)
+import Control.Monad.IO.Class (liftIO)
+import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, elemIndex, find, intercalate, nub)
+import Data.List ((\\), delete, elemIndex, find, intercalate, nub, sort)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), mempty)
+import System.Directory (doesFileExist)
 import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T (readFile, writeFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Pla"
+
+
+-----
+
+
+logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla = L.logPla "Mud.Cmds.Util.Pla"
 
 
 -- ==================================================
@@ -85,6 +112,35 @@ armSubToSlot = \case Head      -> HeadS
                      LowerBody -> LowerBodyS
                      Feet      -> FeetS
                      Shield    -> undefined
+
+
+-----
+
+
+bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
+bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getEntSing' i >>= \(ws, s) ->
+    let p  = (ws^.pcTbl) ! i
+        ri = p^.rmId
+        r  = (ws^.rmTbl) ! ri
+        helper ts = let newEntry = T.concat [ ts
+                                            , " "
+                                            , s
+                                            , " "
+                                            , parensQuote $ showText ri <> " " <> dblQuote (r^.rmName)
+                                            , ": "
+                                            , msg ]
+                    in T.writeFile logFile . T.unlines . sort . (newEntry :) =<< getLogConts
+    in do
+        logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
+        liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "bugTypoLogger")
+        send mq $ nlnl "Thank you."
+        flip bcastAdmins (s <> " has logged a " <> wl' <> ".") =<< readTMVarInNWS plaTblTMVar
+  where
+    logFile     = case wl of BugLog  -> bugLogFile
+                             TypoLog -> typoLogFile
+    getLogConts = doesFileExist logFile >>= \case True  -> T.lines <$> T.readFile logFile
+                                                  False -> return []
+bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
 
 
 -----

@@ -64,7 +64,7 @@ import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile, writeFile)
+import qualified Data.Text.IO as T (readFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -223,33 +223,6 @@ bug p@AdviseNoArgs = advise p ["bug"] advice
                       , dfltColor
                       , "." ]
 bug p = bugTypoLogger p BugLog
-
-
--- TODO: Move to Mud.Cmds.Util.Pla?
-bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
-bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getEntSing' i >>= \(ws, s) ->
-    let p  = (ws^.pcTbl) ! i
-        ri = p^.rmId
-        r  = (ws^.rmTbl) ! ri
-        helper ts = let newEntry = T.concat [ ts
-                                            , " "
-                                            , s
-                                            , " "
-                                            , parensQuote $ showText ri <> " " <> (dblQuote $ r^.rmName)
-                                            , ": "
-                                            , msg ]
-                    in T.writeFile logFile . T.unlines . sort . (newEntry :) =<< getLogConts
-    in do
-        logPlaExecArgs wl' [msg] i
-        liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "bugTypoLogger")
-        send mq $ nlnl "Thank you."
-        flip bcastAdmins (s <> " has logged a " <> wl' <> ".") =<< readTMVarInNWS plaTblTMVar
-  where
-    logFile     = case wl of BugLog  -> bugLogFile
-                             TypoLog -> typoLogFile
-    getLogConts = doesFileExist logFile >>= \case True  -> T.lines <$> T.readFile logFile
-                                                  False -> return []
-bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
 
 
 -----
