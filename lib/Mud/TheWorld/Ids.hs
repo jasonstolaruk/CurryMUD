@@ -138,3 +138,11 @@ iTabard = 65 :: Int
 iGreyCoat = 66 :: Int
 
 iFrockCoat = 67 :: Int
+
+iBreeches1 = 68 :: Int
+
+iBreeches2 = 69 :: Int
+
+iTrousers1 = 70 :: Int
+
+iTrousers2 = 71 :: Int
