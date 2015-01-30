@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -1265,6 +1265,7 @@ shuffleRem i (t, ws) d cn icir as is c f
 
 
 -- TODO: Help.
+-- TODO: Say TO someone.
 say :: Action
 say p@AdviseNoArgs = advise p ["say"] advice
   where
@@ -1276,29 +1277,51 @@ say p@AdviseNoArgs = advise p ["say"] advice
 say p@(WithArgs i _ _ args@(a:_))
   | T.head a == adverbOpenChar
   , T.singleton adverbCloseChar `notInfixOf` T.unwords args
-  = advise p ["say"] advice
+  = advise p ["say"] adviceCloseChar
   | T.head a == adverbOpenChar
-  , left <- T.tail . T.unwords $ args
-  , (adverb, T.drop 2 -> right) <- T.break (== adverbCloseChar) left
-  , msg <- dblQuote . capitalizeMsg . punctuateMsg $ right = readWSTMVar >>= \ws ->
-      let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
-          toSelf   =  (nlnl . T.concat $ [ "You say ", adverb, ", ", msg ], [i])
-          toOthers = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], otherPCIds)]
-      in bcast $ toSelf : toOthers
+  , left            <- T.tail . T.unwords $ args
+  , (adverb, right) <- T.break (== adverbCloseChar) left
+  = if | T.strip adverb == ""  -> advise p ["say"] adviceEmptyAdverb
+       | right          == "]" -> advise p ["say"] adviceEmptySay
+       | msg <- dblQuote . capitalizeMsg . punctuateMsg . T.drop 2 $ right -> readWSTMVar >>= \ws ->
+           let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
+               toSelf   =  (nlnl . T.concat $ [ "You say ", adverb, ", ", msg ], [i])
+               toOthers = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], otherPCIds)]
+           in bcast $ toSelf : toOthers
   where
-    advice = T.concat [ "An adverb sequence must be terminated with a "
-                      , quoteColor
-                      , dblQuote . T.singleton $ adverbCloseChar
-                      , dfltColor
-                      , ", as in "
-                      , quoteColor
-                      , dblQuote . T.concat $ [ "say "
-                                              , T.singleton adverbOpenChar
-                                              , "with desperation"
-                                              , T.singleton adverbCloseChar
-                                              , " please!" ]
-                      , dfltColor
-                      , "." ]
+    adviceCloseChar   = T.concat [ "An adverb sequence must be terminated with a "
+                                 , dblQuote . T.singleton $ adverbCloseChar
+                                 , ", as in "
+                                 , quoteColor
+                                 , dblQuote . T.concat $ [ "say "
+                                                         , T.singleton adverbOpenChar
+                                                         , "with desperation"
+                                                         , T.singleton adverbCloseChar
+                                                         , " pretty please?" ]
+                                 , dfltColor
+                                 , "." ]
+    adviceEmptyAdverb = T.concat [ "Please provide an adverb sequence between "
+                                 , dblQuote . T.singleton $ adverbOpenChar
+                                 , " and "
+                                 , dblQuote . T.singleton $ adverbCloseChar
+                                 , ", as in "
+                                 , quoteColor
+                                 , dblQuote . T.concat $ [ "say "
+                                                         , T.singleton adverbOpenChar
+                                                         , "with desperation"
+                                                         , T.singleton adverbCloseChar
+                                                         , " pretty please?" ]
+                                 , dfltColor
+                                 , "." ]
+    adviceEmptySay    = T.concat [ "Please also specify what you'd like to say, as in "
+                                 , quoteColor
+                                 , dblQuote . T.concat $ [ "say "
+                                                         , T.singleton adverbOpenChar
+                                                         , "with desperation"
+                                                         , T.singleton adverbCloseChar
+                                                         , " pretty please?" ]
+                                 , dfltColor
+                                 , "." ]
 say   (Msg i _ (dblQuote -> msg)) = readWSTMVar >>= \ws ->
     let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
         bs = (nlnl $ "You say, " <> msg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, otherPCIds)]
