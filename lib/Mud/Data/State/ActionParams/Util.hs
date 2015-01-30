@@ -27,7 +27,7 @@ type Args = [T.Text]
 
 formatMsgArgs :: Args -> T.Text
 formatMsgArgs [] = ""
-formatMsgArgs as = capitalizeMsg . punctuateMsg . T.intercalate " " $ as
+formatMsgArgs as = capitalizeMsg . punctuateMsg . T.unwords $ as
 
 
 capitalizeMsg :: T.Text -> T.Text

@@ -469,7 +469,7 @@ debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, Stri
                            , "This is "
                            , showText c
                            , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
-        = (<> dfltColor) . T.intercalate " " $ ls
+        = (<> dfltColor) . T.unwords $ ls
 debugWrap p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: line length, as in "
@@ -528,7 +528,7 @@ debugWrapIndent   (WithArgs i mq cols [a, b]) = do
                            , "This is "
                            , showText c
                            , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
-        = (<> dfltColor) . T.intercalate " " $ ls
+        = (<> dfltColor) . T.unwords $ ls
 
 debugWrapIndent p = advise p [] advice
   where

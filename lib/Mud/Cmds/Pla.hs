@@ -1278,7 +1278,7 @@ say p@(WithArgs i _ _ args@(a:_))
   , T.singleton adverbCloseChar `notInfixOf` T.unwords args
   = advise p ["say"] advice
   | T.head a == adverbOpenChar
-  , left <- T.tail . T.unwords $ args -- TODO: T.unwords instead of T.intercalate " "...?
+  , left <- T.tail . T.unwords $ args
   , (adverb, T.drop 2 -> right) <- T.break (== adverbCloseChar) left
   , msg <- dblQuote . capitalizeMsg . punctuateMsg $ right = readWSTMVar >>= \ws ->
       let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws

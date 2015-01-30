@@ -223,7 +223,7 @@ logPlaExecArgs :: T.Text -> CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs modName cn as i = logPla modName cn i $ "executed " <> helper <> "."
   where
     helper = case as of [] -> dblQuote cn <> " with no arguments"
-                        _  -> dblQuote . T.intercalate " " $ cn : as
+                        _  -> dblQuote . T.unwords $ cn : as
 
 
 logPlaOut :: T.Text -> CmdName -> Id -> [T.Text] -> MudStack ()
