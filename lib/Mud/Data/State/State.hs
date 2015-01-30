@@ -137,8 +137,8 @@ instance Monoid Coins where
 type Cap = Int
 
 
-data Con = Con { _cap     :: Cap
-               , _isCloth :: Bool } deriving (Eq, Show)
+data Con = Con { _isCloth :: Bool
+               , _cap     :: Cap } deriving (Eq, Show)
 
 
 type ConName = T.Text

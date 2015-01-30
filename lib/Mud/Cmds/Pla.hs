@@ -136,6 +136,7 @@ plaCmds =
     , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready one or more items." }
     , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove one or more items from a container." }
     , Cmd { cmdName = "s", action = go "s", cmdDesc = "Go south." }
+    , Cmd { cmdName = "say", action = say, cmdDesc = "Say something out loud." }
     , Cmd { cmdName = "se", action = go "se", cmdDesc = "Go southeast." }
     , Cmd { cmdName = "set", action = setAction, cmdDesc = "View or change settings." }
     , Cmd { cmdName = "sw", action = go "sw", cmdDesc = "Go southwest." }
@@ -1257,6 +1258,25 @@ shuffleRem i (t, ws) d cn icir as is c f
       Right _ -> do
           putTMVar t ws
           return (mkBroadcast i "You can only remove things from one container at a time.", [])
+
+
+-----
+
+
+-- TODO: Help.
+say :: Action
+say p@AdviseNoArgs                = advise p ["say"] advice
+  where
+    advice = T.concat [ "Please specify what you'd like to say, as in "
+                      , quoteColor
+                      , dblQuote "say nice to meet you, Taro"
+                      , dfltColor
+                      , "." ]
+say   (Msg i _ (dblQuote -> msg)) = readWSTMVar >>= \ws ->
+    let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
+        bs = (nlnl $ "You say, " <> msg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, otherPCIds)]
+    in bcast bs
+say p = patternMatchFail "say" [ showText p ]
 
 
 -----

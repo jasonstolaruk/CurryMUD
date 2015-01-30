@@ -122,10 +122,10 @@ createWorld = do
     putCloth iTrousers1 (Ent iTrousers1 (Just "trousers") "pair of baggy beige trousers" "pairs of baggy beige trousers" "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows them to be snugly tightened at the waist." zeroBits) (Obj 1 1) Trousers
     putCloth iTrousers2 (Ent iTrousers2 (Just "trousers") "pair of baggy beige trousers" "pairs of baggy beige trousers" "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows them to be snugly tightened at the waist." zeroBits) (Obj 1 1) Trousers
 
-    putCon iBag1 (Ent iBag1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's red." zeroBits) (Obj 1 1) [] mempty Nothing (Con 10 False)
-    putCon iBag2 (Ent iBag2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's blue." zeroBits) (Obj 1 1) [] mempty Nothing (Con 10 False)
-    putCon iBackpack1 (Ent iBackpack1 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 1 1) [] mempty (Just Backpack) (Con 10 True)
-    putCon iBackpack2 (Ent iBackpack2 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 1 1) [] mempty (Just Backpack) (Con 10 True)
+    putCon iBag1 (Ent iBag1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's red." zeroBits) (Obj 1 1) [] mempty Nothing (Con False 10)
+    putCon iBag2 (Ent iBag2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's blue." zeroBits) (Obj 1 1) [] mempty Nothing (Con False 10)
+    putCon iBackpack1 (Ent iBackpack1 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 1 1) [] mempty (Just Backpack) (Con True 10)
+    putCon iBackpack2 (Ent iBackpack2 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 1 1) [] mempty (Just Backpack) (Con True 10)
 
     putWpn iSword1 (Ent iSword1 (Just "sword") "short sword" "" "It's a sword; short but still sharp!" zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
     putWpn iSword2 (Ent iSword2 (Just "sword") "short sword" "" "It's a sword; short but still sharp!" zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
