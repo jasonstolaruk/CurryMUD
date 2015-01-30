@@ -1265,7 +1265,6 @@ shuffleRem i (t, ws) d cn icir as is c f
 
 
 -- TODO: Help.
--- TODO: Say TO someone.
 say :: Action
 say p@AdviseNoArgs = advise p ["say"] advice
   where
@@ -1275,6 +1274,31 @@ say p@AdviseNoArgs = advise p ["say"] advice
                       , dfltColor
                       , "." ]
 say p@(WithArgs i _ _ args@(a:_))
+  | T.head a == adverbOpenChar = case parseAdverb args of
+    Left  msg -> advise p ["say"] msg
+    Right (adverb, rest@(T.head . head . T.words -> r))
+      | r == sayToChar -> sayTo (Just adverb) rest
+      | otherwise      -> readWSTMVar >>= \ws ->
+          let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
+              msg      = dblQuote . capitalizeMsg . punctuateMsg $ rest
+              toSelf   =  (nlnl . T.concat $ [ "You say ", adverb, ", ", msg ], [i])
+              toOthers = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], otherPCIds)]
+          in bcast $ toSelf : toOthers
+  | T.head a == sayToChar, T.length a > 1 = sayTo Nothing . T.unwords $ args
+  | otherwise = readWSTMVar >>= \ws ->
+      let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
+          msg = dblQuote . capitalizeMsg . punctuateMsg . T.unwords $ args
+          bs  = (nlnl $ "You say, " <> msg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, otherPCIds)]
+      in bcast bs
+  where
+    parseAdverb :: Args -> Either T.Text (T.Text, T.Text) -- TODO: Delete function type sig.
+    parseAdverb _ = undefined
+    sayTo :: Maybe T.Text -> T.Text -> MudStack () -- TODO: Delete function type sig.
+    sayTo _ _ = undefined
+say p = patternMatchFail "say" [ showText p ]
+
+
+{-
   | T.head a == adverbOpenChar
   , T.singleton adverbCloseChar `notInfixOf` T.unwords args
   = advise p ["say"] adviceCloseChar
@@ -1295,9 +1319,9 @@ say p@(WithArgs i _ _ args@(a:_))
                                  , quoteColor
                                  , dblQuote . T.concat $ [ "say "
                                                          , T.singleton adverbOpenChar
-                                                         , "with desperation"
+                                                         , "enthusiastically"
                                                          , T.singleton adverbCloseChar
-                                                         , " pretty please?" ]
+                                                         , " say nice to meet you, too" ]
                                  , dfltColor
                                  , "." ]
     adviceEmptyAdverb = T.concat [ "Please provide an adverb sequence between "
@@ -1308,18 +1332,18 @@ say p@(WithArgs i _ _ args@(a:_))
                                  , quoteColor
                                  , dblQuote . T.concat $ [ "say "
                                                          , T.singleton adverbOpenChar
-                                                         , "with desperation"
+                                                         , "enthusiastically"
                                                          , T.singleton adverbCloseChar
-                                                         , " pretty please?" ]
+                                                         , " say nice to meet you, too" ]
                                  , dfltColor
                                  , "." ]
     adviceEmptySay    = T.concat [ "Please also specify what you'd like to say, as in "
                                  , quoteColor
                                  , dblQuote . T.concat $ [ "say "
                                                          , T.singleton adverbOpenChar
-                                                         , "with desperation"
+                                                         , "enthusiastically"
                                                          , T.singleton adverbCloseChar
-                                                         , " pretty please?" ]
+                                                         , " say nice to meet you, too" ]
                                  , dfltColor
                                  , "." ]
 say   (Msg i _ (dblQuote -> msg)) = readWSTMVar >>= \ws ->
@@ -1327,6 +1351,7 @@ say   (Msg i _ (dblQuote -> msg)) = readWSTMVar >>= \ws ->
         bs = (nlnl $ "You say, " <> msg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, otherPCIds)]
     in bcast bs
 say p = patternMatchFail "say" [ showText p ]
+-}
 
 
 -----
