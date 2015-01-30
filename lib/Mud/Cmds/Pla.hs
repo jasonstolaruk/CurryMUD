@@ -15,6 +15,7 @@ import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Get
@@ -1265,11 +1266,37 @@ shuffleRem i (t, ws) d cn icir as is c f
 
 -- TODO: Help.
 say :: Action
-say p@AdviseNoArgs                = advise p ["say"] advice
+say p@AdviseNoArgs = advise p ["say"] advice
   where
     advice = T.concat [ "Please specify what you'd like to say, as in "
                       , quoteColor
-                      , dblQuote "say nice to meet you, Taro"
+                      , dblQuote "say nice to meet you, too"
+                      , dfltColor
+                      , "." ]
+say p@(WithArgs i _ _ args@(a:_))
+  | T.head a == adverbOpenChar
+  , T.singleton adverbCloseChar `notInfixOf` T.unwords args
+  = advise p ["say"] advice
+  | T.head a == adverbOpenChar
+  , left <- T.tail . T.unwords $ args -- TODO: T.unwords instead of T.intercalate " "...?
+  , (adverb, T.drop 2 -> right) <- T.break (== adverbCloseChar) left
+  , msg <- dblQuote . capitalizeMsg . punctuateMsg $ right = readWSTMVar >>= \ws ->
+      let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
+          toSelf   =  (nlnl . T.concat $ [ "You say ", adverb, ", ", msg ], [i])
+          toOthers = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], otherPCIds)]
+      in bcast $ toSelf : toOthers
+  where
+    advice = T.concat [ "An adverb sequence must be terminated with a "
+                      , quoteColor
+                      , dblQuote . T.singleton $ adverbCloseChar
+                      , dfltColor
+                      , ", as in "
+                      , quoteColor
+                      , dblQuote . T.concat $ [ "say "
+                                              , T.singleton adverbOpenChar
+                                              , "with desperation"
+                                              , T.singleton adverbCloseChar
+                                              , " please!" ]
                       , dfltColor
                       , "." ]
 say   (Msg i _ (dblQuote -> msg)) = readWSTMVar >>= \ws ->

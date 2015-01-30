@@ -2,8 +2,10 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.ActionParams.Util ( Args
+                                        , capitalizeMsg
                                         , formatMsgArgs
-                                        , formatMsgWithTargetArgs ) where
+                                        , formatMsgWithTargetArgs
+                                        , punctuateMsg ) where
 
 import Mud.Util.Misc hiding (patternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)

@@ -16,12 +16,14 @@ debugCmdChar = '!'
 -- Denotative characters used in commands:
 
 
-allChar, amountChar, indexChar, rmChar, slotChar :: Char
-allChar    = '\''
-amountChar = '/'
-indexChar  = '.'
-rmChar     = '-'
-slotChar   = ':'
+adverbCloseChar, adverbOpenChar, allChar, amountChar, indexChar, rmChar, slotChar :: Char
+adverbCloseChar = ']'
+adverbOpenChar  = '['
+allChar         = '\''
+amountChar      = '/'
+indexChar       = '.'
+rmChar          = '-'
+slotChar        = ':'
 
 
 -- ==================================================
