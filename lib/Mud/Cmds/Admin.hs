@@ -99,6 +99,7 @@ adminCmds =
     , Cmd { cmdName = prefixAdminCmd "announce", action = adminAnnounce, cmdDesc = "Send a message to all players." }
     , Cmd { cmdName = prefixAdminCmd "boot", action = adminBoot, cmdDesc = "Boot a player, optionally with a custom \
                                                                            \message." }
+    , Cmd { cmdName = prefixAdminCmd "bug", action = adminBug, cmdDesc = "Dump the bug log." }
     , Cmd { cmdName = prefixAdminCmd "date", action = adminDate, cmdDesc = "Display the current system date." }
     , Cmd { cmdName = prefixAdminCmd "peep", action = adminPeep, cmdDesc = "Start or stop peeping one or more \
                                                                            \players." }
@@ -166,6 +167,15 @@ adminBoot   (MsgWithTarget i mq cols target msg) = do
         logPla "adminBoot customMsg" i' $ T.concat [ "booted by ", s,   "; message: ", dblQuote msg ]
         sendMsgBoot mq' . Just $ msg
 adminBoot p = patternMatchFail "adminBoot" [ showText p ]
+
+
+-----
+
+
+adminBug :: Action
+adminBug (NoArgs i mq cols) =
+    logPlaExec (prefixAdminCmd "bug") i >> dumpLog mq cols bugLogFile ("bug", "bugs")
+adminBug p = withoutArgs adminBug p
 
 
 -----
