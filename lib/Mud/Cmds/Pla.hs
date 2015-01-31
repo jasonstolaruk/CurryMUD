@@ -1279,19 +1279,19 @@ say p@(WithArgs i mq cols args@(a:_))
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1, length rs > 1 -> sayTo (Just adverb) . T.tail $ rest
       | otherwise -> readWSTMVar >>= \ws ->
-          let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
-              msg       = dblQuote . capitalizeMsg . punctuateMsg $ rest
-              toSelfMsg = T.concat $ [ "You say ", adverb, ", ", msg ]
-              toSelf    = (nlnl toSelfMsg, [i])
-              toOthers  = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], otherPCIds)]
-          in logPlaOut "say" i [toSelfMsg] >> bcast (toSelf : toOthers) -- TODO: How does logging look?
+          let (d, _, _, _, _) = mkCapStdDesig i ws
+              msg             = dblQuote . capitalizeMsg . punctuateMsg $ rest
+              toSelfMsg       = T.concat $ [ "You say ", adverb, ", ", msg ]
+              toSelf          = (nlnl toSelfMsg, [i])
+              toOthers        = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], i `delete` pcIds d)]
+          in logPlaOut "say" i [toSelfMsg] >> bcast (toSelf : toOthers)
   | T.head a == sayToChar, T.length a > 1, length args > 1 = sayTo Nothing . T.tail . T.unwords $ args
   | otherwise = readWSTMVar >>= \ws ->
-      let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
-          msg       = dblQuote . capitalizeMsg . punctuateMsg . T.unwords $ args
-          toSelfMsg = "You say, " <> msg
-          bs        = (nlnl toSelfMsg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, otherPCIds)]
-      in logPlaOut "say" i [toSelfMsg] >> bcast bs -- TODO: How does logging look?
+      let (d, _, _, _, _) = mkCapStdDesig i ws
+          msg             = dblQuote . capitalizeMsg . punctuateMsg . T.unwords $ args
+          toSelfMsg       = "You say, " <> msg
+          bs              = (nlnl toSelfMsg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, i `delete` pcIds d)]
+      in logPlaOut "say" i [toSelfMsg] >> bcast bs
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
       (_,   "" ) -> Left adviceCloseChar
@@ -1327,11 +1327,6 @@ say p@(WithArgs i mq cols args@(a:_))
           else wrapSend mq cols "You don't see anyone here to talk to."
     sayTo ma msg = patternMatchFail "say sayTo" [ showText ma, msg ]
 {-
-                   (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
-                   (     cbs', logMsgs') = foldl' helperIntroEitherCoins      (    cbs, logMsgs) ecs
-               in putTMVar t ws' >> return (cbs', logMsgs')
-    helperIntroEitherInv _ _   a (Left msg) | T.null msg = a
-                                            | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
         tryIntro a'@(ws, _, _) targetId | targetType                <- (ws^.typeTbl) ! targetId
@@ -1373,12 +1368,6 @@ say p@(WithArgs i mq cols args@(a:_))
                         in set _1 ws' . over _2 (++ cbs) . over _3 (++ [logMsg]) $ a'
           _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to " <> aOrAn targetSing <> ".", [i])
                  -> over _2 (`appendIfUnique` b) a'
-    helperIntroEitherCoins a (Left  msgs) =
-        over _1 (++ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]) a
-    helperIntroEitherCoins a (Right _   ) =
-        over _1 (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
-    fromClassifiedBroadcast (TargetBroadcast    b) = b
-    fromClassifiedBroadcast (NonTargetBroadcast b) = b
 -}
 say p = patternMatchFail "say" [ showText p ]
 
