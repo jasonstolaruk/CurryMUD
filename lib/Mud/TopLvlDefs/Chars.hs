@@ -23,7 +23,7 @@ allChar         = '\''
 amountChar      = '/'
 indexChar       = '.'
 rmChar          = '-'
-sayToChar       = '\''
+sayToChar       = '-'
 slotChar        = ':'
 
 
