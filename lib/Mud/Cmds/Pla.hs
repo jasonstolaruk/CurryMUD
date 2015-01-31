@@ -1280,15 +1280,15 @@ say p@(WithArgs i mq cols args@(a:_))
       | T.head r == sayToChar, T.length r > 1, length rs > 1 -> sayTo (Just adverb) . T.tail $ rest
       | otherwise -> readWSTMVar >>= \ws ->
           let (d, _, _, _, _) = mkCapStdDesig i ws
-              msg             = dblQuote . capitalizeMsg . punctuateMsg $ rest
-              toSelfMsg       = T.concat $ [ "You say ", adverb, ", ", msg ]
+              msg             = formatMsg rest
+              toSelfMsg       = T.concat [ "You say ", adverb, ", ", msg ]
               toSelf          = (nlnl toSelfMsg, [i])
               toOthers        = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], i `delete` pcIds d)]
           in logPlaOut "say" i [toSelfMsg] >> bcast (toSelf : toOthers)
   | T.head a == sayToChar, T.length a > 1, length args > 1 = sayTo Nothing . T.tail . T.unwords $ args
   | otherwise = readWSTMVar >>= \ws ->
       let (d, _, _, _, _) = mkCapStdDesig i ws
-          msg             = dblQuote . capitalizeMsg . punctuateMsg . T.unwords $ args
+          msg             = formatMsg . T.unwords $ args
           toSelfMsg       = "You say, " <> msg
           bs              = (nlnl toSelfMsg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, i `delete` pcIds d)]
       in logPlaOut "say" i [toSelfMsg] >> bcast bs
@@ -1314,15 +1314,13 @@ say p@(WithArgs i mq cols args@(a:_))
                                  , dblQuote acc
                                  , example ]
     adviceEmptySay    = "Please also specify what you'd like to say" <> example
-    -- TODO: This function can also call parseAdverb on Nothing.
-    sayTo :: Maybe T.Text -> T.Text -> MudStack () -- TODO: Delete function type sig.
-    sayTo _ (T.words -> (target:rest)) = readWSTMVar >>= \ws ->
+    sayTo ma (T.words -> (target:rest@(r:_))) = readWSTMVar >>= \ws ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
             c                                         = (ws^.coinsTbl) ! ri
         in if (not . null $ ris') || (c /= mempty)
           then case resolveRmInvCoins i ws [target] ris' c of
             (_,                    [ Left  [msg] ]) -> wrapSend mq cols msg
-            (_,                    (Right _):_    ) -> wrapSend mq cols "You're talking to coins now?"
+            (_,                    Right _:_      ) -> wrapSend mq cols "You're talking to coins now?"
             ([ Left msg ],         _              ) -> wrapSend mq cols msg
             ([ Right (_:_:_) ],    _              ) -> wrapSend mq cols "Sorry, but you can only say something to one \
                                                                         \person at a time."
@@ -1332,55 +1330,28 @@ say p@(WithArgs i mq cols args@(a:_))
                   targetDesig               = serialize . mkStdDesig targetId ws targetSing False $ ris
               in case targetType of
                 MobType -> undefined
-                PCType  ->
-                    let msg         = dblQuote . capitalizeMsg . punctuateMsg . T.unwords $ rest
-                        toSelfMsg   = T.concat [ "You say to ", targetDesig, ", ", msg ]
-                        toSelf      = (nlnl toSelfMsg, [i])
-                        toTarget    = (nlnl $ serialize d <> " says to you, " <> msg, [targetId])
-                        toOthers    = ( nlnl . T.concat $ [ serialize d, " says to ", targetDesig, ", ", msg ]
-                                      , pcIds d \\ [ i, targetId ] )
-                    in logPlaOut "say" i [toSelfMsg] >> bcast (toSelf : toTarget : [toOthers])
+                PCType  -> case parseRearAdverb of
+                  Left  sorryMsg                 -> advise p ["say"] sorryMsg
+                  Right (frontAdv, rearAdv, msg) ->
+                      let toSelfMsg   = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
+                          toSelf      = (nlnl toSelfMsg, [i])
+                          toTargetMsg = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
+                          toTarget    = (nlnl toTargetMsg, [targetId])
+                          toOthersMsg = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
+                          toOthers    = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
+                      in logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ] >> bcast (toSelf : toTarget : [toOthers])
                 _       -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
           else wrapSend mq cols "You don't see anyone here to talk to."
+      where
+        parseRearAdverb = case ma of
+          Just adv -> Right (adv <> " ", "", formatMsg . T.unwords $ rest)
+          Nothing  | T.head r == adverbOpenChar -> case parseAdverb . T.unwords $ rest of
+                       Right (adverb, rest') -> Right ("", " " <> adverb, formatMsg rest')
+                       Left sorryMsg         -> Left sorryMsg
+                   | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
     sayTo ma msg = patternMatchFail "say sayTo" [ showText ma, msg ]
-{-
-          PCType | targetPC@(view introduced -> intros)  <- (ws^.pcTbl)  ! targetId
-                 , pis                                   <- findPCIds ws ris
-                 , targetDesig                           <- serialize . mkStdDesig targetId ws targetSing False $ ris
-                 , (views sex mkReflexive -> himHerself) <- (ws^.mobTbl) ! i
-                 -> if s `elem` intros
-                   then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                        in over _2 (++ mkNTBroadcast i msg) a'
-                   else let p         = targetPC & introduced .~ sort (s : intros)
-                            ws'       = ws & pcTbl.at targetId ?~ p
-                            msg       = "You introduce yourself to " <> targetDesig <> "."
-                            logMsg    = parsePCDesig i ws msg
-                            srcMsg    = nlnl msg
-                            srcDesig  = StdDesig { stdPCEntSing = Nothing
-                                                 , isCap        = True
-                                                 , pcEntName    = mkUnknownPCEntName i ws
-                                                 , pcId         = i
-                                                 , pcIds        = pis }
-                            targetMsg = nlnl . T.concat $ [ serialize srcDesig
-                                                          , " introduces "
-                                                          , himHerself
-                                                          , " to you as "
-                                                          , knownNameColor
-                                                          , s
-                                                          , dfltColor
-                                                          , "." ]
-                            othersMsg = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
-                                                          , " introduces "
-                                                          , himHerself
-                                                          , " to "
-                                                          , targetDesig
-                                                          , "." ]
-                            cbs = [ NonTargetBroadcast (srcMsg,    [i])
-                                  , TargetBroadcast    (targetMsg, [targetId])
-                                  , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
-                        in set _1 ws' . over _2 (++ cbs) . over _3 (++ [logMsg]) $ a'
--}
+    formatMsg    = dblQuote . capitalizeMsg . punctuateMsg
 say p = patternMatchFail "say" [ showText p ]
 
 
