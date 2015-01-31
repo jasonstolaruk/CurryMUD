@@ -1277,15 +1277,19 @@ say p@(WithArgs i mq cols args@(a:_))
   | T.head a == adverbOpenChar = case parseAdverb . T.unwords $ args of
     Left  msg -> advise p ["say"] msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
-      | T.head r == sayToChar, T.length r > 1, length rs > 1 -> sayTo (Just adverb) . T.tail $ rest
+      | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
+        then sayTo (Just adverb) . T.tail $ rest
+        else advise p ["say"] adviceEmptySayTo
       | otherwise -> readWSTMVar >>= \ws ->
           let (d, _, _, _, _) = mkCapStdDesig i ws
               msg             = formatMsg rest
               toSelfMsg       = T.concat [ "You say ", adverb, ", ", msg ]
               toSelf          = (nlnl toSelfMsg, [i])
-              toOthers        = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], i `delete` pcIds d)]
-          in logPlaOut "say" i [toSelfMsg] >> bcast (toSelf : toOthers)
-  | T.head a == sayToChar, T.length a > 1, length args > 1 = sayTo Nothing . T.tail . T.unwords $ args
+              toOthers        = (nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], i `delete` pcIds d)
+          in logPlaOut "say" i [toSelfMsg] >> bcast (toSelf : [toOthers])
+  | T.head a == sayToChar, T.length a > 1 = if length args > 1
+    then sayTo Nothing . T.tail . T.unwords $ args
+    else advise p ["say"] adviceEmptySayTo
   | otherwise = readWSTMVar >>= \ws ->
       let (d, _, _, _, _) = mkCapStdDesig i ws
           msg             = formatMsg . T.unwords $ args
@@ -1314,6 +1318,11 @@ say p@(WithArgs i mq cols args@(a:_))
                                  , dblQuote acc
                                  , example ]
     adviceEmptySay    = "Please also specify what you'd like to say" <> example
+    adviceEmptySayTo  = T.concat [ "Please also specify what you'd like to say, as in "
+                                 , quoteColor
+                                 , dblQuote $ "say " <> T.singleton sayToChar <> "taro nice to meet you, too"
+                                 , dfltColor
+                                 , "." ]
     sayTo ma (T.words -> (target:rest@(r:_))) = readWSTMVar >>= \ws ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
             c                                         = (ws^.coinsTbl) ! ri
