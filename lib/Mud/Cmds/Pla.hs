@@ -1321,20 +1321,20 @@ say p@(WithArgs i mq cols args@(a:_))
             c                                 = (ws^.coinsTbl) ! ri
         in if (not . null $ is) || (c /= mempty)
           then case resolveRmInvCoins i ws [target] is c of
-            (_,                 [ Left  [msg] ]) -> wrapSend mq cols msg
-            (_,                 (Right _):_    ) -> wrapSend mq cols "You're talking to coins now?"
-            ([ Left msg ],      _              ) -> wrapSend mq cols msg
-            ([ Right (_:_:_) ], _              ) -> wrapSend mq cols "Sorry, but you can only say something to one \
-                                                                     \person at a time."
-            ([ Right [_] ],     _              ) -> undefined
-            x                                    -> patternMatchFail "say sayTo" [ showText x ]
+            (_,                    [ Left  [msg] ]) -> wrapSend mq cols msg
+            (_,                    (Right _):_    ) -> wrapSend mq cols "You're talking to coins now?"
+            ([ Left msg ],         _              ) -> wrapSend mq cols msg
+            ([ Right (_:_:_) ],    _              ) -> wrapSend mq cols "Sorry, but you can only say something to one \
+                                                                        \person at a time."
+            ([ Right [targetId] ], _              )
+              | targetType                <- (ws^.typeTbl) ! targetId
+              , (view sing -> targetSing) <- (ws^.entTbl)  ! targetId -> case targetType of
+                PCType -> undefined
+                _      -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
+            x -> patternMatchFail "say sayTo" [ showText x ]
           else wrapSend mq cols "You don't see anyone here to talk to."
     sayTo ma msg = patternMatchFail "say sayTo" [ showText ma, msg ]
 {-
-    helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
-      where
-        tryIntro a'@(ws, _, _) targetId | targetType                <- (ws^.typeTbl) ! targetId
-                                        , (view sing -> targetSing) <- (ws^.entTbl)  ! targetId = case targetType of
           PCType | targetPC@(view introduced -> intros)  <- (ws^.pcTbl)  ! targetId
                  , pis                                   <- findPCIds ws ris
                  , targetDesig                           <- serialize . mkStdDesig targetId ws targetSing False $ ris
@@ -1370,8 +1370,6 @@ say p@(WithArgs i mq cols args@(a:_))
                                   , TargetBroadcast    (targetMsg, [targetId])
                                   , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
                         in set _1 ws' . over _2 (++ cbs) . over _3 (++ [logMsg]) $ a'
-          _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to " <> aOrAn targetSing <> ".", [i])
-                 -> over _2 (`appendIfUnique` b) a'
 -}
 say p = patternMatchFail "say" [ showText p ]
 
