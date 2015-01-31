@@ -1321,9 +1321,13 @@ say p@(WithArgs i mq cols args@(a:_))
             c                                 = (ws^.coinsTbl) ! ri
         in if (not . null $ is) || (c /= mempty)
           then case resolveRmInvCoins i ws [target] is c of
-            (_, [ Left  [msg] ]) -> wrapSend mq cols msg
-            (_, (Right _):_    ) -> wrapSend mq cols "You're talking to coins now?"
-            wut                  -> wrapSend mq cols . showText $ wut
+            (_,                 [ Left  [msg] ]) -> wrapSend mq cols msg
+            (_,                 (Right _):_    ) -> wrapSend mq cols "You're talking to coins now?"
+            ([ Left msg ],      _              ) -> wrapSend mq cols msg
+            ([ Right (_:_:_) ], _              ) -> wrapSend mq cols "Sorry, but you can only say something to one \
+                                                                     \person at a time."
+            ([ Right [_] ],     _              ) -> undefined
+            x                                    -> patternMatchFail "say sayTo" [ showText x ]
           else wrapSend mq cols "You don't see anyone here to talk to."
     sayTo ma msg = patternMatchFail "say sayTo" [ showText ma, msg ]
 {-
