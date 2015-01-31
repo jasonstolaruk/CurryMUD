@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -1274,7 +1274,7 @@ say p@AdviseNoArgs = advise p ["say"] advice
                       , dfltColor
                       , "." ]
 say p@(WithArgs i _ _ args@(a:_))
-  | T.head a == adverbOpenChar = case parseAdverb args of
+  | T.head a == adverbOpenChar = case parseAdverb . T.unwords $ args of
     Left  msg -> advise p ["say"] msg
     Right (adverb, rest@(T.head . head . T.words -> r))
       | r == sayToChar -> sayTo (Just adverb) rest
@@ -1291,67 +1291,30 @@ say p@(WithArgs i _ _ args@(a:_))
           bs  = (nlnl $ "You say, " <> msg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, otherPCIds)]
       in bcast bs
   where
-    parseAdverb :: Args -> Either T.Text (T.Text, T.Text) -- TODO: Delete function type sig.
-    parseAdverb _ = undefined
-    sayTo :: Maybe T.Text -> T.Text -> MudStack () -- TODO: Delete function type sig.
-    sayTo _ _ = undefined
-say p = patternMatchFail "say" [ showText p ]
-
-
-{-
-  | T.head a == adverbOpenChar
-  , T.singleton adverbCloseChar `notInfixOf` T.unwords args
-  = advise p ["say"] adviceCloseChar
-  | T.head a == adverbOpenChar
-  , left            <- T.tail . T.unwords $ args
-  , (adverb, right) <- T.break (== adverbCloseChar) left
-  = if | T.strip adverb == ""  -> advise p ["say"] adviceEmptyAdverb
-       | right          == "]" -> advise p ["say"] adviceEmptySay
-       | msg <- dblQuote . capitalizeMsg . punctuateMsg . T.drop 2 $ right -> readWSTMVar >>= \ws ->
-           let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
-               toSelf   =  (nlnl . T.concat $ [ "You say ", adverb, ", ", msg ], [i])
-               toOthers = [(nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], otherPCIds)]
-           in bcast $ toSelf : toOthers
-  where
-    adviceCloseChar   = T.concat [ "An adverb sequence must be terminated with a "
-                                 , dblQuote . T.singleton $ adverbCloseChar
-                                 , ", as in "
+    parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
+      (_,   "" ) -> Left adviceCloseChar
+      ("",  _  ) -> Left adviceEmptyAdverb
+      (" ", _  ) -> Left adviceEmptyAdverb
+      (_,   "]") -> Left adviceEmptySay
+      (adverb, right) -> Right (adverb, T.drop 2 right)
+    aoc               = T.singleton adverbOpenChar
+    acc               = T.singleton adverbCloseChar
+    adviceCloseChar   = "An adverb sequence must be terminated with a " <> dblQuote acc <> example
+    example           = T.concat [ ", as in "
                                  , quoteColor
-                                 , dblQuote . T.concat $ [ "say "
-                                                         , T.singleton adverbOpenChar
-                                                         , "enthusiastically"
-                                                         , T.singleton adverbCloseChar
-                                                         , " say nice to meet you, too" ]
+                                 , dblQuote $ "say " <> quoteWith' (aoc, acc) "enthusiastically" <> " nice to meet \
+                                              \you, too"
                                  , dfltColor
                                  , "." ]
     adviceEmptyAdverb = T.concat [ "Please provide an adverb sequence between "
-                                 , dblQuote . T.singleton $ adverbOpenChar
+                                 , dblQuote aoc
                                  , " and "
-                                 , dblQuote . T.singleton $ adverbCloseChar
-                                 , ", as in "
-                                 , quoteColor
-                                 , dblQuote . T.concat $ [ "say "
-                                                         , T.singleton adverbOpenChar
-                                                         , "enthusiastically"
-                                                         , T.singleton adverbCloseChar
-                                                         , " say nice to meet you, too" ]
-                                 , dfltColor
-                                 , "." ]
-    adviceEmptySay    = T.concat [ "Please also specify what you'd like to say, as in "
-                                 , quoteColor
-                                 , dblQuote . T.concat $ [ "say "
-                                                         , T.singleton adverbOpenChar
-                                                         , "enthusiastically"
-                                                         , T.singleton adverbCloseChar
-                                                         , " say nice to meet you, too" ]
-                                 , dfltColor
-                                 , "." ]
-say   (Msg i _ (dblQuote -> msg)) = readWSTMVar >>= \ws ->
-    let (d, _, _, _, (i `delete`) -> otherPCIds) = mkCapStdDesig i ws
-        bs = (nlnl $ "You say, " <> msg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, otherPCIds)]
-    in bcast bs
+                                 , dblQuote acc
+                                 , example ]
+    adviceEmptySay    = "Please also specify what you'd like to say" <> example
+    sayTo :: Maybe T.Text -> T.Text -> MudStack () -- TODO: Delete function type sig.
+    sayTo _ _ = undefined -- TODO: This function can also call parseAdverb on Nothing.
 say p = patternMatchFail "say" [ showText p ]
--}
 
 
 -----
