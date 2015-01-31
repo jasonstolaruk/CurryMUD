@@ -36,7 +36,7 @@ capitalizeMsg   (T.break isLetter ->      ("", x)) = capitalize x
 capitalizeMsg   (T.break isLetter ->      (x, "")) = x
 capitalizeMsg x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` "('\"" = c `T.cons` capitalize y
                                                                     | otherwise       = x
-capitalizeMsg x = patternMatchFail "capitalizeMsg" [x]
+capitalizeMsg x = x
 
 
 punctuateMsg :: T.Text -> T.Text

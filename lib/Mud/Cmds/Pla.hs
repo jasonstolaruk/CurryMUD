@@ -1316,21 +1316,31 @@ say p@(WithArgs i mq cols args@(a:_))
     adviceEmptySay    = "Please also specify what you'd like to say" <> example
     -- TODO: This function can also call parseAdverb on Nothing.
     sayTo :: Maybe T.Text -> T.Text -> MudStack () -- TODO: Delete function type sig.
-    sayTo _ (T.words -> (target:_)) = readWSTMVar >>= \ws ->
-        let (_, _, _, ri, (i `delete`) -> is) = mkCapStdDesig i ws
-            c                                 = (ws^.coinsTbl) ! ri
-        in if (not . null $ is) || (c /= mempty)
-          then case resolveRmInvCoins i ws [target] is c of
+    sayTo _ (T.words -> (target:rest)) = readWSTMVar >>= \ws ->
+        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
+            c                                         = (ws^.coinsTbl) ! ri
+        in if (not . null $ ris') || (c /= mempty)
+          then case resolveRmInvCoins i ws [target] ris' c of
             (_,                    [ Left  [msg] ]) -> wrapSend mq cols msg
             (_,                    (Right _):_    ) -> wrapSend mq cols "You're talking to coins now?"
             ([ Left msg ],         _              ) -> wrapSend mq cols msg
             ([ Right (_:_:_) ],    _              ) -> wrapSend mq cols "Sorry, but you can only say something to one \
                                                                         \person at a time."
-            ([ Right [targetId] ], _              )
-              | targetType                <- (ws^.typeTbl) ! targetId
-              , (view sing -> targetSing) <- (ws^.entTbl)  ! targetId -> case targetType of
-                PCType -> undefined
-                _      -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
+            ([ Right [targetId] ], _              ) ->
+              let targetType                = (ws^.typeTbl) ! targetId
+                  (view sing -> targetSing) = (ws^.entTbl)  ! targetId
+                  targetDesig               = serialize . mkStdDesig targetId ws targetSing False $ ris
+              in case targetType of
+                MobType -> undefined
+                PCType  ->
+                    let msg         = dblQuote . capitalizeMsg . punctuateMsg . T.unwords $ rest
+                        toSelfMsg   = T.concat [ "You say to ", targetDesig, ", ", msg ]
+                        toSelf      = (nlnl toSelfMsg, [i])
+                        toTarget    = (nlnl $ serialize d <> " says to you, " <> msg, [targetId])
+                        toOthers    = ( nlnl . T.concat $ [ serialize d, " says to ", targetDesig, ", ", msg ]
+                                      , pcIds d \\ [ i, targetId ] )
+                    in logPlaOut "say" i [toSelfMsg] >> bcast (toSelf : toTarget : [toOthers])
+                _       -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
           else wrapSend mq cols "You don't see anyone here to talk to."
     sayTo ma msg = patternMatchFail "say sayTo" [ showText ma, msg ]
