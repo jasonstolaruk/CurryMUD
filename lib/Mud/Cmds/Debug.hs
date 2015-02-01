@@ -354,10 +354,10 @@ debugThread (NoArgs i mq cols) = do
   where
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \(showText -> ts) ->
         return . T.concat $ [ padOrTrunc 16 . showText $ ti, tn, ts ]
-    mkTypeName (PlaLog  (showText -> i')) = padOrTrunc 10 "PlaLog"  <> i'
-    mkTypeName (Receive (showText -> i')) = padOrTrunc 10 "Receive" <> i'
-    mkTypeName (Server  (showText -> i')) = padOrTrunc 10 "Server"  <> i'
-    mkTypeName (Talk    (showText -> i')) = padOrTrunc 10 "Talk"    <> i'
+    mkTypeName (PlaLog  (showText -> plaI)) = padOrTrunc 10 "PlaLog"  <> plaI
+    mkTypeName (Receive (showText -> plaI)) = padOrTrunc 10 "Receive" <> plaI
+    mkTypeName (Server  (showText -> plaI)) = padOrTrunc 10 "Server"  <> plaI
+    mkTypeName (Talk    (showText -> plaI)) = padOrTrunc 10 "Talk"    <> plaI
     mkTypeName (showText -> tt)           = tt
 debugThread p = withoutArgs debugThread p
 
@@ -450,17 +450,17 @@ debugWrap p@AdviseNoArgs = advise p [] advice
                       , dfltColor
                       , "." ]
 debugWrap (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String)]) of
-  []            -> sorryParse
-  [(cols', "")] -> helper cols'
-  _             -> sorryParse
+  []              -> sorryParse
+  [(lineLen, "")] -> helper lineLen
+  _               -> sorryParse
   where
     sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-    helper cols'
-      | cols' < 0                          = sorryWtf
-      | cols' < minCols || cols' > maxCols = sorryLineLen
-      | otherwise                          = do
+    helper lineLen
+      | lineLen < 0 = sorryWtf
+      | lineLen < minCols || lineLen > maxCols = sorryLineLen
+      | otherwise = do
           logPlaExecArgs (prefixDebugCmd "wrap") [a] i
-          send mq . frame cols' . wrapUnlines cols' $ msg
+          send mq . frame lineLen . wrapUnlines lineLen $ msg
     sorryWtf     = wrapSend mq cols $ wtfColor                                                            <>
                                       "What the fuck is wrong with you? Are you trying to make me crash?" <>
                                       dfltColor
@@ -512,13 +512,13 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
       _         -> sorry >> return Nothing
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
-    helper cols' indent
-      | cols' < 0 || indent < 0            = sorryWtf
-      | cols' < minCols || cols' > maxCols = sorryLineLen
-      | indent >= cols'                    = sorryIndent
-      | otherwise                          = do
+    helper lineLen indent
+      | lineLen < 0 || indent < 0 = sorryWtf
+      | lineLen < minCols || lineLen > maxCols = sorryLineLen
+      | indent >= lineLen = sorryIndent
+      | otherwise = do
           logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
-          send mq . frame cols' . T.unlines . wrapIndent indent cols' $ msg
+          send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ msg
     sorryWtf     = wrapSend mq cols $ wtfColor                                                            <>
                                       "What the fuck is wrong with you? Are you trying to make me crash?" <>
                                       dfltColor
