@@ -146,26 +146,26 @@ adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
 adminBoot (MsgWithTarget i mq cols target msg) = do
-    mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
-    getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == target ] of
-      []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
-                                 \you must specify the full PC name of the player you wish to boot.)"
-      [i'] | s <- (et ! i)^.sing -> if s == target
-             then wrapSend mq cols "You can't boot yourself."
-             else let mq' = mqt ! i' in do
-                 ok mq
-                 case msg of "" -> dfltMsg   i' s mq'
-                             _  -> customMsg i' s mq'
-      xs   -> patternMatchFail "adminBoot" [ showText xs ]
+    mqt@(IM.keys -> mqtKeys) <- readTMVarInNWS msgQueueTblTMVar
+    getEntTbl >>= \et -> case [ k | k <- mqtKeys, (et ! k)^.sing == target ] of
+      []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
+                                    \you must specify the full PC name of the player you wish to boot.)"
+      [bootI] | s <- (et ! i)^.sing -> if s == target
+                then wrapSend mq cols "You can't boot yourself."
+                else let bootMq = mqt ! bootI in do
+                    ok mq
+                    case msg of "" -> dfltMsg   bootI s bootMq
+                                _  -> customMsg bootI s bootMq
+      xs      -> patternMatchFail "adminBoot" [ showText xs ]
   where
-    dfltMsg   i' s mq' = do
-        logPla "adminBoot dfltMsg"   i  $ T.concat [ "booted ", target, " ", parensQuote "no message given", "." ]
-        logPla "adminBoot dfltMsg"   i' $ T.concat [ "booted by ", s,   " ", parensQuote "no message given", "." ]
-        sendMsgBoot mq' Nothing
-    customMsg i' s mq' = do
-        logPla "adminBoot customMsg" i  $ T.concat [ "booted ", target, "; message: ", dblQuote msg ]
-        logPla "adminBoot customMsg" i' $ T.concat [ "booted by ", s,   "; message: ", dblQuote msg ]
-        sendMsgBoot mq' . Just $ msg
+    dfltMsg   bootI s bootMq = do
+        logPla "adminBoot dfltMsg"   i     $ T.concat [ "booted ", target, " ", parensQuote "no message given", "." ]
+        logPla "adminBoot dfltMsg"   bootI $ T.concat [ "booted by ", s,   " ", parensQuote "no message given", "." ]
+        sendMsgBoot bootMq Nothing
+    customMsg bootI s bootMq = do
+        logPla "adminBoot customMsg" i     $ T.concat [ "booted ", target, "; message: ", dblQuote msg ]
+        logPla "adminBoot customMsg" bootI $ T.concat [ "booted by ", s,   "; message: ", dblQuote msg ]
+        sendMsgBoot bootMq . Just $ msg
 adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
 
@@ -215,18 +215,18 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, logMs
         in putTMVar ptTMVar pt' >> return (msgs, logMsgs)
     peep s piss target a@(pt, _, _) =
         let notFound    = over _2 ("No player by the name of " <> dblQuote target <> " is currently connected." :) a
-            found match | (i', target') <- head . filter ((== match) . snd) $ piss
-                        , thePeeper     <- pt ! i
-                        , thePeeped     <- pt ! i' = if i' `notElem` thePeeper^.peeping
-                          then let pt'     = pt & at i  ?~ over peeping (i' :) thePeeper
-                                                & at i' ?~ over peepers (i  :) thePeeped
-                                   msg     = "You are now peeping " <> target' <> "."
-                                   logMsgs = [("started peeping " <> target', (i', s <> " started peeping."))]
+            found match | (peepI, peepS) <- head . filter ((== match) . snd) $ piss
+                        , thePeeper      <- pt ! i
+                        , thePeeped      <- pt ! peepI = if peepI `notElem` thePeeper^.peeping
+                          then let pt'     = pt & at i     ?~ over peeping (peepI :) thePeeper
+                                                & at peepI ?~ over peepers (i     :) thePeeped
+                                   msg     = "You are now peeping " <> peepS <> "."
+                                   logMsgs = [("started peeping " <> peepS, (peepI, s <> " started peeping."))]
                                in set _1 pt' . over _2 (msg :) . over _3 (logMsgs ++) $ a
-                          else let pt'     = pt & at i  ?~ over peeping (i' `delete`) thePeeper
-                                                & at i' ?~ over peepers (i  `delete`) thePeeped
-                                   msg     = "You are no longer peeping " <> target' <> "."
-                                   logMsgs = [("stopped peeping " <> target', (i', s <> " stopped peeping."))]
+                          else let pt'     = pt & at i     ?~ over peeping (peepI `delete`) thePeeper
+                                                & at peepI ?~ over peepers (i     `delete`) thePeeped
+                                   msg     = "You are no longer peeping " <> peepS <> "."
+                                   logMsgs = [("stopped peeping " <> peepS, (peepI, s <> " stopped peeping."))]
                                in set _1 pt' . over _2 (msg :) . over _3 (logMsgs ++) $ a
         in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
@@ -327,23 +327,23 @@ adminTell (MsgWithTarget i mq cols target msg) = do
     let piss             = mkPlaIdsSingsList et pt
     let notFound         = wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently \
                                               \logged in."
-    let found match | (i', target') <- head . filter ((== match) . snd) $ piss
-                    , mq'           <- mqt ! i'
-                    , p             <- pt ! i'
-                    , cols'         <- p^.columns = do
+    let found match | (tellI, tellS) <- head . filter ((== match) . snd) $ piss
+                    , tellMq         <- mqt ! tellI
+                    , p              <- pt ! tellI
+                    , tellCols       <- p^.columns = do
                        logPla (prefixAdminCmd "tell") i  . T.concat $ [ "sent message to "
-                                                                      , target'
+                                                                      , tellS
                                                                       , ": "
                                                                       , dblQuote msg ]
-                       logPla (prefixAdminCmd "tell") i' . T.concat $ [ "received message from "
-                                                                      , s
-                                                                      , ": "
-                                                                      , dblQuote msg ]
-                       wrapSend mq cols . T.concat $ [ "You send ", target', ": ", dblQuote msg ]
+                       logPla (prefixAdminCmd "tell") tellI . T.concat $ [ "received message from "
+                                                                         , s
+                                                                         , ": "
+                                                                         , dblQuote msg ]
+                       wrapSend mq cols . T.concat $ [ "You send ", tellS, ": ", dblQuote msg ]
                        let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
                        if getPlaFlag IsNotFirstAdminTell p
-                         then wrapSend mq' cols' targetMsg
-                         else multiWrapSend mq' cols' . (targetMsg :) =<< firstAdminTell i' s
+                         then wrapSend tellMq tellCols targetMsg
+                         else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
     maybe notFound found . findFullNameForAbbrev target . map snd $ piss
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
