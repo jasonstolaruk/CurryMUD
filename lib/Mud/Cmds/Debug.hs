@@ -207,14 +207,14 @@ debugCPU p = withoutArgs debugCPU p
 
 debugDispCmdList :: Action
 debugDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixDebugCmd "?") as i >> dispCmdList debugCmds p
-debugDispCmdList p = patternMatchFail "debugDispCmdList" [ showText p ]
+debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ showText p ]
 
 
 -----
 
 
 debugDispEnv :: Action
-debugDispEnv   (NoArgs i mq cols)  = do
+debugDispEnv (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
     pager i mq =<< (concatMap (wrapIndent 2 cols) . mkEnvListTxt <$> liftIO getEnvironment)
 debugDispEnv p@(WithArgs i _ _ as) = do
@@ -398,18 +398,23 @@ debugToken (NoArgs i mq cols) = do
     multiWrapSend mq cols . T.lines . parseTokens . T.unlines $ tokenTxts
   where
     tokenTxts = [ charTokenDelimiter  `T.cons` "a allChar"
+                , charTokenDelimiter  `T.cons` "c adverbCloseChar"
                 , charTokenDelimiter  `T.cons` "d adminCmdChar"
                 , charTokenDelimiter  `T.cons` "i indexChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
+                , charTokenDelimiter  `T.cons` "o adverbOpenChar"
                 , charTokenDelimiter  `T.cons` "r rmChar"
                 , charTokenDelimiter  `T.cons` "s slotChar"
-                , styleTokenDelimiter `T.cons` ("aabbrevColor"     <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("ddfltColor"       <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("hheaderColor"     <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("nnoUnderlineANSI" <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("qquoteColor"      <> dfltColorStyleToken  )
-                , styleTokenDelimiter `T.cons` ("uunderlineANSI"   <> noUnderlineStyleToken)
-                , styleTokenDelimiter `T.cons` ("zzingColor"       <> dfltColorStyleToken  )
+                , charTokenDelimiter  `T.cons` "t sayToChar"
+                , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("ddfltColor"         <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("hheaderColor"       <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("nnoUnderlineANSI"   <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("qquoteColor"        <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("rarrowColor"        <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("ssyntaxSymbolColor" <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("uunderlineANSI"     <> noUnderlineStyleToken)
+                , styleTokenDelimiter `T.cons` ("zzingColor"         <> dfltColorStyleToken  )
                 , "dfltBootMsg: "     <> (msgTokenDelimiter `T.cons` "b")
                 , "dfltShutdownMsg: " <> (msgTokenDelimiter `T.cons` "s") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"
@@ -437,14 +442,14 @@ debugUnderline p = withoutArgs debugUnderline p
 
 
 debugWrap :: Action
-debugWrap p@AdviseNoArgs             = advise p [] advice
+debugWrap p@AdviseNoArgs = advise p [] advice
   where
     advice = T.concat [ "Please specify line length, as in "
                       , quoteColor
                       , dblQuote $ prefixDebugCmd "wrap" <> " 40"
                       , dfltColor
                       , "." ]
-debugWrap   (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String)]) of
+debugWrap (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String)]) of
   []            -> sorryParse
   [(cols', "")] -> helper cols'
   _             -> sorryParse
@@ -483,21 +488,21 @@ debugWrap p = advise p [] advice
 
 
 debugWrapIndent :: Action
-debugWrapIndent p@AdviseNoArgs                = advise p [] advice
+debugWrapIndent p@AdviseNoArgs = advise p [] advice
   where
     advice = T.concat [ "Please specify line length followed by indent amount, as in "
                       , quoteColor
                       , dblQuote $ prefixDebugCmd "wrapindent" <> " 40 4"
                       , dfltColor
                       , "." ]
-debugWrapIndent p@(AdviseOneArg _)            = advise p [] advice
+debugWrapIndent p@(AdviseOneArg _) = advise p [] advice
   where
     advice = T.concat [ "Please also specify indent amount, as in "
                       , quoteColor
                       , dblQuote $ prefixDebugCmd "wrapindent" <> " 40 4"
                       , dfltColor
                       , "." ]
-debugWrapIndent   (WithArgs i mq cols [a, b]) = do
+debugWrapIndent (WithArgs i mq cols [a, b]) = do
     parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
     unless (uncurry (||) . over both isNothing $ parsed) . uncurry helper . over both fromJust $ parsed
   where

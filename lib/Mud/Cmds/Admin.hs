@@ -123,7 +123,7 @@ prefixAdminCmd = prefixCmd adminCmdChar
 
 
 adminAnnounce :: Action
-adminAnnounce p@AdviseNoArgs   = advise p [ prefixAdminCmd "announce" ] advice
+adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
   where
     advice = T.concat [ "You must provide a message to send, as in "
                       , quoteColor
@@ -131,7 +131,7 @@ adminAnnounce p@AdviseNoArgs   = advise p [ prefixAdminCmd "announce" ] advice
                                                   \minutes"
                       , dfltColor
                       , "." ]
-adminAnnounce   (Msg i mq msg) = getEntSing i >>= \s -> do
+adminAnnounce (Msg i mq msg) = getEntSing i >>= \s -> do
     logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
     logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
     ok mq
@@ -145,7 +145,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot   (MsgWithTarget i mq cols target msg) = do
+adminBoot (MsgWithTarget i mq cols target msg) = do
     mqt@(IM.keys -> is) <- readTMVarInNWS msgQueueTblTMVar
     getEntTbl >>= \et -> case [ i' | i' <- is, (et ! i')^.sing == target ] of
       []   -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
@@ -202,7 +202,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 adminPeep :: Action
 adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify one or more PC names of the player(s) \
                                                               \you wish to start or stop peeping."
-adminPeep   (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, logMsgs) -> do
+adminPeep (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, logMsgs) -> do
     multiWrapSend mq cols msgs
     let (logMsgsSelf, logMsgsOthers) = unzip logMsgs
     logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
@@ -236,14 +236,14 @@ adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 
 adminPrint :: Action
-adminPrint p@AdviseNoArgs   = advise p [ prefixAdminCmd "print" ] advice
+adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
   where
     advice = T.concat [ "You must provide a message to print to the server console, as in "
                       , quoteColor
                       , dblQuote $ prefixAdminCmd "print" <> " Is anybody home?"
                       , dfltColor
                       , "." ]
-adminPrint   (Msg i mq msg) = getEntSing i >>= \s -> do
+adminPrint (Msg i mq msg) = getEntSing i >>= \s -> do
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
     logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
@@ -299,14 +299,14 @@ adminShutdown (Msg i mq msg) = getEntSing i >>= \s -> do
                                             , dblQuote msg ]
     logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", dblQuote msg ]
     liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown _ = patternMatchFail "adminShutdown" []
+adminShutdown p = patternMatchFail "adminShutdown" [ showText p ]
 
 
 -----
 
 
 adminTell :: Action
-adminTell p@AdviseNoArgs     = advise p [ prefixAdminCmd "tell" ] advice
+adminTell p@AdviseNoArgs = advise p [ prefixAdminCmd "tell" ] advice
   where
     advice = T.concat [ "Please specify the PC name of a player followed by a message, as in "
                       , quoteColor
@@ -320,7 +320,7 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
-adminTell   (MsgWithTarget i mq cols target msg) = do
+adminTell (MsgWithTarget i mq cols target msg) = do
     et        <- getEntTbl
     (mqt, pt) <- getMqtPt
     let (view sing -> s) = et ! i
@@ -410,13 +410,13 @@ adminUptime p = withoutArgs adminUptime p
 
 
 adminWho :: Action
-adminWho   (NoArgs i mq cols)  = do
+adminWho (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
     pager i mq . concatMap (wrapIndent 20 cols) =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
 adminWho p@(WithArgs i _ _ as) = do
     logPlaExecArgs (prefixAdminCmd "who") as i
     dispMatches p 20 =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
-adminWho _ = patternMatchFail "adminWho" []
+adminWho p = patternMatchFail "adminWho" [ showText p ]
 
 
 mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]
