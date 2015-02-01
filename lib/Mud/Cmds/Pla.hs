@@ -1326,10 +1326,10 @@ say p@(WithArgs i mq cols args@(a:_))
             ([ Right [targetId] ], _                   ) ->
               let targetType                = (ws^.typeTbl) ! targetId
                   (view sing -> targetSing) = (ws^.entTbl)  ! targetId
-                  targetDesig               = serialize . mkStdDesig targetId ws targetSing False $ ris
               in case targetType of
-                MobType -> undefined
-                PCType  -> either sorry (sayToHelper ws d targetId targetDesig) parseRearAdverb
+                PCType  | targetDesig <- serialize . mkStdDesig targetId ws targetSing False $ ris
+                        -> either sorry (sayToHelper    ws d targetId targetDesig) parseRearAdverb
+                MobType -> either sorry (sayToMobHelper    d          targetSing ) parseRearAdverb
                 _       -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
           else wrapSend mq cols "You don't see anyone here to talk to."
@@ -1350,6 +1350,12 @@ say p@(WithArgs i mq cols args@(a:_))
             in do
                 logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ]
                 bcast ( toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst])
+        sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
+            let toSelfMsg      = T.concat [ "You say ",            frontAdv, "to the ", targetSing, rearAdv, ", ", msg ]
+                toSelfBrdcst   = (nlnl toSelfMsg, [i])
+                toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to the ", targetSing, rearAdv, ", ", msg ]
+                toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
+            in logPlaOut "say" i [ toSelfMsg ] >> bcast (toSelfBrdcst : [toOthersBrdcst])
     sayTo ma msg            = patternMatchFail "say sayTo" [ showText ma, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelper ma rest = readWSTMVar >>= \ws ->
