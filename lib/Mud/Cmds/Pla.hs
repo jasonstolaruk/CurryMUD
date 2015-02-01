@@ -1275,23 +1275,23 @@ say p@AdviseNoArgs = advise p ["say"] advice
                       , "." ]
 say p@(WithArgs i mq cols args@(a:_))
   | T.head a == adverbOpenChar = case parseAdverb . T.unwords $ args of
-    Left  msg -> advise p ["say"] msg
+    Left  sorryMsg -> sorry sorryMsg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
         then sayTo (Just adverb) . T.tail $ rest
-        else advise p ["say"] adviceEmptySayTo
+        else sorry adviceEmptySayTo
       | otherwise -> helper (Just adverb) rest
   | T.head a == sayToChar, T.length a > 1 = if length args > 1
     then sayTo Nothing . T.tail . T.unwords $ args
-    else advise p ["say"] adviceEmptySayTo
+    else sorry adviceEmptySayTo
   | otherwise = helper Nothing . T.unwords $ args
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
-      (_,   "" ) -> Left adviceCloseChar
-      ("",  _  ) -> Left adviceEmptyAdverb
-      (" ", _  ) -> Left adviceEmptyAdverb
-      (_,   "]") -> Left adviceEmptySay
-      (adverb, right) -> Right (adverb, T.drop 2 right)
+      (_,   "")            -> Left adviceCloseChar
+      ("",  _ )            -> Left adviceEmptyAdverb
+      (" ", _ )            -> Left adviceEmptyAdverb
+      (_,   x ) | x == acc -> Left adviceEmptySay
+      (adverb, right)      -> Right (adverb, T.drop 2 right)
     aoc               = T.singleton adverbOpenChar
     acc               = T.singleton adverbCloseChar
     adviceCloseChar   = "An adverb sequence must be terminated with a " <> dblQuote acc <> example
@@ -1312,24 +1312,25 @@ say p@(WithArgs i mq cols args@(a:_))
                                  , dblQuote $ "say " <> T.singleton sayToChar <> "taro nice to meet you, too"
                                  , dfltColor
                                  , "." ]
+    sorry             = advise p ["say"]
     sayTo ma (T.words -> (target:rest@(r:_))) = readWSTMVar >>= \ws ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
             c                                         = (ws^.coinsTbl) ! ri
         in if (not . null $ ris') || (c /= mempty)
           then case resolveRmInvCoins i ws [target] ris' c of
-            (_,                    [ Left  [msg] ]) -> wrapSend mq cols msg
-            (_,                    Right _:_      ) -> wrapSend mq cols "You're talking to coins now?"
-            ([ Left msg ],         _              ) -> wrapSend mq cols msg
-            ([ Right (_:_:_) ],    _              ) -> wrapSend mq cols "Sorry, but you can only say something to one \
-                                                                        \person at a time."
-            ([ Right [targetId] ], _              ) ->
+            (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
+            (_,                    Right _:_           ) -> wrapSend mq cols "You're talking to coins now?"
+            ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
+            ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols "Sorry, but you can only say something to \
+                                                                             \one person at a time."
+            ([ Right [targetId] ], _                   ) ->
               let targetType                = (ws^.typeTbl) ! targetId
                   (view sing -> targetSing) = (ws^.entTbl)  ! targetId
                   targetDesig               = serialize . mkStdDesig targetId ws targetSing False $ ris
               in case targetType of
                 MobType -> undefined
                 PCType  -> case parseRearAdverb of
-                  Left  sorryMsg                 -> advise p ["say"] sorryMsg
+                  Left  sorryMsg                 -> sorry sorryMsg
                   Right (frontAdv, rearAdv, msg) ->
                       let toSelfMsg   = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                           toSelf      = (nlnl toSelfMsg, [i])
