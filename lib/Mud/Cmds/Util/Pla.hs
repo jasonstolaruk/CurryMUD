@@ -525,15 +525,16 @@ mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(views entDesc (wrapUnlines 
 
 
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
-mkInvCoinsDesc i cols ws i' (view sing -> s) | is <- (ws^.invTbl)   ! i'
-                                             , c  <- (ws^.coinsTbl) ! i' = case (not . null $ is, c /= mempty) of
-  (False, False) -> wrapUnlines cols $ if i' == i then dudeYourHandsAreEmpty else "The " <> s <> " is empty."
-  (True,  False) -> header <> mkEntsInInvDesc i cols ws is
-  (False, True ) -> header <>                                 mkCoinsSummary cols c
-  (True,  True ) -> header <> mkEntsInInvDesc i cols ws is <> mkCoinsSummary cols c
+mkInvCoinsDesc i cols ws descI (view sing -> descS)
+  | descIs <- (ws^.invTbl)   ! descI
+  , descC  <- (ws^.coinsTbl) ! descI = case (not . null $ descIs, descC /= mempty) of
+    (False, False) -> wrapUnlines cols $ if descI == i then dudeYourHandsAreEmpty else "The " <> descS <> " is empty."
+    (True,  False) -> header <> mkEntsInInvDesc i cols ws descIs
+    (False, True ) -> header <>                                     mkCoinsSummary cols descC
+    (True,  True ) -> header <> mkEntsInInvDesc i cols ws descIs <> mkCoinsSummary cols descC
   where
-    header | i' == i   = nl "You are carrying:"
-           | otherwise = wrapUnlines cols $ "The " <> s <> " contains:"
+    header | descI == i = nl "You are carrying:"
+           | otherwise  = wrapUnlines cols $ "The " <> descS <> " contains:"
 
 
 dudeYourHandsAreEmpty :: T.Text
@@ -562,32 +563,32 @@ mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . mkListFromCoins $
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ws i' (view sing -> s) t | descs <- if i' == i then mkDescsSelf else mkDescsOther =
+mkEqDesc i cols ws descI (view sing -> descS) descT | descs <- if descI == i then mkDescsSelf else mkDescsOther =
     case descs of [] -> none
                   _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
   where
     mkDescsSelf | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! i
-                , sns      <- [ pp s'                 | s' <- ss ]
+                , sns      <- [ pp s                  | s  <- ss ]
                 , es       <- [ (ws^.entTbl) ! ei     | ei <- is ]
                 , ess      <- [ e^.sing               | e  <- es ]
                 , ens      <- [ fromJust $ e^.entName | e  <- es ]
                 , styleds  <- styleAbbrevs DoBracket ens = map helper . zip3 sns ess $ styleds
       where
         helper (T.breakOn " finger" -> (sn, _), es, styled) = T.concat [ parensPad 15 sn, es, " ", styled ]
-    mkDescsOther | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! i'
-                 , sns      <- [ pp s' | s' <- ss ]
+    mkDescsOther | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! descI
+                 , sns      <- [ pp s | s <- ss ]
                  , ess      <- [ e^.sing | ei <- is, let e = (ws^.entTbl) ! ei ] = zipWith helper sns ess
       where
         helper (T.breakOn " finger" -> (sn, _)) es = parensPad 15 sn <> es
     none = wrapUnlines cols $ if
-      | i' == i      -> dudeYou'reNaked
-      | t  == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
-      | otherwise    -> "The " <> s <> " doesn't have anything readied."
+      | descI == i      -> dudeYou'reNaked
+      | descT == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
+      | otherwise       -> "The " <> descS <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
-      | i' == i      -> "You have readied the following equipment:"
-      | t  == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
-      | otherwise    -> "The " <> s <> " has readied the following equipment:"
-    d = mkSerializedNonStdDesig i' ws s The
+      | descI == i      -> "You have readied the following equipment:"
+      | descT == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
+      | otherwise       -> "The " <> descS <> " has readied the following equipment:"
+    d = mkSerializedNonStdDesig descI ws descS The
 
 
 dudeYou'reNaked :: T.Text
