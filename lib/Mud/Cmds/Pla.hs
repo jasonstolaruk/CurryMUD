@@ -1280,11 +1280,11 @@ say p@(WithArgs i mq cols args@(a:_))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
         then sayTo (Just adverb) . T.tail $ rest
         else sorry adviceEmptySayTo
-      | otherwise -> helper (Just adverb) rest
+      | otherwise -> simpleSayHelper (Just adverb) rest
   | T.head a == sayToChar, T.length a > 1 = if length args > 1
     then sayTo Nothing . T.tail . T.unwords $ args
     else sorry adviceEmptySayTo
-  | otherwise = helper Nothing . T.unwords $ args
+  | otherwise = simpleSayHelper Nothing . T.unwords $ args
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
       (_,   "")            -> Left adviceCloseChar
@@ -1329,16 +1329,7 @@ say p@(WithArgs i mq cols args@(a:_))
                   targetDesig               = serialize . mkStdDesig targetId ws targetSing False $ ris
               in case targetType of
                 MobType -> undefined
-                PCType  -> case parseRearAdverb of
-                  Left  sorryMsg                 -> sorry sorryMsg
-                  Right (frontAdv, rearAdv, msg) ->
-                      let toSelfMsg   = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                          toSelf      = (nlnl toSelfMsg, [i])
-                          toTargetMsg = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
-                          toTarget    = (nlnl toTargetMsg, [targetId])
-                          toOthersMsg = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                          toOthers    = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
-                      in logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ] >> bcast (toSelf : toTarget : [toOthers])
+                PCType  -> either sorry (sayToHelper ws d targetId targetDesig) parseRearAdverb
                 _       -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
           else wrapSend mq cols "You don't see anyone here to talk to."
@@ -1349,9 +1340,19 @@ say p@(WithArgs i mq cols args@(a:_))
                        Right (adverb, rest') -> Right ("", " " <> adverb, formatMsg rest')
                        Left sorryMsg         -> Left sorryMsg
                    | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
-    sayTo ma msg   = patternMatchFail "say sayTo" [ showText ma, msg ]
-    formatMsg      = dblQuote . capitalizeMsg . punctuateMsg
-    helper ma rest = readWSTMVar >>= \ws ->
+        sayToHelper ws d targetId targetDesig (frontAdv, rearAdv, msg) =
+            let toSelfMsg      = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
+                toSelfBrdcst   = (nlnl toSelfMsg, [i])
+                toTargetMsg    = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
+                toTargetBrdcst = (nlnl toTargetMsg, [targetId])
+                toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
+                toOthersBrdcst = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
+            in do
+                logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ]
+                bcast ( toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst])
+    sayTo ma msg            = patternMatchFail "say sayTo" [ showText ma, msg ]
+    formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
+    simpleSayHelper ma rest = readWSTMVar >>= \ws ->
         let adverb          = case ma of Nothing  -> ""
                                          Just adv -> " " <> adv
             (d, _, _, _, _) = mkCapStdDesig i ws
