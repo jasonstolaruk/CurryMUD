@@ -1268,7 +1268,6 @@ shuffleRem i (t, ws) d cn icir as is c f
 -----
 
 
--- TODO: Help.
 say :: Action
 say p@AdviseNoArgs = advise p ["say"] advice
   where
@@ -1298,14 +1297,14 @@ say p@(WithArgs i mq cols args@(a:_))
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     aoc               = T.singleton adverbOpenChar
     acc               = T.singleton adverbCloseChar
-    adviceCloseChar   = "An adverb sequence must be terminated with a " <> dblQuote acc <> example
+    adviceCloseChar   = "An adverbial phrase must be terminated with a " <> dblQuote acc <> example
     example           = T.concat [ ", as in "
                                  , quoteColor
                                  , dblQuote $ "say " <> quoteWith' (aoc, acc) "enthusiastically" <> " nice to meet \
                                               \you, too"
                                  , dfltColor
                                  , "." ]
-    adviceEmptyAdverb = T.concat [ "Please provide an adverb sequence between "
+    adviceEmptyAdverb = T.concat [ "Please provide an adverbial phrase between "
                                  , dblQuote aoc
                                  , " and "
                                  , dblQuote acc

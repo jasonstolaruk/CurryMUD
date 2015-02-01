@@ -46,11 +46,14 @@ parseCharTokens = parser expandCharCode charTokenDelimiter
 expandCharCode :: Char -> T.Text
 expandCharCode (toLower -> code) = T.singleton $ case code of
   'a' -> allChar
+  'c' -> adverbCloseChar
   'd' -> adminCmdChar
   'i' -> indexChar
   'm' -> amountChar
+  'o' -> adverbOpenChar
   'r' -> rmChar
   's' -> slotChar
+  't' -> sayToChar
   x   -> patternMatchFail "expandCharCode" [ T.singleton x ]
 
 
@@ -82,6 +85,8 @@ expandStyleCode (toLower -> code) = case code of
   'h' -> headerColor
   'n' -> noUnderlineANSI
   'q' -> quoteColor
+  'r' -> arrowColor
+  's' -> syntaxSymbolColor
   'u' -> underlineANSI
   'z' -> zingColor
   x   -> patternMatchFail "expandStyleCode" [ T.singleton x ]

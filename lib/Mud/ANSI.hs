@@ -6,6 +6,7 @@ module Mud.ANSI ( abbrevColor
                 , adminNoticeColor
                 , adminTellColor
                 , announceColor
+                , arrowColor
                 , asteriskColor
                 , blinkANSI
                 , bootMsgColor
@@ -34,6 +35,7 @@ module Mud.ANSI ( abbrevColor
                 , resetANSI
                 , selfColor
                 , shutdownMsgColor
+                , syntaxSymbolColor
                 , toPeepedColor
                 , underlineANSI
                 , unknownNameColor
@@ -80,7 +82,8 @@ mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, un
 -----
 
 
-cyan, green, magenta, red, yellow :: T.Text
+blue, cyan, green, magenta, red, yellow :: T.Text
+blue    = mkFgColorANSI (Dull, Blue)
 cyan    = mkFgColorANSI (Dull, Cyan)
 green   = mkFgColorANSI (Dull, Green)
 magenta = mkFgColorANSI (Dull, Magenta)
@@ -109,6 +112,10 @@ adminTellColor = magenta
 
 announceColor :: T.Text
 announceColor = magenta
+
+
+arrowColor :: T.Text
+arrowColor = yellow
 
 
 asteriskColor :: T.Text
@@ -197,6 +204,10 @@ selfColor = green
 
 shutdownMsgColor :: T.Text
 shutdownMsgColor = red
+
+
+syntaxSymbolColor :: T.Text
+syntaxSymbolColor = blue
 
 
 toPeepedColor :: T.Text

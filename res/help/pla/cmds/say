@@ -1,0 +1,18 @@
+\h SAY \d
+
+\uUSAGE\n
+say \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
+
+\uDESCRIPTION\n
+Say something out loud, such that anyone else in your current location will hear you.
+You may optionally provide a "target," so as to indicate that you are speaking directly to the specified individual.
+Furthermore, you may optionally provide at most one "adverbial phrase," so as to illustrate the manner in which you speak.
+
+\uEXAMPLES\n
+\q"say nice to meet you, too"\d \r->\d You say, "Nice to meet you, too."4`
+\q"say #ttaro nice to meet you, too"\d \r->\d You say to Taro, "Nice to meet you, too."4`
+\q"say #oquietly#c nice to meet you, too"\d \r->\d You say quietly, "Nice to meet you, too."4`
+\q"say #oquietly#c #ttaro nice to meet you, too"\d \r->\d You say quietly to Taro, "Nice to meet you, too."4`
+\q"say #ttaro #owith some hesitation#c nice to meet you, too"\d \r->\d You say to Taro with some hesitation, "Nice to meet you, too."4`
+
+\uSEE ALSO\n
