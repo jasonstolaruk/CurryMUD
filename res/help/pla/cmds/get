@@ -1,7 +1,7 @@
 \h GET \d
 
 \uUSAGE\n
-get item ...
+get item \s...\d
 
 \uDESCRIPTION\n
 Pick up one or more items in your current location; move item(s) from your current location to your inventory.

@@ -1,7 +1,7 @@
 \h HELP \d
 
 \uUSAGE\n
-help [keyword ...]
+help \s[\dkeyword \s...]\d
 
 \uDESCRIPTION\n
 Get help on one or more commands or topics.

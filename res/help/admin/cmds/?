@@ -1,7 +1,7 @@
 \h #d? \d
 
 \uUSAGE\n
-#d? [term ...]
+#d? \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
 Display a list of available administrator commands and their descriptions. Optionally, search the list for one or more terms.

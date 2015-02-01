@@ -1,7 +1,7 @@
 \h #dSHUTDOWN \d
 
 \uUSAGE\n
-#dshutdown [message]
+#dshutdown \s[\dmessage\s]\d
 
 \uDESCRIPTION\n
 Shut down CurryMUD, optionally with a custom message.

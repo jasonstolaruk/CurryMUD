@@ -1,7 +1,7 @@
 \h #dBOOT \d
 
 \uUSAGE\n
-#dboot name [message]
+#dboot name \s[\dmessage\s]\d
 
 \uDESCRIPTION\n
 Boot a player, optionally with a custom message.

@@ -1,7 +1,7 @@
 \h UNREADY \d
 
 \uUSAGE\n
-unready item ...
+unready item \s...\d
 
 \uDESCRIPTION\n
 Unready one or more items; move item(s) from your readied equipment to your inventory.

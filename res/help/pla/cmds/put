@@ -1,7 +1,7 @@
 \h PUT \d
 
 \uUSAGE\n
-put item ... container
+put item \s...\d container
 
 \uDESCRIPTION\n
 Put one or more items into a container (by default, into a container in your inventory; optionally, into a container in your current location).

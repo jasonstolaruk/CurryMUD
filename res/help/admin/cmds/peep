@@ -1,7 +1,7 @@
 \h #dPEEP \d
 
 \uUSAGE\n
-#dpeep name ...
+#dpeep name \s...\d
 
 \uDESCRIPTION\n
 Start or stop peeping one or more players.

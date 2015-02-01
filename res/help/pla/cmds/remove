@@ -1,7 +1,7 @@
 \h REMOVE \d
 
 \uUSAGE\n
-remove item ... container
+remove item \s...\d container
 
 \uDESCRIPTION\n
 Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in your current location).

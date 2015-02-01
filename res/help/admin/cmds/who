@@ -1,7 +1,7 @@
 \h #dWHO \d
 
 \uUSAGE\n
-#dwho [term ...]
+#dwho \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
 Display a list of the players who are currently connected. Optionally, search the list for one or more terms.
