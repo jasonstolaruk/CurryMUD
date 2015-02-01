@@ -68,6 +68,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
+-- TODO: Review your use of ' in binding names.
+-- TODO: Consider getting rid of alignment spacing when matching ActionParams.
+
+
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
@@ -1328,8 +1332,8 @@ say p@(WithArgs i mq cols args@(a:_))
                   (view sing -> targetSing) = (ws^.entTbl)  ! targetId
               in case targetType of
                 PCType  | targetDesig <- serialize . mkStdDesig targetId ws targetSing False $ ris
-                        -> either sorry (sayToHelper    ws d targetId targetDesig) parseRearAdverb
-                MobType -> either sorry (sayToMobHelper    d          targetSing ) parseRearAdverb
+                        -> either sorry (sayToHelper ws d targetId targetDesig) parseRearAdverb
+                MobType -> either sorry (sayToMobHelper d targetSing)           parseRearAdverb
                 _       -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
           else wrapSend mq cols "You don't see anyone here to talk to."
@@ -1349,13 +1353,15 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersBrdcst = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
             in do
                 logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ]
-                bcast ( toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst])
-        sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
+                bcast $ toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst]
+        sayToMobHelper d targetSing (frontAdv, rearAdv, msg) = -- TODO: NPCs with proper names? "to the" isn't right...
             let toSelfMsg      = T.concat [ "You say ",            frontAdv, "to the ", targetSing, rearAdv, ", ", msg ]
-                toSelfBrdcst   = (nlnl toSelfMsg, [i])
                 toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to the ", targetSing, rearAdv, ", ", msg ]
                 toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
-            in logPlaOut "say" i [ toSelfMsg ] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+            in do
+                logPlaOut "say" i [ toSelfMsg ]
+                fms <- firstMobSay i
+                bcast $ (nlnl toSelfMsg <> fms, [i]) : [toOthersBrdcst]
     sayTo ma msg            = patternMatchFail "say sayTo" [ showText ma, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelper ma rest = readWSTMVar >>= \ws ->
@@ -1369,6 +1375,22 @@ say p@(WithArgs i mq cols args@(a:_))
             toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
         in logPlaOut "say" i [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
 say p = patternMatchFail "say" [ showText p ]
+
+
+firstMobSay :: Id -> MudStack T.Text
+firstMobSay i = (getPlaFlag IsNotFirstMobSay <$> getPla i) >>= \infms -> if infms
+  then return ""
+  else let msg = nlnl . T.concat $ [ hintANSI
+                                   , "Hint:"
+                                   , noHintANSI
+                                   , " to communicate with non-player characters, use the "
+                                   , dblQuote "ask"
+                                   , " command. For example, to ask a city guard about crime, type "
+                                   , quoteColor
+                                   , dblQuote "ask guard crime"
+                                   , dfltColor
+                                   , "." ]
+       in (void . modifyPlaFlag i IsNotFirstMobSay $ True) >> return msg
 
 
 -----
