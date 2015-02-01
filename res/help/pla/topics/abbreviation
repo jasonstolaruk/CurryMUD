@@ -10,14 +10,14 @@ a two-handed long sword [\asw\dord]`
 5 [\agp\d]`
 
 (Each item is listed alongside a word in brackets: the bracketed word is the word you must use to refer to that item in commands.)
-Imagine that you'd like to examine the club and the sack. This is accomplished with the \q"look"\d command. Any of the following are valid:
+Imagine that you'd like to examine the club and the sack. This is accomplished with the "look" command. Any of the following are valid:
 
 \q"look club sack"\d
 \q"look clu sac"\d
 \q"look cl sa"\d
 \q"look c s"\d
 
-As you can see, \q"club"\d may be abbreviated down to \q"c"\d, and \q"sack"\d may be abbreviated down to \q"s"\d.
+As you can see, "club" may be abbreviated down to "c", and "sack" may be abbreviated down to "s".
 The shortest possible abbreviation can be easily ascertained, as it is indicated by \athis color\d in the bracketed words. In fact, whenever you see a word that is partially written in \athis color\d, you know that it may be abbreviated.
 
 Referring back to our example... The names of commands may also be abbreviated. Thus any of the following are valid:
