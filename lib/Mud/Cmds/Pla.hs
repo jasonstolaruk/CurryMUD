@@ -1280,22 +1280,11 @@ say p@(WithArgs i mq cols args@(a:_))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
         then sayTo (Just adverb) . T.tail $ rest
         else advise p ["say"] adviceEmptySayTo
-      | otherwise -> readWSTMVar >>= \ws ->
-          let (d, _, _, _, _) = mkCapStdDesig i ws
-              msg             = formatMsg rest
-              toSelfMsg       = T.concat [ "You say ", adverb, ", ", msg ]
-              toSelf          = (nlnl toSelfMsg, [i])
-              toOthers        = (nlnl . T.concat $ [ serialize d, " says ", adverb, ", ", msg ], i `delete` pcIds d)
-          in logPlaOut "say" i [toSelfMsg] >> bcast (toSelf : [toOthers])
+      | otherwise -> helper (Just adverb) rest
   | T.head a == sayToChar, T.length a > 1 = if length args > 1
     then sayTo Nothing . T.tail . T.unwords $ args
     else advise p ["say"] adviceEmptySayTo
-  | otherwise = readWSTMVar >>= \ws ->
-      let (d, _, _, _, _) = mkCapStdDesig i ws
-          msg             = formatMsg . T.unwords $ args
-          toSelfMsg       = "You say, " <> msg
-          bs              = (nlnl toSelfMsg, [i]) : [(nlnl $ serialize d <> " says, " <> msg, i `delete` pcIds d)]
-      in logPlaOut "say" i [toSelfMsg] >> bcast bs
+  | otherwise = helper Nothing . T.unwords $ args
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
       (_,   "" ) -> Left adviceCloseChar
@@ -1359,8 +1348,18 @@ say p@(WithArgs i mq cols args@(a:_))
                        Right (adverb, rest') -> Right ("", " " <> adverb, formatMsg rest')
                        Left sorryMsg         -> Left sorryMsg
                    | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
-    sayTo ma msg = patternMatchFail "say sayTo" [ showText ma, msg ]
-    formatMsg    = dblQuote . capitalizeMsg . punctuateMsg
+    sayTo ma msg   = patternMatchFail "say sayTo" [ showText ma, msg ]
+    formatMsg      = dblQuote . capitalizeMsg . punctuateMsg
+    helper ma rest = readWSTMVar >>= \ws ->
+        let adverb          = case ma of Nothing  -> ""
+                                         Just adv -> " " <> adv
+            (d, _, _, _, _) = mkCapStdDesig i ws
+            msg             = formatMsg rest
+            toSelfMsg       = T.concat [ "You say", adverb, ", ", msg ]
+            toSelfBrdcst    = (nlnl toSelfMsg, [i])
+            toOthersMsg     = T.concat [ serialize d, " says", adverb, ", ", msg ]
+            toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
+        in logPlaOut "say" i [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
 say p = patternMatchFail "say" [ showText p ]
 
 
