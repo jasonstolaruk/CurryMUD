@@ -1,7 +1,7 @@
 \h D \d
 
 \uUSAGE\n
-d [direction ...]
+d \s[\ddirection \s...]\d
 
 \uDESCRIPTION\n
 Move down, optionally followed by more movement.

@@ -1,7 +1,7 @@
 \h INTRO \d
 
 \uUSAGE\n
-intro [person ...]
+intro \s[\dperson \s...]\d
 
 \uDESCRIPTION\n
 Introduce yourself to one or more people, who will then know you by name.

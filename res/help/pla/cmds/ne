@@ -1,7 +1,7 @@
 \h NE \d
 
 \uUSAGE\n
-ne [direction ...]
+ne \s[\ddirection \s...]\d
 
 \uDESCRIPTION\n
 Move northeast, optionally followed by more movement.

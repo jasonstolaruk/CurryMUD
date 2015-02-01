@@ -1,7 +1,7 @@
 \h SET \d
 
 \uUSAGE\n
-set [setting=value ...]
+set \s[\dsetting=value \s...]\d
 
 \uDESCRIPTION\n
 View or change settings.

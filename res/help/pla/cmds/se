@@ -1,7 +1,7 @@
 \h SE \d
 
 \uUSAGE\n
-se [direction ...]
+se \s[\ddirection \s...]\d
 
 \uDESCRIPTION\n
 Move southeast, optionally followed by more movement.

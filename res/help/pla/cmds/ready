@@ -1,7 +1,7 @@
 \h READY \d
 
 \uUSAGE\n
-ready item[#slocation] ...
+ready item\s[\d#slocation\s] ...\d
 
 \uDESCRIPTION\n
 Ready one or more items; move item(s) from your inventory to your readied equipment.

@@ -1,7 +1,7 @@
 \h N \d
 
 \uUSAGE\n
-n [direction ...]
+n \s[\ddirection \s...]\d
 
 \uDESCRIPTION\n
 Move north, optionally followed by more movement.

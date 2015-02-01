@@ -1,7 +1,7 @@
 \h LOOK \d
 
 \uUSAGE\n
-look [object ...]
+look \s[\dobject \s...]\d
 
 \uDESCRIPTION\n
 Display a description of your current location, or examine one or more objects in your current location.

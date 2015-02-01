@@ -1,7 +1,7 @@
 \h EQUIP \d
 
 \uUSAGE\n
-equip [item ...]
+equip \s[\ditem \s...]\d
 
 \uDESCRIPTION\n
 Display your readied equipment, or examine one or more items in your readied equipment.

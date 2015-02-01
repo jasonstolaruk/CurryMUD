@@ -1,7 +1,7 @@
 \h SW \d
 
 \uUSAGE\n
-sw [direction ...]
+sw \s[\ddirection \s...]\d
 
 \uDESCRIPTION\n
 Move southwest, optionally followed by more movement.
