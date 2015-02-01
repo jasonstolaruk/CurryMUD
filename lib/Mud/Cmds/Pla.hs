@@ -69,7 +69,6 @@ import qualified Data.Text.IO as T (readFile)
 
 
 -- TODO: Review your use of ' in binding names.
--- TODO: Consider getting rid of alignment spacing when matching ActionParams.
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -173,21 +172,21 @@ about p = withoutArgs about p
 
 
 admin :: Action
-admin p@AdviseNoArgs                         = advise p ["admin"] advice
+admin p@AdviseNoArgs = advise p ["admin"] advice
   where
     advice = T.concat [ "Please specify the name of an administrator followed by a message, as in "
                       , quoteColor
                       , dblQuote "admin jason are you available? I need your assistance"
                       , dfltColor
                       , "." ]
-admin p@(AdviseOneArg a)                     = advise p ["admin"] advice
+admin p@(AdviseOneArg a) = advise p ["admin"] advice
   where
     advice = T.concat [ "Please also provide a message to send, as in "
                       , quoteColor
                       , dblQuote $ "admin " <> a <> " are you available? I need your assistance"
                       , dfltColor
                       , "." ]
-admin   (MsgWithTarget i mq cols target msg) = do
+admin (MsgWithTarget i mq cols target msg) = do
     et        <- getEntTbl
     (mqt, pt) <- getMqtPt
     let aiss = mkAdminIdsSingsList i et pt
@@ -227,7 +226,7 @@ bug p@AdviseNoArgs = advise p ["bug"] advice
                       , dblQuote "bug I've fallen and I can't get up!"
                       , dfltColor
                       , "." ]
-bug p              = bugTypoLogger p BugLog
+bug p = bugTypoLogger p BugLog
 
 
 -----
@@ -242,14 +241,14 @@ clear p              = withoutArgs clear p
 
 
 dropAction :: Action
-dropAction p@AdviseNoArgs     = advise p ["drop"] advice
+dropAction p@AdviseNoArgs = advise p ["drop"] advice
   where
     advice = T.concat [ "Please specify one or more items to drop, as in "
                       , quoteColor
                       , dblQuote "drop sword"
                       , dfltColor
                       , "." ]
-dropAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
+dropAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "drop" i $ logMsgs
     bcastNl bs
   where
@@ -307,7 +306,7 @@ getAction p@AdviseNoArgs = advise p ["get"] advice
                       , dblQuote "get sword"
                       , dfltColor
                       , "." ]
-getAction   (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == "from" =
+getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == "from" =
     wrapSend mq cols . T.concat $ [ hintANSI
                                   , "Hint:"
                                   , noHintANSI
@@ -319,7 +318,7 @@ getAction   (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) =
                                   , dblQuote "remove ring sack"
                                   , dfltColor
                                   , "." ]
-getAction   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
+getAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "get" i $ logMsgs
     bcastNl bs
   where
@@ -771,7 +770,7 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 
 
 putAction :: Action
-putAction p@AdviseNoArgs     = advise p ["put"] advice
+putAction p@AdviseNoArgs = advise p ["put"] advice
   where
     advice = T.concat [ "Please specify one or more items you want to put followed by where you want to put them, as \
                         \in "
@@ -786,7 +785,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dblQuote $ "put " <> a <> " sack"
                       , dfltColor
                       , "." ]
-putAction   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
+putAction (Lower' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "put" i $ logMsgs
     bcastNl bs
   where
@@ -839,6 +838,7 @@ shufflePut i (t, ws) d cn icir as is c pis pc f | (gecrs, miss, rcs) <- resolveE
 -----
 
 
+-- TODO: Make it so that this command may not be abbreviated.
 quit :: Action
 quit (NoArgs' i mq)                        = (liftIO . atomically . writeTQueue mq $ Quit) >> logPlaExec "quit" i
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
@@ -920,14 +920,14 @@ notifyEgress i = readWSTMVar >>= \ws ->
 
 
 ready :: Action
-ready p@AdviseNoArgs     = advise p ["ready"] advice
+ready p@AdviseNoArgs = advise p ["ready"] advice
   where
     advice = T.concat [ "Please specify one or more items to ready, as in "
                       , quoteColor
                       , dblQuote "ready sword"
                       , dfltColor
                       , "." ]
-ready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
+ready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "ready" i $ logMsgs
     bcastNl bs
   where
@@ -1204,7 +1204,7 @@ getAvailArmSlot ws sub em = procMaybe . maybeSingleSlot em . armSubToSlot $ sub
 
 
 remove :: Action
-remove p@AdviseNoArgs     = advise p ["remove"] advice
+remove p@AdviseNoArgs = advise p ["remove"] advice
   where
     advice = T.concat [ "Please specify one or more items to remove followed by the container you want to remove \
                         \them from, as in "
@@ -1219,7 +1219,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dblQuote $ "remove " <> a <> " sack"
                       , dfltColor
                       , "." ]
-remove   (Lower' i as)    = helper >>= \(bs, logMsgs) -> do
+remove (Lower' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "remove" i $ logMsgs
     bcastNl bs
   where
@@ -1479,21 +1479,21 @@ typo p@AdviseNoArgs = advise p ["typo"] advice
                       , dblQuote "typo 'accross from the fireplace' should be 'across from the fireplace'"
                       , dfltColor
                       , "." ]
-typo p              = bugTypoLogger p TypoLog
+typo p = bugTypoLogger p TypoLog
 
 
 -----
 
 
 unready :: Action
-unready p@AdviseNoArgs     = advise p ["unready"] advice
+unready p@AdviseNoArgs = advise p ["unready"] advice
   where
     advice = T.concat [ "Please specify one or more items to unready, as in "
                       , quoteColor
                       , dblQuote "unready sword"
                       , dfltColor
                       , "." ]
-unready   (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
+unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
     bcastNl bs
   where
@@ -1617,14 +1617,14 @@ getUptime = (-) <$> (sec <$> (liftIO . getTime $ Monotonic)) <*> (sec <$> getNWS
 
 
 what :: Action
-what p@AdviseNoArgs            = advise p ["what"] advice
+what p@AdviseNoArgs = advise p ["what"] advice
   where
     advice = T.concat [ "Please specify one or more abbreviations to disambiguate, as in "
                       , quoteColor
                       , dblQuote "what up"
                       , dfltColor
                       , "." ]
-what   (LowerNub i mq cols as) = getPCRm' i >>= \(ws, r) ->
+what (LowerNub i mq cols as) = getPCRm' i >>= \(ws, r) ->
     logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
   where
     helper ws r n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ws it n | it <- [ PCInv, PCEq, RmInv ] ]
