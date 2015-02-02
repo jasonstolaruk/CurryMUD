@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls ) where
@@ -217,10 +217,9 @@ debugDispEnv :: Action
 debugDispEnv (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
     pager i mq =<< (concatMap (wrapIndent 2 cols) . mkEnvListTxt <$> liftIO getEnvironment)
-debugDispEnv p@(WithArgs i _ _ as) = do
-    logPlaExecArgs (prefixDebugCmd "env") as i
+debugDispEnv p@(ActionParams { plaId, args }) = do
+    logPlaExecArgs (prefixDebugCmd "env") args plaId
     dispMatches p 2 . mkEnvListTxt =<< liftIO getEnvironment
-debugDispEnv p = patternMatchFail "debugDispEnv" [ showText p ]
 
 
 mkEnvListTxt :: [(String, String)] -> [T.Text]

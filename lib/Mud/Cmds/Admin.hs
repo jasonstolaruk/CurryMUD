@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TransformListComp, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 
@@ -413,10 +413,9 @@ adminWho :: Action
 adminWho (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
     pager i mq . concatMap (wrapIndent 20 cols) =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
-adminWho p@(WithArgs i _ _ as) = do
-    logPlaExecArgs (prefixAdminCmd "who") as i
+adminWho p@(ActionParams { plaId, args }) = do
+    logPlaExecArgs (prefixAdminCmd "who") args plaId
     dispMatches p 20 =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
-adminWho p = patternMatchFail "adminWho" [ showText p ]
 
 
 mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]

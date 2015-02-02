@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Interp.Pager ( interpPager
                         , sendPagerPrompt ) where
@@ -11,22 +11,14 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Wrapping
-import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (both, over)
 import Control.Monad (void)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
-
-
-patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Interp.Pager"
-
-
--- ==================================================
 
 
 type PageLen      = Int
@@ -65,12 +57,7 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
                            sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
                            void . modifyPla i interp . Just $ interpPager pageLen txtLen ( left'' ++ prevPage
                                                                                          , currPage ++ right )
-interpPager _       _      _   _  (WithArgs _ mq cols _) = promptRetry mq cols
-interpPager pageLen txtLen txt cn p                      = patternMatchFail "interpPager" [ showText pageLen
-                                                                                          , showText txtLen
-                                                                                          , showText txt
-                                                                                          , cn
-                                                                                          , showText p ]
+interpPager _ _ _ _ (ActionParams { plaMsgQueue, plaCols }) = promptRetry plaMsgQueue plaCols
 
 
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()

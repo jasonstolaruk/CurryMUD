@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Interp.CentralDispatch (centralDispatch) where
 
@@ -13,27 +13,18 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import Mud.Util.Misc
 
 import Control.Monad (when)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Interp.CentralDispatch"
-
-
--- ==================================================
-
-
 centralDispatch :: Interp
-centralDispatch cn p@(WithArgs i mq _ _) = do
-    findAction i cn >>= maybe sorry (\act -> act p)
-    flip when (prompt mq dfltPrompt) =<< getPlaIsDfltPrompt i
+centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = do
+    findAction plaId cn >>= maybe sorry (\act -> act p)
+    flip when (prompt plaMsgQueue dfltPrompt) =<< getPlaIsDfltPrompt plaId
   where
-    sorry = send mq . nlnl $ "What?"
-centralDispatch cn p = patternMatchFail "centralDispatch" [ cn, showText p ]
+    sorry = send plaMsgQueue . nlnl $ "What?"
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)

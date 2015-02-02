@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Interp.Login (interpName) where
 
@@ -19,10 +19,9 @@ import Mud.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc
 import Mud.Util.Quoting
 import qualified Mud.Logging as L (logNotice, logPla)
-import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM (atomically)
@@ -44,13 +43,6 @@ import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Set as S (member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile, writeFile)
-
-
-patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Interp.Login"
-
-
------
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
@@ -79,8 +71,7 @@ interpName (T.toLower -> cn) (NoArgs' i mq)
                   void . modifyPla i interp . Just $ interpConfirmName cn'
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-interpName _  (WithArgs _ mq _ _) = promptRetryName mq "Your name must be a single word."
-interpName cn p                   = patternMatchFail "interpName" [ cn, showText p ]
+interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
@@ -175,8 +166,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
         in putTMVar t (ws & pcTbl.at  i        ?~ p'
                           & invTbl.at iWelcome ?~ originIs'
                           & invTbl.at iCentral ?~ destIs')
-interpConfirmName _ _  (WithArgs _ mq _ _) = promptRetryYesNo mq
-interpConfirmName s cn p                   = patternMatchFail "interpConfirmName" [ s, cn, showText p ]
+interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
 
 yesNo :: T.Text -> Maybe Bool
