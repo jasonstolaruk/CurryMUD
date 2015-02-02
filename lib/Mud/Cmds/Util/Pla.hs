@@ -193,14 +193,14 @@ type FromId = Id
 type ToId   = Id
 
 
-helperGetDropEitherCoins :: Id                                  ->
-                            PCDesig                             ->
-                            GetOrDrop                           ->
-                            FromId                              ->
-                            ToId                                ->
-                            (WorldState, [Broadcast], [T.Text]) ->
-                            Either [T.Text] Coins               ->
-                            (WorldState, [Broadcast], [T.Text])
+helperGetDropEitherCoins :: Id
+                         -> PCDesig
+                         -> GetOrDrop
+                         -> FromId
+                         -> ToId
+                         -> (WorldState, [Broadcast], [T.Text])
+                         -> Either [T.Text] Coins
+                         -> (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherCoins i d god fi ti a@(ws, _, _) = \case
   Left  msgs -> over _2 (++ [ (msg, [i]) | msg <- msgs ]) a
   Right c | (fc, tc)      <- over both ((ws^.coinsTbl) !) (fi, ti)
@@ -244,14 +244,14 @@ mkGodVerb Drop ThrPer = "drops"
 -----
 
 
-helperGetDropEitherInv :: Id                                  ->
-                          PCDesig                             ->
-                          GetOrDrop                           ->
-                          FromId                              ->
-                          ToId                                ->
-                          (WorldState, [Broadcast], [T.Text]) ->
-                          Either T.Text Inv                   ->
-                          (WorldState, [Broadcast], [T.Text])
+helperGetDropEitherInv :: Id
+                       -> PCDesig
+                       -> GetOrDrop
+                       -> FromId
+                       -> ToId
+                       -> (WorldState, [Broadcast], [T.Text])
+                       -> Either T.Text Inv
+                       -> (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherInv i d god fi ti a@(ws, _, _) = \case
   Left  (mkBroadcast i -> b) -> over _2 (++ b) a
   Right is | (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
@@ -288,16 +288,16 @@ type NthOfM = (Int, Int)
 type ToEnt  = Ent
 
 
-helperPutRemEitherCoins :: Id                                  ->
-                           PCDesig                             ->
-                           PutOrRem                            ->
-                           Maybe NthOfM                        ->
-                           FromId                              ->
-                           ToId                                ->
-                           ToEnt                               ->
-                           (WorldState, [Broadcast], [T.Text]) ->
-                           Either [T.Text] Coins               ->
-                           (WorldState, [Broadcast], [T.Text])
+helperPutRemEitherCoins :: Id
+                        -> PCDesig
+                        -> PutOrRem
+                        -> Maybe NthOfM
+                        -> FromId
+                        -> ToId
+                        -> ToEnt
+                        -> (WorldState, [Broadcast], [T.Text])
+                        -> Either [T.Text] Coins
+                        -> (WorldState, [Broadcast], [T.Text])
 helperPutRemEitherCoins i d por mnom fi ti te a@(ws, _, _) = \case
   Left  msgs -> over _2 (++ [ (msg, [i]) | msg <- msgs ]) a
   Right c | (fc, tc)      <- over both ((ws^.coinsTbl) !) (fi, ti)
@@ -381,16 +381,16 @@ onTheGround _       = " on the ground"
 -----
 
 
-helperPutRemEitherInv :: Id                                  ->
-                         PCDesig                             ->
-                         PutOrRem                            ->
-                         Maybe NthOfM                        ->
-                         FromId                              ->
-                         ToId                                ->
-                         ToEnt                               ->
-                         (WorldState, [Broadcast], [T.Text]) ->
-                         Either T.Text Inv                   ->
-                         (WorldState, [Broadcast], [T.Text])
+helperPutRemEitherInv :: Id
+                      -> PCDesig
+                      -> PutOrRem
+                      -> Maybe NthOfM
+                      -> FromId
+                      -> ToId
+                      -> ToEnt
+                      -> (WorldState, [Broadcast], [T.Text])
+                      -> Either T.Text Inv
+                      -> (WorldState, [Broadcast], [T.Text])
 helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
   Left  (mkBroadcast i -> b) -> over _2 (++ b) a
   Right is | (is', bs')      <- if ti `elem` is
@@ -667,13 +667,13 @@ mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesi
 -----
 
 
-moveReadiedItem :: Id                                  ->
-                   (WorldState, [Broadcast], [T.Text]) ->
-                   EqMap                               ->
-                   Slot                                ->
-                   Id                                  ->
-                   (T.Text, Broadcast)                 ->
-                   (WorldState, [Broadcast], [T.Text])
+moveReadiedItem :: Id
+                -> (WorldState, [Broadcast], [T.Text])
+                -> EqMap
+                -> Slot
+                -> Id
+                -> (T.Text, Broadcast)
+                -> (WorldState, [Broadcast], [T.Text])
 moveReadiedItem i a@(ws, _, _) em s ei (msg, b)
   | is  <- (ws^.invTbl) ! i
   , ws' <- ws & invTbl.at i ?~ filter (/= ei) is
