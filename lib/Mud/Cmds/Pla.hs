@@ -576,8 +576,8 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                                   , TargetBroadcast    (targetMsg, [targetId])
                                   , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
                         in set _1 ws' . over _2 (++ cbs) . over _3 (++ [logMsg]) $ a'
-          _      | b <- NonTargetBroadcast (nlnl $ "You can't introduce yourself to " <> aOrAn targetSing <> ".", [i])
-                 -> over _2 (`appendIfUnique` b) a'
+          _      | msg <- "You can't introduce yourself to " <> aOrAnOnLower targetSing <> "."
+                 , b   <- NonTargetBroadcast (nlnl msg, [i]) -> over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) =
         over _1 (++ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]) a
     helperIntroEitherCoins a (Right _   ) =
@@ -822,7 +822,7 @@ shufflePut i (t, ws) d cn icir as is c pis pc f | (conGecrs, conMiss, conRcs) <-
       else case f . head . zip conGecrs $ conMiss of
         Left  (mkBroadcast i -> bc) -> putTMVar t ws >> return (bc, [])
         Right [ci] | e <- (ws^.entTbl) ! ci, typ <- (ws^.typeTbl) ! ci -> if typ /= ConType
-          then putTMVar t ws >> return (mkBroadcast i $ "The " <> e^.sing <> " isn't a container.", [])
+          then putTMVar t ws >> return (mkBroadcast i $ theOnLower' (e^.sing) <> " isn't a container.", [])
           else let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as pis pc
                    eiss                  = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                   = map procReconciledCoinsPCInv rcs
@@ -1259,7 +1259,7 @@ shuffleRem i (t, ws) d cn icir as is c f
       Left  msg -> putTMVar t ws >> return (mkBroadcast i msg, [])
       Right [ci] | e@(view sing -> s) <- (ws^.entTbl) ! ci, typ <- (ws^.typeTbl) ! ci ->
         if typ /= ConType
-          then putTMVar t ws >> return (mkBroadcast i $ "The " <> s <> " isn't a container.", [])
+          then putTMVar t ws >> return (mkBroadcast i $ theOnLower' s <> " isn't a container.", [])
           else let cis                   = (ws^.invTbl)   ! ci
                    cc                    = (ws^.coinsTbl) ! ci
                    (gecrs, miss, rcs)    = resolveEntCoinNames i ws as cis cc
@@ -1363,8 +1363,15 @@ say p@(WithArgs i mq cols args@(a:_))
                 logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ]
                 bcast $ toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst]
         sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
-            let toSelfMsg      = T.concat [ "You say ",            frontAdv, "to the ", targetSing, rearAdv, ", ", msg ]
-                toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to the ", targetSing, rearAdv, ", ", msg ]
+            let toSelfMsg      = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
+                toOthersMsg    = T.concat [ serialize d
+                                          , " says "
+                                          , frontAdv
+                                          , "to "
+                                          , theOnLower targetSing
+                                          , rearAdv
+                                          , ", "
+                                          , msg ]
                 toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
             in do
                 logPlaOut "say" i [ toSelfMsg ]
