@@ -35,13 +35,13 @@ wrap :: Int -> T.Text -> [T.Text]
 wrap cols t | extracted <- extractANSI t
             , wrapped   <- wrapIt . T.concat . map fst $ extracted = insertANSI extracted wrapped
   where
-    wrapIt t'
-      | T.null afterMax                                 = [t']
+    wrapIt txt
+      | T.null afterMax                                 = [txt]
       | T.any isSpace beforeMax
       , (beforeSpace, afterSpace) <- breakEnd beforeMax = beforeSpace : wrapIt (afterSpace <> afterMax)
       | otherwise                                       = beforeMax   : wrapIt afterMax
       where
-        (beforeMax, afterMax) = T.splitAt cols t'
+        (beforeMax, afterMax) = T.splitAt cols txt
 
 
 breakEnd :: T.Text -> (T.Text, T.Text)
@@ -79,13 +79,13 @@ wrapIndent n cols t = let extracted = extractANSI t
                       in map leadingFillerToSpcs . insertANSI extracted $ wrapped
   where
     helper = wrapIt . leadingSpcsToFiller
-    wrapIt t'
-      | T.null afterMax = [t']
+    wrapIt txt
+      | T.null afterMax = [txt]
       | T.any isSpace beforeMax, (beforeSpace, afterSpace) <- breakEnd beforeMax =
                       beforeSpace : helper (leadingIndent <> afterSpace <> afterMax)
       | otherwise   = beforeMax   : helper (leadingIndent               <> afterMax)
       where
-        (beforeMax, afterMax) = T.splitAt cols t'
+        (beforeMax, afterMax) = T.splitAt cols txt
         leadingIndent         = T.replicate (adjustIndent n cols) . T.singleton $ indentFiller
 
 
