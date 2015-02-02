@@ -119,18 +119,18 @@ pruneDupIds = dropJustNulls . pruneThem []
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
 reconcileCoins (Coins (cop, sil, gol)) enscs = guard (not . null $ enscs) Prelude.>> concatMap helper enscs
   where
-    helper Empty                               = [ Left Empty        ]
-    helper (NoneOf c)                          = [ Left . NoneOf $ c ]
-    helper (SomeOf (Coins (cop', sil', gol'))) = concat [ [ mkEitherCop | cop' /= 0 ]
-                                                        , [ mkEitherSil | sil' /= 0 ]
-                                                        , [ mkEitherGol | gol' /= 0 ] ]
+    helper Empty                                        = [ Left Empty        ]
+    helper (NoneOf c)                                   = [ Left . NoneOf $ c ]
+    helper (SomeOf (Coins (someCop, someSil, someGol))) = concat [ [ mkEitherCop | someCop /= 0 ]
+                                                                 , [ mkEitherSil | someSil /= 0 ]
+                                                                 , [ mkEitherGol | someGol /= 0 ] ]
       where
-        mkEitherCop | cop' <= cop = Right . SomeOf . Coins $ (cop', 0,    0   )
-                    | otherwise   = Left  . SomeOf . Coins $ (cop', 0,    0   )
-        mkEitherSil | sil' <= sil = Right . SomeOf . Coins $ (0,    sil', 0   )
-                    | otherwise   = Left  . SomeOf . Coins $ (0,    sil', 0   )
-        mkEitherGol | gol' <= gol = Right . SomeOf . Coins $ (0,    0,    gol')
-                    | otherwise   = Left  . SomeOf . Coins $ (0,    0,    gol')
+        mkEitherCop | someCop <= cop = Right . SomeOf . Coins $ (someCop, 0,    0   )
+                    | otherwise      = Left  . SomeOf . Coins $ (someCop, 0,    0   )
+        mkEitherSil | someSil <= sil = Right . SomeOf . Coins $ (0,    someSil, 0   )
+                    | otherwise      = Left  . SomeOf . Coins $ (0,    someSil, 0   )
+        mkEitherGol | someGol <= gol = Right . SomeOf . Coins $ (0,    0,    someGol)
+                    | otherwise      = Left  . SomeOf . Coins $ (0,    0,    someGol)
 
 
 distillEnscs :: [EmptyNoneSome Coins] -> [EmptyNoneSome Coins]
@@ -149,24 +149,26 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
 
 
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
-mkGecr i ws is c n@(headTail' -> (h, t))
-  | n == T.singleton allChar
-  , es <- [ (ws^.entTbl) ! i' | i' <- is ] = Mult { amount          = length is
-                                                  , nameSearchedFor = n
-                                                  , entsRes         = Just es
-                                                  , coinsRes        = Just . SomeOf $ c }
-  | h == allChar = mkGecrMult i ws (maxBound :: Int) t is c
+mkGecr i ws searchIs searchC searchName@(headTail' -> (h, t))
+  | searchName == T.singleton allChar
+  , allEs <- [ (ws^.entTbl) ! searchI | searchI <- searchIs ] = Mult { amount          = length searchIs
+                                                                     , nameSearchedFor = searchName
+                                                                     , entsRes         = Just allEs
+                                                                     , coinsRes        = Just . SomeOf $ searchC }
+  | h == allChar = mkGecrMult i ws (maxBound :: Int) t searchIs searchC
   | isDigit h
-  , (numText, rest) <- T.span isDigit n
-  , numInt <- either (oops numText) fst . decimal $ numText = if numText /= "0" then parse rest numInt else Sorry n
-  | otherwise                                               = mkGecrMult i ws 1 n is c
+  , (numText, rest) <- T.span isDigit searchName
+  , numInt <- either (oops numText) fst . decimal $ numText = if numText /= "0"
+                                                                then parse rest numInt
+                                                                else Sorry searchName
+  | otherwise                                               = mkGecrMult i ws 1 searchName searchIs searchC
   where
     oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
-      | T.length rest < 2                = Sorry n
-      | (delim, rest') <- headTail' rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' is c
-                                              | delim == indexChar  -> mkGecrIndexed i ws numInt rest' is
-                                              | otherwise           -> Sorry n
+      | T.length rest < 2                = Sorry searchName
+      | (delim, rest') <- headTail' rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' searchIs searchC
+                                              | delim == indexChar  -> mkGecrIndexed i ws numInt rest' searchIs
+                                              | otherwise           -> Sorry searchName
 
 
 mkGecrMult :: Id -> WorldState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
@@ -204,12 +206,12 @@ distributeAmt amt (c:cs) | diff <- amt - c, diff >= 0 = c   : distributeAmt diff
 
 
 mkGecrMultForEnts :: Id -> WorldState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
-mkGecrMultForEnts i ws a n is | ens <- [ getEffName i ws i' | i' <- is ] =
-    uncurry (Mult a n) . maybe notFound (found ens) . findFullNameForAbbrev n $ ens
+mkGecrMultForEnts i ws a n is | effNames <- [ getEffName i ws i' | i' <- is ] =
+    uncurry (Mult a n) . maybe notFound (found effNames) . findFullNameForAbbrev n $ effNames
   where
-    notFound                    = (Nothing, Nothing)
-    found (zip is -> zipped) fn = (Just . takeMatchingEnts zipped $ fn, Nothing)
-    takeMatchingEnts zipped  fn = take a [ (ws^.entTbl) ! i' | (i', en) <- zipped, en == fn ]
+    notFound                          = (Nothing, Nothing)
+    found (zip is -> zipped) fullName = (Just . takeMatchingEnts zipped $ fullName, Nothing)
+    takeMatchingEnts zipped  fullName = take a [ (ws^.entTbl) ! i' | (i', effName) <- zipped, effName == fullName ]
 
 
 mkGecrIndexed :: Id -> WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes

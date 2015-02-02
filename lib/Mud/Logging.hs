@@ -119,9 +119,9 @@ loggingThreadExHandler n e = guard (fromException e /= Just ThreadKilled) >> mkT
                        , dblQuote . showText $ e ]
     in (T.appendFile loggingExLogFile . nl $ msg) `catch` handler msg
   where
-    handler msg e' | isAlreadyInUseError e' = showIt
-                   | isPermissionError   e' = showIt
-                   | otherwise              = throwIO e'
+    handler msg ex | isAlreadyInUseError ex = showIt
+                   | isPermissionError   ex = showIt
+                   | otherwise              = throwIO ex
       where
         showIt = T.hPutStrLn stderr msg
 
