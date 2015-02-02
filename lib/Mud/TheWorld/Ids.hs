@@ -3,6 +3,12 @@
 module Mud.TheWorld.Ids where
 
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-- ==================================================
+
+
 iWelcome = 0 :: Int
 
 iCentral = 1 :: Int
@@ -148,3 +154,11 @@ iTrousers1 = 70 :: Int
 iTrousers2 = 71 :: Int
 
 iPidge = 72 :: Int
+
+iPeasant'sShirt = 73 :: Int
+
+iOveralls = 74 :: Int
+
+iLeatherApron = 75 :: Int
+
+iTraveler'sBoots = 76 :: Int

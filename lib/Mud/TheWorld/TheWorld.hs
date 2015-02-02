@@ -20,8 +20,14 @@ import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
 import System.Clock (Clock(..), getTime)
 import qualified Data.IntMap.Lazy as IM (empty, map)
-import qualified Data.Map.Lazy as M (empty)
+import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
+
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
@@ -140,8 +146,12 @@ createWorld = do
     putArm iSandals2 (Ent iSandals2 (Just "sandals") "pair of leather sandals" "pairs of leather sandals" "These humble leather sandals offer little in the way of fashion; they will, however, adequately protect the soles of your feet." zeroBits) (Obj 1 1) (Arm Feet 1)
     putArm iBoots (Ent iBoots (Just "boots") "pair of leather boots" "pairs of leather boots" "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain." zeroBits) (Obj 1 1) (Arm Feet 1)
 
-    putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig. You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 NoHand)
-    putMob iPidge (Ent iPidge (Just "pidge") "Pidge" "" "desc here" zeroBits) [] mempty M.empty (Mob Female 10 10 10 10 10 10 10 RHand)
+    putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 NoHand)
+    putMob iPidge (Ent iPidge (Just "pidge") "Pidge" "" "Pidge is a female dwarf with walnut-colored skin and large, brown eyes. She wears her silver-white hair in shoulder-length pigtails. Her small, round face is positively adorable." zeroBits) [] mempty (M.fromList [ (ShirtS, iPeasant'sShirt), (TrousersS, iOveralls), (SmockS, iLeatherApron), (FeetS, iTraveler'sBoots) ]) (Mob Female 10 10 10 10 10 10 10 RHand)
+    putCloth iPeasant'sShirt (Ent iPeasant'sShirt (Just "shirt") "white peasant's shirt" "" "This shirt, favored by skilled laborers and bumpkins alike, represents the epitome of function over fashion." zeroBits) (Obj 1 1) Shirt
+    putCloth iOveralls (Ent iOveralls (Just "overalls") "pair of many-pocketed brown overalls" "pairs of many-pocketed brown overalls" "These durable overalls are adorned with a multitude of little pockets." zeroBits) (Obj 1 1) Trousers
+    putCloth iLeatherApron (Ent iLeatherApron (Just "apron") "leather apron" "" "This heavy apron, though bulky, is a must for those who undertake in dirty and dangerous chores." zeroBits) (Obj 1 1) Smock
+    putArm iTraveler'sBoots (Ent iTraveler'sBoots (Just "boots") "pair of jet-black traveler's boots" "pair of jet-black traveler's boots" "These well-crafted, thigh-high boots are rugged and durable." zeroBits) (Obj 1 1) (Arm Feet 1)
 
 
 sortAllInvs :: MudStack ()
