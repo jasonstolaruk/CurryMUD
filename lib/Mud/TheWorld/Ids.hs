@@ -146,3 +146,5 @@ iBreeches2 = 69 :: Int
 iTrousers1 = 70 :: Int
 
 iTrousers2 = 71 :: Int
+
+iPidge = 72 :: Int

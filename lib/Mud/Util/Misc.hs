@@ -13,6 +13,7 @@ module Mud.Util.Misc ( aOrAn
                      , headTail
                      , headTail'
                      , ifThenElse
+                     , isCapital
                      , isVowel
                      , maybeRet
                      , maybeVoid
@@ -38,7 +39,7 @@ import Mud.Util.Quoting
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Monad (guard)
-import Data.Char (toLower, toUpper)
+import Data.Char (isUpper, toLower, toUpper)
 import Data.List (foldl', sort)
 import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
@@ -110,6 +111,11 @@ headTail' = (T.head *** T.tail) . dup
 ifThenElse :: Bool -> a -> a -> a
 ifThenElse True  x _ = x
 ifThenElse False _ y = y
+
+
+isCapital :: T.Text -> Bool
+isCapital ""            = False
+isCapital (T.head -> h) = isUpper h
 
 
 isVowel :: Char -> Bool

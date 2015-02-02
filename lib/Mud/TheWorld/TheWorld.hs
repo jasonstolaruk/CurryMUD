@@ -72,7 +72,7 @@ createWorld = do
     putRm iConCloset [ iBag1, iBag2, iBackpack1, iBackpack2 ] mempty (Rm "Container closet" "This closet holds containers." zeroBits [ StdLink North iCentral ])
     putRm iWpnCloset [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ] mempty (Rm "Weapon closet" "This closet holds weapons." zeroBits [ StdLink Northeast iCentral ])
     putRm iArmCloset [ iCap, iHelm, iSandals1, iSandals2, iBoots ] mempty (Rm "Armor closet" "This closet holds armor." zeroBits [ StdLink East iCentral ])
-    putRm iMobCloset [iRockCavy] mempty (Rm "Mob closet" "This closet holds mobs." zeroBits [ StdLink Southeast iCentral ])
+    putRm iMobCloset [ iRockCavy, iPidge ] mempty (Rm "Mob closet" "This closet holds mobs." zeroBits [ StdLink Southeast iCentral ])
     putRm iVoid [] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." zeroBits [ StdLink Up iCentral, NonStdLink "lounge" iLounge (sformat $ stext % " enters the lounge.") (sformat $ stext % " enters the lounge.") ])
     putRm iLounge [] mempty (Rm "The admin lounge" "Welcome, admin! Have a seat by the fire and relax for awhile." zeroBits [ NonStdLink "out" iVoid (sformat $ stext % " exits the hut.") (sformat $ stext % " exits the hut.") ])
 
@@ -141,6 +141,7 @@ createWorld = do
     putArm iBoots (Ent iBoots (Just "boots") "pair of leather boots" "pairs of leather boots" "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain." zeroBits) (Obj 1 1) (Arm Feet 1)
 
     putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig. You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 NoHand)
+    putMob iPidge (Ent iPidge (Just "pidge") "Pidge" "" "desc here" zeroBits) [] mempty M.empty (Mob Female 10 10 10 10 10 10 10 RHand)
 
 
 sortAllInvs :: MudStack ()

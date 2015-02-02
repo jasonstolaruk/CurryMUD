@@ -714,7 +714,7 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
                                                     , dfltColor
                                                     , " "
                                                     , en ]
-    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAn s <> " " <> en
+    mkOtherDesc (en, c, (s, _)) | c == 1 = (if isCapital s then s else aOrAn s) <> " " <> en
     mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
 
 
@@ -1362,7 +1362,7 @@ say p@(WithArgs i mq cols args@(a:_))
             in do
                 logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ]
                 bcast $ toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst]
-        sayToMobHelper d targetSing (frontAdv, rearAdv, msg) = -- TODO: NPCs with proper names? "to the" isn't right...
+        sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg      = T.concat [ "You say ",            frontAdv, "to the ", targetSing, rearAdv, ", ", msg ]
                 toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to the ", targetSing, rearAdv, ", ", msg ]
                 toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
