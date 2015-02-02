@@ -118,6 +118,7 @@ plaCmds =
     , Cmd { cmdName = "d", action = go "d", cmdDesc = "Go down." }
     , Cmd { cmdName = "drop", action = dropAction, cmdDesc = "Drop one or more items." }
     , Cmd { cmdName = "e", action = go "e", cmdDesc = "Go east." }
+    , Cmd { cmdName = "emote", action = emote, cmdDesc = "Freely describe an action." }
     , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display your readied equipment, or examine one or more items \
                                                          \in your readied equipment." }
     , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
@@ -259,6 +260,28 @@ dropAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
                in putTMVar t ws'' >> return (bs', logMsgs')
           else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
 dropAction p = patternMatchFail "dropAction" [ showText p ]
+
+
+-----
+
+
+-- TODO: Help.
+emote :: Action
+emote p@AdviseNoArgs = advise p ["emote"] advice
+  where
+    advice = T.concat [ "Please provide a description of an action, as in "
+                      , quoteColor
+                      , dblQuote "emote laughs with relief as tears roll down his face"
+                      , dfltColor
+                      , "." ]
+emote (Msg i _ msg) = readWSTMVar >>= \ws ->
+    let (d, s, _, _, _) = mkCapStdDesig i ws
+        toSelfMsg       = bracketQuote $ s <> " " <> msg
+        toSelfBrdcst    = (nlnl toSelfMsg, [i])
+        toOthersMsg     = serialize d <> " " <> msg
+        toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
+    in logPlaOut "emote" i [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+emote p = patternMatchFail "emote" [ showText p ]
 
 
 -----

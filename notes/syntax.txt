@@ -1,25 +1,3 @@
-COMMAND SYNTAX
-==============
-
-The following is a summary of the major syntactic patterns common among different types of commands.
-
------
-
-MOVEMENT COMMANDS
-
-Movement commands consist of a single character indicating the direction in which you wish to move.
-n   Move north.`
-s   Move south.`
-e   Move east.`
-w   Move west.`
-u   Move up.`
-d   Move down.`
-
-Multiple movement commands can be placed on a single line:
-"e e u s" to attempt to move east twice, then up and south.
-
------
-
 SENSORY COMMANDS
 
 The following commands allow you to utilize your character's senses:
@@ -27,31 +5,6 @@ The following commands allow you to utilize your character's senses:
 
 Supply arguments to indicate one or more things to which you wish to apply your senses ("taste potion", "smell apple orange", etc.).
 "touch" and "taste" require arguments. "smell" and "listen" may be used with or without arguments.
-
------
-
-VERB + ITEM COMMANDS
-
-Verb + item commands consist of a command (a "verb") followed by one or more items for the command to act upon.
-
-get      Pick up items. Operates on items in your current room.`
-drop     Drop items on the ground. Operates on items in your inventory.`
-ready    Move items from your inventory to your readied equipment.
-         You may specify precisely where to ready each item. See "help ready" for more info.
-unready  Move items from your readied equipment to your inventory.`
-
------
-
-VERB + ITEM + CONTAINER COMMANDS
-
-Verb + item + container commands consist of a command (a "verb"), followed by one or more items for the command to act upon, followed by a container.
-
-put     Put items (in your inventory) into a container (in your inventory).
-        "put ring sack" to put your ring into your sack.
-remove  Remove items from a container (in your inventory).
-        "remove ring sack" to remove the ring from your sack.
-
-It is possible to specify a container in your current room, as opposed to one in your inventory. See "help prefixes" for more information.
 
 -----
 
@@ -66,6 +19,8 @@ show  Show items (in your readied equipment OR your inventory) to another charac
 
 -----
 
+TODO: Make a "coins" help topic.
+
 DEALING WITH COINS
 
 Many commands that manipulate items can be used with coins. As such, coins are treated just like any other item. For example, "give 5/sp gp taro" will give five silver pieces and one gold piece to Taro.
@@ -75,37 +30,7 @@ The "coin" keyword may not be abbreviated. "coins" is considered to be a synonym
 
 -----
 
-EXAMINING COMMANDS
-
-Examining commands have two functions: they may either 1) give you a list of things, or 2) give you descriptions of particular things.
-
-look   Examine your current room.
-       "look" to get a description of your current room followed by a list of the things in the room.
-       "look dog" to get a description of the dog in your current room.
-inv    Examine your inventory.
-       "inv" to get a list of the items in your inventory.
-       "inv sack" to get a description of the sack you're holding.
-equip  Examine your readied equipment.
-       "equip" to get a list of your readied equipment.
-       "equip sword" to get a descriptions of the sword you're wielding.
-
------
-
 IC COMMUNICATION COMMANDS
-
-These commands are used to communicate with other PCs.
-
-Use the "say" command to speak out loud. Anyone present in your current room will hear you. (The following examples assume your character is named Taro; the text to the right of the arrow is what the other players in your room will see on their screens.)
-"say hello there" -> Taro says, "Hello there."2`
-
-To say something to a specific PC, prefix the PC's name with a dash:
-"say -hanako how are you?" -> Taro says to Hanako, "How are you?"2`
-
-Supplemental adverbs may be included. Surround them with brackets.
-"say [quietly] I know a secret!" -> Taro says quietly, "I know a secret!"2`
-"say [sarcastically] yeah, right!" -> Taro says sarcastically, "Yeah, right!"2`
-"say [happily] -hanako I knew we could do it!" -> Taro says happily to Hanako, "I knew we could do it!"2`
-"say -hanako [with some hesitation] well, I guess so..." -> Taro says to Hanako with some hesitation, "Well, I guess so..."2`
 
 The "shout" command is similar to "say", but your voice will reach players in adjacent rooms. Shouting costs FP.
 
@@ -123,10 +48,6 @@ The built-in emotes may also be used, like so:
 
 Furthermore, emotes may be used in the IC channel commands. See "help channels" for more info.
 
-The single quote (') is equivalent to "say", while the double quote (") is equivalent to "tell". You need not follow the singe quote or the double quote with a space.
-
-The "ask" command may be used to communicate with NPCs. See "help ask" for more info.
-
 -----
 
 EMOTES
@@ -137,8 +58,6 @@ If the at sign (@) appears in an emote, you character's name will be substituted
 You may emote with your character's name in the possessive form, like so:
 "emote @'s leg twitches involuntarily." -> Taro's leg twitches involuntarily.2`
 "emote as he sits down, the wooden chair creaks under @'s weight." -> As he sits down, the wooden chair creaks under Taro's weight.2`
-
-The semicolon is equivalent to "emote". You need not follow the semicolon with a space.
 
 -----
 
