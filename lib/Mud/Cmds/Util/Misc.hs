@@ -81,13 +81,13 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 dispCmdList :: [Cmd] -> Action
 dispCmdList cmds (NoArgs i mq cols) =
     pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds p                  = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
+dispCmdList cmds p = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
 
 
 mkCmdListText :: [Cmd] -> [T.Text]
 mkCmdListText cmds = let (styleAbbrevs Don'tBracket -> cmdNames) = [ cmdName cmd | cmd <- cmds ]
                          cmdDescs                                = [ cmdDesc cmd | cmd <- cmds ]
-                     in [ pad (succ maxCmdLen) n <> d | n <- cmdNames | d <- cmdDescs ]
+                     in [ pad (succ maxCmdLen) n <> d | (n, d) <- zip cmdNames cmdDescs, not . T.null $ d ]
 
 
 -----

@@ -133,6 +133,7 @@ plaCmds =
     , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
     , Cmd { cmdName = "nw", action = go "nw", cmdDesc = "Go northwest." }
     , Cmd { cmdName = "put", action = putAction, cmdDesc = "Put one or more items into a container." }
+    , Cmd { cmdName = "qui", action = quitCan'tAbbrev, cmdDesc = "" }
     , Cmd { cmdName = "quit", action = quit, cmdDesc = "Quit playing CurryMUD." }
     , Cmd { cmdName = "ready", action = ready, cmdDesc = "Ready one or more items." }
     , Cmd { cmdName = "remove", action = remove, cmdDesc = "Remove one or more items from a container." }
@@ -835,7 +836,6 @@ shufflePut i (t, ws) d cn icir as is c pis pc f | (conGecrs, conMiss, conRcs) <-
 -----
 
 
--- TODO: Make it so that this command may not be abbreviated.
 quit :: Action
 quit (NoArgs' i mq)                        = (liftIO . atomically . writeTQueue mq $ Quit) >> logPlaExec "quit" i
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
@@ -911,6 +911,18 @@ notifyEgress i = readWSTMVar >>= \ws ->
     let (d, _, _, _, _) = mkCapStdDesig i ws
         pis             = i `delete` pcIds d
     in bcast [(nlnl $ serialize d <> " has left the game.", pis)]
+
+
+-----
+
+
+quitCan'tAbbrev :: Action
+quitCan'tAbbrev (NoArgs _ mq cols) | msg <- T.concat [ "The "
+                                                     , dblQuote "quit"
+                                                     , " command may not be abbreviated. Type "
+                                                     , dblQuote "quit"
+                                                     , " with no arguments to quit the game." ] = wrapSend mq cols msg
+quitCan'tAbbrev p = withoutArgs quitCan'tAbbrev p
 
 
 -----
