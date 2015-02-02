@@ -656,10 +656,10 @@ look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
 look p = patternMatchFail "look" [ showText p ]
 
 
-firstLook :: Id                                                          ->
-             Cols                                                        ->
-             (Either T.Text T.Text, Maybe (PCDesig, [PCDesig]))          ->
-             MudStack (Either T.Text T.Text, Maybe (PCDesig, [PCDesig]))
+firstLook :: Id
+          -> Cols
+          -> (Either T.Text T.Text, Maybe (PCDesig, [PCDesig]))
+          -> MudStack (Either T.Text T.Text, Maybe (PCDesig, [PCDesig]))
 firstLook i cols a = (getPlaFlag IsNotFirstLook <$> getPla i) >>= \infl -> if infl
   then return a
   else let msg = T.concat [ hintANSI
@@ -804,18 +804,18 @@ type PCInv        = Inv
 type PCCoins      = Coins
 
 
-shufflePut :: Id                                                  ->
-              (TMVar WorldState, WorldState)                      ->
-              PCDesig                                             ->
-              ConName                                             ->
-              IsConInRm                                           ->
-              Args                                                ->
-              InvWithCon                                          ->
-              CoinsWithCon                                        ->
-              PCInv                                               ->
-              PCCoins                                             ->
-              ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
-              STM ([Broadcast], [T.Text])
+shufflePut :: Id
+           -> (TMVar WorldState, WorldState)
+           -> PCDesig
+           -> ConName
+           -> IsConInRm
+           -> Args
+           -> InvWithCon
+           -> CoinsWithCon
+           -> PCInv
+           -> PCCoins
+           -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
+           -> STM ([Broadcast], [T.Text])
 shufflePut i (t, ws) d cn icir as is c pis pc f | (conGecrs, conMiss, conRcs) <- resolveEntCoinNames i ws [cn] is c =
     if null conMiss && (not . null $ conRcs)
       then putTMVar t ws >> return (mkBroadcast i "You can't put something inside a coin.", [])
@@ -952,22 +952,22 @@ ready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
 ready p = patternMatchFail "ready" [ showText p ]
 
 
-helperReady :: Id                                     ->
-               PCDesig                                ->
-               (WorldState, [Broadcast], [T.Text])    ->
-               (Either T.Text Inv, Maybe RightOrLeft) ->
-               (WorldState, [Broadcast], [T.Text])
+helperReady :: Id
+            -> PCDesig
+            -> (WorldState, [Broadcast], [T.Text])
+            -> (Either T.Text Inv, Maybe RightOrLeft)
+            -> (WorldState, [Broadcast], [T.Text])
 helperReady i d a (eis, mrol) = case eis of
   Left  (mkBroadcast i -> b) -> over _2 (++ b) a
   Right is                   -> foldl' (readyDispatcher i d mrol) a is
 
 
-readyDispatcher :: Id                                  ->
-                   PCDesig                             ->
-                   Maybe RightOrLeft                   ->
-                   (WorldState, [Broadcast], [T.Text]) ->
-                   Id                                  ->
-                   (WorldState, [Broadcast], [T.Text])
+readyDispatcher :: Id
+                -> PCDesig
+                -> Maybe RightOrLeft
+                -> (WorldState, [Broadcast], [T.Text])
+                -> Id
+                -> (WorldState, [Broadcast], [T.Text])
 readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = maybe sorry (\f -> f i d mrol a ei e) mf
   where
     mf = case (ws^.typeTbl) ! ei of
@@ -982,13 +982,13 @@ readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = maybe sorry (
 -- Readying clothing:
 
 
-readyCloth :: Id                                  ->
-              PCDesig                             ->
-              Maybe RightOrLeft                   ->
-              (WorldState, [Broadcast], [T.Text]) ->
-              Id                                  ->
-              Ent                                 ->
-              (WorldState, [Broadcast], [T.Text])
+readyCloth :: Id
+           -> PCDesig
+           -> Maybe RightOrLeft
+           -> (WorldState, [Broadcast], [T.Text])
+           -> Id
+           -> Ent
+           -> (WorldState, [Broadcast], [T.Text])
 readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
     let em = (ws^.eqTbl)    ! i
         c  = (ws^.clothTbl) ! ei
@@ -1116,13 +1116,13 @@ mkPossPronoun s      = patternMatchFail "mkPossPronoun" [ showText s ]
 -- Readying weapons:
 
 
-readyWpn :: Id                                  ->
-            PCDesig                             ->
-            Maybe RightOrLeft                   ->
-            (WorldState, [Broadcast], [T.Text]) ->
-            Id                                  ->
-            Ent                                 ->
-            (WorldState, [Broadcast], [T.Text])
+readyWpn :: Id
+         -> PCDesig
+         -> Maybe RightOrLeft
+         -> (WorldState, [Broadcast], [T.Text])
+         -> Id
+         -> Ent
+         -> (WorldState, [Broadcast], [T.Text])
 readyWpn i d mrol a@(ws, _, _) ei e@(view sing -> s) | em  <- (ws^.eqTbl)  ! i
                                                      , w   <- (ws^.wpnTbl) ! ei
                                                      , sub <- w^.wpnSub = if not . isSlotAvail em $ BothHandsS
@@ -1177,13 +1177,13 @@ getDesigWpnSlot ws (view sing -> s) em rol
 -- Readying armor:
 
 
-readyArm :: Id                                  ->
-            PCDesig                             ->
-            Maybe RightOrLeft                   ->
-            (WorldState, [Broadcast], [T.Text]) ->
-            Id                                  ->
-            Ent                                 ->
-            (WorldState, [Broadcast], [T.Text])
+readyArm :: Id
+         -> PCDesig
+         -> Maybe RightOrLeft
+         -> (WorldState, [Broadcast], [T.Text])
+         -> Id
+         -> Ent
+         -> (WorldState, [Broadcast], [T.Text])
 readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
     let em                   = (ws^.eqTbl)  ! i
         (view armSub -> sub) = (ws^.armTbl) ! ei
@@ -1242,16 +1242,16 @@ remove (Lower' i as) = helper >>= \(bs, logMsgs) -> do
 remove p = patternMatchFail "remove" [ showText p ]
 
 
-shuffleRem :: Id                                                  ->
-              (TMVar WorldState, WorldState)                      ->
-              PCDesig                                             ->
-              ConName                                             ->
-              IsConInRm                                           ->
-              Args                                                ->
-              InvWithCon                                          ->
-              CoinsWithCon                                        ->
-              ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv) ->
-              STM ([Broadcast], [T.Text])
+shuffleRem :: Id
+           -> (TMVar WorldState, WorldState)
+           -> PCDesig
+           -> ConName
+           -> IsConInRm
+           -> Args
+           -> InvWithCon
+           -> CoinsWithCon
+           -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
+           -> STM ([Broadcast], [T.Text])
 shuffleRem i (t, ws) d cn icir as is c f
   | (conGecrs, conMiss, conRcs) <- resolveEntCoinNames i ws [cn] is c = if null conMiss && (not . null $ conRcs)
     then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
@@ -1520,12 +1520,12 @@ unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
 unready p = patternMatchFail "unready" [ showText p ]
 
 
-helperUnready :: Id                                  ->
-                 PCDesig                             ->
-                 EqMap                               ->
-                 (WorldState, [Broadcast], [T.Text]) ->
-                 Either T.Text Inv                   ->
-                 (WorldState, [Broadcast], [T.Text])
+helperUnready :: Id
+              -> PCDesig
+              -> EqMap
+              -> (WorldState, [Broadcast], [T.Text])
+              -> Either T.Text Inv
+              -> (WorldState, [Broadcast], [T.Text])
 helperUnready i d em a@(ws, _, _) = \case
   Left  (mkBroadcast i -> b) -> over _2 (++ b) a
   Right is | pis        <- (ws^.invTbl) ! i
