@@ -47,15 +47,15 @@ findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
 
 
 getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
-getEffBothGramNos i ws i'
-  | e <- (ws^.entTbl) ! i', mn <- e^.entName = case mn of
-    Nothing | (view introduced -> intros) <- (ws^.pcTbl)  ! i
-            , n                           <- e^.sing
-            , (pp *** pp -> (s, r))       <- getSexRace i' ws
-            -> if n `elem` intros
-              then (n, "")
-              else over both ((s <>) . (" " <>)) (r, pluralize r)
-    Just _  -> (view sing *** view plur) . dup $ e
+getEffBothGramNos i ws targetI
+  | targetE <- (ws^.entTbl) ! targetI = case targetE^.entName of
+    Nothing | (view introduced -> intros)          <- (ws^.pcTbl) ! i
+            , targetS                              <- targetE^.sing
+            , (pp *** pp -> (targetSexy, targetR)) <- getSexRace targetI ws
+            -> if targetS `elem` intros
+              then (targetS, "")
+              else over both ((targetSexy <>) . (" " <>)) (targetR, pluralize targetR)
+    Just _  -> (view sing *** view plur) . dup $ targetE
   where
     pluralize "dwarf" = "dwarves"
     pluralize "elf"   = "elves"
@@ -63,12 +63,12 @@ getEffBothGramNos i ws i'
 
 
 getEffName :: Id -> WorldState -> Id -> T.Text
-getEffName i ws i'@(((ws^.entTbl) !) -> e) = fromMaybe helper $ e^.entName
+getEffName i ws targetI@(((ws^.entTbl) !) -> targetE) = fromMaybe helper $ targetE^.entName
   where
-    helper | n `elem` intros    = uncapitalize n
-           | otherwise          = mkUnknownPCEntName i' ws
-    n                           = e^.sing
-    (view introduced -> intros) = (ws^.pcTbl) ! i
+    helper | targetS `elem` intros = uncapitalize targetS
+           | otherwise             = mkUnknownPCEntName targetI ws
+    targetS                        = targetE^.sing
+    (view introduced -> intros)    = (ws^.pcTbl) ! i
 
 
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
@@ -95,9 +95,9 @@ mkPlurFromBoth (_, p ) = p
 
 
 mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
-mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (s', r)) <- getSexRace i ws =
+mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (sexy, r)) <- getSexRace i ws =
     serialize NonStdDesig { nonStdPCEntSing = s
-                          , nonStdDesc      = T.concat [ aot, " ", s', " ", r ] }
+                          , nonStdDesc      = T.concat [ aot, " ", sexy, " ", r ] }
 
 
 mkUnknownPCEntName :: Id -> WorldState -> T.Text
@@ -113,7 +113,8 @@ sortInv ws is | (foldl' helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, (ws^.typeTb
                     | otherwise        = over _2 (++ [i]) a
     sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
-    zipped is'                         = [ (i, fromJust $ e^.entName, e^.sing) | i <- is', let e = (ws^.entTbl) ! i ]
+    zipped nonPCIs                     = [ (i, fromJust $ e^.entName, e^.sing) | i <- nonPCIs
+                                                                               , let e = (ws^.entTbl) ! i ]
 
 
 statefulFork :: StateInIORefT MudState IO () -> MudStack MudState
