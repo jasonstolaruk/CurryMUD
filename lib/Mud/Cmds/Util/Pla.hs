@@ -583,11 +583,11 @@ mkEqDesc i cols ws descI (view sing -> descS) descT | descs <- if descI == i the
     none = wrapUnlines cols $ if
       | descI == i      -> dudeYou'reNaked
       | descT == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
-      | otherwise       -> "The " <> descS <> " doesn't have anything readied."
+      | otherwise       -> theOnLower' descS     <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
       | descI == i      -> "You have readied the following equipment:"
       | descT == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
-      | otherwise       -> "The " <> descS <> " has readied the following equipment:"
+      | otherwise       -> theOnLower' descS     <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig descI ws descS The
 
 

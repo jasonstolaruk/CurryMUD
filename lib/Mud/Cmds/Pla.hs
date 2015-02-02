@@ -714,7 +714,7 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
                                                     , dfltColor
                                                     , " "
                                                     , en ]
-    mkOtherDesc (en, c, (s, _)) | c == 1 = (if isCapital s then s else aOrAn s) <> " " <> en
+    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAnOnLower s <> " " <> en
     mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
 
 

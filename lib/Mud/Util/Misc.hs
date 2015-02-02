@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Misc ( aOrAn
+                     , aOrAnOnLower
                      , appendIfUnique
                      , blowUp
                      , capitalize
@@ -30,6 +31,8 @@ module Mud.Util.Misc ( aOrAn
                      , showText
                      , stripControl
                      , stripTelnet
+                     , theOnLower
+                     , theOnLower'
                      , toMaybe
                      , uncapitalize ) where
 
@@ -52,6 +55,11 @@ aOrAn :: T.Text -> T.Text
 aOrAn (T.strip -> t) | T.null t             = ""
                      | isVowel . T.head $ t = "an " <> t
                      | otherwise            = "a "  <> t
+
+
+aOrAnOnLower :: T.Text -> T.Text
+aOrAnOnLower t | isCapital t = t
+               | otherwise   = aOrAn t
 
 
 appendIfUnique :: (Eq a) => [a] -> a -> [a]
@@ -197,6 +205,15 @@ stripTelnet t
                                                                       (_, T.tail -> rest') -> stripTelnet rest'
       | otherwise     = stripTelnet rest
     helper _ = ""
+
+
+theOnLower :: T.Text -> T.Text
+theOnLower t | isCapital t = t
+             | otherwise   = "the " <> t
+
+
+theOnLower' :: T.Text -> T.Text
+theOnLower' = capitalize . theOnLower
 
 
 toMaybe :: Bool -> a -> Maybe a
