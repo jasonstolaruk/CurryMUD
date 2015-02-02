@@ -46,25 +46,25 @@ getNWSRec :: ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> Mud
 getNWSRec lens = gets (view (nonWorldState.lens))
 
 
-readTMVarInNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) ->
-                  NonWorldState                           ->
-                  Const (TMVar a) NonWorldState)          ->
-                  MudStack a
+readTMVarInNWS :: ((TMVar a -> Const (TMVar a) (TMVar a))
+               -> NonWorldState
+               -> Const (TMVar a) NonWorldState)
+               -> MudStack a
 readTMVarInNWS lens = liftIO . atomically . readTMVar =<< getNWSRec lens
 
 
-onNWS :: ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState) ->
-         ((TMVar t, t) -> STM a)                                                                    ->
-         MudStack a
+onNWS :: ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVar t) NonWorldState)
+      -> ((TMVar t, t) -> STM a)
+      -> MudStack a
 onNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= \x ->
         f (t, x)
 
 
-modifyNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState) ->
-             (a -> a)                                                                                   ->
-             MudStack ()
+modifyNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (TMVar a) NonWorldState)
+          -> (a -> a)
+          -> MudStack ()
 modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = takeTMVar t >>= putTMVar t . f

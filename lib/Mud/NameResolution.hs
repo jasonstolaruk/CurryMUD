@@ -229,12 +229,12 @@ mkGecrIndexed i ws x n is
 -- Resolving entity and coin names with right/left indicators:
 
 
-resolveEntCoinNamesWithRols :: Id         ->
-                               WorldState ->
-                               Args       ->
-                               Inv        ->
-                               Coins      ->
-                               ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNamesWithRols :: Id
+                            -> WorldState
+                            -> Args
+                            -> Inv
+                            -> Coins
+                            -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNamesWithRols i ws (map T.toLower -> as) is c
   | gecrMrols           <- map (mkGecrWithRol i ws is c) as
   , (gecrs, mrols)      <- (gecrMrols^..folded._1, gecrMrols^..folded._2)
