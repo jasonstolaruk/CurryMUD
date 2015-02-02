@@ -136,8 +136,12 @@ listen = handle listenExHandler $ do
                                                                     , showText . NI.ipv4 $ n ] | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
     loop sock = do
-        (h, host, port') <- liftIO . accept $ sock
-        logNotice "listen loop" . T.concat $ [ "connected to ", showText host, " on local port ", showText port', "." ]
+        (h, host, localPort) <- liftIO . accept $ sock
+        logNotice "listen loop" . T.concat $ [ "connected to "
+                                             , showText host
+                                             , " on local port "
+                                             , showText localPort
+                                             , "." ]
         a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
         modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
@@ -224,21 +228,21 @@ talk h host = helper `finally` cleanUp
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = do
     (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar       <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    (s, r)                       <- (,)  <$> liftIO randomSex <*> liftIO randomRace
+    (sexy, r)                    <- (,)  <$> liftIO randomSex <*> liftIO randomRace
     liftIO . atomically $ do
         (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
         -----
         let i    = getUnusedId ws
-        let s'   = showText r <> showText i
+        let s    = showText r <> showText i
         -----
         let e    = Ent { _entId    = i
                        , _entName  = Nothing
-                       , _sing     = s'
+                       , _sing     = s
                        , _plur     = ""
-                       , _entDesc  = capitalize $ mkPronoun s <> " is an ad-hoc player character."
+                       , _entDesc  = capitalize $ mkPronoun sexy <> " is an ad-hoc player character."
                        , _entFlags = zeroBits }
         -----
-        let m    = Mob { _sex  = s
+        let m    = Mob { _sex  = sexy
                        , _st   = 10
                        , _dx   = 10
                        , _iq   = 10
@@ -276,7 +280,7 @@ adHoc mq host = do
         putTMVar mqtTMVar mqt'
         putTMVar ptTMVar  pt'
         -----
-        return (i, s')
+        return (i, s)
 
 
 randomSex :: IO Sex
