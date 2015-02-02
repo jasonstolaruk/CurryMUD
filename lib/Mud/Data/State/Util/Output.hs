@@ -115,11 +115,11 @@ expandPCEntName i ws ic pen@(headTail' -> (h, t)) pi ((i `delete`) -> pis) =
   where
     leading | ic        = "T"
             | otherwise = "t"
-    xth = let matches = foldr (\i' acc -> if mkUnknownPCEntName i' ws == pen then i' : acc else acc) [] pis
+    xth = let matches = foldr (\pcI acc -> if mkUnknownPCEntName pcI ws == pen then pcI : acc else acc) [] pis
           in case matches of [_] -> ""
                              _   -> (<> " ") . mkOrdinal . (+ 1) . fromJust . elemIndex pi $ matches
-    expandSex 'm'                  = "male"
-    expandSex 'f'                  = "female"
+    expandSex 'm'                = "male"
+    expandSex 'f'                = "female"
     expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
 
 

@@ -256,32 +256,32 @@ class Serializable a where
 instance Serializable PCDesig where
   serialize StdDesig { .. }
     | fields <- [ serMaybeText stdPCEntSing, showText isCap, pcEntName, showText pcId, showText pcIds ]
-    = quoteWith d . T.intercalate d' $ fields
+    = quoteWith sdd . T.intercalate dd $ fields
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
-      (d, d')                 = over both T.singleton (stdDesigDelimiter, desigDelimiter)
-  serialize NonStdDesig { .. } = quoteWith d $ do
+      (sdd, dd)               = over both T.singleton (stdDesigDelimiter, desigDelimiter)
+  serialize NonStdDesig { .. } = quoteWith nsdd $ do
       nonStdPCEntSing
-      d'
+      dd
       nonStdDesc
     where
-      (>>)    = (<>)
-      (d, d') = over both T.singleton (nonStdDesigDelimiter, desigDelimiter)
+      (>>)       = (<>)
+      (nsdd, dd) = over both T.singleton (nonStdDesigDelimiter, desigDelimiter)
   deserialize a@(headTail' -> (c, T.init -> t))
-    | c == stdDesigDelimiter, [ pes, ic, pen, pi, pis ] <- T.splitOn d t =
+    | c == stdDesigDelimiter, [ pes, ic, pen, pi, pis ] <- T.splitOn dd t =
         StdDesig { stdPCEntSing = deserMaybeText pes
                  , isCap        = read . T.unpack $ ic
                  , pcEntName    = pen
                  , pcId         = read . T.unpack $ pi
                  , pcIds        = read . T.unpack $ pis }
-    | [ pes, nsd ] <- T.splitOn d t = NonStdDesig { nonStdPCEntSing = pes
-                                                  , nonStdDesc      = nsd }
+    | [ pes, nsd ] <- T.splitOn dd t = NonStdDesig { nonStdPCEntSing = pes
+                                                   , nonStdDesc      = nsd }
     | otherwise = patternMatchFail "deserialize" [ showText a ]
     where
       deserMaybeText ""  = Nothing
       deserMaybeText txt = Just txt
-      d                  = T.singleton desigDelimiter
+      dd                 = T.singleton desigDelimiter
 
 
 -- ==================================================
