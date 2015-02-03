@@ -274,7 +274,7 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , dblQuote "emote laughs with relief as tears roll down his face"
                       , dfltColor
                       , "." ]
-emote (ActionParams { plaId, args })
+emote p@(ActionParams { plaId, args })
   | any (`elem` args) [ enc, enc <> "'s" ] = readWSTMVar >>= \ws ->
       let (d, s, _, _, _) = mkCapStdDesig plaId ws
           toSelfMsg       = bracketQuote . T.replace enc s . formatMsgArgs $ args
@@ -284,7 +284,7 @@ emote (ActionParams { plaId, args })
           toOthersMsg'    = T.replace enc (serialize d { isCap = False }) . punctuateMsg $ toOthersMsg
           toOthersBrdcst  = (nlnl toOthersMsg', plaId `delete` pcIds d)
       in logPlaOut "emote" plaId [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
-  | any (enc `T.isInfixOf`) args = undefined -- TODO
+  | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
   | otherwise = readWSTMVar >>= \ws ->
     let (d, s, _, _, _) = mkCapStdDesig plaId ws
         msg             = punctuateMsg . T.unwords $ args
@@ -296,6 +296,19 @@ emote (ActionParams { plaId, args })
   where
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
+    advice          = T.concat [ dblQuote enc
+                               , " must either be used alone, or with a "
+                               , dblQuote "'s"
+                               , " suffix (to create a possessive proper noun), as in "
+                               , quoteColor
+                               , dblQuote $ "emote shielding his eyes from the sun, " <> enc <> " looks out across the \
+                                            \plains"
+                               , dfltColor
+                               , ", or "
+                               , quoteColor
+                               , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as he laughs with gusto"
+                               , dfltColor
+                               , "." ]
 
 
 -----
