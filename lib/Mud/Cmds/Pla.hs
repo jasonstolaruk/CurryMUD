@@ -265,13 +265,12 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
--- TODO: Help.
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
     advice = T.concat [ "Please provide a description of an action, as in "
                       , quoteColor
-                      , dblQuote "emote laughs with relief as tears roll down his face"
+                      , dblQuote "emote laughs with relief as tears roll down her face"
                       , dfltColor
                       , "." ]
 emote p@(ActionParams { plaId, args })
@@ -301,12 +300,12 @@ emote p@(ActionParams { plaId, args })
                                , dblQuote "'s"
                                , " suffix (to create a possessive noun), as in "
                                , quoteColor
-                               , dblQuote $ "emote shielding his eyes from the sun, " <> enc <> " looks out across the \
+                               , dblQuote $ "emote shielding her eyes from the sun, " <> enc <> " looks out across the \
                                             \plains"
                                , dfltColor
                                , ", or "
                                , quoteColor
-                               , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as he laughs with gusto"
+                               , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
                                , dfltColor
                                , "." ]
 
