@@ -266,6 +266,7 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 -- TODO: Help.
+-- TODO: Implement "@".
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
@@ -274,14 +275,14 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , dblQuote "emote laughs with relief as tears roll down his face"
                       , dfltColor
                       , "." ]
-emote (Msg i _ msg) = readWSTMVar >>= \ws ->
-    let (d, s, _, _, _) = mkCapStdDesig i ws
+emote (ActionParams { plaId, args }) = readWSTMVar >>= \ws ->
+    let (d, s, _, _, _) = mkCapStdDesig plaId ws
+        msg             = punctuateMsg . T.unwords $ args
         toSelfMsg       = bracketQuote $ s <> " " <> msg
-        toSelfBrdcst    = (nlnl toSelfMsg, [i])
+        toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
         toOthersMsg     = serialize d <> " " <> msg
-        toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
-    in logPlaOut "emote" i [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
-emote p = patternMatchFail "emote" [ showText p ]
+        toOthersBrdcst  = (nlnl toOthersMsg, plaId `delete` pcIds d)
+    in logPlaOut "emote" plaId [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
 
 
 -----

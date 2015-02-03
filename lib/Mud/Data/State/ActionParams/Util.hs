@@ -40,6 +40,7 @@ capitalizeMsg x = x
 
 
 punctuateMsg :: T.Text -> T.Text
+punctuateMsg ""                                            = ""
 punctuateMsg x@(T.uncons -> Just (c, "")) | c `elem` ".?!" = x
                                           | otherwise      = c `T.cons` "."
 punctuateMsg x@(T.last   -> c)            | c `elem` ".?!" = x
