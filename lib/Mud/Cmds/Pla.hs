@@ -299,7 +299,7 @@ emote p@(ActionParams { plaId, args })
     advice          = T.concat [ dblQuote enc
                                , " must either be used alone, or with a "
                                , dblQuote "'s"
-                               , " suffix (to create a possessive proper noun), as in "
+                               , " suffix (to create a possessive noun), as in "
                                , quoteColor
                                , dblQuote $ "emote shielding his eyes from the sun, " <> enc <> " looks out across the \
                                             \plains"

@@ -50,17 +50,6 @@ Furthermore, emotes may be used in the IC channel commands. See "help channels" 
 
 -----
 
-EMOTES
-
-If the at sign (@) appears in an emote, you character's name will be substituted for the at sign.
-"emote shielding his eyes from the sun, @ looks out across the plains" -> Shielding his eyes from the sun, Taro looks out across the plains.2`
-
-You may emote with your character's name in the possessive form, like so:
-"emote @'s leg twitches involuntarily." -> Taro's leg twitches involuntarily.2`
-"emote as he sits down, the wooden chair creaks under @'s weight." -> As he sits down, the wooden chair creaks under Taro's weight.2`
-
------
-
 OOC COMMUNICATION COMMANDS
 
 "ooctell" is used strictly for OOC communication. You can send an "ooctell" to any player; it is not necessary for your characters to first establish a link. This command should be used sparingly, and only when necessary.
