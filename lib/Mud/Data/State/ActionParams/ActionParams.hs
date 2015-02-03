@@ -16,6 +16,8 @@ module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
                                                 , pattern NoArgs
                                                 , pattern NoArgs'
                                                 , pattern NoArgs''
+                                                , pattern OneArg
+                                                , pattern OneArg'
                                                 , pattern WithArgs ) where
 
 import Mud.Data.State.ActionParams.Util
@@ -93,6 +95,12 @@ pattern NoArgs' i mq <- NoArgs i mq _
 
 
 pattern NoArgs'' i <- NoArgs' i _
+
+
+pattern OneArg i mq cols a <- WithArgs i mq cols [(T.toLower -> a)] -- TODO: Use this where you can.
+
+
+pattern OneArg' i a <- WithArgs i _ _ [(T.toLower -> a)] -- TODO: Use this where you can.
 
 
 pattern WithArgs i mq cols as = ActionParams { plaId       = i

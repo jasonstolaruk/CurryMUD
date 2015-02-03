@@ -4,35 +4,35 @@
 module Mud.Cmds.ActionCmds ( actionCmdSet
                            , actionCmds ) where
 
+import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
+import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.State
+import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.STM
+import Mud.Util.Misc
+import qualified Mud.Logging as L (logPlaOut)
 
+import Data.List (delete)
+import Data.Monoid ((<>))
 import qualified Data.Set as S (Set, fromList, foldr)
+import qualified Data.Text as T
 
 {-
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.))
-import Data.Monoid ((<>))
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Pla
-import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
-import Mud.Data.State.State
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
-import Mud.Data.State.Util.STM
-import Mud.Logging hiding (logPlaOut)
 import Mud.NameResolution
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Wrapping
-import qualified Data.Text as T
-import qualified Mud.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 -}
 
@@ -40,6 +40,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 {-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.ActionCmds"
+-}
 
 
 -----
@@ -47,7 +48,6 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.ActionCmds"
 
 logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.ActionCmds"
--}
 
 
 -- ==================================================
@@ -58,7 +58,7 @@ actionCmdSet = S.fromList [ ActionCmd { actionCmdName   = "admire"
                                       , actionCmdAction = actionCmdAdmire
                                       , actionCmdType   = HasTarget
                                       , actionCmdRes    = "You admire Hanako." }
-                          , ActionCmd { actionCmdName   = "blink"
+                          , ActionCmd { actionCmdName   = "blink" -- TODO: This cmd is "versatile."
                                       , actionCmdAction = actionCmdBlink
                                       , actionCmdType   = NoTarget
                                       , actionCmdRes    = "You blink." } ]
@@ -81,4 +81,11 @@ actionCmdAdmire _ = return ()
 
 
 actionCmdBlink :: Action
-actionCmdBlink _ = return ()
+actionCmdBlink (NoArgs'' i) = readWSTMVar >>= \ws ->
+    let (d, _, _, _, _) = mkCapStdDesig i ws
+        toSelfMsg       = "You blink."
+        toSelfBrdcst    = (nlnl toSelfMsg, [i])
+        toOthersMsg     = serialize d <> " blinks."
+        toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
+    in logPlaOut "actionCmdBlink" i [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+actionCmdBlink _ = return () -- TODO
