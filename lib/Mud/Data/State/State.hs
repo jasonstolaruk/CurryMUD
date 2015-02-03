@@ -187,36 +187,35 @@ data ArmSub = Head -- cap, helmet, etc.
 type EqMap = M.Map Slot Id
 
 
+-- TODO: Review order.
 data Slot =
-          -- Clothing slots:
-            EarringR1S | EarringR2S
-          | EarringL1S | EarringL2S
-          | NoseRing1S | NoseRing2S
-          | Necklace1S | Necklace2S | Necklace3S
-          | BraceletR1S | BraceletR2S | BraceletR3S
-          | BraceletL1S | BraceletL2S | BraceletL3S
-          | RingRIS | RingRMS | RingRRS | RingRPS
-          | RingLIS | RingLMS | RingLRS | RingLPS
-          | ShirtS
-          | SmockS
-          | CoatS
-          | TrousersS
-          | SkirtS
-          | DressS
-          | FullBodyS
-          | BackpackS
-          | CloakS
-          -- Armor slots:
-          | HeadS
-          | TorsoS
-          | ArmsS
-          | HandsS
-          | LowerBodyS
-          | FeetS
-          -- Weapon/shield slots:
-          | RHandS
-          | LHandS
-          | BothHandsS deriving (Enum, Eq, Ord)
+            HeadS      -- armor
+          | EarringR1S | EarringR2S -- clothing
+          | EarringL1S | EarringL2S -- clothing
+          | NoseRing1S | NoseRing2S -- clothing
+          | Necklace1S | Necklace2S | Necklace3S    -- clothing
+          | ShirtS     -- clothing
+          | DressS     -- clothing
+          | TorsoS     -- armor
+          | SmockS     -- clothing
+          | ArmsS      -- armor
+          | BraceletR1S | BraceletR2S | BraceletR3S -- clothing
+          | BraceletL1S | BraceletL2S | BraceletL3S -- clothing
+          | CoatS      -- clothing
+          | HandsS     -- armor
+          | RHandS     -- weapon/shield
+          | LHandS     -- weapon/shield
+          | BothHandsS -- weapon
+          | RingRIS | RingRMS | RingRRS | RingRPS   -- clothing
+          | RingLIS | RingLMS | RingLRS | RingLPS   -- clothing
+          | TrousersS  -- clothing
+          | SkirtS     -- clothing
+          | LowerBodyS -- armor
+          | FullBodyS  -- clothing
+          | FeetS      -- armor
+          | CloakS     -- clothing
+          | BackpackS  -- container/clothing
+          deriving (Enum, Eq, Ord)
 
 
 -- ==================================================
