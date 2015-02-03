@@ -1,8 +1,10 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, RebindableSyntax, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.Misc ( AOrThe(..)
                      , Action
+                     , ActionCmd(..)
+                     , ActionCmdType(..)
                      , Amount
                      , Args
                      , Broadcast
@@ -288,6 +290,32 @@ instance Serializable PCDesig where
 -- Data types:
 
 
+type Action = ActionParams -> MudStack () -- TODO: Change "Action" to "CmdFun" and "ActionParams" to "CmdFunParams".
+
+
+data ActionCmdType = NoTarget | HasTarget deriving Eq
+
+
+data ActionCmd = ActionCmd { actionCmdName   :: !T.Text
+                           , actionCmdAction :: !Action
+                           , actionCmdType   :: !ActionCmdType
+                           , actionCmdRes    :: !T.Text }
+
+
+instance Eq ActionCmd where
+  a == b = (acn1, act1, acr1) == (acn2, act2, acr2)
+    where
+      ActionCmd { actionCmdName = acn1, actionCmdType = act1, actionCmdRes = acr1 } = a
+      ActionCmd { actionCmdName = acn2, actionCmdType = act2, actionCmdRes = acr2 } = b
+
+
+instance Ord ActionCmd where
+  ActionCmd { actionCmdName = acn1 } `compare` ActionCmd { actionCmdName = acn2 } = acn1 `compare` acn2
+
+
+-----
+
+
 data AOrThe = A | The
 
 
@@ -310,12 +338,18 @@ instance Ord ClassifiedBroadcast where
 -----
 
 
-type Action = ActionParams -> MudStack ()
-
-
 data Cmd = Cmd { cmdName :: !CmdName
                , action  :: !Action
                , cmdDesc :: !T.Text }
+
+
+instance Eq Cmd where
+  Cmd { cmdName = cn1, cmdDesc = cd1 } == Cmd { cmdName = cn2, cmdDesc = cd2 } =
+      and [ c1 == c2 | c1 <- [ cn1, cd1 ] | c2 <- [ cn2, cd2 ]]
+
+
+instance Ord Cmd where
+  Cmd { cmdName = cn1 } `compare` Cmd { cmdName = cn2 } = cn1 `compare` cn2
 
 
 -----

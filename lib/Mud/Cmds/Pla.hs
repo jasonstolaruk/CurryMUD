@@ -10,6 +10,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , showMotd ) where
 
 import Mud.ANSI
+import Mud.Cmds.ActionCmds
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
@@ -109,7 +110,11 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
 
 plaCmds :: [Cmd]
-plaCmds =
+plaCmds = sort $ nonActionCmds ++ actionCmds
+
+
+nonActionCmds :: [Cmd]
+nonActionCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About CurryMUD." }
     , Cmd { cmdName = "admin", action = admin, cmdDesc = "Send a message to an administrator." }

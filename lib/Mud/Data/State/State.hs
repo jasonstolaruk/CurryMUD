@@ -166,8 +166,8 @@ data WpnSub = OneHanded
 type AC = Int
 
 
-data Arm = Arm { _armSub :: !ArmSub
-               , _ac     :: !AC } deriving (Eq, Show)
+data Arm = Arm { _armSub   :: !ArmSub
+               , _armClass :: !AC } deriving (Eq, Show)
 
 
 data ArmSub = Head -- cap, helmet, etc.
