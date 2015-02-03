@@ -276,14 +276,13 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , "." ]
 emote (ActionParams { plaId, args })
   | any (`elem` args) [ enc, enc <> "'s" ] = readWSTMVar >>= \ws ->
-      let toSelfMsg = bracketQuote . T.replace enc s . formatMsgArgs $ args
-          toSelfBrdcst = (nlnl toSelfMsg, [plaId])
-          (d, s, _, _, _) = mkCapStdDesig plaId ws
-          d' = d { isCap = False }
+      let (d, s, _, _, _) = mkCapStdDesig plaId ws
+          toSelfMsg       = bracketQuote . T.replace enc s . formatMsgArgs $ args
+          toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
           toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
-                      | otherwise = capitalizeMsg . T.unwords $ args
-          toOthersMsg' = T.replace enc (serialize d') . punctuateMsg $ toOthersMsg
-          toOthersBrdcst = (nlnl toOthersMsg', plaId `delete` pcIds d)
+                      | otherwise          = capitalizeMsg . T.unwords $ args
+          toOthersMsg'    = T.replace enc (serialize d { isCap = False }) . punctuateMsg $ toOthersMsg
+          toOthersBrdcst  = (nlnl toOthersMsg', plaId `delete` pcIds d)
       in logPlaOut "emote" plaId [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
   | any (enc `T.isInfixOf`) args = undefined -- TODO
   | otherwise = readWSTMVar >>= \ws ->
@@ -295,9 +294,8 @@ emote (ActionParams { plaId, args })
         toOthersBrdcst  = (nlnl toOthersMsg, plaId `delete` pcIds d)
     in logPlaOut "emote" plaId [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
   where
-    h   = head args
-    c   = T.head h
-    enc = T.singleton emoteNameChar
+    h@(T.head -> c) = head args
+    enc             = T.singleton emoteNameChar
 
 
 -----
