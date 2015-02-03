@@ -399,6 +399,7 @@ debugToken (NoArgs i mq cols) = do
     tokenTxts = [ charTokenDelimiter  `T.cons` "a allChar"
                 , charTokenDelimiter  `T.cons` "c adverbCloseChar"
                 , charTokenDelimiter  `T.cons` "d adminCmdChar"
+                , charTokenDelimiter  `T.cons` "e emoteNameChar"
                 , charTokenDelimiter  `T.cons` "i indexChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"

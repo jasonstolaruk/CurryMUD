@@ -266,7 +266,6 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 -- TODO: Help.
--- TODO: Implement "@".
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
@@ -275,7 +274,19 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , dblQuote "emote laughs with relief as tears roll down his face"
                       , dfltColor
                       , "." ]
-emote (ActionParams { plaId, args }) = readWSTMVar >>= \ws ->
+emote (ActionParams { plaId, args })
+  | any (`elem` args) [ enc, enc <> "'s" ] = readWSTMVar >>= \ws ->
+      let toSelfMsg = bracketQuote . T.replace enc s . formatMsgArgs $ args
+          toSelfBrdcst = (nlnl toSelfMsg, [plaId])
+          (d, s, _, _, _) = mkCapStdDesig plaId ws
+          d' = d { isCap = False }
+          toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
+                      | otherwise = capitalizeMsg . T.unwords $ args
+          toOthersMsg' = T.replace enc (serialize d') . punctuateMsg $ toOthersMsg
+          toOthersBrdcst = (nlnl toOthersMsg', plaId `delete` pcIds d)
+      in logPlaOut "emote" plaId [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+  | any (enc `T.isInfixOf`) args = undefined -- TODO
+  | otherwise = readWSTMVar >>= \ws ->
     let (d, s, _, _, _) = mkCapStdDesig plaId ws
         msg             = punctuateMsg . T.unwords $ args
         toSelfMsg       = bracketQuote $ s <> " " <> msg
@@ -283,6 +294,10 @@ emote (ActionParams { plaId, args }) = readWSTMVar >>= \ws ->
         toOthersMsg     = serialize d <> " " <> msg
         toOthersBrdcst  = (nlnl toOthersMsg, plaId `delete` pcIds d)
     in logPlaOut "emote" plaId [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+  where
+    h   = head args
+    c   = T.head h
+    enc = T.singleton emoteNameChar
 
 
 -----

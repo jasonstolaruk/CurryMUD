@@ -187,7 +187,6 @@ data ArmSub = Head -- cap, helmet, etc.
 type EqMap = M.Map Slot Id
 
 
--- TODO: Review order.
 data Slot =
             HeadS      -- armor
           | EarringR1S | EarringR2S -- clothing
@@ -199,21 +198,21 @@ data Slot =
           | TorsoS     -- armor
           | SmockS     -- clothing
           | ArmsS      -- armor
+          | CoatS      -- clothing
           | BraceletR1S | BraceletR2S | BraceletR3S -- clothing
           | BraceletL1S | BraceletL2S | BraceletL3S -- clothing
-          | CoatS      -- clothing
+          | RingRIS | RingRMS | RingRRS | RingRPS   -- clothing
+          | RingLIS | RingLMS | RingLRS | RingLPS   -- clothing
           | HandsS     -- armor
           | RHandS     -- weapon/shield
           | LHandS     -- weapon/shield
           | BothHandsS -- weapon
-          | RingRIS | RingRMS | RingRRS | RingRPS   -- clothing
-          | RingLIS | RingLMS | RingLRS | RingLPS   -- clothing
           | TrousersS  -- clothing
           | SkirtS     -- clothing
           | LowerBodyS -- armor
+          | CloakS     -- clothing
           | FullBodyS  -- clothing
           | FeetS      -- armor
-          | CloakS     -- clothing
           | BackpackS  -- container/clothing
           deriving (Enum, Eq, Ord)
 
