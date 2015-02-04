@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-} -- TODO: Confirm.
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.ActionCmds ( actionCmdSet
                            , actionCmds ) where
@@ -22,20 +22,6 @@ import Data.List ((\\), delete)
 import Data.Monoid (mempty)
 import qualified Data.Set as S (Set, fromList, foldr)
 import qualified Data.Text as T
-
-{-
-import Mud.Cmds.Util.Abbrev
-import Mud.Cmds.Util.Misc
-import Mud.Data.State.ActionParams.Util
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Pla
-import Mud.NameResolution
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Padding
-import Mud.Util.Wrapping
--}
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -78,8 +64,8 @@ actionCmds = S.foldr helper [] actionCmdSet
 
 
 actionCmd :: ActionCmdType -> Action
-actionCmd (HasTarget _ _ _) (NoArgs _ mq cols) = wrapSend mq cols "This action command requires a single target."
-actionCmd act               (NoArgs'' i)       = case act of
+actionCmd (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols "This action command requires a single target."
+actionCmd act            (NoArgs'' i        ) = case act of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   x                                 -> patternMatchFail "actionCmd" [ showText x ]
@@ -90,9 +76,9 @@ actionCmd act               (NoArgs'' i)       = case act of
             toOthers'       = T.replace "%" (serialize d) toOthers
             toOthersBrdcst  = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut (bracketQuote "action command") i [toSelf] >> bcast (toSelfBrdcst : [toOthersBrdcst])
-actionCmd (NoTarget _ _) (OneArg _ mq cols _)      = wrapSend mq cols "This action command may not be used with a \
-                                                                      \target."
-actionCmd act            (OneArg i mq cols target) = case act of
+actionCmd (NoTarget {}) (WithArgs _ mq cols (_:_) ) = wrapSend mq cols "This action command may not be used with a \
+                                                                       \target."
+actionCmd act           (OneArg   i mq cols target) = case act of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   x                                        -> patternMatchFail "actionCmd" [ showText x ]
@@ -134,10 +120,7 @@ actionCmd act            (OneArg i mq cols target) = case act of
                 _       -> wrapSend mq cols "Sorry, but action commands may only target people."
             x -> patternMatchFail "actionCmd helper" [ showText x ]
           else wrapSend mq cols "You don't see anyone here."
-actionCmd (NoTarget _ _) (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols sorry
-  where
-    sorry = "This action command may not be used with a target." -- TODO: Code reduction...?
 actionCmd act (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols $ case act of
-  (HasTarget     _ _ _) -> "This action command requires a single target."
-  (Versatile _ _ _ _ _) -> "This action command may be used with at most one target."
-  x                     -> patternMatchFail "actionCmd" [ showText x ]
+  (HasTarget {}) -> "This action command requires a single target."
+  (Versatile {}) -> "This action command may be used with at most one target."
+  x              -> patternMatchFail "actionCmd" [ showText x ]
