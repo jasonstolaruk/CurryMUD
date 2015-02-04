@@ -233,7 +233,7 @@ adHoc mq host = do
         (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
         -----
         let i    = getUnusedId ws
-        let s    = showText r <> showText i
+            s    = showText r <> showText i
         -----
         let e    = Ent { _entId    = i
                        , _entName  = Nothing
@@ -273,8 +273,8 @@ adHoc mq host = do
                        & mobTbl.at   i ?~ m
                        & pcTbl.at    i ?~ pc
         let ris  = sortInv ws' $ (ws^.invTbl) ! iWelcome ++ [i]
-        let mqt' = mqt & at i ?~ mq
-        let pt'  = pt  & at i ?~ pla
+            mqt' = mqt & at i ?~ mq
+            pt'  = pt  & at i ?~ pla
         -----
         putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ ris
         putTMVar mqtTMVar mqt'
