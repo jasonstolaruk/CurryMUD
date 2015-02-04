@@ -177,9 +177,10 @@ about p = withoutArgs about p
 -----
 
 
+-- TODO: Help.
 actionCmdList :: Action
 actionCmdList (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkActionCmdListTxt
-actionCmdList _ = return () -- TODO
+actionCmdList p = dispMatches p (succ maxCmdLen) $ mkActionCmdListTxt
 
 
 mkActionCmdListTxt :: [T.Text]
@@ -195,7 +196,7 @@ mkActionCmdListTxt =
       (NoTarget  toSelf _   ) -> [ paddedName <> mkInitialTxt acn <> toSelf ]
       (HasTarget toSelf _ _ ) -> [ paddedName <> mkInitialTxt (acn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
       (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt acn <> toSelf
-                                                   , T.replicate (succ maxCmdLen) "_" <>
+                                                   , T.replicate (succ maxCmdLen) "_" <> -- TODO: "_"
                                                      mkInitialTxt (acn <> " hanako")  <>
                                                      T.replace "@" "Hanako" toSelfWithTarget ]
       where
@@ -208,17 +209,6 @@ mkActionCmdListTxt =
                                         , "->"
                                         , dfltColor
                                         , " " ]
-
-
-{-
-plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList plaCmds p
-plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
-
-dispCmdList :: [Cmd] -> Action
-dispCmdList cmds (NoArgs i mq cols) =
-    pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds p = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
--}
 
 
 -----
