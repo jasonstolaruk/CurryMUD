@@ -290,32 +290,25 @@ instance Serializable PCDesig where
 -- Data types:
 
 
-type Action = ActionParams -> MudStack () -- TODO: Change "Action" to "CmdFun" and "ActionParams" to "CmdFunParams".
+-- TODO: Bangs?
+type ActionCmdName = T.Text
 
 
-type ExResNoTarget   = T.Text
-type ExResWithTarget = T.Text
+-- TODO: Bangs?
+type ToSelf             = T.Text
+type ToOthers           = T.Text
+type ToSelfWithTarget   = T.Text
+type ToTarget           = T.Text
+type ToOthersWithTarget = T.Text
 
 
-data ActionCmdType = NoTarget  ExResNoTarget
-                   | HasTarget ExResWithTarget
-                   | Versatile ExResNoTarget ExResWithTarget deriving Eq
+-- TODO: Bangs?
+data ActionCmdType = NoTarget  ToSelf ToOthers
+                   | HasTarget                 ToSelfWithTarget ToTarget ToOthersWithTarget
+                   | Versatile ToSelf ToOthers ToSelfWithTarget ToTarget ToOthersWithTarget deriving (Eq, Ord, Show)
 
 
-data ActionCmd = ActionCmd { actionCmdName   :: !T.Text
-                           , actionCmdAction :: !Action
-                           , actionCmdType   :: !ActionCmdType }
-
-
-instance Eq ActionCmd where
-  a == b = (acn1, act1) == (acn2, act2)
-    where
-      ActionCmd { actionCmdName = acn1, actionCmdType = act1 } = a
-      ActionCmd { actionCmdName = acn2, actionCmdType = act2 } = b
-
-
-instance Ord ActionCmd where
-  ActionCmd { actionCmdName = acn1 } `compare` ActionCmd { actionCmdName = acn2 } = acn1 `compare` acn2
+data ActionCmd = ActionCmd !ActionCmdName !ActionCmdType deriving (Eq, Ord)
 
 
 -----
@@ -341,6 +334,9 @@ instance Ord ClassifiedBroadcast where
 
 
 -----
+
+
+type Action = ActionParams -> MudStack () -- TODO: Change "Action" to "CmdFun" and "ActionParams" to "CmdFunParams".
 
 
 data Cmd = Cmd { cmdName :: !CmdName
