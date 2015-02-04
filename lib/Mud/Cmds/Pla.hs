@@ -65,6 +65,7 @@ import System.Directory (doesFileExist, getDirectoryContents)
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
+import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
@@ -117,6 +118,7 @@ nonActionCmds :: [Cmd]
 nonActionCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About CurryMUD." }
+    , Cmd { cmdName = "actions", action = actionCmdList, cmdDesc = "List available action commands." }
     , Cmd { cmdName = "admin", action = admin, cmdDesc = "Send a message to an administrator." }
     , Cmd { cmdName = "bug", action = bug, cmdDesc = "Report a bug." }
     , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }
@@ -170,6 +172,53 @@ about (NoArgs i mq cols) = do
   where
     helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ aboutFile)
 about p = withoutArgs about p
+
+
+-----
+
+
+actionCmdList :: Action
+actionCmdList (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkActionCmdListTxt
+actionCmdList _ = return () -- TODO
+
+
+mkActionCmdListTxt :: [T.Text]
+mkActionCmdListTxt =
+    let cmdNames       = [ cmdName cmd | cmd <- plaCmds ]
+        styledCmdNames = styleAbbrevs Don'tBracket cmdNames
+    in concatMap mkActionCmdTxt $ [ (styled, head matches) | (cn, styled) <- zip cmdNames styledCmdNames
+                                                           , let matches = findMatches cn
+                                                           , length matches == 1 ]
+  where
+    findMatches cn = S.toList . S.filter (\(ActionCmd acn _) -> acn == cn) $ actionCmdSet
+    mkActionCmdTxt (styled, (ActionCmd acn act)) = case act of
+      (NoTarget  toSelf _   ) -> [ paddedName <> mkInitialTxt acn <> toSelf ]
+      (HasTarget toSelf _ _ ) -> [ paddedName <> mkInitialTxt (acn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
+      (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt acn <> toSelf
+                                                   , T.replicate (succ maxCmdLen) "_" <>
+                                                     mkInitialTxt (acn <> " hanako")  <>
+                                                     T.replace "@" "Hanako" toSelfWithTarget ]
+      where
+        paddedName         = pad (succ maxCmdLen) styled
+        mkInitialTxt input = T.concat $ [ quoteColor
+                                        , dblQuote input
+                                        , dfltColor
+                                        , " "
+                                        , arrowColor
+                                        , "->"
+                                        , dfltColor
+                                        , " " ]
+
+
+{-
+plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList plaCmds p
+plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
+
+dispCmdList :: [Cmd] -> Action
+dispCmdList cmds (NoArgs i mq cols) =
+    pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
+dispCmdList cmds p = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
+-}
 
 
 -----

@@ -290,11 +290,9 @@ instance Serializable PCDesig where
 -- Data types:
 
 
--- TODO: Bangs?
 type ActionCmdName = T.Text
 
 
--- TODO: Bangs?
 type ToSelf             = T.Text
 type ToOthers           = T.Text
 type ToSelfWithTarget   = T.Text
@@ -302,10 +300,10 @@ type ToTarget           = T.Text
 type ToOthersWithTarget = T.Text
 
 
--- TODO: Bangs?
-data ActionCmdType = NoTarget  ToSelf ToOthers
-                   | HasTarget                 ToSelfWithTarget ToTarget ToOthersWithTarget
-                   | Versatile ToSelf ToOthers ToSelfWithTarget ToTarget ToOthersWithTarget deriving (Eq, Ord, Show)
+data ActionCmdType = NoTarget  !ToSelf !ToOthers
+                   | HasTarget                   !ToSelfWithTarget !ToTarget !ToOthersWithTarget
+                   | Versatile !ToSelf !ToOthers !ToSelfWithTarget !ToTarget !ToOthersWithTarget
+                   deriving (Eq, Ord, Show)
 
 
 data ActionCmd = ActionCmd !ActionCmdName !ActionCmdType deriving (Eq, Ord)
