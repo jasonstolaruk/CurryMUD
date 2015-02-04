@@ -118,7 +118,8 @@ nonActionCmds :: [Cmd]
 nonActionCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About CurryMUD." }
-    , Cmd { cmdName = "actions", action = actionCmdList, cmdDesc = "List available action commands." }
+    , Cmd { cmdName = "actions", action = actionCmdList, cmdDesc = "Display or search a list of available action \
+                                                                   \commands and their results." }
     , Cmd { cmdName = "admin", action = admin, cmdDesc = "Send a message to an administrator." }
     , Cmd { cmdName = "bug", action = bug, cmdDesc = "Report a bug." }
     , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }

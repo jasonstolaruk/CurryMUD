@@ -40,16 +40,54 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ActionCmds"
 
 actionCmdSet :: S.Set ActionCmd
 actionCmdSet = S.fromList
-    [ ActionCmd "admire" (HasTarget "You admire @."
-                                    "% admires you."
-                                    "% admires @.")
-    , ActionCmd "blink"  (Versatile "You blink."
-                                    "% blinks."
-                                    "You blink at @."
-                                    "% blinks at you."
-                                    "% blinks at @.")
-    , ActionCmd "jump"   (NoTarget  "You jump up and down."
-                                    "% jumps up and down.") ]
+    [ ActionCmd "admire"      (HasTarget "You admire @."
+                                         "% admires you."
+                                         "% admires @.")
+    , ActionCmd "applaud"     (Versatile "You applaud."
+                                         "% applauds."
+                                         "You applaud @."
+                                         "% applauds you."
+                                         "% applauds @.")
+    , ActionCmd "astonished"  (NoTarget  "You are astonished."
+                                         "% is astonished.")
+    , ActionCmd "beam"        (Versatile "You beam."
+                                         "% beams."
+                                         "You beam at @."
+                                         "% beams at you."
+                                         "% beams at @.")
+    , ActionCmd "belch"       (Versatile "You belch."
+                                         "% belches."
+                                         "You belch at @."
+                                         "% belches at you."
+                                         "% belches at @.")
+    , ActionCmd "bite"        (HasTarget "You bite @."
+                                         "% bites you."
+                                         "% bites @.")
+    , ActionCmd "bleed"       (NoTarget  "You bleed."
+                                         "% bleeds.")
+    , ActionCmd "blink"       (Versatile "You blink."
+                                         "% blinks."
+                                         "You blink at @."
+                                         "% blinks at you."
+                                         "% blinks at @.")
+    , ActionCmd "blush"       (NoTarget  "You blush."
+                                         "% blushes.")
+    , ActionCmd "boggle"      (NoTarget  "You boggle at the concept."
+                                         "% boggles at the concept.")
+    , ActionCmd "bounce"      (NoTarget  "You bounce up and down."
+                                         "% bounces up and down.")
+    , ActionCmd "bow"         (Versatile "You bow."
+                                         "% bows."
+                                         "You bow before @."
+                                         "% bows before you."
+                                         "% bows before @.")
+    , ActionCmd "burp"        (Versatile "You burp."
+                                         "% burps."
+                                         "You burp at @."
+                                         "% burps at you."
+                                         "% burps at @.")
+    , ActionCmd "jump"        (NoTarget  "You jump up and down."
+                                         "% jumps up and down.") ]
 
 
 actionCmds :: [Cmd]
