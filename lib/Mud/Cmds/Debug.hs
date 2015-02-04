@@ -177,8 +177,8 @@ debugColor (NoArgs' i mq) = do
         bgi <- intensities
         bgc <- colors
         let fg   = (fgi, fgc)
-        let bg   = (bgi, bgc)
-        let ansi = mkColorANSI fg bg
+            bg   = (bgi, bgc)
+            ansi = mkColorANSI fg bg
         return . nl . T.concat $ [ padOrTrunc 15 . showText $ ansi
                                  , mkColorDesc fg bg
                                  , ansi
@@ -266,7 +266,7 @@ purgeThreadTbls =
 purgePlaLogTbl :: MudStack ()
 purgePlaLogTbl = IM.assocs <$> readTMVarInNWS plaLogTblTMVar >>= \kvs -> do
     let is     = [ fst kv         | kv <- kvs ]
-    let asyncs = [ fst . snd $ kv | kv <- kvs ]
+        asyncs = [ fst . snd $ kv | kv <- kvs ]
     modifyNWS plaLogTblTMVar . flip (foldl' helper) . zip is =<< (liftIO . mapM poll $ asyncs)
   where
     helper m (_, Nothing) = m

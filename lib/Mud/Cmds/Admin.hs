@@ -263,11 +263,11 @@ adminProfanity p = withoutArgs adminProfanity p
 dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
 dumpLog mq cols logFile (s, p) = send mq =<< helper
   where
-    helper           = (try . liftIO $ readLog) >>= eitherRet handler
+    helper  = (try . liftIO $ readLog) >>= eitherRet handler
     readLog = doesFileExist logFile >>= \case
       True  -> return . multiWrapNl   cols . T.lines =<< T.readFile logFile
       False -> return . wrapUnlinesNl cols $ "No " <> p <> " have been logged."
-    handler e        = do
+    handler e = do
         fileIOExHandler "dumpLog" e
         return . wrapUnlinesNl cols $ "Unfortunately, the " <> s <> " log could not be retrieved."
 
@@ -324,10 +324,10 @@ adminTell (MsgWithTarget i mq cols target msg) = do
     et        <- getEntTbl
     (mqt, pt) <- getMqtPt
     let (view sing -> s) = et ! i
-    let piss             = mkPlaIdsSingsList et pt
-    let notFound         = wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently \
+        piss             = mkPlaIdsSingsList et pt
+        notFound         = wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently \
                                               \logged in."
-    let found match | (tellI, tellS) <- head . filter ((== match) . snd) $ piss
+        found match | (tellI, tellS) <- head . filter ((== match) . snd) $ piss
                     , tellMq         <- mqt ! tellI
                     , p              <- pt ! tellI
                     , tellCols       <- p^.columns = do

@@ -194,12 +194,12 @@ admin (MsgWithTarget i mq cols target msg) = do
     et        <- getEntTbl
     (mqt, pt) <- getMqtPt
     let aiss = mkAdminIdsSingsList i et pt
-    let s    = (et ! i)^.sing
-    let notFound    | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
+        s    = (et ! i)^.sing
+        notFound    | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
                     | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
                                                                   dblQuote target                    <>
                                                                   " is currently logged in."
-    let found match | (ai, target') <- head . filter ((== match) . snd) $ aiss
+        found match | (ai, target') <- head . filter ((== match) . snd) $ aiss
                     , amq           <- mqt ! ai
                     , aCols         <- (pt ! ai)^.columns = do
                        logNotice "admin"    . T.concat $ [ s, " sent message to ",   target', ": ", dblQuote msg ]
@@ -532,9 +532,9 @@ mkHelpData :: Id -> MudStack [Help]
 mkHelpData i = getPlaIsAdmin i >>= \ia -> do
     [ plaHelpCmdNames, plaHelpTopicNames, adminHelpCmdNames, adminHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
     let phcs = [ Help (T.pack                  phcn) (plaHelpCmdsDir     ++ phcn) True  False | phcn <- plaHelpCmdNames     ]
-    let phts = [ Help (T.pack                  phtn) (plaHelpTopicsDir   ++ phtn) False False | phtn <- plaHelpTopicNames   ]
-    let ahcs = [ Help (T.pack $ adminCmdChar : whcn) (adminHelpCmdsDir   ++ whcn) True  True  | whcn <- adminHelpCmdNames   ]
-    let ahts = [ Help (T.pack                  whtn) (adminHelpTopicsDir ++ whtn) False True  | whtn <- adminHelpTopicNames ]
+        phts = [ Help (T.pack                  phtn) (plaHelpTopicsDir   ++ phtn) False False | phtn <- plaHelpTopicNames   ]
+        ahcs = [ Help (T.pack $ adminCmdChar : whcn) (adminHelpCmdsDir   ++ whcn) True  True  | whcn <- adminHelpCmdNames   ]
+        ahts = [ Help (T.pack                  whtn) (adminHelpTopicsDir ++ whtn) False True  | whtn <- adminHelpTopicNames ]
     return $ phcs ++ phts ++ (guard ia >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
@@ -909,9 +909,9 @@ handleEgress i = getPCRmId i >>= \ri -> do
         pt  <- takeTMVar ptTMVar
         -----
         let (view rmId -> ri')    = (ws^.pcTbl)  ! i
-        let ((i `delete`) -> ris) = (ws^.invTbl) ! ri'
-        let (view sing -> s)      = (ws^.entTbl) ! i
-        let (pt', bs, logMsgs)    = peepHelper pt s
+            ((i `delete`) -> ris) = (ws^.invTbl) ! ri'
+            (view sing -> s)      = (ws^.entTbl) ! i
+            (pt', bs, logMsgs)    = peepHelper pt s
         -----
         let ws'                   = ws  & typeTbl.at  i   .~ Nothing
                                         & entTbl.at   i   .~ Nothing
@@ -921,8 +921,8 @@ handleEgress i = getPCRmId i >>= \ri -> do
                                         & mobTbl.at   i   .~ Nothing
                                         & pcTbl.at    i   .~ Nothing
                                         & invTbl.at   ri' ?~ ris
-        let mqt'                  = mqt & at i .~ Nothing
-        let pt''                  = pt' & at i .~ Nothing
+            mqt'                  = mqt & at i .~ Nothing
+            pt''                  = pt' & at i .~ Nothing
         -----
         putTMVar wsTMVar  ws'
         putTMVar mqtTMVar mqt'
