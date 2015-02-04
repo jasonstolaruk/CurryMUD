@@ -156,20 +156,20 @@ instance Pretty AOrThe where
 
 
 instance Pretty Cloth where
-  pp Earring  = "earring"
-  pp NoseRing = "nose ring"
-  pp Necklace = "necklace"
+  pp Backpack = "backpack"
   pp Bracelet = "bracelet"
+  pp Cloak    = "cloak"
+  pp Coat     = "coat"
+  pp Dress    = "dress"
+  pp Earring  = "earring"
+  pp FullBody = "robes"
+  pp Necklace = "necklace"
+  pp NoseRing = "nose ring"
   pp Ring     = "ring"
   pp Shirt    = "shirt"
-  pp Smock    = "smock"
-  pp Coat     = "coat"
-  pp Trousers = "trousers"
   pp Skirt    = "skirt"
-  pp Dress    = "dress"
-  pp FullBody = "robes"
-  pp Backpack = "backpack"
-  pp Cloak    = "cloak"
+  pp Smock    = "smock"
+  pp Trousers = "trousers"
 
 
 instance Pretty Race where
@@ -293,20 +293,25 @@ instance Serializable PCDesig where
 type Action = ActionParams -> MudStack () -- TODO: Change "Action" to "CmdFun" and "ActionParams" to "CmdFunParams".
 
 
-data ActionCmdType = NoTarget | HasTarget deriving Eq
+type ExResNoTarget   = T.Text
+type ExResWithTarget = T.Text
+
+
+data ActionCmdType = NoTarget  ExResNoTarget
+                   | HasTarget ExResWithTarget
+                   | Versatile ExResNoTarget ExResWithTarget deriving Eq
 
 
 data ActionCmd = ActionCmd { actionCmdName   :: !T.Text
                            , actionCmdAction :: !Action
-                           , actionCmdType   :: !ActionCmdType
-                           , actionCmdRes    :: !T.Text }
+                           , actionCmdType   :: !ActionCmdType }
 
 
 instance Eq ActionCmd where
-  a == b = (acn1, act1, acr1) == (acn2, act2, acr2)
+  a == b = (acn1, act1) == (acn2, act2)
     where
-      ActionCmd { actionCmdName = acn1, actionCmdType = act1, actionCmdRes = acr1 } = a
-      ActionCmd { actionCmdName = acn2, actionCmdType = act2, actionCmdRes = acr2 } = b
+      ActionCmd { actionCmdName = acn1, actionCmdType = act1 } = a
+      ActionCmd { actionCmdName = acn2, actionCmdType = act2 } = b
 
 
 instance Ord ActionCmd where

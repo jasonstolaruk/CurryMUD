@@ -56,12 +56,10 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ActionCmds"
 actionCmdSet :: S.Set ActionCmd
 actionCmdSet = S.fromList [ ActionCmd { actionCmdName   = "admire"
                                       , actionCmdAction = actionCmdAdmire
-                                      , actionCmdType   = HasTarget
-                                      , actionCmdRes    = "You admire Hanako." }
-                          , ActionCmd { actionCmdName   = "blink" -- TODO: This cmd is "versatile."
+                                      , actionCmdType   = HasTarget "You admire Hanako." }
+                          , ActionCmd { actionCmdName   = "blink"
                                       , actionCmdAction = actionCmdBlink
-                                      , actionCmdType   = NoTarget
-                                      , actionCmdRes    = "You blink." } ]
+                                      , actionCmdType   = Versatile "You blink." "You blink at Hanako." } ]
 
 
 actionCmds :: [Cmd]
