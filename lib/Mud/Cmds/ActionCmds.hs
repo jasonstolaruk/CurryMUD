@@ -60,9 +60,9 @@ actionCmdSet = S.fromList
                                          "You belch at @."
                                          "% belches at you."
                                          "% belches at @.")
-    , ActionCmd "bite"        (HasTarget "You bite @."
-                                         "% bites you."
-                                         "% bites @.")
+    , ActionCmd "bite"        (HasTarget "You bite @!"
+                                         "% bites you!"
+                                         "% bites @!")
     , ActionCmd "bleed"       (NoTarget  "You bleed."
                                          "% bleeds.")
     , ActionCmd "blink"       (Versatile "You blink."
@@ -86,8 +86,60 @@ actionCmdSet = S.fromList
                                          "You burp at @."
                                          "% burps at you."
                                          "% burps at @.")
+    , ActionCmd "cheer"       (Versatile "You cheer."
+                                         "% cheers."
+                                         "You cheer for @."
+                                         "% cheers for you."
+                                         "% cheers for @.")
+    , ActionCmd "chuckle"     (Versatile "You chuckle."
+                                         "% chuckles."
+                                         "You chuckle at @."
+                                         "% chuckles at you."
+                                         "% chuckles at @.")
+    , ActionCmd "clap"        (Versatile "You clap."
+                                         "% claps."
+                                         "You clap for @."
+                                         "% claps for you."
+                                         "% claps for @.")
+    , ActionCmd "comfort"     (HasTarget "You comfort @."
+                                         "% comforts you."
+                                         "% comforts @.")
+    , ActionCmd "cough"       (Versatile "You cough."
+                                         "% coughs."
+                                         "You cough at @."
+                                         "% coughs at you."
+                                         "% coughs at @.")
+    , ActionCmd "cower"       (Versatile "You cower in fear."
+                                         "% cowers in fear."
+                                         "You cower before @ in fear."
+                                         "% cowers before you in fear."
+                                         "% cowers before @ in fear.")
+    , ActionCmd "cringe"      (Versatile "You cringe."
+                                         "% cringes."
+                                         "You cringe at @."
+                                         "% cringes at you."
+                                         "% cringes at @.")
+    , ActionCmd "cry"         (NoTarget  "You cry."
+                                         "% cries.")
+    , ActionCmd "cuddle"      (HasTarget "You cuddle @."
+                                         "% cuddles you."
+                                         "% cuddles @.")
+    , ActionCmd "curtsey"     (Versatile "You curtsey."
+                                         "% curtseys."
+                                         "You curtsey to @."
+                                         "% curtseys to you."
+                                         "% curtseys to @.")
+    , ActionCmd "curtsy"      (Versatile "You curtsy."
+                                         "% curtsies."
+                                         "You curtsy to @."
+                                         "% curtsies to you."
+                                         "% curtsies to @.")
+    , ActionCmd "hesitate"    (NoTarget  "You hesitate."
+                                         "% hesitates.")
     , ActionCmd "jump"        (NoTarget  "You jump up and down."
-                                         "% jumps up and down.") ]
+                                         "% jumps up and down.")
+    , ActionCmd "tears"       (NoTarget  "Tears roll down your face."
+                                         "Tears roll down %'s face.") ]
 
 
 actionCmds :: [Cmd]
@@ -111,7 +163,9 @@ actionCmd act            (NoArgs'' i        ) = case act of
     helper toSelf toOthers = readWSTMVar >>= \ws ->
         let (d, _, _, _, _) = mkCapStdDesig i ws
             toSelfBrdcst    = (nlnl toSelf, [i])
-            toOthers'       = T.replace "%" (serialize d) toOthers
+            serialized | T.head toOthers == '%' = serialize d
+                       | otherwise              = serialize d { isCap = False }
+            toOthers'       = T.replace "%" serialized toOthers
             toOthersBrdcst  = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut (bracketQuote "action command") i [toSelf] >> bcast (toSelfBrdcst : [toOthersBrdcst])
 actionCmd (NoTarget {}) (WithArgs _ mq cols (_:_) ) = wrapSend mq cols "This action command may not be used with a \
@@ -137,9 +191,10 @@ actionCmd act           (OneArg   i mq cols target) = case act of
                   actionOnPC targetDesig    =
                       let toSelf'        = T.replace "@" targetDesig toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
-                          toTarget'      = T.replace "%" (serialize d) toTarget
+                          serialized     = mkSerializedDesig d
+                          toTarget'      = T.replace "%" serialized toTarget
                           toTargetBrdcst = (nlnl toTarget', [targetId])
-                          toOthers'      = T.replace "@" targetDesig . T.replace "%" (serialize d) $ toOthers
+                          toOthers'      = T.replace "@" targetDesig . T.replace "%" serialized $ toOthers
                           toOthersBrdcst = (nlnl toOthers', pcIds d \\ [ i, targetId ])
                       in do
                           logPlaOut (bracketQuote "action command") i [ parsePCDesig i ws toSelf' ]
@@ -147,7 +202,8 @@ actionCmd act           (OneArg   i mq cols target) = case act of
                   actionOnMob targetNoun    =
                       let toSelf'        = T.replace "@" targetNoun toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
-                          toOthers'      = T.replace "@" targetNoun . T.replace "%" (serialize d) $ toOthers
+                          serialized     = mkSerializedDesig d
+                          toOthers'      = T.replace "@" targetNoun . T.replace "%" serialized $ toOthers
                           toOthersBrdcst = (nlnl toOthers', i `delete` pcIds d)
                       in do
                           logPlaOut (bracketQuote "action command") i [toSelf']
@@ -158,6 +214,9 @@ actionCmd act           (OneArg   i mq cols target) = case act of
                 _       -> wrapSend mq cols "Sorry, but action commands may only target people."
             x -> patternMatchFail "actionCmd helper" [ showText x ]
           else wrapSend mq cols "You don't see anyone here."
+        where
+          mkSerializedDesig d | T.head toOthers == '%' = serialize d
+                              | otherwise              = serialize d { isCap = False }
 actionCmd act (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols $ case act of
   (HasTarget {}) -> "This action command requires a single target."
   (Versatile {}) -> "This action command may be used with at most one target."
