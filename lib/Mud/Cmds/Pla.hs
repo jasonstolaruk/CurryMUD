@@ -180,19 +180,19 @@ about p = withoutArgs about p
 -- TODO: Help.
 actionCmdList :: Action
 actionCmdList (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkActionCmdListTxt
-actionCmdList p = dispMatches p (succ maxCmdLen) $ mkActionCmdListTxt
+actionCmdList p = dispMatches p (succ maxCmdLen) mkActionCmdListTxt
 
 
 mkActionCmdListTxt :: [T.Text]
 mkActionCmdListTxt =
     let cmdNames       = [ cmdName cmd | cmd <- plaCmds ]
         styledCmdNames = styleAbbrevs Don'tBracket cmdNames
-    in concatMap mkActionCmdTxt $ [ (styled, head matches) | (cn, styled) <- zip cmdNames styledCmdNames
-                                                           , let matches = findMatches cn
-                                                           , length matches == 1 ]
+    in concatMap mkActionCmdTxt [ (styled, head matches) | (cn, styled) <- zip cmdNames styledCmdNames
+                                                         , let matches = findMatches cn
+                                                         , length matches == 1 ]
   where
     findMatches cn = S.toList . S.filter (\(ActionCmd acn _) -> acn == cn) $ actionCmdSet
-    mkActionCmdTxt (styled, (ActionCmd acn act)) = case act of
+    mkActionCmdTxt (styled, ActionCmd acn act) = case act of
       (NoTarget  toSelf _   ) -> [ paddedName <> mkInitialTxt acn <> toSelf ]
       (HasTarget toSelf _ _ ) -> [ paddedName <> mkInitialTxt (acn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
       (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt acn <> toSelf
@@ -201,14 +201,14 @@ mkActionCmdListTxt =
                                                      T.replace "@" "Hanako" toSelfWithTarget ]
       where
         paddedName         = pad (succ maxCmdLen) styled
-        mkInitialTxt input = T.concat $ [ quoteColor
-                                        , dblQuote input
-                                        , dfltColor
-                                        , " "
-                                        , arrowColor
-                                        , "->"
-                                        , dfltColor
-                                        , " " ]
+        mkInitialTxt input = T.concat [ quoteColor
+                                      , dblQuote input
+                                      , dfltColor
+                                      , " "
+                                      , arrowColor
+                                      , "->"
+                                      , dfltColor
+                                      , " " ]
 
 
 -----
