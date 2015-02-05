@@ -1195,12 +1195,6 @@ sorryFullClothSlotsOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any 
                                                           , "." ]
 
 
-mkPossPronoun :: Sex -> T.Text
-mkPossPronoun Male   = "his"
-mkPossPronoun Female = "her"
-mkPossPronoun s      = patternMatchFail "mkPossPronoun" [ showText s ]
-
-
 -- Readying weapons:
 
 

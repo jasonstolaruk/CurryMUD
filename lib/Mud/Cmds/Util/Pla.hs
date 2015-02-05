@@ -34,6 +34,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkGetLookBindings
                          , mkInvCoinsDesc
                          , mkMaybeNthOfM
+                         , mkPossPronoun
                          , mkPutRemBindings
                          , mkPutRemCoinsDescs
                          , mkPutRemInvDesc
@@ -650,6 +651,15 @@ mkMaybeNthOfM icir ws i (view sing -> s) is = guard icir >> (Just . helper . dup
   where
     helper  = succ . fromJust . elemIndex i *** length
     matches = filter (\i' -> views sing (== s) $ (ws^.entTbl) ! i') is
+
+
+-----
+
+
+mkPossPronoun :: Sex -> T.Text
+mkPossPronoun Male   = "his"
+mkPossPronoun Female = "her"
+mkPossPronoun s      = patternMatchFail "mkPossPronoun" [ showText s ]
 
 
 -----
