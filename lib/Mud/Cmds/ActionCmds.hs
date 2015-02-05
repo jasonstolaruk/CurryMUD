@@ -67,7 +67,7 @@ actionCmdSet = S.fromList
                                          "% belches at you."
                                          "% belches at @.")
     , ActionCmd "blank"       (Versatile "You have a blank expression on your face."
-                                         "% has a blank expression on # face.")
+                                         "% has a blank expression on # face."
                                          "You look blankly at @."
                                          "% looks blankly at you."
                                          "% looks blankly at @.")
@@ -129,6 +129,11 @@ actionCmdSet = S.fromList
                                          "% cringes at @.")
     , ActionCmd "cry"         (NoTarget  "You cry."
                                          "% cries.")
+    , ActionCmd "cryanger"    (Versatile "You cry out in anger."
+                                         "% cries out in anger."
+                                         "You cry out in anger at @."
+                                         "% cries out in anger at you."
+                                         "% cries out in anger at @.")
     , ActionCmd "cuddle"      (HasTarget "You cuddle @."
                                          "% cuddles you."
                                          "% cuddles @.")
