@@ -112,6 +112,11 @@ actionCmdSet = S.fromList
     , ActionCmd "comfort"     (HasTarget "You comfort @."
                                          "% comforts you."
                                          "% comforts @.")
+    , ActionCmd "confused"    (Versatile "You have a confused expression on your face."
+                                         "% has a confused expression on # face."
+                                         "You look at @ with a confused expression on your face."
+                                         "% looks at you with a confused expression on # face."
+                                         "% looks at @ with a confused expression on # face.")
     , ActionCmd "cough"       (Versatile "You cough."
                                          "% coughs."
                                          "You cough at @."
@@ -331,8 +336,15 @@ actionCmdSet = S.fromList
                                          "% rolls # eyes at @.")
     , ActionCmd "rubeyes"     (NoTarget  "You rub your eyes."
                                          "% rubs # eyes.")
+    , ActionCmd "satisfied"   (NoTarget  "You look satisfied."
+                                         "% looks satisfied.")
     , ActionCmd "sleepy"      (NoTarget  "You look sleepy."
                                          "% looks sleepy.")
+    , ActionCmd "smirk"       (Versatile "You smirk."
+                                         "% smirks."
+                                         "You smirk at @."
+                                         "% smirks at you."
+                                         "% smirks at @.")
     , ActionCmd "tears"       (NoTarget  "Tears roll down your face."
                                          "Tears roll down %'s face.")
     , ActionCmd "thumbsdown"  (Versatile "You give a thumbs down."
@@ -345,6 +357,16 @@ actionCmdSet = S.fromList
                                          "You give a thumbs up to @."
                                          "% gives a thumbs up to you."
                                          "% gives a thumbs up to @.")
+    , ActionCmd "tongue"      (Versatile "You stick out your tongue."
+                                         "% sticks out # tongue."
+                                         "You stick out your tongue at @."
+                                         "% sticks out # tongue at you."
+                                         "% sticks out # tongue at @.")
+    , ActionCmd "unamused"    (Versatile "You are clearly unamused."
+                                         "% is clearly unamused."
+                                         "You are clearly unamused by @'s antics."
+                                         "% is clearly unamused by your antics."
+                                         "% is clearly unamused by @'s antics.")
     , ActionCmd "vomit"       (Versatile "You vomit."
                                          "% vomits."
                                          "You vomit on @."
@@ -352,7 +374,12 @@ actionCmdSet = S.fromList
                                          "% vomits on @.")
     , ActionCmd "watch"       (HasTarget "You watch @ with interest."
                                          "% watches you with interest."
-                                         "% watches @ with interest.") ]
+                                         "% watches @ with interest.")
+    , ActionCmd "wink"        (Versatile "You wink."
+                                         "% winks."
+                                         "You wink at @."
+                                         "% winks at you."
+                                         "% winks at @.") ]
 
 
 actionCmds :: [Cmd]
