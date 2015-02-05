@@ -44,13 +44,21 @@ actionCmdSet = S.fromList
     [ ActionCmd "admire"      (HasTarget "You admire @."
                                          "% admires you."
                                          "% admires @.")
+    , ActionCmd "angry"       (Versatile "You have an angry expression on your face."
+                                         "% has an angry expression on # face."
+                                         "You look at @ with an angry expression on your face."
+                                         "% looks at you with an angry expression on # face."
+                                         "% looks at @ with an angry expression on # face.")
     , ActionCmd "applaud"     (Versatile "You applaud."
                                          "% applauds."
                                          "You applaud @."
                                          "% applauds you."
                                          "% applauds @.")
-    , ActionCmd "astonished"  (NoTarget  "You are astonished."
-                                         "% is astonished.")
+    , ActionCmd "astonished"  (Versatile "You are astonished."
+                                         "% is astonished."
+                                         "You look at @ with an astonished expression on your face."
+                                         "% looks at you with an astonished expression on # face."
+                                         "% looks at @ with an astonished expression on # face.")
     , ActionCmd "avert"       (Versatile "You avert your eyes."
                                          "% averts # eyes."
                                          "You avert your eyes from @."
@@ -109,6 +117,8 @@ actionCmdSet = S.fromList
                                          "% claps for @.")
     , ActionCmd "closeeyes"   (NoTarget  "You close your eyes."
                                          "% closes # eyes.")
+    , ActionCmd "coldsweat"   (NoTarget  "You break out in a cold sweat."
+                                         "% breaks out in a cold sweat.")
     , ActionCmd "comfort"     (HasTarget "You comfort @."
                                          "% comforts you."
                                          "% comforts @.")
@@ -161,8 +171,15 @@ actionCmdSet = S.fromList
                                          "% daydreams.")
     , ActionCmd "deepbreath"  (NoTarget  "You take a deep breath."
                                          "% takes a deep breath.")
+    , ActionCmd "disappoint"  (Versatile "You have a disappointed expression on your face." -- TODO: Cmd length?
+                                         "% has a disappointed expression on # face."
+                                         "You look at @ with a disappointed expression on your face."
+                                         "% looks at you with a disappointed expression on # face."
+                                         "% looks at @ with a disappointed expression on # face.")
     , ActionCmd "drool"       (NoTarget  "You drool."
                                          "% drools.")
+    , ActionCmd "droopy"      (NoTarget  "Your eyes are droopy."
+                                         "%'s eyes are droopy.")
     , ActionCmd "facepalm"    (NoTarget  "You facepalm."
                                          "% facepalms.")
     , ActionCmd "faint"       (NoTarget  "You faint."
@@ -262,6 +279,8 @@ actionCmdSet = S.fromList
                                          "% leers at @.")
     , ActionCmd "licklips"    (NoTarget  "You lick your lips."
                                          "% licks # lips.")
+    , ActionCmd "livid"       (NoTarget  "You are livid."
+                                         "% is livid.")
     , ActionCmd "massage"     (HasTarget "You massage @."
                                          "% massages you."
                                          "% massages @.")
@@ -327,6 +346,11 @@ actionCmdSet = S.fromList
                                          "% raises an eyebrow at @.")
     , ActionCmd "raisehand"   (NoTarget  "You raise your hand."
                                          "% raises # hand.")
+    , ActionCmd "relieved"    (Versatile "You have a relieved expression on your face."
+                                         "% has a relieved expression on # face."
+                                         "You look at @ with a relieved expression on your face."
+                                         "% looks at you with a relieved expression on # face."
+                                         "% looks at @ with a relieved expression on # face.")
     , ActionCmd "rock"        (NoTarget  "You rock back and forth."
                                          "% rocks back and forth.")
     , ActionCmd "rolleyes"    (Versatile "You roll your eyes."
@@ -338,6 +362,11 @@ actionCmdSet = S.fromList
                                          "% rubs # eyes.")
     , ActionCmd "satisfied"   (NoTarget  "You look satisfied."
                                          "% looks satisfied.")
+    , ActionCmd "scream"      (Versatile "You scream."
+                                         "% screams."
+                                         "You scream at @."
+                                         "% screams at you."
+                                         "% screams at @.")
     , ActionCmd "sleepy"      (NoTarget  "You look sleepy."
                                          "% looks sleepy.")
     , ActionCmd "smirk"       (Versatile "You smirk."
@@ -345,6 +374,10 @@ actionCmdSet = S.fromList
                                          "You smirk at @."
                                          "% smirks at you."
                                          "% smirks at @.")
+    , ActionCmd "sob"         (NoTarget  "You sob."
+                                         "% sobs.")
+    , ActionCmd "sweat"       (NoTarget  "You break out in a sweat."
+                                         "% breaks out in a sweat.")
     , ActionCmd "tears"       (NoTarget  "Tears roll down your face."
                                          "Tears roll down %'s face.")
     , ActionCmd "thumbsdown"  (Versatile "You give a thumbs down."
