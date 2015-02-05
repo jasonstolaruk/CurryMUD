@@ -681,12 +681,6 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
 intro p = patternMatchFail "intro" [ showText p ]
 
 
-mkReflexive :: Sex -> T.Text
-mkReflexive Male   = "himself"
-mkReflexive Female = "herself"
-mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
-
-
 -----
 
 

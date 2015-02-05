@@ -15,7 +15,7 @@ import Mud.Util.Quoting
 import qualified Mud.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete)
@@ -50,6 +50,11 @@ actionCmdSet = S.fromList
                                          "% applauds @.")
     , ActionCmd "astonished"  (NoTarget  "You are astonished."
                                          "% is astonished.")
+    , ActionCmd "bark"        (Versatile "You bark like a dog."
+                                         "% barks like a dog."
+                                         "You bark like a dog at @."
+                                         "% barks like a dog at you."
+                                         "% barks like a dog at @.")
     , ActionCmd "beam"        (Versatile "You beam."
                                          "% beams."
                                          "You beam at @."
@@ -134,10 +139,66 @@ actionCmdSet = S.fromList
                                          "You curtsy to @."
                                          "% curtsies to you."
                                          "% curtsies to @.")
+    , ActionCmd "dance"       (Versatile "You dance around."
+                                         "% dances around."
+                                         "You dance with @."
+                                         "% dances with you."
+                                         "% dances with @.")
+    , ActionCmd "drool"       (NoTarget  "You drool."
+                                         "% drools.")
+    , ActionCmd "facepalm"    (NoTarget  "You facepalm."
+                                         "% facepalms.")
+    , ActionCmd "faint"       (NoTarget  "You faint."
+                                         "% faints.")
+    , ActionCmd "flop"        (NoTarget  "You flop down on the ground."
+                                         "% flops down on the ground.")
+    , ActionCmd "frown"       (NoTarget  "You frown."
+                                         "% frowns.")
+    , ActionCmd "gasp"        (Versatile "You gasp."
+                                         "% gasps."
+                                         "You gasp at @."
+                                         "% gasps at you."
+                                         "% gasps at @.")
+    , ActionCmd "giggle"      (Versatile "You giggle."
+                                         "% giggles."
+                                         "You giggle at @."
+                                         "% giggles at you."
+                                         "% giggles at @.")
+    , ActionCmd "glare"       (HasTarget "You glare at @."
+                                         "% glares at you."
+                                         "% glares at @.")
+    , ActionCmd "greet"       (HasTarget "You greet @."
+                                         "% greets you."
+                                         "% greets @.")
+    , ActionCmd "grin"        (Versatile "You grin."
+                                         "% grins."
+                                         "You grin at @."
+                                         "% grins at you."
+                                         "% grins at @.")
+    , ActionCmd "groan"       (Versatile "You groan."
+                                         "% groans."
+                                         "You groan at @."
+                                         "% groans at you."
+                                         "% groans at @.")
+    , ActionCmd "grovel"      (HasTarget "You grovel before @."
+                                         "% grovels before you."
+                                         "% grovels before @.")
+    , ActionCmd "growl"       (Versatile "You growl."
+                                         "% growls."
+                                         "You growl at @."
+                                         "% growls at you."
+                                         "% growls at @.")
+    , ActionCmd "grumble"     (NoTarget  "You grumble to yourself."
+                                         "% grumbles to $.")
     , ActionCmd "hesitate"    (NoTarget  "You hesitate."
                                          "% hesitates.")
     , ActionCmd "jump"        (NoTarget  "You jump up and down."
                                          "% jumps up and down.")
+    , ActionCmd "meow"        (Versatile "You meow like a cat."
+                                         "% meows like a cat."
+                                         "You meow like a cat to @."
+                                         "% meows like a cat to you."
+                                         "% meows like a cat to @.")
     , ActionCmd "tears"       (NoTarget  "Tears roll down your face."
                                          "Tears roll down %'s face.") ]
 
@@ -161,12 +222,13 @@ actionCmd act            (NoArgs'' i        ) = case act of
   x                                 -> patternMatchFail "actionCmd" [ showText x ]
   where
     helper toSelf toOthers = readWSTMVar >>= \ws ->
-        let (d, _, _, _, _) = mkCapStdDesig i ws
-            toSelfBrdcst    = (nlnl toSelf, [i])
-            serialized | T.head toOthers == '%' = serialize d
-                       | otherwise              = serialize d { isCap = False }
-            toOthers'       = T.replace "%" serialized toOthers
-            toOthersBrdcst  = (nlnl toOthers', i `delete` pcIds d)
+        let (d, _, _, _, _)                       = mkCapStdDesig i ws
+            toSelfBrdcst                          = (nlnl toSelf, [i])
+            serialized | T.head toOthers == '%'   = serialize d
+                       | otherwise                = serialize d { isCap = False }
+            (views sex mkReflexive -> himHerself) = (ws^.mobTbl) ! i
+            toOthers'                             = T.replace "%" serialized . T.replace "$" himHerself $ toOthers
+            toOthersBrdcst                        = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut (bracketQuote "action command") i [toSelf] >> bcast (toSelfBrdcst : [toOthersBrdcst])
 actionCmd (NoTarget {}) (WithArgs _ mq cols (_:_) ) = wrapSend mq cols "This action command may not be used with a \
                                                                        \target."

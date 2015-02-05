@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
--- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla".
+-- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
+-- by both "Mud.Cmds.Pla" and "Mud.Cmds.ActionCmds".
 
 module Mud.Cmds.Util.Pla ( InvWithCon
                          , IsConInRm
@@ -37,6 +38,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkPutRemCoinsDescs
                          , mkPutRemInvDesc
                          , mkReadyMsgs
+                         , mkReflexive
                          , mkStdDesig
                          , moveReadiedItem
                          , otherHand
@@ -662,6 +664,15 @@ mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesi
                                                                       [_, _] -> as
                                                                       _      -> (++ [cn]) . nub . init $ as
                            in (d, ris, rc, pis, pc, cn, argsWithoutCon)
+
+
+-----
+
+
+mkReflexive :: Sex -> T.Text
+mkReflexive Male   = "himself"
+mkReflexive Female = "herself"
+mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
 
 
 -----
