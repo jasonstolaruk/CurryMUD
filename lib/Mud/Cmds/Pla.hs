@@ -47,8 +47,8 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((&), (?~), (.~), (^.))
-import Control.Lens.Setter (set, mapped)
+import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
+import Control.Lens.Setter (mapped)
 import Control.Monad (forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
@@ -630,7 +630,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
               putTMVar t ws
               return (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])
     helperIntroEitherInv _ _   a (Left msg) | T.null msg = a
-                                            | otherwise  = over _2 (++ (mkNTBroadcast i . nlnl $ msg)) a
+                                            | otherwise  = a & _2 <>~ (mkNTBroadcast i . nlnl $ msg)
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
       where
         tryIntro a'@(ws, _, _) targetId | targetType                <- (ws^.typeTbl) ! targetId
@@ -641,7 +641,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                  , (views sex mkReflexPro -> himHerself) <- (ws^.mobTbl) ! i
                  -> if s `elem` intros
                    then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                        in over _2 (++ mkNTBroadcast i msg) a'
+                        in a' & _2 <>~ mkNTBroadcast i msg
                    else let p         = targetPC & introduced .~ sort (s : intros)
                             ws'       = ws & pcTbl.at targetId ?~ p
                             msg       = "You introduce yourself to " <> targetDesig <> "."
@@ -669,11 +669,11 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                             cbs = [ NonTargetBroadcast (srcMsg,    [i])
                                   , TargetBroadcast    (targetMsg, [targetId])
                                   , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
-                        in set _1 ws' . over _2 (++ cbs) . over _3 (++ [logMsg]) $ a'
+                        in a' & _1 .~ ws' & _2 <>~ cbs & _3 <>~ [logMsg]
           _      | msg <- "You can't introduce yourself to " <> aOrAnOnLower targetSing <> "."
                  , b   <- NonTargetBroadcast (nlnl msg, [i]) -> over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) =
-        over _1 (++ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]) a
+        a & _1 <>~ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]
     helperIntroEitherCoins a (Right _   ) =
         over _1 (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
@@ -1046,7 +1046,7 @@ helperReady :: Id
             -> (Either T.Text Inv, Maybe RightOrLeft)
             -> (WorldState, [Broadcast], [T.Text])
 helperReady i d a (eis, mrol) = case eis of
-  Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is                   -> foldl' (readyDispatcher i d mrol) a is
 
 
@@ -1064,7 +1064,7 @@ readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = maybe sorry (
       WpnType   -> Just readyWpn
       ArmType   -> Just readyArm
       _         -> Nothing
-    sorry | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." = over _2 (++ b) a
+    sorry | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." = a & _2 <>~ b
 
 
 -- Readying clothing:
@@ -1081,7 +1081,7 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
     let em = (ws^.eqTbl)    ! i
         c  = (ws^.clothTbl) ! ei
     in case maybe (getAvailClothSlot ws i c em) (getDesigClothSlot ws e c em) mrol of
-      Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+      Left  (mkBroadcast i -> b) -> a & _2 <>~ b
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyClothMsgs slot $ c
   where
     mkReadyClothMsgs (pp -> slot) = \case
@@ -1208,9 +1208,9 @@ readyWpn :: Id
 readyWpn i d mrol a@(ws, _, _) ei e@(view sing -> s) | em  <- (ws^.eqTbl)  ! i
                                                      , w   <- (ws^.wpnTbl) ! ei
                                                      , sub <- w^.wpnSub = if not . isSlotAvail em $ BothHandsS
-  then let b = mkBroadcast i "You're already wielding a two-handed weapon." in over _2 (++ b) a
+  then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _2 <>~ b
   else case maybe (getAvailWpnSlot ws i em) (getDesigWpnSlot ws e em) mrol of
-    Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+    Left  (mkBroadcast i -> b) -> a & _2 <>~ b
     Right slot  -> case sub of
       OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", s, " with your ", pp slot, "." ]
                                    , ( T.concat [ serialize d, " wields ", aOrAn s, " with ", p, " ", pp slot, "." ]
@@ -1222,7 +1222,7 @@ readyWpn i d mrol a@(ws, _, _) ei e@(view sing -> s) | em  <- (ws^.eqTbl)  ! i
                             , ( T.concat [ serialize d, " wields ", aOrAn s, " with both hands." ], otherPCIds ) )
             in moveReadiedItem i a em BothHandsS ei readyMsgs
         | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> s <> "."
-                       in over _2 (++ b) a
+                       in a & _2 <>~ b
   where
     p          = views sex mkPossPro $ (ws^.mobTbl) ! i
     otherPCIds = i `delete` pcIds d
@@ -1270,7 +1270,7 @@ readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
     let em                   = (ws^.eqTbl)  ! i
         (view armSub -> sub) = (ws^.armTbl) ! ei
     in case maybe (getAvailArmSlot ws sub em) sorryCan'tWearThere mrol of
-      Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+      Left  (mkBroadcast i -> b) -> a & _2 <>~ b
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyArmMsgs $ sub
   where
     sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
@@ -1535,7 +1535,7 @@ helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) =
     maybe notFound found . findFullNameForAbbrev n $ settingNames
   where
     notFound    = appendMsg $ dblQuote n <> " is not a valid setting name."
-    appendMsg m = over _2 (++ [m]) a
+    appendMsg m = a & _2 <>~ [m]
     found       = \case "columns" -> procEither changeColumns
                         "lines"   -> procEither changePageLines
                         t         -> patternMatchFail "helperSettings found" [t]
@@ -1556,7 +1556,7 @@ helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) =
                                                           , maxValTxt
                                                           , "." ]
       | p'  <- p & lens .~ x, msg <- T.concat [ "Set ", settingName, " to ", xTxt, "." ]
-      = set _1 p' . over _3 (++ [msg]) . appendMsg $ msg
+      = appendMsg msg & _1 .~ p' & _3 <>~ [msg]
 
 
 -----
@@ -1616,12 +1616,12 @@ helperUnready :: Id
               -> Either T.Text Inv
               -> (WorldState, [Broadcast], [T.Text])
 helperUnready i d em a@(ws, _, _) = \case
-  Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is | pis        <- (ws^.invTbl) ! i
            , ws'        <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
                               & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
            , (bs, msgs) <- mkUnreadyDescs i ws' d is
-           -> set _1 ws' . over _2 (++ bs) . over _3 (++ msgs) $ a
+           -> a & _1 .~ ws' & _2 <>~ bs & _3 <>~ msgs
 
 
 mkUnreadyDescs :: Id -> WorldState -> PCDesig -> Inv -> ([Broadcast], [T.Text])
