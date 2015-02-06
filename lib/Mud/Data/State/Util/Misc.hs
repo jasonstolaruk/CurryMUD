@@ -29,7 +29,7 @@ import Control.Arrow ((***))
 import Control.Concurrent (forkIO)
 import Control.Lens (_1, _2, both, over)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((^.))
+import Control.Lens.Operators ((&), (<>~), (^.))
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
@@ -108,8 +108,8 @@ sortInv :: WorldState -> Inv -> Inv
 sortInv ws is | (foldl' helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, (ws^.typeTbl) ! i) | i <- is ]
               = (pcIs ++) . sortNonPCs $ nonPCIs
   where
-    helper a (i, t) | t == PCType      = over _1 (++ [i]) a
-                    | otherwise        = over _2 (++ [i]) a
+    helper a (i, t) | t == PCType      = a & _1 <>~ [i]
+                    | otherwise        = a & _2 <>~ [i]
     sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped nonPCIs                     = [ (i, fromJust $ e^.entName, e^.sing) | i <- nonPCIs

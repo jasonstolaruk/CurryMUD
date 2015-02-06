@@ -73,8 +73,7 @@ import Control.Arrow ((***))
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((&), (?~), (^.))
-import Control.Lens.Setter (set)
+import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor ((<$>))
@@ -206,12 +205,12 @@ helperGetDropEitherCoins :: Id
                          -> Either [T.Text] Coins
                          -> (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherCoins i d god fi ti a@(ws, _, _) = \case
-  Left  msgs -> over _2 (++ [ (msg, [i]) | msg <- msgs ]) a
+  Left  msgs -> a & _2 <>~ [ (msg, [i]) | msg <- msgs ]
   Right c | (fc, tc)      <- over both ((ws^.coinsTbl) !) (fi, ti)
           , ws'           <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                 & coinsTbl.at ti ?~ tc <> c
           , (bs, logMsgs) <- mkGetDropCoinsDesc i d god c
-          -> set _1 ws' . over _2 (++ bs) . over _3 (++ logMsgs) $ a
+          -> a & _1 .~ ws' & _2 <>~ bs & _3 <>~ logMsgs
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
@@ -257,12 +256,12 @@ helperGetDropEitherInv :: Id
                        -> Either T.Text Inv
                        -> (WorldState, [Broadcast], [T.Text])
 helperGetDropEitherInv i d god fi ti a@(ws, _, _) = \case
-  Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is | (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
            , ws'             <- ws & invTbl.at fi ?~ fis \\ is
                                    & invTbl.at ti ?~ sortInv ws (tis ++ is)
            , (bs', logMsgs') <- mkGetDropInvDesc i ws' d god is
-           -> set _1 ws' . over _2 (++ bs') . over _3 (++ logMsgs') $ a
+           -> a & _1 .~ ws' & _2 <>~ bs' & _3 <>~ logMsgs'
 
 
 mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
@@ -303,12 +302,12 @@ helperPutRemEitherCoins :: Id
                         -> Either [T.Text] Coins
                         -> (WorldState, [Broadcast], [T.Text])
 helperPutRemEitherCoins i d por mnom fi ti te a@(ws, _, _) = \case
-  Left  msgs -> over _2 (++ [ (msg, [i]) | msg <- msgs ]) a
+  Left  msgs -> a & _2 <>~ [ (msg, [i]) | msg <- msgs ]
   Right c | (fc, tc)      <- over both ((ws^.coinsTbl) !) (fi, ti)
           , ws'           <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
                                 & coinsTbl.at ti ?~ tc <> c
           , (bs, logMsgs) <- mkPutRemCoinsDescs i d por mnom c te
-          -> set _1 ws' . over _2 (++ bs) . over _3 (++ logMsgs) $ a
+          -> a & _1 .~ ws' & _2 <>~ bs & _3 <>~ logMsgs
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
@@ -396,7 +395,7 @@ helperPutRemEitherInv :: Id
                       -> Either T.Text Inv
                       -> (WorldState, [Broadcast], [T.Text])
 helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
-  Left  (mkBroadcast i -> b) -> over _2 (++ b) a
+  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is | (is', bs')      <- if ti `elem` is
                                   then (filter (/= ti) is, bs ++ [sorry])
                                   else (is, bs)
@@ -404,7 +403,7 @@ helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
            , ws'             <- ws & invTbl.at fi ?~ fis \\ is'
                                    & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
            , (bs'', logMsgs) <- mkPutRemInvDesc i ws' d por mnom is' te
-           -> set _1 ws' . set _2 (bs' ++ bs'') . over _3 (++ logMsgs) $ a
+           -> a & _1 .~ ws' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs
   where
     sorry = ("You can't put the " <> te^.sing <> " inside itself.", [i])
 
@@ -710,7 +709,7 @@ moveReadiedItem i a@(ws, _, _) em s ei (msg, b)
   , ws' <- ws & invTbl.at i ?~ filter (/= ei) is
               & eqTbl.at  i ?~ (em & at s ?~ ei)
   , bs  <- mkBroadcast i msg ++ [b]
-  = set _1 ws' . over _2 (++ bs) . over _3 (++ [msg]) $ a
+  = a & _1 .~ ws' & _2 <>~ bs & _3 <>~ [msg]
 
 
 -----

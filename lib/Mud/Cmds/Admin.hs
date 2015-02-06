@@ -35,7 +35,7 @@ import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, over)
 import Control.Lens.Cons (cons)
 import Control.Lens.Getter (view)
-import Control.Lens.Operators ((<>~), (.~), (&), (?~), (^.)) -- TODO: Order?
+import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
