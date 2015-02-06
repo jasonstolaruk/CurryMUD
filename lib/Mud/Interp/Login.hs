@@ -29,11 +29,10 @@ import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
 import Control.Lens (at)
-import Control.Lens.Getter (view, views)
+import Control.Lens.Getter (use, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Monad (guard, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, sort)
 import Data.Monoid ((<>))
@@ -110,7 +109,7 @@ logProfanity cn (T.pack -> hn) =
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
-checkPropNamesDict cn mq = gets (view (nonWorldState.dicts.propNamesDict)) >>= \case
+checkPropNamesDict cn mq = use (nonWorldState.dicts.propNamesDict) >>= \case
   Nothing                      -> return False
   Just pnd | cn `S.member` pnd -> do
       promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
@@ -119,7 +118,7 @@ checkPropNamesDict cn mq = gets (view (nonWorldState.dicts.propNamesDict)) >>= \
 
 
 checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
-checkWordsDict cn mq = gets (view (nonWorldState.dicts.wordsDict)) >>= \case
+checkWordsDict cn mq = use (nonWorldState.dicts.wordsDict) >>= \case
   Nothing                    -> return False
   Just wd | cn `S.member` wd -> do
       promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."

@@ -8,9 +8,8 @@ import Mud.Data.State.StateInIORefT
 import Control.Applicative (Const)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (use)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (gets)
 
 
 -- ============================================================
@@ -18,7 +17,7 @@ import Control.Monad.State (gets)
 
 
 getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
-getWSTMVar = gets (view worldStateTMVar)
+getWSTMVar = use worldStateTMVar
 
 
 readWSTMVar :: MudStack WorldState
@@ -43,7 +42,7 @@ modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
 
 
 getNWSRec :: ((a -> Const a a) -> NonWorldState -> Const a NonWorldState) -> MudStack a
-getNWSRec lens = gets (view (nonWorldState.lens))
+getNWSRec lens = use (nonWorldState.lens)
 
 
 readTMVarInNWS :: ((TMVar a -> Const (TMVar a) (TMVar a))

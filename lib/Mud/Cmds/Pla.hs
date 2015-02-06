@@ -1240,20 +1240,20 @@ getAvailWpnSlot ws i em | (view hand -> h@(otherHand -> oh)) <- (ws^.mobTbl) ! i
 
 
 getDesigWpnSlot :: WorldState -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigWpnSlot ws (view sing -> s) em rol
-  | isRingRol rol = Left $ "You can't wield " <> aOrAn s <> " with your finger!"
+getDesigWpnSlot ws (views sing aOrAn -> s) em rol
+  | isRingRol rol = Left $ "You can't wield " <> s <> " with your finger!"
   | otherwise     = maybe (Right desigSlot)
                           (\i -> let e = (ws^.entTbl) ! i in Left . sorry $ e)
                           (em^.at desigSlot)
   where
-    sorry (view sing -> wpnS) = T.concat [ "You're already wielding "
-                                         , aOrAn wpnS
-                                         , " with your "
-                                         , pp desigSlot
-                                         , "." ]
-    desigSlot               = case rol of R -> RHandS
-                                          L -> LHandS
-                                          _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
+    sorry (views sing aOrAn -> wpnS) = T.concat [ "You're already wielding "
+                                                , wpnS
+                                                , " with your "
+                                                , pp desigSlot
+                                                , "." ]
+    desigSlot = case rol of R -> RHandS
+                            L -> LHandS
+                            _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
 
 
 -- Readying armor:

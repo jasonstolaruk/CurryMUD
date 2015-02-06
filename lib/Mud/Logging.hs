@@ -33,12 +33,11 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (use)
 import Control.Lens.Operators ((&), (.=), (?~))
 import Control.Monad (forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
-import Control.Monad.State (gets)
 import Data.IntMap.Lazy ((!))
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
@@ -163,8 +162,8 @@ doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
 closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> gets (view (nonWorldState.noticeLog))
-                                       , fromJust <$> gets (view (nonWorldState.errorLog )) ]
+    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> use (nonWorldState.noticeLog)
+                                       , fromJust <$> use (nonWorldState.errorLog ) ]
     (unzip -> (as, qs)) <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
     mapM_ stopLog         $ nq : eq : qs
     mapM_ (liftIO . wait) $ na : ea : as
@@ -180,13 +179,13 @@ registerMsg msg q = liftIO . atomically . writeTQueue q . LogMsg $ msg
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
-logNotice modName (dblQuote -> funName) msg = maybeVoid helper =<< gets (view (nonWorldState.noticeLog))
+logNotice modName (dblQuote -> funName) msg = maybeVoid helper =<< use (nonWorldState.noticeLog)
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ]) . snd
 
 
 logError :: T.Text -> MudStack ()
-logError msg = maybeVoid (registerMsg msg . snd) =<< gets (view (nonWorldState.errorLog))
+logError msg = maybeVoid (registerMsg msg . snd) =<< use (nonWorldState.errorLog)
 
 
 logExMsg :: T.Text -> T.Text -> T.Text -> SomeException -> MudStack ()

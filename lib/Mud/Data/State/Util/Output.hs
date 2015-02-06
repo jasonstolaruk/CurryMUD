@@ -36,7 +36,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
@@ -88,11 +88,11 @@ bcast bs = readWSTMVar >>= \ws -> do
 
 
 parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
-parsePCDesig i ws | (view introduced -> intros) <- (ws^.pcTbl) ! i = helper intros
+parsePCDesig i ws msg = views introduced (flip helper msg) ((ws^.pcTbl) ! i)
   where
-    helper intros msg
-      | T.singleton stdDesigDelimiter `T.isInfixOf` msg
-      , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter msg
+    helper intros txt
+      | T.singleton stdDesigDelimiter `T.isInfixOf` txt
+      , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
           left                                                                                 <>
@@ -100,11 +100,11 @@ parsePCDesig i ws | (view introduced -> intros) <- (ws^.pcTbl) ! i = helper intr
           helper intros rest
         StdDesig { stdPCEntSing = Nothing,  .. } ->
           left <> expandPCEntName i ws isCap pcEntName pcId pcIds <> helper intros rest
-        _                                        -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
-      | T.singleton nonStdDesigDelimiter `T.isInfixOf` msg
-      , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter msg
+        _ -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
+      | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
+      , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter txt
       = left <> (if nonStdPCEntSing `elem` intros then nonStdPCEntSing else nonStdDesc) <> helper intros rest
-      | otherwise = msg
+      | otherwise = txt
     extractPCDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig = (left, pcd, rest)
 

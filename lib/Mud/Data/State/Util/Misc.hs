@@ -65,10 +65,9 @@ getEffBothGramNos i ws targetI
 getEffName :: Id -> WorldState -> Id -> T.Text
 getEffName i ws targetI@(((ws^.entTbl) !) -> targetE) = fromMaybe helper $ targetE^.entName
   where
-    helper | targetS `elem` intros = uncapitalize targetS
-           | otherwise             = mkUnknownPCEntName targetI ws
-    targetS                        = targetE^.sing
-    (view introduced -> intros)    = (ws^.pcTbl) ! i
+    helper | views introduced ((targetE^.sing) `elem`) ((ws^.pcTbl) ! i) = uncapitalize targetS
+           | otherwise                                                   = mkUnknownPCEntName targetI ws
+    targetS                                                              = targetE^.sing
 
 
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
