@@ -9,6 +9,7 @@ import Mud.ANSI
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -27,10 +28,9 @@ import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc
 import Mud.Util.Quoting
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
-import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
@@ -64,13 +64,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
 default (Int)
-
-
------
-
-
-patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Threads"
 
 
 -----
@@ -239,7 +232,7 @@ adHoc mq host = do
                        , _entName  = Nothing
                        , _sing     = s
                        , _plur     = ""
-                       , _entDesc  = capitalize $ mkPronoun sexy <> " is an ad-hoc player character."
+                       , _entDesc  = capitalize $ mkThrPerPronoun sexy <> " is an ad-hoc player character."
                        , _entFlags = zeroBits }
         -----
         let m    = Mob { _sex  = sexy
@@ -299,12 +292,6 @@ getUnusedId = head . (\\) [0..] . allKeys
 
 allKeys :: WorldState -> Inv
 allKeys = views typeTbl IM.keys
-
-
-mkPronoun :: Sex -> T.Text
-mkPronoun Male   = "he"
-mkPronoun Female = "she"
-mkPronoun s      = patternMatchFail "mkPronoun" [ showText s ]
 
 
 plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()

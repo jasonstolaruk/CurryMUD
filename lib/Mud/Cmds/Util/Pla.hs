@@ -41,6 +41,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkReadyMsgs
                          , mkReflexive
                          , mkStdDesig
+                         , mkThrPerPronoun
                          , moveReadiedItem
                          , otherHand
                          , putOnMsgs
@@ -679,10 +680,19 @@ mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesi
 -----
 
 
-mkReflexive :: Sex -> T.Text
+mkReflexive :: Sex -> T.Text -- TODO: Change to mkReflexPronoun.
 mkReflexive Male   = "himself"
 mkReflexive Female = "herself"
 mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
+
+
+-----
+
+
+mkThrPerPronoun :: Sex -> T.Text
+mkThrPerPronoun Male   = "he"
+mkThrPerPronoun Female = "she"
+mkThrPerPronoun s      = patternMatchFail "mkPronoun" [ showText s ]
 
 
 -----
