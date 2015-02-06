@@ -638,7 +638,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
           PCType | targetPC@(view introduced -> intros)  <- (ws^.pcTbl)  ! targetId
                  , pis                                   <- findPCIds ws ris
                  , targetDesig                           <- serialize . mkStdDesig targetId ws targetSing False $ ris
-                 , (views sex mkReflexive -> himHerself) <- (ws^.mobTbl) ! i
+                 , (views sex mkReflexPro -> himHerself) <- (ws^.mobTbl) ! i
                  -> if s `elem` intros
                    then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
                         in over _2 (++ mkNTBroadcast i msg) a'
@@ -1097,7 +1097,7 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
                      , (T.concat [ serialize d, " wears ",  aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
         slideMsgs  = (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
                      , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-        p          = views sex mkPossPronoun $ (ws^.mobTbl) ! i
+        p          = views sex mkPossPro $ (ws^.mobTbl) ! i
         otherPCIds = i `delete` pcIds d
 
 
@@ -1224,7 +1224,7 @@ readyWpn i d mrol a@(ws, _, _) ei e@(view sing -> s) | em  <- (ws^.eqTbl)  ! i
         | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> s <> "."
                        in over _2 (++ b) a
   where
-    p          = views sex mkPossPronoun $ (ws^.mobTbl) ! i
+    p          = views sex mkPossPro $ (ws^.mobTbl) ! i
     otherPCIds = i `delete` pcIds d
 
 

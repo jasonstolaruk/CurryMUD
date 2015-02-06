@@ -34,14 +34,14 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkGetLookBindings
                          , mkInvCoinsDesc
                          , mkMaybeNthOfM
-                         , mkPossPronoun
+                         , mkPossPro
                          , mkPutRemBindings
                          , mkPutRemCoinsDescs
                          , mkPutRemInvDesc
                          , mkReadyMsgs
-                         , mkReflexive
+                         , mkReflexPro
                          , mkStdDesig
-                         , mkThrPerPronoun
+                         , mkThrPerPro
                          , moveReadiedItem
                          , otherHand
                          , putOnMsgs
@@ -657,10 +657,10 @@ mkMaybeNthOfM icir ws i (view sing -> s) is = guard icir >> (Just . helper . dup
 -----
 
 
-mkPossPronoun :: Sex -> T.Text
-mkPossPronoun Male   = "his"
-mkPossPronoun Female = "her"
-mkPossPronoun s      = patternMatchFail "mkPossPronoun" [ showText s ]
+mkPossPro :: Sex -> T.Text
+mkPossPro Male   = "his"
+mkPossPro Female = "her"
+mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
 
 
 -----
@@ -680,19 +680,19 @@ mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesi
 -----
 
 
-mkReflexive :: Sex -> T.Text -- TODO: Change to mkReflexPronoun.
-mkReflexive Male   = "himself"
-mkReflexive Female = "herself"
-mkReflexive s      = patternMatchFail "mkReflexive" [ showText s ]
+mkReflexPro :: Sex -> T.Text
+mkReflexPro Male   = "himself"
+mkReflexPro Female = "herself"
+mkReflexPro s      = patternMatchFail "mkReflexPro" [ showText s ]
 
 
 -----
 
 
-mkThrPerPronoun :: Sex -> T.Text
-mkThrPerPronoun Male   = "he"
-mkThrPerPronoun Female = "she"
-mkThrPerPronoun s      = patternMatchFail "mkPronoun" [ showText s ]
+mkThrPerPro :: Sex -> T.Text
+mkThrPerPro Male   = "he"
+mkThrPerPro Female = "she"
+mkThrPerPro s      = patternMatchFail "mkThrPerPro" [ showText s ]
 
 
 -----

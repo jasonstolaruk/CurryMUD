@@ -58,6 +58,8 @@ expCmdSet = S.fromList
                                       "You avert your eyes from @."
                                       "% averts & eyes from you."
                                       "% averts & eyes from @.")
+    , ExpCmd "bawl"        (NoTarget  "You bawl like a baby."
+                                      "% bawl like a baby.")
     , ExpCmd "beam"        (Versatile "You beam."
                                       "% beams."
                                       "You beam at @."
@@ -75,8 +77,6 @@ expCmdSet = S.fromList
                                       "You look blankly at @."
                                       "% looks blankly at you."
                                       "% looks blankly at @.")
-    , ExpCmd "bleed"       (NoTarget  "You are bleeding."
-                                      "% is bleeding.")
     , ExpCmd "blink"       (Versatile "You blink."
                                       "% blinks."
                                       "You blink at @."
@@ -169,8 +169,8 @@ expCmdSet = S.fromList
                                       "You dance with @."
                                       "% dances with you."
                                       "% dances with @.")
-    , ExpCmd "daydream"    (NoTarget  "You daydream."
-                                      "% daydreams.")
+    , ExpCmd "daydream"    (NoTarget  "Staring off into the distance, you indulge in a daydream."
+                                      "Staring off into the distance, % indulges in a daydream.")
     , ExpCmd "deepbreath"  (NoTarget  "You take a deep breath."
                                       "% takes a deep breath.")
     , ExpCmd "disappoint"  (Versatile "You are clearly disappointed."
@@ -350,6 +350,9 @@ expCmdSet = S.fromList
                                       "% peers at @.")
     , ExpCmd "perplexed"   (NoTarget  "You are truly perplexed by the situation."
                                       "% is truly perplexed by the situation.")
+    , ExpCmd "pet"         (HasTarget "You pet @."
+                                      "% pets you."
+                                      "% pets @.")
     , ExpCmd "picknose"    (NoTarget  "You pick your nose."
                                       "% picks & nose.")
     , ExpCmd "pinch"       (HasTarget "You pinch @."
@@ -423,8 +426,16 @@ expCmdSet = S.fromList
                                       "% smirks at @.")
     , ExpCmd "sniffle"     (NoTarget  "You sniffle."
                                       "% sniffles.")
+    , ExpCmd "scowl"       (Versatile "You scowl with contempt."
+                                      "% scowls with contempt."
+                                      "You scowl with contempt at @."
+                                      "% scowls with contempt at you."
+                                      "% scowls with contempt at @.")
     , ExpCmd "sob"         (NoTarget  "You sob."
                                       "% sobs.")
+    , ExpCmd "stare"       (HasTarget "You stare at @."
+                                      "% stares at you."
+                                      "% stares at @.")
     , ExpCmd "stomach"     (NoTarget  "Your stomach growls."
                                       "%'s stomach growls.")
     , ExpCmd "sweat"       (NoTarget  "You break out in a sweat."
@@ -492,7 +503,7 @@ expCmds = S.foldr helper [] expCmdSet
 -----
 
 
--- TODO: More refactoring for code reuse.
+-- TODO: More refactoring for code reuse. Clean up.
 expCmd :: ExpCmdType -> Action
 expCmd (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols "This expressive command requires a single target."
 expCmd act            (NoArgs'' i        ) = case act of
@@ -505,7 +516,7 @@ expCmd act            (NoArgs'' i        ) = case act of
             toSelfBrdcst                        = (nlnl toSelf, [i])
             serialized | T.head toOthers == '%' = serialize d
                        | otherwise              = serialize d { isCap = False }
-            (heShe, hisHer, hisHerself)         = mkPronouns i ws
+            (heShe, hisHer, hisHerself)         = mkPros i ws
             toOthers'                           = T.replace "%" serialized . T.replace "^" heShe . T.replace "&" hisHer . T.replace "*" hisHerself $ toOthers
             toOthersBrdcst                      = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut (bracketQuote "exp. command") i [toSelf] >> bcast (toSelfBrdcst : [toOthersBrdcst])
@@ -534,7 +545,7 @@ expCmd act           (OneArg   i mq cols target) = case act of
                       let toSelf'        = T.replace "@" targetDesig toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
                           serialized     = mkSerializedDesig d
-                          (_, hisHer, _) = mkPronouns i ws
+                          (_, hisHer, _) = mkPros i ws
                           toTarget'      = T.replace "%" serialized . T.replace "&" hisHer $ toTarget
                           toTargetBrdcst = (nlnl toTarget', [targetId])
                           toOthers'      = T.replace "@" targetDesig . T.replace "%" serialized . T.replace "&" hisHer $ toOthers
@@ -546,7 +557,7 @@ expCmd act           (OneArg   i mq cols target) = case act of
                       let toSelf'        = T.replace "@" targetNoun toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
                           serialized     = mkSerializedDesig d
-                          (_, hisHer, _) = mkPronouns i ws
+                          (_, hisHer, _) = mkPros i ws
                           toOthers'      = T.replace "@" targetNoun . T.replace "%" serialized . T.replace "&" hisHer $ toOthers
                           toOthersBrdcst = (nlnl toOthers', i `delete` pcIds d)
                       in do
@@ -567,6 +578,5 @@ expCmd act (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCol
   x              -> patternMatchFail "expCmd" [ showText x ]
 
 
-mkPronouns :: Id -> WorldState -> (T.Text, T.Text, T.Text)
-mkPronouns i ws = let (view sex -> s) = (ws^.mobTbl) ! i
-                  in (mkThrPerPronoun s, mkPossPronoun s, mkReflexive s)
+mkPros :: Id -> WorldState -> (T.Text, T.Text, T.Text)
+mkPros i ws = let (view sex -> s) = (ws^.mobTbl) ! i in (mkThrPerPro s, mkPossPro s, mkReflexPro s)

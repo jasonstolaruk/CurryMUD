@@ -232,7 +232,7 @@ adHoc mq host = do
                        , _entName  = Nothing
                        , _sing     = s
                        , _plur     = ""
-                       , _entDesc  = capitalize $ mkThrPerPronoun sexy <> " is an ad-hoc player character."
+                       , _entDesc  = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
                        , _entFlags = zeroBits }
         -----
         let m    = Mob { _sex  = sexy
