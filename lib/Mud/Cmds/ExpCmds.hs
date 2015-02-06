@@ -42,389 +42,407 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 expCmdSet :: S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"      (HasTarget "You admire @."
-                                         "% admires you."
-                                         "% admires @.")
+                                      "% admires you."
+                                      "% admires @.")
     , ExpCmd "applaud"     (Versatile "You applaud."
-                                         "% applauds."
-                                         "You applaud @."
-                                         "% applauds you."
-                                         "% applauds @.")
+                                      "% applauds."
+                                      "You applaud @."
+                                      "% applauds you."
+                                      "% applauds @.")
     , ExpCmd "astonished"  (Versatile "You are astonished."
-                                         "% is astonished."
-                                         "You look at @ with an astonished expression on your face."
-                                         "% looks at you with an astonished expression on # face."
-                                         "% looks at @ with an astonished expression on # face.")
+                                      "% is astonished."
+                                      "You stare at @ with an astonished expression on your face."
+                                      "% stares at you with an astonished expression on # face."
+                                      "% stares at @ with an astonished expression on # face.")
     , ExpCmd "avert"       (Versatile "You avert your eyes."
-                                         "% averts # eyes."
-                                         "You avert your eyes from @."
-                                         "% averts # eyes from you."
-                                         "% averts # eyes from @.")
+                                      "% averts # eyes."
+                                      "You avert your eyes from @."
+                                      "% averts # eyes from you."
+                                      "% averts # eyes from @.")
     , ExpCmd "beam"        (Versatile "You beam."
-                                         "% beams."
-                                         "You beam at @."
-                                         "% beams at you."
-                                         "% beams at @.")
+                                      "% beams."
+                                      "You beam at @."
+                                      "% beams at you."
+                                      "% beams at @.")
     , ExpCmd "belch"       (Versatile "You belch."
-                                         "% belches."
-                                         "You belch at @."
-                                         "% belches at you."
-                                         "% belches at @.")
+                                      "% belches."
+                                      "You belch at @."
+                                      "% belches at you."
+                                      "% belches at @.")
     , ExpCmd "blank"       (Versatile "You have a blank expression on your face."
-                                         "% has a blank expression on # face."
-                                         "You look blankly at @."
-                                         "% looks blankly at you."
-                                         "% looks blankly at @.")
-    , ExpCmd "bleed"       (NoTarget  "You bleed."
-                                         "% bleeds.")
+                                      "% has a blank expression on # face."
+                                      "You look blankly at @."
+                                      "% looks blankly at you."
+                                      "% looks blankly at @.")
+    , ExpCmd "bleed"       (NoTarget  "You are bleeding."
+                                      "% is bleeding.")
     , ExpCmd "blink"       (Versatile "You blink."
-                                         "% blinks."
-                                         "You blink at @."
-                                         "% blinks at you."
-                                         "% blinks at @.")
+                                      "% blinks."
+                                      "You blink at @."
+                                      "% blinks at you."
+                                      "% blinks at @.")
     , ExpCmd "blush"       (NoTarget  "You blush."
-                                         "% blushes.")
+                                      "% blushes.")
     , ExpCmd "boggle"      (NoTarget  "You boggle at the concept."
-                                         "% boggles at the concept.")
+                                      "% boggles at the concept.")
     , ExpCmd "bow"         (Versatile "You bow."
-                                         "% bows."
-                                         "You bow before @."
-                                         "% bows before you."
-                                         "% bows before @.")
+                                      "% bows."
+                                      "You bow before @."
+                                      "% bows before you."
+                                      "% bows before @.")
     , ExpCmd "burp"        (Versatile "You burp."
-                                         "% burps."
-                                         "You burp at @."
-                                         "% burps at you."
-                                         "% burps at @.")
+                                      "% burps."
+                                      "You burp at @."
+                                      "% burps at you."
+                                      "% burps at @.")
     , ExpCmd "cheer"       (Versatile "You cheer."
-                                         "% cheers."
-                                         "You cheer for @."
-                                         "% cheers for you."
-                                         "% cheers for @.")
+                                      "% cheers."
+                                      "You cheer for @."
+                                      "% cheers for you."
+                                      "% cheers for @.")
     , ExpCmd "chuckle"     (Versatile "You chuckle."
-                                         "% chuckles."
-                                         "You chuckle at @."
-                                         "% chuckles at you."
-                                         "% chuckles at @.")
+                                      "% chuckles."
+                                      "You chuckle at @."
+                                      "% chuckles at you."
+                                      "% chuckles at @.")
     , ExpCmd "clap"        (Versatile "You clap."
-                                         "% claps."
-                                         "You clap for @."
-                                         "% claps for you."
-                                         "% claps for @.")
+                                      "% claps."
+                                      "You clap for @."
+                                      "% claps for you."
+                                      "% claps for @.")
     , ExpCmd "closeeyes"   (NoTarget  "You close your eyes."
-                                         "% closes # eyes.")
+                                      "% closes # eyes.")
     , ExpCmd "coldsweat"   (NoTarget  "You break out in a cold sweat."
-                                         "% breaks out in a cold sweat.")
+                                      "% breaks out in a cold sweat.")
     , ExpCmd "comfort"     (HasTarget "You comfort @."
-                                         "% comforts you."
-                                         "% comforts @.")
-    , ExpCmd "confused"    (Versatile "You have a confused expression on your face."
-                                         "% has a confused expression on # face."
-                                         "You look at @ with a confused expression on your face."
-                                         "% looks at you with a confused expression on # face."
-                                         "% looks at @ with a confused expression on # face.")
+                                      "% comforts you."
+                                      "% comforts @.")
+    , ExpCmd "confused"    (Versatile "You look utterly confused."
+                                      "% looks utterly confused."
+                                      "You look fixedly at @ with an expression of utter confusion on your face."
+                                      "% looks fixedly at you with an expression of utter confusion on # face."
+                                      "% looks fixedly at @ with an expression of utter confusion on # face.")
     , ExpCmd "cough"       (Versatile "You cough."
-                                         "% coughs."
-                                         "You cough at @."
-                                         "% coughs at you."
-                                         "% coughs at @.")
+                                      "% coughs."
+                                      "You cough at @."
+                                      "% coughs at you."
+                                      "% coughs at @.")
     , ExpCmd "coverears"   (NoTarget  "You cover your ears."
-                                         "% covers # ears.")
+                                      "% covers # ears.")
     , ExpCmd "covereyes"   (NoTarget  "You cover your eyes."
-                                         "% covers # eyes.")
+                                      "% covers # eyes.")
     , ExpCmd "covermouth"  (NoTarget  "You cover your mouth."
-                                         "% covers # mouth.")
+                                      "% covers # mouth.")
     , ExpCmd "cower"       (Versatile "You cower in fear."
-                                         "% cowers in fear."
-                                         "You cower in fear before @."
-                                         "% cowers in fear before you."
-                                         "% cowers in fear before @.")
+                                      "% cowers in fear."
+                                      "You cower in fear before @."
+                                      "% cowers in fear before you."
+                                      "% cowers in fear before @.")
     , ExpCmd "cringe"      (Versatile "You cringe."
-                                         "% cringes."
-                                         "You cringe at @."
-                                         "% cringes at you."
-                                         "% cringes at @.")
+                                      "% cringes."
+                                      "You cringe at @."
+                                      "% cringes at you."
+                                      "% cringes at @.")
     , ExpCmd "cry"         (NoTarget  "You cry."
-                                         "% cries.")
+                                      "% cries.")
     , ExpCmd "cryanger"    (Versatile "You cry out in anger."
-                                         "% cries out in anger."
-                                         "You cry out in anger at @."
-                                         "% cries out in anger at you."
-                                         "% cries out in anger at @.")
+                                      "% cries out in anger."
+                                      "You cry out in anger at @."
+                                      "% cries out in anger at you."
+                                      "% cries out in anger at @.")
     , ExpCmd "cuddle"      (HasTarget "You cuddle @."
-                                         "% cuddles you."
-                                         "% cuddles @.")
+                                      "% cuddles you."
+                                      "% cuddles @.")
     , ExpCmd "curtsey"     (Versatile "You curtsey."
-                                         "% curtseys."
-                                         "You curtsey to @."
-                                         "% curtseys to you."
-                                         "% curtseys to @.")
+                                      "% curtseys."
+                                      "You curtsey to @."
+                                      "% curtseys to you."
+                                      "% curtseys to @.")
     , ExpCmd "curtsy"      (Versatile "You curtsy."
-                                         "% curtsies."
-                                         "You curtsy to @."
-                                         "% curtsies to you."
-                                         "% curtsies to @.")
+                                      "% curtsies."
+                                      "You curtsy to @."
+                                      "% curtsies to you."
+                                      "% curtsies to @.")
     , ExpCmd "dance"       (Versatile "You dance around."
-                                         "% dances around."
-                                         "You dance with @."
-                                         "% dances with you."
-                                         "% dances with @.")
+                                      "% dances around."
+                                      "You dance with @."
+                                      "% dances with you."
+                                      "% dances with @.")
     , ExpCmd "daydream"    (NoTarget  "You daydream."
-                                         "% daydreams.")
+                                      "% daydreams.")
     , ExpCmd "deepbreath"  (NoTarget  "You take a deep breath."
-                                         "% takes a deep breath.")
-    , ExpCmd "disappoint"  (Versatile "You are clearly disappointed." -- TODO: Cmd length?
-                                         "% is clearly disappointed."
-                                         "You are clearly disappointed in @."
-                                         "% is clearly disappointed in you."
-                                         "% is clearly disappointed in @.")
+                                      "% takes a deep breath.")
+    , ExpCmd "disappoint"  (Versatile "You are clearly disappointed."
+                                      "% is clearly disappointed."
+                                      "You are clearly disappointed in @."
+                                      "% is clearly disappointed in you."
+                                      "% is clearly disappointed in @.")
     , ExpCmd "drool"       (NoTarget  "You drool."
-                                         "% drools.")
+                                      "% drools.")
     , ExpCmd "droopy"      (NoTarget  "Your eyes are droopy."
-                                         "%'s eyes are droopy.")
+                                      "%'s eyes are droopy.")
     , ExpCmd "facepalm"    (NoTarget  "You facepalm."
-                                         "% facepalms.")
+                                      "% facepalms.")
     , ExpCmd "faint"       (NoTarget  "You faint."
-                                         "% faints.")
+                                      "% faints.")
     , ExpCmd "flop"        (NoTarget  "You flop down on the ground."
-                                         "% flops down on the ground.")
+                                      "% flops down on the ground.")
     , ExpCmd "frown"       (Versatile "You frown."
-                                         "% frowns."
-                                         "You frown at @."
-                                         "% frowns at you."
-                                         "% frowns at @.")
+                                      "% frowns."
+                                      "You frown at @."
+                                      "% frowns at you."
+                                      "% frowns at @.")
     , ExpCmd "funnyface"   (Versatile "You make a funny face."
-                                         "% makes a funny face."
-                                         "You make a funny face at @."
-                                         "% makes a funny face at you."
-                                         "% makes a funny face at @.")
+                                      "% makes a funny face."
+                                      "You make a funny face at @."
+                                      "% makes a funny face at you."
+                                      "% makes a funny face at @.")
     , ExpCmd "giggle"      (Versatile "You gag."
-                                         "% gags."
-                                         "You gag in response to @."
-                                         "% gags in response to you."
-                                         "% gags in response to @.")
+                                      "% gags."
+                                      "You gag in reaction to @."
+                                      "% gags in reaction to you."
+                                      "% gags in reaction to @.")
     , ExpCmd "gasp"        (Versatile "You gasp."
-                                         "% gasps."
-                                         "You gasp at @."
-                                         "% gasps at you."
-                                         "% gasps at @.")
+                                      "% gasps."
+                                      "You gasp at @."
+                                      "% gasps at you."
+                                      "% gasps at @.")
     , ExpCmd "gawk"        (HasTarget "You gawk at @."
-                                         "% gawks at you."
-                                         "% gawks at @.")
+                                      "% gawks at you."
+                                      "% gawks at @.")
     , ExpCmd "giggle"      (Versatile "You giggle."
-                                         "% giggles."
-                                         "You giggle at @."
-                                         "% giggles at you."
-                                         "% giggles at @.")
+                                      "% giggles."
+                                      "You giggle at @."
+                                      "% giggles at you."
+                                      "% giggles at @.")
     , ExpCmd "glance"      (Versatile "You glance around."
-                                         "% glances around."
-                                         "You glance at @."
-                                         "% glances at you."
-                                         "% glances at @.")
+                                      "% glances around."
+                                      "You glance at @."
+                                      "% glances at you."
+                                      "% glances at @.")
     , ExpCmd "glare"       (HasTarget "You glare at @."
-                                         "% glares at you."
-                                         "% glares at @.")
+                                      "% glares at you."
+                                      "% glares at @.")
     , ExpCmd "greet"       (HasTarget "You greet @."
-                                         "% greets you."
-                                         "% greets @.")
+                                      "% greets you."
+                                      "% greets @.")
     , ExpCmd "grin"        (Versatile "You grin."
-                                         "% grins."
-                                         "You grin at @."
-                                         "% grins at you."
-                                         "% grins at @.")
+                                      "% grins."
+                                      "You grin at @."
+                                      "% grins at you."
+                                      "% grins at @.")
     , ExpCmd "groan"       (Versatile "You groan."
-                                         "% groans."
-                                         "You groan at @."
-                                         "% groans at you."
-                                         "% groans at @.")
+                                      "% groans."
+                                      "You groan at @."
+                                      "% groans at you."
+                                      "% groans at @.")
     , ExpCmd "grovel"      (HasTarget "You grovel before @."
-                                         "% grovels before you."
-                                         "% grovels before @.")
+                                      "% grovels before you."
+                                      "% grovels before @.")
     , ExpCmd "growl"       (Versatile "You growl."
-                                         "% growls."
-                                         "You growl at @."
-                                         "% growls at you."
-                                         "% growls at @.")
+                                      "% growls."
+                                      "You growl at @."
+                                      "% growls at you."
+                                      "% growls at @.")
     , ExpCmd "grumble"     (NoTarget  "You grumble to yourself."
-                                         "% grumbles to $.")
+                                      "% grumbles to $.")
+    , ExpCmd "gulp"        (NoTarget  "You gulp."
+                                      "% gulps.")
     , ExpCmd "handhips"    (NoTarget  "You put your hands on your hips."
-                                         "% puts # hands on # hips.")
+                                      "% puts # hands on # hips.")
     , ExpCmd "hesitate"    (NoTarget  "You hesitate."
-                                         "% hesitates.")
+                                      "% hesitates.")
     , ExpCmd "hiccup"      (NoTarget  "You hiccup."
-                                         "% hiccups.")
+                                      "% hiccups.")
+    , ExpCmd "holdlaugh"   (NoTarget  "You try hard to hold back laughter."
+                                      "% tries hard not to laugh.")
+    , ExpCmd "holdcry"     (NoTarget  "You try hard not to cry."
+                                      "% tries hard to stifle # tears.")
     , ExpCmd "horf"        (Versatile "You horf all over the place."
-                                         "% horfs all over the place."
-                                         "You horf all over @."
-                                         "% horfs all over you."
-                                         "% horfs all over @.")
+                                      "% horfs all over the place."
+                                      "You horf all over @."
+                                      "% horfs all over you."
+                                      "% horfs all over @.")
     , ExpCmd "innocent"    (NoTarget  "You try to look innocent."
-                                         "% tries to look innocent.")
+                                      "% tries to look innocent.")
     , ExpCmd "jump"        (NoTarget  "You jump up and down."
-                                         "% jumps up and down.")
+                                      "% jumps up and down.")
     , ExpCmd "hop"         (NoTarget  "You hop up and down."
-                                         "% hops up and down.")
+                                      "% hops up and down.")
     , ExpCmd "hug"         (HasTarget "You hug @."
-                                         "% hugs you."
-                                         "% hugs @.")
+                                      "% hugs you."
+                                      "% hugs @.")
     , ExpCmd "hum"         (NoTarget  "You hum a merry tune."
-                                         "% hums a merry tune.")
+                                      "% hums a merry tune.")
     , ExpCmd "kiss"        (HasTarget "You kiss @."
-                                         "% kisses you."
-                                         "% kisses @.")
+                                      "% kisses you."
+                                      "% kisses @.")
     , ExpCmd "kneel"       (Versatile "You kneel down."
-                                         "% kneels down."
-                                         "You kneel down before @."
-                                         "% kneels down before you."
-                                         "% kneels down before @.")
+                                      "% kneels down."
+                                      "You kneel down before @."
+                                      "% kneels down before you."
+                                      "% kneels down before @.")
     , ExpCmd "laugh"       (Versatile "You laugh."
-                                         "% laughs."
-                                         "You laugh at @."
-                                         "% laughs at you."
-                                         "% laughs at @.")
+                                      "% laughs."
+                                      "You laugh at @."
+                                      "% laughs at you."
+                                      "% laughs at @.")
     , ExpCmd "leap"        (NoTarget  "You leap into the air."
-                                         "% leaps into the air.")
+                                      "% leaps into the air.")
     , ExpCmd "leer"        (HasTarget "You leer at @."
-                                         "% leers at you."
-                                         "% leers at @.")
+                                      "% leers at you."
+                                      "% leers at @.")
     , ExpCmd "licklips"    (NoTarget  "You lick your lips."
-                                         "% licks # lips.")
+                                      "% licks # lips.")
     , ExpCmd "livid"       (NoTarget  "You are positively livid."
-                                         "% is positively livid.")
+                                      "% is positively livid.")
     , ExpCmd "massage"     (HasTarget "You massage @."
-                                         "% massages you."
-                                         "% massages @.")
+                                      "% massages you."
+                                      "% massages @.")
     , ExpCmd "moan"        (NoTarget  "You moan."
-                                         "% moans.")
+                                      "% moans.")
+    , ExpCmd "mumble"      (Versatile "You mumble to yourself."
+                                      "% mumbles to $."
+                                      "You mumble something to @."
+                                      "% mumbles something to you."
+                                      "% mumbles something to @.")
     , ExpCmd "mutter"      (NoTarget  "You mutter to yourself."
-                                         "% mutters to $.")
+                                      "% mutters to $.")
     , ExpCmd "nod"         (Versatile "You nod."
-                                         "% nods."
-                                         "You nod to @."
-                                         "% nods to you."
-                                         "% nods to @.")
+                                      "% nods."
+                                      "You nod to @."
+                                      "% nods to you."
+                                      "% nods to @.")
     , ExpCmd "nudge"       (HasTarget "You nudge @."
-                                         "% nudges you."
-                                         "% nudges @.")
+                                      "% nudges you."
+                                      "% nudges @.")
     , ExpCmd "nuzzle"      (HasTarget "You nuzzle @."
-                                         "% nuzzles you."
-                                         "% nuzzles @.")
+                                      "% nuzzles you."
+                                      "% nuzzles @.")
     , ExpCmd "openeyes"    (NoTarget  "You open your eyes."
-                                         "% opens # eyes.")
+                                      "% opens # eyes.")
     , ExpCmd "pace"        (NoTarget  "You pace around."
-                                         "% paces around.")
+                                      "% paces around.")
     , ExpCmd "pant"        (NoTarget  "You pant."
-                                         "% pants.")
+                                      "% pants.")
     , ExpCmd "pat"         (HasTarget "You pat @ on the back."
-                                         "% pats you on the back."
-                                         "% pats @ on the back.")
+                                      "% pats you on the back."
+                                      "% pats @ on the back.")
     , ExpCmd "peer"        (HasTarget "You peer at @."
-                                         "% peers at you."
-                                         "% peers at @.")
+                                      "% peers at you."
+                                      "% peers at @.")
     , ExpCmd "picknose"    (NoTarget  "You pick your nose."
-                                         "% picks # nose.")
+                                      "% picks # nose.")
     , ExpCmd "pinch"       (HasTarget "You pinch @."
-                                         "% pinches you."
-                                         "% pinches @.")
+                                      "% pinches you."
+                                      "% pinches @.")
     , ExpCmd "point"       (HasTarget "You point to @."
-                                         "% points to you."
-                                         "% points to @.")
+                                      "% points to you."
+                                      "% points to @.")
     , ExpCmd "poke"        (HasTarget "You poke @."
-                                         "% pokes you."
-                                         "% pokes @.")
+                                      "% pokes you."
+                                      "% pokes @.")
     , ExpCmd "ponder"      (NoTarget  "You ponder the situation."
-                                         "% ponders the situation.")
+                                      "% ponders the situation.")
     , ExpCmd "pout"        (Versatile "You strike a pose."
-                                         "% strikes a pose."
-                                         "You strike a pose before @."
-                                         "% strikes a pose before you."
-                                         "% strikes a pose before @.")
+                                      "% strikes a pose."
+                                      "You strike a pose before @."
+                                      "% strikes a pose before you."
+                                      "% strikes a pose before @.")
     , ExpCmd "pounce"      (HasTarget "You pounce on @."
-                                         "% pounces on you."
-                                         "% pounces on @.")
+                                      "% pounces on you."
+                                      "% pounces on @.")
     , ExpCmd "pout"        (Versatile "You pout."
-                                         "% pouts."
-                                         "You pout at @."
-                                         "% pouts at you."
-                                         "% pout at @.")
+                                      "% pouts."
+                                      "You pout at @."
+                                      "% pouts at you."
+                                      "% pout at @.")
     , ExpCmd "prance"      (Versatile "You prance around."
-                                         "% prances around."
-                                         "You prance around @."
-                                         "% prances around you."
-                                         "% prances around @.")
+                                      "% prances around."
+                                      "You prance around @."
+                                      "% prances around you."
+                                      "% prances around @.")
     , ExpCmd "puke"        (Versatile "You puke all over."
-                                         "% pukes all over."
-                                         "You puke on @."
-                                         "% pukes on you."
-                                         "% pukes on @.")
+                                      "% pukes all over."
+                                      "You puke on @."
+                                      "% pukes on you."
+                                      "% pukes on @.")
     , ExpCmd "raisebrow"   (Versatile "You raise an eyebrow."
-                                         "% raises an eyebrow."
-                                         "You raise an eyebrow at @."
-                                         "% raises an eyebrow at you."
-                                         "% raises an eyebrow at @.")
+                                      "% raises an eyebrow."
+                                      "You raise an eyebrow at @."
+                                      "% raises an eyebrow at you."
+                                      "% raises an eyebrow at @.")
     , ExpCmd "raisehand"   (NoTarget  "You raise your hand."
-                                         "% raises # hand.")
+                                      "% raises # hand.")
     , ExpCmd "rock"        (NoTarget  "You rock back and forth."
-                                         "% rocks back and forth.")
+                                      "% rocks back and forth.")
     , ExpCmd "rolleyes"    (Versatile "You roll your eyes."
-                                         "% rolls # eyes."
-                                         "You roll your eyes at @."
-                                         "% rolls # eyes at you."
-                                         "% rolls # eyes at @.")
+                                      "% rolls # eyes."
+                                      "You roll your eyes at @."
+                                      "% rolls # eyes at you."
+                                      "% rolls # eyes at @.")
     , ExpCmd "rubeyes"     (NoTarget  "You rub your eyes."
-                                         "% rubs # eyes.")
+                                      "% rubs # eyes.")
     , ExpCmd "satisfied"   (NoTarget  "You look satisfied."
-                                         "% looks satisfied.")
+                                      "% looks satisfied.")
     , ExpCmd "scream"      (Versatile "You scream."
-                                         "% screams."
-                                         "You scream at @."
-                                         "% screams at you."
-                                         "% screams at @.")
+                                      "% screams."
+                                      "You scream at @."
+                                      "% screams at you."
+                                      "% screams at @.")
     , ExpCmd "sleepy"      (NoTarget  "You look sleepy."
-                                         "% looks sleepy.")
+                                      "% looks sleepy.")
     , ExpCmd "smirk"       (Versatile "You smirk."
-                                         "% smirks."
-                                         "You smirk at @."
-                                         "% smirks at you."
-                                         "% smirks at @.")
+                                      "% smirks."
+                                      "You smirk at @."
+                                      "% smirks at you."
+                                      "% smirks at @.")
+    , ExpCmd "sniffle"     (NoTarget  "You sniffle."
+                                      "% sniffles.")
     , ExpCmd "sob"         (NoTarget  "You sob."
-                                         "% sobs.")
+                                      "% sobs.")
     , ExpCmd "sweat"       (NoTarget  "You break out in a sweat."
-                                         "% breaks out in a sweat.")
+                                      "% breaks out in a sweat.")
     , ExpCmd "tears"       (NoTarget  "Tears roll down your face."
-                                         "Tears roll down %'s face.")
+                                      "Tears roll down %'s face.")
     , ExpCmd "thumbsdown"  (Versatile "You give a thumbs down."
-                                         "% gives a thumbs down."
-                                         "You give a thumbs down to @."
-                                         "% gives a thumbs down to you."
-                                         "% gives a thumbs down to @.")
+                                      "% gives a thumbs down."
+                                      "You give a thumbs down to @."
+                                      "% gives a thumbs down to you."
+                                      "% gives a thumbs down to @.")
     , ExpCmd "thumbsup"    (Versatile "You give a thumbs up."
-                                         "% gives a thumbs up."
-                                         "You give a thumbs up to @."
-                                         "% gives a thumbs up to you."
-                                         "% gives a thumbs up to @.")
+                                      "% gives a thumbs up."
+                                      "You give a thumbs up to @."
+                                      "% gives a thumbs up to you."
+                                      "% gives a thumbs up to @.")
     , ExpCmd "tongue"      (Versatile "You stick out your tongue."
-                                         "% sticks out # tongue."
-                                         "You stick out your tongue at @."
-                                         "% sticks out # tongue at you."
-                                         "% sticks out # tongue at @.")
+                                      "% sticks out # tongue."
+                                      "You stick out your tongue at @."
+                                      "% sticks out # tongue at you."
+                                      "% sticks out # tongue at @.")
     , ExpCmd "unamused"    (Versatile "You are plainly unamused."
-                                         "% is plainly unamused."
-                                         "You are plainly unamused by @'s antics."
-                                         "% is plainly unamused by your antics."
-                                         "% is plainly unamused by @'s antics.")
+                                      "% is plainly unamused."
+                                      "You are plainly unamused by @'s antics."
+                                      "% is plainly unamused by your antics."
+                                      "% is plainly unamused by @'s antics.")
     , ExpCmd "vomit"       (Versatile "You vomit."
-                                         "% vomits."
-                                         "You vomit on @."
-                                         "% vomits on you."
-                                         "% vomits on @.")
+                                      "% vomits."
+                                      "You vomit on @."
+                                      "% vomits on you."
+                                      "% vomits on @.")
     , ExpCmd "watch"       (HasTarget "You watch @ with interest."
-                                         "% watches you with interest."
-                                         "% watches @ with interest.")
+                                      "% watches you with interest."
+                                      "% watches @ with interest.")
     , ExpCmd "wink"        (Versatile "You wink."
-                                         "% winks."
-                                         "You wink at @."
-                                         "% winks at you."
-                                         "% winks at @.") ]
+                                      "% winks."
+                                      "You wink at @."
+                                      "% winks at you."
+                                      "% winks at @.")
+    , ExpCmd "yawn"        (Versatile "You yawn."
+                                      "% yawns."
+                                      "You yawn at @."
+                                      "% yawns at you."
+                                      "% yawns at @.") ]
 
 
 expCmds :: [Cmd]
@@ -438,7 +456,7 @@ expCmds = S.foldr helper [] expCmdSet
 -----
 
 
--- TODO: More refactoring for code reuse?
+-- TODO: More refactoring for code reuse.
 expCmd :: ExpCmdType -> Action
 expCmd (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols "This expressive command requires a single target."
 expCmd act            (NoArgs'' i        ) = case act of

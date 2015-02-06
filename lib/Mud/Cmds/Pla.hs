@@ -136,7 +136,7 @@ nonExpCmds =
                                                    \inventory." }
     , Cmd { cmdName = "intro", action = intro, cmdDesc = "Introduce yourself." }
     , Cmd { cmdName = "look", action = look, cmdDesc = "Display a description of your current location, or examine one \
-                                                       \or more items in your current location." }
+                                                       \or more items in your current location." } -- TODO: "l"
     , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
     , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
     , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }

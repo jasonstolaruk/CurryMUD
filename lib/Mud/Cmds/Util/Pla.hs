@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
--- by both "Mud.Cmds.Pla" and "Mud.Cmds.ActionCmds".
+-- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
 
 module Mud.Cmds.Util.Pla ( InvWithCon
                          , IsConInRm
