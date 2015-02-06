@@ -1,0 +1,21 @@
+\h L \d
+
+\uUSAGE\n
+l \s[\dobject \s...]\d
+
+\uDESCRIPTION\n
+Display a description of your current location, or examine one or more objects in your current location.
+
+\uEXAMPLES\n
+\q"l"\d to get a description of the room followed by a list of its contents.4`
+\q"l sword"\d to examine the sword in the room.4`
+\q"l sword melf"\d to examine the sword and the male elf in the room.4`
+\q"l 2#isack"\d to examine the second sack in the room.4`
+\q"l 2#mring"\d to examine the first two rings in the room.4`
+\q"l 3#iring 3#mbracelet"\d to examine the third ring and the first three bracelets in the room.4`
+\q"l #aring"\d to examine all the rings in the room.4`
+\q"l #a"\d to examine everything in the room.4`
+\q"l gp sp"\d to examine a gold piece and a silver piece in the room.4`
+\q"l 'coin"\d to examine all the coins in the room.4`
+
+\uSEE ALSO\n

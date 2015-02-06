@@ -135,8 +135,8 @@ nonExpCmds =
     , Cmd { cmdName = "i", action = inv, cmdDesc = "Display your inventory, or examine one or more items in your \
                                                    \inventory." }
     , Cmd { cmdName = "intro", action = intro, cmdDesc = "Introduce yourself." }
-    , Cmd { cmdName = "look", action = look, cmdDesc = "Display a description of your current location, or examine one \
-                                                       \or more items in your current location." } -- TODO: "l"
+    , Cmd { cmdName = "l", action = look, cmdDesc = "Display a description of your current location, or examine one or \
+                                                    \more items in your current location." }
     , Cmd { cmdName = "motd", action = motd, cmdDesc = "Display the message of the day." }
     , Cmd { cmdName = "n", action = go "n", cmdDesc = "Go north." }
     , Cmd { cmdName = "ne", action = go "ne", cmdDesc = "Go northeast." }
@@ -754,7 +754,7 @@ firstLook i cols a = (getPlaFlag IsNotFirstLook <$> getPla i) >>= \infl -> if in
                           , "Hint:"
                           , noHintANSI
                           , " use the "
-                          , dblQuote "look"
+                          , dblQuote "l"
                           , " command to examine one or more items in your current location. To examine items in \
                             \your inventory, use the "
                           , dblQuote "i"

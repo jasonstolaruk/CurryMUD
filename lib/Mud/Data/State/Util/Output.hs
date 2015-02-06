@@ -88,7 +88,7 @@ bcast bs = readWSTMVar >>= \ws -> do
 
 
 parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
-parsePCDesig i ws msg = views introduced (flip helper msg) ((ws^.pcTbl) ! i)
+parsePCDesig i ws msg = views introduced (`helper` msg) ((ws^.pcTbl) ! i)
   where
     helper intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
