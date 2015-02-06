@@ -10,7 +10,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , showMotd ) where
 
 import Mud.ANSI
-import Mud.Cmds.ActionCmds
+import Mud.Cmds.ExpCmds
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
@@ -111,15 +111,13 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
 
 plaCmds :: [Cmd]
-plaCmds = sort $ nonActionCmds ++ actionCmds
+plaCmds = sort $ nonExpCmds ++ expCmds
 
 
-nonActionCmds :: [Cmd]
-nonActionCmds =
+nonExpCmds :: [Cmd]
+nonExpCmds =
     [ Cmd { cmdName = "?", action = plaDispCmdList, cmdDesc = "Display or search this command list." }
     , Cmd { cmdName = "about", action = about, cmdDesc = "About CurryMUD." }
-    , Cmd { cmdName = "actions", action = actionCmdList, cmdDesc = "Display or search a list of available action \
-                                                                   \commands and their results." }
     , Cmd { cmdName = "admin", action = admin, cmdDesc = "Send a message to an administrator." }
     , Cmd { cmdName = "bug", action = bug, cmdDesc = "Report a bug." }
     , Cmd { cmdName = "clear", action = clear, cmdDesc = "Clear the screen." }
@@ -130,6 +128,8 @@ nonActionCmds =
     , Cmd { cmdName = "equip", action = equip, cmdDesc = "Display your readied equipment, or examine one or more items \
                                                          \in your readied equipment." }
     , Cmd { cmdName = "exits", action = exits, cmdDesc = "Display obvious exits." }
+    , Cmd { cmdName = "expressive", action = expCmdList, cmdDesc = "Display or search a list of available expressive \
+                                                                   \commands and their results." }
     , Cmd { cmdName = "get", action = getAction, cmdDesc = "Pick up one or more items." }
     , Cmd { cmdName = "help", action = help, cmdDesc = "Get help on one or more commands or topics." }
     , Cmd { cmdName = "i", action = inv, cmdDesc = "Display your inventory, or examine one or more items in your \
@@ -173,43 +173,6 @@ about (NoArgs i mq cols) = do
   where
     helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ aboutFile)
 about p = withoutArgs about p
-
-
------
-
-
--- TODO: Help.
-actionCmdList :: Action
-actionCmdList (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkActionCmdListTxt
-actionCmdList p = dispMatches p (succ maxCmdLen) mkActionCmdListTxt
-
-
-mkActionCmdListTxt :: [T.Text]
-mkActionCmdListTxt =
-    let cmdNames       = [ cmdName cmd | cmd <- plaCmds ]
-        styledCmdNames = styleAbbrevs Don'tBracket cmdNames
-    in concatMap mkActionCmdTxt [ (styled, head matches) | (cn, styled) <- zip cmdNames styledCmdNames
-                                                         , let matches = findMatches cn
-                                                         , length matches == 1 ]
-  where
-    findMatches cn = S.toList . S.filter (\(ActionCmd acn _) -> acn == cn) $ actionCmdSet
-    mkActionCmdTxt (styled, ActionCmd acn act) = case act of
-      (NoTarget  toSelf _   ) -> [ paddedName <> mkInitialTxt acn <> toSelf ]
-      (HasTarget toSelf _ _ ) -> [ paddedName <> mkInitialTxt (acn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
-      (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt acn <> toSelf
-                                                   , T.replicate (succ maxCmdLen) "_" <> -- TODO: "_"
-                                                     mkInitialTxt (acn <> " hanako")  <>
-                                                     T.replace "@" "Hanako" toSelfWithTarget ]
-      where
-        paddedName         = pad (succ maxCmdLen) styled
-        mkInitialTxt input = T.concat [ quoteColor
-                                      , dblQuote input
-                                      , dfltColor
-                                      , " "
-                                      , arrowColor
-                                      , "->"
-                                      , dfltColor
-                                      , " " ]
 
 
 -----
@@ -385,6 +348,43 @@ exits :: Action
 exits (NoArgs i mq cols) = getPCRm i >>= \r ->
     logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
 exits p = withoutArgs exits p
+
+
+-----
+
+
+-- TODO: Help.
+expCmdList :: Action
+expCmdList (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkExpCmdListTxt
+expCmdList p = dispMatches p (succ maxCmdLen) mkExpCmdListTxt
+
+
+mkExpCmdListTxt :: [T.Text]
+mkExpCmdListTxt =
+    let cmdNames       = [ cmdName cmd | cmd <- plaCmds ]
+        styledCmdNames = styleAbbrevs Don'tBracket cmdNames
+    in concatMap mkExpCmdTxt [ (styled, head matches) | (cn, styled) <- zip cmdNames styledCmdNames
+                                                      , let matches = findMatches cn
+                                                      , length matches == 1 ]
+  where
+    findMatches cn = S.toList . S.filter (\(ExpCmd acn _) -> acn == cn) $ expCmdSet
+    mkExpCmdTxt (styled, ExpCmd acn act) = case act of
+      (NoTarget  toSelf _   ) -> [ paddedName <> mkInitialTxt acn <> toSelf ]
+      (HasTarget toSelf _ _ ) -> [ paddedName <> mkInitialTxt (acn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
+      (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt acn <> toSelf
+                                                   , T.replicate (succ maxCmdLen) "-" <> -- TODO: "-"
+                                                     mkInitialTxt (acn <> " hanako")  <>
+                                                     T.replace "@" "Hanako" toSelfWithTarget ]
+      where
+        paddedName         = pad (succ maxCmdLen) styled
+        mkInitialTxt input = T.concat [ quoteColor
+                                      , dblQuote input
+                                      , dfltColor
+                                      , " "
+                                      , arrowColor
+                                      , "->"
+                                      , dfltColor
+                                      , " " ]
 
 
 -----

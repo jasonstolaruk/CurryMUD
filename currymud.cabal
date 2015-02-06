@@ -45,9 +45,9 @@ library
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   exposed-modules:     Mud.ANSI,
-                       Mud.Cmds.ActionCmds
                        Mud.Cmds.Admin,
                        Mud.Cmds.Debug,
+                       Mud.Cmds.ExpCmds
                        Mud.Cmds.Pla,
                        Mud.Cmds.Util.Abbrev,
                        Mud.Cmds.Util.Misc,

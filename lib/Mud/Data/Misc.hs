@@ -3,8 +3,6 @@
 
 module Mud.Data.Misc ( AOrThe(..)
                      , Action
-                     , ActionCmd(..)
-                     , ActionCmdType(..)
                      , Amount
                      , Args
                      , Broadcast
@@ -13,6 +11,8 @@ module Mud.Data.Misc ( AOrThe(..)
                      , CmdName
                      , Cols
                      , EmptyNoneSome(..)
+                     , ExpCmd(..)
+                     , ExpCmdType(..)
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)
                      , Help(..)
@@ -290,7 +290,7 @@ instance Serializable PCDesig where
 -- Data types:
 
 
-type ActionCmdName = T.Text
+type ExpCmdName = T.Text
 
 
 type ToSelf             = T.Text
@@ -300,13 +300,12 @@ type ToTarget           = T.Text
 type ToOthersWithTarget = T.Text
 
 
-data ActionCmdType = NoTarget  !ToSelf !ToOthers
-                   | HasTarget                   !ToSelfWithTarget !ToTarget !ToOthersWithTarget
-                   | Versatile !ToSelf !ToOthers !ToSelfWithTarget !ToTarget !ToOthersWithTarget
-                   deriving (Eq, Ord, Show)
+data ExpCmdType = NoTarget  !ToSelf !ToOthers
+                | HasTarget                   !ToSelfWithTarget !ToTarget !ToOthersWithTarget
+                | Versatile !ToSelf !ToOthers !ToSelfWithTarget !ToTarget !ToOthersWithTarget deriving (Eq, Ord, Show)
 
 
-data ActionCmd = ActionCmd !ActionCmdName !ActionCmdType deriving (Eq, Ord)
+data ExpCmd = ExpCmd !ExpCmdName !ExpCmdType deriving (Eq, Ord)
 
 
 -----
@@ -334,7 +333,7 @@ instance Ord ClassifiedBroadcast where
 -----
 
 
-type Action = ActionParams -> MudStack () -- TODO: Change "Action" to "CmdFun" and "ActionParams" to "CmdFunParams".
+type Action = ActionParams -> MudStack ()
 
 
 data Cmd = Cmd { cmdName :: !CmdName
