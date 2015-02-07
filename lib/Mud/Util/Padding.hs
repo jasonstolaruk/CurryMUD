@@ -6,8 +6,6 @@ module Mud.Util.Padding where
 import Mud.Util.ANSI
 import Mud.Util.Quoting
 
-import Control.Lens (folded, to)
-import Control.Lens.Operators ((^..))
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
@@ -16,7 +14,7 @@ quoteWithAndPad :: (T.Text, T.Text) -> Int -> T.Text -> T.Text
 quoteWithAndPad q x t = quoteWith' q t' <> T.replicate (x - T.length t' - 2) " "
   where
     t' = T.take (pred $ x - l) t
-    l  = sum $ [ fst q, snd q ]^..folded.to T.length
+    l  = sum . map T.length $ [ fst q, snd q ]
 
 
 bracketPad :: Int -> T.Text -> T.Text

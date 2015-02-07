@@ -25,18 +25,17 @@ import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Quoting
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Lens (_1, _2, dropping, folded, over, to)
+import Control.Lens (_1, over)
 import Control.Lens.Getter (view)
-import Control.Lens.Operators ((^.), (^..))
+import Control.Lens.Operators ((^.))
 import Control.Monad (guard)
-import Data.Char (isDigit, toUpper)
+import Data.Char (isDigit)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), foldl')
 import Data.Monoid ((<>), mempty)
 import Data.String (fromString)
 import Data.Text.Internal.Builder (Builder)
 import Data.Text.Read (decimal)
-import Data.Text.Strict.Lens (unpacked)
 import Formatting ((%), sformat)
 import Formatting.Formatters (int, stext)
 import Formatting.Holey (Holey)
@@ -236,9 +235,8 @@ resolveEntCoinNamesWithRols :: Id
                             -> Coins
                             -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNamesWithRols i ws (map T.toLower -> as) is c
-  | gecrMrols           <- map (mkGecrWithRol i ws is c) as
-  , (gecrs, mrols)      <- (gecrMrols^..folded._1, gecrMrols^..folded._2)
-  , (gecrs', miss, rcs) <- expandGecrs c gecrs
+  | (unzip -> (gecrs, mrols)) <- map (mkGecrWithRol i ws is c) as
+  , (gecrs', miss, rcs)       <- expandGecrs c gecrs
   = (gecrs', mrols, miss, rcs)
 
 
@@ -246,7 +244,7 @@ mkGecrWithRol :: Id -> WorldState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes,
 mkGecrWithRol i ws is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
   | T.null b        = (mkGecr i ws is c n, Nothing)
   | T.length b == 1 = sorry
-  | parsed <- reads (b^..unpacked.dropping 1 (folded.to toUpper)) :: [ (RightOrLeft, String) ] =
+  | parsed <- reads (T.unpack . T.toUpper . T.drop 1 $ b) :: [(RightOrLeft, String)] =
       case parsed of [(rol, _)] -> (mkGecr i ws is c a, Just rol)
                      _          -> sorry
   where
