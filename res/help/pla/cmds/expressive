@@ -1,0 +1,14 @@
+\h EXPRESSIVE \d
+
+\uUSAGE\n
+expressive \s[\dterm \s...]\d
+
+\uDESCRIPTION\n
+Display a list of available expressive commands and their results. Optionally, search the list for one or more terms.
+
+\uEXAMPLES\n
+\q"expressive"\d to display the full command list.4`
+\q"expressive laugh"\d to display entries containing "laugh".4`
+\q"expressive laugh look"\d to display entries containing "laugh", followed by entries containing "look".4`
+
+\uSEE ALSO\n

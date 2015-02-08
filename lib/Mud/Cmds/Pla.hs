@@ -352,7 +352,6 @@ exits p = withoutArgs exits p
 -----
 
 
--- TODO: Help.
 expCmdList :: Action
 expCmdList (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkExpCmdListTxt
 expCmdList p = dispMatches p (succ maxCmdLen) mkExpCmdListTxt
