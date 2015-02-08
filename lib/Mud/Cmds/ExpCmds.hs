@@ -216,6 +216,8 @@ expCmdSet = S.fromList
                                       "% facepalms.")
     , ExpCmd "faint"       (NoTarget  "You faint."
                                       "% faints.")
+    , ExpCmd "fistpump"    (NoTarget  "You pump your fist in the air triumphantly."
+                                      "% pumps & fist in the air triumphantly.")
     , ExpCmd "flex"        (Versatile "You flex your muscles."
                                       "%'s flexes & muscles."
                                       "You flex your muscles at @."
@@ -265,6 +267,11 @@ expCmdSet = S.fromList
     , ExpCmd "greet"       (HasTarget "You greet @."
                                       "% greets you."
                                       "% greets @.")
+    , ExpCmd "grimace"     (Versatile "You grimace disapprovingly."
+                                      "% grimaces disapprovingly."
+                                      "You grimace disapprovingly at @."
+                                      "% grimaces disapprovingly at you."
+                                      "% grimaces disapprovingly at @.")
     , ExpCmd "grin"        (Versatile "You grin."
                                       "% grins."
                                       "You grin at @."
@@ -407,6 +414,8 @@ expCmdSet = S.fromList
                                       "You nod in agreement to @."
                                       "% nods in agreement to you."
                                       "% nods in agreement to @.")
+    , ExpCmd "noexpress"   (NoTarget  "Your face is entirely expressionless."
+                                      "%'s face is entirely expressionless.")
     , ExpCmd "nudge"       (HasTarget "You nudge @."
                                       "% nudges you."
                                       "% nudges @.")
@@ -430,6 +439,11 @@ expCmdSet = S.fromList
     , ExpCmd "peer"        (HasTarget "You peer at @."
                                       "% peers at you."
                                       "% peers at @.")
+    , ExpCmd "pensive"     (Versatile "Your wistful expression suggests a pensive mood."
+                                      "%'s wistful expression suggests a pensive mood."
+                                      "You gaze pensively at @."
+                                      "% gazes pensively at you."
+                                      "% gazes pensively at @.")
     , ExpCmd "perplexed"   (NoTarget  "You are truly perplexed by the situation."
                                       "% is truly perplexed by the situation.")
     , ExpCmd "pet"         (HasTarget "You pet @."
@@ -485,6 +499,8 @@ expCmdSet = S.fromList
                                       "% raises & hand.")
     , ExpCmd "reeling"     (NoTarget  "Dizzy and reeling, you look as though you might pass out."
                                       "Dizzy and reeling, % looks as though ^ might pass out.")
+    , ExpCmd "relieved"    (NoTarget  "You look relieved."
+                                      "% looks relieved.")
     , ExpCmd "rock"        (NoTarget  "You rock back and forth."
                                       "% rocks back and forth.")
     , ExpCmd "rolleyes"    (Versatile "You roll your eyes."
@@ -513,6 +529,14 @@ expCmdSet = S.fromList
     , ExpCmd "shush"       (HasTarget "You shush @."
                                       "% shushes you."
                                       "% shushed @.")
+    , ExpCmd "sigh"        (NoTarget  "You sigh."
+                                      "% sighes.")
+    , ExpCmd "sighrelief"  (NoTarget  "You sigh in relief."
+                                      "% sighes in relief.")
+    , ExpCmd "sighsadly"   (NoTarget  "You sigh sadly."
+                                      "% sighes sadly.")
+    , ExpCmd "sighwearily" (NoTarget  "You sigh wearily."
+                                      "% sighes wearily.")
     , ExpCmd "sit"         (Versatile "You sit down."
                                       "% sits down."
                                       "You sit down next to @."
@@ -614,6 +638,11 @@ expCmdSet = S.fromList
                                       "You wink at @."
                                       "% winks at you."
                                       "% winks at @.")
+    , ExpCmd "wistful"     (Versatile "Your wistful expression suggests a pensive mood."
+                                      "%'s wistful expression suggests a pensive mood."
+                                      "You gaze wistfully at @."
+                                      "% gazes wistfully at you."
+                                      "% gazes wistfully at @.")
     , ExpCmd "worried"     (Versatile "You look genuinely worried."
                                       "% looks genuinely worried."
                                       "You look genuinely worried for @."
