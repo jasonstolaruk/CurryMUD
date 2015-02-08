@@ -96,6 +96,11 @@ expCmdSet = S.fromList
                                       "You burp at @."
                                       "% burps at you."
                                       "% burps at @.")
+    , ExpCmd "burstlaugh"  (Versatile "You abruptly burst into laughter."
+                                      "% abruptly bursts into laughter."
+                                      "You abruptly burst into laughter in reaction to @."
+                                      "% abruptly bursts into laughter in reaction to you."
+                                      "% abruptly bursts into laughter in reaction to @.")
     , ExpCmd "cheer"       (Versatile "You cheer."
                                       "% cheers."
                                       "You cheer for @."
@@ -106,6 +111,11 @@ expCmdSet = S.fromList
                                       "You chuckle at @."
                                       "% chuckles at you."
                                       "% chuckles at @.")
+    , ExpCmd "chortle"     (Versatile "You chortle gleefully."
+                                      "% chortles gleefully."
+                                      "You chortle gleefully at @."
+                                      "% chortles gleefully at you."
+                                      "% chortles gleefully at @.")
     , ExpCmd "clap"        (Versatile "You clap."
                                       "% claps."
                                       "You clap for @."
@@ -185,6 +195,11 @@ expCmdSet = S.fromList
                                       "% is clearly disappointed in @.")
     , ExpCmd "dizzy"       (NoTarget  "Dizzy and reeling, you look as though you might pass out."
                                       "Dizzy and reeling, % looks as though ^ might pass out.")
+    , ExpCmd "doublelaguh" (Versatile "You double over with laughter."
+                                      "% doubles over with laughter."
+                                      "You double over with laughter in reaction to @."
+                                      "% doubles over with laughter in reaction to you."
+                                      "% doubles over with laughter in reaction to @.")
     , ExpCmd "drool"       (NoTarget  "You drool."
                                       "% drools.")
     , ExpCmd "droopy"      (NoTarget  "Your eyes are droopy."
@@ -261,6 +276,11 @@ expCmdSet = S.fromList
                                       "% growls at @.")
     , ExpCmd "grumble"     (NoTarget  "You grumble to yourself."
                                       "% grumbles to *.")
+    , ExpCmd "guffaw"      (Versatile "You guffaw boisterously."
+                                      "% guffaws boisterously."
+                                      "You guffaw boisterously at @."
+                                      "% guffaws boisterously at you."
+                                      "% guffaws boisterously at @.")
     , ExpCmd "gulp"        (NoTarget  "You gulp."
                                       "% gulps.")
     , ExpCmd "handhips"    (NoTarget  "You put your hands on your hips."
@@ -277,6 +297,11 @@ expCmdSet = S.fromList
                                       "You horf all over @."
                                       "% horfs all over you."
                                       "% horfs all over @.")
+    , ExpCmd "howllaugh"   (Versatile "You howl with laughter."
+                                      "% howls with laughter."
+                                      "You howl with laughter at @."
+                                      "% howls with laughter at you."
+                                      "% howls with laughter at @.")
     , ExpCmd "innocent"    (NoTarget  "You try to look innocent."
                                       "% tries to look innocent.")
     , ExpCmd "joytears"    (NoTarget  "You are overcome with tears of joy."
@@ -403,11 +428,11 @@ expCmdSet = S.fromList
                                       "You prance around @."
                                       "% prances around you."
                                       "% prances around @.")
-    , ExpCmd "puke"        (Versatile "You puke all over."
-                                      "% pukes all over."
-                                      "You puke on @."
-                                      "% pukes on you."
-                                      "% pukes on @.")
+    , ExpCmd "puke"        (Versatile "You violently puke all over."
+                                      "% violently pukes all over."
+                                      "You violently puke on @."
+                                      "% pukes voilently on you."
+                                      "% pukes voilently on @.")
     , ExpCmd "questioning" (Versatile "Curious, you have a questioning expression on your face."
                                       "Curious, % has a questioning expression on & face."
                                       "You flash a questioning expression at @."
@@ -433,23 +458,43 @@ expCmdSet = S.fromList
                                       "% rubs & eyes.")
     , ExpCmd "satisfied"   (NoTarget  "You look satisfied."
                                       "% looks satisfied.")
-    , ExpCmd "scream"      (Versatile "You scream."
-                                      "% screams."
+    , ExpCmd "scream"      (Versatile "You let out a high-pitched scream."
+                                      "% lets out a high-pitched scream."
                                       "You scream at @."
                                       "% screams at you."
                                       "% screams at @.")
+    , ExpCmd "shrieklaugh" (Versatile "You shriek with laughter."
+                                      "% shrieks with laughter."
+                                      "You shriek with laughter at @."
+                                      "% shrieks with laughter at you."
+                                      "% shrieks with laughter at @.")
     , ExpCmd "shush"       (HasTarget "You shush @."
                                       "% shushes you."
                                       "% shushed @.")
     , ExpCmd "sleepy"      (NoTarget  "You look sleepy."
                                       "% looks sleepy.")
+    , ExpCmd "slowclap"    (Versatile "You clap slowly, with a mocking lack of enthusiasm."
+                                      "% claps slowly, with a mocking lack of enthusiasm."
+                                      "You clap slowly for @, with a mocking lack of enthusiasm."
+                                      "% claps slowly for you, with a mocking lack of enthusiasm."
+                                      "% claps slowl for @, with a mocking lack of enthusiasm.")
     , ExpCmd "smirk"       (Versatile "You smirk."
                                       "% smirks."
                                       "You smirk at @."
                                       "% smirks at you."
                                       "% smirks at @.")
+    , ExpCmd "snicker"     (Versatile "You snicker derisively."
+                                      "% snickers derisively."
+                                      "You snicker derisively at @."
+                                      "% snickers derisively at you."
+                                      "% snickers derisively at @.")
     , ExpCmd "sniffle"     (NoTarget  "You sniffle."
                                       "% sniffles.")
+    , ExpCmd "snort"       (Versatile "You snort."
+                                      "% snorts."
+                                      "You snort at @."
+                                      "% snorts at you."
+                                      "% snorts at @.")
     , ExpCmd "scowl"       (Versatile "You scowl with contempt."
                                       "% scowls with contempt."
                                       "You scowl with contempt at @."
