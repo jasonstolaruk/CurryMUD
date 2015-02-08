@@ -666,79 +666,82 @@ expCmds = S.foldr helper [] expCmdSet
 -----
 
 
--- TODO: More refactoring for code reuse. Clean up.
 expCmd :: ExpCmdType -> Action
 expCmd (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols "This expressive command requires a single target."
-expCmd act            (NoArgs'' i        ) = case act of
+expCmd ec             (NoArgs'' i        ) = case ec of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
-  x                                 -> patternMatchFail "expCmd" [ showText x ]
+  _                                 -> patternMatchFail "expCmd" [ showText ec ]
   where
     helper toSelf toOthers = readWSTMVar >>= \ws ->
         let (d, _, _, _, _)                     = mkCapStdDesig i ws
             toSelfBrdcst                        = (nlnl toSelf, [i])
-            serialized | T.head toOthers == '%' = serialize d
-                       | otherwise              = serialize d { isCap = False }
-            (heShe, hisHer, hisHerself)         = mkPros i ws
-            toOthers'                           = T.replace "%" serialized . T.replace "^" heShe . T.replace "&" hisHer . T.replace "*" hisHerself $ toOthers
+            serialized                          = mkSerializedDesig d toOthers
+            (heShe, hisHer, himHerself)         = mkPros i ws
+            toOthers'                           = T.replace "%" serialized .
+                                                  T.replace "^" heShe      .
+                                                  T.replace "&" hisHer     .
+                                                  T.replace "*" himHerself $ toOthers
             toOthersBrdcst                      = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut (bracketQuote "exp. command") i [toSelf] >> bcast (toSelfBrdcst : [toOthersBrdcst])
-expCmd (NoTarget {}) (WithArgs _ mq cols (_:_) ) = wrapSend mq cols "This expressive command may not be used with a \
+expCmd (NoTarget {}) (WithArgs _ mq cols (_:_))  = wrapSend mq cols "This expressive command cannot be used with a \
                                                                     \target."
-expCmd act           (OneArg   i mq cols target) = case act of
+expCmd ec            (OneArg   i mq cols target) = case ec of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
-  x                                        -> patternMatchFail "expCmd" [ showText x ]
+  _                                        -> patternMatchFail "expCmd" [ showText ec ]
   where
     helper toSelf toTarget toOthers = readWSTMVar >>= \ws ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
             c                                         = (ws^.coinsTbl) ! ri
         in if (not . null $ ris') || (c /= mempty)
           then case resolveRmInvCoins i ws [target] ris' c of
-            (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
-            (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot be \
-                                                                             \used with coins."
-            ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
-            ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols "Sorry, but you can only target one \
-                                                                             \person at a time with expressive \
-                                                                             \commands."
-            ([ Right [targetId] ], _                   ) ->
+            (_,                 [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
+            (_,                 Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot be \
+                                                                          \used with coins."
+            ([ Left sorryMsg ], _                   ) -> wrapSend mq cols sorryMsg
+            ([ Right (_:_:_) ], _                   ) -> wrapSend mq cols "Sorry, but you can only target one person \
+                                                                          \at a time with expressive commands."
+            ([ Right [targetId] ], _                ) ->
               let (view sing -> targetSing) = (ws^.entTbl) ! targetId
                   onPC targetDesig =
-                      let toSelf'        = T.replace "@" targetDesig toSelf
-                          toSelfBrdcst   = (nlnl toSelf', [i])
-                          serialized     = mkSerializedDesig d
-                          (_, hisHer, _) = mkPros i ws
+                      let (toSelf', toSelfBrdcst, serialized, hisHer, toOthers') = mkBindings targetDesig
+                          toOthersBrdcst = (nlnl toOthers', pcIds d \\ [ i, targetId ])
                           toTarget'      = T.replace "%" serialized . T.replace "&" hisHer $ toTarget
                           toTargetBrdcst = (nlnl toTarget', [targetId])
-                          toOthers'      = T.replace "@" targetDesig . T.replace "%" serialized . T.replace "&" hisHer $ toOthers
-                          toOthersBrdcst = (nlnl toOthers', pcIds d \\ [ i, targetId ])
                       in do
                           logPlaOut (bracketQuote "exp. command") i [ parsePCDesig i ws toSelf' ]
                           bcast $ toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst]
                   onMob targetNoun =
-                      let toSelf'        = T.replace "@" targetNoun toSelf
-                          toSelfBrdcst   = (nlnl toSelf', [i])
-                          serialized     = mkSerializedDesig d
-                          (_, hisHer, _) = mkPros i ws
-                          toOthers'      = T.replace "@" targetNoun . T.replace "%" serialized . T.replace "&" hisHer $ toOthers
+                      let (toSelf', toSelfBrdcst, _, _, toOthers') = mkBindings targetNoun
                           toOthersBrdcst = (nlnl toOthers', i `delete` pcIds d)
                       in do
                           logPlaOut (bracketQuote "exp. command") i [toSelf']
                           bcast $ toSelfBrdcst : [toOthersBrdcst]
+                  mkBindings targetTxt =
+                      let toSelf'        = T.replace "@" targetTxt toSelf
+                          toSelfBrdcst   = (nlnl toSelf', [i])
+                          serialized     = mkSerializedDesig d toOthers
+                          (_, hisHer, _) = mkPros i ws
+                          toOthers'      = T.replace "@" targetTxt  .
+                                           T.replace "%" serialized .
+                                           T.replace "&" hisHer     $ toOthers
+                      in (toSelf', toSelfBrdcst, serialized, hisHer, toOthers')
               in case (ws^.typeTbl) ! targetId of
                 PCType  -> onPC  . serialize . mkStdDesig targetId ws targetSing False $ ris
                 MobType -> onMob . theOnLower $ targetSing
-                _       -> wrapSend mq cols "Sorry, but expressive commands may only target people."
+                _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
             x -> patternMatchFail "expCmd helper" [ showText x ]
           else wrapSend mq cols "You don't see anyone here."
-        where
-          mkSerializedDesig d | T.head toOthers == '%' = serialize d
-                              | otherwise              = serialize d { isCap = False }
-expCmd act (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols $ case act of
+expCmd ec (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols $ case ec of
   (HasTarget {}) -> "This expressive command requires a single target."
-  (Versatile {}) -> "This expressive command may be used with at most one target."
-  x              -> patternMatchFail "expCmd" [ showText x ]
+  (Versatile {}) -> "This expressive command can be used with at most one target."
+  _              -> patternMatchFail "expCmd" [ showText ec ]
+
+
+mkSerializedDesig :: PCDesig -> T.Text -> T.Text
+mkSerializedDesig d toOthers | T.head toOthers == '%' = serialize d
+                             | otherwise              = serialize d { isCap = False }
 
 
 mkPros :: Id -> WorldState -> (T.Text, T.Text, T.Text)
