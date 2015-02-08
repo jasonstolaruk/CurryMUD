@@ -34,7 +34,6 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (both, over)
 import Control.Lens.Getter (use, views)
-import Control.Lens.Setter (mapped)
 import Control.Monad (replicateM, replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
@@ -345,7 +344,7 @@ debugTalk p = withoutArgs debugTalk p
 debugThread :: Action
 debugThread (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "thread") i
-    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over (mapped.both) asyncThreadId getLogAsyncs
+    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId <$> getLogAsyncs
     threadTblKvs <- M.assocs <$> readTMVarInNWS threadTblTMVar
     (es, ks)     <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
     let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]

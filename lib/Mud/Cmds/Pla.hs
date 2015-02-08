@@ -48,7 +48,6 @@ import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
-import Control.Lens.Setter (mapped)
 import Control.Monad (forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
@@ -791,7 +790,7 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
                                 (if not . null $ otherNcbs then otherDescs            else "") <>
                                 (if c /= mempty            then mkCoinsSummary cols c else "")
   where
-    splitPCsOthers                       = over (both.mapped) snd . span fst
+    splitPCsOthers                       = over both (map snd) . span fst
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
                                              then knownNameColor   <> s       <> dfltColor
                                              else unknownNameColor <> aOrAn s <> dfltColor
