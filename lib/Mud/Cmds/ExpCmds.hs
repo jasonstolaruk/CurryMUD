@@ -154,6 +154,11 @@ expCmdSet = S.fromList
     , ExpCmd "cuddle"      (HasTarget "You cuddle @."
                                       "% cuddles you."
                                       "% cuddles @.")
+    , ExpCmd "curious"     (Versatile "Interested in knowing more, you have a curious expression on your face."
+                                      "Interested in knowing more, % has a curious expression on & face."
+                                      "Interested in knowing more, you flash a curious expression at @."
+                                      "Interested in knowing more, % flashes a curious expression at you."
+                                      "Interested in knowing more, % flashes a curious expression at @."
     , ExpCmd "curtsey"     (Versatile "You curtsey."
                                       "% curtseys."
                                       "You curtsey to @."
@@ -281,6 +286,11 @@ expCmdSet = S.fromList
                                       "% hugs @.")
     , ExpCmd "hum"         (NoTarget  "You hum a merry tune."
                                       "% hums a merry tune.")
+    , ExpCmd "inquisitive" (Versatile "Curious, you have an inquisitive expression on your face."
+                                      "Curious, % has an inquisitive expression on & face."
+                                      "You flash an inquisitive expression at @."
+                                      "% flashes an inquisitive expression at you."
+                                      "% flashes an inquisitive expression at @."
     , ExpCmd "kiss"        (HasTarget "You kiss @."
                                       "% kisses you."
                                       "% kisses @.")
@@ -389,6 +399,11 @@ expCmdSet = S.fromList
                                       "You puke on @."
                                       "% pukes on you."
                                       "% pukes on @.")
+    , ExpCmd "questioning" (Versatile "Curious, you have a questioning expression on your face."
+                                      "Curious, % has a questioning expression on & face."
+                                      "You flash a questioning expression at @."
+                                      "% flashes a questioning expression at you."
+                                      "% flashes a questioning expression at @."
     , ExpCmd "raisebrow"   (Versatile "You raise an eyebrow."
                                       "% raises an eyebrow."
                                       "You raise an eyebrow at @."
@@ -431,6 +446,8 @@ expCmdSet = S.fromList
                                       "You scowl with contempt at @."
                                       "% scowls with contempt at you."
                                       "% scowls with contempt at @.")
+    , ExpCmd "snore"       (NoTarget  "You snore loudly."
+                                      "% snores loudly.")
     , ExpCmd "sob"         (NoTarget  "You sob."
                                       "% sobs.")
     , ExpCmd "stare"       (HasTarget "You stare at @."
@@ -470,6 +487,11 @@ expCmdSet = S.fromList
     , ExpCmd "watch"       (HasTarget "You watch @ with interest."
                                       "% watches you with interest."
                                       "% watches @ with interest.")
+    , ExpCmd "wave"        (Versatile "You wave."
+                                      "% waves."
+                                      "You wave at @."
+                                      "% waves at you."
+                                      "% waves at @.")
     , ExpCmd "weary"       (Versatile "Exhausted, your face displays a weary expression."
                                       "Exhausted, %'s face displays a weary expression."
                                       "You cast @ a weary glance."
