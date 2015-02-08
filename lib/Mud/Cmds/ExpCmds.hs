@@ -195,6 +195,11 @@ expCmdSet = S.fromList
                                       "% facepalms.")
     , ExpCmd "faint"       (NoTarget  "You faint."
                                       "% faints.")
+    , ExpCmd "flex"        (Versatile "You flex your muscles."
+                                      "%'s flexes & muscles."
+                                      "You flex your muscles at @."
+                                      "% flexes & muscles at you."
+                                      "% flexes & muscles at @.")
     , ExpCmd "flop"        (NoTarget  "You flop down on the ground."
                                       "% flops down on the ground.")
     , ExpCmd "frown"       (Versatile "You frown."
@@ -264,10 +269,9 @@ expCmdSet = S.fromList
                                       "% hesitates.")
     , ExpCmd "hiccup"      (NoTarget  "You hiccup."
                                       "% hiccups.")
-    , ExpCmd "holdlaugh"   (NoTarget  "You try hard to hold back laughter."
-                                      "% tries hard not to laugh.")
-    , ExpCmd "holdcry"     (NoTarget  "You try hard not to cry."
-                                      "% tries hard to stifle & tears.")
+    , ExpCmd "holdhand"    (HasTarget "You hold @'s hand."
+                                      "% holds your hand."
+                                      "% holds @'s hand.")
     , ExpCmd "horf"        (Versatile "You horf all over the place."
                                       "% horfs all over the place."
                                       "You horf all over @."
@@ -325,6 +329,11 @@ expCmdSet = S.fromList
                                       "You mumble something to @."
                                       "% mumbles something to you."
                                       "% mumbles something to @.")
+    , ExpCmd "muscles"     (Versatile "You flex your muscles."
+                                      "%'s flexes & muscles."
+                                      "You flex your muscles at @."
+                                      "% flexes & muscles at you."
+                                      "% flexes & muscles at @.")
     , ExpCmd "mutter"      (Versatile "You mutter to yourself."
                                       "% mutters to *."
                                       "You mutter something to @."
@@ -453,8 +462,14 @@ expCmdSet = S.fromList
     , ExpCmd "stare"       (HasTarget "You stare at @."
                                       "% stares at you."
                                       "% stares at @.")
+    , ExpCmd "stiflelaugh" (NoTarget  "You try hard to stifle a laugh."
+                                      "% tries hard to stifle a laugh.")
+    , ExpCmd "stifletears" (NoTarget  "You try hard to stifle your tears."
+                                      "% tries hard to stifle & tears.")
     , ExpCmd "stomach"     (NoTarget  "Your stomach growls."
                                       "%'s stomach growls.")
+    , ExpCmd "stretch"     (NoTarget  "You stretch your muscles."
+                                      "% stretches & muscles.")
     , ExpCmd "sweat"       (NoTarget  "You break out in a sweat."
                                       "% breaks out in a sweat.")
     , ExpCmd "tears"       (NoTarget  "Tears roll down your face."
