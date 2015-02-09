@@ -93,8 +93,13 @@ Use "when", "unless", and "guard" for conditional evaluation.
 when   :: Bool -> m () -> m () -- Evaluate the second parameter when "True".
 unless :: Bool -> m () -> m () -- Evaluate the second parameter when "False".
 guard  :: (MonadPlus m) => Bool -> m ()
-"guard" will short-circuit chained expressions when "False": (RWH p.375)
-guard ('b' > 'a') >> putStrLn "True!"
+"guard" will short-circuit chained expressions (by returning "mzero") when "False": (RWH p.375)
+λ> guard (1 < 2) >> Just 'a'
+Just 'a'
+λ> guard (1 == 2) >> Just 'a'
+Nothing
+λ> mzero :: Maybe Char
+Nothing
 
 Use "void" instead of ">> return ()".
 void :: (Functor f) => f a -> f () -- Evaluate the first parameter and return "f ()".
@@ -252,13 +257,9 @@ A list in a monad is returned: the context of the monad is reflected in the fina
 Use the "Maybe" monad to chain together calculations that may fail:
 λ> Nothing >> Just 5
 Nothing
-tryMaybe :: Int -> Maybe Int
-tryMaybe x = f x >>= \n -> g n
-  where
-    f 0 = Nothing
-    f x = Just x
-    g 5 = Nothing
-    g x = Just x
+Compare the above to the following:
+λ> Nothing `mplus` Just 5
+Just 5
 
 Use the "Either" monad for calculations that need to fail with an auxiliary value (for example, a
 message explaining the error). (LYAH p.340)
@@ -313,7 +314,7 @@ Just 'b'
 
 When you have a number of computations, each resulting in an instance of "Monoid" wrapped in
 "Maybe", you can use the "Maybe a" instance of "Monoid" to work with those results in a "monoidal"
-fashion, without directly dealing with the "Maybe" wrapper: 
+fashion, without directly dealing with the "Maybe" wrapper:
 λ> let myMap = M.fromList [('a',[1..5]),('b',[6..10])] -- Note that "[a]" is a monoid.
 λ> M.lookup 'c' myMap <> M.lookup 'd' myMap <> M.lookup 'a' myMap
 Just [1,2,3,4,5]
@@ -326,6 +327,15 @@ Just 1
 λ> let list = ['a'..'z']
 λ> filter isDigit list `mplus` filter isLower list `mplus` filter (< 'd') list
 "abc"
+Note that "Nothing `mplus` Just 5" returns "Just 5", while "Nothing >> Just 5" returns "Nothing".
+"Just 5 `mplus` Just 6" returns "Just 5".
+
+"msum" form "MonadPlus" is analogous to "mconcat" from "Monoid" (but keep in mind that while "MonadPlus" types take a type variable, "Monoid" types do not).
+λ> :t msum
+msum :: MonadPlus m => [m a] -> m a
+λ> msum [Just 1, Nothing, Just 2] -- Keep the first "successful" value.
+Just 1
+Again, recall that "Just 5 `mplus` Just 6" returns "Just 5".
 
 "mfilter" applies an everyday predicate to a "MonadPlus" value and returns "mzero" if the result is "False"; otherwise it returns the "MonadPlus" value.
 mfilter :: MonadPlus m => (a -> Bool) -> m a -> m a
