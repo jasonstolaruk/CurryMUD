@@ -155,7 +155,7 @@ mkOrdinal (showText -> n) = n <> case T.last n of '1' -> "st"
 mkTimestamp :: IO T.Text
 mkTimestamp = getZonedTime >>= \(T.words . showText -> wordy) ->
     let date = head wordy
-        time = T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
+        time = T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy
     in return . bracketQuote $ date <> " " <> time
 
 
