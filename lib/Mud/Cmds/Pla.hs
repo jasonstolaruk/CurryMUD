@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -170,7 +170,7 @@ about (NoArgs i mq cols) = do
     logPlaExec "about" i
     try helper >>= eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
-    helper = multiWrapSend mq cols . T.lines =<< (liftIO . T.readFile $ aboutFile)
+    helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
 about p = withoutArgs about p
 
 
@@ -321,8 +321,7 @@ emote p@(ActionParams { plaId, args })
 
 
 equip :: Action
-equip (NoArgs i mq cols) = getEnt' i >>= \(ws, e) ->
-    send mq . nl . mkEqDesc i cols ws i e $ PCType
+equip (NoArgs i mq cols) = send mq . nl =<< [ mkEqDesc i cols ws i e $ PCType | (ws, e) <- getEnt' i ]
 equip (LowerNub i mq cols as) = do
     (ws, em@(M.elems -> is)) <- getEq' i
     send mq $ if not . M.null $ em
@@ -344,9 +343,8 @@ equip p = patternMatchFail "equip" [ showText p ]
 
 
 exits :: Action
-exits (NoArgs i mq cols) = getPCRm i >>= \r ->
-    logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
-exits p = withoutArgs exits p
+exits (NoArgs i mq cols) = logPlaExec "exits" i >> (send mq . nl =<< [ mkExitsSummary cols r | r <- getPCRm i ])
+exits p                  = withoutArgs exits p
 
 
 -----
@@ -354,7 +352,7 @@ exits p = withoutArgs exits p
 
 expCmdList :: Action
 expCmdList (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkExpCmdListTxt
-expCmdList p = dispMatches p (succ maxCmdLen) mkExpCmdListTxt
+expCmdList p                  = dispMatches p (succ maxCmdLen) mkExpCmdListTxt
 
 
 mkExpCmdListTxt :: [T.Text]
@@ -588,8 +586,8 @@ getHelpByName cols hs name =
     maybe sorry found . findFullNameForAbbrev name $ [ helpName h | h <- hs ]
   where
     sorry           = return ("No help is available on " <> dblQuote name <> ".", "")
-    found hn        | h <- head . filter ((== hn) . helpName) $ hs =
-                        (,) <$> readHelpFile (hn, helpFilePath h) <*> (return . dblQuote $ hn)
+    found hn        = let h = head . filter ((== hn) . helpName) $ hs
+                      in (,) <$> readHelpFile (hn, helpFilePath h) <*> (return . dblQuote $ hn)
     readHelpFile (hn, hf) = (try . liftIO . T.readFile $ hf) >>= eitherRet handler
       where
         handler e = do
@@ -601,8 +599,7 @@ getHelpByName cols hs name =
 
 
 intro :: Action
-intro (NoArgs i mq cols) = do
-    intros <- getPCIntroduced i
+intro (NoArgs i mq cols) = getPCIntroduced i >>= \intros ->
     if null intros
       then let introsTxt = "No one has introduced themselves to you yet." in do
           wrapSend mq cols introsTxt
@@ -683,8 +680,7 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv (NoArgs i mq cols) = getEnt' i >>= \(ws, e) ->
-    send mq . nl . mkInvCoinsDesc i cols ws i $ e
+inv (NoArgs i mq cols) = send mq . nl =<< [ mkInvCoinsDesc i cols ws i e | (ws, e) <- getEnt' i ]
 inv (LowerNub i mq cols as) = getInvCoins' i >>= \(ws, (is, c)) ->
     send mq $ if (not . null $ is) || (c /= mempty)
       then let (eiss, ecs) = resolvePCInvCoins i ws as is c
@@ -704,10 +700,10 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 look :: Action
-look (NoArgs i mq cols) = getPCRmIdRm' i >>= \(ws, (ri, r)) ->
-    let primary = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
-        suppl   = mkExitsSummary cols r <> mkRmInvCoinsDesc i cols ws ri
-    in send mq . nl $ primary <> suppl
+look (NoArgs i mq cols) = send mq . nl . uncurry (<>) =<<
+    [ ( multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
+      , mkExitsSummary cols r <> mkRmInvCoinsDesc i cols ws ri )
+    | (ws, (ri, r)) <- getPCRmIdRm' i ]
 look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
   (Left  msg, _           ) -> send mq msg
   (Right msg, Nothing     ) -> send mq msg
@@ -719,10 +715,10 @@ look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
               (nlnl . T.concat $ [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
               acc
       in do
-          bcast . foldr f [] $ ds
-          send mq msg
           forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
               logPla "look" i ("looked at " <> es <> ".")
+          send mq msg
+          bcast . foldr f [] $ ds
   where
     helper = onWS $ \(t, ws) ->
         let (d, _, ris, ris', rc) = mkGetLookBindings i ws
@@ -1455,8 +1451,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
             in do
                 logPlaOut "say" i [ toSelfMsg ]
-                fms <- firstMobSay i
-                bcast $ (nlnl toSelfMsg <> fms, [i]) : [toOthersBrdcst]
+                bcast =<< [ (nlnl toSelfMsg <> fms, [i]) : [toOthersBrdcst] | fms <- firstMobSay i ]
     sayTo ma msg            = patternMatchFail "say sayTo" [ showText ma, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelper ma rest = readWSTMVar >>= \ws ->
@@ -1494,13 +1489,9 @@ firstMobSay i = (getPlaFlag IsNotFirstMobSay <$> getPla i) >>= \infms -> if infm
 setAction :: Action
 setAction (NoArgs i mq cols) = do
     logPlaExecArgs "set" [] i
-    multiWrapSend mq cols =<< mkSettingsList
-  where
-    mkSettingsList = getPla i >>= \p ->
-        let pl     = p^.pageLines
-            names  = styleAbbrevs Don'tBracket settingNames
-            values = map showText [ cols, pl ]
-        in return [ pad 9 (n <> ": ") <> v | n <- names | v <- values ]
+    multiWrapSend mq cols =<< [ [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] | p <- getPla i
+                              , let values = map showText [ cols, p^.pageLines ]
+                              , let names  = styleAbbrevs Don'tBracket settingNames ]
 setAction (LowerNub i mq cols as) = helper >>= \(msgs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "set" i $ logMsgs
     multiWrapSend mq cols msgs
@@ -1720,8 +1711,8 @@ what p@AdviseNoArgs = advise p ["what"] advice
                       , dblQuote "what up"
                       , dfltColor
                       , "." ]
-what (LowerNub i mq cols as) = getPCRm' i >>= \(ws, r) ->
-    logPlaExecArgs "what" as i >> (send mq . T.concat . map (helper ws r) $ as)
+what (LowerNub i mq cols as) =
+    logPlaExecArgs "what" as i >> (send mq =<< [ T.concat . map (helper ws r) $ as | (ws, r) <- getPCRm' i ])
   where
     helper ws r n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ws it n | it <- [ PCInv, PCEq, RmInv ] ]
 what p = patternMatchFail "what" [ showText p ]
@@ -1886,7 +1877,7 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
 whoAdmin :: Action
 whoAdmin (NoArgs i mq cols) = do
     logPlaExec "whoadmin" i
-    (mkAdminListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar) >>= multiWrapSend mq cols
+    multiWrapSend mq cols =<< (mkAdminListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
 whoAdmin p = withoutArgs whoAdmin p
 
 
