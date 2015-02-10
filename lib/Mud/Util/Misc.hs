@@ -103,7 +103,9 @@ eitherRet = flip either return
 
 
 findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
-findFullNameForAbbrev needle hay = guard (not . null $ res) >> (Just . head $ res)
+findFullNameForAbbrev needle hay = do
+    guard . not . null $ res
+    return . head $ res
   where
     res = sort . filter (needle `T.isPrefixOf`) $ hay
 
@@ -131,7 +133,7 @@ isVowel = (`elem` "aeiou")
 
 
 maybeRet :: Monad m => m a -> Maybe a -> m a
-maybeRet dflt = maybe dflt return
+maybeRet = flip maybe return
 
 
 maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
@@ -217,5 +219,4 @@ theOnLower' = capitalize . theOnLower
 
 
 toMaybe :: Bool -> a -> Maybe a
-toMaybe False _ = Nothing
-toMaybe True  a = Just a
+toMaybe b = (guard b >>) . return

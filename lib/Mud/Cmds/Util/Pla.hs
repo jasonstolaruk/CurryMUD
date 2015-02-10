@@ -647,7 +647,7 @@ type InvWithCon = Inv
 
 
 mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM icir ws i (view sing -> s) is = guard icir >> (Just . helper . dup $ matches)
+mkMaybeNthOfM icir ws i (view sing -> s) is = guard icir >> (return . helper . dup $ matches)
   where
     helper  = succ . fromJust . elemIndex i *** length
     matches = filter (\i' -> views sing (== s) $ (ws^.entTbl) ! i') is

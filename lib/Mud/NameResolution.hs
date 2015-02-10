@@ -87,19 +87,26 @@ expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
 extractEnscsFromGecrs = over _1 reverse . foldl' helper ([], [])
   where
+    helper (gecrs, enscs) gecr | isSorryGecr gecr                               = (gecr : gecrs, enscs)
     helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Just ensc } = (gecr : gecrs, ensc : enscs)
     helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Nothing   } = (gecr : gecrs, enscs)
     helper (gecrs, enscs)      Mult { entsRes = Nothing, coinsRes = Just ensc } = (gecrs, ensc : enscs)
     helper (gecrs, enscs) gecr@Mult { entsRes = Nothing, coinsRes = Nothing   } = (gecr : gecrs, enscs)
-    helper (gecrs, enscs) gecr@Indexed {}                         = (gecr : gecrs, enscs)
-    helper (gecrs, enscs) gecr@Sorry   {}                         = (gecr : gecrs, enscs)
-    helper (gecrs, enscs) gecr@SorryIndexedCoins                  = (gecr : gecrs, enscs)
+    helper (gecrs, enscs) gecr@Indexed {}                                       = (gecr : gecrs, enscs)
+    helper x y = patternMatchFail "extractEnscsFromGecrs helper" [ showText x, showText y ]
+
+
+isSorryGecr :: GetEntsCoinsRes -> Bool
+isSorryGecr Sorry {}          = True
+isSorryGecr SorryIndexedCoins = True
+isSorryGecr _                 = False
 
 
 extractMesFromGecr :: GetEntsCoinsRes -> Maybe [Ent]
-extractMesFromGecr = \case Mult    { entsRes = Just es } -> Just es
-                           Indexed { entRes  = Right e } -> Just [e]
-                           _                             -> Nothing
+extractMesFromGecr gecr = guard (not . isSorryGecr $ gecr) Prelude.>> case gecr of
+  Mult    { entsRes = Just es } -> return es
+  Indexed { entRes  = Right e } -> return [e]
+  _                             -> patternMatchFail "extractMesFromGecr" [ showText gecr ]
 
 
 pruneDupIds :: [Maybe Inv] -> [Maybe Inv]
@@ -447,7 +454,7 @@ extractCoinsTxt (Just  x:xs) = x : extractCoinsTxt xs
 
 
 msgOnNonzero :: Int -> T.Text -> Maybe T.Text
-msgOnNonzero x msg = guard (x /= 0) Prelude.>> Just msg
+msgOnNonzero x msg = guard (x /= 0) Prelude.>> return msg
 
 
 procReconciledCoinsRm :: ReconciledCoins -> Either [T.Text] Coins

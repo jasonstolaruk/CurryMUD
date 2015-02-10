@@ -190,15 +190,16 @@ Compose "fmap"s to lift a function inside multiple functor "layers":
 Just (Just (Just 6))
 
 "fmap" (or "(<$>)"), "liftA", and "liftM" are all very similar:
-fmap  :: Functor f     => (a  -> b) -> f a  -> f b
-liftA :: Applicative f => (a  -> b) -> f a  -> f b
-liftM :: Monad m       => (a1 -> r) -> m a1 -> m r
+fmap  :: Functor f     => (a -> b) -> f a -> f b
+liftA :: Applicative f => (a -> b) -> f a -> f b
+liftM :: Monad m       => (a -> r) -> m a -> m r
 Use "fmap" or "(<$>)" instead of "liftM".
 Use "fmap" instead of "liftA" when you can.
 
 Use applicative style instead of monadic code when possible.
 "pure" is the applicative version of "return".
 "(<*>)" is the applicative version of "ap".
+(For an explanation of how to use "ap", see BH p.177.)
 
 When writing monadic code, consider what can be written outside the monad and lifted in.
 
@@ -252,7 +253,7 @@ Use "filterM" to filter a normal list with a monadic predicate of type "(a -> m 
 p.349):
 filterM :: (Monad m) => (a -> m Bool) -> [a] -> m [a]
 The predicate could, for example, be of type "Int -> Writer [String] Bool".
-A list in a monad is returned: the context of the monad is reflected in the final results.
+A list in a monad is returned; the context of the monad is reflected in the final results.
 
 Use the "Maybe" monad to chain together calculations that may fail:
 λ> Nothing >> Just 5
