@@ -380,7 +380,7 @@ adminTime (NoArgs i mq cols) = do
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
     formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
-      | time <- T.init . T.reverse . T.dropWhile (/= '.') . T.reverse . head . tail $ wordy
+      | time <- T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy
       = T.concat [ zone, ": ", date, " ", time ]
 adminTime p = withoutArgs adminTime p
 
