@@ -97,10 +97,10 @@ pattern NoArgs' i mq <- NoArgs i mq _
 pattern NoArgs'' i <- NoArgs' i _
 
 
-pattern OneArg i mq cols a <- WithArgs i mq cols [(T.toLower -> a)] -- TODO: Use this where you can.
+pattern OneArg i mq cols a <- WithArgs i mq cols [(T.toLower -> a)]
 
 
-pattern OneArg' i a <- OneArg i _ _ a -- TODO: Use this where you can.
+pattern OneArg' i a <- OneArg i _ _ a
 
 
 pattern WithArgs i mq cols as = ActionParams { plaId       = i
