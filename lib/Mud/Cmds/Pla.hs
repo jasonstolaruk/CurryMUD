@@ -321,7 +321,7 @@ emote p@(ActionParams { plaId, args })
 
 
 equip :: Action
-equip (NoArgs i mq cols) = send mq . nl =<< [ mkEqDesc i cols ws i e $ PCType | (ws, e) <- getEnt' i ]
+equip (NoArgs i mq cols) = send mq . nl =<< [ mkEqDesc i cols ws i e PCType | (ws, e) <- getEnt' i ]
 equip (LowerNub i mq cols as) = do
     (ws, em@(M.elems -> is)) <- getEq' i
     send mq $ if not . M.null $ em

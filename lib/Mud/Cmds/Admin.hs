@@ -145,7 +145,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (MsgWithTarget i mq cols target msg) = readTMVarInNWS msgQueueTblTMVar >>= \mqt@(IM.keys -> mqtKeys) -> do
+adminBoot (MsgWithTarget i mq cols target msg) = readTMVarInNWS msgQueueTblTMVar >>= \mqt@(IM.keys -> mqtKeys) ->
     getEntTbl >>= \et -> case [ k | k <- mqtKeys, (et ! k)^.sing == target ] of
       []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
                                     \you must specify the full PC name of the player you wish to boot.)"
@@ -364,7 +364,7 @@ firstAdminTell i s = [ [ T.concat [ hintANSI
                        , dfltColor
                        , " is the message you want to send to "
                        , s
-                       , "." ] ] | _ <- modifyPlaFlag i IsNotFirstAdminTell $ True ]
+                       , "." ] ] | _ <- modifyPlaFlag i IsNotFirstAdminTell True ]
 
 -----
 

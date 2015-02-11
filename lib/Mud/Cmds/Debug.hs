@@ -151,7 +151,7 @@ debugBuffCheck (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "buffer") i
     try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
   where
-    helper = (liftIO $ flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do
+    helper = liftIO (flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do
         send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | (mkMsg fn -> msg) <- liftIO . hGetBuffering $ h ]
         liftIO $ hClose h >> removeFile fn
     mkMsg (dblQuote . T.pack -> fn) (dblQuote . showText -> mode) =
@@ -322,22 +322,22 @@ debugTalk p = withoutArgs debugTalk p
 -----
 
 
-debugThread :: Action -- TODO: Cont. from here.
+debugThread :: Action
 debugThread (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "thread") i
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId <$> getLogAsyncs
     threadTblKvs <- M.assocs <$> readTMVarInNWS threadTblTMVar
-    (es, ks)     <- let f = (,) <$> IM.elems <*> IM.keys in f `fmap` readTMVarInNWS plaLogTblTMVar
+    (es, ks)     <- let f = (,) <$> IM.elems <*> IM.keys in f <$> readTMVarInNWS plaLogTblTMVar
     let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
   where
-    mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = (liftIO . threadStatus $ ti) >>= \(showText -> ts) ->
-        return . T.concat $ [ padOrTrunc 16 . showText $ ti, tn, ts ]
+    mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
+                                                    | (showText -> ts) <- liftIO . threadStatus $ ti ]
     mkTypeName (PlaLog  (showText -> plaI)) = padOrTrunc 10 "PlaLog"  <> plaI
     mkTypeName (Receive (showText -> plaI)) = padOrTrunc 10 "Receive" <> plaI
     mkTypeName (Server  (showText -> plaI)) = padOrTrunc 10 "Server"  <> plaI
     mkTypeName (Talk    (showText -> plaI)) = padOrTrunc 10 "Talk"    <> plaI
-    mkTypeName (showText -> tt)           = tt
+    mkTypeName (showText -> tt)             = tt
 debugThread p = withoutArgs debugThread p
 
 
@@ -362,8 +362,7 @@ debugThrow p            = withoutArgs debugThrow p
 debugThrowLog :: Action
 debugThrowLog (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "throwlog") i
-    (snd . (! i) -> q) <- readTMVarInNWS plaLogTblTMVar
-    liftIO . atomically . writeTQueue q $ Throw
+    [ snd $ plt ! i | plt <- readTMVarInNWS plaLogTblTMVar ] >>= liftIO . atomically . flip writeTQueue Throw
     ok mq
 debugThrowLog p = withoutArgs debugThrowLog p
 
@@ -408,13 +407,11 @@ debugToken p = withoutArgs debugToken p
 debugUnderline :: Action
 debugUnderline (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "underline") i
-    wrapSend mq cols underlined
-  where
-    underlined = T.concat [ showText underlineANSI
-                          , underlineANSI
-                          , " This text is underlined. "
-                          , noUnderlineANSI
-                          , showText noUnderlineANSI ]
+    wrapSend mq cols . T.concat $ [ showText underlineANSI
+                                  , underlineANSI
+                                  , " This text is underlined. "
+                                  , noUnderlineANSI
+                                  , showText noUnderlineANSI ]
 debugUnderline p = withoutArgs debugUnderline p
 
 
@@ -429,16 +426,16 @@ debugWrap p@AdviseNoArgs = advise p [] advice
                       , dblQuote $ prefixDebugCmd "wrap" <> " 40"
                       , dfltColor
                       , "." ]
-debugWrap (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String)]) of
+debugWrap (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)] of
   []              -> sorryParse
   [(lineLen, "")] -> helper lineLen
   _               -> sorryParse
   where
     sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     helper lineLen
-      | lineLen < 0 = sorryWtf
+      | lineLen < 0                            = sorryWtf
       | lineLen < minCols || lineLen > maxCols = sorryLineLen
-      | otherwise = do
+      | otherwise                              = do
           logPlaExecArgs (prefixDebugCmd "wrap") [a] i
           send mq . frame lineLen . wrapUnlines lineLen $ msg
     sorryWtf     = wrapSend mq cols $ wtfColor                                                            <>
@@ -449,12 +446,12 @@ debugWrap (WithArgs i mq cols [a]) = case (reads . T.unpack $ a :: [(Int, String
                                                  , " and "
                                                  , showText maxCols
                                                  , " characters." ]
-    msg | ls <- [ T.concat [ u
-                           , mkFgColorANSI (Dull, c)
-                           , "This is "
-                           , showText c
-                           , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
-        = (<> dfltColor) . T.unwords $ ls
+    msg = let ls = [ T.concat [ u
+                              , mkFgColorANSI (Dull, c)
+                              , "This is "
+                              , showText c
+                              , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
+          in (<> dfltColor) . T.unwords $ ls
 debugWrap p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: line length, as in "
@@ -486,17 +483,17 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
     parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
     unless (uncurry (||) . over both isNothing $ parsed) . uncurry helper . over both fromJust $ parsed
   where
-    parse txt sorry   = case (reads . T.unpack $ txt :: [(Int, String)]) of
+    parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
       []        -> sorry >> return Nothing
       [(x, "")] -> return . Just $ x
       _         -> sorry >> return Nothing
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
     helper lineLen indent
-      | lineLen < 0 || indent < 0 = sorryWtf
+      | lineLen < 0 || indent < 0              = sorryWtf
       | lineLen < minCols || lineLen > maxCols = sorryLineLen
-      | indent >= lineLen = sorryIndent
-      | otherwise = do
+      | indent >= lineLen                      = sorryIndent
+      | otherwise                              = do
           logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
           send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ msg
     sorryWtf     = wrapSend mq cols $ wtfColor                                                            <>
@@ -508,13 +505,12 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
                                                  , showText maxCols
                                                  , " characters." ]
     sorryIndent  = wrapSend mq cols "The indent amount must be less than the line length."
-    msg | ls <- [ T.concat [ u
-                           , mkFgColorANSI (Dull, c)
-                           , "This is "
-                           , showText c
-                           , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
-        = (<> dfltColor) . T.unwords $ ls
-
+    msg = let ls = [ T.concat [ u
+                   , mkFgColorANSI (Dull, c)
+                   , "This is "
+                   , showText c
+                   , " text." ] | c <- Black `delete` colors , u <- [ underlineANSI , noUnderlineANSI ] ]
+          in (<> dfltColor) . T.unwords $ ls
 debugWrapIndent p = advise p [] advice
   where
     advice = T.concat [ "Please provide two arguments: line length and indent amount, as in "
