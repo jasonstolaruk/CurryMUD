@@ -832,7 +832,8 @@ showMotd :: MsgQueue -> Cols -> MudStack ()
 showMotd mq cols = send mq =<< helper
   where
     helper    = (try . liftIO $ readMotd) >>= eitherRet handler
-    readMotd  = return . frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor =<< T.readFile motdFile
+    readMotd  = [ frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor $ cont
+                | cont <- T.readFile motdFile ]
     handler e = do
         fileIOExHandler "showMotd" e
         return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
@@ -928,20 +929,14 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 handleEgress :: Id -> MudStack ()
 handleEgress i = getPCRmId i >>= \ri -> do
     unless (ri == iWelcome) . notifyEgress $ i
-    wsTMVar  <- getWSTMVar
-    mqtTMVar <- getNWSRec msgQueueTblTMVar
-    ptTMVar  <- getNWSRec plaTblTMVar
-    (s, bs, logMsgs, pt) <- liftIO . atomically $ do
-        ws  <- takeTMVar wsTMVar
-        mqt <- takeTMVar mqtTMVar
-        pt  <- takeTMVar ptTMVar
-        -----
+    (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar        <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
+    let takeTMVars =                (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar         <*> takeTMVar ptTMVar
+    (s, bs, logMsgs, pt)         <- liftIO . atomically $ takeTMVars >>= \(ws, mqt, pt) ->
         let (view rmId -> ri')    = (ws^.pcTbl)  ! i
             ((i `delete`) -> ris) = (ws^.invTbl) ! ri'
             (view sing -> s)      = (ws^.entTbl) ! i
             (pt', bs, logMsgs)    = peepHelper pt s
-        -----
-        let ws'                   = ws  & typeTbl.at  i   .~ Nothing
+            ws'                   = ws  & typeTbl.at  i   .~ Nothing
                                         & entTbl.at   i   .~ Nothing
                                         & invTbl.at   i   .~ Nothing
                                         & coinsTbl.at i   .~ Nothing
@@ -951,11 +946,9 @@ handleEgress i = getPCRmId i >>= \ri -> do
                                         & invTbl.at   ri' ?~ ris
             mqt'                  = mqt & at i .~ Nothing
             pt''                  = pt' & at i .~ Nothing
-        -----
-        putTMVar wsTMVar  ws'
-        putTMVar mqtTMVar mqt'
-        putTMVar ptTMVar  pt''
-        return (s, bs, logMsgs, pt'')
+        in do
+            sequence_ [ putTMVar wsTMVar ws', putTMVar mqtTMVar mqt', putTMVar ptTMVar pt'' ]
+            return (s, bs, logMsgs, pt'')
     forM_ logMsgs $ uncurry (logPla "handleEgress")
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
@@ -989,10 +982,8 @@ handleEgress i = getPCRmId i >>= \ri -> do
 
 
 notifyEgress :: Id -> MudStack ()
-notifyEgress i = readWSTMVar >>= \ws ->
-    let (d, _, _, _, _) = mkCapStdDesig i ws
-        pis             = i `delete` pcIds d
-    in bcast [(nlnl $ serialize d <> " has left the game.", pis)]
+notifyEgress i = bcast =<< [ [(nlnl $ serialize d <> " has left the game.", pis)] | ws <- readWSTMVar
+                           , let (d, _, _, _, _) = mkCapStdDesig i ws, let pis = i `delete` pcIds d ]
 
 
 -----
