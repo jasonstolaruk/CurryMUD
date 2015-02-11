@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls ) where
@@ -151,16 +151,11 @@ debugBuffCheck (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "buffer") i
     try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
   where
-    helper = do
-        (fn@(dblQuote . T.pack -> fn'), h) <- liftIO $ flip openTempFile "temp" =<< getTemporaryDirectory
-        (dblQuote . showText -> mode)      <- liftIO . hGetBuffering $ h
-        send mq . nl . T.unlines . wrapIndent 2 cols . T.concat $ [ parensQuote "Default"
-                                                                  , " buffering mode for temp file "
-                                                                  , fn'
-                                                                  , " is "
-                                                                  , mode
-                                                                  , "." ]
+    helper = (liftIO $ flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do
+        send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | (mkMsg fn -> msg) <- liftIO . hGetBuffering $ h ]
         liftIO $ hClose h >> removeFile fn
+    mkMsg (dblQuote . T.pack -> fn) (dblQuote . showText -> mode) =
+        T.concat [ parensQuote "Default", " buffering mode for temp file ", fn, " is ", mode, "." ]
 debugBuffCheck p = withoutArgs debugBuffCheck p
 
 
@@ -170,20 +165,11 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 debugColor :: Action
 debugColor (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "color") i
-    send mq . nl . T.concat $ do
-        fgi <- intensities
-        fgc <- colors
-        bgi <- intensities
-        bgc <- colors
-        let fg   = (fgi, fgc)
-            bg   = (bgi, bgc)
-            ansi = mkColorANSI fg bg
-        return . nl . T.concat $ [ padOrTrunc 15 . showText $ ansi
-                                 , mkColorDesc fg bg
-                                 , ansi
-                                 , " CurryMUD "
-                                 , dfltColor ]
+    send mq . nl . T.concat $ msg
   where
+    msg = [ nl . T.concat $ [ padOrTrunc 15 . showText $ ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColor ]
+          | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
+          , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName = uncurry (<>) . (padOrTrunc 6 . showText *** padOrTrunc 8 . showText)
 debugColor p = withoutArgs debugColor p
@@ -195,7 +181,7 @@ debugColor p = withoutArgs debugColor p
 debugCPU :: Action
 debugCPU (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "cpu") i
-    wrapSend mq cols . ("CPU time: " <>) =<< liftIO cpuTime
+    wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO cpuTime ]
   where
     cpuTime = showText . (/ fromIntegral (10 ^ 12)) . fromIntegral <$> getCPUTime
 debugCPU p = withoutArgs debugCPU p
@@ -218,7 +204,7 @@ debugDispEnv (NoArgs i mq cols)  = do
     pager i mq =<< (concatMap (wrapIndent 2 cols) . mkEnvListTxt <$> liftIO getEnvironment)
 debugDispEnv p@(ActionParams { plaId, args }) = do
     logPlaExecArgs (prefixDebugCmd "env") args plaId
-    dispMatches p 2 . mkEnvListTxt =<< liftIO getEnvironment
+    dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO getEnvironment ]
 
 
 mkEnvListTxt :: [(String, String)] -> [T.Text]
@@ -233,9 +219,9 @@ mkEnvListTxt = map (mkAssocTxt . (T.pack *** T.pack))
 debugLog :: Action
 debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
-    helper       = replicateM 100 . statefulFork_ $ heavyLogging
-    heavyLogging = liftIO myThreadId >>=
-        replicateM_ 100 . logNotice "debugLog heavyLogging" . (<> ".") . ("Logging from " <>) . showText
+    helper       = replicateM  100 . statefulFork_ $ heavyLogging
+    heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
+    mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
 
 
@@ -258,36 +244,34 @@ debugPurge p              = withoutArgs debugPurge p
 
 
 purgeThreadTbls :: MudStack ()
-purgeThreadTbls =
-    logNotice "purgeThreadTbls" "purging the thread tables." >> purgePlaLogTbl >> purgeTalkAsyncTbl >> purgeThreadTbl
+purgeThreadTbls = do
+    logNotice "purgeThreadTbls" "purging the thread tables."
+    sequence_ [ purgePlaLogTbl, purgeTalkAsyncTbl, purgeThreadTbl ]
 
 
 purgePlaLogTbl :: MudStack ()
-purgePlaLogTbl = IM.assocs <$> readTMVarInNWS plaLogTblTMVar >>= \kvs -> do
-    let is     = [ fst kv         | kv <- kvs ]
-        asyncs = [ fst . snd $ kv | kv <- kvs ]
-    modifyNWS plaLogTblTMVar . flip (foldl' helper) . zip is =<< (liftIO . mapM poll $ asyncs)
+purgePlaLogTbl = modifyNWS plaLogTblTMVar =<< purger =<< (IM.assocs <$> readTMVarInNWS plaLogTblTMVar)
   where
+    purger kvs = let (is, asyncs) = unzip [ (fst kv, fst . snd $ kv) | kv <- kvs ]
+                 in [ flip (foldl' helper) . zip is $ statuses | statuses <- liftIO . mapM poll $ asyncs ]
     helper m (_, Nothing) = m
     helper m (i, _      ) = IM.delete i m
 
 
 purgeTalkAsyncTbl :: MudStack ()
-purgeTalkAsyncTbl = do
-    asyncs <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
-    ss     <- liftIO . mapM poll $ asyncs
-    modifyNWS talkAsyncTblTMVar . flip (foldl' helper) . zip asyncs $ ss
+purgeTalkAsyncTbl = modifyNWS talkAsyncTblTMVar =<< purger
   where
+    purger = [ flip (foldl' helper) . zip asyncs $ statuses | asyncs   <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
+                                                            , statuses <- liftIO . mapM poll $ asyncs ]
     helper m (_, Nothing) = m
     helper m (a, _      ) = M.delete (asyncThreadId a) m
 
 
 purgeThreadTbl :: MudStack ()
-purgeThreadTbl = do
-    tis <- M.keys <$> readTMVarInNWS threadTblTMVar
-    ss  <- liftIO . mapM threadStatus $ tis
-    modifyNWS threadTblTMVar . flip (foldl' helper) . zip tis $ ss
+purgeThreadTbl = modifyNWS threadTblTMVar =<< purger
   where
+    purger = [ flip (foldl' helper) . zip tis $ ss | tis <- M.keys <$> readTMVarInNWS threadTblTMVar
+                                                   , ss  <- liftIO . mapM threadStatus $ tis ]
     helper m (ti, s) | s == ThreadFinished = M.delete ti m
                      | otherwise           = m
 
@@ -298,11 +282,9 @@ purgeThreadTbl = do
 debugRemPut :: Action
 debugRemPut (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "remput") i
-    mapM_ (fakeClientInput mq) . take 10 . cycle $ [ remCmd, putCmd ]
+    mapM_ (fakeClientInput mq) . take 10 . cycle . map (<> rest) $ [ "remove", "put" ]
   where
-    remCmd = "remove" <> rest
-    putCmd = "put"    <> rest
-    rest   = T.concat [ " ", T.singleton allChar, " ", T.singleton rmChar, "sack" ]
+    rest = T.concat [ " ", T.singleton allChar, " ", T.singleton rmChar, "sack" ]
 debugRemPut p = withoutArgs debugRemPut p
 
 
@@ -314,9 +296,8 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 debugRotate :: Action
-debugRotate (NoArgs' i mq) = do
+debugRotate (NoArgs' i mq) = (snd . fromJust . IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \q -> do
     logPlaExec (prefixDebugCmd "rotate") i
-    q <- snd . fromJust . IM.lookup i <$> readTMVarInNWS plaLogTblTMVar
     liftIO . atomically . writeTQueue q $ RotateLog
     ok mq
 debugRotate p = withoutArgs debugRotate p
@@ -330,18 +311,18 @@ debugTalk (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "talk") i
     send mq . frame cols . multiWrap cols =<< mapM mkDesc . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
   where
-    mkDesc a = (liftIO . poll $ a) >>= \status ->
-        let statusTxt = case status of Nothing                                    -> "running"
-                                       Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
-                                       Just (Right ())                            -> "finished"
-        in return . T.concat $ [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
+    mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", s, "." ]
+                  | (mkStatusTxt -> s) <- liftIO . poll $ a ]
+    mkStatusTxt = \case Nothing                                    -> "running"
+                        Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
+                        Just (Right ())                            -> "finished"
 debugTalk p = withoutArgs debugTalk p
 
 
 -----
 
 
-debugThread :: Action
+debugThread :: Action -- TODO: Cont. from here.
 debugThread (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "thread") i
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId <$> getLogAsyncs
