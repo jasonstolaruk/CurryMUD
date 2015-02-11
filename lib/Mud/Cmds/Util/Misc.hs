@@ -99,7 +99,7 @@ dispMatches (LowerNub i mq cols needles) indent haystack =
   where
     grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
                   in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
-dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, showText indent, showText haystack ] -- TODO: Consider mapping.
+dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, showText indent, showText haystack ]
 
 
 -----
