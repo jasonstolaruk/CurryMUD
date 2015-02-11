@@ -136,7 +136,7 @@ bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getEntSing' i >>= \(ws, s) ->
     in do
         logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
         liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "bugTypoLogger")
-        send mq $ nlnl "Thank you."
+        send mq . nlnl $ "Thank you."
         flip bcastAdmins (s <> " has logged a " <> wl' <> ".") =<< readTMVarInNWS plaTblTMVar
   where
     logFile     = case wl of BugLog  -> bugLogFile

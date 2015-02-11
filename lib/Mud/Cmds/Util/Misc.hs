@@ -60,16 +60,13 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
 advise (Advising mq cols) []  msg = wrapSend mq cols msg
-advise (Advising mq cols) [h] msg =
-    let msgs = [ msg, T.concat [ "For more information, type "
-                               , quoteColor
-                               , dblQuote $ "help " <> h
-                               , dfltColor
-                               , "." ] ]
-    in multiWrapSend mq cols msgs
+advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For more information, type "
+                                                          , quoteColor
+                                                          , dblQuote $ "help " <> h
+                                                          , dfltColor
+                                                          , "." ] ]
 advise (Advising mq cols) hs  msg =
-    let msgs = [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
-    in multiWrapSend mq cols msgs
+    multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
   where
     helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
@@ -102,7 +99,7 @@ dispMatches (LowerNub i mq cols needles) indent haystack =
   where
     grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
                   in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
-dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, showText indent, showText haystack ]
+dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, showText indent, showText haystack ] -- TODO: Consider mapping.
 
 
 -----

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TransformListComp, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 
@@ -36,7 +36,7 @@ import Control.Lens (_1, _2, _3, at, over)
 import Control.Lens.Cons (cons)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
-import Control.Monad (forM_, void)
+import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
@@ -145,8 +145,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (MsgWithTarget i mq cols target msg) = do
-    mqt@(IM.keys -> mqtKeys) <- readTMVarInNWS msgQueueTblTMVar
+adminBoot (MsgWithTarget i mq cols target msg) = readTMVarInNWS msgQueueTblTMVar >>= \mqt@(IM.keys -> mqtKeys) -> do
     getEntTbl >>= \et -> case [ k | k <- mqtKeys, (et ! k)^.sing == target ] of
       []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
                                     \you must specify the full PC name of the player you wish to boot.)"
@@ -176,6 +175,18 @@ adminBug :: Action
 adminBug (NoArgs i mq cols) =
     logPlaExec (prefixAdminCmd "bug") i >> dumpLog mq cols bugLogFile ("bug", "bugs")
 adminBug p = withoutArgs adminBug p
+
+
+dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
+dumpLog mq cols logFile (s, p) = send mq =<< helper
+  where
+    helper  = (try . liftIO $ readLog) >>= eitherRet handler
+    readLog = doesFileExist logFile >>= \case
+      True  -> return . multiWrapNl   cols . T.lines =<< T.readFile logFile
+      False -> return . wrapUnlinesNl cols $ "No " <> p <> " have been logged."
+    handler e = do
+        fileIOExHandler "dumpLog" e
+        return . wrapUnlinesNl cols $ "Unfortunately, the " <> s <> " log could not be retrieved."
 
 
 -----
@@ -261,18 +272,6 @@ adminProfanity (NoArgs i mq cols) =
 adminProfanity p = withoutArgs adminProfanity p
 
 
-dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
-dumpLog mq cols logFile (s, p) = send mq =<< helper
-  where
-    helper  = (try . liftIO $ readLog) >>= eitherRet handler
-    readLog = doesFileExist logFile >>= \case
-      True  -> return . multiWrapNl   cols . T.lines =<< T.readFile logFile
-      False -> return . wrapUnlinesNl cols $ "No " <> p <> " have been logged."
-    handler e = do
-        fileIOExHandler "dumpLog" e
-        return . wrapUnlinesNl cols $ "Unfortunately, the " <> s <> " log could not be retrieved."
-
-
 -----
 
 
@@ -350,25 +349,22 @@ adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
 firstAdminTell :: Id -> Sing -> MudStack [T.Text]
-firstAdminTell i s = do
-    void . modifyPlaFlag i IsNotFirstAdminTell $ True
-    return [ T.concat [ hintANSI
-                      , "Hint:"
-                      , noHintANSI
-                      , " the above is a message from "
-                      , s
-                      , ", a CurryMUD administrator. To reply, type "
-                      , quoteColor
-                      , dblQuote $ "admin " <> s <> " msg"
-                      , dfltColor
-                      , ", where "
-                      , quoteColor
-                      , dblQuote "msg"
-                      , dfltColor
-                      , " is the message you want to send to "
-                      , s
-                      , "." ] ]
-
+firstAdminTell i s = [ [ T.concat [ hintANSI
+                       , "Hint:"
+                       , noHintANSI
+                       , " the above is a message from "
+                       , s
+                       , ", a CurryMUD administrator. To reply, type "
+                       , quoteColor
+                       , dblQuote $ "admin " <> s <> " msg"
+                       , dfltColor
+                       , ", where "
+                       , quoteColor
+                       , dblQuote "msg"
+                       , dfltColor
+                       , " is the message you want to send to "
+                       , s
+                       , "." ] ] | _ <- modifyPlaFlag i IsNotFirstAdminTell $ True ]
 
 -----
 
@@ -376,7 +372,7 @@ firstAdminTell i s = do
 adminTime :: Action
 adminTime (NoArgs i mq cols) = do
     logPlaExec (prefixAdminCmd "time") i
-    (ct, zt) <- (,) <$> liftIO (formatThat `fmap` getCurrentTime) <*> liftIO (formatThat `fmap` getZonedTime)
+    (ct, zt) <- (,) <$> liftIO (formatThat <$> getCurrentTime) <*> liftIO (formatThat <$> getZonedTime)
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
     formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
