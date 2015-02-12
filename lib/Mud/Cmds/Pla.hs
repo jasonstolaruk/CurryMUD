@@ -289,7 +289,7 @@ emote p@(ActionParams { plaId, args })
                       | otherwise          = capitalizeMsg . T.unwords $ args
           toOthersMsg'    = T.replace enc (serialize d { isCap = False }) . punctuateMsg $ toOthersMsg
           toOthersBrdcst  = (nlnl toOthersMsg', plaId `delete` pcIds d)
-      in logPlaOut "emote" plaId [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+      in logPlaOut "emote" plaId [toSelfMsg] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
   | otherwise = readWSTMVar >>= \ws ->
     let (d, s, _, _, _) = mkCapStdDesig plaId ws
@@ -298,7 +298,7 @@ emote p@(ActionParams { plaId, args })
         toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
         toOthersMsg     = serialize d <> " " <> msg
         toOthersBrdcst  = (nlnl toOthersMsg, plaId `delete` pcIds d)
-    in logPlaOut "emote" plaId [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+    in logPlaOut "emote" plaId [toSelfMsg] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
   where
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
@@ -1428,7 +1428,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersBrdcst = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
             in do
                 logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ]
-                bcast $ toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst]
+                bcast [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
         sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg      = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
                 toOthersMsg    = T.concat [ serialize d
@@ -1442,7 +1442,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
             in do
                 logPlaOut "say" i [ toSelfMsg ]
-                bcast =<< [ (nlnl toSelfMsg <> fms, [i]) : [toOthersBrdcst] | fms <- firstMobSay i ]
+                bcast =<< [ [ (nlnl toSelfMsg <> fms, [i]), toOthersBrdcst ] | fms <- firstMobSay i ]
     sayTo ma msg            = patternMatchFail "say sayTo" [ showText ma, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelper ma rest = readWSTMVar >>= \ws ->
@@ -1454,7 +1454,7 @@ say p@(WithArgs i mq cols args@(a:_))
             toSelfBrdcst    = (nlnl toSelfMsg, [i])
             toOthersMsg     = T.concat [ serialize d, " says", adverb, ", ", msg ]
             toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
-        in logPlaOut "say" i [toSelfMsg] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+        in logPlaOut "say" i [toSelfMsg] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
 say p = patternMatchFail "say" [ showText p ]
 
 

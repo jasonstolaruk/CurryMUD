@@ -683,7 +683,7 @@ expCmd ec             (NoArgs'' i        ) = case ec of
                                                   T.replace "&" hisHer     .
                                                   T.replace "*" himHerself $ toOthers
             toOthersBrdcst                      = (nlnl toOthers', i `delete` pcIds d)
-        in logPlaOut (bracketQuote "exp. command") i [toSelf] >> bcast (toSelfBrdcst : [toOthersBrdcst])
+        in logPlaOut (bracketQuote "exp. command") i [toSelf] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
 expCmd (NoTarget {}) (WithArgs _ mq cols (_:_))  = wrapSend mq cols "This expressive command cannot be used with a \
                                                                     \target."
 expCmd ec            (OneArg   i mq cols target) = case ec of
@@ -711,13 +711,13 @@ expCmd ec            (OneArg   i mq cols target) = case ec of
                           toTargetBrdcst = (nlnl toTarget', [targetId])
                       in do
                           logPlaOut (bracketQuote "exp. command") i [ parsePCDesig i ws toSelf' ]
-                          bcast $ toSelfBrdcst : toTargetBrdcst : [toOthersBrdcst]
+                          bcast [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
                   onMob targetNoun =
                       let (toSelf', toSelfBrdcst, _, _, toOthers') = mkBindings targetNoun
-                          toOthersBrdcst = (nlnl toOthers', i `delete` pcIds d)
+                          toOthersBrdcst                           = (nlnl toOthers', i `delete` pcIds d)
                       in do
                           logPlaOut (bracketQuote "exp. command") i [toSelf']
-                          bcast $ toSelfBrdcst : [toOthersBrdcst]
+                          bcast [ toSelfBrdcst, toOthersBrdcst ]
                   mkBindings targetTxt =
                       let toSelf'        = T.replace "@" targetTxt toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
