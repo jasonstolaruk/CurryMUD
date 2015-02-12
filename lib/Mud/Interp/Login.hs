@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Interp.Login (interpName) where
 
@@ -75,7 +75,7 @@ interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
 promptRetryName mq msg = do
-    send mq . nl' $ if not . T.null $ msg then nl msg else ""
+    send mq . nl' $ if not (T.null msg) then nl msg else ""
     prompt mq "Let's try this again. By what name are you known?"
 
 
@@ -87,8 +87,8 @@ checkProfanity cn i mq =
     helper profanities = if cn `notElem` T.lines profanities
       then return False
       else do
-          (parensQuote -> s) <- getEntSing i
-          logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
+          logNotice "checkProfanity" =<< [ T.concat [ "booting player ", showText i, " ", s, " due to profanity." ]
+                                         | (parensQuote -> s) <- getEntSing i ]
           views hostName (logProfanity cn) =<< getPla i
           send mq . nl' . nl $ bootMsgColor                                                                     <>
                                "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
@@ -99,13 +99,13 @@ checkProfanity cn i mq =
 
 logProfanity :: CmdName -> HostName -> MudStack ()
 logProfanity cn (T.pack -> hn) =
-    liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "logProfanity")
+    liftIO (mkTimestamp >>= try . helper) >>= eitherRet (fileIOExHandler "logProfanity")
   where
-    helper ts = let newEntry = T.concat [ ts, " ", hn, " ", cn ]
-                in getLogConts >>= T.writeFile profanityLogFile . T.unlines . sort . (newEntry :)
-    getLogConts = mIf (doesFileExist profanityLogFile)
-                      (T.lines <$> T.readFile profanityLogFile)
-                      (return [])
+    helper ts = T.writeFile profanityLogFile =<< [ T.unlines . sort $ newEntry : cont
+                                                 | cont <- mIf (doesFileExist profanityLogFile)
+                                                               (T.lines <$> T.readFile profanityLogFile)
+                                                               (return [])
+                                                 , let newEntry = T.concat [ ts, " ", hn, " ", cn ] ]
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
