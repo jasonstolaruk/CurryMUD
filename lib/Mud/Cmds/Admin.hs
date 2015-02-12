@@ -181,9 +181,9 @@ dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
 dumpLog mq cols logFile (s, p) = send mq =<< helper
   where
     helper  = (try . liftIO $ readLog) >>= eitherRet handler
-    readLog = doesFileExist logFile >>= \case
-      True  -> return . multiWrapNl   cols . T.lines =<< T.readFile logFile
-      False -> return . wrapUnlinesNl cols $ "No " <> p <> " have been logged."
+    readLog = mIf (doesFileExist logFile)
+                  (return . multiWrapNl   cols . T.lines =<< T.readFile logFile)
+                  (return . wrapUnlinesNl cols $ "No " <> p <> " have been logged.")
     handler e = do
         fileIOExHandler "dumpLog" e
         return . wrapUnlinesNl cols $ "Unfortunately, the " <> s <> " log could not be retrieved."

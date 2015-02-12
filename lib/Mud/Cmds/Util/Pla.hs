@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
@@ -132,17 +132,18 @@ bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getEntSing' i >>= \(ws, s) ->
                                             , parensQuote $ showText ri <> " " <> dblQuote (r^.rmName)
                                             , ": "
                                             , msg ]
-                    in T.writeFile logFile . T.unlines . sort . (newEntry :) =<< getLogConts
+                    in T.writeFile logFile =<< [ T.unlines . sort $ newEntry : cont | cont <- getLogConts ]
     in do
         logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
-        liftIO mkTimestamp >>= try . liftIO . helper >>= eitherRet (fileIOExHandler "bugTypoLogger")
+        liftIO (mkTimestamp >>= try . helper) >>= eitherRet (fileIOExHandler "bugTypoLogger")
         send mq . nlnl $ "Thank you."
         flip bcastAdmins (s <> " has logged a " <> wl' <> ".") =<< readTMVarInNWS plaTblTMVar
   where
     logFile     = case wl of BugLog  -> bugLogFile
                              TypoLog -> typoLogFile
-    getLogConts = doesFileExist logFile >>= \case True  -> T.lines <$> T.readFile logFile
-                                                  False -> return []
+    getLogConts = mIf (doesFileExist logFile)
+                      (T.lines <$> T.readFile logFile)
+                      (return [])
 bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
 
 

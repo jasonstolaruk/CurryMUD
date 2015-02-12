@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Misc ( aOrAn
                      , aOrAnOnLower
@@ -21,6 +21,7 @@ module Mud.Util.Misc ( aOrAn
                      , mkCountList
                      , mkOrdinal
                      , mkTimestamp
+                     , mIf
                      , nl
                      , nl'
                      , nlnl
@@ -159,6 +160,11 @@ mkTimestamp = getZonedTime >>= \(T.words . showText -> wordy) ->
     let date = head wordy
         time = T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy
     in return . bracketQuote $ date <> " " <> time
+
+
+mIf :: (Monad m) => m Bool -> m a -> m a -> m a
+mIf p x y = p >>= \case True  -> x
+                        False -> y
 
 
 nl :: T.Text -> T.Text

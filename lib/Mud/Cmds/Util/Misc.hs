@@ -65,10 +65,8 @@ advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For
                                                           , dblQuote $ "help " <> h
                                                           , dfltColor
                                                           , "." ] ]
-advise (Advising mq cols) hs  msg =
+advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
-  where
-    helpTopics = dblQuote . T.intercalate (dblQuote ", ") $ hs
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 
