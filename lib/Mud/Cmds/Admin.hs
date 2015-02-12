@@ -372,7 +372,7 @@ firstAdminTell i s = [ [ T.concat [ hintANSI
 adminTime :: Action
 adminTime (NoArgs i mq cols) = do
     logPlaExec (prefixAdminCmd "time") i
-    (ct, zt) <- (,) <$> liftIO (formatThat <$> getCurrentTime) <*> liftIO (formatThat <$> getZonedTime)
+    (ct, zt) <- liftIO $ (,) <$> fmap formatThat getCurrentTime <*> fmap formatThat getZonedTime
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
     formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))

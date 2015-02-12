@@ -104,9 +104,9 @@ isSorryGecr _                 = False
 
 extractMesFromGecr :: GetEntsCoinsRes -> Maybe [Ent]
 extractMesFromGecr gecr = guard (not . isSorryGecr $ gecr) Prelude.>> case gecr of
-  Mult    { entsRes = Just es } -> return es
-  Indexed { entRes  = Right e } -> return [e]
-  _                             -> patternMatchFail "extractMesFromGecr" [ showText gecr ]
+  Mult    { entsRes = Just es } -> Just es
+  Indexed { entRes  = Right e } -> Just [e]
+  _                             -> Nothing
 
 
 pruneDupIds :: [Maybe Inv] -> [Maybe Inv]

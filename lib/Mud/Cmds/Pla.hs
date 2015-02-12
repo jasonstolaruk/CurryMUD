@@ -69,10 +69,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
--- TODO: Can fmap instead of <$> save you from parens?
--- TODO: Are we using (,) and (,,) with <$> everywhere we can?
-
-
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
