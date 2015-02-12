@@ -153,7 +153,7 @@ closePlaLog = flip doIfLogging stopLog
 
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= maybe (return ()) (f . snd)
+doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= maybeVoid (f . snd)
 
 
 closeLogs :: MudStack ()
@@ -172,7 +172,7 @@ closeLogs = do
 
 
 registerMsg :: T.Text -> LogQueue -> MudStack ()
-registerMsg msg q = liftIO . atomically . writeTQueue q . LogMsg $ msg
+registerMsg msg = liftIO . atomically . flip writeTQueue (LogMsg msg)
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
@@ -191,11 +191,8 @@ logExMsg modName (dblQuote -> funName) msg (dblQuote . showText -> e) =
 
 
 logIOEx :: T.Text -> T.Text -> IOException -> MudStack ()
-logIOEx modName (dblQuote -> funName) (dblQuote . showText -> e) = logError . T.concat $ [ modName
-                                                                                         , " "
-                                                                                         , funName
-                                                                                         , ": "
-                                                                                         , e ]
+logIOEx modName (dblQuote -> funName) (dblQuote . showText -> e) =
+    logError . T.concat $ [ modName, " ", funName, ": ", e ]
 
 
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> T.Text -> IOException -> MudStack ()
@@ -204,11 +201,8 @@ logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showText -> e)
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
-logPla modName (dblQuote -> funName) i msg = doIfLogging i . registerMsg . T.concat $ [ modName
-                                                                                      , " "
-                                                                                      , funName
-                                                                                      , ": "
-                                                                                      , msg ]
+logPla modName (dblQuote -> funName) i msg =
+    doIfLogging i . registerMsg . T.concat $ [ modName, " ", funName, ": ", msg ]
 
 
 logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Threads ( allKeys
                    , getUnusedId
@@ -152,21 +152,17 @@ registerThread threadType = liftIO myThreadId >>= \ti ->
 
 
 loadDictFiles :: MudStack ()
-loadDictFiles = do
-    wordsSet     <- loadDictFile wordsFile
-    propNamesSet <- loadDictFile propNamesFile
-    nonWorldState.dicts .= Dicts wordsSet propNamesSet
+loadDictFiles = (nonWorldState.dicts .=) =<< [ Dicts mWSet mPnSet | mWSet  <- loadDictFile wordsFile
+                                                                  , mPnSet <- loadDictFile propNamesFile ]
 
 
 loadDictFile :: Maybe FilePath -> MudStack (Maybe (S.Set T.Text))
-loadDictFile = \case
-  Nothing -> return Nothing
-  Just fn -> do
-      logNotice "loadDictFile" $ "loading dictionary " <> (dblQuote . T.pack $ fn) <> "."
-      helper fn `catch` handler
+loadDictFile = maybe (return Nothing) loadIt
   where
-    helper fn = Just . S.fromList . T.lines . T.toLower <$> (liftIO . T.readFile $ fn)
-    handler e = fileIOExHandler "loadDictFile" e >> return Nothing
+    loadIt fn@(dblQuote . T.pack -> fn') = do
+      logNotice "loadDictFile" $ "loading dictionary " <> fn' <> "."
+      let helper = Just . S.fromList . T.lines . T.toLower <$> (liftIO . T.readFile $ fn)
+      helper `catch` (\e -> fileIOExHandler "loadDictFile" e >> return Nothing)
 
 
 -- ==================================================
@@ -177,9 +173,8 @@ threadTblPurger :: MudStack ()
 threadTblPurger = do
     registerThread ThreadTblPurger
     logNotice "threadTblPurger" "thread table purger thread started."
+    let loop = (liftIO . threadDelay $ 10 ^ 6 * threadTblPurgerDelay) >> purgeThreadTbls
     forever loop `catch` threadTblPurgerExHandler
-  where
-    loop = (liftIO . threadDelay $ 10 ^ 6 * threadTblPurgerDelay) >> purgeThreadTbls
 
 
 threadTblPurgerExHandler :: SomeException -> MudStack ()
@@ -223,18 +218,15 @@ adHoc mq host = do
     (sexy, r)                    <- (,)  <$> liftIO randomSex <*> liftIO randomRace
     liftIO . atomically $ do
         (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
-        -----
         let i    = getUnusedId ws
             s    = showText r <> showText i
-        -----
-        let e    = Ent { _entId    = i
+            e    = Ent { _entId    = i
                        , _entName  = Nothing
                        , _sing     = s
                        , _plur     = ""
                        , _entDesc  = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
                        , _entFlags = zeroBits }
-        -----
-        let m    = Mob { _sex  = sexy
+            m    = Mob { _sex  = sexy
                        , _st   = 10
                        , _dx   = 10
                        , _iq   = 10
@@ -243,46 +235,37 @@ adHoc mq host = do
                        , _fp   = 10
                        , _xp   = 0
                        , _hand = RHand }
-        -----
-        let pc   = PC  { _rmId       = iWelcome
+            pc   = PC  { _rmId       = iWelcome
                        , _race       = r
                        , _introduced = []
                        , _linked     = [] }
-        -----
-        let pla  = Pla { _hostName  = host
+            pla  = Pla { _hostName  = host
                        , _plaFlags  = zeroBits
                        , _columns   = 80
                        , _pageLines = 24
                        , _interp    = Just interpName
                        , _peepers   = []
                        , _peeping   = [] }
-        -----
-        let ws'  = ws  & typeTbl.at  i ?~ PCType
+            ws'  = ws  & typeTbl.at  i ?~ PCType
                        & entTbl.at   i ?~ e
                        & invTbl.at   i ?~ []
                        & coinsTbl.at i ?~ mempty
                        & eqTbl.at    i ?~ M.empty
                        & mobTbl.at   i ?~ m
                        & pcTbl.at    i ?~ pc
-        let ris  = sortInv ws' $ (ws^.invTbl) ! iWelcome ++ [i]
+            ris  = sortInv ws' $ (ws^.invTbl) ! iWelcome ++ [i]
             mqt' = mqt & at i ?~ mq
             pt'  = pt  & at i ?~ pla
-        -----
-        putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ ris
-        putTMVar mqtTMVar mqt'
-        putTMVar ptTMVar  pt'
-        -----
+        sequence_ [ putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ ris, putTMVar mqtTMVar mqt', putTMVar ptTMVar pt' ]
         return (i, s)
 
 
 randomSex :: IO Sex
-randomSex = newStdGen >>= \g ->
-    let (x, _) = randomR (0, 1) g in return $ [ Male, Female ] !! x
+randomSex = [ [ Male, Female ] !! x | g <- newStdGen, let (x, _) = randomR (0, 1) g ]
 
 
 randomRace :: IO Race
-randomRace = newStdGen >>= \g ->
-    let (x, _) = randomR (0, 7) g in return $ [ Dwarf .. Vulpenoid ] !! x
+randomRace = [ [ Dwarf .. Vulpenoid ] !! x | g <- newStdGen, let (x, _) = randomR (0, 7) g ]
 
 
 getUnusedId :: WorldState -> Id
@@ -305,7 +288,7 @@ dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
     mkFilename   = ("title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
-    takeADump fn = send mq . nl' =<< (nl <$> (liftIO . T.readFile . (titleDir ++) $ fn))
+    takeADump fn = send mq . nl' =<< nl `fmap` (liftIO . T.readFile . (titleDir ++) $ fn)
 
 
 -- ==================================================
@@ -341,7 +324,7 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
 
 
 server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-server h i mq itq = (registerThread . Server $ i) >> loop (Just itq) `catch` plaThreadExHandler "server" i
+server h i mq itq = sequence_ [ registerThread . Server $ i, loop (Just itq) `catch` plaThreadExHandler "server" i ]
   where
     loop mitq = (liftIO . atomically . readTQueue $ mq) >>= \case
       Dropped        ->                                   sayonara i mitq
@@ -358,15 +341,15 @@ server h i mq itq = (registerThread . Server $ i) >> loop (Just itq) `catch` pla
 
 
 sayonara :: Id -> Maybe InacTimerQueue -> MudStack ()
-sayonara i (Just itq) = (liftIO . atomically . writeTQueue itq $ StopTimer) >> handleEgress i
-sayonara i Nothing    =                                                        handleEgress i
+sayonara i (Just itq) = sequence_ [ liftIO . atomically . writeTQueue itq $ StopTimer, handleEgress i ]
+sayonara i Nothing    = handleEgress i
 
 
 handleFromClient :: Id -> MsgQueue -> Maybe InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq mitq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
-    case p^.interp of
-      Nothing -> unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
-      Just f  -> uncurry (interpret p f) $ if T.null msg then ("", []) else headTail . T.words $ msg
+    let thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
+        thruOther f = uncurry (interpret p f) $ if T.null msg then ("", []) else headTail . T.words $ msg
+    in maybe thruCentral thruOther $ p^.interp
   where
     interpret p f cn as = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
@@ -376,9 +359,8 @@ handleFromClient i mq mitq (T.strip . stripControl . stripTelnet -> msg) = getPl
 
 forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> T.Text -> MudStack ()
 forwardToPeepers i peeperIds toOrFrom msg = do
-    mqt <- readTMVarInNWS msgQueueTblTMVar
-    let peepMqs = map (mqt !) peeperIds
-    s   <- getEntSing i
+    peepMqs <- [ map (mqt !) peeperIds | mqt <- readTMVarInNWS msgQueueTblTMVar ]
+    s       <- getEntSing i
     liftIO . atomically . forM_ peepMqs $ flip writeTQueue (mkPeepedMsg s)
   where
     mkPeepedMsg s = Peeped $ case toOrFrom of
@@ -432,7 +414,7 @@ shutDown = massMsg SilentBoot >> commitSuicide
 
 
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
-receive h i mq = (registerThread . Receive $ i) >> loop `catch` plaThreadExHandler "receive" i
+receive h i mq = sequence_ [ registerThread . Receive $ i, loop `catch` plaThreadExHandler "receive" i ]
   where
     loop = mIf (liftIO . hIsEOF $ h)
                (sequence_ [ logPla "receive" i "connection dropped."
