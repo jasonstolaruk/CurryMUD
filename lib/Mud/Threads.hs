@@ -101,15 +101,14 @@ graceful = getUptime >>= saveUptime >> closeLogs
 
 
 saveUptime :: Int -> MudStack ()
-saveUptime ut@(T.pack . renderSecs . toInteger -> utTxt) = getRecordUptime >>= \case
-  Nothing  -> saveIt >> logIt
-  Just rut -> case ut `compare` rut of GT -> saveIt >> logRec
-                                       _  -> logIt
+saveUptime ut@(T.pack . renderSecs . toInteger -> utTxt) = getRecordUptime >>= maybe (saveIt >> logIt) checkRecord
   where
-    saveIt    = (liftIO . writeFile uptimeFile . show $ ut) `catch` logIOEx "saveUptime saveIt"
-    logIt     = logHelper "."
-    logRec    = logHelper " - it's a new record!"
-    logHelper = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (utTxt <>)
+    saveIt          = (liftIO . writeFile uptimeFile . show $ ut) `catch` logIOEx "saveUptime saveIt"
+    logIt           = logHelper "."
+    checkRecord rut = case ut `compare` rut of GT -> saveIt >> logRec
+                                               _  -> logIt
+    logRec          = logHelper " - it's a new record!"
+    logHelper       = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (utTxt <>)
 
 
 listen :: MudStack ()
@@ -435,13 +434,11 @@ shutDown = massMsg SilentBoot >> commitSuicide
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
 receive h i mq = (registerThread . Receive $ i) >> loop `catch` plaThreadExHandler "receive" i
   where
-    loop = (liftIO . hIsEOF $ h) >>= \case
-      True  -> do
-          logPla "receive" i "connection dropped."
-          liftIO . atomically . writeTQueue mq $ Dropped
-      False -> do
-          liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters =<< T.hGetLine h
-          loop
+    loop = mIf (liftIO . hIsEOF $ h)
+               (sequence_ [ logPla "receive" i "connection dropped."
+                          , liftIO . atomically . writeTQueue mq $ Dropped ])
+               (sequence_ [ liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters =<< T.hGetLine h
+                          , loop ])
     remDelimiters = T.foldr helper ""
     helper c acc | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
                  | otherwise                             = acc

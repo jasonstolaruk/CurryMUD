@@ -90,10 +90,11 @@ spawnLogger fn@(T.pack -> fn') p (T.unpack -> ln) f q =
       RotateLog                -> rotateLog gh
       StopLog                  -> close gh
       Throw                    -> throwIO DivideByZero
-    rotateLog gh = doesFileExist fn >>= \case
-        True  -> (fileSize <$> getFileStatus fn) >>= \fs ->
-            if fs >= maxLogSize then rotateIt else loop gh
-        False -> close gh >> (loop =<< initLog)
+    rotateLog gh = mIf (doesFileExist fn)
+                       (mIf ((>= maxLogSize) <$> fileSize `fmap` getFileStatus fn)
+                            rotateIt
+                            (loop gh))
+                       (sequence_ [ close gh, loop =<< initLog ])
       where
         rotateIt = getZonedTime >>= \(T.words . showText -> wordy) ->
             let date = head wordy
@@ -152,9 +153,7 @@ closePlaLog = flip doIfLogging stopLog
 
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \case
-  Nothing     -> return ()
-  Just (_, q) -> f q
+doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= maybe (return ()) (f . snd)
 
 
 closeLogs :: MudStack ()

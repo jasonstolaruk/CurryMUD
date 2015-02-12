@@ -69,6 +69,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
+-- TODO: Can fmap instead of <$> save you from parens?
+
+
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
@@ -1680,9 +1683,9 @@ uptimeHelper ut = helper <$> getRecordUptime
 
 
 getRecordUptime :: MudStack (Maybe Int)
-getRecordUptime = (liftIO . doesFileExist $ uptimeFile) >>= \case
-  True  -> liftIO readUptime `catch` (\e -> fileIOExHandler "getRecordUptime" e >> return Nothing)
-  False -> return Nothing
+getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
+                      (liftIO readUptime `catch` (\e -> fileIOExHandler "getRecordUptime" e >> return Nothing))
+                      (return Nothing)
   where
     readUptime = Just . read <$> readFile uptimeFile
 

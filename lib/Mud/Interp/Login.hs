@@ -103,9 +103,9 @@ logProfanity cn (T.pack -> hn) =
   where
     helper ts = let newEntry = T.concat [ ts, " ", hn, " ", cn ]
                 in getLogConts >>= T.writeFile profanityLogFile . T.unlines . sort . (newEntry :)
-    getLogConts = doesFileExist profanityLogFile >>= \case
-      True  -> T.lines <$> T.readFile profanityLogFile
-      False -> return []
+    getLogConts = mIf (doesFileExist profanityLogFile)
+                      (T.lines <$> T.readFile profanityLogFile)
+                      (return [])
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
