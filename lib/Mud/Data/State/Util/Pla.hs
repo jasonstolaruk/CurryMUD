@@ -49,13 +49,11 @@ putPla i p = modifyNWS plaTblTMVar $ \pt ->
 
 modifyPla :: Id -> ASetter Pla Pla a b -> b -> MudStack Pla
 modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
-    let p  = pt ! i
-        p' = p & lens .~ val
-    in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
+    let p = (pt ! i) & lens .~ val
+    in putTMVar ptTMVar (pt & at i ?~ p) >> return p
 
 
 modifyPlaFlag :: Id -> PlaFlags -> Bool -> MudStack Pla
 modifyPlaFlag i flag b = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
-    let p  = pt ! i
-        p' = setPlaFlag flag b p
-    in putTMVar ptTMVar (pt & at i ?~ p') >> return p'
+    let p = setPlaFlag flag b $ pt ! i
+    in putTMVar ptTMVar (pt & at i ?~ p) >> return p

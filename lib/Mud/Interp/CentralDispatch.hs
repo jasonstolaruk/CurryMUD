@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Interp.CentralDispatch (centralDispatch) where
 
@@ -28,14 +28,12 @@ centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = do
 
 
 findAction :: Id -> CmdName -> MudStack (Maybe Action)
-findAction i (T.toLower -> cn) = do
-    r  <- getPCRm       i
-    ia <- getPlaIsAdmin i
-    let cmds = mkCmdListWithNonStdRmLinks r              ++
-               (if ia            then adminCmds else []) ++
-               (if ia && isDebug then debugCmds else [])
-    maybe (return Nothing)
-          (\fn -> return . Just . findActionForFullName fn $ cmds)
-          (findFullNameForAbbrev cn [ cmdName cmd | cmd <- cmds ])
+findAction i (T.toLower -> cn) = helper =<< mkCmdList
   where
+    mkCmdList =
+        [ mkCmdListWithNonStdRmLinks r ++ (if ia then adminCmds else []) ++ (if ia && isDebug then debugCmds else [])
+        | r <- getPCRm i, ia <- getPlaIsAdmin i ]
+    helper cmds = maybe (return Nothing)
+                        (\fn -> return . Just . findActionForFullName fn $ cmds)
+                        (findFullNameForAbbrev cn [ cmdName cmd | cmd <- cmds ])
     findActionForFullName fn = action . head . filter ((== fn) . cmdName)
