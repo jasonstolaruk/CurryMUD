@@ -79,6 +79,7 @@ dispCmdList cmds (NoArgs i mq cols) =
 dispCmdList cmds p = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
 
 
+-- TODO: Make a special function to style abbrevs for cmds. When a cmd has an effName, the effName signifies the part of the cmdName that should be styled.
 mkCmdListText :: [Cmd] -> [T.Text]
 mkCmdListText cmds = let (styleAbbrevs Don'tBracket -> cmdNames) = [ cmdName cmd | cmd <- cmds ]
                          cmdDescs                                = [ cmdDesc cmd | cmd <- cmds ]

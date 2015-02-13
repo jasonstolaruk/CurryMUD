@@ -8,7 +8,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Broadcast
                      , ClassifiedBroadcast(..)
                      , Cmd(..)
-                     , CmdName
                      , Cols
                      , EmptyNoneSome(..)
                      , ExpCmd(..)
@@ -51,6 +50,7 @@ import Control.Lens.Getter (Getting)
 import Control.Lens.Operators ((^.))
 import Control.Lens.Setter (Setting)
 import Data.Bits (clearBit, setBit, testBit)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
 import Prelude hiding ((>>), pi)
@@ -336,14 +336,15 @@ instance Ord ClassifiedBroadcast where
 type Action = ActionParams -> MudStack ()
 
 
-data Cmd = Cmd { cmdName :: !CmdName
-               , action  :: !Action
-               , cmdDesc :: !T.Text }
+data Cmd = Cmd { cmdName    :: !CmdName
+               , cmdEffName :: !(Maybe CmdName)
+               , action     :: !Action
+               , cmdDesc    :: !T.Text }
 
 
 instance Eq Cmd where
-  Cmd { cmdName = cn1, cmdDesc = cd1 } == Cmd { cmdName = cn2, cmdDesc = cd2 } =
-      and [ c1 == c2 | c1 <- [ cn1, cd1 ] | c2 <- [ cn2, cd2 ]]
+  Cmd { cmdName = cn1, cmdEffName = cen1, cmdDesc = cd1 } == Cmd { cmdName = cn2, cmdEffName = cen2, cmdDesc = cd2 } =
+      and [ c1 == c2 | c1 <- [ cn1, fromMaybe "" cen1, cd1 ] | c2 <- [ cn2, fromMaybe "" cen2, cd2 ]]
 
 
 instance Ord Cmd where

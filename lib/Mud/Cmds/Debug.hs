@@ -77,37 +77,29 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 -- ==================================================
 
 
+-- TODO: Clean up layout.
 debugCmds :: [Cmd]
 debugCmds =
-    [ Cmd { cmdName = prefixDebugCmd "?", action = debugDispCmdList, cmdDesc = "Display or search this command list." }
-    , Cmd { cmdName = prefixDebugCmd "boot", action = debugBoot, cmdDesc = "Boot all players (including yourself)." }
-    , Cmd { cmdName = prefixDebugCmd "broad", action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line \
-                                                                             \message." }
-    , Cmd { cmdName = prefixDebugCmd "buffer", action = debugBuffCheck, cmdDesc = "Confirm the default buffering \
-                                                                                  \mode for file handles." }
-    , Cmd { cmdName = prefixDebugCmd "color", action = debugColor, cmdDesc = "Perform a color test." }
-    , Cmd { cmdName = prefixDebugCmd "cpu", action = debugCPU, cmdDesc = "Display the CPU time." }
-    , Cmd { cmdName = prefixDebugCmd "env", action = debugDispEnv, cmdDesc = "Display or search system environment \
-                                                                             \variables." }
-    , Cmd { cmdName = prefixDebugCmd "log", action = debugLog, cmdDesc = "Put the logging service under heavy load." }
-    , Cmd { cmdName = prefixDebugCmd "params", action = debugParams, cmdDesc = "Show \"ActionParams\"." }
-    , Cmd { cmdName = prefixDebugCmd "purge", action = debugPurge, cmdDesc = "Purge the thread tables." }
-    , Cmd { cmdName = prefixDebugCmd "remput", action = debugRemPut, cmdDesc = "In quick succession, remove from and \
-                                                                               \put into a sack on the ground." }
-    , Cmd { cmdName = prefixDebugCmd "rotate", action = debugRotate, cmdDesc = "Send the signal to rotate your player \
-                                                                               \log." }
-    , Cmd { cmdName = prefixDebugCmd "talk", action = debugTalk, cmdDesc = "Dump the talk async table." }
-    , Cmd { cmdName = prefixDebugCmd "thread", action = debugThread, cmdDesc = "Dump the thread table." }
-    , Cmd { cmdName = prefixDebugCmd "throw", action = debugThrow, cmdDesc = "Throw an exception." }
-    , Cmd { cmdName = prefixDebugCmd "throwlog", action = debugThrowLog, cmdDesc = "Throw an exception on your player \
-                                                                                   \log thread." }
-    , Cmd { cmdName = prefixDebugCmd "token", action = debugToken, cmdDesc = "Test token parsing." }
-    , Cmd { cmdName = prefixDebugCmd "underline", action = debugUnderline, cmdDesc = "Test underlining." }
-    , Cmd { cmdName = prefixDebugCmd "wrap", action = debugWrap, cmdDesc = "Test the wrapping of a line containing \
-                                                                           \ANSI escape sequences." }
-    , Cmd { cmdName = prefixDebugCmd "wrapindent", action = debugWrapIndent, cmdDesc = "Test the indented wrapping of \
-                                                                                       \a line containing ANSI escape \
-                                                                                       \sequences." } ]
+    [ Cmd { cmdName = prefixDebugCmd "?", cmdEffName = Nothing, action = debugDispCmdList, cmdDesc = "Display or search this command list." }
+    , Cmd { cmdName = prefixDebugCmd "boot", cmdEffName = Nothing, action = debugBoot, cmdDesc = "Boot all players (including yourself)." }
+    , Cmd { cmdName = prefixDebugCmd "broad", cmdEffName = Nothing, action = debugBroad, cmdDesc = "Broadcast (to yourself) a multi-line message." }
+    , Cmd { cmdName = prefixDebugCmd "buffer", cmdEffName = Nothing, action = debugBuffCheck, cmdDesc = "Confirm the default buffering mode for file handles." }
+    , Cmd { cmdName = prefixDebugCmd "color", cmdEffName = Nothing, action = debugColor, cmdDesc = "Perform a color test." }
+    , Cmd { cmdName = prefixDebugCmd "cpu", cmdEffName = Nothing, action = debugCPU, cmdDesc = "Display the CPU time." }
+    , Cmd { cmdName = prefixDebugCmd "env", cmdEffName = Nothing, action = debugDispEnv, cmdDesc = "Display or search system environment variables." }
+    , Cmd { cmdName = prefixDebugCmd "log", cmdEffName = Nothing, action = debugLog, cmdDesc = "Put the logging service under heavy load." }
+    , Cmd { cmdName = prefixDebugCmd "params", cmdEffName = Nothing, action = debugParams, cmdDesc = "Show \"ActionParams\"." }
+    , Cmd { cmdName = prefixDebugCmd "purge", cmdEffName = Nothing, action = debugPurge, cmdDesc = "Purge the thread tables." }
+    , Cmd { cmdName = prefixDebugCmd "remput", cmdEffName = Nothing, action = debugRemPut, cmdDesc = "In quick succession, remove from and put into a sack on the ground." }
+    , Cmd { cmdName = prefixDebugCmd "rotate", cmdEffName = Nothing, action = debugRotate, cmdDesc = "Send the signal to rotate your player log." }
+    , Cmd { cmdName = prefixDebugCmd "talk", cmdEffName = Nothing, action = debugTalk, cmdDesc = "Dump the talk async table." }
+    , Cmd { cmdName = prefixDebugCmd "thread", cmdEffName = Nothing, action = debugThread, cmdDesc = "Dump the thread table." }
+    , Cmd { cmdName = prefixDebugCmd "throw", cmdEffName = Nothing, action = debugThrow, cmdDesc = "Throw an exception." }
+    , Cmd { cmdName = prefixDebugCmd "throwlog", cmdEffName = Nothing, action = debugThrowLog, cmdDesc = "Throw an exception on your player log thread." }
+    , Cmd { cmdName = prefixDebugCmd "token", cmdEffName = Nothing, action = debugToken, cmdDesc = "Test token parsing." }
+    , Cmd { cmdName = prefixDebugCmd "underline", cmdEffName = Nothing, action = debugUnderline, cmdDesc = "Test underlining." }
+    , Cmd { cmdName = prefixDebugCmd "wrap", cmdEffName = Nothing, action = debugWrap, cmdDesc = "Test the wrapping of a line containing ANSI escape sequences." }
+    , Cmd { cmdName = prefixDebugCmd "wrapindent", cmdEffName = Nothing, action = debugWrapIndent, cmdDesc = "Test the indented wrapping of a line containing ANSI escape sequences." } ]
 
 
 prefixDebugCmd :: CmdName -> T.Text

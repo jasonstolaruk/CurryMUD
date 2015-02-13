@@ -93,26 +93,23 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
+-- TODO: Clean up layout.
 adminCmds :: [Cmd]
 adminCmds =
-    [ Cmd { cmdName = prefixAdminCmd "?", action = adminDispCmdList, cmdDesc = "Display or search this command list." }
-    , Cmd { cmdName = prefixAdminCmd "announce", action = adminAnnounce, cmdDesc = "Send a message to all players." }
-    , Cmd { cmdName = prefixAdminCmd "boot", action = adminBoot, cmdDesc = "Boot a player, optionally with a custom \
-                                                                           \message." }
-    , Cmd { cmdName = prefixAdminCmd "bug", action = adminBug, cmdDesc = "Dump the bug log." }
-    , Cmd { cmdName = prefixAdminCmd "date", action = adminDate, cmdDesc = "Display the current system date." }
-    , Cmd { cmdName = prefixAdminCmd "peep", action = adminPeep, cmdDesc = "Start or stop peeping one or more \
-                                                                           \players." }
-    , Cmd { cmdName = prefixAdminCmd "print", action = adminPrint, cmdDesc = "Print a message to the server console." }
-    , Cmd { cmdName = prefixAdminCmd "profanity", action = adminProfanity, cmdDesc = "Dump the profanity log." }
-    , Cmd { cmdName = prefixAdminCmd "shutdown", action = adminShutdown, cmdDesc = "Shut down CurryMUD, optionally \
-                                                                                   \with a custom message." }
-    , Cmd { cmdName = prefixAdminCmd "tell", action = adminTell, cmdDesc = "Send a message to a player." }
-    , Cmd { cmdName = prefixAdminCmd "time", action = adminTime, cmdDesc = "Display the current system time." }
-    , Cmd { cmdName = prefixAdminCmd "typo", action = adminTypo, cmdDesc = "Dump the typo log." }
-    , Cmd { cmdName = prefixAdminCmd "uptime", action = adminUptime, cmdDesc = "Display the system uptime." }
-    , Cmd { cmdName = prefixAdminCmd "who", action = adminWho, cmdDesc = "Display or search a list of the players who \
-                                                                         \are currently connected." } ]
+    [ Cmd { cmdName = prefixAdminCmd "?", cmdEffName = Nothing, action = adminDispCmdList, cmdDesc = "Display or search this command list." }
+    , Cmd { cmdName = prefixAdminCmd "announce", cmdEffName = Nothing, action = adminAnnounce, cmdDesc = "Send a message to all players." }
+    , Cmd { cmdName = prefixAdminCmd "boot", cmdEffName = Nothing, action = adminBoot, cmdDesc = "Boot a player, optionally with a custom message." }
+    , Cmd { cmdName = prefixAdminCmd "bug", cmdEffName = Nothing, action = adminBug, cmdDesc = "Dump the bug log." }
+    , Cmd { cmdName = prefixAdminCmd "date", cmdEffName = Nothing, action = adminDate, cmdDesc = "Display the current system date." }
+    , Cmd { cmdName = prefixAdminCmd "peep", cmdEffName = Nothing, action = adminPeep, cmdDesc = "Start or stop peeping one or more players." }
+    , Cmd { cmdName = prefixAdminCmd "print", cmdEffName = Nothing, action = adminPrint, cmdDesc = "Print a message to the server console." }
+    , Cmd { cmdName = prefixAdminCmd "profanity", cmdEffName = Nothing, action = adminProfanity, cmdDesc = "Dump the profanity log." }
+    , Cmd { cmdName = prefixAdminCmd "shutdown", cmdEffName = Nothing, action = adminShutdown, cmdDesc = "Shut down CurryMUD, optionally with a custom message." }
+    , Cmd { cmdName = prefixAdminCmd "tell", cmdEffName = Nothing, action = adminTell, cmdDesc = "Send a message to a player." }
+    , Cmd { cmdName = prefixAdminCmd "time", cmdEffName = Nothing, action = adminTime, cmdDesc = "Display the current system time." }
+    , Cmd { cmdName = prefixAdminCmd "typo", cmdEffName = Nothing, action = adminTypo, cmdDesc = "Dump the typo log." }
+    , Cmd { cmdName = prefixAdminCmd "uptime", cmdEffName = Nothing, action = adminUptime, cmdDesc = "Display the system uptime." }
+    , Cmd { cmdName = prefixAdminCmd "who", cmdEffName = Nothing, action = adminWho, cmdDesc = "Display or search a list of the players who are currently connected." } ]
 
 
 prefixAdminCmd :: CmdName -> T.Text
