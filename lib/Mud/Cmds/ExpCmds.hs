@@ -70,7 +70,7 @@ expCmdSet = S.fromList
                                       "You belch purposefully at @."
                                       "% belches purposefully at you."
                                       "% belches purposefully at @.")
-    , ExpCmd "blank"       (Versatile "You are hopelessly bewildered."
+    , ExpCmd "bewildered"  (Versatile "You are hopelessly bewildered."
                                       "% is hopelessly bewildered."
                                       "You are hopelessly bewildered by @'s behavior."
                                       "% is hopelessly bewildered by your behavior."
@@ -674,15 +674,15 @@ expCmd ec             (NoArgs'' i        ) = case ec of
   _                                 -> patternMatchFail "expCmd" [ showText ec ]
   where
     helper toSelf toOthers = readWSTMVar >>= \ws ->
-        let (d, _, _, _, _)                     = mkCapStdDesig i ws
-            toSelfBrdcst                        = (nlnl toSelf, [i])
-            serialized                          = mkSerializedDesig d toOthers
-            (heShe, hisHer, himHerself)         = mkPros i ws
-            toOthers'                           = T.replace "%" serialized .
-                                                  T.replace "^" heShe      .
-                                                  T.replace "&" hisHer     .
-                                                  T.replace "*" himHerself $ toOthers
-            toOthersBrdcst                      = (nlnl toOthers', i `delete` pcIds d)
+        let (d, _, _, _, _)             = mkCapStdDesig i ws
+            toSelfBrdcst                = (nlnl toSelf, [i])
+            serialized                  = mkSerializedDesig d toOthers
+            (heShe, hisHer, himHerself) = mkPros i ws
+            toOthers'                   = flip replace toOthers [ ("%", serialized)
+                                                                , ("^", heShe)
+                                                                , ("&", hisHer)
+                                                                , ("*", himHerself) ]
+            toOthersBrdcst              = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut (bracketQuote "exp. command") i [toSelf] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
 expCmd (NoTarget {}) (WithArgs _ mq cols (_:_))  = wrapSend mq cols "This expressive command cannot be used with a \
                                                                     \target."
@@ -707,7 +707,7 @@ expCmd ec            (OneArg   i mq cols target) = case ec of
                   onPC targetDesig =
                       let (toSelf', toSelfBrdcst, serialized, hisHer, toOthers') = mkBindings targetDesig
                           toOthersBrdcst = (nlnl toOthers', pcIds d \\ [ i, targetId ])
-                          toTarget'      = T.replace "%" serialized . T.replace "&" hisHer $ toTarget
+                          toTarget'      = replace [ ("%", serialized), ("&", hisHer) ] toTarget
                           toTargetBrdcst = (nlnl toTarget', [targetId])
                       in do
                           logPlaOut (bracketQuote "exp. command") i [ parsePCDesig i ws toSelf' ]
@@ -719,13 +719,11 @@ expCmd ec            (OneArg   i mq cols target) = case ec of
                           logPlaOut (bracketQuote "exp. command") i [toSelf']
                           bcast [ toSelfBrdcst, toOthersBrdcst ]
                   mkBindings targetTxt =
-                      let toSelf'        = T.replace "@" targetTxt toSelf
+                      let toSelf'        = replace [("@", targetTxt)] toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
                           serialized     = mkSerializedDesig d toOthers
                           (_, hisHer, _) = mkPros i ws
-                          toOthers'      = T.replace "@" targetTxt  .
-                                           T.replace "%" serialized .
-                                           T.replace "&" hisHer     $ toOthers
+                          toOthers'      = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
                       in (toSelf', toSelfBrdcst, serialized, hisHer, toOthers')
               in case (ws^.typeTbl) ! targetId of
                 PCType  -> onPC  . serialize . mkStdDesig targetId ws targetSing False $ ris
@@ -746,3 +744,7 @@ mkSerializedDesig d toOthers | T.head toOthers == '%' = serialize d
 
 mkPros :: Id -> WorldState -> (T.Text, T.Text, T.Text)
 mkPros i ws = let (view sex -> s) = (ws^.mobTbl) ! i in (mkThrPerPro s, mkPossPro s, mkReflexPro s)
+
+
+replace :: [(T.Text, T.Text)] -> (T.Text -> T.Text)
+replace = foldr (.) id . map (uncurry T.replace)
