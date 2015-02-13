@@ -195,7 +195,7 @@ talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
     helper = do
-        (mq, itq)          <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
+        (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         registerThread . Talk $ i
         handle (plaThreadExHandler "talk" i) $ readTMVarInNWS plaTblTMVar >>= \pt -> do
@@ -214,8 +214,8 @@ talk h host = helper `finally` cleanUp
 
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = do
-    (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar       <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    (sexy, r)                    <- (,)  <$> liftIO randomSex <*> liftIO randomRace
+    (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
+    (sexy, r)                    <- liftIO $ (,) <$> randomSex <*> randomRace
     liftIO . atomically $ do
         (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
         let i    = getUnusedId ws

@@ -153,7 +153,7 @@ closePlaLog = flip doIfLogging stopLog
 
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = (IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= maybeVoid (f . snd)
+doIfLogging i f = IM.lookup i <$> readTMVarInNWS plaLogTblTMVar >>= maybeVoid (f . snd)
 
 
 closeLogs :: MudStack ()

@@ -375,7 +375,7 @@ adminTime (NoArgs i mq cols) = do
     (ct, zt) <- liftIO $ (,) <$> formatThat `fmap` getCurrentTime <*> formatThat `fmap` getZonedTime
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
-    formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
+    formatThat (T.words . showText -> wordy@(headLast -> (date, zone)))
       | time <- T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy
       = T.concat [ zone, ": ", date, " ", time ]
 adminTime p = withoutArgs adminTime p

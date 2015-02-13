@@ -11,6 +11,7 @@ module Mud.Util.Misc ( aOrAn
                      , dup
                      , eitherRet
                      , findFullNameForAbbrev
+                     , headLast
                      , headTail
                      , headTail'
                      , ifThenElse
@@ -109,6 +110,10 @@ findFullNameForAbbrev needle hay = do
     return . head $ res
   where
     res = sort . filter (needle `T.isPrefixOf`) $ hay
+
+
+headLast :: [a] -> (a, a)
+headLast = (,) <$> head <*> last
 
 
 headTail :: [a] -> (a, [a])
