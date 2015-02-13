@@ -201,7 +201,7 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 debugDispEnv :: Action
 debugDispEnv (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
-    pager i mq =<< (concatMap (wrapIndent 2 cols) . mkEnvListTxt <$> liftIO getEnvironment)
+    pager i mq =<< concatMap (wrapIndent 2 cols) . mkEnvListTxt <$> liftIO getEnvironment
 debugDispEnv p@(ActionParams { plaId, args }) = do
     logPlaExecArgs (prefixDebugCmd "env") args plaId
     dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO getEnvironment ]
@@ -250,7 +250,7 @@ purgeThreadTbls = do
 
 
 purgePlaLogTbl :: MudStack ()
-purgePlaLogTbl = modifyNWS plaLogTblTMVar =<< purger =<< (IM.assocs <$> readTMVarInNWS plaLogTblTMVar)
+purgePlaLogTbl = modifyNWS plaLogTblTMVar =<< purger =<< IM.assocs <$> readTMVarInNWS plaLogTblTMVar
   where
     purger kvs = let (is, asyncs) = unzip [ (fst kv, fst . snd $ kv) | kv <- kvs ]
                  in [ flip (foldl' helper) . zip is $ statuses | statuses <- liftIO . mapM poll $ asyncs ]
@@ -296,7 +296,7 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 debugRotate :: Action
-debugRotate (NoArgs' i mq) = (snd . fromJust . IM.lookup i <$> readTMVarInNWS plaLogTblTMVar) >>= \q -> do
+debugRotate (NoArgs' i mq) = snd . fromJust . IM.lookup i <$> readTMVarInNWS plaLogTblTMVar >>= \q -> do
     logPlaExec (prefixDebugCmd "rotate") i
     liftIO . atomically . writeTQueue q $ RotateLog
     ok mq

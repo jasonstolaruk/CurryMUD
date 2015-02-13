@@ -48,7 +48,7 @@ import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
-import Control.Monad (forM_, guard, mplus, unless, void)
+import Control.Monad (forM, forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -558,7 +558,7 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
       then nl' $ asterisk <> " indicates help that is available only to administrators."
       else ""
 help (LowerNub i mq cols as) = mkHelpData i >>= \hs -> do
-    (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> mapM (getHelpByName cols hs) as
+    (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
 help p = patternMatchFail "help" [ showText p ]
@@ -742,7 +742,7 @@ firstLook :: Id
           -> Cols
           -> (Either T.Text T.Text, Maybe (PCDesig, [PCDesig]))
           -> MudStack (Either T.Text T.Text, Maybe (PCDesig, [PCDesig]))
-firstLook i cols a = (getPlaFlag IsNotFirstLook <$> getPla i) >>= \infl -> if infl
+firstLook i cols a = getPlaFlag IsNotFirstLook <$> getPla i >>= \infl -> if infl
   then return a
   else let msg = T.concat [ hintANSI
                           , "Hint:"
@@ -1459,19 +1459,19 @@ say p = patternMatchFail "say" [ showText p ]
 
 
 firstMobSay :: Id -> MudStack T.Text
-firstMobSay i = (getPlaFlag IsNotFirstMobSay <$> getPla i) >>= \infms -> if infms
-  then return ""
-  else let msg = nlnl . T.concat $ [ hintANSI
-                                   , "Hint:"
-                                   , noHintANSI
-                                   , " to communicate with non-player characters, use the "
-                                   , dblQuote "ask"
-                                   , " command. For example, to ask a city guard about crime, type "
-                                   , quoteColor
-                                   , dblQuote "ask guard crime"
-                                   , dfltColor
-                                   , "." ]
-       in (void . modifyPlaFlag i IsNotFirstMobSay $ True) >> return msg
+firstMobSay i = mIf (getPlaFlag IsNotFirstMobSay <$> getPla i)
+                    (return "")
+                    (let msg = nlnl . T.concat $ [ hintANSI
+                                                 , "Hint:"
+                                                 , noHintANSI
+                                                 , " to communicate with non-player characters, use the "
+                                                 , dblQuote "ask"
+                                                 , " command. For example, to ask a city guard about crime, type "
+                                                 , quoteColor
+                                                 , dblQuote "ask guard crime"
+                                                 , dfltColor
+                                                 , "." ]
+                     in (void . modifyPlaFlag i IsNotFirstMobSay $ True) >> return msg)
 
 
 -----
@@ -1688,7 +1688,7 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 
 
 getUptime :: MudStack Int
-getUptime = (-) <$> (sec <$> (liftIO . getTime $ Monotonic)) <*> (sec <$> getNWSRec startTime)
+getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` getNWSRec startTime
 
 
 -----
@@ -1868,7 +1868,7 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
 whoAdmin :: Action
 whoAdmin (NoArgs i mq cols) = do
     logPlaExec "whoadmin" i
-    multiWrapSend mq cols =<< (mkAdminListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
+    multiWrapSend mq cols =<< mkAdminListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
 whoAdmin p = withoutArgs whoAdmin p
 
 

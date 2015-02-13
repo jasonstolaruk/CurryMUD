@@ -372,7 +372,7 @@ firstAdminTell i s = [ [ T.concat [ hintANSI
 adminTime :: Action
 adminTime (NoArgs i mq cols) = do
     logPlaExec (prefixAdminCmd "time") i
-    (ct, zt) <- liftIO $ (,) <$> fmap formatThat getCurrentTime <*> fmap formatThat getZonedTime
+    (ct, zt) <- liftIO $ (,) <$> formatThat `fmap` getCurrentTime <*> formatThat `fmap` getZonedTime
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
     formatThat (T.words . showText -> wordy@((,) <$> head <*> last -> (date, zone)))
@@ -409,10 +409,10 @@ adminUptime p = withoutArgs adminUptime p
 adminWho :: Action
 adminWho (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
-    pager i mq . concatMap (wrapIndent 20 cols) =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
+    pager i mq . concatMap (wrapIndent 20 cols) =<< mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
 adminWho p@(ActionParams { plaId, args }) = do
     logPlaExecArgs (prefixAdminCmd "who") args plaId
-    dispMatches p 20 =<< (mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar)
+    dispMatches p 20 =<< mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
 
 
 mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]
