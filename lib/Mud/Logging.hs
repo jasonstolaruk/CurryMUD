@@ -41,7 +41,6 @@ import Control.Monad.STM (atomically)
 import Data.IntMap.Lazy ((!))
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
-import Data.Time (getZonedTime)
 import System.Directory (doesFileExist, renameFile)
 import System.IO (stderr)
 import System.IO.Error (isAlreadyInUseError, isPermissionError)
@@ -96,14 +95,11 @@ spawnLogger fn@(T.pack -> fn') p (T.unpack -> ln) f q =
                             (loop gh))
                        (sequence_ [ close gh, loop =<< initLog ])
       where
-        rotateIt = getZonedTime >>= \(T.words . showText -> wordy) ->
-            let date = head wordy
-                time = T.replace ":" "-" . T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy
-            in do
-                atomically . writeTQueue q . LogMsg $ "Mud.Logging spawnLogger rotateLog rotateIt: log rotated."
-                close gh
-                renameFile fn . T.unpack . T.concat $ [ dropExt fn', ".", date, "_", time, ".log" ]
-                loop =<< initLog
+        rotateIt = mkDateTimeTxt >>= \(date, time) -> do
+            atomically . writeTQueue q . LogMsg $ "Mud.Logging spawnLogger rotateLog rotateIt: log rotated."
+            close gh
+            renameFile fn . T.unpack . T.concat $ [ dropExt fn', ".", date, "_", time, ".log" ]
+            loop =<< initLog
         dropExt = T.reverse . T.drop 4 . T.reverse
 
 

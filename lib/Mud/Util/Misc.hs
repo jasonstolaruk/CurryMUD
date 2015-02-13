@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Misc ( aOrAn
                      , aOrAnOnLower
@@ -20,6 +20,7 @@ module Mud.Util.Misc ( aOrAn
                      , maybeRet
                      , maybeVoid
                      , mkCountList
+                     , mkDateTimeTxt
                      , mkOrdinal
                      , mkTimestamp
                      , mIf
@@ -150,6 +151,12 @@ mkCountList :: (Eq a) => [a] -> [Int]
 mkCountList xs = map (`countOcc` xs) xs
 
 
+mkDateTimeTxt :: IO (T.Text, T.Text)
+mkDateTimeTxt = helper <$> (T.words . showText) `fmap` getZonedTime
+  where
+    helper = (,) <$> head <*> (T.init . T.dropWhileEnd (/= '.') . head . tail)
+
+
 mkOrdinal :: Int -> T.Text
 mkOrdinal 11              = "11th"
 mkOrdinal 12              = "12th"
@@ -161,10 +168,7 @@ mkOrdinal (showText -> n) = n <> case T.last n of '1' -> "st"
 
 
 mkTimestamp :: IO T.Text
-mkTimestamp = getZonedTime >>= \(T.words . showText -> wordy) ->
-    let date = head wordy
-        time = T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy
-    in return . bracketQuote $ date <> " " <> time
+mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeTxt ]
 
 
 mIf :: (Monad m) => m Bool -> m a -> m a -> m a

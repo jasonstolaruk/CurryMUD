@@ -678,10 +678,8 @@ expCmd ec             (NoArgs'' i        ) = case ec of
             toSelfBrdcst                = (nlnl toSelf, [i])
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros i ws
-            toOthers'                   = flip replace toOthers [ ("%", serialized)
-                                                                , ("^", heShe)
-                                                                , ("&", hisHer)
-                                                                , ("*", himHerself) ]
+            toOthers'                   = replace substitutions toOthers
+            substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBrdcst              = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut (bracketQuote "exp. command") i [toSelf] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
 expCmd (NoTarget {}) (WithArgs _ mq cols (_:_))  = wrapSend mq cols "This expressive command cannot be used with a \
@@ -746,5 +744,5 @@ mkPros :: Id -> WorldState -> (T.Text, T.Text, T.Text)
 mkPros i ws = let (view sex -> s) = (ws^.mobTbl) ! i in (mkThrPerPro s, mkPossPro s, mkReflexPro s)
 
 
-replace :: [(T.Text, T.Text)] -> (T.Text -> T.Text)
-replace = foldr (.) id . map (uncurry T.replace)
+replace :: [(T.Text, T.Text)] -> T.Text -> T.Text
+replace = foldr ((.) . uncurry T.replace) id
