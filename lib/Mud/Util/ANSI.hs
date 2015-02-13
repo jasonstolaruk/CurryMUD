@@ -75,8 +75,6 @@ loopOverExtractedList ((xs, escSeq):rest) ys
 loopOverExtractedList xs ys = patternMatchFail "loopOverExtractedList" [ showText xs, ys ]
 
 
--- TODO: '            '
---       '"applaud hanako" -> You applaud enthusiastically for Hanako.'
 loopOverExtractedTxt :: T.Text -> T.Text -> T.Text
 loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
   | x == y            = x            `T.cons` loopOverExtractedTxt xs ys
