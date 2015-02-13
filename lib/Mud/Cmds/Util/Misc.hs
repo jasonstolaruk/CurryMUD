@@ -33,6 +33,7 @@ import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)
 import Control.Monad (void)
 import Data.List (intercalate)
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 import qualified Data.Text as T
@@ -79,11 +80,19 @@ dispCmdList cmds (NoArgs i mq cols) =
 dispCmdList cmds p = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
 
 
--- TODO: Make a special function to style abbrevs for cmds. When a cmd has an effName, the effName signifies the part of the cmdName that should be styled.
 mkCmdListText :: [Cmd] -> [T.Text]
-mkCmdListText cmds = let (styleAbbrevs Don'tBracket -> cmdNames) = [ cmdName cmd | cmd <- cmds ]
-                         cmdDescs                                = [ cmdDesc cmd | cmd <- cmds ]
-                     in [ pad (succ maxCmdLen) n <> d | (n, d) <- zip cmdNames cmdDescs, not . T.null $ d ]
+mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
+                     in [ pad (succ maxCmdLen) n <> d | (n, d) <- zipped, not . T.null $ d ]
+
+
+styleCmdAbbrevs :: [Cmd] -> [T.Text]
+styleCmdAbbrevs cmds = let cmdNames       = [ cmdName    cmd | cmd <- cmds ]
+                           cmdEffNames    = [ cmdEffName cmd | cmd <- cmds ]
+                           styledCmdNames = styleAbbrevs Don'tBracket cmdNames
+                       in [ checkEffCmdName a | a <- zip3 cmdNames cmdEffNames styledCmdNames ]
+  where
+    checkEffCmdName (_,  Nothing,  scn) = scn
+    checkEffCmdName (cn, Just cen, _  ) = T.concat [ abbrevColor, cen, dfltColor, fromJust . T.stripPrefix cen $ cn ]
 
 
 -----
