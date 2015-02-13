@@ -363,13 +363,13 @@ mkExpCmdListTxt =
                                                       , let matches = findMatches cn
                                                       , length matches == 1 ]
   where
-    findMatches cn = S.toList . S.filter (\(ExpCmd acn _) -> acn == cn) $ expCmdSet
-    mkExpCmdTxt (styled, ExpCmd acn act) = case act of
-      (NoTarget  toSelf _   ) -> [ paddedName <> mkInitialTxt acn <> toSelf ]
-      (HasTarget toSelf _ _ ) -> [ paddedName <> mkInitialTxt (acn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
-      (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt acn <> toSelf
-                                                   , T.replicate (succ maxCmdLen) "-" <> -- TODO: "-"
-                                                     mkInitialTxt (acn <> " hanako")  <>
+    findMatches cn = S.toList . S.filter (\(ExpCmd ecn _) -> ecn == cn) $ expCmdSet
+    mkExpCmdTxt (styled, ExpCmd ecn act) = case act of
+      (NoTarget  toSelf _   ) -> [ paddedName <> mkInitialTxt ecn <> toSelf ]
+      (HasTarget toSelf _ _ ) -> [ paddedName <> mkInitialTxt (ecn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
+      (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt ecn <> toSelf
+                                                   , T.replicate (succ maxCmdLen) (T.singleton indentFiller) <>
+                                                     mkInitialTxt (ecn <> " hanako")                         <>
                                                      T.replace "@" "Hanako" toSelfWithTarget ]
       where
         paddedName         = pad (succ maxCmdLen) styled

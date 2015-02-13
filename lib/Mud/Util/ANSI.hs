@@ -45,11 +45,15 @@ type EscSeq = T.Text
 
 
 extractANSI :: T.Text -> [(T.Text, EscSeq)]
-extractANSI t
-  | ansiCSI `notInfixOf` t = [(t, "")]
-  | (t',                                    rest)            <- T.breakOn (T.singleton ansiEsc)          t
-  , ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') <- T.breakOn (T.singleton ansiSGRDelimiter) rest
-  = if T.null rest' then [(t', escSeq)] else (t', escSeq) : extractANSI rest'
+extractANSI t | (T.length -> l, rest) <- T.span (== ' ') t
+              , l > 0     = helper $ T.replicate l (T.singleton indentFiller) <> rest
+              | otherwise = helper t
+  where
+    helper txt
+      | ansiCSI `notInfixOf` txt = [(txt, "")]
+      | (txt',                                  rest)            <- T.breakOn (T.singleton ansiEsc)          txt
+      , ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') <- T.breakOn (T.singleton ansiSGRDelimiter) rest
+      = if T.null rest' then [(txt', escSeq)] else (txt', escSeq) : helper rest'
 
 
 -----
@@ -71,6 +75,8 @@ loopOverExtractedList ((xs, escSeq):rest) ys
 loopOverExtractedList xs ys = patternMatchFail "loopOverExtractedList" [ showText xs, ys ]
 
 
+-- TODO: '            '
+--       '"applaud hanako" -> You applaud enthusiastically for Hanako.'
 loopOverExtractedTxt :: T.Text -> T.Text -> T.Text
 loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
   | x == y            = x            `T.cons` loopOverExtractedTxt xs ys
