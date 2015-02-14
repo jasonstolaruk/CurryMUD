@@ -52,7 +52,7 @@ import Control.Monad (forM, forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy)
+import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), mempty)
@@ -114,114 +114,81 @@ plaCmds = sort $ nonExpCmds ++ expCmds
 
 
 nonExpCmds :: [Cmd]
-nonExpCmds =
-    [ mkRegCmd            "?"                    plaDispCmdList  "Display or search this command list."
-    , mkRegCmd            "about"                about           "About CurryMUD."
-    , mkRegCmd            "admin"                admin           "Send a message to an administrator."
-    , mkExplicitAbbrevCmd "b"          "bug"     bug
-    , mkExplicitAbbrevCmd "bu"         "bug"     bug
-    , mkPriorityAbbrevCmd "bug"        "b"       bug             "Report a bug."
-    , mkExplicitAbbrevCmd "c"          "clear"   clear
-    , mkExplicitAbbrevCmd "cl"         "clear"   clear
-    , mkExplicitAbbrevCmd "cle"        "clear"   clear
-    , mkExplicitAbbrevCmd "clea"       "clear"   clear
+nonExpCmds = regularCmds ++ priorityAbbrevCmds
+
+
+regularCmds :: [Cmd]
+regularCmds =
+    [ mkRegularCmd        "?"                    plaDispCmdList  "Display or search this command list."
+    , mkRegularCmd        "about"                about           "About CurryMUD."
+    , mkRegularCmd        "admin"                admin           "Send a message to an administrator."
+    , mkRegularCmd        "d"                    (go "d")        "Go down."
+    , mkRegularCmd        "e"                    (go "e")        "Go east."
+    , mkRegularCmd        "equip"                equip           "Display your readied equipment, or examine one or more items in your readied equipment."
+    , mkRegularCmd        "expressive"           expCmdList      "Display or search a list of available expressive commands and their results."
+    , mkRegularCmd        "i"                    inv             "Display your inventory, or examine one or more items in your inventory."
+    , mkRegularCmd        "l"                    look            "Display a description of your current location, or examine one or more items in your current location."
+    , mkRegularCmd        "n"                    (go "n")        "Go north."
+    , mkRegularCmd        "ne"                   (go "ne")       "Go northeast."
+    , mkRegularCmd        "nw"                   (go "nw")       "Go northwest."
+    , mkRegularCmd        "qui"                  quitCan'tAbbrev ""
+    , mkRegularCmd        "quit"                 quit            "Quit playing CurryMUD."
+    , mkRegularCmd        "remove"               remove          "Remove one or more items from a container."
+    , mkRegularCmd        "s"                    (go "s")        "Go south."
+    , mkRegularCmd        "se"                   (go "se")       "Go southeast."
+    , mkRegularCmd        "set"                  setAction       "View or change settings."
+    , mkRegularCmd        "sw"                   (go "sw")       "Go southwest."
+    , mkRegularCmd        "take"                 getAction       "Pick up one or more items."
+    , mkRegularCmd        "typo"                 typo            "Report a typo."
+    , mkRegularCmd        "u"                    (go "u")        "Go up."
+    , mkRegularCmd        "uptime"               uptime          "Display how long CurryMUD has been running."
+    , mkRegularCmd        "w"                    (go "w")        "Go west."
+    , mkRegularCmd        "what"                 what            "Disambiguate one or more abbreviations or prefixed names."
+    , mkRegularCmd        "whoadmin"             whoAdmin        "Display a list of the administrators who are currently logged in."
+    , mkRegularCmd        "whoami"               whoAmI          "Confirm your name, sex, and race." ]
+
+
+priorityAbbrevCmds :: [Cmd]
+priorityAbbrevCmds = concat
+    [ mkPriorityAbbrevCmd "bug"        "b"       bug             "Report a bug."
     , mkPriorityAbbrevCmd "clear"      "c"       clear           "Clear the screen."
-    , mkRegCmd            "d"                    (go "d")        "Go down."
-    , mkExplicitAbbrevCmd "dr"         "drop"    dropAction
-    , mkExplicitAbbrevCmd "dro"        "drop"    dropAction
     , mkPriorityAbbrevCmd "drop"       "dr"      dropAction      "Drop one or more items."
-    , mkRegCmd            "e"                    (go "e")        "Go east."
-    , mkExplicitAbbrevCmd "em"         "emote"   emote
-    , mkExplicitAbbrevCmd "emo"        "emote"   emote
-    , mkExplicitAbbrevCmd "emot"       "emote"   emote
     , mkPriorityAbbrevCmd "emote"      "em"      emote           "Freely describe an action."
-    , mkRegCmd            "equip"                equip           "Display your readied equipment, or examine one or \
-                                                                 \more items in your readied equipment."
-    , mkExplicitAbbrevCmd "ex"         "exits"   exits
-    , mkExplicitAbbrevCmd "exi"        "exits"   exits
-    , mkExplicitAbbrevCmd "exit"       "exits"   exits
     , mkPriorityAbbrevCmd "exits"      "ex"      exits           "Display obvious exits."
-    , mkRegCmd            "expressive"           expCmdList      "Display or search a list of available expressive \
-                                                                 \commands and their results."
-    , mkExplicitAbbrevCmd "g"          "get"     getAction
-    , mkExplicitAbbrevCmd "ge"         "get"     getAction
     , mkPriorityAbbrevCmd "get"        "g"       getAction       "Pick up one or more items."
-    , mkExplicitAbbrevCmd "h"          "help"    help
-    , mkExplicitAbbrevCmd "he"         "help"    help
-    , mkExplicitAbbrevCmd "hel"        "help"    help
     , mkPriorityAbbrevCmd "help"       "h"       help            "Get help on one or more commands or topics."
-    , mkRegCmd            "i"                    inv             "Display your inventory, or examine one or more items \
-                                                                 \in your inventory."
-    , mkExplicitAbbrevCmd "in"         "intro"   intro
-    , mkExplicitAbbrevCmd "int"        "intro"   intro
-    , mkExplicitAbbrevCmd "intr"       "intro"   intro
     , mkPriorityAbbrevCmd "intro"      "in"      intro           "Introduce yourself."
-    , mkRegCmd            "l"                    look            "Display a description of your current location, or \
-                                                                 \examine one or more items in your current location."
-    , mkExplicitAbbrevCmd "m"          "motd"    motd
-    , mkExplicitAbbrevCmd "mo"         "motd"    motd
-    , mkExplicitAbbrevCmd "mot"        "motd"    motd
     , mkPriorityAbbrevCmd "motd"       "m"       motd            "Display the message of the day."
-    , mkRegCmd            "n"                    (go "n")        "Go north."
-    , mkRegCmd            "ne"                   (go "ne")       "Go northeast."
-    , mkRegCmd            "nw"                   (go "nw")       "Go northwest."
-    , mkExplicitAbbrevCmd "p"          "put"     putAction
-    , mkExplicitAbbrevCmd "pu"         "put"     putAction
     , mkPriorityAbbrevCmd "put"        "p"       putAction       "Put one or more items into a container."
-    , mkRegCmd            "qui"                  quitCan'tAbbrev ""
-    , mkRegCmd            "quit"                 quit            "Quit playing CurryMUD."
-    , mkExplicitAbbrevCmd "r"          "ready"   ready
-    , mkExplicitAbbrevCmd "re"         "ready"   ready
-    , mkExplicitAbbrevCmd "rea"        "ready"   ready
-    , mkExplicitAbbrevCmd "read"       "ready"   ready
     , mkPriorityAbbrevCmd "ready"      "r"       ready           "Ready one or more items."
-    , mkRegCmd            "remove"               remove          "Remove one or more items from a container."
-    , mkRegCmd            "s"                    (go "s")        "Go south."
-    , mkExplicitAbbrevCmd "sa"         "say"     say
     , mkPriorityAbbrevCmd "say"        "sa"      say             "Say something out loud."
-    , mkRegCmd            "se"                   (go "se")       "Go southeast."
-    , mkRegCmd            "set"                  setAction       "View or change settings."
-    , mkRegCmd            "sw"                   (go "sw")       "Go southwest."
-    , mkRegCmd            "take"                 getAction       "Pick up one or more items."
-    , mkRegCmd            "typo"                 typo            "Report a typo."
-    , mkRegCmd            "u"                    (go "u")        "Go up."
-    , mkExplicitAbbrevCmd "un"         "unready" unready
-    , mkExplicitAbbrevCmd "unr"        "unready" unready
-    , mkExplicitAbbrevCmd "unre"       "unready" unready
-    , mkExplicitAbbrevCmd "unrea"      "unready" unready
-    , mkExplicitAbbrevCmd "unread"     "unready" unready
-    , mkPriorityAbbrevCmd "unready"    "un"      unready         "Unready one or more items."
-    , mkRegCmd            "uptime"               uptime          "Display how long CurryMUD has been running."
-    , mkRegCmd            "w"                    (go "w")        "Go west."
-    , mkRegCmd            "what"                 what            "Disambiguate one or more abbreviations or prefixed \
-                                                                 \names."
-    , mkRegCmd            "whoadmin"             whoAdmin        "Display a list of the administrators who are \
-                                                                 \currently logged in."
-    , mkRegCmd            "whoami"               whoAmI          "Confirm your name, sex, and race." ]
+    , mkPriorityAbbrevCmd "unready"    "un"      unready         "Unready one or more items." ]
 
 
-mkRegCmd :: CmdName -> Action -> CmdDesc -> Cmd
-mkRegCmd cn act cd = Cmd { cmdName           = cn
-                         , cmdPriorityAbbrev = Nothing
-                         , cmdFullName       = cn
-                         , action            = act
-                         , cmdDesc           = cd }
+mkRegularCmd :: CmdFullName -> Action -> CmdDesc -> Cmd
+mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
+                              , cmdPriorityAbbrev = Nothing
+                              , cmdFullName       = cfn
+                              , action            = act
+                              , cmdDesc           = cd }
 
 
-mkExplicitAbbrevCmd :: CmdName -> CmdFullName -> Action -> Cmd
-mkExplicitAbbrevCmd cn cfn act = Cmd { cmdName           = cn
-                                     , cmdPriorityAbbrev = Nothing
-                                     , cmdFullName       = cfn
-                                     , action            = act
-                                     , cmdDesc           = "" }
-
-
-mkPriorityAbbrevCmd :: CmdName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> Cmd
-mkPriorityAbbrevCmd cn cpat act cd = Cmd { cmdName           = cn
-                                         , cmdPriorityAbbrev = Just cpat
-                                         , cmdFullName       = cn
-                                         , action            = act
-                                         , cmdDesc           = cd }
+mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> [Cmd]
+mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmdName           = cfn
+                                                                           , cmdPriorityAbbrev = Just cpat
+                                                                           , cmdFullName       = cfn
+                                                                           , action            = act
+                                                                           , cmdDesc           = cd } ]
+  where
+    helper ""                      = Nothing
+    helper abbrev | abbrev == cpat = Just (mkExplicitAbbrevCmd, "")
+                  | otherwise      = Just (mkExplicitAbbrevCmd, T.init abbrev)
+      where
+        mkExplicitAbbrevCmd = Cmd { cmdName           = abbrev
+                                  , cmdPriorityAbbrev = Nothing
+                                  , cmdFullName       = cfn
+                                  , action            = act
+                                  , cmdDesc           = "" }
 
 
 -----
