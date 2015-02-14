@@ -37,7 +37,9 @@ module Mud.Util.Misc ( aOrAn
                      , theOnLower
                      , theOnLower'
                      , toMaybe
-                     , uncapitalize ) where
+                     , uncapitalize
+                     , uncurry3
+                     , uncurry4 ) where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Quoting
@@ -235,3 +237,11 @@ theOnLower' = capitalize . theOnLower
 
 toMaybe :: Bool -> a -> Maybe a
 toMaybe b = (guard b >>) . return
+
+
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (a, b, c) = f a b c
+
+
+uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
+uncurry4 f (a, b, c, d) = f a b c d

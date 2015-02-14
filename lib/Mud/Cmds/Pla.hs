@@ -110,11 +110,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
 
 plaCmds :: [Cmd]
-plaCmds = sort $ nonExpCmds ++ expCmds
-
-
-nonExpCmds :: [Cmd]
-nonExpCmds = regularCmds ++ priorityAbbrevCmds
+plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
 
 
 regularCmds :: [Cmd]
@@ -150,6 +146,14 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("whoami",     whoAmI,          "Confirm your name, sex, and race.") ]
 
 
+mkRegularCmd :: CmdFullName -> Action -> CmdDesc -> Cmd
+mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
+                              , cmdPriorityAbbrev = Nothing
+                              , cmdFullName       = cfn
+                              , action            = act
+                              , cmdDesc           = cd }
+
+
 priorityAbbrevCmds :: [Cmd]
 priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     [ ("bug",     "b",  bug,        "Report a bug.")
@@ -165,22 +169,6 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("ready",   "r",  ready,      "Ready one or more items.")
     , ("say",     "sa", say,        "Say something out loud.")
     , ("unready", "un", unready,    "Unready one or more items.") ]
-
-
-uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
-uncurry3 f (a, b, c) = f a b c
-
-
-uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
-uncurry4 f (a, b, c, d) = f a b c d
-
-
-mkRegularCmd :: CmdFullName -> Action -> CmdDesc -> Cmd
-mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
-                              , cmdPriorityAbbrev = Nothing
-                              , cmdFullName       = cfn
-                              , action            = act
-                              , cmdDesc           = cd }
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> [Cmd]
