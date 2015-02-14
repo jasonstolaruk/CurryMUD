@@ -118,51 +118,61 @@ nonExpCmds = regularCmds ++ priorityAbbrevCmds
 
 
 regularCmds :: [Cmd]
-regularCmds =
-    [ mkRegularCmd        "?"                    plaDispCmdList  "Display or search this command list."
-    , mkRegularCmd        "about"                about           "About CurryMUD."
-    , mkRegularCmd        "admin"                admin           "Send a message to an administrator."
-    , mkRegularCmd        "d"                    (go "d")        "Go down."
-    , mkRegularCmd        "e"                    (go "e")        "Go east."
-    , mkRegularCmd        "equip"                equip           "Display your readied equipment, or examine one or more items in your readied equipment."
-    , mkRegularCmd        "expressive"           expCmdList      "Display or search a list of available expressive commands and their results."
-    , mkRegularCmd        "i"                    inv             "Display your inventory, or examine one or more items in your inventory."
-    , mkRegularCmd        "l"                    look            "Display a description of your current location, or examine one or more items in your current location."
-    , mkRegularCmd        "n"                    (go "n")        "Go north."
-    , mkRegularCmd        "ne"                   (go "ne")       "Go northeast."
-    , mkRegularCmd        "nw"                   (go "nw")       "Go northwest."
-    , mkRegularCmd        "qui"                  quitCan'tAbbrev ""
-    , mkRegularCmd        "quit"                 quit            "Quit playing CurryMUD."
-    , mkRegularCmd        "remove"               remove          "Remove one or more items from a container."
-    , mkRegularCmd        "s"                    (go "s")        "Go south."
-    , mkRegularCmd        "se"                   (go "se")       "Go southeast."
-    , mkRegularCmd        "set"                  setAction       "View or change settings."
-    , mkRegularCmd        "sw"                   (go "sw")       "Go southwest."
-    , mkRegularCmd        "take"                 getAction       "Pick up one or more items."
-    , mkRegularCmd        "typo"                 typo            "Report a typo."
-    , mkRegularCmd        "u"                    (go "u")        "Go up."
-    , mkRegularCmd        "uptime"               uptime          "Display how long CurryMUD has been running."
-    , mkRegularCmd        "w"                    (go "w")        "Go west."
-    , mkRegularCmd        "what"                 what            "Disambiguate one or more abbreviations or prefixed names."
-    , mkRegularCmd        "whoadmin"             whoAdmin        "Display a list of the administrators who are currently logged in."
-    , mkRegularCmd        "whoami"               whoAmI          "Confirm your name, sex, and race." ]
+regularCmds = map (uncurry3 mkRegularCmd)
+    [ ("?", plaDispCmdList,           "Display or search this command list.")
+    , ("about",      about,           "About CurryMUD.")
+    , ("admin",      admin,           "Send a message to an administrator.")
+    , ("d",          go "d",          "Go down.")
+    , ("e",          go "e",          "Go east.")
+    , ("equip",      equip,           "Display your readied equipment, or examine one or more items in your readied \
+                                      \equipment.")
+    , ("expressive", expCmdList,      "Display or search a list of available expressive commands and their results.")
+    , ("i",          inv,             "Display your inventory, or examine one or more items in your inventory.")
+    , ("l",          look,            "Display a description of your current location, or examine one or more items in \
+                                      \your current location.")
+    , ("n",          go "n",          "Go north.")
+    , ("ne",         go "ne",         "Go northeast.")
+    , ("nw",         go "nw",         "Go northwest.")
+    , ("qui",        quitCan'tAbbrev, "")
+    , ("quit",       quit,            "Quit playing CurryMUD.")
+    , ("remove",     remove,          "Remove one or more items from a container.")
+    , ("s",          go "s",          "Go south.")
+    , ("se",         go "se",         "Go southeast.")
+    , ("set",        setAction,       "View or change settings.")
+    , ("sw",         go "sw",         "Go southwest.")
+    , ("take",       getAction,       "Pick up one or more items.")
+    , ("typo",       typo,            "Report a typo.")
+    , ("u",          go "u",          "Go up.")
+    , ("uptime",     uptime,          "Display how long CurryMUD has been running.")
+    , ("w",          go "w",          "Go west.")
+    , ("what",       what,            "Disambiguate one or more abbreviations or prefixed names.")
+    , ("whoadmin",   whoAdmin,        "Display a list of the administrators who are currently logged in.")
+    , ("whoami",     whoAmI,          "Confirm your name, sex, and race.") ]
 
 
 priorityAbbrevCmds :: [Cmd]
-priorityAbbrevCmds = concat
-    [ mkPriorityAbbrevCmd "bug"        "b"       bug             "Report a bug."
-    , mkPriorityAbbrevCmd "clear"      "c"       clear           "Clear the screen."
-    , mkPriorityAbbrevCmd "drop"       "dr"      dropAction      "Drop one or more items."
-    , mkPriorityAbbrevCmd "emote"      "em"      emote           "Freely describe an action."
-    , mkPriorityAbbrevCmd "exits"      "ex"      exits           "Display obvious exits."
-    , mkPriorityAbbrevCmd "get"        "g"       getAction       "Pick up one or more items."
-    , mkPriorityAbbrevCmd "help"       "h"       help            "Get help on one or more commands or topics."
-    , mkPriorityAbbrevCmd "intro"      "in"      intro           "Introduce yourself."
-    , mkPriorityAbbrevCmd "motd"       "m"       motd            "Display the message of the day."
-    , mkPriorityAbbrevCmd "put"        "p"       putAction       "Put one or more items into a container."
-    , mkPriorityAbbrevCmd "ready"      "r"       ready           "Ready one or more items."
-    , mkPriorityAbbrevCmd "say"        "sa"      say             "Say something out loud."
-    , mkPriorityAbbrevCmd "unready"    "un"      unready         "Unready one or more items." ]
+priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
+    [ ("bug",     "b",  bug,        "Report a bug.")
+    , ("clear",   "c",  clear,      "Clear the screen.")
+    , ("drop",    "dr", dropAction, "Drop one or more items.")
+    , ("emote",   "em", emote,      "Freely describe an action.")
+    , ("exits",   "ex", exits,      "Display obvious exits.")
+    , ("get",     "g",  getAction,  "Pick up one or more items.")
+    , ("help",    "h",  help,       "Get help on one or more commands or topics.")
+    , ("intro",   "in", intro,      "Introduce yourself.")
+    , ("motd",    "m",  motd,       "Display the message of the day.")
+    , ("put",     "p",  putAction,  "Put one or more items into a container.")
+    , ("ready",   "r",  ready,      "Ready one or more items.")
+    , ("say",     "sa", say,        "Say something out loud.")
+    , ("unready", "un", unready,    "Unready one or more items.") ]
+
+
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (a, b, c) = f a b c
+
+
+uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
+uncurry4 f (a, b, c, d) = f a b c d
 
 
 mkRegularCmd :: CmdFullName -> Action -> CmdDesc -> Cmd
