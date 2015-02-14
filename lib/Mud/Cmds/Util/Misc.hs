@@ -86,13 +86,13 @@ mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd
 
 
 styleCmdAbbrevs :: [Cmd] -> [T.Text]
-styleCmdAbbrevs cmds = let cmdNames       = [ cmdName    cmd | cmd <- cmds ]
-                           cmdEffNames    = [ cmdEffName cmd | cmd <- cmds ]
+styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
+                           cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
                            styledCmdNames = styleAbbrevs Don'tBracket cmdNames
-                       in [ checkEffCmdName a | a <- zip3 cmdNames cmdEffNames styledCmdNames ]
+                       in [ checkProrityAbbrev a | a <- zip3 cmdNames cmdPAs styledCmdNames ]
   where
-    checkEffCmdName (_,  Nothing,  scn) = scn
-    checkEffCmdName (cn, Just cen, _  ) = T.concat [ abbrevColor, cen, dfltColor, fromJust . T.stripPrefix cen $ cn ]
+    checkProrityAbbrev (_,  Nothing,  scn) = scn
+    checkProrityAbbrev (cn, Just cpa, _  ) = T.concat [ abbrevColor, cpa, dfltColor, fromJust . T.stripPrefix cpa $ cn ]
 
 
 -----

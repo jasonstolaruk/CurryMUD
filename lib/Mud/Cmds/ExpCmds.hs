@@ -658,15 +658,17 @@ expCmdSet = S.fromList
 expCmds :: [Cmd]
 expCmds = S.foldr helper [] expCmdSet
   where
-    helper (ExpCmd expCmdName expCmdType) = (Cmd { cmdName    = expCmdName
-                                                 , cmdEffName = Nothing
-                                                 , action     = expCmd expCmdType
-                                                 , cmdDesc    = "" } :)
+    helper (ExpCmd expCmdName expCmdType) = (Cmd { cmdName           = expCmdName
+                                                 , cmdPriorityAbbrev = Nothing
+                                                 , cmdFullName       = expCmdName
+                                                 , action            = expCmd expCmdType
+                                                 , cmdDesc           = "" } :)
 
 
 -----
 
 
+-- TODO: Give exp cmd name in sorry msgs.
 expCmd :: ExpCmdType -> Action
 expCmd (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols "This expressive command requires a single target."
 expCmd ec             (NoArgs'' i        ) = case ec of

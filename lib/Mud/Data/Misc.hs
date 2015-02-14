@@ -8,6 +8,9 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Broadcast
                      , ClassifiedBroadcast(..)
                      , Cmd(..)
+                     , CmdDesc
+                     , CmdFullName
+                     , CmdPriorityAbbrevTxt
                      , Cols
                      , EmptyNoneSome(..)
                      , ExpCmd(..)
@@ -333,18 +336,24 @@ instance Ord ClassifiedBroadcast where
 -----
 
 
-type Action = ActionParams -> MudStack ()
+type CmdPriorityAbbrevTxt = T.Text
+type CmdFullName          = T.Text
+type Action               = ActionParams -> MudStack ()
+type CmdDesc              = T.Text
 
 
-data Cmd = Cmd { cmdName    :: !CmdName
-               , cmdEffName :: !(Maybe CmdName)
-               , action     :: !Action
-               , cmdDesc    :: !T.Text }
+data Cmd = Cmd { cmdName           :: !CmdName
+               , cmdPriorityAbbrev :: !(Maybe CmdPriorityAbbrevTxt)
+               , cmdFullName       :: !CmdFullName
+               , action            :: !Action
+               , cmdDesc           :: !CmdDesc }
 
 
 instance Eq Cmd where
-  Cmd { cmdName = cn1, cmdEffName = cen1, cmdDesc = cd1 } == Cmd { cmdName = cn2, cmdEffName = cen2, cmdDesc = cd2 } =
-      and [ c1 == c2 | c1 <- [ cn1, fromMaybe "" cen1, cd1 ] | c2 <- [ cn2, fromMaybe "" cen2, cd2 ]]
+  (==) Cmd { cmdName = cn1, cmdPriorityAbbrev = cpa1, cmdDesc = cd1 }
+       Cmd { cmdName = cn2, cmdPriorityAbbrev = cpa2, cmdDesc = cd2 } =
+       and [ c1 == c2 | c1 <- [ cn1, fromMaybe "" cpa1, cd1 ]
+                      | c2 <- [ cn2, fromMaybe "" cpa2, cd2 ] ]
 
 
 instance Ord Cmd where
