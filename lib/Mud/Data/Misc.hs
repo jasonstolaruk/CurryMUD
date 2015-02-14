@@ -14,6 +14,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Cols
                      , EmptyNoneSome(..)
                      , ExpCmd(..)
+                     , ExpCmdName
                      , ExpCmdType(..)
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)

@@ -668,7 +668,7 @@ expCmds = S.foldr helper [] expCmdSet
 -----
 
 
-expCmd :: CmdName -> ExpCmdType -> Action
+expCmd :: ExpCmdName -> ExpCmdType -> Action
 expCmd ecn (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive command \
                                                                     \requires a single target."
 expCmd ecn ect            (NoArgs'' i        ) = case ect of
