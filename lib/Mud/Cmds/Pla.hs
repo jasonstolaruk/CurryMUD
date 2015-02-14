@@ -121,9 +121,21 @@ nonExpCmds =
           , cmdDesc = "About CurryMUD." }
     , Cmd { cmdName = "admin",      cmdEffName = Nothing,   action = admin
           , cmdDesc = "Send a message to an administrator." }
-    , Cmd { cmdName = "bug",        cmdEffName = Nothing,   action = bug
+    , Cmd { cmdName = "b",          cmdEffName = Nothing,   action = bug
+          , cmdDesc = "" }
+    , Cmd { cmdName = "bu",         cmdEffName = Nothing,   action = bug
+          , cmdDesc = "" }
+    , Cmd { cmdName = "bug",        cmdEffName = Just "b",  action = bug
           , cmdDesc = "Report a bug." }
-    , Cmd { cmdName = "clear",      cmdEffName = Nothing,   action = clear
+    , Cmd { cmdName = "c",          cmdEffName = Nothing,   action = clear
+          , cmdDesc = "" }
+    , Cmd { cmdName = "cl",         cmdEffName = Nothing,   action = clear
+          , cmdDesc = "" }
+    , Cmd { cmdName = "cle",        cmdEffName = Nothing,   action = clear
+          , cmdDesc = "" }
+    , Cmd { cmdName = "clea",       cmdEffName = Nothing,   action = clear
+          , cmdDesc = "" }
+    , Cmd { cmdName = "clear",      cmdEffName = Just "c",  action = clear
           , cmdDesc = "Clear the screen." }
     , Cmd { cmdName = "d",          cmdEffName = Nothing,   action = go "d"
           , cmdDesc = "Go down." }
@@ -135,26 +147,60 @@ nonExpCmds =
           , cmdDesc = "Drop one or more items." }
     , Cmd { cmdName = "e",          cmdEffName = Nothing,   action = go "e"
           , cmdDesc = "Go east." }
-    , Cmd { cmdName = "emote",      cmdEffName = Nothing,   action = emote
+    , Cmd { cmdName = "em",         cmdEffName = Nothing,   action = emote
+          , cmdDesc = "" }
+    , Cmd { cmdName = "emo",        cmdEffName = Nothing,   action = emote
+          , cmdDesc = "" }
+    , Cmd { cmdName = "emot",       cmdEffName = Nothing,   action = emote
+          , cmdDesc = "" }
+    , Cmd { cmdName = "emote",      cmdEffName = Just "em", action = emote
           , cmdDesc = "Freely describe an action." }
     , Cmd { cmdName = "equip",      cmdEffName = Nothing,   action = equip
           , cmdDesc = "Display your readied equipment, or examine one or more items in your readied equipment." }
-    , Cmd { cmdName = "exits",      cmdEffName = Nothing,   action = exits
+    , Cmd { cmdName = "ex",         cmdEffName = Nothing,   action = exits
+          , cmdDesc = "" }
+    , Cmd { cmdName = "exi",        cmdEffName = Nothing,   action = exits
+          , cmdDesc = "" }
+    , Cmd { cmdName = "exit",       cmdEffName = Nothing,   action = exits
+          , cmdDesc = "" }
+    , Cmd { cmdName = "exits",      cmdEffName = Just "ex", action = exits
           , cmdDesc = "Display obvious exits." }
     , Cmd { cmdName = "expressive", cmdEffName = Nothing,   action = expCmdList
           , cmdDesc = "Display or search a list of available expressive commands and their results." }
-    , Cmd { cmdName = "get",        cmdEffName = Nothing,   action = getAction
+    , Cmd { cmdName = "g",          cmdEffName = Nothing,   action = getAction
+          , cmdDesc = "" }
+    , Cmd { cmdName = "ge",         cmdEffName = Nothing,   action = getAction
+          , cmdDesc = "" }
+    , Cmd { cmdName = "get",        cmdEffName = Just "g",  action = getAction
           , cmdDesc = "Pick up one or more items." }
-    , Cmd { cmdName = "help",       cmdEffName = Nothing,   action = help
+    , Cmd { cmdName = "h",          cmdEffName = Nothing,   action = help
+          , cmdDesc = "" }
+    , Cmd { cmdName = "he",         cmdEffName = Nothing,   action = help
+          , cmdDesc = "" }
+    , Cmd { cmdName = "hel",        cmdEffName = Nothing,   action = help
+          , cmdDesc = "" }
+    , Cmd { cmdName = "help",       cmdEffName = Just "h",  action = help
           , cmdDesc = "Get help on one or more commands or topics." }
     , Cmd { cmdName = "i",          cmdEffName = Nothing,   action = inv
           , cmdDesc = "Display your inventory, or examine one or more items in your inventory." }
-    , Cmd { cmdName = "intro",      cmdEffName = Nothing,   action = intro
+    , Cmd { cmdName = "in",         cmdEffName = Nothing,   action = intro
+          , cmdDesc = "" }
+    , Cmd { cmdName = "int",        cmdEffName = Nothing,   action = intro
+          , cmdDesc = "" }
+    , Cmd { cmdName = "intr",       cmdEffName = Nothing,   action = intro
+          , cmdDesc = "" }
+    , Cmd { cmdName = "intro",      cmdEffName = Just "in", action = intro
           , cmdDesc = "Introduce yourself." }
     , Cmd { cmdName = "l",          cmdEffName = Nothing,   action = look
           , cmdDesc = "Display a description of your current location, or examine one or more items in your current \
                       \location." }
-    , Cmd { cmdName = "motd",       cmdEffName = Nothing,   action = motd
+    , Cmd { cmdName = "m",          cmdEffName = Nothing,   action = motd
+          , cmdDesc = "" }
+    , Cmd { cmdName = "mo",         cmdEffName = Nothing,   action = motd
+          , cmdDesc = "" }
+    , Cmd { cmdName = "mot",        cmdEffName = Nothing,   action = motd
+          , cmdDesc = "" }
+    , Cmd { cmdName = "motd",       cmdEffName = Just "m",  action = motd
           , cmdDesc = "Display the message of the day." }
     , Cmd { cmdName = "n",          cmdEffName = Nothing,   action = go "n"
           , cmdDesc = "Go north." }
@@ -162,19 +208,33 @@ nonExpCmds =
           , cmdDesc = "Go northeast." }
     , Cmd { cmdName = "nw",         cmdEffName = Nothing,   action = go "nw"
           , cmdDesc = "Go northwest." }
-    , Cmd { cmdName = "put",        cmdEffName = Nothing,   action = putAction
+    , Cmd { cmdName = "p",          cmdEffName = Nothing,   action = putAction
+          , cmdDesc = "" }
+    , Cmd { cmdName = "pu",         cmdEffName = Nothing,   action = putAction
+          , cmdDesc = "" }
+    , Cmd { cmdName = "put",        cmdEffName = Just "p",  action = putAction
           , cmdDesc = "Put one or more items into a container." }
     , Cmd { cmdName = "qui",        cmdEffName = Nothing,   action = quitCan'tAbbrev
           , cmdDesc = "" }
     , Cmd { cmdName = "quit",       cmdEffName = Nothing,   action = quit
           , cmdDesc = "Quit playing CurryMUD." }
-    , Cmd { cmdName = "ready",      cmdEffName = Nothing,   action = ready
+    , Cmd { cmdName = "r",          cmdEffName = Nothing,   action = ready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "re",         cmdEffName = Nothing,   action = ready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "rea",        cmdEffName = Nothing,   action = ready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "read",       cmdEffName = Nothing,   action = ready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "ready",      cmdEffName = Just "r",  action = ready
           , cmdDesc = "Ready one or more items." }
     , Cmd { cmdName = "remove",     cmdEffName = Nothing,   action = remove
           , cmdDesc = "Remove one or more items from a container." }
     , Cmd { cmdName = "s",          cmdEffName = Nothing,   action = go "s"
           , cmdDesc = "Go south." }
-    , Cmd { cmdName = "say",        cmdEffName = Nothing,   action = say
+    , Cmd { cmdName = "sa",         cmdEffName = Nothing,   action = say
+          , cmdDesc = "" }
+    , Cmd { cmdName = "say",        cmdEffName = Just "sa", action = say
           , cmdDesc = "Say something out loud." }
     , Cmd { cmdName = "se",         cmdEffName = Nothing,   action = go "se"
           , cmdDesc = "Go southeast." }
@@ -188,7 +248,17 @@ nonExpCmds =
           , cmdDesc = "Report a typo." }
     , Cmd { cmdName = "u",          cmdEffName = Nothing,   action = go "u"
           , cmdDesc = "Go up." }
-    , Cmd { cmdName = "unready",    cmdEffName = Nothing,   action = unready
+    , Cmd { cmdName = "un",         cmdEffName = Nothing,   action = unready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "unr",        cmdEffName = Nothing,   action = unready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "unre",       cmdEffName = Nothing,   action = unready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "unrea",      cmdEffName = Nothing,   action = unready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "unread",     cmdEffName = Nothing,   action = unready
+          , cmdDesc = "" }
+    , Cmd { cmdName = "unready",    cmdEffName = Just "un", action = unready
           , cmdDesc = "Unready one or more items." }
     , Cmd { cmdName = "uptime",     cmdEffName = Nothing,   action = uptime
           , cmdDesc = "Display how long CurryMUD has been running." }
