@@ -438,9 +438,7 @@ debugWrap (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)
       | otherwise                              = do
           logPlaExecArgs (prefixDebugCmd "wrap") [a] i
           send mq . frame lineLen . wrapUnlines lineLen $ msg
-    sorryWtf     = wrapSend mq cols $ wtfColor                                                            <>
-                                      "What the fuck is wrong with you? Are you trying to make me crash?" <>
-                                      dfltColor
+    sorryWtf     = wrapSend mq cols $ wtfColor <> "Hey! Are you trying to make me crash?" <> dfltColor
     sorryLineLen = wrapSend mq cols . T.concat $ [ "The line length must be between "
                                                  , showText minCols
                                                  , " and "
@@ -496,9 +494,7 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
       | otherwise                              = do
           logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
           send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ msg
-    sorryWtf     = wrapSend mq cols $ wtfColor                                                            <>
-                                      "What the fuck is wrong with you? Are you trying to make me crash?" <>
-                                      dfltColor
+    sorryWtf     = wrapSend mq cols $ wtfColor <> "Hey! Are you trying to make me crash?" <> dfltColor
     sorryLineLen = wrapSend mq cols . T.concat $ [ "The line length must be between "
                                                  , showText minCols
                                                  , " and "
