@@ -1766,18 +1766,15 @@ what p = patternMatchFail "what" [ showText p ]
 
 whatCmd :: Cols -> Rm -> T.Text -> T.Text
 whatCmd cols (mkCmdListWithNonStdRmLinks -> cmds) (T.toLower -> n@(whatQuote -> n')) =
-    wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n $ [ cn | cmd <- cmds
-                                                                             , let cn = cmdName cmd
-                                                                             , isPlaCmd cn ]
+    wrapUnlines cols . maybe notFound found . findFullNameForAbbrev n $ [ cmdName cmd | cmd <- cmds ]
   where
-    isPlaCmd               = (`notElem` [ adminCmdChar, debugCmdChar ]) . T.head
-    notFound               = n' <> " doesn't refer to any commands."
-    found (dblQuote -> cn) = T.concat [ n', " may refer to the ", cn, " command." ]
+    notFound = n' <> " doesn't refer to any commands."
+    found cn = let cfn = dblQuote . cmdFullName . head . filter ((== cn) . cmdName) $ cmds
+               in T.concat [ n', " may refer to the ", cfn, " command." ]
 
 
 mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
-mkCmdListWithNonStdRmLinks (view rmLinks -> rls) =
-    sortBy (compare `on` cmdName) $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
+mkCmdListWithNonStdRmLinks (view rmLinks -> rls) = sort $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
 
 
 mkCmdForRmLink :: RmLink -> Cmd
