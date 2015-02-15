@@ -80,7 +80,7 @@ import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, find, intercalate, nub, sort)
 import Data.Maybe (catMaybes, fromJust, isNothing)
-import Data.Monoid ((<>), mempty)
+import Data.Monoid ((<>), Sum(..), mempty)
 import System.Directory (doesFileExist)
 import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
@@ -494,9 +494,9 @@ mkStdDesig i ws s ic ris = StdDesig { stdPCEntSing = Just s
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
 mkCoinsDesc cols (Coins (cop, sil, gol)) =
-    T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ cop /= 0 |?| copDesc
-                                                                             , sil /= 0 |?| silDesc
-                                                                             , gol /= 0 |?| golDesc ]
+    T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ Sum cop |!| copDesc
+                                                                             , Sum sil |!| silDesc
+                                                                             , Sum gol |!| golDesc ]
   where -- TODO: Come up with good descriptions.
     copDesc = "The copper piece is round and shiny."
     silDesc = "The silver piece is round and shiny."
@@ -564,7 +564,7 @@ mkStyledName_Count_BothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffNa
 mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . mkListFromCoins $ c
   where
-    mkNameAmt cn a = a == 0 |!| showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
+    mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
     helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 

@@ -71,14 +71,16 @@ True  ? (x :? _) = x
 False ? (_ :? y) = y
 
 
+-- mempty on False.
 infixl 1 |?|
 (|?|) :: (Monoid a) => Bool -> a -> a
 a |?| b = a ? b :? mempty
 
 
+-- mempty on mempty.
 infixl 1 |!|
-(|!|) :: (Monoid a) => Bool -> a -> a
-a |!| b = a ? mempty :? b
+(|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
+a |!| b = (a == mempty) ? mempty :? b
 
 
 (|*|) :: (Eq a, Monoid a, Eq b, Monoid b) => (a, b) -> (c, c) -> c

@@ -806,9 +806,7 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
                               , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
                               , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
                               , c          <- (ws^.coinsTbl) ! ri
-                              = T.concat [ (not . null $ pcNcbs)    |?| pcDescs
-                                         , (not . null $ otherNcbs) |?| otherDescs
-                                         , c /= mempty              |?| mkCoinsSummary cols c ]
+                              = (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
   where
     splitPCsOthers                       = over both (map snd) . span fst
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s
@@ -1043,7 +1041,7 @@ ready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
         in (is, c) |*|
           ( let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
                 eiss                      = zipWith (curry procGecrMisReady) gecrs miss
-                bs                        = null rcs |!| mkBroadcast i "You can't ready coins."
+                bs                        = rcs |!| mkBroadcast i "You can't ready coins."
                 (ws', bs', logMsgs)       = foldl' (helperReady i d) (ws, bs, []) . zip eiss $ mrols
             in putTMVar t ws' >> return (bs', logMsgs)
           ,    putTMVar t ws  >> return (mkBroadcast i dudeYourHandsAreEmpty, []) )
@@ -1600,7 +1598,7 @@ unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
         in if not . null $ is
           then let (gecrs, miss, rcs)  = resolveEntCoinNames i ws as is mempty
                    eiss                = zipWith (curry procGecrMisPCEq) gecrs miss
-                   bs                  = null rcs |!| mkBroadcast i "You can't unready coins."
+                   bs                  = rcs |!| mkBroadcast i "You can't unready coins."
                    (ws', bs', logMsgs) = foldl' (helperUnready i d em) (ws, bs, []) eiss
                in putTMVar t ws' >> return (bs', logMsgs)
           else    putTMVar t ws  >> return (mkBroadcast i dudeYou'reNaked, [])
