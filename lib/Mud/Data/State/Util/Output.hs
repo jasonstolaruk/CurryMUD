@@ -95,15 +95,15 @@ parsePCDesig i ws msg = views introduced (`helper` msg) ((ws^.pcTbl) ! i)
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
-          left                                                                                 <>
-          (if pes `elem` intros then pes else expandPCEntName i ws isCap pcEntName pcId pcIds) <>
+          left                                                                         <>
+          (pes `elem` intros ? pes :? expandPCEntName i ws isCap pcEntName pcId pcIds) <>
           helper intros rest
         StdDesig { stdPCEntSing = Nothing,  .. } ->
           left <> expandPCEntName i ws isCap pcEntName pcId pcIds <> helper intros rest
         _ -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter txt
-      = left <> (if nonStdPCEntSing `elem` intros then nonStdPCEntSing else nonStdDesc) <> helper intros rest
+      = left <> (nonStdPCEntSing `elem` intros ? nonStdPCEntSing :? nonStdDesc) <> helper intros rest
       | otherwise = txt
     extractPCDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig = (left, pcd, rest)
@@ -115,7 +115,7 @@ expandPCEntName i ws ic pen@(headTail' -> (h, t)) pi ((i `delete`) -> pis) =
   where
     leading | ic        = "T"
             | otherwise = "t"
-    xth = let matches = foldr (\pcI acc -> if mkUnknownPCEntName pcI ws == pen then pcI : acc else acc) [] pis
+    xth = let matches = foldr (\pcI acc -> mkUnknownPCEntName pcI ws == pen ? pcI : acc :? acc) [] pis
           in case matches of [_] -> ""
                              _   -> (<> " ") . mkOrdinal . (+ 1) . fromJust . elemIndex pi $ matches
     expandSex 'm'                = "male"

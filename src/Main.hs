@@ -42,4 +42,4 @@ welcome = do
     T.putStrLn . nl . T.concat $ [ "Hello, ", T.pack un, ". Welcome to ", dblQuote mn, " ver ", ver, "." ]
   where
     whatsMyName = getProgName >>= \mn ->
-        return (if mn == "<interactive>" then "Y U NO COMPILE ME?" else T.pack mn)
+        return (mn == "<interactive>" ? "Y U NO COMPILE ME?" :? T.pack mn)

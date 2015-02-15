@@ -229,9 +229,9 @@ mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLo
 mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
 mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
   where
-    c = if cop /= 0 then Just . f cop $ "copper piece" else Nothing
-    s = if sil /= 0 then Just . f sil $ "silver piece" else Nothing
-    g = if gol /= 0 then Just . f gol $ "gold piece"   else Nothing
+    c = cop /= 0 ? (Just . f cop $ "copper piece") :? Nothing
+    s = sil /= 0 ? (Just . f sil $ "silver piece") :? Nothing
+    g = gol /= 0 ? (Just . f gol $ "gold piece"  ) :? Nothing
 
 
 extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
@@ -494,11 +494,13 @@ mkStdDesig i ws s ic ris = StdDesig { stdPCEntSing = Just s
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
 mkCoinsDesc cols (Coins (cop, sil, gol)) =
-    T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ copDesc, silDesc, golDesc ]
+    T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ cop /= 0 |?| copDesc
+                                                                             , sil /= 0 |?| silDesc
+                                                                             , gol /= 0 |?| golDesc ]
   where -- TODO: Come up with good descriptions.
-    copDesc = if cop /= 0 then "The copper piece is round and shiny." else ""
-    silDesc = if sil /= 0 then "The silver piece is round and shiny." else ""
-    golDesc = if gol /= 0 then "The gold piece is round and shiny."   else ""
+    copDesc = "The copper piece is round and shiny."
+    silDesc = "The silver piece is round and shiny."
+    golDesc = "The gold piece is round and shiny."
 
 
 -----
@@ -532,7 +534,7 @@ mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
 mkInvCoinsDesc i cols ws descI (view sing -> descS)
   | descIs <- (ws^.invTbl)   ! descI
   , descC  <- (ws^.coinsTbl) ! descI = case (not . null $ descIs, descC /= mempty) of
-    (False, False) -> wrapUnlines cols $ if descI == i then dudeYourHandsAreEmpty else "The " <> descS <> " is empty."
+    (False, False) -> wrapUnlines cols (descI == i ? dudeYourHandsAreEmpty :? "The " <> descS <> " is empty.")
     (True,  False) -> header <> mkEntsInInvDesc i cols ws descIs
     (False, True ) -> header <>                                     mkCoinsSummary cols descC
     (True,  True ) -> header <> mkEntsInInvDesc i cols ws descIs <> mkCoinsSummary cols descC
@@ -562,12 +564,12 @@ mkStyledName_Count_BothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffNa
 mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . mkListFromCoins $ c
   where
-    mkNameAmt cn a = if a == 0 then "" else showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
+    mkNameAmt cn a = a == 0 |!| showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
     helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
 mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ws descI (view sing -> descS) descT | descs <- if descI == i then mkDescsSelf else mkDescsOther =
+mkEqDesc i cols ws descI (view sing -> descS) descT | descs <- descI == i ? mkDescsSelf :? mkDescsOther =
     case descs of [] -> none
                   _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
   where

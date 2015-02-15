@@ -103,7 +103,7 @@ xformLeading a (T.singleton -> b) (T.span (== a) -> (T.length -> n, rest)) = T.r
 
 
 adjustIndent :: Int -> Int -> Int
-adjustIndent n cols = if n >= cols then pred cols else n
+adjustIndent n cols = n >= cols ? pred cols :? n
 
 
 -----

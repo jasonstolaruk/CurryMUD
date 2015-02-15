@@ -576,7 +576,7 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
                                               , topicNames
                                               , footnote hs ]
         in logPla "help" i "read root help file." >> (pager i mq . parseHelpTxt cols $ helpTxt)
-    mkHelpNames styleds   = [ pad padding $ styled <> isAdminHelp h |?| asterisk | (styled, h) <- styleds ]
+    mkHelpNames styleds   = [ pad padding . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- styleds ]
     padding               = maxHelpTopicLen + 2
     asterisk              = asteriskColor <> "*" <> dfltColor
     formatHelpNames names = let wordsPerLine = cols `div` padding
@@ -806,7 +806,9 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
                               , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
                               , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
                               , c          <- (ws^.coinsTbl) ! ri
-                              = pcNcbs |&| pcDescs <> otherNcbs |&| otherDescs <> c |&| mkCoinsSummary cols c
+                              = T.concat [ (not . null $ pcNcbs)    |?| pcDescs
+                                         , (not . null $ otherNcbs) |?| otherDescs
+                                         , c /= mempty              |?| mkCoinsSummary cols c ]
   where
     splitPCsOthers                       = over both (map snd) . span fst
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s

@@ -3,7 +3,6 @@
 
 module Mud.Util.Misc ( (?)
                      , (|!|)
-                     , (|&|)
                      , (|*|)
                      , (|?|)
                      , Cond(..)
@@ -72,19 +71,14 @@ True  ? (x :? _) = x
 False ? (_ :? y) = y
 
 
-infixr 7 |?|
+infixl 1 |?|
 (|?|) :: (Monoid a) => Bool -> a -> a
 a |?| b = a ? b :? mempty
 
 
-infixr 7 |!|
+infixl 1 |!|
 (|!|) :: (Monoid a) => Bool -> a -> a
 a |!| b = a ? mempty :? b
-
-
-infixr 7 |&|
-(|&|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
-a |&| b = a /= mempty ? b :? mempty
 
 
 (|*|) :: (Eq a, Monoid a, Eq b, Monoid b) => (a, b) -> (c, c) -> c
@@ -125,7 +119,7 @@ capsHelper f (headTail' -> (T.singleton . f -> h, t)) = h <> t
 
 
 countOcc :: (Eq a) => a -> [a] -> Int
-countOcc needle = foldl' (\acc x -> if x == needle then succ acc else acc) 0
+countOcc needle = foldl' (\acc x -> x == needle ? succ acc :? acc) 0
 
 
 dropBlanks :: [T.Text] -> [T.Text]

@@ -75,7 +75,7 @@ interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
 promptRetryName mq msg = do
-    send mq . nl' $ msg |&| nl msg
+    send mq . nl' $ (not . T.null $ msg) |?| nl msg
     prompt mq "Let's try this again. By what name are you known?"
 
 

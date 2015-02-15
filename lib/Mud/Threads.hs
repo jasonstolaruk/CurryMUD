@@ -348,7 +348,7 @@ sayonara i Nothing    = handleEgress i
 handleFromClient :: Id -> MsgQueue -> Maybe InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq mitq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
     let thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
-        thruOther f = uncurry (interpret p f) $ if T.null msg then ("", []) else headTail . T.words $ msg
+        thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
     in maybe thruCentral thruOther $ p^.interp
   where
     interpret p f cn as = do

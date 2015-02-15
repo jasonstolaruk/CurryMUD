@@ -31,7 +31,7 @@ findAction :: Id -> CmdName -> MudStack (Maybe Action)
 findAction i (T.toLower -> cn) = helper =<< mkCmdList
   where
     mkCmdList =
-        [ mkCmdListWithNonStdRmLinks r ++ (if ia then adminCmds else []) ++ (if ia && isDebug then debugCmds else [])
+        [ mkCmdListWithNonStdRmLinks r ++ (ia |?| adminCmds) ++ (ia && isDebug |?| debugCmds)
         | r <- getPCRm i, ia <- getPlaIsAdmin i ]
     helper cmds = maybe (return Nothing)
                         (\fn -> return . Just . findActionForFullName fn $ cmds)
