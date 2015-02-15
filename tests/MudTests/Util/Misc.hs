@@ -27,7 +27,7 @@ import qualified Data.Text as T
 prop_aOrAn :: T.Text -> Property
 prop_aOrAn t = (not . T.null . T.strip $ t) ==>
   let (a, b) = T.break isSpace . aOrAn $ t
-  in a == if isVowel . T.head . T.tail $ b then "an" else "a"
+  in a == ((isVowel . T.head . T.tail $ b) ? "an" :? "a")
 
 
 prop_countOcc :: Int -> [Int] -> Bool
