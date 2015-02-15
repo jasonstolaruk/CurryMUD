@@ -19,7 +19,7 @@ import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete)
-import Data.Monoid ((<>), mempty)
+import Data.Monoid ((<>))
 import qualified Data.Set as S (Set, fromList, foldr)
 import qualified Data.Text as T
 
@@ -695,44 +695,44 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
     helper toSelf toTarget toOthers = readWSTMVar >>= \ws ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
             c                                         = (ws^.coinsTbl) ! ri
-        in if (not . null $ ris') || (c /= mempty)
-          then case resolveRmInvCoins i ws [target] ris' c of
-            (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
-            (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot be \
-                                                                             \used with coins."
-            ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
-            ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols "Sorry, but you can only target one \
-                                                                             \person at a time with expressive \
-                                                                             \commands."
-            ([ Right [targetId] ], _                   ) ->
-              let (view sing -> targetSing) = (ws^.entTbl) ! targetId
-                  onPC targetDesig =
-                      let (toSelf', toSelfBrdcst, serialized, hisHer, toOthers') = mkBindings targetDesig
-                          toOthersBrdcst = (nlnl toOthers', pcIds d \\ [ i, targetId ])
-                          toTarget'      = replace [ ("%", serialized), ("&", hisHer) ] toTarget
-                          toTargetBrdcst = (nlnl toTarget', [targetId])
-                      in do
-                          logPlaOut ecn i [ parsePCDesig i ws toSelf' ]
-                          bcast [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
-                  onMob targetNoun =
-                      let (toSelf', toSelfBrdcst, _, _, toOthers') = mkBindings targetNoun
-                          toOthersBrdcst                           = (nlnl toOthers', i `delete` pcIds d)
-                      in do
-                          logPlaOut ecn i [toSelf']
-                          bcast [ toSelfBrdcst, toOthersBrdcst ]
-                  mkBindings targetTxt =
-                      let toSelf'        = replace [("@", targetTxt)] toSelf
-                          toSelfBrdcst   = (nlnl toSelf', [i])
-                          serialized     = mkSerializedDesig d toOthers
-                          (_, hisHer, _) = mkPros i ws
-                          toOthers'      = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
-                      in (toSelf', toSelfBrdcst, serialized, hisHer, toOthers')
-              in case (ws^.typeTbl) ! targetId of
-                PCType  -> onPC  . serialize . mkStdDesig targetId ws targetSing False $ ris
-                MobType -> onMob . theOnLower $ targetSing
-                _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
-            x -> patternMatchFail "expCmd helper" [ showText x ]
-          else wrapSend mq cols "You don't see anyone here."
+        in (ris', c) |*|
+          ( case resolveRmInvCoins i ws [target] ris' c of
+              (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
+              (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot be \
+                                                                               \used with coins."
+              ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
+              ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols "Sorry, but you can only target one \
+                                                                               \person at a time with expressive \
+                                                                               \commands."
+              ([ Right [targetId] ], _                   ) ->
+                let (view sing -> targetSing) = (ws^.entTbl) ! targetId
+                    onPC targetDesig =
+                        let (toSelf', toSelfBrdcst, serialized, hisHer, toOthers') = mkBindings targetDesig
+                            toOthersBrdcst = (nlnl toOthers', pcIds d \\ [ i, targetId ])
+                            toTarget'      = replace [ ("%", serialized), ("&", hisHer) ] toTarget
+                            toTargetBrdcst = (nlnl toTarget', [targetId])
+                        in do
+                            logPlaOut ecn i [ parsePCDesig i ws toSelf' ]
+                            bcast [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
+                    onMob targetNoun =
+                        let (toSelf', toSelfBrdcst, _, _, toOthers') = mkBindings targetNoun
+                            toOthersBrdcst                           = (nlnl toOthers', i `delete` pcIds d)
+                        in do
+                            logPlaOut ecn i [toSelf']
+                            bcast [ toSelfBrdcst, toOthersBrdcst ]
+                    mkBindings targetTxt =
+                        let toSelf'        = replace [("@", targetTxt)] toSelf
+                            toSelfBrdcst   = (nlnl toSelf', [i])
+                            serialized     = mkSerializedDesig d toOthers
+                            (_, hisHer, _) = mkPros i ws
+                            toOthers'      = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
+                        in (toSelf', toSelfBrdcst, serialized, hisHer, toOthers')
+                in case (ws^.typeTbl) ! targetId of
+                  PCType  -> onPC  . serialize . mkStdDesig targetId ws targetSing False $ ris
+                  MobType -> onMob . theOnLower $ targetSing
+                  _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
+              x -> patternMatchFail "expCmd helper" [ showText x ]
+          , wrapSend mq cols "You don't see anyone here." )
 expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only target one person at a time with expressive commands."
 

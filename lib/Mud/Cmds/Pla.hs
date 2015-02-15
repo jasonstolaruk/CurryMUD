@@ -1420,20 +1420,20 @@ say p@(WithArgs i mq cols args@(a:_))
             c                                         = (ws^.coinsTbl) ! ri
         in (ris', c) |*|
           ( case resolveRmInvCoins i ws [target] ris' c of
-            (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
-            (_,                    Right _:_           ) -> wrapSend mq cols "You're talking to coins now?"
-            ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
-            ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols "Sorry, but you can only say something to \
-                                                                             \one person at a time."
-            ([ Right [targetId] ], _                   ) ->
-              let targetType                = (ws^.typeTbl) ! targetId
-                  (view sing -> targetSing) = (ws^.entTbl)  ! targetId
-              in case targetType of
-                PCType  | targetDesig <- serialize . mkStdDesig targetId ws targetSing False $ ris
-                        -> either sorry (sayToHelper ws d targetId targetDesig) parseRearAdverb
-                MobType -> either sorry (sayToMobHelper d targetSing)           parseRearAdverb
-                _       -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
-            x -> patternMatchFail "say sayTo" [ showText x ]
+              (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
+              (_,                    Right _:_           ) -> wrapSend mq cols "You're talking to coins now?"
+              ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
+              ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols "Sorry, but you can only say something \
+                                                                               \to one person at a time."
+              ([ Right [targetId] ], _                   ) ->
+                let targetType                = (ws^.typeTbl) ! targetId
+                    (view sing -> targetSing) = (ws^.entTbl)  ! targetId
+                in case targetType of
+                  PCType  | targetDesig <- serialize . mkStdDesig targetId ws targetSing False $ ris
+                          -> either sorry (sayToHelper ws d targetId targetDesig) parseRearAdverb
+                  MobType -> either sorry (sayToMobHelper d targetSing)           parseRearAdverb
+                  _       -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
+              x -> patternMatchFail "say sayTo" [ showText x ]
           , wrapSend mq cols "You don't see anyone here to talk to." )
       where
         parseRearAdverb = case ma of

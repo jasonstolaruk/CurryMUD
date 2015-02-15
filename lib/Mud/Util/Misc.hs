@@ -65,7 +65,7 @@ data Cond a = a :? a
 
 
 infixl 0 ?
-(?) :: Bool -> Cond a -> a
+(?) :: Bool -> Cond a -> a -- TODO: Use this.
 True  ? (x :? _) = x
 False ? (_ :? y) = y
 
