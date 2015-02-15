@@ -576,7 +576,7 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
                                               , topicNames
                                               , footnote hs ]
         in logPla "help" i "read root help file." >> (pager i mq . parseHelpTxt cols $ helpTxt)
-    mkHelpNames styleds   = [ pad padding $ styled <> if isAdminHelp h then asterisk else "" | (styled, h) <- styleds ]
+    mkHelpNames styleds   = [ pad padding $ styled <> isAdminHelp h |?| asterisk | (styled, h) <- styleds ]
     padding               = maxHelpTopicLen + 2
     asterisk              = asteriskColor <> "*" <> dfltColor
     formatHelpNames names = let wordsPerLine = cols `div` padding
@@ -1041,7 +1041,7 @@ ready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
         in (is, c) |*|
           ( let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
                 eiss                      = zipWith (curry procGecrMisReady) gecrs miss
-                bs                        = if null rcs then [] else mkBroadcast i "You can't ready coins."
+                bs                        = null rcs |!| mkBroadcast i "You can't ready coins."
                 (ws', bs', logMsgs)       = foldl' (helperReady i d) (ws, bs, []) . zip eiss $ mrols
             in putTMVar t ws' >> return (bs', logMsgs)
           ,    putTMVar t ws  >> return (mkBroadcast i dudeYourHandsAreEmpty, []) )
@@ -1533,7 +1533,7 @@ helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
                        , dblQuote "set columns=80"
                        , dfltColor
                        , "." ]
-  , f      <- if any (advice `T.isInfixOf`) msgs then (++ [msg]) else (++ [ msg <> advice ]) = over _2 f a
+  , f      <- any (advice `T.isInfixOf`) msgs ? (++ [msg]) :? (++ [ msg <> advice ]) = over _2 f a
 helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) =
     maybe notFound found . findFullNameForAbbrev n $ settingNames
   where
@@ -1598,7 +1598,7 @@ unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
         in if not . null $ is
           then let (gecrs, miss, rcs)  = resolveEntCoinNames i ws as is mempty
                    eiss                = zipWith (curry procGecrMisPCEq) gecrs miss
-                   bs                  = if null rcs then [] else mkBroadcast i "You can't unready coins."
+                   bs                  = null rcs |!| mkBroadcast i "You can't unready coins."
                    (ws', bs', logMsgs) = foldl' (helperUnready i d em) (ws, bs, []) eiss
                in putTMVar t ws' >> return (bs', logMsgs)
           else    putTMVar t ws  >> return (mkBroadcast i dudeYou'reNaked, [])
@@ -1684,7 +1684,7 @@ uptimeHelper :: Int -> MudStack T.Text
 uptimeHelper ut = helper <$> getRecordUptime
   where
     helper                     = \case Nothing  -> mkUptimeTxt
-                                       Just rut -> if ut > rut then mkNewRecTxt else mkRecTxt rut
+                                       Just rut -> ut > rut ? mkNewRecTxt :? mkRecTxt rut
     mkUptimeTxt                = mkTxtHelper "."
     mkNewRecTxt                = mkTxtHelper . T.concat $ [ " - "
                                                           , newRecordColor
@@ -1896,7 +1896,7 @@ mkAdminListTxt i ws pt =
                                                                     , then sortWith by s ]
         aas'                        = dropBlanks $ self : aas
         footer                      = [ numOfAdmins ais <> " logged in." ]
-    in if null aas' then footer else T.intercalate ", " aas' : footer
+    in null aas' ? footer :? T.intercalate ", " aas' : footer
   where
     numOfAdmins (length -> noa) | noa == 1  = "1 administrator"
                                 | otherwise = showText noa <> " administrators"

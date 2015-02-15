@@ -2,10 +2,11 @@
 {-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Misc ( (?)
+                     , (|!|)
                      , (|&|)
                      , (|*|)
                      , (|?|)
-                     , Cond
+                     , Cond(..)
                      , aOrAn
                      , aOrAnOnLower
                      , appendIfUnique
@@ -71,6 +72,16 @@ True  ? (x :? _) = x
 False ? (_ :? y) = y
 
 
+infixr 7 |?|
+(|?|) :: (Monoid a) => Bool -> a -> a
+a |?| b = a ? b :? mempty
+
+
+infixr 7 |!|
+(|!|) :: (Monoid a) => Bool -> a -> a
+a |!| b = a ? mempty :? b
+
+
 infixr 7 |&|
 (|&|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
 a |&| b = a /= mempty ? b :? mempty
@@ -78,11 +89,6 @@ a |&| b = a /= mempty ? b :? mempty
 
 (|*|) :: (Eq a, Monoid a, Eq b, Monoid b) => (a, b) -> (c, c) -> c
 (a, b) |*| (c, d) = a /= mempty || b /= mempty ? c :? d
-
-
-infixr 7 |?|
-(|?|) :: (Monoid a) => Bool -> a -> a
-a |?| b = a ? b :? mempty
 
 
 aOrAn :: T.Text -> T.Text
