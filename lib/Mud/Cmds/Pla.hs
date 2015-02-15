@@ -287,12 +287,12 @@ dropAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
   where
     helper = onWS $ \(t, ws) ->
         let (d, ri, is, c) = mkDropReadyBindings i ws
-        in if (not . null $ is) || (c /= mempty)
-          then let (eiss, ecs)           = resolvePCInvCoins i ws as is c
-                   (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
-                   (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
-               in putTMVar t ws'' >> return (bs', logMsgs')
-          else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+        in (is, c) |*|
+          ( let (eiss, ecs)           = resolvePCInvCoins i ws as is c
+                (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
+                (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
+            in putTMVar t ws'' >> return (bs', logMsgs')
+          ,    putTMVar t ws   >> return (mkBroadcast i dudeYourHandsAreEmpty, []) )
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
@@ -439,12 +439,12 @@ getAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
   where
     helper = onWS $ \(t, ws) ->
         let (d, ri, _, ris, rc) = mkGetLookBindings i ws
-        in if (not . null $ ris) || (rc /= mempty)
-          then let (eiss, ecs)           = resolveRmInvCoins i ws as ris rc
-                   (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
-                   (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ws', bs, logMsgs) ecs
-               in putTMVar t ws'' >> return (bs', logMsgs')
-          else putTMVar t ws >> return (mkBroadcast i "You don't see anything here to pick up.", [])
+        in (ris, rc) |*|
+          ( let (eiss, ecs)           = resolveRmInvCoins i ws as ris rc
+                (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
+                (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ws', bs, logMsgs) ecs
+            in putTMVar t ws'' >> return (bs', logMsgs')
+          ,    putTMVar t ws   >> return (mkBroadcast i "You don't see anything here to pick up.", []) )
 getAction p = patternMatchFail "getAction" [ showText p ]
 
 
@@ -643,14 +643,13 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
             (view rmId -> ri)        = (ws^.pcTbl)    ! i
             is@((i `delete`) -> is') = (ws^.invTbl)   ! ri
             c                        = (ws^.coinsTbl) ! ri
-        in if (not . null $ is') || (c /= mempty)
-          then let (eiss, ecs)           = resolveRmInvCoins i ws as is' c
-                   (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
-                   (     cbs', logMsgs') = foldl' helperIntroEitherCoins      (    cbs, logMsgs) ecs
-               in putTMVar t ws' >> return (cbs', logMsgs')
-          else do
-              putTMVar t ws
-              return (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])
+        in (is', c) |*|
+          ( let (eiss, ecs)           = resolveRmInvCoins i ws as is' c
+                (ws', cbs,  logMsgs ) = foldl' (helperIntroEitherInv s is) (ws, [],  []     ) eiss
+                (     cbs', logMsgs') = foldl' helperIntroEitherCoins      (    cbs, logMsgs) ecs
+            in putTMVar t ws' >> return (cbs', logMsgs')
+          ,    putTMVar t ws  >> return ( mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to."
+                                        , [] ) )
     helperIntroEitherInv _ _   a (Left msg) | T.null msg = a
                                             | otherwise  = a & _2 <>~ (mkNTBroadcast i . nlnl $ msg)
     helperIntroEitherInv s ris a (Right is) = foldl' tryIntro a is
@@ -709,12 +708,11 @@ intro p = patternMatchFail "intro" [ showText p ]
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv (NoArgs i mq cols) = send mq . nl =<< [ mkInvCoinsDesc i cols ws i e | (ws, e) <- getEnt' i ]
 inv (LowerNub i mq cols as) = getInvCoins' i >>= \(ws, (is, c)) ->
-    send mq $ if (not . null $ is) || (c /= mempty)
-      then let (eiss, ecs) = resolvePCInvCoins i ws as is c
-               invDesc     = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc   = foldl' helperEitherCoins    "" ecs
-           in invDesc <> coinsDesc
-      else wrapUnlinesNl cols dudeYourHandsAreEmpty
+    send mq $ (is, c) |*| ( let (eiss, ecs) = resolvePCInvCoins i ws as is c
+                                invDesc     = foldl' (helperEitherInv ws) "" eiss
+                                coinsDesc   = foldl' helperEitherCoins    "" ecs
+                            in invDesc <> coinsDesc
+                          , wrapUnlinesNl cols dudeYourHandsAreEmpty )
   where
     helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
     helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
@@ -749,15 +747,15 @@ look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
   where
     helper = onWS $ \(t, ws) ->
         let (d, _, ris, ris', rc) = mkGetLookBindings i ws
-        in if (not . null $ ris') || (rc /= mempty)
-          then let (eiss, ecs) = resolveRmInvCoins i ws as ris' rc
-                   invDesc     = foldl' (helperLookEitherInv ws) "" eiss
-                   coinsDesc   = foldl' helperLookEitherCoins    "" ecs
-                   ds          = [ mkStdDesig pi ws s False ris | pi <- extractPCIdsFromEiss ws eiss
-                                 , let (view sing -> s) = (ws^.entTbl) ! pi ]
-               in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
-          else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
-                                          , Nothing )
+        in (ris', rc) |*|
+          ( let (eiss, ecs) = resolveRmInvCoins i ws as ris' rc
+                invDesc     = foldl' (helperLookEitherInv ws) "" eiss
+                coinsDesc   = foldl' helperLookEitherCoins    "" ecs
+                ds          = [ mkStdDesig pi ws s False ris | pi <- extractPCIdsFromEiss ws eiss
+                              , let (view sing -> s) = (ws^.entTbl) ! pi ]
+            in putTMVar t ws >> return (Right $ invDesc <> coinsDesc, Just (d, ds))
+          ,    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
+                                       , Nothing ) )
     helperLookEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
     helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
@@ -808,12 +806,10 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
                               , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
                               , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
                               , c          <- (ws^.coinsTbl) ! ri
-                              = (if not . null $ pcNcbs    then pcDescs               else "") <>
-                                (if not . null $ otherNcbs then otherDescs            else "") <>
-                                (if c /= mempty            then mkCoinsSummary cols c else "")
+                              = pcNcbs |?| pcDescs <> otherNcbs |?| otherDescs <> c |?| mkCoinsSummary cols c
   where
     splitPCsOthers                       = over both (map snd) . span fst
-    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> en) . (<> " ") $ if isKnownPCSing s
+    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s
                                              then knownNameColor   <> s       <> dfltColor
                                              else unknownNameColor <> aOrAn s <> dfltColor
     mkPCDesc    (en, c, b     )          = T.concat [ unknownNameColor
@@ -899,13 +895,13 @@ putAction (Lower' i as) = helper >>= \(bs, logMsgs) -> do
   where
     helper = onWS $ \(t, ws) ->
       let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ws as
-      in if (not . null $ pis) || (pc /= mempty)
-        then if T.head cn == rmChar && cn /= T.singleton rmChar
+      in (pis, pc) |*|
+        ( if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
             then shufflePut i (t, ws) d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
           else shufflePut i (t, ws) d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
-        else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+        , putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, []) )
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -1042,13 +1038,13 @@ ready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
   where
     helper = onWS $ \(t, ws) ->
         let (d, _, is, c) = mkDropReadyBindings i ws
-        in if (not . null $ is) || (c /= mempty)
-          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
-                   eiss                      = zipWith (curry procGecrMisReady) gecrs miss
-                   bs                        = if null rcs then [] else mkBroadcast i "You can't ready coins."
-                   (ws', bs', logMsgs)       = foldl' (helperReady i d) (ws, bs, []) . zip eiss $ mrols
-               in putTMVar t ws' >> return (bs', logMsgs)
-          else    putTMVar t ws  >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+        in (is, c) |*|
+          ( let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
+                eiss                      = zipWith (curry procGecrMisReady) gecrs miss
+                bs                        = if null rcs then [] else mkBroadcast i "You can't ready coins."
+                (ws', bs', logMsgs)       = foldl' (helperReady i d) (ws, bs, []) . zip eiss $ mrols
+            in putTMVar t ws' >> return (bs', logMsgs)
+          ,    putTMVar t ws  >> return (mkBroadcast i dudeYourHandsAreEmpty, []) )
 ready p = patternMatchFail "ready" [ showText p ]
 
 
@@ -1422,8 +1418,8 @@ say p@(WithArgs i mq cols args@(a:_))
     sayTo ma (T.words -> (target:rest@(r:_))) = readWSTMVar >>= \ws ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
             c                                         = (ws^.coinsTbl) ! ri
-        in if (not . null $ ris') || (c /= mempty)
-          then case resolveRmInvCoins i ws [target] ris' c of
+        in (ris', c) |*|
+          ( case resolveRmInvCoins i ws [target] ris' c of
             (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
             (_,                    Right _:_           ) -> wrapSend mq cols "You're talking to coins now?"
             ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
@@ -1438,7 +1434,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 MobType -> either sorry (sayToMobHelper d targetSing)           parseRearAdverb
                 _       -> wrapSend mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
-          else wrapSend mq cols "You don't see anyone here to talk to."
+          , wrapSend mq cols "You don't see anyone here to talk to." )
       where
         parseRearAdverb = case ma of
           Just adv -> Right (adv <> " ", "", formatMsg . T.unwords $ rest)

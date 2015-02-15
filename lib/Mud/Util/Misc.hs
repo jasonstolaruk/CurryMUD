@@ -1,7 +1,11 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.Misc ( aOrAn
+module Mud.Util.Misc ( (?)
+                     , (|*|)
+                     , (|?|)
+                     , Cond
+                     , aOrAn
                      , aOrAnOnLower
                      , appendIfUnique
                      , blowUp
@@ -49,11 +53,30 @@ import Control.Arrow ((***))
 import Control.Monad (guard)
 import Data.Char (isUpper, toLower, toUpper)
 import Data.List (foldl', sort)
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), Monoid, mempty)
 import Data.Time (getZonedTime)
 import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Set as S (fromList, toList)
 import qualified Data.Text as T
+
+
+infixl 1 :?
+data Cond a = a :? a
+
+
+infixl 0 ?
+(?) :: Bool -> Cond a -> a
+True  ? (x :? _) = x
+False ? (_ :? y) = y
+
+
+(|*|) :: (Eq a, Monoid a, Eq b, Monoid b) => (a, b) -> (c, c) -> c
+(a, b) |*| (c, d) = a /= mempty || b /= mempty ? c :? d
+
+
+infixr 7 |?|
+(|?|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
+a |?| b = if a /= mempty then b else mempty
 
 
 aOrAn :: T.Text -> T.Text
