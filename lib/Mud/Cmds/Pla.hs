@@ -806,7 +806,7 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
                               , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
                               , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
                               , c          <- (ws^.coinsTbl) ! ri
-                              = pcNcbs |?| pcDescs <> otherNcbs |?| otherDescs <> c |?| mkCoinsSummary cols c
+                              = pcNcbs |&| pcDescs <> otherNcbs |&| otherDescs <> c |&| mkCoinsSummary cols c
   where
     splitPCsOthers                       = over both (map snd) . span fst
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s

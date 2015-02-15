@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Misc ( (?)
+                     , (|&|)
                      , (|*|)
                      , (|?|)
                      , Cond
@@ -65,9 +66,14 @@ data Cond a = a :? a
 
 
 infixl 0 ?
-(?) :: Bool -> Cond a -> a -- TODO: Use this.
+(?) :: Bool -> Cond a -> a
 True  ? (x :? _) = x
 False ? (_ :? y) = y
+
+
+infixr 7 |&|
+(|&|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
+a |&| b = a /= mempty ? b :? mempty
 
 
 (|*|) :: (Eq a, Monoid a, Eq b, Monoid b) => (a, b) -> (c, c) -> c
@@ -75,8 +81,8 @@ False ? (_ :? y) = y
 
 
 infixr 7 |?|
-(|?|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
-a |?| b = if a /= mempty then b else mempty
+(|?|) :: (Monoid a) => Bool -> a -> a
+a |?| b = a ? b :? mempty
 
 
 aOrAn :: T.Text -> T.Text
