@@ -698,8 +698,8 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
         in (ris', c) |*|
           ( case resolveRmInvCoins i ws [target] ris' c of
               (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
-              (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot be \
-                                                                               \used with coins."
+              (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot \
+                                                                               \be used with coins."
               ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
               ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols "Sorry, but you can only target one \
                                                                                \person at a time with expressive \
