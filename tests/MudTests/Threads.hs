@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
-
 module MudTests.Threads where
 
 import Mud.Data.State.Util.STM

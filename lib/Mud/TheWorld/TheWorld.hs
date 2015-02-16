@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.TheWorld.TheWorld ( initMudState

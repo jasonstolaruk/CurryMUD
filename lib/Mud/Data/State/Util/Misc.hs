@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, TransformListComp, ViewPatterns #-}
 
 -- This module contains state-related functions used by multiple modules.

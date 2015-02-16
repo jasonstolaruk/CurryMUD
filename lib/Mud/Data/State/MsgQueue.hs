@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
-
 module Mud.Data.State.MsgQueue where
 
 import Control.Concurrent.STM.TQueue (TQueue)

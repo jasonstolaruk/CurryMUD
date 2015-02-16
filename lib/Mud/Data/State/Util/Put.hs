@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
-
 module Mud.Data.State.Util.Put where
 
 import Mud.Data.State.State

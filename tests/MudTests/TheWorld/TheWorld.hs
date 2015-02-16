@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
-
 module MudTests.TheWorld.TheWorld where
 
 import Mud.Data.State.State

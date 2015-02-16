@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -Wall -Werror -fno-warn-unused-do-bind #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, RebindableSyntax, ViewPatterns #-}
 
 module Mud.NameResolution ( ReconciledCoins

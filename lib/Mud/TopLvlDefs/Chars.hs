@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
-
 module Mud.TopLvlDefs.Chars where
 
 

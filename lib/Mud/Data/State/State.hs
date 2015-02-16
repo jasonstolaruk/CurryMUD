@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 
 module Mud.Data.State.State where

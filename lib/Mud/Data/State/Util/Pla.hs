@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wall -Werror #-}
-
 module Mud.Data.State.Util.Pla where
 
 import Mud.Data.Misc
