@@ -84,7 +84,7 @@ a |!| b = (a == mempty) ? mempty :? b
 
 
 (|*|) :: (Eq a, Monoid a, Eq b, Monoid b) => (a, b) -> (c, c) -> c
-(a, b) |*| (c, d) = a /= mempty || b /= mempty ? c :? d
+pair |*| (a, b) = (uncurry (||) . ((/= mempty) *** (/= mempty)) $ pair) ? a :? b
 
 
 aOrAn :: T.Text -> T.Text
