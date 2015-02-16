@@ -13,7 +13,7 @@ cabal-version:         >=1.10
 
 executable             curry
   default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
+  ghc-options:         -O2 -threaded -funbox-strict-fields -rtsopts -with-rtsopts=-N -Wall -Werror
   main-is:             Main.hs
   other-extensions:    OverloadedStrings
   build-depends:       base >=4.7 && <5.0,
@@ -28,7 +28,7 @@ executable             curry
 
 executable             curry-prof
   default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -rtsopts "-with-rtsopts=-N -p -hy -sstderr" -fprof-auto -Wall -Werror
+  ghc-options:         -O2 -threaded -funbox-strict-fields -rtsopts "-with-rtsopts=-N -p -hy -sstderr" -fprof-auto -Wall -Werror
   main-is:             Main.hs
   other-extensions:    OverloadedStrings
   build-depends:       base >=4.7 && <5.0,
@@ -43,7 +43,7 @@ executable             curry-prof
 
 library
   default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
+  ghc-options:         -O2 -threaded -funbox-strict-fields -rtsopts -with-rtsopts=-N -Wall -Werror
   exposed-modules:     Mud.ANSI,
                        Mud.Cmds.Admin,
                        Mud.Cmds.Debug,
@@ -135,7 +135,7 @@ library
 
 test-suite             test
   default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
+  ghc-options:         -O2 -threaded -funbox-strict-fields -rtsopts -with-rtsopts=-N -Wall -Werror
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs

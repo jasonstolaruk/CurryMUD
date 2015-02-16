@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.State.Util.Output ( bcast

@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-type-defaults #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Logging ( closeLogs

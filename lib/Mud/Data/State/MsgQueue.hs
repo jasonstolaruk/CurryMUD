@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Mud.Data.State.MsgQueue where
 

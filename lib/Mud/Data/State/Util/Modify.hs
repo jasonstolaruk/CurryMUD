@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Mud.Data.State.Util.Modify where

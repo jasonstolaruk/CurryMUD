@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror -fno-warn-unused-do-bind #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-unused-do-bind #-}
 {-# LANGUAGE OverloadedStrings, PatternSynonyms, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
