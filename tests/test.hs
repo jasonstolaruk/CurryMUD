@@ -7,8 +7,9 @@ import Mud.Util.Quoting
 import MudTests.Data.Misc
 import MudTests.TheWorld.TheWorld
 import MudTests.Threads
-import MudTests.Util.Misc
+import MudTests.Util.List
 import MudTests.Util.Padding
+import MudTests.Util.Text
 import MudTests.Util.Wrapping
 
 import Data.Monoid ((<>))
@@ -38,8 +39,9 @@ tests = testGroup "tests" [ propertyTests, unitTests ]
 propertyTests :: TestTree
 propertyTests = testGroup "property tests" [ propTests_Mud_TheWorld_TheWorld
                                            , propTests_Mud_Threads
-                                           , propTests_Mud_Util_Misc
+                                           , propTests_Mud_Util_List
                                            , propTests_Mud_Util_Padding
+                                           , propTests_Mud_Util_Text
                                            , propTests_Mud_Util_Wrapping ]
 
 
@@ -62,12 +64,9 @@ propTests_Mud_Threads = testGroup "property tests Mud.Threads"
 -- --------------------------------------------------
 
 
-propTests_Mud_Util_Misc :: TestTree
-propTests_Mud_Util_Misc = testGroup "property tests Mud.Util.Misc"
-    [ QC.testProperty "prop_aOrAn" prop_aOrAn
-    , QC.testProperty "prop_countOcc" prop_countOcc
-    , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
-    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch" prop_findFullNameForAbbrev_findsMatch
+propTests_Mud_Util_List :: TestTree
+propTests_Mud_Util_List = testGroup "property tests Mud.Util.List"
+    [ QC.testProperty "prop_countOcc" prop_countOcc
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 
 
@@ -80,6 +79,16 @@ propTests_Mud_Util_Padding = testGroup "property tests Mud.Util.Padding"
     , QC.testProperty "prop_quoteWithAndPad_quotes" prop_quoteWithAndPad_quotes
     , QC.testProperty "prop_padOrTrunc_pads" prop_padOrTrunc_pads
     , QC.testProperty "prop_padOrTrunc_truncates" prop_padOrTrunc_truncates ]
+
+
+-- --------------------------------------------------
+
+
+propTests_Mud_Util_Text :: TestTree
+propTests_Mud_Util_Text = testGroup "property tests Mud.Util.Text"
+    [ QC.testProperty "prop_aOrAn" prop_aOrAn
+    , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
+    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch" prop_findFullNameForAbbrev_findsMatch ]
 
 
 -- --------------------------------------------------
@@ -100,7 +109,7 @@ propTests_Mud_Util_Wrapping = testGroup "property tests Mud.Util.Wrapping"
 
 unitTests :: TestTree
 unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
-                                   , unitTests_Mud_Util_Misc ]
+                                   , unitTests_Mud_Util_Text ]
 
 
 -- --------------------------------------------------
@@ -125,8 +134,8 @@ unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
 -- --------------------------------------------------
 
 
-unitTests_Mud_Util_Misc :: TestTree
-unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
+unitTests_Mud_Util_Text :: TestTree
+unitTests_Mud_Util_Text = testGroup "unit tests Mud.Util.Text"
     [ testCase "stripControl"                   $ test_stripControl                   @?= "test"
     , testCase "stripTelnet_null"               $ test_stripTelnet_null               @?= ""
     , testCase "stripTelnet_telnetCodes"        $ test_stripTelnet_telnetCodes        @?= ""

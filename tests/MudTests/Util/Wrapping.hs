@@ -5,14 +5,13 @@ module MudTests.Util.Wrapping where
 
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Text
 import Mud.Util.Wrapping
 import MudTests.TestUtil
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
-import Test.QuickCheck.Instances ()
 import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 import qualified Data.Text as T
 

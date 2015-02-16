@@ -1,18 +1,16 @@
 {-# OPTIONS_GHC -funbox-strict-fields -Wall -Werror #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module MudTests.Util.Misc where
+module MudTests.Util.Text where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text
 
-import Control.Applicative ((<$>), (<*>))
 import Data.Char (chr, isSpace)
-import Data.List (elemIndices, group, sort)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
-import Test.QuickCheck.Instances ()
 import Test.QuickCheck.Modifiers (NonEmptyList(..))
 import Test.Tasty.QuickCheck ((==>), Property)
 import qualified Data.Text as T
@@ -30,12 +28,6 @@ prop_aOrAn t = (not . T.null . T.strip $ t) ==>
   in a == ((isVowel . T.head . T.tail $ b) ? "an" :? "a")
 
 
-prop_countOcc :: Int -> [Int] -> Bool
-prop_countOcc needle hay = countOcc needle hay == matches
-  where
-    matches = length . elemIndices needle $ hay
-
-
 prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [T.Text] -> Property
 prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any (not . T.null) hay &&
                                                                             all (not . (needle `T.isInfixOf`)) hay ==>
@@ -49,14 +41,6 @@ prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (n
       match   = needle <> nonNull
       hay'    = match : hay
   in findFullNameForAbbrev needle hay' == Just match
-
-
-prop_mkCountList :: [Int] -> Bool
-prop_mkCountList xs = mkCountList xs == mkCountList' xs
-  where
-    mkCountList' xs'@(group . sort -> grouped) | ((<$> grouped) -> elemCountList) <- (,) <$> head <*> length =
-      let getCountForElem x = snd (head . filter ((== x) . fst) $ elemCountList)
-      in map getCountForElem xs'
 
 
 test_stripControl :: T.Text

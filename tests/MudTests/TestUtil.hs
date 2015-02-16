@@ -12,7 +12,6 @@ import Data.Char (chr)
 import Data.Functor ((<$>))
 import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck (Gen, choose)
-import Test.QuickCheck.Instances ()
 import Test.QuickCheck.Monadic (PropertyM, run)
 import qualified Data.Text as T
 
