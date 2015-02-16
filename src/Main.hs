@@ -19,6 +19,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text
 
 import Control.Monad (void)
 import Network (withSocketsDo)
