@@ -23,6 +23,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Quoting
+import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Lens (_1, over)
@@ -155,7 +156,7 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
 
 
 mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
-mkGecr i ws searchIs searchC searchName@(headTail' -> (h, t))
+mkGecr i ws searchIs searchC searchName@(headTail -> (h, t))
   | searchName == T.singleton allChar
   , allEs <- [ (ws^.entTbl) ! searchI | searchI <- searchIs ] = Mult { amount          = length searchIs
                                                                      , nameSearchedFor = searchName
@@ -171,10 +172,10 @@ mkGecr i ws searchIs searchC searchName@(headTail' -> (h, t))
   where
     oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
-      | T.length rest < 2                = Sorry searchName
-      | (delim, rest') <- headTail' rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' searchIs searchC
-                                              | delim == indexChar  -> mkGecrIndexed i ws numInt rest' searchIs
-                                              | otherwise           -> Sorry searchName
+      | T.length rest < 2               = Sorry searchName
+      | (delim, rest') <- headTail rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' searchIs searchC
+                                             | delim == indexChar  -> mkGecrIndexed i ws numInt rest' searchIs
+                                             | otherwise           -> Sorry searchName
 
 
 mkGecrMult :: Id -> WorldState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
@@ -315,7 +316,7 @@ procGecrMisReady gecrMis                                = procGecrMisPCInv gecrM
 
 sorryBadSlot :: T.Text -> T.Text
 sorryBadSlot n
-  | T.singleton slotChar `T.isInfixOf` n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") (nl' ringHelp)
+  | T.singleton slotChar `T.isInfixOf` n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") (nlPrefix ringHelp)
   | otherwise                            = sformat (do { "You don't have "; "." }) . aOrAn $ n
   where
     m = do

@@ -11,8 +11,8 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text
 import Mud.Util.Wrapping
 
 import Control.Lens (both, over)
@@ -34,7 +34,7 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
       "f" -> next
       "n" -> next
       "p" -> prev
-      "q" -> (prompt mq . nl' $ dfltPrompt) >> (void . modifyPla i interp $ Nothing)
+      "q" -> (prompt mq . nlPrefix $ dfltPrompt) >> (void . modifyPla i interp $ Nothing)
       "u" -> prev
       _   -> promptRetry mq cols
   where

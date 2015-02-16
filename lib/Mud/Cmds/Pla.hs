@@ -31,9 +31,11 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.ANSI
+import Mud.Util.List (appendIfUnique, mkCountList)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
+import Mud.Util.Text
 import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
@@ -581,9 +583,8 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
     asterisk              = asteriskColor <> "*" <> dfltColor
     formatHelpNames names = let wordsPerLine = cols `div` padding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
-    footnote hs           = if any isAdminHelp hs
-      then nl' $ asterisk <> " indicates help that is available only to administrators."
-      else ""
+    footnote hs           = any isAdminHelp hs |?| (nlPrefix $ asterisk <> " indicates help that is available only to \
+                                                                           \administrators.") -- TODO: Search for else "" and "else []"
 help (LowerNub i mq cols as) = mkHelpData i >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
@@ -928,7 +929,7 @@ shufflePut i (t, ws) d cn icir as is c pis pc f | (conGecrs, conMiss, conRcs) <-
       else case f . head . zip conGecrs $ conMiss of
         Left  (mkBroadcast i -> bc) -> putTMVar t ws >> return (bc, [])
         Right [ci] | e <- (ws^.entTbl) ! ci, typ <- (ws^.typeTbl) ! ci -> if typ /= ConType
-          then putTMVar t ws >> return (mkBroadcast i $ theOnLower' (e^.sing) <> " isn't a container.", [])
+          then putTMVar t ws >> return (mkBroadcast i $ theOnLowerCap (e^.sing) <> " isn't a container.", [])
           else let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as pis pc
                    eiss                  = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                   = map procReconciledCoinsPCInv rcs
@@ -1349,7 +1350,7 @@ shuffleRem i (t, ws) d cn icir as is c f
       Left  msg -> putTMVar t ws >> return (mkBroadcast i msg, [])
       Right [ci] | e@(view sing -> s) <- (ws^.entTbl) ! ci, typ <- (ws^.typeTbl) ! ci ->
         if typ /= ConType
-          then putTMVar t ws >> return (mkBroadcast i $ theOnLower' s <> " isn't a container.", [])
+          then putTMVar t ws >> return (mkBroadcast i $ theOnLowerCap s <> " isn't a container.", [])
           else let cis                   = (ws^.invTbl)   ! ci
                    cc                    = (ws^.coinsTbl) ! ci
                    (gecrs, miss, rcs)    = resolveEntCoinNames i ws as cis cc

@@ -62,9 +62,11 @@ import Mud.Data.State.Util.STM
 import Mud.NameResolution
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.Util.List (mkCountList)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
+import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -589,11 +591,11 @@ mkEqDesc i cols ws descI (view sing -> descS) descT | descs <- descI == i ? mkDe
     none = wrapUnlines cols $ if
       | descI == i      -> dudeYou'reNaked
       | descT == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
-      | otherwise       -> theOnLower' descS     <> " doesn't have anything readied."
+      | otherwise       -> theOnLowerCap descS   <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
       | descI == i      -> "You have readied the following equipment:"
       | descT == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
-      | otherwise       -> theOnLower' descS     <> " has readied the following equipment:"
+      | otherwise       -> theOnLowerCap descS   <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig descI ws descS The
 
 

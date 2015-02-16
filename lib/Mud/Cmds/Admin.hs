@@ -18,9 +18,11 @@ import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs
+import Mud.Util.List (headLast)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
+import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)

@@ -5,8 +5,9 @@ module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
 
 import Mud.ANSI
 import Mud.Data.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.List (nubSort)
 import Mud.Util.Quoting
+import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, over)
@@ -44,7 +45,7 @@ mkAbbrevs = helper "" . nubSort
   where
     helper :: PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
     helper _    []     = []
-    helper ""   (x:xs) = (x, over _1 T.singleton . headTail' $ x) : helper x xs
+    helper ""   (x:xs) = (x, over _1 T.singleton . headTail $ x) : helper x xs
     helper prev (x:xs) = let abbrev = calcAbbrev x prev
                          in (x, (abbrev, fromJust $ abbrev `T.stripPrefix` x)) : helper x xs
 

@@ -21,6 +21,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text
 import qualified Mud.Logging as L (logNotice, logPla)
 
 import Control.Applicative ((<$>))
@@ -66,7 +67,7 @@ interpName (T.toLower -> cn) (NoArgs' i mq)
           unless isPropName $ do
               isWord <- checkWordsDict cn mq
               unless isWord $ let cn' = capitalize cn in do
-                  prompt mq . nl' $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
+                  prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
                   void . modifyPla i interp . Just $ interpConfirmName cn'
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
@@ -75,7 +76,7 @@ interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
 promptRetryName mq msg = do
-    send mq . nl' $ msg |!| nl msg
+    send mq . nlPrefix $ msg |!| nl msg
     prompt mq "Let's try this again. By what name are you known?"
 
 
@@ -90,9 +91,9 @@ checkProfanity cn i mq =
           logNotice "checkProfanity" =<< [ T.concat [ "booting player ", showText i, " ", s, " due to profanity." ]
                                          | (parensQuote -> s) <- getEntSing i ]
           views hostName (logProfanity cn) =<< getPla i
-          send mq . nl' . nl $ bootMsgColor                                                                     <>
-                               "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
-                               dfltColor
+          send mq . nlPrefix . nl $ bootMsgColor                                                                     <>
+                                    "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
+                                    dfltColor
           sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
           return True
 

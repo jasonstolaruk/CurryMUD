@@ -10,6 +10,7 @@ import Mud.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Monoid ((<>))

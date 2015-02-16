@@ -16,6 +16,7 @@ module Mud.Util.Wrapping ( adjustIndent
 import Mud.TopLvlDefs.Chars
 import Mud.Util.ANSI
 import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (both, over)

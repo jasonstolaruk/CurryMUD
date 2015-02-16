@@ -7,7 +7,7 @@ module Mud.Data.State.ActionParams.Util ( Args
                                         , formatMsgWithTargetArgs
                                         , punctuateMsg ) where
 
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Char (isLetter)

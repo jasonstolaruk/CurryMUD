@@ -14,6 +14,7 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
+import Mud.Util.Text
 
 import Control.Monad (when)
 import qualified Data.Text as T

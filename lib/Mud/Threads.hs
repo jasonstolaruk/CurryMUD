@@ -28,8 +28,10 @@ import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.Util.List (headTail)
 import Mud.Util.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text hiding (headTail)
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
@@ -288,7 +290,7 @@ dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
     mkFilename   = ("title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
-    takeADump fn = send mq . nl' =<< nl `fmap` (liftIO . T.readFile . (titleDir ++) $ fn)
+    takeADump fn = send mq . nlPrefix =<< nl `fmap` (liftIO . T.readFile . (titleDir ++) $ fn)
 
 
 -- ==================================================

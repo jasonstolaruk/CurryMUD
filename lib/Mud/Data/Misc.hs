@@ -47,6 +47,7 @@ import Mud.Data.State.State
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting
+import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (both, over)
@@ -274,7 +275,7 @@ instance Serializable PCDesig where
     where
       (>>)       = (<>)
       (nsdd, dd) = over both T.singleton (nonStdDesigDelimiter, desigDelimiter)
-  deserialize a@(headTail' -> (c, T.init -> t))
+  deserialize a@(headTail -> (c, T.init -> t))
     | c == stdDesigDelimiter, [ pes, ic, pen, pi, pis ] <- T.splitOn dd t =
         StdDesig { stdPCEntSing = deserMaybeText pes
                  , isCap        = read . T.unpack $ ic

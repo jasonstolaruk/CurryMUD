@@ -28,8 +28,10 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
+import Mud.Util.List (nubSort)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting
+import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -110,7 +112,7 @@ parsePCDesig i ws msg = views introduced (`helper` msg) ((ws^.pcTbl) ! i)
 
 
 expandPCEntName :: Id -> WorldState -> Bool -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ws ic pen@(headTail' -> (h, t)) pi ((i `delete`) -> pis) =
+expandPCEntName i ws ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
     T.concat [ leading, "he ", xth, expandSex h, " ", t ]
   where
     leading | ic        = "T"

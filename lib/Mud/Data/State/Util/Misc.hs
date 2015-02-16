@@ -23,6 +23,7 @@ import Mud.Data.State.State
 import Mud.Data.State.StateInIORefT
 import Mud.Data.State.Util.STM
 import Mud.Util.Misc
+import Mud.Util.Text
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))

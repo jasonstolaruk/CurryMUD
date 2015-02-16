@@ -25,6 +25,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (threadDelay)

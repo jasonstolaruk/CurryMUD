@@ -19,6 +19,7 @@ import Mud.TopLvlDefs.Msgs
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
+import Mud.Util.Text
 import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)

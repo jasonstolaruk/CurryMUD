@@ -6,7 +6,7 @@ module Mud.Util.Token (parseTokens) where
 import Mud.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Char (toLower)
@@ -33,7 +33,7 @@ type Delimiter = Char
 parser :: (Char -> T.Text) -> Delimiter -> T.Text -> T.Text
 parser f d t
   | T.singleton d `notInfixOf` t = t
-  | (left, headTail' . T.tail -> (c, right)) <- T.breakOn (T.singleton d) t = left <> f c <> parser f d right
+  | (left, headTail . T.tail -> (c, right)) <- T.breakOn (T.singleton d) t = left <> f c <> parser f d right
 
 
 -----

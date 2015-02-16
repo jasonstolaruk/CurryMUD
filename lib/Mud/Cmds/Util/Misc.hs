@@ -22,9 +22,9 @@ import Mud.Interp.Pager
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.ANSI
-import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
+import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
