@@ -583,8 +583,8 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
     asterisk              = asteriskColor <> "*" <> dfltColor
     formatHelpNames names = let wordsPerLine = cols `div` padding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
-    footnote hs           = any isAdminHelp hs |?| (nlPrefix $ asterisk <> " indicates help that is available only to \
-                                                                           \administrators.") -- TODO: Search for else "" and "else []"
+    footnote hs           = any isAdminHelp hs |?| nlPrefix $ asterisk <> " indicates help that is available only to \
+                                                                          \administrators."
 help (LowerNub i mq cols as) = mkHelpData i >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
