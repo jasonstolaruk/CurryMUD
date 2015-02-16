@@ -2,6 +2,7 @@
 
 module Mud.Util.List ( appendIfUnique
                      , countOcc
+                     , countOccs
                      , headLast
                      , headTail
                      , mkCountList
@@ -10,7 +11,8 @@ module Mud.Util.List ( appendIfUnique
 import Mud.Util.Misc
 
 import Control.Applicative ((<$>), (<*>))
-import Data.List (foldl')
+import Control.Arrow ((***))
+import Data.List (foldl', group, sort)
 import qualified Data.Set as S (fromList, toList)
 
 
@@ -21,6 +23,10 @@ xs `appendIfUnique` x | x `elem` xs = xs
 
 countOcc :: (Eq a) => a -> [a] -> Int
 countOcc needle = foldl' (\acc x -> x == needle ? succ acc :? acc) 0
+
+
+countOccs :: (Eq a, Ord a) => [a] -> [(a, Int)]
+countOccs = map ((head *** length) . dup) . group . sort
 
 
 headLast :: [a] -> (a, a)
