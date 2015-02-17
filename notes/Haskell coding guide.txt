@@ -31,12 +31,11 @@ Indent 4 spaces following a hanging lambda:
 m >>= \x ->
     return (x + 1)
 
-Bind to a hanging lambda instead of writing a "do" block when in doing so you are able to write just
-two lines of code:
+Bind to a hanging lambda instead of writing a "do" block when in doing so you are able to write just two lines of code:
 m >>= \x ->
     return (x + 1)
 
-Prefer function composition over parens:
+Prefer function composition over parentheses:
 lift . f $ x
 ...instead of...
 lift (f x)
@@ -110,8 +109,7 @@ head . (\\) [0..]
 Derive "Enum" to use ".." in lists of your types.
 myLst = [MyType1 .. MyType3]
 
-Avoid manually instantiating "Show" as a means to pretty-print your type. Instead,
-consider rolling your own pretty-print class.
+Avoid manually instantiating "Show" as a means to pretty-print your type. Instead, consider rolling your own pretty-print class.
 
 Prefer strictness annotations (bang patterns) to "seq".
 
@@ -136,38 +134,29 @@ head . (\\) [0..]
 PACKAGES, MODULES, AND IMPORTING/EXPORTING
 ==================================================
 
-The version numbers you assign to your packages should follow the official Package Versioning
-Policy. (BH p.81)
+The version numbers you assign to your packages should follow the official Package Versioning Policy. (BH p.81)
 
-Your main module should be named "Main" as opposed to "Foo.Main"; you may, however, put the 
-corresponding main ".hs" file in the "Foo" directory.
+Your main module should be named "Main" as opposed to "Foo.Main"; you may, however, put the corresponding main ".hs" file in the "Foo" directory.
 
 Your modules should only export the functions that other modules need to use.
 The "Main" module may need only export "main".
 
-However, in the case that you are developing a library, your library may itself contain multiple
-modules that export ALL their functions. Then, the single primary module of your library can import
-all the other modules, and export only those functions that are meant to be part of the library's
-public API. Your ".cabal" file can specify that only the primary module is exposed.
+However, in the case that you are developing a library, your library may itself contain multiple modules that export ALL their functions. Then, the single primary module of your library can import all the other modules, and export only those functions that are meant to be part of the library's public API. Your ".cabal" file can specify that only the primary module is exposed.
 See "http://lambda.jstolarek.com/2012/10/code-testing-in-haskell/".
 
-Prefer explicit import lists over importing everything, unless your import list becomes unreasonably
-long (or you are importing a module whose functions are familiar to all Haskell programmers).
+Prefer explicit import lists over importing everything, unless your import list becomes unreasonably long (or you are importing a module whose functions are familiar to all Haskell programmers).
 
-Import "Data.Functor" if you only need to use "(<$>)"; import "Control.Applicative" if you also
-need to use "(<*>)".
+Import "Data.Functor" if you only need to use "(<$>)"; import "Control.Applicative" if you also need to use "(<*>)".
 
 
 NEWTYPE
 ==================================================
 
-If your data type has a single constructor with a single field, use a "newtype" declaration instead
-of a "data" declaration.
+If your data type has a single constructor with a single field, use a "newtype" declaration instead of a "data" declaration.
 
 Use "newtype" to hide an underlying implementation.
 
-Utilize "GeneralizedNewtypeDeriving" to avoid boilerplate code, and to selectively expose the
-typeclasses of the underlying type wrapped by "newtype":
+Utilize "GeneralizedNewtypeDeriving" to avoid boilerplate code, and to selectively expose the typeclasses of the underlying type wrapped by "newtype":
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 newtype MyMonoidList a = L { runList :: [a] } deriving (Monoid, Show)
 ml = L ['A'..'F']
@@ -180,10 +169,8 @@ FUNCTORS, APPLICATIVE FUNCTORS, AND MONADS
 ==================================================
 
 A functor is a container type (kind "* -> *") that you can map over.
-Applicative functors allow you to take a normal function and apply it to a number of values inside
-applicative functor containers.
-Monads allow you to take a value in a monad container and apply to it a function that expects a
-normal value (and returns a monadic value). (This is precisely what "(>>=)" does.)
+Applicative functors allow you to take a normal function and apply it to a number of values inside applicative functor containers.
+Monads allow you to take a value in a monad container and apply to it a function that expects a normal value (and returns a monadic value). (This is precisely what "(>>=)" does.)
 
 Compose "fmap"s to lift a function inside multiple functor "layers":
 λ> (fmap . fmap . fmap) (+1) $ Just (Just (Just 5))
@@ -233,11 +220,9 @@ When defining a type synonym for a monad transformer stack, leave out the type v
 type App = ReaderT AppConfig (StateT AppState IO)
 ...instead of...
 type App a = ReaderT AppConfig (StateT AppState IO) a
-The type variable will get in the way should you decide to add another transformer to the stack.
-(RWH p.444)
+The type variable will get in the way should you decide to add another transformer to the stack. (RWH p.444)
 
-Use "sequence" to take a list of monadic actions and evaluate them in turn, returning a list of the
-results: (LYAH p.170)
+Use "sequence" to take a list of monadic actions and evaluate them in turn, returning a list of the results: (LYAH p.170)
 sequence [getLine, getLine, getLine] :: IO [String]
 Note that "mapM f" is equivalent to "sequence . map f".
 Note also the following interesting properties:
@@ -249,11 +234,9 @@ This makes sense given the type signature: "sequence :: Monad m => [m a] -> m [a
 
 Don't forget that you have a choice between "mapM" and "forM". (RWH p.221)
 
-Use "filterM" to filter a normal list with a monadic predicate of type "(a -> m Bool)" (LYAH
-p.349):
+Use "filterM" to filter a normal list with a monadic predicate of type "(a -> m Bool)" (LYAH p.349):
 filterM :: (Monad m) => (a -> m Bool) -> [a] -> m [a]
-The predicate could, for example, be of type "Int -> Writer [String] Bool".
-A list in a monad is returned; the context of the monad is reflected in the final results.
+The predicate could, for example, be of type "Int -> Writer [String] Bool". A list in a monad is returned; the context of the monad is reflected in the final results.
 
 Use the "Maybe" monad to chain together calculations that may fail:
 λ> Nothing >> Just 5
@@ -262,12 +245,10 @@ Compare the above to the following:
 λ> Nothing `mplus` Just 5
 Just 5
 
-Use the "Either" monad for calculations that need to fail with an auxiliary value (for example, a
-message explaining the error). (LYAH p.340)
+Use the "Either" monad for calculations that need to fail with an auxiliary value (for example, a message explaining the error). (LYAH p.340)
 "Right" is for success, "Left" is for failure.
 "return" uses the "Right" constructor.
-Binding a "Left" value to a function essentially does nothing; the value in the "Left" is
-preserved.
+Binding a "Left" value to a function essentially does nothing; the value in the "Left" is preserved.
 
 Use the list monad for non-deterministic calculations.
 The following are all equivalent:
@@ -277,8 +258,7 @@ do { x <- [1,2]; y <- [3,4]; return (x,y) }
 [(x,y) | x <- [1,2], y <- [3,4]]
 
 Use the "Writer" monad for logging, or other computations that produce auxiliary values.
-Note that the additional value must be a monoid; consider using a monoid with an efficient
-implementation of "mappend". (RWH p.391)
+Note that the additional value must be a monoid; consider using a monoid with an efficient implementation of "mappend". (RWH p.391)
 multWithLog :: Int -> Int -> Writer [String] Int
 multWithLog x y = tell [show x ++ " * " ++ show y ++ " = " ++ show res] >> return res
   where
@@ -286,7 +266,7 @@ multWithLog x y = tell [show x ++ " * " ++ show y ++ " = " ++ show res] >> retur
 λ> runWriter $ multWithLog 5 3
 (15,["5 * 3 = 15"])
 
-Use the "Reader" monad to pass a value to a handful of functions behind the scenes.
+Use the "Reader" monad to pass a read-only value to a handful of functions behind the scenes.
 LYAH provides examples along these lines:
 λ> (fmap (*2) (+1)) 10 == (10+1) * 2
 True
@@ -294,6 +274,32 @@ True
 True
 λ> let tryMe = do { a <- (*2); b <- (+1); return (a+b) } in tryMe 10
 31
+
+
+MONAD TRANSFORMERS (BH p.180-5)
+==================================================
+
+Monad transformers are themselves monads, and thus are kind "* -> *".
+
+Transformers are named for the monad whose effects the transformer adds. For example, "StateT" adds the functionality of the "State" monad to another (inner) monad (in this case, the "State" monad is considered to be the "base" monad). Computations of the inner monad must be lifted.
+
+All monad transformers instantiate the "MonadClass" typeclass, whose sole function is "lift".
+
+StateT s Maybe a   ... "s -> (a, s)" becomes "s -> Maybe (a, s)"
+MaybeT (State s) a ... "Maybe a"     becomes "s -> (Maybe a, s)"
+
+In the "mtl" package, monads are defined in terms of their transformers: the transformer adds the effects of the base monad to the "Identity" monad. "Reader r" is defined as "ReaderT r Identity". (BH p. 183)
+
+Transformer functionality is available in both "transformers" and "mtl". The "mtl" package has the advantage of being built in a clever way that eliminates the need for most calls to "lift" (note that "IO" functions must still be lifted). This is accomplished via a typeclass hierarchy.
+An example of one such typeclass is "MonadReader" (found in "Control.Monad.Reader"). This typeclass defines those functions that provide the basic operations of the "Reader" monad: "ask", "local", and "reader". Then, "mtl" goes on to define instances of "MonadReader" for every combination that includes "ReaderT" as a layer.
+Using "mtl", the following is thus possible:
+readerWriterExample :: ReaderT Int (Writer String) Int
+readerWriterExample = do
+    x <- ask
+    tell . show $ x -- No "lift"!
+    return . succ $ x
+But there's more! The function type signature given above limits your code to the explicitly stated monad stack. It is possible to rewrite the signature in terms of the "mtl" typeclasses, thereby making your function usable in any monad stack that includes the functionality of "ReaderT" and "WriterT":
+readerWriterExample :: (MonadReader Int m, MonadWriter String m) => m Int
 
 
 MONOIDS
@@ -304,8 +310,7 @@ sortBy mySort
   where
     mySort (x, y) (x', y') = (x `compare` x') <> (y `compare` y')
 
-Use "First" or "Last" when you have a number of "Maybe" values and you want to check whether or
-not they are all "Nothing" (and get either the first or last "Just"):
+Use "First" or "Last" when you have a number of "Maybe" values and you want to check whether or not they are all "Nothing" (and get either the first or last "Just"):
 λ> getFirst $ First Nothing <> First (Just 'a') <> First Nothing
 Just 'a'
 λ> getFirst $ First Nothing <> First (Just 'a') <> First (Just 'b')
@@ -313,15 +318,12 @@ Just 'a'
 λ> getLast $ Last Nothing <> Last (Just 'a') <> Last (Just 'b')
 Just 'b'
 
-When you have a number of computations, each resulting in an instance of "Monoid" wrapped in
-"Maybe", you can use the "Maybe a" instance of "Monoid" to work with those results in a "monoidal"
-fashion, without directly dealing with the "Maybe" wrapper:
+When you have a number of computations, each resulting in an instance of "Monoid" wrapped in "Maybe", you can use the "Maybe a" instance of "Monoid" to work with those results in a "monoidal" fashion, without directly dealing with the "Maybe" wrapper:
 λ> let myMap = M.fromList [('a',[1..5]),('b',[6..10])] -- Note that "[a]" is a monoid.
 λ> M.lookup 'c' myMap <> M.lookup 'd' myMap <> M.lookup 'a' myMap
 Just [1,2,3,4,5]
 
-Certain nested computations, where the second computation should take place if the first one
-"fails," can be cleanly written using "mplus" from "MonadPlus":
+Certain nested computations, where the second computation should take place if the first one "fails," can be cleanly written using "mplus" from "MonadPlus":
 λ> let myMap = M.fromList [('a',1),('b',2)]
 λ> M.lookup 'c' myMap `mplus` M.lookup 'd' myMap `mplus` M.lookup 'a' myMap
 Just 1
@@ -352,15 +354,12 @@ FOLDS (see also PERFORMANCE)
 Use "unfoldr" to build up a list from a seed. (BH p.74)
 unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
 
-The "Foldable" typeclass ("import qualified Data.Foldable as F") is useful when you want to fold
-over structures other than lists. (LYAH p.277)
+The "Foldable" typeclass ("import qualified Data.Foldable as F") is useful when you want to fold over structures other than lists. (LYAH p.277)
 Simply by implementating "foldMap", you get all the other "Foldable" fold functions for free.
 
-"foldMap" (from the "Foldable" typeclass) is useful when you want to reduce a foldable structure to
-a single monoid value: (LYAH p.278)
+"foldMap" (from the "Foldable" typeclass) is useful when you want to reduce a foldable structure to a single monoid value: (LYAH p.278)
 foldMap :: (Monoid m, Foldable t) => (a -> m) -> t a -> m
-Map over "t a" (the "Foldable") with the "(a -> m)" function, producing monoid values. Then, use
-"mappend" to reduce the monoid values to a single (monoid) value.
+Map over "t a" (the "Foldable") with the "(a -> m)" function, producing monoid values. Then, use "mappend" to reduce the monoid values to a single (monoid) value.
 
 Use "foldMap" to convert a foldable structure into a list:
 λ> myTree
@@ -371,27 +370,18 @@ Node 0 (Node 1 (Node 3 Empty Empty) (Node 4 Empty Empty)) (Node 2 (Node 5 Empty 
 "foldM" is the monadic version of "foldl" (LYAH p.351):
 foldl :: (a -> b -> a) -> a -> [b] -> a -- "a" is the type of the accumulator/result.
 foldM :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a
-"foldM" thus differs from "foldl" in that the function applied to each element of the list is
-monadic (specifically, it returns a value in a monad), and, naturally, the final results of the
-fold are likewise in a monad.
+"foldM" thus differs from "foldl" in that the function applied to each element of the list is monadic (specifically, it returns a value in a monad), and, naturally, the final results of the fold are likewise in a monad.
 
 
 LENSES
 ==================================================
 
-Do not surround lens operators with spaces. Similarly, do not surround "(.)" with spaces when using
-it to compose lenses:
+Do not surround lens operators with spaces. Similarly, do not surround "(.)" with spaces when using it to compose lenses:
 obj^.name.to T.toUpper
 ...instead of...
 obj ^. name . to T.toUpper
 
-Prefer the "packed" and "unpacked" lenses over the corresponding "pack" and "unpack" functions, but
-prefer...
-dumpFile . (helpDir ++) . T.unpack
-...over...
-dumpFile . (helpDir ++) . (^.unpacked)
-
-Consider using "to" with "(^.)" when you can:
+Consider using "to" with "(^.)" when sensible:
 obj^.name.to T.toUpper
 maybeString^.to fromJust.packed
 
@@ -400,7 +390,7 @@ myStrings^..folded.packed
 [a..b]^..folded.to T.length
 
 Use "(<$>)" to lift your lenses:
-(^.myLens) <$> myMonadicFun
+(view myLens) <$> myMonadicFun
 
 
 TUPLES
@@ -409,8 +399,7 @@ TUPLES
 Construct tuples using the "(,)" and "(,,)" tuple constructors when appropriate:
 (,,) <$> ['a','b'] <*> [LT,GT] <*> [Left True, Right False]
 
-Use "first" and "second" (from "Control.Arrow") to apply a function to an element of a tuple and
-and get back the "updated" tuple: (RWH p.379)
+Use "first" and "second" (from "Control.Arrow") to apply a function to an element of a tuple and get back the "updated" tuple: (RWH p.379)
 λ> second odd ('a', 1)
 ('a',True)
 
@@ -423,37 +412,39 @@ uncurry :: (a -> b -> c) -> (a, b) -> c
 'a'
 
 
-MAPS
+MAPS AND SETS
 ==================================================
 
-Prefer "Data.Map" over association lists.
+Prefer "Map" over association lists.
 
-Use "Data.IntMap" instead of "Data.Map" when your keys are of type "Int".
+Use "IntMap" instead of "Map" when your keys are of type "Int".
+
+"HashMap" are a good choice when your keys are not of type "Int" (and are hashable), as hash maps perform better than vanilla maps. (BH p.88)
 
 Use "M.empty" instead of "M.fromList []" (where "M" is "Data.Map")
 
 Instead of using "M.fromList" with a list containing a single key-value pair, use "M.singleton".
 
+If you don't need to map values to keys, consider using "Set".
+Note that "IntSet" also exists.
+
 
 PERFORMANCE
 ==================================================
 
-Keep in mind that "length" must traverse the entirety of its argument.
+Keep in mind that "length" must traverse the entirety of its argument. In some cases, pattern matching may provide a sufficient alternative to "length".
 
 To avoid space leaks, prefer "foldr" and "foldl'" over "foldl". (RWH p.113)
 
-As a rule of thumb, use "foldr" on lists that might be infinite, or when building up a data
-structure. Use "foldl'" on finite lists, and when the fold comes down to a single value.
+As a rule of thumb, use "foldr" on lists that might be infinite, or when building up a data structure. Use "foldl'" on finite lists, and when the fold comes down to a single value.
 
 In most cases, it's a good idea to prefer "Double" over "Float".
 
-Prefer types that have simple raw machine representations over more complex types that must be
-stored on the heap (for example, prefer "Int" over "Integer").
+Prefer types that have simple raw machine representations over more complex types that must be stored on the heap (for example, prefer "Int" over "Integer").
 
 Converting to and from a set is more performant than using "nub". (BH p.88)
 S.toList . S.fromList $ ["list with duplicates", "list with duplicates"]
 Note that this will sort elements in ascending order.
-
 
 Compile using "-O2" for optimization.
 To make use of multiple cores, compile with "-threaded" and run with "+RTS -N".
@@ -464,32 +455,26 @@ ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
 LAZY VS. STRICT
 ==================================================
 
-In your own data types, use strictness annotations/bang patterns ("!") on atomic fields such as
-"Int", "Double", and "Bool".
+In your own data types, use strictness annotations/bang patterns ("!") on atomic fields such as "Int", "Double", and "Bool".
 
-Apply "-funbox-strict-fields" when using strictness annotations/bang patterns ("!") on
-constructor fields.
+Apply "-funbox-strict-fields" when using strictness annotations/bang patterns ("!") on constructor fields. Consider specifying this option in your ".cabal" file.
 
 When creating a recursively defined type, make the spines lazy and the leaves strict.
 
-When deciding on whether to use a lazy or strict data type (for example, "Data.Map.Lazy" vs.
-"Data.Map.Strict"), base your decision on profiling.
+When deciding on whether to use a lazy or strict data type (for example, "Data.Map.Lazy" vs. "Data.Map.Strict"), base your decision on profiling.
 
 
 ERROR HANDLING
 ==================================================
 
-Use "error" for "impossible" situations due to programmer error. ("error" throws an exception and
-halts the program.) (PaCP p.147)
+Use "error" for "impossible" situations due to programmer error. ("error" throws an exception and halts the program.) (PaCP p.147)
 
-In pure code, use "Maybe", or "Either" with a custom data type (representing the different
-possible error types with auxiliary info) as the "Left" type.
+In pure code, use "Maybe", or "Either" with a custom data type (representing the different possible error types, with auxiliary info) as the "Left" type.
 
 When in the IO monad, use "throwIO" and "catch" ("catch" is normally used infix). Prefer "throwIO" over "throw", as the former guarantees ordering with respect to other IO operations, whereas the latter does not. (PaCP p.149-50)
 Use "throwTo" to throw an asynchronous exception (to throw an exception from one thread to another). (PaCP p.156)
 
-You may also use "MonadError" ("Error" and "ErrorT"). As "throwIO" and "catch" are preferable
-when in the IO monad, use "ErrorT" when the base monad in your transformer stack is not IO.
+You may also use "MonadError" ("Error" and "ErrorT"). As "throwIO" and "catch" are preferable when in the "IO" monad, use "ErrorT" when the base monad in your transformer stack is not "IO".
 
 To catch any exception, write an exception handler that catches the "SomeException" type. (PaCP p.149)
 
@@ -567,8 +552,7 @@ Avoid composing too many blocking operations together.
 MISC
 ==================================================
 
-Avoid constraints in type declarations. Instead, apply constraints to the functions that use your
-type, where necessary.
+Avoid constraints in type declarations. Instead, apply constraints to the functions that use your type, where necessary.
 
 Prefer top level definitions of type "Char" over single-character strings or "Text":
 a = 'a'
