@@ -139,7 +139,8 @@ test-suite             test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
-  other-extensions:    OverloadedStrings
+  other-extensions:    OverloadedStrings,
+                       ViewPatterns
   build-depends:       QuickCheck >=2.7 && <3.0,
                        base >=4.7 && <5.0,
                        containers >=0.5 && <0.6,
