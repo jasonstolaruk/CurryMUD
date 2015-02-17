@@ -356,8 +356,7 @@ FOLDS (see also PERFORMANCE)
 Use "unfoldr" to build up a list from a seed. (BH p.74)
 unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
 
-The "Foldable" typeclass ("import qualified Data.Foldable as F") is useful when you want to fold over structures other than lists. (LYAH p.277)
-Simply by implementating "foldMap", you get all the other "Foldable" fold functions for free.
+The "Foldable" typeclass ("import qualified Data.Foldable as F") is useful when you want to fold over structures other than lists. Simply by implementating "foldMap", you get all the other "Foldable" fold functions for free. (LYAH p.277)
 
 "foldMap" (from the "Foldable" typeclass) is useful when you want to reduce a foldable structure to a single monoid value: (LYAH p.278)
 foldMap :: (Monoid m, Foldable t) => (a -> m) -> t a -> m
@@ -378,7 +377,7 @@ foldM :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a
 LENSES
 ==================================================
 
-Do not surround lens operators with spaces. Similarly, do not surround "(.)" with spaces when using it to compose lenses:
+In many cases, it is preferable to not surround lens operators with spaces. Similarly, do not surround "(.)" with spaces when using it to compose lenses:
 obj^.name.to T.toUpper
 ...instead of...
 obj ^. name . to T.toUpper
@@ -409,26 +408,24 @@ Use "uncurry" to apply a two-argument function to the elements of a pair:
 λ> uncurry compare ('a', 'b')
 LT
 Note that "curry" essentially does the opposite:
-uncurry :: (a -> b -> c) -> (a, b) -> c
 λ> curry fst 'a' undefined
 'a'
 
 
-MAPS AND SETS
+MAPS
 ==================================================
 
 Prefer "Map" over association lists.
 
 Use "IntMap" instead of "Map" when your keys are of type "Int".
 
-"HashMap" are a good choice when your keys are not of type "Int" (and are hashable), as hash maps perform better than vanilla maps. (BH p.88)
+"HashMap" is a good choice when your keys are not of type "Int" (and are hashable), as hash maps perform better than vanilla maps. (BH p.88)
 
 Use "M.empty" instead of "M.fromList []" (where "M" is "Data.Map")
 
 Instead of using "M.fromList" with a list containing a single key-value pair, use "M.singleton".
 
-If you don't need to map values to keys, consider using "Set".
-Note that "IntSet" also exists.
+If you don't need to map values to keys, consider using "Set". (Note that "IntSet" also exists.)
 
 
 PERFORMANCE
@@ -444,8 +441,8 @@ In most cases, it's a good idea to prefer "Double" over "Float".
 
 Prefer types that have simple raw machine representations over more complex types that must be stored on the heap (for example, prefer "Int" over "Integer").
 
-Converting to and from a set is more performant than using "nub". (BH p.88)
-S.toList . S.fromList $ ["list with duplicates", "list with duplicates"]
+Converting to and from a set is more performant than "nub". (BH p.88)
+S.toList . S.fromList $ ["list with duplicates", "list with duplicates", "blah"]
 Note that this will sort elements in ascending order.
 
 Compile using "-O2" for optimization.
@@ -459,7 +456,7 @@ LAZY VS. STRICT
 
 In your own data types, use strictness annotations/bang patterns ("!") on atomic fields such as "Int", "Double", and "Bool".
 
-Apply "-funbox-strict-fields" when using strictness annotations/bang patterns ("!") on constructor fields. Consider specifying this option in your ".cabal" file.
+Apply "-funbox-strict-fields" when using strictness annotations/bang patterns ("!") on constructor fields. Consider specifying this option in the "ghc-options" field of your ".cabal" file.
 
 When creating a recursively defined type, make the spines lazy and the leaves strict.
 
@@ -474,9 +471,10 @@ Use "error" for "impossible" situations due to programmer error. ("error" throws
 In pure code, use "Maybe", or "Either" with a custom data type (representing the different possible error types, with auxiliary info) as the "Left" type.
 
 When in the "IO" monad, use "throwIO" and "catch" ("catch" is normally used infix). Prefer "throwIO" over "throw", as the former guarantees ordering with respect to other "IO" operations, whereas the latter does not. (PaCP p.149-50)
-Use "throwTo" to throw an asynchronous exception (to throw an exception from one thread to another). (PaCP p.156)
 
-You may also use "MonadError" ("Error" and "ErrorT"). As "throwIO" and "catch" are preferable when in the "IO" monad, use "ErrorT" when the base monad in your transformer stack is not "IO".
+Use "throwTo" to throw an asynchronous exception (that is, to throw an exception from one thread to another). (PaCP p.156)
+
+You may also use "MonadError" ("Error" and "ErrorT"). While "throwIO" and "catch" are preferable when in the "IO" monad, use "ErrorT" when the base monad in your transformer stack is not "IO".
 
 To catch any exception, write an exception handler that catches the "SomeException" type. (PaCP p.149)
 
@@ -519,7 +517,8 @@ An asynchronous exception may interrupt a thread when you are in the middle of u
 mask, mask_, modifyMVar, modifyMVar_, withMVar
 
 The "bracket" family of abstractions have masking built in. (PaCP p.170)
-The "acquire resource" code block of a "bracket" should perform at most just one blocking operation. Any blocking operation in the "cleanup" block is interruptible by an asynchronous exception. (PaCP p.162)
+The "acquire resource" code block of a "bracket" should perform at most just one blocking operation.
+Any blocking operation in the "cleanup" block is interruptible by an asynchronous exception. (PaCP p.162)
 
 The exception handler defined in a "catch" or a "handle" has masking built-in. Note that if you tail-call out of an exception handler, you will still remain inside its implicit mask. (PaCP p.167)
 
