@@ -9,7 +9,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Lens (_1, over)
+import Control.Arrow (first)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -44,7 +44,7 @@ mkAbbrevs = helper "" . nubSort
   where
     helper :: PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
     helper _    []     = []
-    helper ""   (x:xs) = (x, over _1 T.singleton . headTail $ x) : helper x xs
+    helper ""   (x:xs) = (x, first T.singleton . headTail $ x) : helper x xs
     helper prev (x:xs) = let abbrev = calcAbbrev x prev
                          in (x, (abbrev, fromJust $ abbrev `T.stripPrefix` x)) : helper x xs
 

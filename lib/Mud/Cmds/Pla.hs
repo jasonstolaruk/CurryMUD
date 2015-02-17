@@ -41,7 +41,7 @@ import qualified Mud.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Arrow ((***))
+import Control.Arrow ((***), first)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -696,7 +696,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
     helperIntroEitherCoins a (Left  msgs) =
         a & _1 <>~ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]
     helperIntroEitherCoins a (Right _   ) =
-        over _1 (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
+        first (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
 intro p = patternMatchFail "intro" [ showText p ]
@@ -794,7 +794,7 @@ firstLook i cols a = getPlaFlag IsNotFirstLook <$> getPla i >>= \infl -> if infl
                           , " alone will list the items in your inventory and readied equipment, respectively." ]
        in do
            void . modifyPlaFlag i IsNotFirstLook $ True
-           return . over _1 (appendToEither . wrapUnlinesNl cols $ msg) $ a
+           return . first (appendToEither . wrapUnlinesNl cols $ msg) $ a
   where
     appendToEither msg (Left sorryMsg) = Left $ sorryMsg <> msg
     appendToEither msg right           = (<> msg) <$> right
@@ -1621,7 +1621,7 @@ helperUnready i d em a@(ws, _, _) = \case
 
 
 mkUnreadyDescs :: Id -> WorldState -> PCDesig -> Inv -> ([Broadcast], [T.Text])
-mkUnreadyDescs i ws d is = over _1 concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ws is ]
+mkUnreadyDescs i ws d is = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ws is ]
   where
     helper (ei, c, b@(s, _)) = if c == 1
       then let msg = T.concat [ "You ", mkVerb ei SndPer, " the ", s, "." ] in

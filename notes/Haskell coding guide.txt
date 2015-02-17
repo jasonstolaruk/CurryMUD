@@ -20,7 +20,7 @@ if x
 
 Indent 2 spaces following "case ... of" (when you want to break the line to save horizontal space).
 
-Indent "where" 2 spaces, and indent 2 spaces following "where":
+Indent "where" 2 spaces, and indent the line following "where" 2 spaces:
 f = x
   where
     x = y
@@ -29,23 +29,23 @@ Consider using a hanging lambda to split a line of code that is particularly lon
 
 Indent 4 spaces following a hanging lambda:
 m >>= \x ->
-    return (x + 1)
+    return . succ $ x
 
 Bind to a hanging lambda instead of writing a "do" block when in doing so you are able to write just two lines of code:
 m >>= \x ->
-    return (x + 1)
+    return . succ $ x
 
 Prefer function composition over parentheses:
 lift . f $ x
 ...instead of...
 lift (f x)
 
-Avoid unnecessary parens in cons expressions:
+Avoid unnecessary parenthesis in cons expressions:
 x : f y
 ...instead of...
 x : (f y)
 
-If appropriate, use "\" to split text across multiple lines. (RWH p.315)
+When appropriate, use "\" to split text across multiple lines. (RWH p.315)
 
 Prefer "(<>)" over "mappend".
 
@@ -64,7 +64,7 @@ Prefer the composition of library functions over rolling your own fold.
 
 Avoid explicit recursion when it is possible (and more readable) to use a fold.
 
-Prefer using guards with "case" over using "if" with "case":
+Prefer using guards with "case" over using "if" inside "case":
 case x of
   y | y == 1 -> z
     | otherwise -> y
@@ -80,15 +80,16 @@ flip delete
 
 Use "null" instead of "(== [])".
 
-Use "on" where applicable in binary functions for sorting, etc.:
+Use "on" where applicable (in binary functions for sorting, etc.):
 sortBy (compare `on` fst)
 groupBy ((==) `on` clientName)
 
 Use record update syntax with your record data types.
 
 Prefer "maybe" over unwrapping a "Maybe" via pattern matching.
+Similarly, prefer "either" over pattern matching.
 
-Use "when", "unless", and "guard" for conditional evaluation.
+Use "when", "unless", and "guard" for conditional evaluation in a monad.
 when   :: Bool -> m () -> m () -- Evaluate the second parameter when "True".
 unless :: Bool -> m () -> m () -- Evaluate the second parameter when "False".
 guard  :: (MonadPlus m) => Bool -> m ()
@@ -106,10 +107,10 @@ void :: (Functor f) => f a -> f () -- Evaluate the first parameter and return "f
 Use infinite lists when sensible:
 head . (\\) [0..]
 
-Derive "Enum" to use ".." in lists of your types.
-myLst = [MyType1 .. MyType3]
+Derive "Enum" to use ".." in lists containing the type in question.
+myLst = [MyTypeA .. MyTypeC]
 
-Avoid manually instantiating "Show" as a means to pretty-print your type. Instead, consider rolling your own pretty-print class.
+Avoid manually instantiating "Show" as a means to pretty-print your type. Instead, consider rolling your own pretty-print typeclass.
 
 Prefer strictness annotations (bang patterns) to "seq".
 
@@ -117,17 +118,17 @@ Prefer strictness annotations (bang patterns) to "seq".
 INFIX STYLE
 ==================================================
 
-When defining an infix operator, consider including a fixity definition. (RWH p.244, 328)
+When defining an infix operator, consider including a fixity definition (in which you may specify associativity). (RWH p.244, 328)
 
 If appropriate, use infix style when defining a data type. (RWH p.80)
 
 Use infix style when it allows you to avoid writing a lambda:
-`f` y
+(`f` y)
 ...instead of...
 \x -> f x y
 
 Don't shy away from composing a function with an infix operator:
-(++) "You entered:\n\n" . map toUpper
+("You entered:\n" ++) . map toUpper
 head . (\\) [0..]
 
 
@@ -136,17 +137,17 @@ PACKAGES, MODULES, AND IMPORTING/EXPORTING
 
 The version numbers you assign to your packages should follow the official Package Versioning Policy. (BH p.81)
 
-Your main module should be named "Main" as opposed to "Foo.Main"; you may, however, put the corresponding main ".hs" file in the "Foo" directory.
+Your main module should be named "Main" as opposed to "Foo.Main"; you may, however, put your main ".hs" file in the "Foo" directory.
 
 Your modules should only export the functions that other modules need to use.
 The "Main" module may need only export "main".
 
-However, in the case that you are developing a library, your library may itself contain multiple modules that export ALL their functions. Then, the single primary module of your library can import all the other modules, and export only those functions that are meant to be part of the library's public API. Your ".cabal" file can specify that only the primary module is exposed.
+However, in the case that you are developing a library, your library itself may contain multiple modules that export ALL their functions. Then, the single primary module of your library can import all your other modules, and export only those functions that are meant to be part of the library's public API. Your ".cabal" file can specify that only the primary module is exposed.
 See "http://lambda.jstolarek.com/2012/10/code-testing-in-haskell/".
 
-Prefer explicit import lists over importing everything, unless your import list becomes unreasonably long (or you are importing a module whose functions are familiar to all Haskell programmers).
+Prefer explicit import lists over importing everything, unless your import list becomes unreasonably long, or you are importing a module whose functions are familiar to all Haskell programmers.
 
-Import "Data.Functor" if you only need to use "(<$>)"; import "Control.Applicative" if you also need to use "(<*>)".
+Import "Data.Functor" if you only need to use "(<$>)" and not "(<*>)"; import "Control.Applicative" if you also need to use "(<*>)".
 
 
 NEWTYPE
@@ -159,8 +160,8 @@ Use "newtype" to hide an underlying implementation.
 Utilize "GeneralizedNewtypeDeriving" to avoid boilerplate code, and to selectively expose the typeclasses of the underlying type wrapped by "newtype":
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 newtype MyMonoidList a = L { runList :: [a] } deriving (Monoid, Show)
-ml = L ['A'..'F']
-hex = Just ml <> Just (L ['0'..'9']) <> Nothing
+myList = L ['A'..'F']
+hex = Just myList <> Just (L ['0'..'9']) <> Nothing
 λ> runList . fromJust $ hex
 "ABCDEF0123456789"
 
@@ -168,25 +169,24 @@ hex = Just ml <> Just (L ['0'..'9']) <> Nothing
 FUNCTORS, APPLICATIVE FUNCTORS, AND MONADS
 ==================================================
 
-A functor is a container type (kind "* -> *") that you can map over.
-Applicative functors allow you to take a normal function and apply it to a number of values inside applicative functor containers.
+A functor is a container type (kind "* -> *") that you can map over (transform).
+Applicative functors allow you to take a normal function and apply it to a number of values, each inside applicative functor containers.
 Monads allow you to take a value in a monad container and apply to it a function that expects a normal value (and returns a monadic value). (This is precisely what "(>>=)" does.)
 
 Compose "fmap"s to lift a function inside multiple functor "layers":
-λ> (fmap . fmap . fmap) (+1) $ Just (Just (Just 5))
+λ> (fmap . fmap . fmap) (+ 1) $ Just (Just (Just 5))
 Just (Just (Just 6))
 
-"fmap" (or "(<$>)"), "liftA", and "liftM" are all very similar:
+"fmap", "liftA", and "liftM" are all very similar:
 fmap  :: Functor f     => (a -> b) -> f a -> f b
 liftA :: Applicative f => (a -> b) -> f a -> f b
 liftM :: Monad m       => (a -> r) -> m a -> m r
-Use "fmap" or "(<$>)" instead of "liftM".
+Prefer "fmap" or "(<$>)" over "liftM".
 Use "fmap" instead of "liftA" when you can.
 
 Use applicative style instead of monadic code when possible.
 "pure" is the applicative version of "return".
-"(<*>)" is the applicative version of "ap".
-(For an explanation of how to use "ap", see BH p.177.)
+"(<*>)" is the applicative version of "ap". (For an explanation of how to use "ap", see BH p.177.)
 
 When writing monadic code, consider what can be written outside the monad and lifted in.
 
@@ -214,14 +214,6 @@ Monadic functions can be composed with "(>=>)" and "(<=<)":
 (>=>) :: (Monad m) => (a -> m b) -> (b -> m c) -> a -> m c
 (<=<) :: (Monad m) => (b -> m c) -> (a -> m b) -> a -> m c
 
-Prefer "liftIO" over "lift" when lifting to the IO layer of a monad transformer stack.
-
-When defining a type synonym for a monad transformer stack, leave out the type variable.
-type App = ReaderT AppConfig (StateT AppState IO)
-...instead of...
-type App a = ReaderT AppConfig (StateT AppState IO) a
-The type variable will get in the way should you decide to add another transformer to the stack. (RWH p.444)
-
 Use "sequence" to take a list of monadic actions and evaluate them in turn, returning a list of the results: (LYAH p.170)
 sequence [getLine, getLine, getLine] :: IO [String]
 Note that "mapM f" is equivalent to "sequence . map f".
@@ -248,7 +240,9 @@ Just 5
 Use the "Either" monad for calculations that need to fail with an auxiliary value (for example, a message explaining the error). (LYAH p.340)
 "Right" is for success, "Left" is for failure.
 "return" uses the "Right" constructor.
-Binding a "Left" value to a function essentially does nothing; the value in the "Left" is preserved.
+Binding a "Left" value to a function essentially does nothing; the value in the "Left" is preserved:
+λ> succ <$> Left 10
+Left 10
 
 Use the list monad for non-deterministic calculations.
 The following are all equivalent:
@@ -257,9 +251,9 @@ do { x <- [1,2]; y <- [3,4]; return (x,y) }
 (,) <$> [1,2] <*> [3,4]
 [(x,y) | x <- [1,2], y <- [3,4]]
 
-Use the "Writer" monad for logging, or other computations that produce auxiliary values.
-Note that the additional value must be a monoid; consider using a monoid with an efficient implementation of "mappend". (RWH p.391)
-multWithLog :: Int -> Int -> Writer [String] Int
+Use the "Writer" monad for logging, or to handle auxiliary values produced by or concerning your main computations.
+Note that the auxiliary value in question must be a monoid; consider using a monoid with an efficient implementation of "mappend". (RWH p.391)
+multWithLog :: Int -> Int -> Writer [String] Int -- ("String" does NOT have an efficient "mappend", but...)
 multWithLog x y = tell [show x ++ " * " ++ show y ++ " = " ++ show res] >> return res
   where
     res = x * y
@@ -300,6 +294,14 @@ readerWriterExample = do
     return . succ $ x
 But there's more! The function type signature given above limits your code to the explicitly stated monad stack. It is possible to rewrite the signature in terms of the "mtl" typeclasses, thereby making your function usable in any monad stack that includes the functionality of "ReaderT" and "WriterT":
 readerWriterExample :: (MonadReader Int m, MonadWriter String m) => m Int
+
+Prefer "liftIO" over "lift" when lifting to the inner "IO" layer of a monad transformer stack.
+
+When defining a type synonym for a monad transformer stack, leave out the type variable.
+type App = ReaderT AppConfig (StateT AppState IO)
+...instead of...
+type App a = ReaderT AppConfig (StateT AppState IO) a
+The type variable will get in the way should you decide to add another transformer to the stack. (RWH p.444)
 
 
 MONOIDS
@@ -471,7 +473,7 @@ Use "error" for "impossible" situations due to programmer error. ("error" throws
 
 In pure code, use "Maybe", or "Either" with a custom data type (representing the different possible error types, with auxiliary info) as the "Left" type.
 
-When in the IO monad, use "throwIO" and "catch" ("catch" is normally used infix). Prefer "throwIO" over "throw", as the former guarantees ordering with respect to other IO operations, whereas the latter does not. (PaCP p.149-50)
+When in the "IO" monad, use "throwIO" and "catch" ("catch" is normally used infix). Prefer "throwIO" over "throw", as the former guarantees ordering with respect to other "IO" operations, whereas the latter does not. (PaCP p.149-50)
 Use "throwTo" to throw an asynchronous exception (to throw an exception from one thread to another). (PaCP p.156)
 
 You may also use "MonadError" ("Error" and "ErrorT"). As "throwIO" and "catch" are preferable when in the "IO" monad, use "ErrorT" when the base monad in your transformer stack is not "IO".

@@ -26,7 +26,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Lens (_1, over)
+import Control.Arrow (first)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.))
 import Control.Monad (guard)
@@ -86,7 +86,7 @@ expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
 
 
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
-extractEnscsFromGecrs = over _1 reverse . foldl' helper ([], [])
+extractEnscsFromGecrs = first reverse . foldl' helper ([], [])
   where
     helper (gecrs, enscs) gecr | isSorryGecr gecr                               = (gecr : gecrs, enscs)
     helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Just ensc } = (gecr : gecrs, ensc : enscs)
