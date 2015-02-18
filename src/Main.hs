@@ -32,7 +32,7 @@ main :: IO ()
 main = withSocketsDo $ do
     setCurrentDirectory mudDir
     welcome
-    initMudState >>= void . runStateInIORefT listenWrapper
+    void . runStateInIORefT listenWrapper =<< initMudState
 
 
 welcome :: IO ()
