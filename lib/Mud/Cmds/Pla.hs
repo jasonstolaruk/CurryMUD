@@ -562,12 +562,12 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
 help :: Action
-help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= either handler helper
+help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir ++ "root") |$| try >=> either handler helper
   where
     handler e = do
         fileIOExHandler "help" e
         wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
-    helper rootHelpTxt = mkHelpData i >>= \(sortBy (compare `on` helpName) -> hs) ->
+    helper rootHelpTxt = i |$| mkHelpData >=> \(sortBy (compare `on` helpName) -> hs) ->
         let styleds                = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = over both (formatHelpNames . mkHelpNames) . partition (isCmdHelp . snd) $ styleds
             helpTxt                = T.concat [ nl rootHelpTxt
@@ -584,7 +584,7 @@ help (NoArgs i mq cols) = (try . liftIO . T.readFile $ helpDir ++ "root") >>= ei
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote hs           = any isAdminHelp hs |?| nlPrefix $ asterisk <> " indicates help that is available only to \
                                                                           \administrators."
-help (LowerNub i mq cols as) = mkHelpData i >>= \hs -> do
+help (LowerNub i mq cols as) = i |$| mkHelpData >=> \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
@@ -592,7 +592,7 @@ help p = patternMatchFail "help" [ showText p ]
 
 
 mkHelpData :: Id -> MudStack [Help]
-mkHelpData i = getPlaIsAdmin i >>= \ia -> do
+mkHelpData i = i |$| getPlaIsAdmin >=> \ia -> do
     [ plaHelpCmdNames, plaHelpTopicNames, adminHelpCmdNames, adminHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
     let phcs = [ Help (T.pack                  phcn) (plaHelpCmdsDir     ++ phcn) True  False | phcn <- plaHelpCmdNames     ]
         phts = [ Help (T.pack                  phtn) (plaHelpTopicsDir   ++ phtn) False False | phtn <- plaHelpTopicNames   ]
@@ -615,7 +615,7 @@ getHelpByName cols hs name =
     sorry           = return ("No help is available on " <> dblQuote name <> ".", "")
     found hn        = let h = head . filter ((== hn) . helpName) $ hs
                       in (,) <$> readHelpFile (hn, helpFilePath h) <*> (return . dblQuote $ hn)
-    readHelpFile (hn, hf) = (try . liftIO . T.readFile $ hf) >>= eitherRet handler
+    readHelpFile (hn, hf) = (liftIO . T.readFile $ hf) |$| try >=> eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpByName readHelpFile" e
@@ -626,7 +626,7 @@ getHelpByName cols hs name =
 
 
 intro :: Action
-intro (NoArgs i mq cols) = getPCIntroduced i >>= \intros ->
+intro (NoArgs i mq cols) = i |$| getPCIntroduced >=> \intros ->
     if null intros
       then let introsTxt = "No one has introduced themselves to you yet." in do
           wrapSend mq cols introsTxt
@@ -707,7 +707,7 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv (NoArgs i mq cols) = send mq . nl =<< [ mkInvCoinsDesc i cols ws i e | (ws, e) <- getEnt' i ]
-inv (LowerNub i mq cols as) = getInvCoins' i >>= \(ws, (is, c)) ->
+inv (LowerNub i mq cols as) = i |$| getInvCoins' >=> \(ws, (is, c)) ->
     send mq $ (is, c) |*| ( let (eiss, ecs) = resolvePCInvCoins i ws as is c
                                 invDesc     = foldl' (helperEitherInv ws) "" eiss
                                 coinsDesc   = foldl' helperEitherCoins    "" ecs
@@ -854,7 +854,7 @@ motd p                  = withoutArgs motd p
 showMotd :: MsgQueue -> Cols -> MudStack ()
 showMotd mq cols = send mq =<< helper
   where
-    helper    = (try . liftIO $ readMotd) >>= eitherRet handler
+    helper    = liftIO readMotd |$| try >=> eitherRet handler
     readMotd  = [ frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor $ cont
                 | cont <- T.readFile motdFile ]
     handler e = do
@@ -950,7 +950,7 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 
 
 handleEgress :: Id -> MudStack ()
-handleEgress i = getPCRmId i >>= \ri -> do
+handleEgress i = i |$| getPCRmId >=> \ri -> do
     unless (ri == iWelcome) . notifyEgress $ i
     (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar        <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
     let takeTMVarsSTM =             (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar         <*> takeTMVar ptTMVar

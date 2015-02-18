@@ -210,9 +210,10 @@ m >>= f
 ...can always be defined as...
 join (fmap f m)
 
-Monadic functions can be composed with "(>=>)" and "(<=<)":
+Monadic functions can be composed with the Kleisli composition operators ("(>=>)" and "(<=<)"):
 (>=>) :: (Monad m) => (a -> m b) -> (b -> m c) -> a -> m c
 (<=<) :: (Monad m) => (b -> m c) -> (a -> m b) -> a -> m c
+(f >=> g) x = f x >>= g
 
 Use "sequence" to take a list of monadic actions and evaluate them in turn, returning a list of the results: (LYAH p.170)
 sequence [getLine, getLine, getLine] :: IO [String]
