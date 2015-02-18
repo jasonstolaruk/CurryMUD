@@ -45,7 +45,7 @@ import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
-import Control.Monad (forM_, forever, unless, void)
+import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.Bits (zeroBits)
@@ -200,7 +200,7 @@ talk h host = helper `finally` cleanUp
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         registerThread . Talk $ i
-        handle (plaThreadExHandler "talk" i) $ readTMVarInNWS plaTblTMVar >>= \pt -> do
+        handle (plaThreadExHandler "talk" i) $ plaTblTMVar |$| readTMVarInNWS >=> \pt -> do
             logNotice "talk helper" $ "new PC name for incoming player: " <> s <> "."
             bcastAdmins pt $ "A new player has connected: " <> s <> "."
             liftIO configBuffer
@@ -309,7 +309,7 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
   where
     loop secs = do
         liftIO . threadDelay $ 10 ^ 6
-        (liftIO . atomically . tryReadTQueue $ itq) >>= \case
+        itq |$| liftIO . atomically . tryReadTQueue >=> \case
           Nothing | secs >= maxInacSecs -> inacBoot secs
                   | otherwise           -> loop . succ $ secs
           Just itm                      -> case itm of StopTimer  -> return ()
@@ -328,7 +328,7 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
 server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 server h i mq itq = sequence_ [ registerThread . Server $ i, loop (Just itq) `catch` plaThreadExHandler "server" i ]
   where
-    loop mitq = (liftIO . atomically . readTQueue $ mq) >>= \case
+    loop mitq = mq |$| liftIO . atomically . readTQueue >=> \case
       Dropped        ->                                   sayonara i mitq
       FromClient msg -> handleFromClient i mq mitq msg >> loop mitq
       FromServer msg -> handleFromServer i h msg       >> loop mitq
@@ -348,7 +348,7 @@ sayonara i Nothing    = handleEgress i
 
 
 handleFromClient :: Id -> MsgQueue -> Maybe InacTimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq mitq (T.strip . stripControl . stripTelnet -> msg) = getPla i >>= \p ->
+handleFromClient i mq mitq (T.strip . stripControl . stripTelnet -> msg) = i |$| getPla >=> \p ->
     let thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
         thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
     in maybe thruCentral thruOther $ p^.interp
@@ -371,7 +371,7 @@ forwardToPeepers i peeperIds toOrFrom msg = do
 
 
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
-handleFromServer i h msg = getPla i >>= \(view peepers -> peeperIds) -> do
+handleFromServer i h msg = i |$| getPla >=> \(view peepers -> peeperIds) -> do
     forwardToPeepers i peeperIds ToThePeeped msg
     liftIO . T.hPutStr h $ msg
 
@@ -391,7 +391,7 @@ boot h = liftIO . T.hPutStrLn h . nl . (<> dfltColor) . (bootMsgColor <>)
 
 
 sendPrompt :: Id -> Handle -> T.Text -> MudStack ()
-sendPrompt i h p = getPla i >>= \(view peepers -> peeperIds) -> do
+sendPrompt i h p = i |$| getPla >=> \(view peepers -> peeperIds) -> do
     forwardToPeepers i peeperIds ToThePeeped . nl $ p
     liftIO . T.hPutStrLn h $ p
 
