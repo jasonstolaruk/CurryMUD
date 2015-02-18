@@ -31,7 +31,7 @@ import Control.Exception.Lifted (try)
 import Control.Lens (at)
 import Control.Lens.Getter (use, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
-import Control.Monad (guard, unless, void, when)
+import Control.Monad ((>=>), guard, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, sort)
@@ -81,8 +81,9 @@ promptRetryName mq msg = do
 
 checkProfanity :: CmdName -> Id -> MsgQueue -> MudStack Bool
 checkProfanity cn i mq =
-    try (liftIO . T.readFile $ profanitiesFile) >>= either (\e -> fileIOExHandler "checkProfanity" e >> return False)
-                                                           helper
+      (liftIO . T.readFile $ profanitiesFile) |$| try >=> either
+          (\e -> fileIOExHandler "checkProfanity" e >> return False)
+          helper
   where
     helper profanities = if cn `notElem` T.lines profanities
       then return False
@@ -109,7 +110,7 @@ logProfanity cn (T.pack -> hn) =
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
-checkPropNamesDict cn mq = use (nonWorldState.dicts.propNamesDict) >>= \case
+checkPropNamesDict cn mq = nonWorldState.dicts.propNamesDict |$| use >=> \case
   Nothing                      -> return False
   Just pnd | cn `S.member` pnd -> do
       promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
@@ -118,7 +119,7 @@ checkPropNamesDict cn mq = use (nonWorldState.dicts.propNamesDict) >>= \case
 
 
 checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
-checkWordsDict cn mq = use (nonWorldState.dicts.wordsDict) >>= \case
+checkWordsDict cn mq = nonWorldState.dicts.wordsDict |$| use >=> \case
   Nothing                    -> return False
   Just wd | cn `S.member` wd -> do
       promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
@@ -183,7 +184,7 @@ stopInacTimer i mq = do
 
 
 notifyArrival :: Id -> IM.IntMap Pla -> MudStack ()
-notifyArrival i pt = getEntSing' i >>= \(ws, s) -> do
+notifyArrival i pt = i |$| getEntSing' >=> \(ws, s) -> do
     bcastAdmins pt $ s <> " has logged on."
     bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ws s A <> " has arrived in the game."
 

@@ -15,13 +15,13 @@ import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Text
 
-import Control.Monad (when)
+import Control.Monad ((>=>), when)
 import qualified Data.Text as T
 
 
 centralDispatch :: Interp
 centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = do
-    findAction plaId cn >>= maybe sorry (\act -> act p)
+    cn |$| findAction plaId >=> maybe sorry (\act -> act p)
     flip when (prompt plaMsgQueue dfltPrompt) =<< getPlaIsDfltPrompt plaId
   where
     sorry = send plaMsgQueue . nlnl $ "What?"
