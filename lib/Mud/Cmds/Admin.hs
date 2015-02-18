@@ -37,7 +37,7 @@ import Control.Lens (_1, _2, _3, at, over)
 import Control.Lens.Cons (cons)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
-import Control.Monad (forM_)
+import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
@@ -136,7 +136,7 @@ adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
                                                   \minutes"
                       , dfltColor
                       , "." ]
-adminAnnounce (Msg i mq msg) = getEntSing i >>= \s -> do
+adminAnnounce (Msg i mq msg) = i |$| getEntSing >=> \s -> do
     logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
     logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
     ok mq
@@ -150,7 +150,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (MsgWithTarget i mq cols target msg) = readTMVarInNWS msgQueueTblTMVar >>= \mqt@(IM.keys -> mqtKeys) ->
+adminBoot (MsgWithTarget i mq cols target msg) = msgQueueTblTMVar |$| readTMVarInNWS >=> \mqt@(IM.keys -> mqtKeys) ->
     getEntTbl >>= \et -> case [ k | k <- mqtKeys, (et ! k)^.sing == target ] of
       []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
                                     \you must specify the full PC name of the player you wish to boot.)"
@@ -185,7 +185,7 @@ adminBug p = withoutArgs adminBug p
 dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
 dumpLog mq cols logFile (s, p) = send mq =<< helper
   where
-    helper  = (try . liftIO $ readLog) >>= eitherRet handler
+    helper  = liftIO readLog |$| try >=> eitherRet handler
     readLog = mIf (doesFileExist logFile)
                   (return . multiWrapNl   cols . T.lines =<< T.readFile logFile)
                   (return . wrapUnlinesNl cols $ "No " <> p <> " have been logged.")
@@ -260,7 +260,7 @@ adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
                       , dblQuote $ prefixAdminCmd "print" <> " Is anybody home?"
                       , dfltColor
                       , "." ]
-adminPrint (Msg i mq msg) = getEntSing i >>= \s -> do
+adminPrint (Msg i mq msg) = i |$| getEntSing >=> \s -> do
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
     logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
@@ -281,7 +281,7 @@ adminProfanity p = withoutArgs adminProfanity p
 
 
 adminShutdown :: Action
-adminShutdown (NoArgs' i mq) = getEntSing i >>= \s -> do
+adminShutdown (NoArgs' i mq) = i |$| getEntSing >=> \s -> do
     logPla "adminShutdown" i $ "initiating shutdown " <> parensQuote "no message given" <> "."
     massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
     massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
@@ -295,7 +295,7 @@ adminShutdown (NoArgs' i mq) = getEntSing i >>= \s -> do
                                           , parensQuote "no message given"
                                           , "." ]
     liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown (Msg i mq msg) = getEntSing i >>= \s -> do
+adminShutdown (Msg i mq msg) = i |$| getEntSing >=> \s -> do
     logPla "adminShutdown" i $ "initiating shutdown; message: " <> dblQuote msg
     massSend $ shutdownMsgColor <> msg <> dfltColor
     massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
@@ -401,7 +401,7 @@ adminTypo p = withoutArgs adminTypo p
 adminUptime :: Action
 adminUptime (NoArgs i mq cols) = do
     logPlaExec (prefixAdminCmd "uptime") i
-    (try . send mq . nl =<< liftIO runUptime) >>= eitherRet handler
+    send mq . nl =<< liftIO runUptime |$| try >=> eitherRet handler
   where
     runUptime = T.pack <$> readProcess "uptime" [] ""
     handler e = logIOEx "adminUptime" e >> sendGenericErrorMsg mq cols
