@@ -49,7 +49,7 @@ import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
-import Control.Monad (forM, forM_, guard, mplus, unless, void)
+import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -196,7 +196,7 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 about :: Action
 about (NoArgs i mq cols) = do
     logPlaExec "about" i
-    try helper >>= eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
+    helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
     helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
 about p = withoutArgs about p
@@ -898,9 +898,9 @@ putAction (Lower' i as) = helper >>= \(bs, logMsgs) -> do
       in (pis, pc) |*|
         ( if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
-            then shufflePut i (t, ws) d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
+            then shufflePutSTM i (t, ws) d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
             else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
-          else shufflePut i (t, ws) d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
+          else shufflePutSTM i (t, ws) d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
         , putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, []) )
 putAction p = patternMatchFail "putAction" [ showText p ]
 
@@ -910,19 +910,19 @@ type PCInv        = Inv
 type PCCoins      = Coins
 
 
-shufflePut :: Id
-           -> (TMVar WorldState, WorldState)
-           -> PCDesig
-           -> ConName
-           -> IsConInRm
-           -> Args
-           -> InvWithCon
-           -> CoinsWithCon
-           -> PCInv
-           -> PCCoins
-           -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-           -> STM ([Broadcast], [T.Text])
-shufflePut i (t, ws) d cn icir as is c pis pc f | (conGecrs, conMiss, conRcs) <- resolveEntCoinNames i ws [cn] is c =
+shufflePutSTM :: Id
+              -> (TMVar WorldState, WorldState)
+              -> PCDesig
+              -> ConName
+              -> IsConInRm
+              -> Args
+              -> InvWithCon
+              -> CoinsWithCon
+              -> PCInv
+              -> PCCoins
+              -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
+              -> STM ([Broadcast], [T.Text])
+shufflePutSTM i (t, ws) d cn icir as is c pis pc f | (conGecrs, conMiss, conRcs) <- resolveEntCoinNames i ws [cn] is c =
     if null conMiss && (not . null $ conRcs)
       then putTMVar t ws >> return (mkBroadcast i "You can't put something inside a coin.", [])
       else case f . head . zip conGecrs $ conMiss of
@@ -935,7 +935,7 @@ shufflePut i (t, ws) d cn icir as is c pis pc f | (conGecrs, conMiss, conRcs) <-
                    mnom                  = mkMaybeNthOfM icir ws ci e is
                    (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put mnom i ci e) (ws,  [], []     ) eiss
                    (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i ci e) (ws', bs, logMsgs) ecs
-               in putTMVar t ws'' >> return (bs', logMsgs')
+               in  putTMVar t ws'' >> return (bs', logMsgs')
         Right _ -> putTMVar t ws   >> return (mkBroadcast i "You can only put things into one container at a time.", [])
 
 
@@ -953,8 +953,8 @@ handleEgress :: Id -> MudStack ()
 handleEgress i = getPCRmId i >>= \ri -> do
     unless (ri == iWelcome) . notifyEgress $ i
     (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar        <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    let takeTMVars =                (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar         <*> takeTMVar ptTMVar
-    (s, bs, logMsgs, pt)         <- liftIO . atomically $ takeTMVars >>= \(ws, mqt, pt) ->
+    let takeTMVarsSTM =             (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar         <*> takeTMVar ptTMVar
+    (s, bs, logMsgs, pt)         <- liftIO . atomically $ takeTMVarsSTM >>= \(ws, mqt, pt) ->
         let (view rmId -> ri')    = (ws^.pcTbl)  ! i
             ((i `delete`) -> ris) = (ws^.invTbl) ! ri'
             (view sing -> s)      = (ws^.entTbl) ! i
@@ -1326,13 +1326,13 @@ remove (Lower' i as) = helper >>= \(bs, logMsgs) -> do
       let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ws as
       in if T.head cn == rmChar && cn /= T.singleton rmChar
         then if not . null $ ris
-          then shuffleRem i (t, ws) d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
+          then shuffleRemSTM i (t, ws) d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
           else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
-        else shuffleRem i (t, ws) d cn False argsWithoutCon pis pc procGecrMisPCInv
+        else shuffleRemSTM i (t, ws) d cn False argsWithoutCon pis pc procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 
 
-shuffleRem :: Id
+shuffleRemSTM :: Id
            -> (TMVar WorldState, WorldState)
            -> PCDesig
            -> ConName
@@ -1342,7 +1342,7 @@ shuffleRem :: Id
            -> CoinsWithCon
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
            -> STM ([Broadcast], [T.Text])
-shuffleRem i (t, ws) d cn icir as is c f
+shuffleRemSTM i (t, ws) d cn icir as is c f
   | (conGecrs, conMiss, conRcs) <- resolveEntCoinNames i ws [cn] is c = if null conMiss && (not . null $ conRcs)
     then putTMVar t ws >> return (mkBroadcast i "You can't remove something from a coin.", [])
     else case f . head . zip conGecrs $ conMiss of

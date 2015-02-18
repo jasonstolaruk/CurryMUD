@@ -1,7 +1,6 @@
 module Mud.Data.State.Util.STM where
 
 import Mud.Data.State.State
-import Mud.Data.State.StateInIORefT
 
 import Control.Applicative (Const)
 import Control.Concurrent.STM (STM, atomically)
@@ -14,7 +13,7 @@ import Control.Monad.IO.Class (liftIO)
 -- World state:
 
 
-getWSTMVar :: StateInIORefT MudState IO (TMVar WorldState)
+getWSTMVar :: MudStack (TMVar WorldState)
 getWSTMVar = use worldStateTMVar
 
 
