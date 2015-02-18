@@ -35,7 +35,7 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (both, over)
 import Control.Lens.Getter (use, views)
-import Control.Monad (replicateM, replicateM_, unless)
+import Control.Monad ((>=>), replicateM, replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, foldl', sort)
@@ -150,7 +150,7 @@ debugBroad p = withoutArgs debugBroad p
 debugBuffCheck :: Action
 debugBuffCheck (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "buffer") i
-    try helper >>= eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
+    helper |$| try >=> eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
   where
     helper = liftIO (flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do
         send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | (mkMsg fn -> msg) <- liftIO . hGetBuffering $ h ]

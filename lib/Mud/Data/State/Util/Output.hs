@@ -39,7 +39,7 @@ import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
-import Control.Monad (forM_)
+import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex)
@@ -151,7 +151,7 @@ bcastOthersInRm i msg = bcast =<< helper
 
 
 massMsg :: Msg -> MudStack ()
-massMsg m = readTMVarInNWS msgQueueTblTMVar >>= \(IM.elems -> is) ->
+massMsg m = msgQueueTblTMVar |$| readTMVarInNWS >=> \(IM.elems -> is) ->
     forM_ is $ liftIO . atomically . flip writeTQueue m
 
 

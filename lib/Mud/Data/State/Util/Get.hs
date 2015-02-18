@@ -9,6 +9,7 @@ import Mud.Util.Misc
 import Control.Applicative ((<$>))
 import Control.Arrow ((***))
 import Control.Lens.Getter (view, views)
+import Control.Monad ((>=>))
 import Data.IntMap.Lazy ((!))
 import qualified Data.IntMap.Lazy as IM (IntMap)
 
@@ -177,22 +178,22 @@ getPCRmId' i = readWSTMVar >>= \ws@(view rmId . views pcTbl (! i) -> ri) ->
 
 
 getPCRm :: Id -> MudStack Rm
-getPCRm i = getPCRmId' i >>= \(ws, ri) ->
+getPCRm i = i |$| getPCRmId' >=> \(ws, ri) ->
     views rmTbl (return . (! ri)) ws
 
 
 getPCRm' :: Id -> MudStack (WorldState, Rm)
-getPCRm' i = getPCRmId' i >>= \(ws, ri) ->
+getPCRm' i = i |$| getPCRmId' >=> \(ws, ri) ->
     return (ws, views rmTbl (! ri) ws)
 
 
 getPCRmIdRm :: Id -> MudStack (Id, Rm)
-getPCRmIdRm i = getPCRmId' i >>= \(ws, ri) ->
+getPCRmIdRm i = i |$| getPCRmId' >=> \(ws, ri) ->
     return (ri, views rmTbl (! ri) ws)
 
 
 getPCRmIdRm' :: Id -> MudStack (WorldState, (Id, Rm))
-getPCRmIdRm' i = getPCRmId' i >>= \(ws, ri) ->
+getPCRmIdRm' i = i |$| getPCRmId' >=> \(ws, ri) ->
     return (ws, (ri, views rmTbl (! ri) ws))
 
 

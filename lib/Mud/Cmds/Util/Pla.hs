@@ -75,7 +75,7 @@ import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
-import Control.Monad (guard)
+import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
@@ -122,7 +122,7 @@ armSubToSlot = \case Head      -> HeadS
 
 
 bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
-bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getEntSing' i >>= \(ws, s) ->
+bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = i |$| getEntSing' >=> \(ws, s) ->
     let p  = (ws^.pcTbl) ! i
         ri = p^.rmId
         r  = (ws^.rmTbl) ! ri
