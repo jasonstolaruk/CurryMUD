@@ -36,7 +36,7 @@ import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
 import Control.Lens.Getter (use)
 import Control.Lens.Operators ((&), (.=), (?~))
-import Control.Monad (forM_, forever, guard)
+import Control.Monad ((>=>), forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Data.IntMap.Lazy ((!))
@@ -82,10 +82,10 @@ spawnLogger fn@(T.pack -> fn') p (T.unpack -> ln) f q =
     async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler "spawnLogger")
                   (logRotationFlagger q `catch` loggingThreadExHandler "logRotationFlagger")
   where
-    initLog = fileHandler fn p >>= \gh ->
+    initLog = p |$| fileHandler fn >=> \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
         in updateGlobalLogger ln (setHandlers [h] . setLevel p) >> return gh
-    loop gh = (atomically . readTQueue $ q) >>= \case
+    loop gh = q |$| atomically . readTQueue >=> \case
       LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
       RotateLog                -> rotateLog gh
       StopLog                  -> close gh
@@ -224,7 +224,7 @@ getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
 
 
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
-massLogPla modName (dblQuote -> funName) msg = readTMVarInNWS plaLogTblTMVar >>= helper
+massLogPla modName (dblQuote -> funName) msg = plaLogTblTMVar |$| readTMVarInNWS >=> helper
   where
     helper (map snd . IM.elems -> logQueues) =
         forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
