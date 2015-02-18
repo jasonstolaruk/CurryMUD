@@ -21,6 +21,7 @@ import Mud.Interp.Pager
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.ANSI
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -30,7 +31,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)
-import Control.Monad (void)
+import Control.Monad ((>=>), void)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
@@ -126,7 +127,7 @@ fileIOExHandler fn e
 
 
 pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
-pager i mq txt@(length -> txtLen) = getPlaPageLines i >>= \pageLen ->
+pager i mq txt@(length -> txtLen) = i |$| getPlaPageLines >=> \pageLen ->
     if txtLen + 3 <= pageLen
       then send mq . nl . T.unlines $ txt
       else let (page, rest) = splitAt (pageLen - 2) txt in do
