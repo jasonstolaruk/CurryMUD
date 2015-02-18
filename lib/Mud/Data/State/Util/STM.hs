@@ -1,11 +1,13 @@
 module Mud.Data.State.Util.STM where
 
 import Mud.Data.State.State
+import Mud.Util.Misc
 
 import Control.Applicative (Const)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
 import Control.Lens.Getter (use)
+import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 
 
@@ -24,14 +26,14 @@ readWSTMVar = liftIO . atomically . readTMVar =<< getWSTMVar
 onWS :: ((TMVar WorldState, WorldState) -> STM a) -> MudStack a
 onWS f = liftIO . atomically . transaction =<< getWSTMVar
   where
-    transaction t = takeTMVar t >>= \ws ->
+    transaction t = t |$| takeTMVar >=> \ws ->
         f (t, ws)
 
 
 modifyWS :: (WorldState -> WorldState) -> MudStack ()
 modifyWS f = liftIO . atomically . transaction =<< getWSTMVar
   where
-    transaction t = takeTMVar t >>= putTMVar t . f
+    transaction t = t |$| takeTMVar >=> putTMVar t . f
 
 
 -- ============================================================
@@ -54,7 +56,7 @@ onNWS :: ((TMVar t -> Const (TMVar t) (TMVar t)) -> NonWorldState -> Const (TMVa
       -> MudStack a
 onNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
-    transaction t = takeTMVar t >>= \x ->
+    transaction t = t |$| takeTMVar >=> \x ->
         f (t, x)
 
 
@@ -63,4 +65,4 @@ modifyNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (
           -> MudStack ()
 modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
-    transaction t = takeTMVar t >>= putTMVar t . f
+    transaction t = t |$| takeTMVar >=> putTMVar t . f
