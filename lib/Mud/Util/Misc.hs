@@ -2,6 +2,7 @@
 
 module Mud.Util.Misc ( (?)
                      , (|!|)
+                     , (|$|)
                      , (|*|)
                      , (|?|)
                      , Cond(..)
@@ -52,6 +53,11 @@ a |?| b = a ? b :? mempty
 infixl 1 |!|
 (|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
 a |!| b = (a == mempty) ? mempty :? b
+
+
+infixr 0 |$|
+(|$|) :: a -> (a -> b) -> b
+(|$|) = flip ($)
 
 
 (|*|) :: (Eq a, Monoid a, Eq b, Monoid b) => (a, b) -> (c, c) -> c
