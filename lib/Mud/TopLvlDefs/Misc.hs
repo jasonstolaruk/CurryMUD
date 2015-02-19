@@ -52,7 +52,7 @@ maxHelpTopicLen = 12
 
 
 maxInacSecs :: Integer
-maxInacSecs = 5 -- 10 * 60
+maxInacSecs = 10 * 60
 
 
 maxPageLines, minPageLines :: Int
@@ -77,7 +77,7 @@ stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
 threadTblPurgerDelay :: Int
-threadTblPurgerDelay = 30 * 60
+threadTblPurgerDelay = 60 * 60
 
 
 ver :: T.Text
