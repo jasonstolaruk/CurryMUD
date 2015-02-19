@@ -38,8 +38,9 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryReadTMQueue, writeTMQueue)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
-import Control.Concurrent.STM.TQueue (TQueue, newTQueueIO, readTQueue, tryReadTQueue, writeTQueue)
+import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
@@ -175,7 +176,7 @@ threadTblPurger :: MudStack ()
 threadTblPurger = do
     registerThread ThreadTblPurger
     logNotice "threadTblPurger" "thread table purger thread started."
-    let loop = (liftIO . threadDelay $ 10 ^ 6 * threadTblPurgerDelay) >> purgeThreadTbls
+    let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
     forever loop `catch` threadTblPurgerExHandler
 
 
@@ -197,7 +198,7 @@ talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
     helper = do
-        (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTQueueIO
+        (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         registerThread . Talk $ i
         handle (plaThreadExHandler "talk" i) $ plaTblTMVar |$| readTMVarInNWS >=> \pt -> do
@@ -297,23 +298,22 @@ dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHand
 -- "Inactivity timer" threads:
 
 
-type InacTimerQueue = TQueue InacTimerMsg
+type InacTimerQueue = TMQueue InacTimerMsg
 
 
 data InacTimerMsg = ResetTimer
-                  | StopTimer
 
 
 inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThreadExHandler "inactivity timer" i
   where
     loop secs = do
-        liftIO . threadDelay $ 10 ^ 6
-        itq |$| liftIO . atomically . tryReadTQueue >=> \case
-          Nothing | secs >= maxInacSecs -> inacBoot secs
-                  | otherwise           -> loop . succ $ secs
-          Just itm                      -> case itm of StopTimer  -> return ()
-                                                       ResetTimer -> loop 0
+        liftIO . threadDelay $ 1 * 10 ^ 6
+        itq |$| liftIO . atomically . tryReadTMQueue >=> \case
+          Just Nothing | secs >= maxInacSecs -> inacBoot secs
+                       | otherwise           -> loop . succ $ secs
+          Just (Just ResetTimer)             -> loop 0
+          Nothing                            -> return ()
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = do
         (parensQuote -> s) <- getEntSing i
         logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", s, " due to inactivity." ]
@@ -326,36 +326,32 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
 
 
 server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-server h i mq itq = sequence_ [ registerThread . Server $ i, loop (Just itq) `catch` plaThreadExHandler "server" i ]
+server h i mq itq = sequence_ [ registerThread . Server $ i, loop `catch` plaThreadExHandler "server" i ]
   where
-    loop mitq = mq |$| liftIO . atomically . readTQueue >=> \case
-      Dropped        ->                                   sayonara i mitq
-      FromClient msg -> handleFromClient i mq mitq msg >> loop mitq
-      FromServer msg -> handleFromServer i h msg       >> loop mitq
-      InacBoot       -> sendInacBootMsg h              >> sayonara i mitq
-      InacStop       -> stopInacThread mitq            >> loop Nothing
-      MsgBoot msg    -> boot h msg                     >> sayonara i mitq
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)   >> loop mitq
-      Prompt  p      -> sendPrompt i h p               >> loop mitq
-      Quit           -> cowbye h                       >> sayonara i mitq
-      Shutdown       -> shutDown                       >> loop mitq
-      SilentBoot     ->                                   sayonara i mitq
+    loop = mq |$| liftIO . atomically . readTQueue >=> \case
+      Dropped        ->                                  sayonara
+      FromClient msg -> handleFromClient i mq itq msg >> loop
+      FromServer msg -> handleFromServer i h msg      >> loop
+      InacBoot       -> sendInacBootMsg h             >> sayonara
+      InacStop       -> stopInacThread itq            >> loop
+      MsgBoot msg    -> boot h msg                    >> sayonara
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)  >> loop
+      Prompt  p      -> sendPrompt i h p              >> loop
+      Quit           -> cowbye h                      >> sayonara
+      Shutdown       -> shutDown                      >> loop
+      SilentBoot     ->                                  sayonara
+    sayonara = sequence_ [ liftIO . atomically . closeTMQueue $ itq, handleEgress i ] -- TODO: In the case of an admin, the queue will have already been closed...
 
 
-sayonara :: Id -> Maybe InacTimerQueue -> MudStack ()
-sayonara i (Just itq) = sequence_ [ liftIO . atomically . writeTQueue itq $ StopTimer, handleEgress i ]
-sayonara i Nothing    = handleEgress i
-
-
-handleFromClient :: Id -> MsgQueue -> Maybe InacTimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq mitq (T.strip . stripControl . stripTelnet -> msg) = i |$| getPla >=> \p ->
+handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
+handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = i |$| getPla >=> \p ->
     let thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
         thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
     in maybe thruCentral thruOther $ p^.interp
   where
     interpret p f cn as = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
-        maybeVoid (liftIO . atomically . flip writeTQueue ResetTimer) mitq
+        liftIO . atomically . writeTMQueue itq $ ResetTimer
         f cn . WithArgs i mq (p^.columns) $ as
 
 
@@ -382,8 +378,8 @@ sendInacBootMsg h = liftIO . T.hPutStrLn h . nl $ bootMsgColor                  
                                                   dfltColor
 
 
-stopInacThread :: Maybe InacTimerQueue -> MudStack ()
-stopInacThread = maybeVoid (liftIO . atomically . flip writeTQueue StopTimer)
+stopInacThread :: InacTimerQueue -> MudStack ()
+stopInacThread = liftIO . atomically . closeTMQueue
 
 
 boot :: Handle -> T.Text -> MudStack ()

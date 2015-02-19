@@ -126,6 +126,7 @@ library
                        random >=1.1 && <2.0,
                        split >=0.2 && <0.3,
                        stm >=2.4 && <3.0,
+                       stm-chans >=3.0 && <4.0,
                        text >=1.1 && <2.0,
                        time >=1.4 && <2.0,
                        transformers >=0.4 && <0.5,

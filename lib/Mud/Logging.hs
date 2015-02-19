@@ -125,7 +125,7 @@ logRotationFlagger :: LogQueue -> IO ()
 logRotationFlagger q = forever loop
   where
     loop = do
-        threadDelay $ 10 ^ 6 * logRotationFlaggerDelay
+        threadDelay $ logRotationFlaggerDelay * 10 ^ 6
         atomically . writeTQueue q $ RotateLog
 
 

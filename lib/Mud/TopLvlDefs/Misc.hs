@@ -35,7 +35,7 @@ isDebug = True
 
 
 logRotationFlaggerDelay :: Int
-logRotationFlaggerDelay = 60 * 5
+logRotationFlaggerDelay = 5 * 60
 
 
 maxCmdLen :: Int
@@ -52,7 +52,7 @@ maxHelpTopicLen = 12
 
 
 maxInacSecs :: Integer
-maxInacSecs = 60 * 10
+maxInacSecs = 5 -- 10 * 60
 
 
 maxPageLines, minPageLines :: Int
@@ -77,7 +77,7 @@ stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
 threadTblPurgerDelay :: Int
-threadTblPurgerDelay = 60 * 5
+threadTblPurgerDelay = 30 * 60
 
 
 ver :: T.Text
