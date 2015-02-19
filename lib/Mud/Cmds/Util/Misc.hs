@@ -114,7 +114,7 @@ dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, sho
 
 
 fileIOExHandler :: T.Text -> IOException -> MudStack ()
-fileIOExHandler fn e = if or . map (e |$|) $ [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]
+fileIOExHandler fn e = if any (e |$|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]
                          then logIOEx fn e
                          else throwIO e
 
