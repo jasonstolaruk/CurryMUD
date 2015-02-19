@@ -56,7 +56,7 @@ import Data.Monoid ((<>), mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
-import System.Random (randomRIO) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
+import System.Random (randomIO, randomRIO) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, empty)
@@ -264,7 +264,7 @@ adHoc mq host = do
 
 
 randomSex :: IO Sex
-randomSex = ([ Male, Female ] !!) <$> randomRIO (0, 1)
+randomSex = ([ Male, Female ] !!) . fromEnum <$> (randomIO :: IO Bool)
 
 
 randomRace :: IO Race
@@ -340,7 +340,7 @@ server h i mq itq = sequence_ [ registerThread . Server $ i, loop `catch` plaThr
       Quit           -> cowbye h                      >> sayonara
       Shutdown       -> shutDown                      >> loop
       SilentBoot     ->                                  sayonara
-    sayonara = sequence_ [ liftIO . atomically . closeTMQueue $ itq, handleEgress i ] -- TODO: In the case of an admin, the queue will have already been closed...
+    sayonara = sequence_ [ liftIO . atomically . closeTMQueue $ itq, handleEgress i ]
 
 
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
