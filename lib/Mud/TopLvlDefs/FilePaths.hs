@@ -1,6 +1,7 @@
 module Mud.TopLvlDefs.FilePaths where
 
 import System.Environment (getEnv)
+import System.FilePath ((<.>), (</>), pathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
 
 
@@ -9,33 +10,33 @@ import System.IO.Unsafe (unsafePerformIO)
 
 
 mudDir :: FilePath
-mudDir = let home = unsafePerformIO . getEnv $ "HOME" in home ++ "/CurryMUD/"
+mudDir = let home = unsafePerformIO . getEnv $ "HOME" in home </> "CurryMUD"
 
 
 logDir, resDir :: FilePath
-logDir = mudDir ++ "logs/"
-resDir = mudDir ++ "res/"
+logDir = mudDir </> "logs"
+resDir = mudDir </> "res"
 
 
 helpDir, miscDir, titleDir :: FilePath
-helpDir  = resDir ++ "help/"
-miscDir  = resDir ++ "misc/"
-titleDir = resDir ++ "titles/"
+helpDir  = resDir </> "help"
+miscDir  = resDir </> "misc"
+titleDir = resDir </> "titles"
 
 
 adminHelpDir, plaHelpDir :: FilePath
-adminHelpDir = helpDir ++ "admin/"
-plaHelpDir   = helpDir ++ "pla/"
+adminHelpDir = helpDir </> "admin"
+plaHelpDir   = helpDir </> "pla"
 
 
 plaHelpCmdsDir, plaHelpTopicsDir :: FilePath
-plaHelpCmdsDir   = plaHelpDir ++ "cmds/"
-plaHelpTopicsDir = plaHelpDir ++ "topics/"
+plaHelpCmdsDir   = plaHelpDir </> "cmds"
+plaHelpTopicsDir = plaHelpDir </> "topics"
 
 
 adminHelpCmdsDir, adminHelpTopicsDir :: FilePath
-adminHelpCmdsDir   = adminHelpDir ++ "cmds/"
-adminHelpTopicsDir = adminHelpDir ++ "topics/"
+adminHelpCmdsDir   = adminHelpDir </> "cmds"
+adminHelpTopicsDir = adminHelpDir </> "topics"
 
 
 -- ==================================================
@@ -43,12 +44,12 @@ adminHelpTopicsDir = adminHelpDir ++ "topics/"
 
 
 bugLogFile, errorLogFile, loggingExLogFile, noticeLogFile, profanityLogFile, typoLogFile :: FilePath
-bugLogFile       = logDir ++ "bug.log"
-errorLogFile     = logDir ++ "error.log"
-loggingExLogFile = logDir ++ "logging thread exception.log"
-noticeLogFile    = logDir ++ "notice.log"
-profanityLogFile = logDir ++ "profanity.log"
-typoLogFile      = logDir ++ "typo.log"
+bugLogFile       = logDir </> "bug"                      <.> "log"
+errorLogFile     = logDir </> "error"                    <.> "log"
+loggingExLogFile = logDir </> "logging thread exception" <.> "log"
+noticeLogFile    = logDir </> "notice"                   <.> "log"
+profanityLogFile = logDir </> "profanity"                <.> "log"
+typoLogFile      = logDir </> "typo"                     <.> "log"
 
 
 -- ==================================================
@@ -56,10 +57,10 @@ typoLogFile      = logDir ++ "typo.log"
 
 
 aboutFile, cowbyeFile, motdFile, uptimeFile :: FilePath
-aboutFile  = miscDir ++ "about"
-cowbyeFile = miscDir ++ "cowbye"
-motdFile   = miscDir ++ "motd"
-uptimeFile = mudDir  ++ "uptime"
+aboutFile  = miscDir </> "about"
+cowbyeFile = miscDir </> "cowbye"
+motdFile   = miscDir </> "motd"
+uptimeFile = mudDir  </> "uptime"
 
 
 -- ==================================================
@@ -67,9 +68,9 @@ uptimeFile = mudDir  ++ "uptime"
 
 
 wordsFile, propNamesFile :: Maybe FilePath
-wordsFile     = Just "/usr/share/dict/words"
-propNamesFile = Just "/usr/share/dict/propernames"
+wordsFile     = Just $ pathSeparator : "usr" </> "share" </> "dict" </> "words"
+propNamesFile = Just $ pathSeparator : "usr" </> "share" </> "dict" </> "propernames"
 
 
 profanitiesFile :: FilePath
-profanitiesFile = miscDir ++ "profanities"
+profanitiesFile = miscDir </> "profanities"

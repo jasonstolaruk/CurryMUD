@@ -43,6 +43,7 @@ import Data.IntMap.Lazy ((!))
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.Directory (doesFileExist, renameFile)
+import System.FilePath ((<.>), (</>))
 import System.IO (stderr)
 import System.IO.Error (isAlreadyInUseError, isPermissionError)
 import System.Log (Priority(..))
@@ -130,9 +131,9 @@ logRotationFlagger q = forever loop
 
 
 initPlaLog :: Id -> Sing -> MudStack ()
-initPlaLog i n@((logDir ++) . (++ ".log") . T.unpack -> fn) = do
+initPlaLog i n@(T.unpack -> n') = do
     q <- liftIO newTQueueIO
-    a <- liftIO . spawnLogger fn INFO ("currymud." <> n) infoM $ q
+    a <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM $ q
     modifyNWS plaLogTblTMVar $ \plt ->
         plt & at i ?~ (a, q)
 

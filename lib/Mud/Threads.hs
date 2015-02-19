@@ -55,6 +55,7 @@ import Data.List ((\\))
 import Data.Monoid ((<>), mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
+import System.FilePath ((</>))
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (randomIO, randomRIO) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)
@@ -291,7 +292,7 @@ dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
     mkFilename   = ("title" ++) . show <$> randomRIO (1, noOfTitles)
-    takeADump fn = send mq . nlPrefix =<< nl `fmap` (liftIO . T.readFile . (titleDir ++) $ fn)
+    takeADump fn = send mq . nlPrefix =<< nl `fmap` (liftIO . T.readFile $ titleDir </> fn)
 
 
 -- ==================================================

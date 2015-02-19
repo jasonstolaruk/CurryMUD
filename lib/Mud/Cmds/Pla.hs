@@ -562,7 +562,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
 help :: Action
-help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir ++ "root") |$| try >=> either handler helper
+help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
   where
     handler e = do
         fileIOExHandler "help" e
@@ -593,11 +593,26 @@ help p = patternMatchFail "help" [ showText p ]
 
 mkHelpData :: Id -> MudStack [Help]
 mkHelpData i = i |$| getPlaIsAdmin >=> \ia -> do
-    [ plaHelpCmdNames, plaHelpTopicNames, adminHelpCmdNames, adminHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
-    let phcs = [ Help (T.pack                  phcn) (plaHelpCmdsDir     ++ phcn) True  False | phcn <- plaHelpCmdNames     ]
-        phts = [ Help (T.pack                  phtn) (plaHelpTopicsDir   ++ phtn) False False | phtn <- plaHelpTopicNames   ]
-        ahcs = [ Help (T.pack $ adminCmdChar : whcn) (adminHelpCmdsDir   ++ whcn) True  True  | whcn <- adminHelpCmdNames   ]
-        ahts = [ Help (T.pack                  whtn) (adminHelpTopicsDir ++ whtn) False True  | whtn <- adminHelpTopicNames ]
+    [ plaHelpCmdNames
+    , plaHelpTopicNames
+    , adminHelpCmdNames
+    , adminHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
+    let phcs = [ Help { helpName     = T.pack phcn
+                      , helpFilePath = plaHelpCmdsDir     </> phcn
+                      , isCmdHelp    = True
+                      , isAdminHelp  = False } | phcn <- plaHelpCmdNames     ]
+        phts = [ Help { helpName     = T.pack phtn
+                      , helpFilePath = plaHelpTopicsDir   </> phtn
+                      , isCmdHelp    = False
+                      , isAdminHelp  = False } | phtn <- plaHelpTopicNames   ]
+        ahcs = [ Help { helpName     = T.pack $ adminCmdChar : whcn
+                      , helpFilePath = adminHelpCmdsDir   </> whcn
+                      , isCmdHelp    = True
+                      , isAdminHelp  = True }  | whcn <- adminHelpCmdNames   ]
+        ahts = [ Help { helpName     = T.pack whtn
+                      , helpFilePath = adminHelpTopicsDir </> whtn
+                      , isCmdHelp    = False
+                      , isAdminHelp  = True }  | whtn <- adminHelpTopicNames ]
     return $ phcs ++ phts ++ (guard ia >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
