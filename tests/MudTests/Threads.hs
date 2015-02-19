@@ -5,6 +5,7 @@ import Mud.Threads
 import Mud.Util.Misc
 import MudTests.TestUtil
 
+import Control.Monad ((>=>))
 import Test.QuickCheck.Monadic (assert, monadicIO)
 import Test.Tasty.QuickCheck (Property)
 
