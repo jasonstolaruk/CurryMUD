@@ -62,6 +62,7 @@ import Prelude hiding (pi)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
+import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
@@ -592,11 +593,10 @@ help p = patternMatchFail "help" [ showText p ]
 
 
 mkHelpData :: Id -> MudStack [Help]
-mkHelpData i = i |$| getPlaIsAdmin >=> \ia -> do
-    [ plaHelpCmdNames
-    , plaHelpTopicNames
-    , adminHelpCmdNames
-    , adminHelpTopicNames ] <- mapM getHelpDirectoryContents helpDirs
+mkHelpData i = helpDirs |$| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
+                                                               , plaHelpTopicNames
+                                                               , adminHelpCmdNames
+                                                               , adminHelpTopicNames ] -> do
     let phcs = [ Help { helpName     = T.pack phcn
                       , helpFilePath = plaHelpCmdsDir     </> phcn
                       , isCmdHelp    = True
@@ -613,6 +613,7 @@ mkHelpData i = i |$| getPlaIsAdmin >=> \ia -> do
                       , helpFilePath = adminHelpTopicsDir </> whtn
                       , isCmdHelp    = False
                       , isAdminHelp  = True }  | whtn <- adminHelpTopicNames ]
+    ia <- getPlaIsAdmin i
     return $ phcs ++ phts ++ (guard ia >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]

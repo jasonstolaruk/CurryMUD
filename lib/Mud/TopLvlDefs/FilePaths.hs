@@ -5,6 +5,10 @@ import System.FilePath ((<.>), (</>), pathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
 
 
+drive :: Char
+drive = pathSeparator
+
+
 -- ==================================================
 -- Directories:
 
@@ -68,8 +72,8 @@ uptimeFile = mudDir  </> "uptime"
 
 
 wordsFile, propNamesFile :: Maybe FilePath
-wordsFile     = Just $ pathSeparator : "usr" </> "share" </> "dict" </> "words"
-propNamesFile = Just $ pathSeparator : "usr" </> "share" </> "dict" </> "propernames"
+wordsFile     = Just $ drive : "usr" </> "share" </> "dict" </> "words"
+propNamesFile = Just $ drive : "usr" </> "share" </> "dict" </> "propernames"
 
 
 profanitiesFile :: FilePath
