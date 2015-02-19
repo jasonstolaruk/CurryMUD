@@ -268,7 +268,7 @@ randomSex = ([ Male, Female ] !!) . fromEnum <$> (randomIO :: IO Bool)
 
 
 randomRace :: IO Race
-randomRace = ([ Dwarf .. Vulpenoid ] !!) <$> randomRIO (0, 7)
+randomRace = randomIO
 
 
 getUnusedId :: WorldState -> Id

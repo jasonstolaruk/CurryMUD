@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell, ViewPatterns #-}
 
 module Mud.Data.State.State where
 
@@ -6,6 +6,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.StateInIORefT
 
+import Control.Arrow ((***), first)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TMVar (TMVar)
@@ -14,6 +15,7 @@ import Control.Lens (makeLenses)
 import Data.Monoid (Monoid, mappend, mempty)
 import Network (HostName)
 import System.Clock (TimeSpec)
+import System.Random (Random, random, randomR)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Set as S (Set)
@@ -256,7 +258,12 @@ data Race = Dwarf
           | Human
           | Lagomorph
           | Nymph
-          | Vulpenoid deriving (Enum, Eq, Show)
+          | Vulpenoid deriving (Bounded, Enum, Eq, Show)
+
+
+instance Random Race where
+  randomR (fromEnum *** fromEnum -> intPair) = first toEnum . randomR intPair
+  random                                     = randomR (minBound, maxBound)
 
 
 -- ==================================================
