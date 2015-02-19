@@ -56,7 +56,7 @@ import Data.Monoid ((<>), mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
-import System.Random (newStdGen, randomR) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
+import System.Random (randomRIO) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, empty)
@@ -264,11 +264,11 @@ adHoc mq host = do
 
 
 randomSex :: IO Sex
-randomSex = [ [ Male, Female ] !! x | g <- newStdGen, let (x, _) = randomR (0, 1) g ]
+randomSex = ([ Male, Female ] !!) <$> randomRIO (0, 1)
 
 
 randomRace :: IO Race
-randomRace = [ [ Dwarf .. Vulpenoid ] !! x | g <- newStdGen, let (x, _) = randomR (0, 7) g ]
+randomRace = ([ Dwarf .. Vulpenoid ] !!) <$> randomRIO (0, 7)
 
 
 getUnusedId :: WorldState -> Id
@@ -290,7 +290,7 @@ plaThreadExHandler n i e
 dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
-    mkFilename   = ("title" ++) . show . fst . randomR (1, noOfTitles) <$> newStdGen
+    mkFilename   = ("title" ++) . show <$> randomRIO (1, noOfTitles)
     takeADump fn = send mq . nlPrefix =<< nl `fmap` (liftIO . T.readFile . (titleDir ++) $ fn)
 
 
