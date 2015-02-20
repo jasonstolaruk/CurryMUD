@@ -160,7 +160,7 @@ loadDictFiles = (nonWorldState.dicts .=) =<< [ Dicts mWSet mPnSet | mWSet  <- lo
                                                                   , mPnSet <- loadDictFile propNamesFile ]
 
 
-loadDictFile :: Maybe FilePath -> MudStack (Maybe (S.Set T.Text))
+loadDictFile :: Maybe FilePath -> MudStack (Maybe (S.Set T.Text)) -- TODO: Hmm...
 loadDictFile = maybe (return Nothing) loadIt
   where
     loadIt fn@(dblQuote . T.pack -> fn') = do
