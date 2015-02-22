@@ -153,7 +153,7 @@ loadDictFiles = (nonWorldState.dicts .=) =<< [ Dicts mWSet mPnSet | mWSet  <- lo
                                                                   , mPnSet <- loadDictFile propNamesFile ]
 
 
-loadDictFile :: Maybe FilePath -> MudStack (Maybe (S.Set T.Text)) -- TODO: Hmm...
+loadDictFile :: Maybe FilePath -> MudStack (Maybe (S.Set T.Text))
 loadDictFile = maybe (return Nothing) loadIt
   where
     loadIt fn@(dblQuote . T.pack -> fn') = do
@@ -338,7 +338,7 @@ server h i mq itq = sequence_ [ registerThread . Server $ i, loop `catch` plaThr
 
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) =
-    asks (\md -> (! i) <$> liftIO . readTVarIO $ md^.plaTblTVar) >>= \p ->
+    (\md -> (! i) <$> liftIO . readTVarIO $ md^.plaTblTVar) |$| asks >=> \p ->
         let thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
             thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
         in maybe thruCentral thruOther $ p^.interp
