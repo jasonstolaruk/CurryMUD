@@ -11,7 +11,7 @@ import Mud.TheWorld.Ids
 import qualified Mud.Logging as L (logNotice)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent.STM.TVar (newTVarIO)
+import Control.Concurrent.STM.TVar (modifyTVar, newTVarIO, readTVar)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Data.Bits (zeroBits)
 import Data.Monoid (mempty)
@@ -174,7 +174,11 @@ createWorld = do
 
 
 sortAllInvs :: MudStack ()
-sortAllInvs = do
+sortAllInvs = ask >>= \md -> do
     logNotice "sortAllInvs" "sorting all inventories."
-    modifyWS $ \ws ->
-        ws & invTbl .~ IM.map (sortInv ws) (ws^.invTbl)
+    liftIO . atomically . helperSTM $ md
+  where
+    helperSTM md = do
+        tt <- readTVar $ md^.typeTblTVar
+        et <- readTVar $ md^.entTblTVar
+        modifyTVar (md^.invTblTVar) . IM.map (sortInv tt et)

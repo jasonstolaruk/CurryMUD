@@ -23,14 +23,15 @@ import Mud.Data.State.Util.STM
 import Mud.Util.Misc
 import Mud.Util.Text
 
+-- TODO: import Control.Monad (void)
+-- TODO: import Control.Monad.IO.Class (liftIO)
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Concurrent (forkIO)
 import Control.Lens (_1, _2, both, over)
+import Control.Lens.Cons (cons)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (<>~), (^.))
--- TODO: import Control.Monad (void)
--- TODO: import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
@@ -102,16 +103,17 @@ mkUnknownPCEntName i ws | (view sex  -> s) <- (ws^.mobTbl) ! i
                         , (view race -> r) <- (ws^.pcTbl)  ! i = (T.singleton . T.head . pp $ s) <> pp r
 
 
-sortInv :: WorldState -> Inv -> Inv
-sortInv ws is | (foldl' helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, (ws^.typeTbl) ! i) | i <- is ]
-              = (pcIs ++) . sortNonPCs $ nonPCIs
+-- TODO: Changed fold from "foldl'" to "foldr"... everything OK?
+sortInv :: TypeTbl -> EntTbl -> Inv -> Inv
+sortInv tt et is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, tt ! i) | i <- is ]
+                 = (pcIs ++) . sortNonPCs $ nonPCIs
   where
-    helper a (i, t) | t == PCType      = a & _1 <>~ [i]
-                    | otherwise        = a & _2 <>~ [i]
+    helper (i, t) a                    = let consTo lens = over lens (cons i) a
+                                         in if t == PCType then consTo _1 else consTo _2
     sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped nonPCIs                     = [ (i, fromJust $ e^.entName, e^.sing) | i <- nonPCIs
-                                                                               , let e = (ws^.entTbl) ! i ]
+                                                                               , let e = et ! i ]
 
 
 -- TODO: statefulFork :: StateInIORefT MudState IO () -> MudStack MudState
