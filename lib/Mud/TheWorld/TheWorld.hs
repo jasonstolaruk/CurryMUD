@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.TheWorld ( initMudState
+module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
 
 import Mud.Data.State.State
@@ -11,7 +11,7 @@ import Mud.TheWorld.Ids
 import qualified Mud.Logging as L (logNotice)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent.STM.TMVar (newTMVarIO)
+import Control.Concurrent.STM.TVar (newTVarIO)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Data.Bits (zeroBits)
 import Data.Monoid (mempty)
@@ -36,28 +36,48 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 -- ==================================================
 
 
-initMudState :: IO MudState
-initMudState = do
-    let dictionaries = Dicts Nothing Nothing
-    start <- getTime Monotonic
-    (mqtTMVar, pltTMVar, ptTMVar, tatTMVar, ttTMVar, wsTMVar) <- (,,,,,) <$> newTMVarIO IM.empty
-                                                                         <*> newTMVarIO IM.empty
-                                                                         <*> newTMVarIO IM.empty
-                                                                         <*> newTMVarIO M.empty
-                                                                         <*> newTMVarIO M.empty
-                                                                         <*> newTMVarIO ws
-    return MudState { _worldStateTMVar = wsTMVar
-                    , _nonWorldState   = NonWorldState { _dicts             = dictionaries
-                                                       , _errorLog          = Nothing
-                                                       , _msgQueueTblTMVar  = mqtTMVar
-                                                       , _noticeLog         = Nothing
-                                                       , _plaLogTblTMVar    = pltTMVar
-                                                       , _plaTblTMVar       = ptTMVar
-                                                       , _startTime         = start
-                                                       , _talkAsyncTblTMVar = tatTMVar
-                                                       , _threadTblTMVar    = ttTMVar } }
-  where
-    ws = WorldState IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty IM.empty
+initMudData :: IO MudData
+initMudData = do
+    (a, b, c, d, e, f, g, h, i, j, k, l, m, n, q, r) <- (,,,,,,,,,,,,,,,) <$> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+                                                                          <*> newTVarIO IM.empty
+    (o, p) <- (,) <$> newTVarIO M.empty <*> newTVarIO M.empty
+    (noticeLogService, errorLogService) <- initLogging
+    startTime                           <- getTime Monotonic
+    return MudData { _armTblTVar       :: TVar a
+                   , _clothTblTVar     :: TVar b
+                   , _coinsTblTVar     :: TVar c
+                   , _conTblTVar       :: TVar d
+                   , _entTblTVar       :: TVar e
+                   , _eqTblTVar        :: TVar f
+                   , _errorLog         :: errorLogService
+                   , _invTblTVar       :: TVar g
+                   , _mobTblTVar       :: TVar h
+                   , _msgQueueTblTVar  :: TVar i
+                   , _noticeLog        :: noticeLogService
+                   , _objTblTVar       :: TVar j
+                   , _pcTblTVar        :: TVar k
+                   , _plaLogTblTVar    :: TVar l
+                   , _plaTblTVar       :: TVar m
+                   , _rmTblTVar        :: TVar n
+                   , _startTime        :: startTime
+                   , _talkAsyncTblTVar :: TVar o
+                   , _threadTblTVar    :: TVar p
+                   , _typeTblTVar      :: TVar q
+                   , _wpnTblTVar       :: TVar r }
 
 
 initWorld :: MudStack ()

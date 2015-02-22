@@ -11,7 +11,6 @@ kickButt <$> take maxBound names
 
 module Main (main) where
 
-import Mud.Data.State.StateInIORefT
 import Mud.TheWorld.TheWorld
 import Mud.Threads
 import Mud.TopLvlDefs.FilePaths
@@ -20,7 +19,6 @@ import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Control.Monad (void)
 import Network (withSocketsDo)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getEnv, getProgName)
@@ -32,7 +30,7 @@ main :: IO ()
 main = withSocketsDo $ do
     setCurrentDirectory mudDir
     welcome
-    void . runStateInIORefT listenWrapper =<< initMudState
+    runReaderT listenWrapper =<< initMudData
 
 
 welcome :: IO ()
