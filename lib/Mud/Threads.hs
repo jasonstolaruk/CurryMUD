@@ -143,9 +143,8 @@ listenExHandler e = case fromException e of
 
 
 registerThread :: ThreadType -> MudStack ()
-registerThread threadType = ask >>= md -> do
-    ti <- liftIO myThreadId
-    liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType
+registerThread threadType = liftIO myThreadId >>= \ti ->
+    asks (\md -> liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType)
 
 
 -- TODO: Figure out what to do with dictionaries.
@@ -184,7 +183,7 @@ threadTblPurgerExHandler e = do
 
 
 getListenThreadId :: MudStack ThreadId
-getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
+getListenThreadId = asks (\md -> reverseLookup Listen <$> liftIO . readTVarIO $ md^.threadTblTVar)
 
 
 -- ==================================================
