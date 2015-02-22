@@ -47,7 +47,7 @@ import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
 import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask, runReaderT)
+import Control.Monad.Reader (ask, asks, runReaderT)
 import Data.Bits (zeroBits)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\))
@@ -111,7 +111,7 @@ saveUptime ut@(T.pack . renderSecs . toInteger -> utTxt) = getRecordUptime >>= m
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     registerThread Listen
-    liftIO . void . forkIO . runReaderT threadTblPurger =<< ask
+    asks $ liftIO . void . forkIO . runReaderT threadTblPurger
     initWorld
     listInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
@@ -130,7 +130,7 @@ listen = handle listenExHandler $ do
                                              , " on local port "
                                              , showText localPort
                                              , "." ]
-        a@(asyncThreadId -> ti) <- liftIO . async . runReaderT (talk h host) =<< ask
+        a@(asyncThreadId -> ti) <- liftIO . async . runReaderT (talk h host) $ md
         liftIO . atomically . modifyTMVar (md^.talkAsyncTblTVar) $ at ti ?~ a
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
@@ -194,7 +194,7 @@ getListenThreadId = reverseLookup Listen <$> readTMVarInNWS threadTblTMVar
 talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
-    helper = do
+    helper = ask >>= \md -> do
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         registerThread . Talk $ i
@@ -204,12 +204,9 @@ talk h host = helper `finally` cleanUp
             liftIO configBuffer
             dumpTitle mq
             prompt    mq "By what name are you known?"
-            mudState <- statefulFork . inacTimer i mq $ itq
-            -- TODO:
-            -- liftIO $ race_ (runStateInIORefT (server  h i mq itq) state)
-            --                (runStateInIORefT (receive h i mq)     state)
-            liftIO $ race_ (runStateT (server  h i mq itq) mudState)
-                           (runStateT (receive h i mq)     mudState)
+            liftIO . void . forkIO . runReaderT (inacTimer i mq itq) $ md
+            liftIO $ race_ (runReaderT (server  h i mq itq) md)
+                           (runReaderT (receive h i mq)     md)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
@@ -399,9 +396,9 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = massMsg SilentBoot >> commitSuicide
+shutDown = massMsg SilentBoot >> asks (liftIO . void . forkIO . runReaderT commitSuicide)
   where
-    commitSuicide = statefulFork_ $ do
+    commitSuicide = do
         liftIO . mapM_ wait . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
         logNotice "shutDown commitSuicide" "all players have been disconnected; killing the listen thread."
         liftIO . killThread =<< getListenThreadId

@@ -174,9 +174,7 @@ createWorld = do
 
 
 sortAllInvs :: MudStack ()
-sortAllInvs = ask >>= \md -> do
-    logNotice "sortAllInvs" "sorting all inventories."
-    liftIO . atomically . helperSTM $ md
+sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> (asks $ liftIO . atomically . helperSTM)
   where
     helperSTM md = do
         tt <- readTVar $ md^.typeTblTVar

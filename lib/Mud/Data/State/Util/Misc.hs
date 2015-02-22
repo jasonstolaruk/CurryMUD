@@ -12,9 +12,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
                                 , mkUnknownPCEntName
-                                , sortInv
-                                , statefulFork
-                                , statefulFork_ ) where
+                                , sortInv ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
@@ -114,16 +112,3 @@ sortInv tt et is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, tt ! i) |
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped nonPCIs                     = [ (i, fromJust $ e^.entName, e^.sing) | i <- nonPCIs
                                                                                , let e = et ! i ]
-
-
--- TODO: statefulFork :: StateInIORefT MudState IO () -> MudStack MudState
-statefulFork :: StateT MudState IO () -> MudStack MudState
-statefulFork f = get >>= \s ->
-    (liftIO . void . forkIO . void . runStateT f $ s) >> return s
-    -- (liftIO . void . forkIO . void . runStateInIORefT f $ s) >> return s
-
-
--- TODO: statefulFork_ :: StateInIORefT MudState IO () -> MudStack ()
--- statefulFork_ f = liftIO . void . forkIO . void . runStateInIORefT f =<< get
-statefulFork_ :: StateT MudState IO () -> MudStack ()
-statefulFork_ f = liftIO . void . forkIO . void . runStateT f =<< get
