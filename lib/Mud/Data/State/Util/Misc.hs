@@ -19,7 +19,6 @@ module Mud.Data.State.Util.Misc ( BothGramNos
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
-import Mud.Data.State.StateInIORefT
 import Mud.Data.State.Util.STM
 import Mud.Util.Misc
 import Mud.Util.Text
@@ -30,9 +29,8 @@ import Control.Concurrent (forkIO)
 import Control.Lens (_1, _2, both, over)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (<>~), (^.))
-import Control.Monad (void)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (get)
+-- TODO: import Control.Monad (void)
+-- TODO: import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
@@ -116,10 +114,14 @@ sortInv ws is | (foldl' helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, (ws^.typeTb
                                                                                , let e = (ws^.entTbl) ! i ]
 
 
-statefulFork :: StateInIORefT MudState IO () -> MudStack MudState
+-- TODO: statefulFork :: StateInIORefT MudState IO () -> MudStack MudState
+statefulFork :: StateT MudState IO () -> MudStack MudState
 statefulFork f = get >>= \s ->
-    (liftIO . void . forkIO . void . runStateInIORefT f $ s) >> return s
+    (liftIO . void . forkIO . void . runStateT f $ s) >> return s
+    -- (liftIO . void . forkIO . void . runStateInIORefT f $ s) >> return s
 
 
-statefulFork_ :: StateInIORefT MudState IO () -> MudStack ()
-statefulFork_ f = liftIO . void . forkIO . void . runStateInIORefT f =<< get
+-- TODO: statefulFork_ :: StateInIORefT MudState IO () -> MudStack ()
+-- statefulFork_ f = liftIO . void . forkIO . void . runStateInIORefT f =<< get
+statefulFork_ :: StateT MudState IO () -> MudStack ()
+statefulFork_ f = liftIO . void . forkIO . void . runStateT f =<< get

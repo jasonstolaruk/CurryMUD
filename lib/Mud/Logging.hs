@@ -40,7 +40,6 @@ import Control.Monad ((>=>), forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM (atomically)
 import Data.IntMap.Lazy ((!))
-import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.Directory (doesFileExist, renameFile)
 import System.FilePath ((<.>), (</>))
@@ -64,14 +63,13 @@ default (Int)
 -- Starting logs:
 
 
-initLogging :: MudStack ()
+initLogging :: IO (LogService, LogService)
 initLogging = do
-    liftIO . updateGlobalLogger rootLoggerName $ removeHandler
-    (nq, eq) <- (,) <$> liftIO newTQueueIO <*> liftIO newTQueueIO
-    (na, ea) <- (,) <$> (liftIO . spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM $ nq)
-                    <*> (liftIO . spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  $ eq)
-    nonWorldState.noticeLog .= Just (na, nq)
-    nonWorldState.errorLog  .= Just (ea, eq)
+    updateGlobalLogger rootLoggerName removeHandler
+    (nq, eq) <- (,) <$> newTQueueIO <*> newTQueueIO
+    (na, ea) <- (,) <$> (spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM $ nq)
+                    <*> (spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  $ eq)
+    retrun ((na, nq), (ea, eq))
 
 
 type LogName    = T.Text

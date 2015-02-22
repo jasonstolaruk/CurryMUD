@@ -14,7 +14,6 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
-import Mud.Data.State.StateInIORefT
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -39,8 +38,8 @@ import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryReadTMQueue, writeTMQueue)
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
+import Control.Concurrent.STM.TVar (modifyTVar)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
@@ -48,7 +47,7 @@ import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.=), (?~), (^.))
 import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (get)
+import Control.Monad.Reader (ask, runReaderT)
 import Data.Bits (zeroBits)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\))
@@ -94,14 +93,8 @@ logPla = L.logPla "Mud.Threads"
 
 
 listenWrapper :: MudStack ()
-listenWrapper = flip finally graceful $ do
-    initLogging
-    logNotice "listenWrapper initAndStart" "server started."
-    listen
-
-
-graceful :: MudStack ()
-graceful = getUptime >>= saveUptime >> closeLogs
+listenWrapper =
+    (logNotice "listenWrapper" "server started." >> listen) `finally` (getUptime >>= saveUptime >> closeLogs)
 
 
 saveUptime :: Int -> MudStack ()
@@ -118,7 +111,7 @@ saveUptime ut@(T.pack . renderSecs . toInteger -> utTxt) = getRecordUptime >>= m
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     registerThread Listen
-    statefulFork_ threadTblPurger
+    liftIO . void . forkIO . runReaderT threadTblPurger =<< ask
     initWorld
     loadDictFiles
     listInterfaces
@@ -138,7 +131,8 @@ listen = handle listenExHandler $ do
                                              , " on local port "
                                              , showText localPort
                                              , "." ]
-        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
+        -- TODO: a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
+        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateT (talk h host) =<< get
         modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
@@ -151,10 +145,13 @@ listenExHandler e = case fromException e of
 
 
 registerThread :: ThreadType -> MudStack ()
-registerThread threadType = liftIO myThreadId >>= \ti ->
-    modifyNWS threadTblTMVar $ \tt -> tt & at ti ?~ threadType
+registerThread threadType = ask >>= md -> do
+    ti <- liftIO myThreadId
+    liftIO . atomically . modifyTVar (md^.threadTblTVar) $ \tt -> tt & at ti ?~ threadType
 
 
+-- TODO: Figure out what to do with dictionaries.
+{-
 loadDictFiles :: MudStack ()
 loadDictFiles = (nonWorldState.dicts .=) =<< [ Dicts mWSet mPnSet | mWSet  <- loadDictFile wordsFile
                                                                   , mPnSet <- loadDictFile propNamesFile ]
@@ -167,6 +164,7 @@ loadDictFile = maybe (return Nothing) loadIt
       logNotice "loadDictFile" $ "loading dictionary " <> fn' <> "."
       let helper = Just . S.fromList . T.lines . T.toLower <$> (liftIO . T.readFile $ fn)
       helper `catch` (\e -> fileIOExHandler "loadDictFile" e >> return Nothing)
+-}
 
 
 -- ==================================================
@@ -208,9 +206,12 @@ talk h host = helper `finally` cleanUp
             liftIO configBuffer
             dumpTitle mq
             prompt    mq "By what name are you known?"
-            state <- statefulFork . inacTimer i mq $ itq
-            liftIO $ race_ (runStateInIORefT (server  h i mq itq) state)
-                           (runStateInIORefT (receive h i mq)     state)
+            mudState <- statefulFork . inacTimer i mq $ itq
+            -- TODO:
+            -- liftIO $ race_ (runStateInIORefT (server  h i mq itq) state)
+            --                (runStateInIORefT (receive h i mq)     state)
+            liftIO $ race_ (runStateT (server  h i mq itq) mudState)
+                           (runStateT (receive h i mq)     mudState)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)

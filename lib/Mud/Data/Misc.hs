@@ -304,12 +304,12 @@ type ToTarget           = T.Text
 type ToOthersWithTarget = T.Text
 
 
-data ExpCmdType = NoTarget  !ToSelf !ToOthers
-                | HasTarget                   !ToSelfWithTarget !ToTarget !ToOthersWithTarget
-                | Versatile !ToSelf !ToOthers !ToSelfWithTarget !ToTarget !ToOthersWithTarget deriving (Eq, Ord, Show)
+data ExpCmdType = NoTarget  ToSelf ToOthers
+                | HasTarget                 ToSelfWithTarget ToTarget ToOthersWithTarget
+                | Versatile ToSelf ToOthers ToSelfWithTarget ToTarget ToOthersWithTarget deriving (Eq, Ord, Show)
 
 
-data ExpCmd = ExpCmd !ExpCmdName !ExpCmdType deriving (Eq, Ord)
+data ExpCmd = ExpCmd ExpCmdName ExpCmdType deriving (Eq, Ord)
 
 
 -----
@@ -343,11 +343,11 @@ type Action               = ActionParams -> MudStack ()
 type CmdDesc              = T.Text
 
 
-data Cmd = Cmd { cmdName           :: !CmdName
-               , cmdPriorityAbbrev :: !(Maybe CmdPriorityAbbrevTxt)
-               , cmdFullName       :: !CmdFullName
-               , action            :: !Action
-               , cmdDesc           :: !CmdDesc }
+data Cmd = Cmd { cmdName           :: CmdName
+               , cmdPriorityAbbrev :: Maybe CmdPriorityAbbrevTxt
+               , cmdFullName       :: CmdFullName
+               , action            :: Action
+               , cmdDesc           :: CmdDesc }
 
 
 instance Eq Cmd where
@@ -368,14 +368,14 @@ type Amount = Int
 type Index  = Int
 
 
-data GetEntsCoinsRes = Mult    { amount          :: !Amount
-                               , nameSearchedFor :: !T.Text
-                               , entsRes         :: !(Maybe [Ent])
-                               , coinsRes        :: !(Maybe (EmptyNoneSome Coins)) }
-                     | Indexed { index           :: !Index
-                               , nameSearchedFor :: !T.Text
-                               , entRes          :: !(Either Plur Ent) }
-                     | Sorry   { nameSearchedFor :: !T.Text }
+data GetEntsCoinsRes = Mult    { amount          :: Amount
+                               , nameSearchedFor :: T.Text
+                               , entsRes         :: Maybe [Ent]
+                               , coinsRes        :: Maybe (EmptyNoneSome Coins) }
+                     | Indexed { index           :: Index
+                               , nameSearchedFor :: T.Text
+                               , entRes          :: Either Plur Ent }
+                     | Sorry   { nameSearchedFor :: T.Text }
                      | SorryIndexedCoins deriving Show
 
 
@@ -410,13 +410,13 @@ data InvType = PCInv | PCEq | RmInv deriving Eq
 -----
 
 
-data PCDesig = StdDesig    { stdPCEntSing    :: !(Maybe T.Text)
-                           , isCap           :: !Bool
-                           , pcEntName       :: !T.Text
-                           , pcId            :: !Id
-                           , pcIds           :: !Inv }
-             | NonStdDesig { nonStdPCEntSing :: !T.Text
-                           , nonStdDesc      :: !T.Text } deriving (Eq, Show)
+data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
+                           , isCap           :: Bool
+                           , pcEntName       :: T.Text
+                           , pcId            :: Id
+                           , pcIds           :: Inv }
+             | NonStdDesig { nonStdPCEntSing :: T.Text
+                           , nonStdDesc      :: T.Text } deriving (Eq, Show)
 
 
 -----

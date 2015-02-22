@@ -36,10 +36,10 @@ type Id   = Int
 type Cols = Int
 
 
-data ActionParams = ActionParams { plaId       :: !Id
-                                 , plaMsgQueue :: !MsgQueue
-                                 , plaCols     :: !Cols
-                                 , args        :: !Args }
+data ActionParams = ActionParams { plaId       :: Id
+                                 , plaMsgQueue :: MsgQueue
+                                 , plaCols     :: Cols
+                                 , args        :: Args }
 
 
 instance Show ActionParams where

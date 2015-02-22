@@ -49,8 +49,10 @@ import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
-import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
-import Control.Monad.IO.Class (liftIO)
+-- TODO: import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
+-- TODO: import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Resource (ResourceT, runResourceT)
+import Data.Conduit -- TODO: (($$), (=$))
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
@@ -64,11 +66,14 @@ import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
+import qualified Data.Conduit.Binary as CB -- TODO: (sourceFile)
+import qualified Data.Conduit.Text as CT -- TODO
 import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+import Control.Monad.State.Lazy -- TODO
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -197,9 +202,14 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 about :: Action
 about (NoArgs i mq cols) = do
     logPlaExec "about" i
-    helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
+    -- helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
+    runResourceT $ source $$ conduit =$ sink
   where
-    helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
+    -- helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
+    source  = CB.sourceFile aboutFile
+    conduit = CT.decodeUtf8
+    sink :: Sink T.Text (ResourceT (StateT MudState IO)) ()
+    sink    = awaitForever $ lift . lift . multiWrapSend mq cols . T.lines
 about p = withoutArgs about p
 
 

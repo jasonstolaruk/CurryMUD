@@ -57,27 +57,27 @@ initMudData = do
     (o, p) <- (,) <$> newTVarIO M.empty <*> newTVarIO M.empty
     (noticeLogService, errorLogService) <- initLogging
     startTime                           <- getTime Monotonic
-    return MudData { _armTblTVar       :: TVar a
-                   , _clothTblTVar     :: TVar b
-                   , _coinsTblTVar     :: TVar c
-                   , _conTblTVar       :: TVar d
-                   , _entTblTVar       :: TVar e
-                   , _eqTblTVar        :: TVar f
-                   , _errorLog         :: errorLogService
-                   , _invTblTVar       :: TVar g
-                   , _mobTblTVar       :: TVar h
-                   , _msgQueueTblTVar  :: TVar i
-                   , _noticeLog        :: noticeLogService
-                   , _objTblTVar       :: TVar j
-                   , _pcTblTVar        :: TVar k
-                   , _plaLogTblTVar    :: TVar l
-                   , _plaTblTVar       :: TVar m
-                   , _rmTblTVar        :: TVar n
-                   , _startTime        :: startTime
-                   , _talkAsyncTblTVar :: TVar o
-                   , _threadTblTVar    :: TVar p
-                   , _typeTblTVar      :: TVar q
-                   , _wpnTblTVar       :: TVar r }
+    return MudData { _armTblTVar       = TVar a
+                   , _clothTblTVar     = TVar b
+                   , _coinsTblTVar     = TVar c
+                   , _conTblTVar       = TVar d
+                   , _entTblTVar       = TVar e
+                   , _eqTblTVar        = TVar f
+                   , _errorLog         = errorLogService
+                   , _invTblTVar       = TVar g
+                   , _mobTblTVar       = TVar h
+                   , _msgQueueTblTVar  = TVar i
+                   , _noticeLog        = noticeLogService
+                   , _objTblTVar       = TVar j
+                   , _pcTblTVar        = TVar k
+                   , _plaLogTblTVar    = TVar l
+                   , _plaTblTVar       = TVar m
+                   , _rmTblTVar        = TVar n
+                   , _startTime        = startTime
+                   , _talkAsyncTblTVar = TVar o
+                   , _threadTblTVar    = TVar p
+                   , _typeTblTVar      = TVar q
+                   , _wpnTblTVar       = TVar r }
 
 
 initWorld :: MudStack ()
