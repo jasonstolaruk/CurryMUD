@@ -1,8 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Threads ( allKeys
-                   , getUnusedId
+module Mud.Threads ( getUnusedId
                    , listenWrapper) where
 
 import Mud.ANSI
@@ -197,9 +196,9 @@ talk h host = helper `finally` cleanUp
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         registerThread . Talk $ i
-        handle (plaThreadExHandler "talk" i) $ plaTblTMVar |$| readTMVarInNWS >=> \pt -> do
+        handle (plaThreadExHandler "talk" i) $ do
             logNotice "talk helper" $ "new PC name for incoming player: " <> s <> "."
-            bcastAdmins pt $ "A new player has connected: " <> s <> "."
+            flip bcastAdmins ("A new player has connected: " <> s <> ".") =<< readTVarIO (md^.plaTblTVar)
             liftIO configBuffer
             dumpTitle mq
             prompt    mq "By what name are you known?"
@@ -212,12 +211,13 @@ talk h host = helper `finally` cleanUp
 
 
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
-adHoc mq host = do
-    (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    (sexy, r)                    <- liftIO $ (,) <$> randomSex <*> randomRace
+adHoc mq host = ask >>= \md -> do
+    (sexy, r) <- liftIO $ (,) <$> randomSex <*> randomRace
     liftIO . atomically $ do
-        (ws, mqt, pt) <- (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar <*> takeTMVar ptTMVar
-        let i    = getUnusedId ws
+        tt <- readTVar $ md^.typeTblTVar
+        et <- readTVar $ md^.entTblTVar
+        it <- readTVar $ md^.invTblTVar
+        let i    = getUnusedId tt
             s    = showText r <> showText i
             e    = Ent { _entId    = i
                        , _entName  = Nothing
@@ -245,17 +245,18 @@ adHoc mq host = do
                        , _interp    = Just interpName
                        , _peepers   = []
                        , _peeping   = [] }
-            ws'  = ws  & typeTbl.at  i ?~ PCType
-                       & entTbl.at   i ?~ e
-                       & invTbl.at   i ?~ []
-                       & coinsTbl.at i ?~ mempty
-                       & eqTbl.at    i ?~ M.empty
-                       & mobTbl.at   i ?~ m
-                       & pcTbl.at    i ?~ pc
-            ris  = sortInv ws' $ (ws^.invTbl) ! iWelcome ++ [i]
-            mqt' = mqt & at i ?~ mq
-            pt'  = pt  & at i ?~ pla
-        sequence_ [ putTMVar wsTMVar $ ws' & invTbl.at iWelcome ?~ ris, putTMVar mqtTMVar mqt', putTMVar ptTMVar pt' ]
+            tt'  = tt & at i ?~ PCType
+            et'  = et & at i ?~ e
+            ris  = sortInv tt' et' $ it ! iWelcome ++ [i]
+        writeTVar  (md^.typeTblTVar) tt'
+        writeTVar  (md^.entTblTVar)  et'
+        writeTVar  (md^.invTblTVar)      $ it & at i ?~ [] & at iWelcome ?~ ris
+        modifyTVar (md^.coinsTblTVar)    $ at i ?~ mempty
+        modifyTVar (md^.eqTblTVar)       $ at i ?~ M.empty
+        modifyTVar (md^.mobTblTVar)      $ at i ?~ m
+        modifyTVar (md^.pcTblTVar)       $ at i ?~ pc
+        modifyTVar (md^.msgQueueTblTVar) $ at i ?~ mq
+        modifyTVar (md^.plaTblTVar)      $ at i ?~ pla
         return (i, s)
 
 
@@ -267,12 +268,8 @@ randomRace :: IO Race
 randomRace = randomIO
 
 
-getUnusedId :: WorldState -> Id
-getUnusedId = head . (\\) [0..] . allKeys
-
-
-allKeys :: WorldState -> Inv
-allKeys = views typeTbl IM.keys
+getUnusedId :: TypeTbl -> Id
+getUnusedId = head . ([0..] \\) . IM.keys
 
 
 plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
