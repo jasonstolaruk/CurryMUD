@@ -28,27 +28,47 @@ type MudStack = ReaderT MudData IO
 -- ==================================================
 
 
-data MudData = MudData { _armTblTVar       :: TVar (IM.IntMap Arm)
-                       , _clothTblTVar     :: TVar (IM.IntMap Cloth)
-                       , _coinsTblTVar     :: TVar (IM.IntMap Coins)
-                       , _conTblTVar       :: TVar (IM.IntMap Con)
-                       , _entTblTVar       :: TVar (IM.IntMap Ent)
-                       , _eqTblTVar        :: TVar (IM.IntMap EqMap)
+data MudData = MudData { _armTblTVar       :: TVar ArmTbl
+                       , _clothTblTVar     :: TVar ClothTbl
+                       , _coinsTblTVar     :: TVar CoinsTbl
+                       , _conTblTVar       :: TVar ConTbl
+                       , _entTblTVar       :: TVar EntTbl
+                       , _eqTblTVar        :: TVar EqTbl
                        , _errorLog         :: LogService
-                       , _invTblTVar       :: TVar (IM.IntMap Inv)
-                       , _mobTblTVar       :: TVar (IM.IntMap Mob)
-                       , _msgQueueTblTVar  :: TVar (IM.IntMap MsgQueue)
+                       , _invTblTVar       :: TVar InvTbl
+                       , _mobTblTVar       :: TVar MobTbl
+                       , _msgQueueTblTVar  :: TVar MsgQueueTbl
                        , _noticeLog        :: LogService
-                       , _objTblTVar       :: TVar (IM.IntMap Obj)
-                       , _pcTblTVar        :: TVar (IM.IntMap PC)
-                       , _plaLogTblTVar    :: TVar (IM.IntMap LogService)
-                       , _plaTblTVar       :: TVar (IM.IntMap Pla)
-                       , _rmTblTVar        :: TVar (IM.IntMap Rm)
+                       , _objTblTVar       :: TVar ObjTbl
+                       , _pcTblTVar        :: TVar PCTbl
+                       , _plaLogTblTVar    :: TVar PlaLogTbl
+                       , _plaTblTVar       :: TVar PlaTbl
+                       , _rmTblTVar        :: TVar RmTbl
                        , _startTime        :: TimeSpec
                        , _talkAsyncTblTVar :: TVar TalkAsyncTbl
                        , _threadTblTVar    :: TVar ThreadTbl
-                       , _typeTblTVar      :: TVar (IM.IntMap Type)
-                       , _wpnTblTVar       :: TVar (IM.IntMap Wpn) }
+                       , _typeTblTVar      :: TVar TypeTbl
+                       , _wpnTblTVar       :: TVar WpnTbl }
+
+
+type ArmTbl       = IM.IntMap Arm
+type ClothTbl     = IM.IntMap Cloth
+type CoinsTbl     = IM.IntMap Coins
+type ConTbl       = IM.IntMap Con
+type EntTbl       = IM.IntMap Ent
+type EqTbl        = IM.IntMap Eq
+type InvTbl       = IM.IntMap Inv
+type MobTbl       = IM.IntMap Mob
+type MsgQueueTbl  = IM.IntMap MsgQueue
+type ObjTbl       = IM.IntMap Obj
+type PCTbl        = IM.IntMap PC
+type PlaLogTbl    = IM.IntMap LogService
+type PlaTbl       = IM.IntMap Pla
+type RmTbl        = IM.IntMap Rm
+type TalkAsyncTbl = M.Map ThreadId (Async ())
+type ThreadTbl    = M.Map ThreadId ThreadType
+type TypeTbl      = IM.IntMap Type
+type WpnTbl       = IM.IntMap Wpn
 
 
 -- ==================================================
@@ -334,15 +354,6 @@ instance Eq RmLink where
 
 
 -- ==================================================
-
-
-type TalkAsyncTbl = M.Map ThreadId (Async ())
-
-
--- ==================================================
-
-
-type ThreadTbl = M.Map ThreadId ThreadType
 
 
 data ThreadType = Error
