@@ -113,7 +113,6 @@ listen = handle listenExHandler $ do
     registerThread Listen
     liftIO . void . forkIO . runReaderT threadTblPurger =<< ask
     initWorld
-    loadDictFiles
     listInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
@@ -124,16 +123,15 @@ listen = handle listenExHandler $ do
                                                                     , ": "
                                                                     , showText . NI.ipv4 $ n ] | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
-    loop sock = do
+    loop sock = ask >>= \md -> do
         (h, host, localPort) <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to "
                                              , showText host
                                              , " on local port "
                                              , showText localPort
                                              , "." ]
-        -- TODO: a@(asyncThreadId -> ti) <- liftIO . async . void . runStateInIORefT (talk h host) =<< get
-        a@(asyncThreadId -> ti) <- liftIO . async . void . runStateT (talk h host) =<< get
-        modifyNWS talkAsyncTblTMVar $ \tat -> tat & at ti ?~ a
+        a@(asyncThreadId -> ti) <- liftIO . async . runReaderT (talk h host) =<< ask
+        liftIO . atomically . modifyTMVar (md^.talkAsyncTblTVar) $ at ti ?~ a
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
 
@@ -147,7 +145,7 @@ listenExHandler e = case fromException e of
 registerThread :: ThreadType -> MudStack ()
 registerThread threadType = ask >>= md -> do
     ti <- liftIO myThreadId
-    liftIO . atomically . modifyTVar (md^.threadTblTVar) $ \tt -> tt & at ti ?~ threadType
+    liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType
 
 
 -- TODO: Figure out what to do with dictionaries.
