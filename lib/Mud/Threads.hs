@@ -113,12 +113,12 @@ listen = handle listenExHandler $ do
     registerThread Listen
     asks $ liftIO . void . forkIO . runReaderT threadTblPurger
     initWorld
-    listInterfaces
+    logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
     (forever . loop $ sock) `finally` cleanUp sock
   where
-    listInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
+    logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
         let ifList = T.intercalate ", " [ bracketQuote . T.concat $ [ showText . NI.name $ n
                                                                     , ": "
                                                                     , showText . NI.ipv4 $ n ] | n <- ns ]
