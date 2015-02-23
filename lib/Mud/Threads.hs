@@ -338,7 +338,7 @@ server h i mq itq = sequence_ [ registerThread . Server $ i, loop `catch` plaThr
 
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) =
-    (\md -> (! i) <$> liftIO . readTVarIO $ md^.plaTblTVar) |$| asks >=> \p ->
+    (\md -> liftIO . readTVarIO $ md^.plaTblTVar) |$| asks >=> \((! i) -> p) ->
         let thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
             thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
         in maybe thruCentral thruOther $ p^.interp
@@ -350,19 +350,20 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) =
 
 
 forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> T.Text -> MudStack ()
-forwardToPeepers i peeperIds toOrFrom msg = ask >>= \md -> liftIO . atomically $ do
-    mqt <- readTVar $ md^.msgQueueTblTVar
-    let peeperMqs = [ mqt ! pi | pi <- peeperIds ]
-    (view sing . (! i) -> s) <- readTVar $ md^.entTblTVar
-    forM_ peeperMqs $ flip writeTQueue (mkPeepedMsg s)
+forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< ask
   where
+    helperSTM md = do
+        mqt <- readTVar $ md^.msgQueueTblTVar
+        let peeperMqs = [ mqt ! pi | pi <- peeperIds ]
+        (view sing . (! i) -> s) <- readTVar $ md^.entTblTVar
+        forM_ peeperMqs $ flip writeTQueue (mkPeepedMsg s)
     mkPeepedMsg s = Peeped $ case toOrFrom of
       ToThePeeped   ->      T.concat   [ toPeepedColor,   " ", bracketQuote s, " ", dfltColor, " ", msg ]
       FromThePeeped -> nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
 
 
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
-handleFromServer i h msg = (\md -> (! i) <$> liftIO . readTVarIO $ md^.plaTblTVar) |$| asks >=> \p -> do
+handleFromServer i h msg = (\md -> liftIO . readTVarIO $ md^.plaTblTVar) |$| asks >=> \((! i) -> p) -> do
     forwardToPeepers i (p^.peepers) ToThePeeped msg
     liftIO . T.hPutStr h $ msg
 
@@ -392,9 +393,9 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = massMsg SilentBoot >> asks (liftIO . void . forkIO . runReaderT commitSuicide)
+shutDown = massMsg SilentBoot >> asks $ liftIO . void . forkIO . runReaderT commitSuicide
   where
-    commitSuicide = (\md -> readTVarIO $ md^.talkAsyncTblTVar) |$| asks >=> \tat ->
+    commitSuicide = (\md -> liftIO . readTVarIO $ md^.talkAsyncTblTVar) |$| asks >=> \tat ->
         liftIO . mapM_ wait . M.elems $ tat
         logNotice "shutDown commitSuicide" "all players have been disconnected; killing the listen thread."
         liftIO . killThread =<< getListenThreadId
