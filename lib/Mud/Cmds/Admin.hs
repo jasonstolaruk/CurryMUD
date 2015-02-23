@@ -49,7 +49,7 @@ import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
-import qualified Data.IntMap.Lazy as IM (IntMap, keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, filter, keys)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
@@ -423,7 +423,7 @@ adminUptime p = withoutArgs adminUptime p
 
 
 adminWho :: Action
-adminWho (NoArgs i mq cols)  = do
+adminWho (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
     pager i mq . concatMap (wrapIndent 20 cols) =<< mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
 adminWho p@(ActionParams { plaId, args }) = do
@@ -431,14 +431,18 @@ adminWho p@(ActionParams { plaId, args }) = do
     dispMatches p 20 =<< mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
 
 
-mkPlaListTxt :: WorldState -> IM.IntMap Pla -> [T.Text]
-mkPlaListTxt ws pt =
-    let pis         = [ pi | pi <- IM.keys pt, not . getPlaFlag IsAdmin $ (pt ! pi) ]
-        (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = view sing $ (ws^.entTbl) ! pi, then sortWith by s ]
+mkPlaListTxt ::
+mkPlaListTxt = (liftIO . atomically . helperSTM) |$| asks >=> \(pt, et) ->
+    let pis         = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ pt
+        (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = (et ! pi)^.sing, then sortWith by s ]
         pias        = zip pis' . styleAbbrevs Don'tBracket $ pss
-    in map helper pias ++ [ numOfPlayers pis <> " connected." ]
+    in map mkPlaTxt pias ++ [ mkNumOfPlayersTxt pis <> " connected." ]
   where
-    helper (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
-                     in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
-    numOfPlayers (length -> nop) | nop == 1  = "1 player"
-                                 | otherwise = showText nop <> " players"
+    helperSTM md = do
+        pt <- readTVar $ md^.plaTblTVar
+        et <- readTVar $ md^.entTblTVar
+        return (pt, et)
+    mkPlaTxt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
+                       in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
+    mkNumOfPlayersTxt (length -> nop) | nop == 1  = "1 player"
+                                      | otherwise = showText nop <> " players"
