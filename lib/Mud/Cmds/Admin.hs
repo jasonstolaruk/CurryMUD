@@ -222,17 +222,21 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 adminPeep :: Action
 adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify one or more PC names of the player(s) \
                                                               \you wish to start or stop peeping."
-adminPeep (LowerNub i mq cols (map capitalize -> as)) = helper >>= \(msgs, logMsgs) -> do
-    multiWrapSend mq cols msgs
-    let (logMsgsSelf, logMsgsOthers) = unzip logMsgs
-    logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
-    forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
+adminPeep (LowerNub i mq cols (map capitalize -> as)) =
+    (liftIO . atomically . helperSTM) |$| asks >=> \(msgs, logMsgs) -> do
+        multiWrapSend mq cols msgs
+        let (logMsgsSelf, logMsgsOthers) = unzip logMsgs
+        logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
+        forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
   where
-    helper = getEntTbl >>= \et -> onNWS plaTblTMVar $ \(ptTMVar, pt) ->
+    helperSTM md = do
+        et <- readTVar $ md^.entTblTVar
+        pt <- readTVar $ md^.plaTblTVar
         let s                    = (et ! i)^.sing
             piss                 = mkPlaIdsSingsList et pt
             (pt', msgs, logMsgs) = foldr (peep s piss) (pt, [], []) as
-        in putTMVar ptTMVar pt' >> return (msgs, logMsgs)
+        writeTVar (md^.ptTMVar) pt'
+        return (msgs, logMsgs)
     peep s piss target a@(pt, _, _) =
         let notFound    = over _2 (cons sorry) a
             sorry       = "No player by the name of " <> dblQuote target <> " is currently connected."
