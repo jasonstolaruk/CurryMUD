@@ -122,24 +122,28 @@ armSubToSlot = \case Head      -> HeadS
 
 
 bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
-bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = i |$| getEntSing' >=> \(ws, s) ->
-    let p  = (ws^.pcTbl) ! i
-        ri = p^.rmId
-        r  = (ws^.rmTbl) ! ri
-        helper ts = let newEntry = T.concat [ ts
-                                            , " "
-                                            , s
-                                            , " "
-                                            , parensQuote $ showText ri <> " " <> dblQuote (r^.rmName)
-                                            , ": "
-                                            , msg ]
-                    in T.writeFile logFile =<< [ T.unlines . sort $ newEntry : cont | cont <- getLogConts ]
-    in do
-        logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
-        liftIO (mkTimestamp >>= try . helper) >>= eitherRet (fileIOExHandler "bugTypoLogger")
-        send mq . nlnl $ "Thank you."
-        flip bcastAdmins (s <> " has logged a " <> wl' <> ".") =<< readTMVarInNWS plaTblTMVar
+bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = do
+    logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
+    (s, ri, rn, pt) <- asks $ liftIO . atomically . helperSTM
+    liftIO (try . logIt s ri $ rn) >>= eitherRet (fileIOExHandler "bugTypoLogger")
+    send mq . nlnl $ "Thank you."
+    bcastAdmins pt $ s <> " has logged a " <> wl' <> "."
   where
+    helperSTM md = do
+        (view sing   . (! i)  -> s ) <- readTVar $ md^.entTblTVar
+        (view rmId   . (! i)  -> ri) <- readTVar $ md^.pcTblTVar
+        (view rmName . (! ri) -> rn) <- readTVar $ md^.rmTblTVar
+        pt                           <- readTVar $ md^.plaTblTVar
+        return (s, ri, rn, pt)
+    logIt s ri rn = mkTimestamp >>= \ts -> -- TODO: Why not just append to the end of the file?
+        let newEntry = T.concat [ ts
+                                , " "
+                                , s
+                                , " "
+                                , parensQuote $ showText ri <> " " <> dblQuote rn
+                                , ": "
+                                , msg ]
+        in T.writeFile logFile =<< [ T.unlines . sort $ newEntry : cont | cont <- getLogConts ]
     logFile     = case wl of BugLog  -> bugLogFile
                              TypoLog -> typoLogFile
     getLogConts = mIf (doesFileExist logFile)
