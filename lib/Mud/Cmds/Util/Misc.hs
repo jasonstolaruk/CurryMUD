@@ -107,7 +107,7 @@ dispMatches (LowerNub i mq cols needles) indent haystack =
   where
     grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
                   in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
-dispMatches p indent haystack = patternMatchFail "dispCmdList" [ showText p, showText indent, showText haystack ]
+dispMatches p indent haystack = patternMatchFail "dispMatches" [ showText p, showText indent, showText haystack ]
 
 
 -----
@@ -123,13 +123,19 @@ fileIOExHandler fn e = if any (e |$|) [ isAlreadyInUseError, isDoesNotExistError
 
 
 pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
-pager i mq txt@(length -> txtLen) = i |$| getPlaPageLines >=> \pageLen ->
+pager i mq txt@(length -> txtLen) = ask >>= \md -> do
+    (view pageLines . (! i) -> pageLen) <- liftIO . readTVarIO $ md^.plaTblTVar
     if txtLen + 3 <= pageLen
       then send mq . nl . T.unlines $ txt
-      else let (page, rest) = splitAt (pageLen - 2) txt in do
-        send mq . T.unlines $ page
-        sendPagerPrompt mq (pageLen - 2) txtLen
-        void . modifyPla i interp . Just $ interpPager pageLen txtLen (page, rest)
+      else let (page, rest) = splitAt (pageLen - 2) txt
+               helperSTM    = do
+                   pt <- readTVar $ md^.plaTblTVar
+                   let p = (pt ! i) & interp .~ (Just $ interpPager pageLen txtLen (page, rest))
+                   liftIO . atomically . writeTVar (md^.plaTblTVar) $ pt & at i ?~ p
+           in do
+               send mq . T.unlines $ page
+               sendPagerPrompt mq (pageLen - 2) txtLen
+               liftIO . atomically $ helperSTM
 
 
 -----
