@@ -122,7 +122,6 @@ fileIOExHandler fn e = if any (e |$|) [ isAlreadyInUseError, isDoesNotExistError
 -----
 
 
--- TODO: Search for readTVarIO; make sure all uses are ok.
 pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
 pager i mq txt@(length -> txtLen) = (liftIO . atomically . helperSTM) |$| asks >=> \case
     Nothing              -> send mq . nl . T.unlines $ txt

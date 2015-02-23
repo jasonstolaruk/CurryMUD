@@ -289,29 +289,31 @@ adminProfanity p = withoutArgs adminProfanity p
 
 
 adminShutdown :: Action
-adminShutdown (NoArgs' i mq) = (\md -> liftIO . readTVarIO $ md^.entTblTVar) |$| asks >=> \((! i) -> s) -> do
-    logPla "adminShutdown" i $ "initiating shutdown " <> parensQuote "no message given" <> "."
-    massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
-    massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
-                                          , s
-                                          , " "
-                                          , parensQuote "no message given"
-                                          , "." ]
-    logNotice  "adminShutdown" $ T.concat [ "server shutdown initiated by "
-                                          , s
-                                          , " "
-                                          , parensQuote "no message given"
-                                          , "." ]
-    liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown (Msg i mq msg) = (\md -> liftIO . readTVarIO $ md^.entTblTVar) |$| asks >=> \((! i) -> s) -> do
-    logPla "adminShutdown" i $ "initiating shutdown; message: " <> dblQuote msg
-    massSend $ shutdownMsgColor <> msg <> dfltColor
-    massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
-                                            , s
-                                            , "; message: "
-                                            , dblQuote msg ]
-    logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", dblQuote msg ]
-    liftIO . atomically . writeTQueue mq $ Shutdown
+adminShutdown (NoArgs' i mq) =
+    (\md -> liftIO . readTVarIO $ md^.entTblTVar) |$| asks >=> \(view sing . (! i) -> s) -> do
+        logPla "adminShutdown" i $ "initiating shutdown " <> parensQuote "no message given" <> "."
+        massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
+        massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
+                                              , s
+                                              , " "
+                                              , parensQuote "no message given"
+                                              , "." ]
+        logNotice  "adminShutdown" $ T.concat [ "server shutdown initiated by "
+                                              , s
+                                              , " "
+                                              , parensQuote "no message given"
+                                              , "." ]
+        liftIO . atomically . writeTQueue mq $ Shutdown
+adminShutdown (Msg i mq msg) =
+    (\md -> liftIO . readTVarIO $ md^.entTblTVar) |$| asks >=> \(view sing . (! i) -> s) -> do
+        logPla "adminShutdown" i $ "initiating shutdown; message: " <> dblQuote msg
+        massSend $ shutdownMsgColor <> msg <> dfltColor
+        massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
+                                                , s
+                                                , "; message: "
+                                                , dblQuote msg ]
+        logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", dblQuote msg ]
+        liftIO . atomically . writeTQueue mq $ Shutdown
 adminShutdown p = patternMatchFail "adminShutdown" [ showText p ]
 
 
