@@ -122,20 +122,22 @@ fileIOExHandler fn e = if any (e |$|) [ isAlreadyInUseError, isDoesNotExistError
 -----
 
 
+-- TODO: Search for readTVarIO; make sure all uses are ok.
 pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
-pager i mq txt@(length -> txtLen) = ask >>= \md -> do
-    (view pageLines . (! i) -> pageLen) <- liftIO . readTVarIO $ md^.plaTblTVar
-    if txtLen + 3 <= pageLen
-      then send mq . nl . T.unlines $ txt
-      else let (page, rest) = splitAt (pageLen - 2) txt
-               helperSTM    = do
-                   pt <- readTVar $ md^.plaTblTVar
-                   let p = (pt ! i) & interp .~ (Just $ interpPager pageLen txtLen (page, rest))
-                   liftIO . atomically . writeTVar (md^.plaTblTVar) $ pt & at i ?~ p
-           in do
-               send mq . T.unlines $ page
-               sendPagerPrompt mq (pageLen - 2) txtLen
-               liftIO . atomically $ helperSTM
+pager i mq txt@(length -> txtLen) = (liftIO . atomically . helperSTM) |$| asks >=> \case
+    Nothing              -> send mq . nl . T.unlines $ txt
+    Just (page, pageLen) -> do
+        send mq . T.unlines $ page
+        sendPagerPrompt mq (pageLen - 2) txtLen
+  where
+    helperSTM md = (readTVar $ md^.plaTblTVar) >>= \pt ->
+        let p       = pt ! i
+            pageLen = p^.pageLines
+        in if txtLen + 3 <= pageLen
+          then return Nothing
+          else let (page, rest) = splitAt (pageLen - 2) txt
+                   p'           = p & interp .~ (Just $ interpPager pageLen txtLen (page, rest))
+               in (writeTVar (md^.plaTblTVar) $ pt & at i ?~ p') >> (return . Just $ (page, pageLen))
 
 
 -----
