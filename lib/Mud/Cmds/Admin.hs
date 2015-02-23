@@ -289,7 +289,7 @@ adminProfanity p = withoutArgs adminProfanity p
 
 
 adminShutdown :: Action
-adminShutdown (NoArgs' i mq) = i |$| getEntSing >=> \s -> do
+adminShutdown (NoArgs' i mq) = (\md -> liftIO . readTVarIO $ md^.entTblTVar) |$| asks >=> \((! i) -> s) -> do
     logPla "adminShutdown" i $ "initiating shutdown " <> parensQuote "no message given" <> "."
     massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
     massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
@@ -303,7 +303,7 @@ adminShutdown (NoArgs' i mq) = i |$| getEntSing >=> \s -> do
                                           , parensQuote "no message given"
                                           , "." ]
     liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown (Msg i mq msg) = i |$| getEntSing >=> \s -> do
+adminShutdown (Msg i mq msg) = (\md -> liftIO . readTVarIO $ md^.entTblTVar) |$| asks >=> \((! i) -> s) -> do
     logPla "adminShutdown" i $ "initiating shutdown; message: " <> dblQuote msg
     massSend $ shutdownMsgColor <> msg <> dfltColor
     massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
@@ -333,51 +333,57 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
-adminTell (MsgWithTarget i mq cols target msg) = do
-    et        <- getEntTbl
-    (mqt, pt) <- getMqtPt
+adminTell (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperSTM) |$| asks >=> \(et, mqt, pt) ->
     let (view sing -> s) = et ! i
         piss             = mkPlaIdsSingsList et pt
         notFound         = wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently \
                                               \logged in."
         found match | (tellI, tellS) <- head . filter ((== match) . snd) $ piss
                     , tellMq         <- mqt ! tellI
-                    , p              <- pt ! tellI
+                    , p              <- pt  ! tellI
                     , tellCols       <- p^.columns = do
-                       logPla (prefixAdminCmd "tell") i  . T.concat $ [ "sent message to "
-                                                                      , tellS
-                                                                      , ": "
-                                                                      , dblQuote msg ]
-                       logPla (prefixAdminCmd "tell") tellI . T.concat $ [ "received message from "
-                                                                         , s
-                                                                         , ": "
-                                                                         , dblQuote msg ]
-                       wrapSend mq cols . T.concat $ [ "You send ", tellS, ": ", dblQuote msg ]
-                       let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
-                       if getPlaFlag IsNotFirstAdminTell p
-                         then wrapSend tellMq tellCols targetMsg
-                         else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
+                        logPla (prefixAdminCmd "tell") i     . T.concat $ [ "sent message to "
+                                                                          , tellS
+                                                                          , ": "
+                                                                          , dblQuote msg ]
+                        logPla (prefixAdminCmd "tell") tellI . T.concat $ [ "received message from "
+                                                                          , s
+                                                                          , ": "
+                                                                          , dblQuote msg ]
+                        wrapSend mq cols . T.concat $ [ "You send ", tellS, ": ", dblQuote msg ]
+                        let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+                        if getPlaFlag IsNotFirstAdminTell p
+                          then wrapSend tellMq tellCols targetMsg
+                          else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
     maybe notFound found . findFullNameForAbbrev target . map snd $ piss
+  where
+    helperSTM md = do
+        et  <- readTVar $ md^.entTblTvar
+        mqt <- readTVar $ md^.msgQueueTblTVar
+        pt  <- readTVar $ md^.plaTblTVar
+        return (et, mqt, pt)
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
 firstAdminTell :: Id -> Sing -> MudStack [T.Text]
-firstAdminTell i s = [ [ T.concat [ hintANSI
-                       , "Hint:"
-                       , noHintANSI
-                       , " the above is a message from "
-                       , s
-                       , ", a CurryMUD administrator. To reply, type "
-                       , quoteColor
-                       , dblQuote $ "admin " <> s <> " msg"
-                       , dfltColor
-                       , ", where "
-                       , quoteColor
-                       , dblQuote "msg"
-                       , dfltColor
-                       , " is the message you want to send to "
-                       , s
-                       , "." ] ] | _ <- modifyPlaFlag i IsNotFirstAdminTell True ]
+firstAdminTell i s = do
+    modifyPlaFlag i IsNotFirstAdminTell True
+    return $ T.concat [ hintANSI
+                      , "Hint:"
+                      , noHintANSI
+                      , " the above is a message from "
+                      , s
+                      , ", a CurryMUD administrator. To reply, type "
+                      , quoteColor
+                      , dblQuote $ "admin " <> s <> " msg"
+                      , dfltColor
+                      , ", where "
+                      , quoteColor
+                      , dblQuote "msg"
+                      , dfltColor
+                      , " is the message you want to send to "
+                      , s
+                      , "." ]
 
 -----
 
@@ -389,8 +395,7 @@ adminTime (NoArgs i mq cols) = do
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
     formatThat (T.words . showText -> wordy@(headLast -> (date, zone)))
-      | time <- T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy
-      = T.concat [ zone, ": ", date, " ", time ]
+      | time <- T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy = T.concat [ zone, ": ", date, " ", time ]
 adminTime p = withoutArgs adminTime p
 
 
@@ -398,9 +403,8 @@ adminTime p = withoutArgs adminTime p
 
 
 adminTypo :: Action
-adminTypo (NoArgs i mq cols) =
-    logPlaExec (prefixAdminCmd "typo") i >> dumpLog mq cols typoLogFile ("typo", "typos")
-adminTypo p = withoutArgs adminTypo p
+adminTypo (NoArgs i mq cols) = logPlaExec (prefixAdminCmd "typo") i >> dumpLog mq cols typoLogFile ("typo", "typos")
+adminTypo p                  = withoutArgs adminTypo p
 
 
 -----
@@ -409,10 +413,9 @@ adminTypo p = withoutArgs adminTypo p
 adminUptime :: Action
 adminUptime (NoArgs i mq cols) = do
     logPlaExec (prefixAdminCmd "uptime") i
-    send mq . nl =<< liftIO runUptime |$| try >=> eitherRet handler
+    send mq . nl =<< liftIO uptime |$| try >=> eitherRet (\e -> logIOEx "adminUptime" e >> sendGenericErrorMsg mq cols)
   where
-    runUptime = T.pack <$> readProcess "uptime" [] ""
-    handler e = logIOEx "adminUptime" e >> sendGenericErrorMsg mq cols
+    uptime = T.pack <$> readProcess "uptime" [] ""
 adminUptime p = withoutArgs adminUptime p
 
 

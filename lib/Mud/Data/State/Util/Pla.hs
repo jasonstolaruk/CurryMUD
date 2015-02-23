@@ -51,7 +51,9 @@ modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
     in putTMVar ptTMVar (pt & at i ?~ p) >> return p
 
 
-modifyPlaFlag :: Id -> PlaFlags -> Bool -> MudStack Pla
-modifyPlaFlag i flag b = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
-    let p = setPlaFlag flag b $ pt ! i
-    in putTMVar ptTMVar (pt & at i ?~ p) >> return p
+modifyPlaFlag :: Id -> PlaFlags -> Bool -> MudStack ()
+modifyPlaFlag i flag b = asks $ liftIO . atomically . helperSTM
+  where
+    helperSTM md = (md^.plaTblTVar) |$| readTVar >=> \pt ->
+        let p = setPlaFlag flag b $ pt ! i
+        in putTVar (md^.plaTblTVar) (pt & at i ?~ p)
