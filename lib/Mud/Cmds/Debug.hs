@@ -251,12 +251,16 @@ purgeThreadTbls = do
 
 
 purgePlaLogTbl :: MudStack ()
-purgePlaLogTbl = modifyNWS plaLogTblTMVar =<< purger =<< IM.assocs <$> readTMVarInNWS plaLogTblTMVar
+purgePlaLogTbl = ask >>= \md -> do
+    plt <- liftIO . readTVarIO $ md^.plaLogTblTVar
+    let (is, asyncs) = unzip [ (fst kv, fst . snd $ kv) | kv <- IM.assocs plt ]
+    zipped <- [ zip is statuses | statuses <- liftIO . mapM poll $ asyncs ]
+    liftIO . atomically . helperSTM md $ zipped
   where
-    purger kvs = let (is, asyncs) = unzip [ (fst kv, fst . snd $ kv) | kv <- kvs ]
-                 in [ flip (foldl' helper) . zip is $ statuses | statuses <- liftIO . mapM poll $ asyncs ]
-    helper m (_, Nothing) = m
-    helper m (i, _      ) = IM.delete i m
+    helperSTM md zipped = (md^.plaLogTblTVar) |$| readTVar >=> \plt ->
+        writeTVar (md^.plaLogTblTVar) . foldr purger plt $ zipped
+    purger (_, Nothing) tbl = tbl
+    purger (i, _      ) tbl = IM.delete i tbl
 
 
 purgeTalkAsyncTbl :: MudStack ()
