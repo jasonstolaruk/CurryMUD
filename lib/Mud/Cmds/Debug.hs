@@ -304,7 +304,7 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 debugRotate :: Action
-debugRotate (NoArgs' i mq) = (\md -> liftIO . readTVarIO $ md^.plaLogTblTVar) |$| asks >=> \plt ->
+debugRotate (NoArgs' i mq) = (\md -> liftIO . readTVarIO $ md^.plaLogTblTVar) |$| asks >=> \plt -> do
     logPlaExec (prefixDebugCmd "rotate") i
     liftIO . atomically . writeTQueue (snd $ plt ! i) $ RotateLog
     ok mq
@@ -315,15 +315,15 @@ debugRotate p = withoutArgs debugRotate p
 
 
 debugTalk :: Action
-debugTalk (NoArgs i mq cols) = do
+debugTalk (NoArgs i mq cols) = (\md -> liftIO . readTVarIO $ md^.talkAsyncTblTVar) |$| asks >=> \tat -> do
     logPlaExec (prefixDebugCmd "talk") i
-    send mq . frame cols . multiWrap cols =<< mapM mkDesc . M.elems =<< readTMVarInNWS talkAsyncTblTMVar
+    send mq . frame cols . multiWrap cols =<< (mapM mkDesc . M.elems $ tat)
   where
-    mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", s, "." ]
-                  | (mkStatusTxt -> s) <- liftIO . poll $ a ]
+    mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", status, "." ]
+                  | status <- mkStatusTxt <$> liftIO . poll $ a ]
     mkStatusTxt = \case Nothing                                    -> "running"
                         Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
-                        Just (Right ())                            -> "finished"
+                        Just (Right ()                           ) -> "finished"
 debugTalk p = withoutArgs debugTalk p
 
 
