@@ -103,15 +103,15 @@ debugCmds =
                                                \sequences." ]
 
 
-mkDebugCmd :: CmdName -> Action -> CmdDesc -> Cmd
-mkDebugCmd (prefixDebugCmd -> cn) act cd = Cmd { cmdName = cn
+mkDebugCmd :: T.Text -> Action -> CmdDesc -> Cmd
+mkDebugCmd (prefixDebugCmd -> cn) act cd = Cmd { cmdName           = cn
                                                , cmdPriorityAbbrev = Nothing
                                                , cmdFullName       = cn
                                                , action            = act
                                                , cmdDesc           = cd }
 
 
-prefixDebugCmd :: CmdName -> T.Text
+prefixDebugCmd :: T.Text -> CmdName
 prefixDebugCmd = prefixCmd debugCmdChar
 
 
@@ -209,7 +209,7 @@ debugDispEnv p@(ActionParams { plaId, args }) = do
 
 
 mkEnvListTxt :: [(String, String)] -> [T.Text]
-mkEnvListTxt = map (mkAssocTxt . (T.pack *** T.pack))
+mkEnvListTxt = map (mkAssocTxt . over both . T.pack)
   where
     mkAssocTxt (a, b) = T.concat [ envVarColor, a, ": ", dfltColor, b ]
 
@@ -220,7 +220,7 @@ mkEnvListTxt = map (mkAssocTxt . (T.pack *** T.pack))
 debugLog :: Action
 debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
-    helper       = replicateM_ 100 . liftIO . void . forkIO . runReaderT heavyLogging =<< ask
+    helper       = replicateM_ 100 . asks $ liftIO . void . forkIO . runReaderT heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p

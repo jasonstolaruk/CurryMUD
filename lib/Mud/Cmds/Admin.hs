@@ -112,15 +112,15 @@ adminCmds =
     , mkAdminCmd "who"       adminWho         "Display or search a list of the players who are currently connected." ]
 
 
-mkAdminCmd :: CmdName -> Action -> CmdDesc -> Cmd
-mkAdminCmd (prefixAdminCmd -> cn) act cd = Cmd { cmdName = cn
+mkAdminCmd :: T.Text -> Action -> CmdDesc -> Cmd
+mkAdminCmd (prefixAdminCmd -> cn) act cd = Cmd { cmdName           = cn
                                                , cmdPriorityAbbrev = Nothing
                                                , cmdFullName       = cn
                                                , action            = act
                                                , cmdDesc           = cd }
 
 
-prefixAdminCmd :: CmdName -> T.Text
+prefixAdminCmd :: T.Text -> CmdName
 prefixAdminCmd = prefixCmd adminCmdChar
 
 
