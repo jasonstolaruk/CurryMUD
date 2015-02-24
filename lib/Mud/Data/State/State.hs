@@ -18,7 +18,6 @@ import System.Clock (TimeSpec)
 import System.Random (Random, random, randomR)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
-import qualified Data.Set as S (Set)
 import qualified Data.Text as T
 
 
@@ -56,7 +55,7 @@ type ClothTbl     = IM.IntMap Cloth
 type CoinsTbl     = IM.IntMap Coins
 type ConTbl       = IM.IntMap Con
 type EntTbl       = IM.IntMap Ent
-type EqTbl        = IM.IntMap Eq
+type EqTbl        = IM.IntMap EqMap
 type InvTbl       = IM.IntMap Inv
 type MobTbl       = IM.IntMap Mob
 type MsgQueueTbl  = IM.IntMap MsgQueue
