@@ -252,10 +252,9 @@ purgeThreadTbls = do
 
 purgePlaLogTbl :: MudStack ()
 purgePlaLogTbl = ask >>= \md -> do
-    plt <- liftIO . readTVarIO $ md^.plaLogTblTVar
-    let (is, asyncs) = unzip [ (fst kv, fst . snd $ kv) | kv <- IM.assocs plt ]
-    zipped <- [ zip is statuses | statuses <- liftIO . mapM poll $ asyncs ]
-    liftIO . atomically . helperSTM md $ zipped
+    (IM.assocs -> kvs) <- liftIO . readTVarIO $ md^.plaLogTblTVar
+    let (is, asyncs) = unzip [ (fst kv, fst . snd $ kv) | kv <- kvs ]
+    liftIO . atomically . helperSTM md =<< (zip is <$> liftIO . mapM poll $ asyncs)
   where
     helperSTM md zipped = (md^.plaLogTblTVar) |$| readTVar >=> \plt ->
         writeTVar (md^.plaLogTblTVar) . foldr purger plt $ zipped
@@ -264,21 +263,25 @@ purgePlaLogTbl = ask >>= \md -> do
 
 
 purgeTalkAsyncTbl :: MudStack ()
-purgeTalkAsyncTbl = modifyNWS talkAsyncTblTMVar =<< purger
+purgeTalkAsyncTbl = ask >>= \md -> do
+    (M.elems -> asyncs) <- liftIO . readTVarIO $ md^.talkAsyncTblTVar
+    liftIO . atomically . helperSTM md =<< (zip asyncs <$> liftIO . mapM poll $ asyncs)
   where
-    purger = [ flip (foldl' helper) . zip asyncs $ statuses | asyncs   <- M.elems <$> readTMVarInNWS talkAsyncTblTMVar
-                                                            , statuses <- liftIO . mapM poll $ asyncs ]
-    helper m (_, Nothing) = m
-    helper m (a, _      ) = M.delete (asyncThreadId a) m
+    helperSTM md zipped = (md^.talkAsyncTblTVar) |$| readTVar >>= \tat ->
+        writeTVar (md^.talkAsyncTblTVar) . foldr purger tat $ zipped
+    purger (_, Nothing) tbl = tbl -- TODO: Quite similar to the "purger" above...
+    purger (a, _      ) tbl = M.delete (asyncThreadId a) tbl
 
 
 purgeThreadTbl :: MudStack ()
-purgeThreadTbl = modifyNWS threadTblTMVar =<< purger
+purgeThreadTbl = ask >>= \md -> do
+    (M.keys -> tis) <- liftIO . readTVarIO $ md^.threadTblTVar
+    liftIO . atomically . helperSTM md =<< (zip tis <$> liftIO . mapM threadStatus $ tis)
   where
-    purger = [ flip (foldl' helper) . zip tis $ ss | tis <- M.keys <$> readTMVarInNWS threadTblTMVar
-                                                   , ss  <- liftIO . mapM threadStatus $ tis ]
-    helper m (ti, s) | s == ThreadFinished = M.delete ti m
-                     | otherwise           = m
+    helperSTM md zipped = (md^.threadTblTVar) |$| readTVar >=> \tt ->
+        writeTVar (md^.threadTblTVar) . foldr purger tt $ zipped
+    purger (ti, status) tbl | status == ThreadFinished = M.delete ti tbl
+                            | otherwise                = tbl
 
 
 -----
