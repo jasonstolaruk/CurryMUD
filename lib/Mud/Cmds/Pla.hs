@@ -49,8 +49,8 @@ import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
--- TODO: import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
--- TODO: import Control.Monad.IO.Class (liftIO)
+import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Data.Conduit -- TODO: (($$), (=$))
 import Data.Function (on)
@@ -73,7 +73,6 @@ import qualified Data.Map.Lazy as M (elems, filter, null)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
-import Control.Monad.State.Lazy -- TODO
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

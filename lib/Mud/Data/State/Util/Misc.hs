@@ -21,8 +21,6 @@ import Mud.Data.State.Util.STM
 import Mud.Util.Misc
 import Mud.Util.Text
 
--- TODO: import Control.Monad (void)
--- TODO: import Control.Monad.IO.Class (liftIO)
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Concurrent (forkIO)
