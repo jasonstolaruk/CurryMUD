@@ -129,14 +129,14 @@ pager i mq txt@(length -> txtLen) = (liftIO . atomically . helperSTM) |$| asks >
         send mq . T.unlines $ page
         sendPagerPrompt mq (pageLen - 2) txtLen
   where
-    helperSTM md = (readTVar $ md^.plaTblTVar) >>= \pt ->
+    helperSTM md = readTVar (md^.plaTblTVar) >>= \pt ->
         let p       = pt ! i
             pageLen = p^.pageLines
         in if txtLen + 3 <= pageLen
           then return Nothing
           else let (page, rest) = splitAt (pageLen - 2) txt
                    p'           = p & interp .~ (Just $ interpPager pageLen txtLen (page, rest))
-               in (writeTVar (md^.plaTblTVar) $ pt & at i ?~ p') >> (return . Just $ (page, pageLen))
+               in writeTVar (md^.plaTblTVar) (pt & at i ?~ p') >> (return . Just $ (page, pageLen))
 
 
 -----

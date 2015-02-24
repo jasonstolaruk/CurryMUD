@@ -357,7 +357,7 @@ adminTell (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperST
                         if getPlaFlag IsNotFirstAdminTell p
                           then wrapSend tellMq tellCols targetMsg
                           else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
-    maybe notFound found . findFullNameForAbbrev target . map snd $ piss
+    in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
   where
     helperSTM md = do
         et  <- readTVar $ md^.entTblTvar
@@ -427,18 +427,18 @@ adminUptime p = withoutArgs adminUptime p
 adminWho :: Action
 adminWho (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
-    pager i mq . concatMap (wrapIndent 20 cols) =<< mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
+    pager i mq . concatMap (wrapIndent 20 cols) =<< mkPlaListTxt
 adminWho p@(ActionParams { plaId, args }) = do
     logPlaExecArgs (prefixAdminCmd "who") args plaId
-    dispMatches p 20 =<< mkPlaListTxt <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
+    dispMatches p 20 =<< mkPlaListTxt
 
 
-mkPlaListTxt ::
+mkPlaListTxt :: MudStack [T.Text]
 mkPlaListTxt = (liftIO . atomically . helperSTM) |$| asks >=> \(pt, et) ->
     let pis         = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ pt
         (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = (et ! pi)^.sing, then sortWith by s ]
         pias        = zip pis' . styleAbbrevs Don'tBracket $ pss
-    in map mkPlaTxt pias ++ [ mkNumOfPlayersTxt pis <> " connected." ]
+    in return $ map mkPlaTxt pias ++ [ mkNumOfPlayersTxt pis <> " connected." ]
   where
     helperSTM md = do
         pt <- readTVar $ md^.plaTblTVar

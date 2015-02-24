@@ -67,8 +67,8 @@ initLogging :: IO (LogService, LogService)
 initLogging = do
     updateGlobalLogger rootLoggerName removeHandler
     (nq, eq) <- (,) <$> newTQueueIO <*> newTQueueIO
-    (na, ea) <- (,) <$> (spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM $ nq)
-                    <*> (spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  $ eq)
+    (na, ea) <- (,) <$> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq
+                    <*> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq
     retrun ((na, nq), (ea, eq))
 
 

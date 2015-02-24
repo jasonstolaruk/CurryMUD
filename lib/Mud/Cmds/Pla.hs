@@ -1445,7 +1445,7 @@ say p@(WithArgs i mq cols args@(a:_))
     sayTo ma (T.words -> (target:rest@(r:_))) = readWSTMVar >>= \ws ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
             c                                         = (ws^.coinsTbl) ! ri
-        in (not . null $ ris') || c /= mempty
+            in if uncurry (||) . over both (/= mempty) $ (ris', c)
           then case resolveRmInvCoins i ws [target] ris' c of
             (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
             (_,                    Right _:_           ) -> wrapSend mq cols "You're talking to coins now?"

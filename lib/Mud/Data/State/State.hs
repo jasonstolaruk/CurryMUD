@@ -323,8 +323,8 @@ data RmLink = StdLink    { _linkDir      :: LinkDir
                          , _stdDestId    :: Id }
             | NonStdLink { _linkName     :: LinkName
                          , _nonStdDestId :: Id
-                         , _originMsg    :: (T.Text -> T.Text)
-                         , _destMsg      :: (T.Text -> T.Text) }
+                         , _originMsg    :: T.Text -> T.Text
+                         , _destMsg      :: T.Text -> T.Text }
 
 
 data LinkDir = North
