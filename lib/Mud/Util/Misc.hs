@@ -3,7 +3,6 @@
 module Mud.Util.Misc ( (?)
                      , (|!|)
                      , (|$|)
-                     , (|*|)
                      , (|?|)
                      , Cond(..)
                      , blowUp
@@ -25,7 +24,6 @@ module Mud.Util.Misc ( (?)
 import Mud.Util.Quoting
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Arrow ((***))
 import Control.Monad (guard)
 import Data.Monoid ((<>), Monoid, mempty)
 import Data.Time (getZonedTime)
@@ -58,10 +56,6 @@ a |!| b = (a == mempty) ? mempty :? b
 infixr 0 |$|
 (|$|) :: a -> (a -> b) -> b
 (|$|) = flip ($)
-
-
-(|*|) :: (Eq a, Monoid a, Eq b, Monoid b) => (a, b) -> (c, c) -> c
-pair |*| (a, b) = (uncurry (||) . ((/= mempty) *** (/= mempty)) $ pair) ? a :? b
 
 
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
