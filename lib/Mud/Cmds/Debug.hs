@@ -269,7 +269,7 @@ purgeTalkAsyncTbl = ask >>= \md -> do
   where
     helperSTM md zipped = (md^.talkAsyncTblTVar) |$| readTVar >>= \tat ->
         writeTVar (md^.talkAsyncTblTVar) . foldr purger tat $ zipped
-    purger (_, Nothing) tbl = tbl -- TODO: Quite similar to the "purger" above...
+    purger (_, Nothing) tbl = tbl
     purger (a, _      ) tbl = M.delete (asyncThreadId a) tbl
 
 
@@ -304,9 +304,9 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 debugRotate :: Action
-debugRotate (NoArgs' i mq) = snd . fromJust . IM.lookup i <$> readTMVarInNWS plaLogTblTMVar >>= \q -> do
+debugRotate (NoArgs' i mq) = (\md -> liftIO . readTVarIO $ md^.plaLogTblTVar) |$| asks >=> \plt ->
     logPlaExec (prefixDebugCmd "rotate") i
-    liftIO . atomically . writeTQueue q $ RotateLog
+    liftIO . atomically . writeTQueue (snd $ plt ! i) $ RotateLog
     ok mq
 debugRotate p = withoutArgs debugRotate p
 
