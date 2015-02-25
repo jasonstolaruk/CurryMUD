@@ -372,8 +372,12 @@ debugThrow p            = withoutArgs debugThrow p
 debugThrowLog :: Action
 debugThrowLog (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "throwlog") i
-    [ snd $ plt ! i | plt <- readTMVarInNWS plaLogTblTMVar ] >>= liftIO . atomically . flip writeTQueue Throw
+    liftIO . atomically . helperSTM =<< ask
     ok mq
+  where
+    helperSTM md = do
+        (snd . (! i) -> q) <- readTVar $ md^.plaLogTblTVar
+        writeTQueue q Throw
 debugThrowLog p = withoutArgs debugThrowLog p
 
 
