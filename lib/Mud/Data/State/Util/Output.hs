@@ -88,19 +88,19 @@ bcast bs = readWSTMVar >>= \ws -> do
       = send mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ws $ msg
 
 
-parsePCDesig :: Id -> WorldState -> T.Text -> T.Text
-parsePCDesig i ws msg = views introduced (`helper` msg) ((ws^.pcTbl) ! i)
+parsePCDesig :: Id -> MobTbl -> PCTbl -> T.Text -> T.Text
+parsePCDesig i mt pt msg = views introduced (`helper` msg) $ pt ! i
   where
     helper intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
-          left                                                                         <>
-          (pes `elem` intros ? pes :? expandPCEntName i ws isCap pcEntName pcId pcIds) <>
+          left                                                                            <>
+          (pes `elem` intros ? pes :? expandPCEntName i mt pt isCap pcEntName pcId pcIds) <>
           helper intros rest
         StdDesig { stdPCEntSing = Nothing,  .. } ->
-          left <> expandPCEntName i ws isCap pcEntName pcId pcIds <> helper intros rest
+          left <> expandPCEntName i mt pt isCap pcEntName pcId pcIds <> helper intros rest
         _ -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter txt
@@ -110,13 +110,13 @@ parsePCDesig i ws msg = views introduced (`helper` msg) ((ws^.pcTbl) ! i)
       | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig = (left, pcd, rest)
 
 
-expandPCEntName :: Id -> WorldState -> Bool -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ws ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
+expandPCEntName :: Id -> MobTbl -> PlaTbl -> Bool -> T.Text -> Id -> Inv -> T.Text
+expandPCEntName i mt pt ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
     T.concat [ leading, "he ", xth, expandSex h, " ", t ]
   where
     leading | ic        = "T"
             | otherwise = "t"
-    xth = let matches = foldr (\pcI acc -> mkUnknownPCEntName pcI ws == pen ? pcI : acc :? acc) [] pis
+    xth = let matches = foldr (\pcI acc -> mkUnknownPCEntName pcI mt pt == pen ? pcI : acc :? acc) [] pis
           in case matches of [_] -> ""
                              _   -> (<> " ") . mkOrdinal . (+ 1) . fromJust . elemIndex pi $ matches
     expandSex 'm'                = "male"

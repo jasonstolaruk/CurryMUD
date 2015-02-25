@@ -698,9 +698,9 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
-    helper toSelf toTarget toOthers = readWSTMVar >>= \ws ->
-        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
-            c                                         = (ws^.coinsTbl) ! ri
+    helper toSelf toTarget toOthers = (liftIO . atomically . helperSTM) |$| asks >=> \(ct, et, it, mt, pt, tt) ->
+        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et pt it
+            c                                         = ct ! ri
         in if uncurry (||) . over both (/= mempty) $ (ris', c)
           then case resolveRmInvCoins i ws [target] ris' c of
             (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
@@ -711,14 +711,14 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
                                                                              \person at a time with expressive \
                                                                              \commands."
             ([ Right [targetId] ], _                   ) ->
-              let (view sing -> targetSing) = (ws^.entTbl) ! targetId
+              let targetSing = (et ! targetId)^.sing
                   onPC targetDesig =
                       let (toSelf', toSelfBrdcst, serialized, hisHer, toOthers') = mkBindings targetDesig
                           toOthersBrdcst = (nlnl toOthers', pcIds d \\ [ i, targetId ])
                           toTarget'      = replace [ ("%", serialized), ("&", hisHer) ] toTarget
                           toTargetBrdcst = (nlnl toTarget', [targetId])
                       in do
-                          logPlaOut ecn i [ parsePCDesig i ws toSelf' ]
+                          logPlaOut ecn i [ parsePCDesig i mt pt toSelf' ]
                           bcast [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
                   onMob targetNoun =
                       let (toSelf', toSelfBrdcst, _, _, toOthers') = mkBindings targetNoun
@@ -730,15 +730,24 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
                       let toSelf'        = replace [("@", targetTxt)] toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
                           serialized     = mkSerializedDesig d toOthers
-                          (_, hisHer, _) = mkPros i ws
+                          (_, hisHer, _) = mkPros i tt
                           toOthers'      = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
                       in (toSelf', toSelfBrdcst, serialized, hisHer, toOthers')
-              in case (ws^.typeTbl) ! targetId of
-                PCType  -> onPC  . serialize . mkStdDesig targetId ws targetSing False $ ris
+              in case tt ! targetId of
+                PCType  -> onPC  . serialize . mkStdDesig targetId mt pt tt targetSing False $ ris
                 MobType -> onMob . theOnLower $ targetSing
                 _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
             x -> patternMatchFail "expCmd helper" [ showText x ]
           else wrapSend mq cols "You don't see anyone here."
+  where
+    helperSTM md = (liftIO . atomically . helperSTM) |$| asks >=> \(ct, et, it, mt, pt, tt) ->
+        ct <- readTVar $ md^.coinsTblTVar
+        et <- readTVar $ md^.entTblTVar
+        it <- readTVar $ md^.invTblTVar
+        mt <- readTVar $ md^.mobTblTVar
+        pt <- readTVar $ md^.plaTblTVar
+        tt <- readTVar $ md^.typeTblTvar
+        return (ct, et, it, mt, pt, tt)
 expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only target one person at a time with expressive commands."
 
@@ -749,7 +758,7 @@ mkSerializedDesig d toOthers | T.head toOthers == '%' = serialize d
 
 
 mkPros :: Id -> MobTbl -> (T.Text, T.Text, T.Text)
-mkPros i ws = let s = (mobTbl ! i)^.sex in (mkThrPerPro s, mkPossPro s, mkReflexPro s)
+mkPros i mt = let s = (mt ! i)^.sex in (mkThrPerPro s, mkPossPro s, mkReflexPro s)
 
 
 replace :: [(T.Text, T.Text)] -> T.Text -> T.Text

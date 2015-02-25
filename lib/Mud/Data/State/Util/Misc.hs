@@ -37,8 +37,8 @@ import qualified Data.IntMap.Lazy as IM (IntMap, keys)
 import qualified Data.Text as T
 
 
-findPCIds :: WorldState -> [Id] -> [Id]
-findPCIds ws haystack = [ i | i <- haystack, (ws^.typeTbl) ! i == PCType ]
+findPCIds :: TypeTbl -> [Id] -> [Id]
+findPCIds tt haystack = [ i | i <- haystack, tt ! i == PCType ]
 
 
 getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
@@ -94,9 +94,9 @@ mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (sexy, r
                           , nonStdDesc      = T.concat [ aot, " ", sexy, " ", r ] }
 
 
-mkUnknownPCEntName :: Id -> WorldState -> T.Text
-mkUnknownPCEntName i ws | (view sex  -> s) <- (ws^.mobTbl) ! i
-                        , (view race -> r) <- (ws^.pcTbl)  ! i = (T.singleton . T.head . pp $ s) <> pp r
+mkUnknownPCEntName :: Id -> MobTbl -> PCTbl -> T.Text
+mkUnknownPCEntName i mt pt | s <- (mt ! i)^.sex
+                           , r <- (pt ! i)^.race = (T.singleton . T.head . pp $ s) <> pp r
 
 
 -- TODO: Changed fold from "foldl'" to "foldr"... everything OK?

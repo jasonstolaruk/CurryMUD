@@ -486,12 +486,12 @@ mkCapStdDesig i et pt it | s                   <- (et ! i)^.sing
                          , ris                 <- it ! ri = (mkStdDesig i ws s True ris, s, p, ri, ris)
 
 
-mkStdDesig :: Id -> WorldState -> Sing -> Bool -> Inv -> PCDesig
-mkStdDesig i ws s ic ris = StdDesig { stdPCEntSing = Just s
-                                    , isCap        = ic
-                                    , pcEntName    = mkUnknownPCEntName i ws
-                                    , pcId         = i
-                                    , pcIds        = findPCIds ws ris }
+mkStdDesig :: Id -> MobTbl -> PCTbl -> TypeTbl -> Sing -> Bool -> Inv -> PCDesig
+mkStdDesig i mt pt tt s ic ris = StdDesig { stdPCEntSing = Just s
+                                          , isCap        = ic
+                                          , pcEntName    = mkUnknownPCEntName i mt pt
+                                          , pcId         = i
+                                          , pcIds        = findPCIds tt ris }
 
 
 -----
