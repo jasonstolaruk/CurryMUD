@@ -331,14 +331,17 @@ debugTalk p = withoutArgs debugTalk p
 
 
 debugThread :: Action
-debugThread (NoArgs i mq cols) = do
+debugThread (NoArgs i mq cols) = ask >>= \md -> do
     logPlaExec (prefixDebugCmd "thread") i
-    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId <$> getLogAsyncs
-    threadTblKvs <- M.assocs <$> readTMVarInNWS threadTblTMVar
-    (es, ks)     <- let f = (,) <$> IM.elems <*> IM.keys in f <$> readTMVarInNWS plaLogTblTMVar
-    let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- es | k <- ks ]
+    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId . getLogAsyncs $ md
+    (M.assocs -> threadTblKvs, plt) <- liftIO . atomically . helperSTM $ md
+    let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- IM.elems plt | k <- IM.keys plt ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
   where
+    helperSTM md = do
+        tt  <- readTVar $ md^.threadTblTVar
+        plt <- readTVar $ md^.plaLogTblTVar
+        return (tt, plt)
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
     mkTypeName (PlaLog  (showText -> plaI)) = padOrTrunc 10 "PlaLog"  <> plaI
@@ -349,10 +352,9 @@ debugThread (NoArgs i mq cols) = do
 debugThread p = withoutArgs debugThread p
 
 
-getLogAsyncs :: MudStack (LogAsync, LogAsync)
-getLogAsyncs = helper <$> use nonWorldState
+getLogAsyncs :: MudData -> (LogAsync, LogAsync)
+getLogAsyncs = (getAsync noticeLog *** getAsync errorLog) . dup
   where
-    helper     = (getAsync noticeLog *** getAsync errorLog) . dup
     getAsync l = views l (fst . fromJust)
 
 
