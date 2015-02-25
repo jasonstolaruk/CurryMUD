@@ -676,15 +676,21 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
-    helper toSelf toOthers = readWSTMVar >>= \ws ->
-        let (d, _, _, _, _)             = mkCapStdDesig i ws
+    helper toSelf toOthers = (liftIO . atomically . helperSTM) |$| asks >=> \(et, pt, it, mt) ->
+        let (d, _, _, _, _)             = mkCapStdDesig i et pt it
             toSelfBrdcst                = (nlnl toSelf, [i])
             serialized                  = mkSerializedDesig d toOthers
-            (heShe, hisHer, himHerself) = mkPros i ws
+            (heShe, hisHer, himHerself) = mkPros i mt
             toOthers'                   = replace substitutions toOthers
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBrdcst              = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut ecn i [toSelf] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
+    helperSTM md = do
+        et <- readTVar $ md^.entTblTVar
+        pt <- readTVar $ md^.plaTblTVar
+        it <- readTVar $ md^.invTblTVar
+        mt <- readTVar $ md^.mobTblTVar
+        return (et, pt, it, mt)
 expCmd ecn (NoTarget {}) (WithArgs _ mq cols (_:_))  = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
                                                                           \command cannot be used with a target."
 expCmd ecn ect           (OneArg   i mq cols target) = case ect of
@@ -742,8 +748,8 @@ mkSerializedDesig d toOthers | T.head toOthers == '%' = serialize d
                              | otherwise              = serialize d { isCap = False }
 
 
-mkPros :: Id -> WorldState -> (T.Text, T.Text, T.Text)
-mkPros i ws = let (view sex -> s) = (ws^.mobTbl) ! i in (mkThrPerPro s, mkPossPro s, mkReflexPro s)
+mkPros :: Id -> MobTbl -> (T.Text, T.Text, T.Text)
+mkPros i ws = let s = (mobTbl ! i)^.sex in (mkThrPerPro s, mkPossPro s, mkReflexPro s)
 
 
 replace :: [(T.Text, T.Text)] -> T.Text -> T.Text

@@ -480,10 +480,10 @@ maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
 -----
 
 
-mkCapStdDesig :: Id -> WorldState -> (PCDesig, Sing, PC, Id, Inv)
-mkCapStdDesig i ws | (view sing -> s)    <- (ws^.entTbl) ! i
-                   , p@(view rmId -> ri) <- (ws^.pcTbl)  ! i
-                   , ris                 <- (ws^.invTbl) ! ri = (mkStdDesig i ws s True ris, s, p, ri, ris)
+mkCapStdDesig :: Id -> EntTbl -> PCTbl -> InvTbl -> (PCDesig, Sing, PC, Id, Inv)
+mkCapStdDesig i et pt it | s                   <- (et ! i)^.sing
+                         , p@(view rmId -> ri) <- pt ! i
+                         , ris                 <- it ! ri = (mkStdDesig i ws s True ris, s, p, ri, ris)
 
 
 mkStdDesig :: Id -> WorldState -> Sing -> Bool -> Inv -> PCDesig
