@@ -151,7 +151,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperSTM) |$| asks >=> \(mqt, et) ->
+adminBoot (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperSTM) |$| asks >=> \(et, mqt) ->
   case [ k | k <- IM.keys mqt, (et ! k)^.sing == target ] of
     []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
                                   \you must specify the full PC name of the player you wish to boot.)"
@@ -162,10 +162,7 @@ adminBoot (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperST
                   T.null msg ? dfltMsg bootI s bootMq :? customMsg bootI s bootMq
     xs      -> patternMatchFail "adminBoot" [ showText xs ]
   where
-    helperSTM md = do
-        mqt <- readTVar $ md^.msgQueueTblTVar
-        et  <- readTVar $ md^.entTblTVar
-        return (mqt, et)
+    helperSTM md             = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.msgQueueTblTVar)
     dfltMsg   bootI s bootMq = do
         logPla "adminBoot dfltMsg"   i     $ T.concat [ "booted ", target, " ", parensQuote "no message given", "." ]
         logPla "adminBoot dfltMsg"   bootI $ T.concat [ "booted by ", s,   " ", parensQuote "no message given", "." ]
@@ -230,8 +227,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) =
         forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
   where
     helperSTM md = do
-        et <- readTVar $ md^.entTblTVar
-        pt <- readTVar $ md^.plaTblTVar
+        (et, pt) <- (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar)
         let s                    = (et ! i)^.sing
             piss                 = mkPlaIdsSingsList et pt
             (pt', msgs, logMsgs) = foldr (peep s piss) (pt, [], []) as
@@ -359,11 +355,9 @@ adminTell (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperST
                           else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
     in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
   where
-    helperSTM md = do
-        et  <- readTVar $ md^.entTblTvar
-        mqt <- readTVar $ md^.msgQueueTblTVar
-        pt  <- readTVar $ md^.plaTblTVar
-        return (et, mqt, pt)
+    helperSTM md = (et, mqt, pt) <- (,) <$> readTVar (md^.entTblTVar)
+                                        <*> readTVar (md^.msgQueueTblTVar)
+                                        <*> readTVar (md^.plaTblTVar)
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
@@ -434,16 +428,13 @@ adminWho p@(ActionParams { plaId, args }) = do
 
 
 mkPlaListTxt :: MudStack [T.Text]
-mkPlaListTxt = (liftIO . atomically . helperSTM) |$| asks >=> \(pt, et) ->
+mkPlaListTxt = (liftIO . atomically . helperSTM) |$| asks >=> \(et, pt) ->
     let pis         = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ pt
         (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = (et ! pi)^.sing, then sortWith by s ]
         pias        = zip pis' . styleAbbrevs Don'tBracket $ pss
     in return $ map mkPlaTxt pias ++ [ mkNumOfPlayersTxt pis <> " connected." ]
   where
-    helperSTM md = do
-        pt <- readTVar $ md^.plaTblTVar
-        et <- readTVar $ md^.entTblTVar
-        return (pt, et)
+    helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar)
     mkPlaTxt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
                        in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
     mkNumOfPlayersTxt (length -> nop) | nop == 1  = "1 player"
