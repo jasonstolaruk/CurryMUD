@@ -196,15 +196,22 @@ talk h host = helper `finally` cleanUp
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         registerThread . Talk $ i
-        handle (plaThreadExHandler "talk" i) $ do
-            logNotice "talk helper" $ "new PC name for incoming player: " <> s <> "."
-            flip bcastAdmins ("A new player has connected: " <> s <> ".") =<< readTVarIO (md^.plaTblTVar)
+        handle (plaThreadExHandler "talk" i) $ (liftIO . atomically . helperSTM) |$| asks >=> \( mt
+                                                                                               , mqt
+                                                                                               , pcTbl
+                                                                                               , plaTbl ) ->
+            logNotice "talk helper" $ "new PC name for incoming player: "    <> s <> "."
+            bcastAdmins mt mqt pcTbl plaTbl $ "A new player has connected: " <> s <> "."
             liftIO configBuffer
             dumpTitle mq
             prompt    mq "By what name are you known?"
             liftIO . void . forkIO . runReaderT (inacTimer i mq itq) $ md
             liftIO $ race_ (runReaderT (server  h i mq itq) md)
                            (runReaderT (receive h i mq)     md)
+    helperSTM md = (,) <$> readTVar (md^.mobTblTVar)
+                       <*> readTVar (md^.msgQueueTblTVar)
+                       <*> readTVar (md^.pcTblTVar)
+                       <*> readTVar (md^.plaTblTVar)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
