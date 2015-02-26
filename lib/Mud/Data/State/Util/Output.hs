@@ -121,13 +121,15 @@ expandPCEntName i mt pt ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
     expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
 
 
-bcastNl :: [Broadcast] -> MudStack ()
-bcastNl bs = bcast . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
+bcastNl :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
+bcastNl mt mqt pcTbl plaTbl bs =
+    bcast mt mqt pcTbl plaTbl . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
 
 
-bcastAdmins :: IM.IntMap Pla -> T.Text -> MudStack ()
-bcastAdmins pt msg = bcastNl [( adminNoticeColor <> msg <> dfltColor
-                              , [ pi | pi <- IM.keys pt, getPlaFlag IsAdmin (pt ! pi) ] )]
+bcastAdmins :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> MudStack ()
+bcastAdmins mt mqt pcTbl plaTbl msg =
+    bcastNl mt mqt pcTbl plaTbl [( adminNoticeColor <> msg <> dfltColor
+                                 , [ pi | pi <- IM.keys plaTbl, getPlaFlag IsAdmin (plaTbl ! pi) ] )]
 
 
 mkBroadcast :: Id -> T.Text -> [Broadcast]
@@ -138,13 +140,11 @@ mkNTBroadcast :: Id -> T.Text -> [ClassifiedBroadcast]
 mkNTBroadcast i msg = [NonTargetBroadcast (msg, [i])]
 
 
-bcastOthersInRm :: Id -> T.Text -> MudStack ()
-bcastOthersInRm i msg = bcast =<< helper
-  where
-    helper = onWS $ \(t, ws) ->
-        let (view rmId    -> ri)  = (ws^.pcTbl)  ! i
-            ((i `delete`) -> ris) = (ws^.invTbl) ! ri
-        in putTMVar t ws >> return [(msg, findPCIds ws ris)]
+bcastOthersInRm :: Id -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> TypeTbl -> T.Text -> MudStack ()
+bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
+                                                      ris = i `delete` it ! ri
+                                                      bs  = [(msg, findPCIds tt ris)]
+                                                  in bcast mt mqt pcTbl plaTbl bs
 
 
 massMsg :: Msg -> MudStack ()
