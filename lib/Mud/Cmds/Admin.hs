@@ -355,9 +355,9 @@ adminTell (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperST
                           else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
     in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
   where
-    helperSTM md = (et, mqt, pt) <- (,) <$> readTVar (md^.entTblTVar)
-                                        <*> readTVar (md^.msgQueueTblTVar)
-                                        <*> readTVar (md^.plaTblTVar)
+    helperSTM md = (,) <$> readTVar (md^.entTblTVar)
+                       <*> readTVar (md^.msgQueueTblTVar)
+                       <*> readTVar (md^.plaTblTVar)
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 

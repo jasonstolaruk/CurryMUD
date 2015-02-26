@@ -737,7 +737,6 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
                 _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
             x -> patternMatchFail "expCmd helper" [ showText x ]
           else wrapSend mq cols "You don't see anyone here."
-  where
     helperSTM md = (,) <$> readTVar (md^.coinsTblTVar)
                        <*> readTVar (md^.entTblTVar)
                        <*> readTVar (md^.invTblTVar)
