@@ -850,10 +850,16 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
     mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
 
 
-mkIsPC_StyledName_Count_BothList :: Id -> WorldState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
-mkIsPC_StyledName_Count_BothList i ws is =
-  let ips   =                        [ (ws^.typeTbl) ! i' == PCType    | i' <- is ]
-      ens   = styleAbbrevs DoBracket [ getEffName        i ws i'       | i' <- is ]
+mkIsPC_StyledName_Count_BothList :: Id
+                                 -> EntTbl
+                                 -> MobTbl
+                                 -> PCTbl
+                                 -> TypeTbl
+                                 -> Inv
+                                 -> [(Bool, (T.Text, Int, BothGramNos))]
+mkIsPC_StyledName_Count_BothList i et mt pt tt is =
+  let ips   =                        [ tt ! i' == PCType               | i' <- is ]
+      ens   = styleAbbrevs DoBracket [ getEffName        i et mt pt i' | i' <- is ]
       ebgns =                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
       cs    = mkCountList ebgns
   in nub . zip ips . zip3 ens cs $ ebgns
@@ -1793,53 +1799,65 @@ whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
     (view rmId -> ri) = (ws^.pcTbl) ! i
 
 
-whatInvEnts :: Id -> Cols -> WorldState -> InvType -> T.Text -> GetEntsCoinsRes -> Inv -> T.Text
-whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is = wrapUnlines cols $ case gecr of
-  Mult { entsRes = (Just es), .. }
-    | nameSearchedFor == acp -> T.concat [ whatQuote acp
-                                         , " may refer to everything "
-                                         , locTxt
-                                         , supplement
-                                         , "." ]
-    | e@(view sing -> s) <- head es, len <- length es -> if len > 1
-      then let ebgns@(head -> h)         = take len [ getEffBothGramNos i et mt pt i' | e' <- es, let i' = e'^.entId ]
-               target | all (== h) ebgns = mkPlurFromBoth h
-                      | otherwise        = (<> "s") . bracketQuote . getEffName i ws $ e^.entId
-           in T.concat [ r
-                       , " may refer to the "
-                       , showText len
-                       , " "
-                       , target
-                       , " "
-                       , locTxt
-                       , "." ]
-      else let ens = [ getEffName i ws i' | i' <- is ]
-           in T.concat [ r
-                       , " may refer to the "
-                       , T.pack . checkFirst e $ ens
-                       , s
-                       , " "
-                       , locTxt
-                       , "." ]
-  Indexed { entRes = (Right e@(view sing -> s)), .. } -> T.concat [ r
-                                                                  , " may refer to the "
-                                                                  , mkOrdinal index
-                                                                  , " "
-                                                                  , bracketQuote . getEffName i ws $ e^.entId
-                                                                  , " "
-                                                                  , parensQuote s
-                                                                  , " "
-                                                                  , locTxt
-                                                                  , "." ]
-  _                                                   -> T.concat [ r
-                                                                  , " doesn't refer to anything "
-                                                                  , locTxt
-                                                                  , "." ]
+whatInvEnts :: Id
+            -> Cols
+            -> EntTbl
+            -> MobTbl
+            -> PCTbl
+            -> TypeTbl
+            -> InvType
+            -> T.Text
+            -> GetEntsCoinsRes
+            -> Inv
+            -> T.Text
+whatInvEnts i cols et mt pt it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is =
+    wrapUnlines cols $ case gecr of
+      Mult { entsRes = (Just es), .. }
+        | nameSearchedFor == acp -> T.concat [ whatQuote acp
+                                             , " may refer to everything "
+                                             , locTxt
+                                             , supplement
+                                             , "." ]
+        | e@(view sing -> s) <- head es, len <- length es -> if len > 1
+          then let ebgns@(head -> h)         = take len [ getEffBothGramNos i et mt pt i'
+                                                        | e' <- es, let i' = e'^.entId ]
+                   target | all (== h) ebgns = mkPlurFromBoth h
+                          | otherwise        = (<> "s") . bracketQuote . getEffName i et mt pt $ e^.entId
+               in T.concat [ r
+                           , " may refer to the "
+                           , showText len
+                           , " "
+                           , target
+                           , " "
+                           , locTxt
+                           , "." ]
+          else let ens = [ getEffName i et mt pt i' | i' <- is ]
+               in T.concat [ r
+                           , " may refer to the "
+                           , T.pack . checkFirst e $ ens
+                           , s
+                           , " "
+                           , locTxt
+                           , "." ]
+      Indexed { entRes = (Right e@(view sing -> s)), .. } -> T.concat [ r
+                                                                      , " may refer to the "
+                                                                      , mkOrdinal index
+                                                                      , " "
+                                                                      , bracketQuote . getEffName i et mt pt $ e^.entId
+                                                                      , " "
+                                                                      , parensQuote s
+                                                                      , " "
+                                                                      , locTxt
+                                                                      , "." ]
+      _                                                   -> T.concat [ r
+                                                                      , " doesn't refer to anything "
+                                                                      , locTxt
+                                                                      , "." ]
   where
     acp                                     = T.singleton allChar
     supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
                | otherwise                  = ""
-    checkFirst e ens | en <- getEffName i ws $ e^.entId, matches <- filter (== en) ens =
+    checkFirst e ens | en <- getEffName i et mt pt $ e^.entId, matches <- filter (== en) ens =
         guard (length matches > 1) >> "first "
 
 
