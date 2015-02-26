@@ -214,9 +214,7 @@ adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = ask >>= \md -> do
     (sexy, r) <- liftIO $ (,) <$> randomSex <*> randomRace
     liftIO . atomically $ do
-        tt <- readTVar $ md^.typeTblTVar
-        et <- readTVar $ md^.entTblTVar
-        it <- readTVar $ md^.invTblTVar
+        (et, it, tt) <- (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.invTblTVar) <*> readTVar (md^.typeTblTVar)
         let i    = getUnusedId tt
             s    = showText r <> showText i
             e    = Ent { _entId    = i
@@ -254,8 +252,8 @@ adHoc mq host = ask >>= \md -> do
         modifyTVar (md^.coinsTblTVar)    $ at i ?~ mempty
         modifyTVar (md^.eqTblTVar)       $ at i ?~ M.empty
         modifyTVar (md^.mobTblTVar)      $ at i ?~ m
-        modifyTVar (md^.pcTblTVar)       $ at i ?~ pc
         modifyTVar (md^.msgQueueTblTVar) $ at i ?~ mq
+        modifyTVar (md^.pcTblTVar)       $ at i ?~ pc
         modifyTVar (md^.plaTblTVar)      $ at i ?~ pla
         return (i, s)
 
@@ -353,10 +351,8 @@ forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> T.Text -> MudStack ()
 forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
-        mqt <- readTVar $ md^.msgQueueTblTVar
-        let peeperMqs = [ mqt ! pi | pi <- peeperIds ]
-        (view sing . (! i) -> s) <- readTVar $ md^.entTblTVar
-        forM_ peeperMqs $ flip writeTQueue (mkPeepedMsg s)
+        (view sing . (! i) -> s, mqt) <- (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.msgQueueTblTVar)
+        forM_ [ mqt ! pi | pi <- peeperIds ] $ flip writeTQueue (mkPeepedMsg s)
     mkPeepedMsg s = Peeped $ case toOrFrom of
       ToThePeeped   ->      T.concat   [ toPeepedColor,   " ", bracketQuote s, " ", dfltColor, " ", msg ]
       FromThePeeped -> nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
