@@ -282,10 +282,10 @@ mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap
     otherPCIds = i `delete` pcIds d
 
 
-mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkNameCountBothList i ws is | ens   <- [ getEffName        i ws i'       | i' <- is ]
-                            , ebgns <- [ getEffBothGramNos i et mt pt i' | i' <- is ]
-                            , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
+mkNameCountBothList :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> [(T.Text, Int, BothGramNos)]
+mkNameCountBothList i et mt pt is | ens   <- [ getEffName        i et mt pt i' | i' <- is ]
+                                  , ebgns <- [ getEffBothGramNos i et mt pt i' | i' <- is ]
+                                  , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
 
 
 -----
@@ -558,10 +558,12 @@ mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper)
     ind = 11
 
 
-mkStyledName_Count_BothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkStyledName_Count_BothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'       | i' <- is ]
-                                    , ebgns <-                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
-                                    , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
+mkStyledName_Count_BothList :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> [(T.Text, Int, BothGramNos)]
+mkStyledName_Count_BothList i et mt pt is =
+    let ens   = styleAbbrevs DoBracket [ getEffName        i et mt pt i' | i' <- is ]
+        ebgns =                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
+        cs    = mkCountList ebgns
+    in nub . zip3 ens cs $ ebgns
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
