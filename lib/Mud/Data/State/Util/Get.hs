@@ -14,6 +14,9 @@ import Data.IntMap.Lazy ((!))
 import qualified Data.IntMap.Lazy as IM (IntMap)
 
 
+-- TODO: Can we get rid of, or entirely rewrite, this module?
+
+
 getEntTbl :: MudStack (IM.IntMap Ent)
 getEntTbl = view entTbl <$> readWSTMVar
 

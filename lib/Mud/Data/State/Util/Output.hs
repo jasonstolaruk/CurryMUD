@@ -77,15 +77,12 @@ sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
 sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
 
 
-bcast :: [Broadcast] -> MudStack ()
-bcast bs = readWSTMVar >>= \ws -> do
-    mqtPt <- getMqtPt
-    forM_ bs $ \(msg, is) -> mapM_ (helper ws mqtPt msg) is
+bcast :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
+bcast mt mqt pcTbl plaTbl = mapM_ (\(msg, is) -> mapM_ (helper msg) is)
   where
-    helper ws (mqt, pt) msg i
-      | mq   <- mqt ! i
-      , cols <- (pt ! i)^.columns
-      = send mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ws $ msg
+    helper msg i | mq   <- mqt ! i
+                 , cols <- (plaTbl ! i)^.columns
+                 = send mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i mt pcTbl $ msg
 
 
 parsePCDesig :: Id -> MobTbl -> PCTbl -> T.Text -> T.Text
