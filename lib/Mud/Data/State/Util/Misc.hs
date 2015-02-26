@@ -6,7 +6,6 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , findPCIds
                                 , getEffBothGramNos
                                 , getEffName
-                                , getMqtPt
                                 , getSexRace
                                 , mkPlaIdsSingsList
                                 , mkPlurFromBoth
@@ -62,10 +61,6 @@ getEffName i et mt pt targetI@((et !) -> targetE) = fromMaybe helper $ targetE^.
     helper | views introduced ((targetE^.sing) `elem`) (pt ! i) = uncapitalize targetS
            | otherwise                                          = mkUnknownPCEntName targetI mt pt
     targetS                                                     = targetE^.sing
-
-
-getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
-getMqtPt = (,) <$> readTMVarInNWS msgQueueTblTMVar <*> readTMVarInNWS plaTblTMVar
 
 
 getSexRace :: Id -> MobTbl -> PCTbl -> (Sex, Race)

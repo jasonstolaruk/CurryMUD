@@ -283,8 +283,8 @@ mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap
 
 
 mkNameCountBothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkNameCountBothList i ws is | ens   <- [ getEffName        i ws i' | i' <- is ]
-                            , ebgns <- [ getEffBothGramNos i ws i' | i' <- is ]
+mkNameCountBothList i ws is | ens   <- [ getEffName        i ws i'       | i' <- is ]
+                            , ebgns <- [ getEffBothGramNos i et mt pt i' | i' <- is ]
                             , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
 
 
@@ -559,8 +559,8 @@ mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper)
 
 
 mkStyledName_Count_BothList :: Id -> WorldState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkStyledName_Count_BothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffName        i ws i' | i' <- is ]
-                                    , ebgns <-                        [ getEffBothGramNos i ws i' | i' <- is ]
+mkStyledName_Count_BothList i ws is | ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'       | i' <- is ]
+                                    , ebgns <-                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
                                     , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
 
 

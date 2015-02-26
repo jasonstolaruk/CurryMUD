@@ -851,10 +851,12 @@ mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
 
 
 mkIsPC_StyledName_Count_BothList :: Id -> WorldState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
-mkIsPC_StyledName_Count_BothList i ws is | ips   <-                        [ (ws^.typeTbl) ! i' == PCType | i' <- is ]
-                                         , ens   <- styleAbbrevs DoBracket [ getEffName        i ws i'    | i' <- is ]
-                                         , ebgns <-                        [ getEffBothGramNos i ws i'    | i' <- is ]
-                                         , cs    <- mkCountList ebgns = nub . zip ips . zip3 ens cs $ ebgns
+mkIsPC_StyledName_Count_BothList i ws is =
+  let ips   =                        [ (ws^.typeTbl) ! i' == PCType    | i' <- is ]
+      ens   = styleAbbrevs DoBracket [ getEffName        i ws i'       | i' <- is ]
+      ebgns =                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
+      cs    = mkCountList ebgns
+  in nub . zip ips . zip3 ens cs $ ebgns
 
 
 isKnownPCSing :: Sing -> Bool
@@ -1691,7 +1693,7 @@ mkUnreadyDescs i ws d is = first concat . unzip $ [ helper icb | icb <- mkIdCoun
 
 
 mkIdCountBothList :: Id -> WorldState -> Inv -> [(Id, Int, BothGramNos)]
-mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i ws i' | i' <- is ], cs <- mkCountList ebgns =
+mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i et mt pt i' | i' <- is ], cs <- mkCountList ebgns =
     nubBy equalCountsAndBoths . zip3 is cs $ ebgns
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
@@ -1800,7 +1802,7 @@ whatInvEnts i cols ws it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr i
                                          , supplement
                                          , "." ]
     | e@(view sing -> s) <- head es, len <- length es -> if len > 1
-      then let ebgns@(head -> h)         = take len [ getEffBothGramNos i ws i' | e' <- es, let i' = e'^.entId ]
+      then let ebgns@(head -> h)         = take len [ getEffBothGramNos i et mt pt i' | e' <- es, let i' = e'^.entId ]
                target | all (== h) ebgns = mkPlurFromBoth h
                       | otherwise        = (<> "s") . bracketQuote . getEffName i ws $ e^.entId
            in T.concat [ r
