@@ -176,7 +176,5 @@ createWorld = do
 sortAllInvs :: MudStack ()
 sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> asks (liftIO . atomically . helperSTM)
   where
-    helperSTM md = do
-        tt <- readTVar $ md^.typeTblTVar
-        et <- readTVar $ md^.entTblTVar
-        modifyTVar (md^.invTblTVar) . IM.map (sortInv tt et)
+    helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.typeTblTVar) >>= \(et, tt) ->
+        modifyTVar (md^.invTblTVar) $ IM.map (sortInv tt et)
