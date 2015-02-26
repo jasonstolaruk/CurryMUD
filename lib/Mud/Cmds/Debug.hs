@@ -334,14 +334,11 @@ debugThread :: Action
 debugThread (NoArgs i mq cols) = ask >>= \md -> do
     logPlaExec (prefixDebugCmd "thread") i
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId . getLogAsyncs $ md
-    (M.assocs -> threadTblKvs, plt) <- liftIO . atomically . helperSTM $ md
+    (plt, M.assocs -> threadTblKvs) <- liftIO . atomically . helperSTM $ md
     let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- IM.elems plt | k <- IM.keys plt ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
   where
-    helperSTM md = do
-        tt  <- readTVar $ md^.threadTblTVar
-        plt <- readTVar $ md^.plaLogTblTVar
-        return (tt, plt)
+    helperSTM md = (,) <$> readTVar (md^.plaLogTblTVar) <*> readTVar (md^.threadTblTVar)
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
     mkTypeName (PlaLog  (showText -> plaI)) = padOrTrunc 10 "PlaLog"  <> plaI
@@ -375,9 +372,7 @@ debugThrowLog (NoArgs' i mq) = do
     liftIO . atomically . helperSTM =<< ask
     ok mq
   where
-    helperSTM md = do
-        (snd . (! i) -> q) <- readTVar $ md^.plaLogTblTVar
-        writeTQueue q Throw
+    helperSTM md = flip writeTQueue Throw . snd . (! i) =<< readTVar (md^.plaLogTblTVar)
 debugThrowLog p = withoutArgs debugThrowLog p
 
 
