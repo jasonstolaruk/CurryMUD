@@ -155,32 +155,33 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
 
 
-mkGecr :: Id -> WorldState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
-mkGecr i ws searchIs searchC searchName@(headTail -> (h, t))
+mkGecr :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
+mkGecr i et mt pt searchIs searchC searchName@(headTail -> (h, t))
   | searchName == T.singleton allChar
-  , allEs <- [ (ws^.entTbl) ! searchI | searchI <- searchIs ] = Mult { amount          = length searchIs
-                                                                     , nameSearchedFor = searchName
-                                                                     , entsRes         = Just allEs
-                                                                     , coinsRes        = Just . SomeOf $ searchC }
-  | h == allChar = mkGecrMult i ws (maxBound :: Int) t searchIs searchC
+  , allEs <- [ et ! searchI | searchI <- searchIs ] = Mult { amount          = length searchIs
+                                                           , nameSearchedFor = searchName
+                                                           , entsRes         = Just allEs
+                                                           , coinsRes        = Just . SomeOf $ searchC }
+  | h == allChar = mkGecrMult i et mt pt (maxBound :: Int) t searchIs searchC
   | isDigit h
   , (numText, rest) <- T.span isDigit searchName
   , numInt <- either (oops numText) fst . decimal $ numText = if numText /= "0"
                                                                 then parse rest numInt
                                                                 else Sorry searchName
-  | otherwise                                               = mkGecrMult i ws 1 searchName searchIs searchC
+  | otherwise                                               = mkGecrMult i et mt pt 1 searchName searchIs searchC
   where
     oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
     parse rest numInt
       | T.length rest < 2               = Sorry searchName
-      | (delim, rest') <- headTail rest = if | delim == amountChar -> mkGecrMult    i ws numInt rest' searchIs searchC
-                                             | delim == indexChar  -> mkGecrIndexed i ws numInt rest' searchIs
-                                             | otherwise           -> Sorry searchName
+      | (delim, rest') <- headTail rest =
+          if | delim == amountChar -> mkGecrMult    i et mt pt numInt rest' searchIs searchC
+             | delim == indexChar  -> mkGecrIndexed i et mt pt numInt rest' searchIs
+             | otherwise           -> Sorry searchName
 
 
-mkGecrMult :: Id -> WorldState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
-mkGecrMult i ws a n is c | n `elem` allCoinNames = mkGecrMultForCoins     a n c
-                         | otherwise             = mkGecrMultForEnts i ws a n is
+mkGecrMult :: Id -> EntTbl -> MobTbl -> PCTbl -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
+mkGecrMult i et mt pt a n is c | n `elem` allCoinNames = mkGecrMultForCoins           a n c
+                               | otherwise             = mkGecrMultForEnts i et mt pt a n is
 
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> GetEntsCoinsRes
@@ -212,24 +213,25 @@ distributeAmt amt (c:cs) | diff <- amt - c, diff >= 0 = c   : distributeAmt diff
                          | otherwise                  = amt : distributeAmt 0    cs
 
 
-mkGecrMultForEnts :: Id -> WorldState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
-mkGecrMultForEnts i ws a n is | effNames <- [ getEffName i ws i' | i' <- is ] =
+mkGecrMultForEnts :: Id -> EntTbl -> MobTbl -> PCTbl -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
+mkGecrMultForEnts i et mt pt a n is | effNames <- [ getEffName i et mt pt i' | i' <- is ] =
     uncurry (Mult a n) . maybe notFound (found effNames) . findFullNameForAbbrev n $ effNames
   where
     notFound                          = (Nothing, Nothing)
     found (zip is -> zipped) fullName = (Just . takeMatchingEnts zipped $ fullName, Nothing)
-    takeMatchingEnts zipped  fullName = take a [ (ws^.entTbl) ! i' | (i', effName) <- zipped, effName == fullName ]
+    takeMatchingEnts zipped  fullName = take a [ et ! i' | (i', effName) <- zipped, effName == fullName ]
 
 
-mkGecrIndexed :: Id -> WorldState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
-mkGecrIndexed i ws x n is
+mkGecrIndexed :: Id -> EntTbl -> MobTbl -> PCTbl -> Index -> T.Text -> Inv -> GetEntsCoinsRes
+mkGecrIndexed i et mt pt x n is
   | n `elem` allCoinNames = SorryIndexedCoins
-  | ens <- [ getEffName i ws i' | i' <- is ] = Indexed x n . maybe notFound (found ens) . findFullNameForAbbrev n $ ens
+  | otherwise             = let ens = [ getEffName i et mt pt i' | i' <- is ]
+                            in Indexed x n . maybe notFound (found ens) . findFullNameForAbbrev n $ ens
   where
     notFound = Left ""
     found ens fn | matches <- filter ((== fn) . snd) . zip is $ ens = if length matches < x
-      then Left . mkPlurFromBoth . getEffBothGramNos i ws . fst . head $ matches
-      else Right . ((ws^.entTbl) !) . fst $ matches !! pred x
+      then Left . mkPlurFromBoth . getEffBothGramNos i et mt pt . fst . head $ matches
+      else Right . (et !) . fst $ matches !! pred x
 
 
 -- ============================================================

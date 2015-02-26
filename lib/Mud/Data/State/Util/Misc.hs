@@ -41,12 +41,11 @@ findPCIds :: TypeTbl -> [Id] -> [Id]
 findPCIds tt haystack = [ i | i <- haystack, tt ! i == PCType ]
 
 
-getEffBothGramNos :: Id -> WorldState -> Id -> BothGramNos
-getEffBothGramNos i ws targetI
-  | targetE <- (ws^.entTbl) ! targetI = case targetE^.entName of
-    Nothing | (view introduced -> intros)          <- (ws^.pcTbl) ! i
+getEffBothGramNos :: Id -> EntTbl -> MobTbl -> PCTbl -> Id -> BothGramNos
+getEffBothGramNos i et mt pt targetI | targetE <- et ! targetI = case targetE^.entName of
+    Nothing | intros                               <- (pt ! i)^.introduced
             , targetS                              <- targetE^.sing
-            , (pp *** pp -> (targetSexy, targetR)) <- getSexRace targetI ws
+            , (pp *** pp -> (targetSexy, targetR)) <- getSexRace targetI mt pt
             -> if targetS `elem` intros
               then (targetS, "")
               else over both ((targetSexy <>) . (" " <>)) (targetR, pluralize targetR)
@@ -57,20 +56,20 @@ getEffBothGramNos i ws targetI
     pluralize r       = r <> "s"
 
 
-getEffName :: Id -> WorldState -> Id -> T.Text
-getEffName i ws targetI@(((ws^.entTbl) !) -> targetE) = fromMaybe helper $ targetE^.entName
+getEffName :: Id -> EntTbl -> MobTbl -> PCTbl -> Id -> T.Text
+getEffName i et mt pt targetI@((et !) -> targetE) = fromMaybe helper $ targetE^.entName
   where
-    helper | views introduced ((targetE^.sing) `elem`) ((ws^.pcTbl) ! i) = uncapitalize targetS
-           | otherwise                                                   = mkUnknownPCEntName targetI ws
-    targetS                                                              = targetE^.sing
+    helper | views introduced ((targetE^.sing) `elem`) (pt ! i) = uncapitalize targetS
+           | otherwise                                          = mkUnknownPCEntName targetI mt pt
+    targetS                                                     = targetE^.sing
 
 
 getMqtPt :: MudStack (IM.IntMap MsgQueue, IM.IntMap Pla)
 getMqtPt = (,) <$> readTMVarInNWS msgQueueTblTMVar <*> readTMVarInNWS plaTblTMVar
 
 
-getSexRace :: Id -> WorldState -> (Sex, Race)
-getSexRace i ws = (view sex *** view race) . (views mobTbl (!) ws *** views pcTbl (!) ws) . dup $ i
+getSexRace :: Id -> MobTbl -> PCTbl -> (Sex, Race)
+getSexRace i mt pt = (view sex *** view race) (mt ! i, pt ! i)
 
 
 mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
@@ -89,7 +88,7 @@ mkPlurFromBoth (_, p ) = p
 
 
 mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
-mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (sexy, r)) <- getSexRace i ws =
+mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (sexy, r)) <- getSexRace i mt pt =
     serialize NonStdDesig { nonStdPCEntSing = s
                           , nonStdDesc      = T.concat [ aot, " ", sexy, " ", r ] }
 
