@@ -14,6 +14,9 @@ import Data.IntMap.Lazy ((!))
 import Data.Maybe (isNothing)
 
 
+-- TODO: Can we get rid of, or entirely rewrite, this module?
+
+
 getPla :: Id -> MudStack Pla
 getPla i = (! i) <$> readTMVarInNWS plaTblTMVar
 

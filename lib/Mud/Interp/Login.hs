@@ -110,21 +110,27 @@ logProfanity cn (T.pack -> hn) =
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
+checkPropNamesDict _ _ = return False -- TODO: Dictionaries?
+{-
 checkPropNamesDict cn mq = nonWorldState.dicts.propNamesDict |$| use >=> \case
   Nothing                      -> return False
   Just pnd | cn `S.member` pnd -> do
       promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
       return True
   _                            -> return False
+-}
 
 
 checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
+checkWordsDict _ _ = return False -- TODO: Dictionaries?
+{-
 checkWordsDict cn mq = nonWorldState.dicts.wordsDict |$| use >=> \case
   Nothing                    -> return False
   Just wd | cn `S.member` wd -> do
       promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
       return True
   _                          -> return False
+-}
 
 
 interpConfirmName :: Sing -> Interp

@@ -1,5 +1,6 @@
 module Mud.Data.State.Util.STM where
 
+{-
 import Mud.Data.State.State
 import Mud.Util.Misc
 
@@ -9,8 +10,13 @@ import Control.Concurrent.STM.TMVar (TMVar, putTMVar, readTMVar, takeTMVar)
 import Control.Lens.Getter (use)
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
+-}
 
 
+-- TODO: Can we get rid of, or entirely rewrite, this module?
+
+
+{-
 -- ============================================================
 -- World state:
 
@@ -66,3 +72,4 @@ modifyNWS :: ((TMVar a -> Const (TMVar a) (TMVar a)) -> NonWorldState -> Const (
 modifyNWS lens f = liftIO . atomically . transaction =<< getNWSRec lens
   where
     transaction t = t |$| takeTMVar >=> putTMVar t . f
+-}
