@@ -530,7 +530,7 @@ mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(views entDesc (wrapUnlines 
               _       -> ed
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
-    mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ws = T.concat [ "You see a ", s, " ", r, "." ]
+    mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei mt pt = T.concat [ "You see a ", s, " ", r, "." ]
 
 
 mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text

@@ -1955,6 +1955,6 @@ mkAdminListTxt i ws pt =
 whoAmI :: Action
 whoAmI (NoArgs i mq cols) = do
     logPlaExec "whoami" i
-    ((pp *** pp) . getSexRace i -> (sexy, r), s) <- getEntSing' i
+    ((pp *** pp) . getSexRace i -> (sexy, r), s) <- getEntSing' i mt pt
     wrapSend mq cols . T.concat $ [ "You are ", knownNameColor, s, dfltColor, " (a ", sexy, " ", r, ")." ]
 whoAmI p = withoutArgs whoAmI p

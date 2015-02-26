@@ -435,7 +435,7 @@ mkPlaListTxt = (liftIO . atomically . helperSTM) |$| asks >=> \(et, pt) ->
     in return $ map mkPlaTxt pias ++ [ mkNumOfPlayersTxt pis <> " connected." ]
   where
     helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar)
-    mkPlaTxt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi ws
+    mkPlaTxt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi mt pt
                        in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
     mkNumOfPlayersTxt (length -> nop) | nop == 1  = "1 player"
                                       | otherwise = showText nop <> " players"
