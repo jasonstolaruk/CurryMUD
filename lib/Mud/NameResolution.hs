@@ -95,12 +95,12 @@ expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
 extractEnscsFromGecrs = first reverse . foldl' helper ([], [])
   where
-    helper (gecrs, enscs) gecr | isSorryGecr gecr                               = (gecr : gecrs, enscs)
+    helper (gecrs, enscs) gecr | isSorryGecr gecr                               = (gecr : gecrs,        enscs)
     helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Just ensc } = (gecr : gecrs, ensc : enscs)
-    helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Nothing   } = (gecr : gecrs, enscs)
-    helper (gecrs, enscs)      Mult { entsRes = Nothing, coinsRes = Just ensc } = (gecrs, ensc : enscs)
-    helper (gecrs, enscs) gecr@Mult { entsRes = Nothing, coinsRes = Nothing   } = (gecr : gecrs, enscs)
-    helper (gecrs, enscs) gecr@Indexed {}                                       = (gecr : gecrs, enscs)
+    helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Nothing   } = (gecr : gecrs,        enscs)
+    helper (gecrs, enscs)      Mult { entsRes = Nothing, coinsRes = Just ensc } = (gecrs,        ensc : enscs)
+    helper (gecrs, enscs) gecr@Mult { entsRes = Nothing, coinsRes = Nothing   } = (gecr : gecrs,        enscs)
+    helper (gecrs, enscs) gecr@Indexed {}                                       = (gecr : gecrs,        enscs)
     helper x y = patternMatchFail "extractEnscsFromGecrs helper" [ showText x, showText y ]
 
 

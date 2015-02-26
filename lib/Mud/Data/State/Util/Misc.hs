@@ -87,8 +87,8 @@ mkPlurFromBoth (s, "") = s <> "s"
 mkPlurFromBoth (_, p ) = p
 
 
-mkSerializedNonStdDesig :: Id -> WorldState -> Sing -> AOrThe -> T.Text
-mkSerializedNonStdDesig i ws s (capitalize . pp -> aot) | (pp *** pp -> (sexy, r)) <- getSexRace i mt pt =
+mkSerializedNonStdDesig :: Id -> MobTbl -> PCTbl -> Sing -> AOrThe -> T.Text
+mkSerializedNonStdDesig i mt pt s (capitalize . pp -> aot) | (pp *** pp -> (sexy, r)) <- getSexRace i mt pt =
     serialize NonStdDesig { nonStdPCEntSing = s
                           , nonStdDesc      = T.concat [ aot, " ", sexy, " ", r ] }
 

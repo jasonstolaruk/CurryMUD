@@ -597,7 +597,7 @@ mkEqDesc i cols ws descI (view sing -> descS) descT | descs <- descI == i ? mkDe
       | descI == i      -> "You have readied the following equipment:"
       | descT == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
       | otherwise       -> theOnLowerCap descS   <> " has readied the following equipment:"
-    d = mkSerializedNonStdDesig descI ws descS The
+    d = mkSerializedNonStdDesig descI mt pt descS The
 
 
 dudeYou'reNaked :: T.Text

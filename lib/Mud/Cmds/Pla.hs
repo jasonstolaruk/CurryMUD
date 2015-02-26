@@ -496,7 +496,7 @@ tryMove i mq cols dir = helper >>= \case
             , msgAtOrigin <- nlnl $ case mom of
                                Nothing -> T.concat [ serialize originD, " ", verb, " ", expandLinkName dir, "." ]
                                Just f  -> f . serialize $ originD
-            , msgAtDest   <- let destD = mkSerializedNonStdDesig i ws s A
+            , msgAtDest   <- let destD = mkSerializedNonStdDesig i mt pt s A
                              in nlnl $ case mdm of
                                Nothing -> T.concat [ destD, " arrives from ", expandOppLinkName dir, "." ]
                                Just f  -> f destD
