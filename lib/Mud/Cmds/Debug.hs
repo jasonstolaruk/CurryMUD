@@ -129,7 +129,7 @@ debugBoot p              = withoutArgs debugBoot p
 debugBroad :: Action
 debugBroad (NoArgs'' i) = do
     logPlaExec (prefixDebugCmd "broad") i
-    bcastNl . mkBroadcast i $ msg
+    bcastNl mt mqt pcTbl plaTbl . mkBroadcast i $ msg
   where
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\

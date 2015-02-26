@@ -294,7 +294,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , "." ]
 dropAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "drop" i $ logMsgs
-    bcastNl bs
+    bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
         let (d, ri, is, c) = mkDropReadyBindings i ws
@@ -327,7 +327,7 @@ emote p@(ActionParams { plaId, args })
                       | otherwise          = capitalizeMsg . T.unwords $ args
           toOthersMsg'    = T.replace enc (serialize d { isCap = False }) . punctuateMsg $ toOthersMsg
           toOthersBrdcst  = (nlnl toOthersMsg', plaId `delete` pcIds d)
-      in logPlaOut "emote" plaId [toSelfMsg] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
+      in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
   | otherwise = readWSTMVar >>= \ws ->
     let (d, s, _, _, _) = mkCapStdDesig plaId ws
@@ -336,7 +336,7 @@ emote p@(ActionParams { plaId, args })
         toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
         toOthersMsg     = serialize d <> " " <> msg
         toOthersBrdcst  = (nlnl toOthersMsg, plaId `delete` pcIds d)
-    in logPlaOut "emote" plaId [toSelfMsg] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
+    in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
   where
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
@@ -446,7 +446,7 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , "." ]
 getAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "get" i $ logMsgs
-    bcastNl bs
+    bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
         let (d, ri, _, ris, rc) = mkGetLookBindings i ws
@@ -476,10 +476,10 @@ goDispatcher p                                = patternMatchFail "goDispatcher" 
 tryMove :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
 tryMove i mq cols dir = helper >>= \case
   Left  msg          -> wrapSend mq cols msg
-  Right (logMsg, bs) -> bcast bs >> logPla "tryMove" i logMsg >> look ActionParams { plaId       = i
-                                                                                   , plaMsgQueue = mq
-                                                                                   , plaCols     = cols
-                                                                                   , args        = [] }
+  Right (logMsg, bs) -> do
+      bcast mt mqt pcTbl plaTbl bs
+      logPla "tryMove" i logMsg
+      look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
   where
     helper = onWS $ \(t, ws) ->
         let (originD, s, p, originRi, (i `delete`) -> originIs) = mkCapStdDesig i ws
@@ -661,7 +661,7 @@ intro (NoArgs i mq cols) = i |$| getPCIntroduced >=> \intros ->
           logPlaOut "intro" i [introsTxt]
 intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "intro" i $ logMsgs
-    bcast . map fromClassifiedBroadcast . sort $ cbs
+    bcast mt mqt pcTbl plaTbl . map fromClassifiedBroadcast . sort $ cbs
   where
     helper = onWS $ \(t, ws) ->
         let (view sing -> s)         = (ws^.entTbl)   ! i
@@ -770,7 +770,7 @@ look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
           forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
               logPla "look" i ("looked at " <> es <> ".")
           send mq msg
-          bcast . foldr f [] $ ds
+          bcast mt mqt pcTbl plaTbl . foldr f [] $ ds
   where
     helper = onWS $ \(t, ws) ->
         let (d, _, ris, ris', rc) = mkGetLookBindings i ws
@@ -926,7 +926,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , "." ]
 putAction (Lower' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "put" i $ logMsgs
-    bcastNl bs
+    bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
       let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ws as
@@ -1010,8 +1010,8 @@ handleEgress i = i |$| getPCRmId >=> \ri -> do
     forM_ logMsgs $ uncurry (logPla "handleEgress")
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
-    bcastNl bs
-    bcastAdmins pt $ s <> " has left the game."
+    bcastNl mt mqt pcTbl plaTbl bs
+    bcastAdmins mt mqt pcTbl plaTbl $ s <> " has left the game."
   where
     peepHelper pt@((! i) -> p) s =
         let pt'       = stopPeeping
@@ -1040,8 +1040,9 @@ handleEgress i = i |$| getPCRmId >=> \ri -> do
 
 
 notifyEgress :: Id -> MudStack ()
-notifyEgress i = bcast =<< [ [(nlnl $ serialize d <> " has left the game.", pis)] | ws <- readWSTMVar
-                           , let (d, _, _, _, _) = mkCapStdDesig i ws, let pis = i `delete` pcIds d ]
+notifyEgress i =
+    bcast mt mqt pcTbl plaTbl =<< [ [(nlnl $ serialize d <> " has left the game.", pis)] | ws <- readWSTMVar
+                                  , let (d, _, _, _, _) = mkCapStdDesig i ws, let pis = i `delete` pcIds d ]
 
 
 -----
@@ -1069,7 +1070,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , "." ]
 ready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "ready" i $ logMsgs
-    bcastNl bs
+    bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
         let (d, _, is, c) = mkDropReadyBindings i ws
@@ -1355,7 +1356,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , "." ]
 remove (Lower' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "remove" i $ logMsgs
-    bcastNl bs
+    bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
       let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ws as
@@ -1486,7 +1487,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersBrdcst = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
             in do
                 logPlaOut "say" i [ parsePCDesig i ws toSelfMsg ]
-                bcast [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
+                bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
         sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg      = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
                 toOthersMsg    = T.concat [ serialize d
@@ -1500,7 +1501,8 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
             in do
                 logPlaOut "say" i [ toSelfMsg ]
-                bcast =<< [ [ (nlnl toSelfMsg <> fms, [i]), toOthersBrdcst ] | fms <- firstMobSay i ]
+                bcast mt mqt pcTbl plaTbl =<< [ [ (nlnl toSelfMsg <> fms, [i]), toOthersBrdcst ]
+                                              | fms <- firstMobSay i ]
     sayTo ma msg            = patternMatchFail "say sayTo" [ showText ma, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelper ma rest = readWSTMVar >>= \ws ->
@@ -1512,7 +1514,7 @@ say p@(WithArgs i mq cols args@(a:_))
             toSelfBrdcst    = (nlnl toSelfMsg, [i])
             toOthersMsg     = T.concat [ serialize d, " says", adverb, ", ", msg ]
             toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
-        in logPlaOut "say" i [toSelfMsg] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
+        in logPlaOut "say" i [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
 say p = patternMatchFail "say" [ showText p ]
 
 
@@ -1624,7 +1626,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , "." ]
 unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
-    bcastNl bs
+    bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
         let (d, _, _, _, _) = mkCapStdDesig i ws
