@@ -124,17 +124,15 @@ armSubToSlot = \case Head      -> HeadS
 bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
 bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = do
     logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
-    (s, ri, rn, pt) <- asks $ liftIO . atomically . helperSTM
-    liftIO (try . logIt s ri $ rn) >>= eitherRet (fileIOExHandler "bugTypoLogger")
+    (view sing . (! i) -> s, view rmId . (! i) -> ri, rt, pt) <- asks $ liftIO . atomically . helperSTM
+    liftIO (try . logIt s ri $ (rt ! ri)^.rmName) >>= eitherRet (fileIOExHandler "bugTypoLogger")
     send mq . nlnl $ "Thank you."
     bcastAdmins pt $ s <> " has logged a " <> wl' <> "."
   where
-    helperSTM md = do
-        (view sing   . (! i)  -> s ) <- readTVar $ md^.entTblTVar
-        (view rmId   . (! i)  -> ri) <- readTVar $ md^.pcTblTVar
-        (view rmName . (! ri) -> rn) <- readTVar $ md^.rmTblTVar
-        pt                           <- readTVar $ md^.plaTblTVar
-        return (s, ri, rn, pt)
+    helperSTM md = (,) <$> readTVar (md^.entTblTVar)
+                       <*> readTVar (md^.pcTblTVar)
+                       <*> readTVar (md^.plaTblTVar)
+                       <*> readTVar (md^.rmTblTVar)
     logIt s ri rn = mkTimestamp >>= \ts -> -- TODO: Why not just append to the end of the file?
         let newEntry = T.concat [ ts
                                 , " "
