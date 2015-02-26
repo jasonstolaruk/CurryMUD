@@ -263,7 +263,7 @@ helperGetDropEitherInv i d god fi ti a@(ws, _, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is | (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
            , ws'             <- ws & invTbl.at fi ?~ fis \\ is
-                                   & invTbl.at ti ?~ sortInv ws (tis ++ is)
+                                   & invTbl.at ti ?~ sortInv et tt (tis ++ is)
            , (bs', logMsgs') <- mkGetDropInvDesc i ws' d god is
            -> a & _1 .~ ws' & _2 <>~ bs' & _3 <>~ logMsgs'
 
@@ -405,7 +405,7 @@ helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
                                   else (is, bs)
            , (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
            , ws'             <- ws & invTbl.at fi ?~ fis \\ is'
-                                   & invTbl.at ti ?~ (sortInv ws . (tis ++) $ is')
+                                   & invTbl.at ti ?~ (sortInv et tt . (tis ++) $ is')
            , (bs'', logMsgs) <- mkPutRemInvDesc i ws' d por mnom is' te
            -> a & _1 .~ ws' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs
   where

@@ -490,7 +490,7 @@ tryMove i mq cols dir = helper >>= \case
             | p'          <- p & rmId .~ destRi
             , destRm      <- (ws^.rmTbl)  ! destRi
             , destIs      <- (ws^.invTbl) ! destRi
-            , destIs'     <- sortInv ws $ destIs ++ [i]
+            , destIs'     <- sortInv et tt $ destIs ++ [i]
             , originPis   <- i `delete` pcIds originD
             , destPis     <- findPCIds ws destIs
             , msgAtOrigin <- nlnl $ case mom of
@@ -696,7 +696,7 @@ intro (LowerNub' i as) = helper >>= \(cbs, logMsgs) -> do
                             srcMsg    = nlnl msg
                             srcDesig  = StdDesig { stdPCEntSing = Nothing
                                                  , isCap        = True
-                                                 , pcEntName    = mkUnknownPCEntName i ws
+                                                 , pcEntName    = mkUnknownPCEntName i mt pt
                                                  , pcId         = i
                                                  , pcIds        = pis }
                             targetMsg = nlnl . T.concat $ [ serialize srcDesig
@@ -1650,7 +1650,7 @@ helperUnready i d em a@(ws, _, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is | pis        <- (ws^.invTbl) ! i
            , ws'        <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
-                              & invTbl.at i ?~ (sortInv ws . (pis ++) $ is)
+                              & invTbl.at i ?~ (sortInv et tt . (pis ++) $ is)
            , (bs, msgs) <- mkUnreadyDescs i ws' d is
            -> a & _1 .~ ws' & _2 <>~ bs & _3 <>~ msgs
 

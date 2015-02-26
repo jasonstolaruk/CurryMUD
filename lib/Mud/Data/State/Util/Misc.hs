@@ -67,7 +67,7 @@ getSexRace :: Id -> MobTbl -> PCTbl -> (Sex, Race)
 getSexRace i mt pt = (view sex *** view race) (mt ! i, pt ! i)
 
 
-mkPlaIdsSingsList :: IM.IntMap Ent -> IM.IntMap Pla -> [(Id, Sing)]
+mkPlaIdsSingsList :: EntTbl -> PlaTbl -> [(Id, Sing)]
 mkPlaIdsSingsList et pt = [ (i, s) | i <- IM.keys pt
                                    , not . getPlaFlag IsAdmin $ (pt ! i)
                                    , let s = (et ! i)^.sing
@@ -94,8 +94,8 @@ mkUnknownPCEntName i mt pt | s <- (mt ! i)^.sex
 
 
 -- TODO: Changed fold from "foldl'" to "foldr"... everything OK?
-sortInv :: TypeTbl -> EntTbl -> Inv -> Inv
-sortInv tt et is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, tt ! i) | i <- is ]
+sortInv :: EntTbl -> TypeTbl -> Inv -> Inv
+sortInv et tt is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, tt ! i) | i <- is ]
                  = (pcIs ++) . sortNonPCs $ nonPCIs
   where
     helper (i, t) a                    = let consTo lens = over lens (cons i) a

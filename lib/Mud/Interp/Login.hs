@@ -162,7 +162,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
             originIs  = (ws^.invTbl) ! iWelcome
             originIs' = i `delete` originIs
             destIs    = (ws^.invTbl) ! iCentral
-            destIs'   = sortInv ws $ destIs ++ [i]
+            destIs'   = sortInv et tt $ destIs ++ [i]
         in putTMVar t (ws & pcTbl.at  i        ?~ p'
                           & invTbl.at iWelcome ?~ originIs'
                           & invTbl.at iCentral ?~ destIs')
