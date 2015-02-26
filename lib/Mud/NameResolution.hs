@@ -73,8 +73,15 @@ patternMatchFail = U.patternMatchFail "Mud.NameResolution"
 type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 
-resolveEntCoinNames :: Id -> WorldState -> Args -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNames i ws (map T.toLower -> as) is c = expandGecrs c [ mkGecr i ws is c a | a <- as ]
+resolveEntCoinNames :: Id
+                    -> EntTbl
+                    -> MobTbl
+                    -> PCTbl
+                    -> Args
+                    -> Inv
+                    -> Coins
+                    -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNames i et mt pt (map T.toLower -> as) is c = expandGecrs c [ mkGecr i et mt pt is c a | a <- as ]
 
 
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
@@ -239,23 +246,25 @@ mkGecrIndexed i et mt pt x n is
 
 
 resolveEntCoinNamesWithRols :: Id
-                            -> WorldState
+                            -> EntTbl
+                            -> MobTbl
+                            -> PCTbl
                             -> Args
                             -> Inv
                             -> Coins
                             -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNamesWithRols i ws (map T.toLower -> as) is c
-  | (unzip -> (gecrs, mrols)) <- map (mkGecrWithRol i ws is c) as
+resolveEntCoinNamesWithRols i et mt pt (map T.toLower -> as) is c
+  | (unzip -> (gecrs, mrols)) <- map (mkGecrWithRol i et mt pt is c) as
   , (gecrs', miss, rcs)       <- expandGecrs c gecrs
   = (gecrs', mrols, miss, rcs)
 
 
-mkGecrWithRol :: Id -> WorldState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
-mkGecrWithRol i ws is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
-  | T.null b        = (mkGecr i ws is c n, Nothing)
+mkGecrWithRol :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
+mkGecrWithRol i et mt pt is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
+  | T.null b        = (mkGecr i et mt pt is c n, Nothing)
   | T.length b == 1 = sorry
   | parsed <- reads (T.unpack . T.toUpper . T.drop 1 $ b) :: [(RightOrLeft, String)] =
-      case parsed of [(rol, _)] -> (mkGecr i ws is c a, Just rol)
+      case parsed of [(rol, _)] -> (mkGecr i et mt pt is c a, Just rol)
                      _          -> sorry
   where
     sorry = (Sorry n, Nothing)
