@@ -183,10 +183,11 @@ stopInacTimer i mq = do
     liftIO . atomically . writeTQueue mq $ InacStop
 
 
-notifyArrival :: Id -> MobTbl -> PCTbl -> PlaTbl -> MudStack ()
-notifyArrival i mt pcTbl plaTbl = i |$| getEntSing' >=> \(ws, s) -> do
-    bcastAdmins plaTbl $ s <> " has logged on."
-    bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i mt pcTbl s A <> " has arrived in the game."
+notifyArrival :: Id -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> MudStack ()
+notifyArrival i it mt mqt pcTbl plaTbl tt = let s = (et ! i)^.sing in do
+    bcastAdmins mt mqt pcTbl plaTbl $ s <> " has logged on."
+    bcastOthersInRm i it mt mqt pcTbl plaTbl tt . nlnl $ mkSerializedNonStdDesig i mt pcTbl s A <> " has arrived in \
+                                                                                                   \the game."
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()

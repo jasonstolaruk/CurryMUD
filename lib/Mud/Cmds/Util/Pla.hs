@@ -122,14 +122,21 @@ armSubToSlot = \case Head      -> HeadS
 
 
 bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
-bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = do
+bugTypoLogger (Msg i mq msg) wl@(pp -> wl') =
+    (liftIO . atomically . helperSTM) |$| asks >=> \( view sing . (! i) -> s
+                                                    , mt
+                                                    , mqt
+                                                    , pcTbl@(view rmId . (! i) -> ri)
+                                                    , plaTbl
+                                                    , rt ) -> do
     logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
-    (view sing . (! i) -> s, view rmId . (! i) -> ri, rt, pt) <- asks $ liftIO . atomically . helperSTM
     liftIO (try . logIt s ri $ (rt ! ri)^.rmName) >>= eitherRet (fileIOExHandler "bugTypoLogger")
     send mq . nlnl $ "Thank you."
-    bcastAdmins pt $ s <> " has logged a " <> wl' <> "."
+    bcastAdmins mt mqt pcTbl plaTbl $ s <> " has logged a " <> wl' <> "."
   where
     helperSTM md = (,) <$> readTVar (md^.entTblTVar)
+                       <*> readTVar (md^.mobTblTVar)
+                       <*> readTVar (md^.msgQueueTblTVar)
                        <*> readTVar (md^.pcTblTVar)
                        <*> readTVar (md^.plaTblTVar)
                        <*> readTVar (md^.rmTblTVar)
