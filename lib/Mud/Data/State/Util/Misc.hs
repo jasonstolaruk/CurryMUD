@@ -14,25 +14,21 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , sortInv ) where
 
 import Mud.Data.Misc
-import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
-import Mud.Data.State.Util.STM
 import Mud.Util.Misc
 import Mud.Util.Text
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
-import Control.Concurrent (forkIO)
 import Control.Lens (_1, _2, both, over)
 import Control.Lens.Cons (cons)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((&), (<>~), (^.))
+import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
-import Data.List (foldl', sortBy)
+import Data.List (sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import GHC.Exts (sortWith)
-import qualified Data.IntMap.Lazy as IM (IntMap, keys)
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
 
 

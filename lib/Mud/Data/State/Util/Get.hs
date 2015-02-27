@@ -2,6 +2,7 @@
 
 module Mud.Data.State.Util.Get where
 
+{-
 import Mud.Data.State.State
 import Mud.Data.State.Util.STM
 import Mud.Util.Misc
@@ -12,11 +13,13 @@ import Control.Lens.Getter (view, views)
 import Control.Monad ((>=>))
 import Data.IntMap.Lazy ((!))
 import qualified Data.IntMap.Lazy as IM (IntMap)
+-}
 
 
 -- TODO: Can we get rid of, or entirely rewrite, this module?
 
 
+{-
 getEntTbl :: MudStack (IM.IntMap Ent)
 getEntTbl = view entTbl <$> readWSTMVar
 
@@ -220,3 +223,4 @@ getTypeTbl = view typeTbl <$> readWSTMVar
 
 getType :: Id -> MudStack Type
 getType i = (! i) <$> getTypeTbl
+-}
