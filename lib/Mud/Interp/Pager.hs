@@ -34,7 +34,7 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
       "f" -> next
       "n" -> next
       "p" -> prev
-      "q" -> (prompt mq . nlPrefix $ dfltPrompt) >> (void . modifyPla i interp $ Nothing)
+      "q" -> (prompt mq . nlPrefix $ dfltPrompt) >> (liftIO . atomically . resetInterpSTM =<< ask)
       "u" -> prev
       _   -> promptRetry mq cols
   where
@@ -42,11 +42,11 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
       then do
           send mq . nl . T.unlines $ right
           prompt mq dfltPrompt
-          void . modifyPla i interp $ Nothing
+          liftIO . atomically . resetInterpSTM =<< ask
       else let (page, right') = splitAt (pageLen - 2) right in do
           send mq . T.unlines $ page
           sendPagerPrompt mq (length left + pageLen - 2) txtLen
-          void . modifyPla i interp . Just $ interpPager pageLen txtLen (left ++ page, right')
+          liftIO . atomically . (`setInterpSTM` interpPager pageLen txtLen (left ++ page, right')) =<< ask
     prev | length left == pageLen - 2 = do
              send mq . T.unlines $ left
              sendPagerPrompt mq (pageLen - 2) txtLen
@@ -55,8 +55,11 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
                        in do
                            send mq . T.unlines $ prevPage
                            sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
-                           void . modifyPla i interp . Just $ interpPager pageLen txtLen ( left'' ++ prevPage
-                                                                                         , currPage ++ right )
+                           md <- ask
+                           liftIO . atomically . setInterpSTM md $ interpPager pageLen txtLen ( left'' ++ prevPage
+                                                                                              , currPage ++ right )
+    resetInterpSTM md   = modifyTVar (md^.plaTblTVar) $ at i & interp .~ Nothing
+    setInterpSTM   md f = modifyTVar (md^.plaTblTVar) $ at i & interp .~ Just f
 interpPager _ _ _ _ (ActionParams { plaMsgQueue, plaCols }) = promptRetry plaMsgQueue plaCols
 
 

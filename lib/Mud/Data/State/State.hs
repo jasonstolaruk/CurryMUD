@@ -300,7 +300,7 @@ data PlaFlags = IsAdmin
               | IsNotFirstMobSay deriving Enum
 
 
-type Interp  = (CmdName -> ActionParams -> MudStack ())
+type Interp  = CmdName -> ActionParams -> MudStack ()
 
 
 type CmdName = T.Text
