@@ -1,22 +1,35 @@
 module Mud.Data.State.Util.Pla where
 
-{-
 import Mud.Data.Misc
 import Mud.Data.State.State
-import Mud.Data.State.Util.STM
+import Mud.Util.Misc
 
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TVar (readTVar, writeTVar)
+import Control.Lens (at)
+import Control.Lens.Operators ((&), (?~), (^.))
+import Control.Monad ((>=>))
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
+import Data.IntMap.Lazy ((!))
+{-
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (putTMVar)
-import Control.Lens (at)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((&), (?~), (.~))
 import Control.Lens.Setter (ASetter)
-import Data.IntMap.Lazy ((!))
 import Data.Maybe (isNothing)
 -}
 
 
 -- TODO: Can we get rid of, or entirely rewrite, this module?
+
+
+modifyPlaFlag :: Id -> PlaFlags -> Bool -> MudStack ()
+modifyPlaFlag i flag b = liftIO . atomically . helperSTM =<< ask
+  where
+    helperSTM md = (md^.plaTblTVar) |$| readTVar >=> \pt ->
+        let p = setPlaFlag flag b $ pt ! i
+        in writeTVar (md^.plaTblTVar) (pt & at i ?~ p)
 
 
 {-
@@ -55,12 +68,4 @@ modifyPla :: Id -> ASetter Pla Pla a b -> b -> MudStack Pla
 modifyPla i lens val = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
     let p = (pt ! i) & lens .~ val
     in putTMVar ptTMVar (pt & at i ?~ p) >> return p
-
-
-modifyPlaFlag :: Id -> PlaFlags -> Bool -> MudStack ()
-modifyPlaFlag i flag b = asks $ liftIO . atomically . helperSTM
-  where
-    helperSTM md = (md^.plaTblTVar) |$| readTVar >=> \pt ->
-        let p = setPlaFlag flag b $ pt ! i
-        in putTVar (md^.plaTblTVar) (pt & at i ?~ p)
 -}

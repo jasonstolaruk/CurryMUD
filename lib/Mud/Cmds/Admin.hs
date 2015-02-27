@@ -31,6 +31,7 @@ import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
+import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, over)
@@ -39,6 +40,7 @@ import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
 import Data.Monoid ((<>))
@@ -136,12 +138,11 @@ adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
                                                   \minutes"
                       , dfltColor
                       , "." ]
-adminAnnounce (Msg i mq msg) =
-    (\md -> liftIO . atomically . readTVarIO $ md^.entTblTVar) |$| asks >=> \(view sing . (! i) -> s) -> do
-        logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
-        logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
-        ok mq
-        massSend $ announceColor <> msg <> dfltColor
+adminAnnounce (Msg i mq msg) = ask >>= \md -> (liftIO . readTVarIO $ md^.entTblTVar) >>= \(view sing . (! i) -> s) -> do
+    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
+    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
+    ok mq
+    massSend $ announceColor <> msg <> dfltColor
 adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 
 
@@ -151,7 +152,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperSTM) |$| asks >=> \(et, mqt) ->
+adminBoot (MsgWithTarget i mq cols target msg) = ask >>= \md -> (liftIO . atomically . helperSTM) >>= \(et, mqt) ->
   case [ k | k <- IM.keys mqt, (et ! k)^.sing == target ] of
     []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
                                   \you must specify the full PC name of the player you wish to boot.)"
@@ -219,19 +220,19 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 adminPeep :: Action
 adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify one or more PC names of the player(s) \
                                                               \you wish to start or stop peeping."
-adminPeep (LowerNub i mq cols (map capitalize -> as)) =
-    (liftIO . atomically . helperSTM) |$| asks >=> \(msgs, logMsgs) -> do
-        multiWrapSend mq cols msgs
-        let (logMsgsSelf, logMsgsOthers) = unzip logMsgs
-        logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
-        forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
+adminPeep (LowerNub i mq cols (map capitalize -> as)) = ask >>= \md -> do
+    (msgs, logMsgs) <- liftIO . atomically . helperSTM $ md
+    multiWrapSend mq cols msgs
+    let (logMsgsSelf, logMsgsOthers) = unzip logMsgs
+    logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
+    forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
   where
     helperSTM md = do
         (et, pt) <- (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar)
         let s                    = (et ! i)^.sing
             piss                 = mkPlaIdsSingsList et pt
             (pt', msgs, logMsgs) = foldr (peep s piss) (pt, [], []) as
-        writeTVar (md^.ptTMVar) pt'
+        writeTVar (md^.plaTblTVar) pt'
         return (msgs, logMsgs)
     peep s piss target a@(pt, _, _) =
         let notFound    = over _2 (cons sorry) a
@@ -264,7 +265,7 @@ adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
                       , dblQuote $ prefixAdminCmd "print" <> " Is anybody home?"
                       , dfltColor
                       , "." ]
-adminPrint (Msg i mq msg) = i |$| getEntSing >=> \s -> do
+adminPrint (Msg i mq msg) = ask >>= \md -> view sing . (! i) <$> (liftIO . readTVarIO $ md^.entTblTVar) >>= \s -> do
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
     logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
@@ -285,31 +286,29 @@ adminProfanity p = withoutArgs adminProfanity p
 
 
 adminShutdown :: Action
-adminShutdown (NoArgs' i mq) =
-    (\md -> liftIO . readTVarIO $ md^.entTblTVar) |$| asks >=> \(view sing . (! i) -> s) -> do
-        logPla "adminShutdown" i $ "initiating shutdown " <> parensQuote "no message given" <> "."
-        massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
-        massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
-                                              , s
-                                              , " "
-                                              , parensQuote "no message given"
-                                              , "." ]
-        logNotice  "adminShutdown" $ T.concat [ "server shutdown initiated by "
-                                              , s
-                                              , " "
-                                              , parensQuote "no message given"
-                                              , "." ]
-        liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown (Msg i mq msg) =
-    (\md -> liftIO . readTVarIO $ md^.entTblTVar) |$| asks >=> \(view sing . (! i) -> s) -> do
-        logPla "adminShutdown" i $ "initiating shutdown; message: " <> dblQuote msg
-        massSend $ shutdownMsgColor <> msg <> dfltColor
-        massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
-                                                , s
-                                                , "; message: "
-                                                , dblQuote msg ]
-        logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", dblQuote msg ]
-        liftIO . atomically . writeTQueue mq $ Shutdown
+adminShutdown (NoArgs' i mq) = ask >>= \md -> view sing . (! i) <$> (liftIO . readTVarIO $ md^.entTblTVar) >>= \s -> do
+    logPla "adminShutdown" i $ "initiating shutdown " <> parensQuote "no message given" <> "."
+    massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
+    massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
+                                          , s
+                                          , " "
+                                          , parensQuote "no message given"
+                                          , "." ]
+    logNotice  "adminShutdown" $ T.concat [ "server shutdown initiated by "
+                                          , s
+                                          , " "
+                                          , parensQuote "no message given"
+                                          , "." ]
+    liftIO . atomically . writeTQueue mq $ Shutdown
+adminShutdown (Msg i mq msg) = ask >>= \md -> view sing . (! i) <$> (liftIO . readTVarIO $ md^.entTblTVar) >>= \s -> do
+    logPla "adminShutdown" i $ "initiating shutdown; message: " <> dblQuote msg
+    massSend $ shutdownMsgColor <> msg <> dfltColor
+    massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
+                                            , s
+                                            , "; message: "
+                                            , dblQuote msg ]
+    logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", dblQuote msg ]
+    liftIO . atomically . writeTQueue mq $ Shutdown
 adminShutdown p = patternMatchFail "adminShutdown" [ showText p ]
 
 
@@ -331,8 +330,9 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
-adminTell (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperSTM) |$| asks >=> \(et, mqt, pt) ->
-    let (view sing -> s) = et ! i
+adminTell (MsgWithTarget i mq cols target msg) = ask >>= \md -> do
+    (et, mqt, pt) <- liftIO . atomically . helperSTM $ md
+    let s                = (et ! i)^.sing
         piss             = mkPlaIdsSingsList et pt
         notFound         = wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently \
                                               \logged in."
@@ -353,7 +353,7 @@ adminTell (MsgWithTarget i mq cols target msg) = (liftIO . atomically . helperST
                         if getPlaFlag IsNotFirstAdminTell p
                           then wrapSend tellMq tellCols targetMsg
                           else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
-    in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
+    maybe notFound found . findFullNameForAbbrev target . map snd $ piss
   where
     helperSTM md = (,) <$> readTVar (md^.entTblTVar)
                        <*> readTVar (md^.msgQueueTblTVar)
@@ -428,7 +428,7 @@ adminWho p@(ActionParams { plaId, args }) = do
 
 
 mkPlaListTxt :: MudStack [T.Text]
-mkPlaListTxt = (liftIO . atomically . helperSTM) |$| asks >=> \(et, pt) ->
+mkPlaListTxt = ask >>= \md -> (liftIO . atomically . helperSTM $ md) >>= \(et, pt) ->
     let pis         = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ pt
         (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = (et ! pi)^.sing, then sortWith by s ]
         pias        = zip pis' . styleAbbrevs Don'tBracket $ pss
