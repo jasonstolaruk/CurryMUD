@@ -10,9 +10,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
-import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
@@ -36,12 +34,12 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (both, over)
 import Control.Lens.Getter (views)
-import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), replicateM, replicateM_, unless, void)
+import Control.Lens.Operators ((^.))
+import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask, runReaderT)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, foldl', sort)
+import Data.List (delete, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>))
 import GHC.Conc (ThreadStatus(..), threadStatus)
@@ -50,7 +48,7 @@ import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys, lookup)
+import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, keys)
 import qualified Data.Text as T
 
@@ -130,10 +128,14 @@ debugBoot p              = withoutArgs debugBoot p
 
 
 debugBroad :: Action
-debugBroad (NoArgs'' i) = do
+debugBroad (NoArgs'' i) = ask >>= liftIO . atomically . helperSTM >>= \(mt, mqt, pcTbl, plaTbl) -> do
     logPlaExec (prefixDebugCmd "broad") i
     bcastNl mt mqt pcTbl plaTbl . mkBroadcast i $ msg
   where
+    helperSTM md = (,,,) <$> readTVar (md^.mobTblTVar)
+                         <*> readTVar (md^.msgQueueTblTVar)
+                         <*> readTVar (md^.pcTblTVar)
+                         <*> readTVar (md^.plaTblTVar)
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\
           \[3] abcdefghij abcdefghij abcdefghij\n\
@@ -212,7 +214,7 @@ debugDispEnv p@(ActionParams { plaId, args }) = do
 
 
 mkEnvListTxt :: [(String, String)] -> [T.Text]
-mkEnvListTxt = map (mkAssocTxt . over both . T.pack)
+mkEnvListTxt = map (mkAssocTxt . over both T.pack)
   where
     mkAssocTxt (a, b) = T.concat [ envVarColor, a, ": ", dfltColor, b ]
 
@@ -257,7 +259,7 @@ purgePlaLogTbl :: MudStack ()
 purgePlaLogTbl = ask >>= \md -> do
     (IM.assocs -> kvs) <- liftIO . readTVarIO $ md^.plaLogTblTVar
     let (is, asyncs) = unzip [ (fst kv, fst . snd $ kv) | kv <- kvs ]
-    liftIO . atomically . helperSTM md =<< (zip is <$> liftIO . mapM poll $ asyncs)
+    liftIO . atomically . helperSTM md =<< (zip is <$> (liftIO . mapM poll $ asyncs))
   where
     helperSTM md zipped = (md^.plaLogTblTVar) |$| readTVar >=> \plt ->
         writeTVar (md^.plaLogTblTVar) . foldr purger plt $ zipped
@@ -268,9 +270,9 @@ purgePlaLogTbl = ask >>= \md -> do
 purgeTalkAsyncTbl :: MudStack ()
 purgeTalkAsyncTbl = ask >>= \md -> do
     (M.elems -> asyncs) <- liftIO . readTVarIO $ md^.talkAsyncTblTVar
-    liftIO . atomically . helperSTM md =<< (zip asyncs <$> liftIO . mapM poll $ asyncs)
+    liftIO . atomically . helperSTM md =<< (zip asyncs <$> (liftIO . mapM poll $ asyncs))
   where
-    helperSTM md zipped = (md^.talkAsyncTblTVar) |$| readTVar >>= \tat ->
+    helperSTM md zipped = (md^.talkAsyncTblTVar) |$| readTVar >=> \tat ->
         writeTVar (md^.talkAsyncTblTVar) . foldr purger tat $ zipped
     purger (_, Nothing) tbl = tbl
     purger (a, _      ) tbl = M.delete (asyncThreadId a) tbl
@@ -279,7 +281,7 @@ purgeTalkAsyncTbl = ask >>= \md -> do
 purgeThreadTbl :: MudStack ()
 purgeThreadTbl = ask >>= \md -> do
     (M.keys -> tis) <- liftIO . readTVarIO $ md^.threadTblTVar
-    liftIO . atomically . helperSTM md =<< (zip tis <$> liftIO . mapM threadStatus $ tis)
+    liftIO . atomically . helperSTM md =<< (zip tis <$> (liftIO . mapM threadStatus $ tis))
   where
     helperSTM md zipped = (md^.threadTblTVar) |$| readTVar >=> \tt ->
         writeTVar (md^.threadTblTVar) . foldr purger tt $ zipped
@@ -323,7 +325,7 @@ debugTalk (NoArgs i mq cols) = ask >>= \md -> (liftIO . readTVarIO $ md^.talkAsy
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . M.elems $ tat)
   where
     mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", status, "." ]
-                  | status <- mkStatusTxt <$> liftIO . poll $ a ]
+                  | status <- mkStatusTxt <$> (liftIO . poll $ a) ]
     mkStatusTxt = \case Nothing                                    -> "running"
                         Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
                         Just (Right ()                           ) -> "finished"
@@ -336,7 +338,7 @@ debugTalk p = withoutArgs debugTalk p
 debugThread :: Action
 debugThread (NoArgs i mq cols) = ask >>= \md -> do
     logPlaExec (prefixDebugCmd "thread") i
-    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId . getLogAsyncs $ md
+    let (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) = over both asyncThreadId . getLogAsyncs $ md
     (plt, M.assocs -> threadTblKvs) <- liftIO . atomically . helperSTM $ md
     let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- IM.elems plt | k <- IM.keys plt ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
@@ -355,7 +357,7 @@ debugThread p = withoutArgs debugThread p
 getLogAsyncs :: MudData -> (LogAsync, LogAsync)
 getLogAsyncs = (getAsync noticeLog *** getAsync errorLog) . dup
   where
-    getAsync l = views l (fst . fromJust)
+    getAsync l = views l fst
 
 
 -----
