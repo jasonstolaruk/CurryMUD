@@ -1,5 +1,6 @@
 module Mud.Data.State.Util.Pla where
 
+{-
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.STM
@@ -12,11 +13,13 @@ import Control.Lens.Operators ((&), (?~), (.~))
 import Control.Lens.Setter (ASetter)
 import Data.IntMap.Lazy ((!))
 import Data.Maybe (isNothing)
+-}
 
 
 -- TODO: Can we get rid of, or entirely rewrite, this module?
 
 
+{-
 getPla :: Id -> MudStack Pla
 getPla i = (! i) <$> readTMVarInNWS plaTblTMVar
 
@@ -60,3 +63,4 @@ modifyPlaFlag i flag b = asks $ liftIO . atomically . helperSTM
     helperSTM md = (md^.plaTblTVar) |$| readTVar >=> \pt ->
         let p = setPlaFlag flag b $ pt ! i
         in putTVar (md^.plaTblTVar) (pt & at i ?~ p)
+-}

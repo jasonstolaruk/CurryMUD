@@ -148,7 +148,7 @@ bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
 
 
 massMsg :: Msg -> MudStack ()
-massMsg m = msgQueueTblTMVar |$| readTMVarInNWS >=> \(IM.elems -> is) ->
+massMsg m = msgQueueTblTVar |$| readTMVarInNWS >=> \(IM.elems -> is) ->
     forM_ is $ liftIO . atomically . flip writeTQueue m
 
 

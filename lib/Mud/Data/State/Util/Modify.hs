@@ -2,6 +2,7 @@
 
 module Mud.Data.State.Util.Modify where
 
+{-
 import Mud.Data.State.State
 import Mud.Data.State.Util.STM
 
@@ -10,11 +11,13 @@ import Control.Lens (at)
 import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Lens.Setter (ASetter, set)
 import Data.IntMap.Lazy ((!))
+-}
 
 
 -- TODO: Can we get rid of, or entirely rewrite, this module?
 
 
+{-
 modifyEnt :: Id -> ASetter Ent Ent a b -> b -> MudStack Ent
 modifyEnt i lens val = onWS $ \(t, ws) ->
     let (set lens val -> e) = (ws^.entTbl) ! i
@@ -55,3 +58,4 @@ modifyRm :: Id -> ASetter Rm Rm a b -> b -> MudStack Rm
 modifyRm i lens val = onWS $ \(t, ws) ->
     let (set lens val -> e) = (ws^.rmTbl) ! i
     in putTMVar t (ws & rmTbl.at i ?~ e) >> return e
+-}

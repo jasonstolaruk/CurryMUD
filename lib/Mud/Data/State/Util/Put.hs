@@ -1,17 +1,17 @@
 module Mud.Data.State.Util.Put where
 
 import Mud.Data.State.State
-import Mud.Data.State.Util.STM
 
 import Control.Concurrent.STM.TVar (modifyTVar)
 import Control.Lens (at)
-import Control.Lens.Operators ((&), (?~), (.~))
-import Control.Monad.Reader (asks)
+import Control.Lens.Operators ((.~), (?~), (^.))
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Control.Monad.STM (atomically)
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
-putArm i e o a = asks $ liftIO . atomically . helperSTM
+putArm i e o a = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
         modifyTVar (md^.typeTblTVar) $ at i ?~ ArmType
@@ -24,20 +24,20 @@ putArm i e o a = asks $ liftIO . atomically . helperSTM
 
 
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
-putCloth i e o c = asks $ liftIO . atomically . helperSTM
+putCloth i e o c = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
-        modifyTVar (md^.typeTblTVar) $ at i ?~ ClothType
-        modifyTVar (md^.entTblTVar)  $ at i ?~ e
-        modifyTVar (md^.objTblTVar)  $ at i ?~ o
-        modifyTVar (md^.objTblTVar)  $ at i ?~ c
+        modifyTVar (md^.typeTblTVar)  $ at i ?~ ClothType
+        modifyTVar (md^.entTblTVar)   $ at i ?~ e
+        modifyTVar (md^.objTblTVar)   $ at i ?~ o
+        modifyTVar (md^.clothTblTVar) $ at i ?~ c
 
 
 -----
 
 
 putCon :: Id -> Ent -> Obj -> Inv -> Coins -> Maybe Cloth -> Con -> MudStack ()
-putCon i e o is coi mc con = asks $ liftIO . atomically . helperSTM
+putCon i e o is coi mc con = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
         modifyTVar (md^.typeTblTVar)  $ at i ?~ ConType
@@ -45,7 +45,7 @@ putCon i e o is coi mc con = asks $ liftIO . atomically . helperSTM
         modifyTVar (md^.objTblTVar)   $ at i ?~ o
         modifyTVar (md^.invTblTVar)   $ at i ?~ is
         modifyTVar (md^.coinsTblTVar) $ at i ?~ coi
-        modifyTVar (md^.clothTblTVar) $ at i ?~ mc
+        modifyTVar (md^.clothTblTVar) $ at i .~ mc
         modifyTVar (md^.conTblTVar)   $ at i ?~ con
 
 
@@ -53,7 +53,7 @@ putCon i e o is coi mc con = asks $ liftIO . atomically . helperSTM
 
 
 putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
-putMob i e is c em m = asks $ liftIO . atomically . helperSTM
+putMob i e is c em m = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
         modifyTVar (md^.typeTblTVar)  $ at i ?~ MobType
@@ -68,7 +68,7 @@ putMob i e is c em m = asks $ liftIO . atomically . helperSTM
 
 
 putObj :: Id -> Ent -> Obj -> MudStack ()
-putObj i e o = asks $ liftIO . atomically . helperSTM
+putObj i e o = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
         modifyTVar (md^.typeTblTVar) $ at i ?~ ObjType
@@ -80,7 +80,7 @@ putObj i e o = asks $ liftIO . atomically . helperSTM
 
 
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> MudStack ()
-putPC i e is c em m p = asks $ liftIO . atomically . helperSTM
+putPC i e is c em m p = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
         modifyTVar (md^.typeTblTVar)  $ at i ?~ PCType
@@ -96,7 +96,7 @@ putPC i e is c em m p = asks $ liftIO . atomically . helperSTM
 
 
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
-putRm i is c r = asks $ liftIO . atomically . helperSTM
+putRm i is c r = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
         modifyTVar (md^.typeTblTVar)  $ at i ?~ RmType
@@ -109,7 +109,7 @@ putRm i is c r = asks $ liftIO . atomically . helperSTM
 
 
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
-putWpn i e o w = asks $ liftIO . atomically . helperSTM
+putWpn i e o w = liftIO . atomically . helperSTM =<< ask
   where
     helperSTM md = do
         modifyTVar (md^.typeTblTVar) $ at i ?~ WpnType
