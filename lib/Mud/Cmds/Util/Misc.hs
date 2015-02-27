@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
@@ -16,7 +16,6 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Pla
 import Mud.Interp.Pager
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
@@ -29,9 +28,15 @@ import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)
-import Control.Monad ((>=>), void)
+import Control.Lens (at)
+import Control.Lens.Operators ((&), (.~), (?~), (^.))
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
+import Data.IntMap.Lazy ((!))
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
@@ -123,7 +128,7 @@ fileIOExHandler fn e = if any (e |$|) [ isAlreadyInUseError, isDoesNotExistError
 
 
 pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
-pager i mq txt@(length -> txtLen) = (liftIO . atomically . helperSTM) |$| asks >=> \case
+pager i mq txt@(length -> txtLen) = ask >>= liftIO . atomically . helperSTM >>= \case
     Nothing              -> send mq . nl . T.unlines $ txt
     Just (page, pageLen) -> do
         send mq . T.unlines $ page

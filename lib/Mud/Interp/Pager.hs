@@ -16,8 +16,7 @@ import Mud.Util.Wrapping
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (readTVar, writeTVar)
-import Control.Lens (at)
-import Control.Lens (both, over)
+import Control.Lens (at, both, over)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
