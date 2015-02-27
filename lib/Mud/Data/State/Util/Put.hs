@@ -2,12 +2,12 @@ module Mud.Data.State.Util.Put where
 
 import Mud.Data.State.State
 
+import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (modifyTVar)
 import Control.Lens (at)
 import Control.Lens.Operators ((.~), (?~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
-import Control.Monad.STM (atomically)
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()

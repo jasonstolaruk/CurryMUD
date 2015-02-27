@@ -20,7 +20,6 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -30,19 +29,18 @@ import Mud.Util.Text
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
+import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Concurrent.STM.TVar (readTVar, readTVarIO, modifyTVar)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
-import Control.Lens.Getter (use)
-import Control.Lens.Operators ((&), (.=), (?~))
-import Control.Monad ((>=>), forM_, forever, guard)
+import Control.Lens.Getter (view)
+import Control.Lens.Operators ((?~), (^.))
+import Control.Monad ((>=>), forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
-import Control.Monad.STM (atomically)
 import Data.IntMap.Lazy ((!))
-import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.Directory (doesFileExist, renameFile)
 import System.FilePath ((<.>), (</>))
@@ -145,7 +143,11 @@ initPlaLog i n@(T.unpack -> n') = do
 
 
 stopLog :: LogQueue -> MudStack ()
-stopLog = liftIO . atomically . flip writeTQueue StopLog
+stopLog = liftIO . atomically . stopLogSTM
+
+
+stopLogSTM :: LogQueue -> STM ()
+stopLogSTM = flip writeTQueue StopLog
 
 
 closePlaLog :: Id -> MudStack ()
@@ -154,18 +156,19 @@ closePlaLog = flip doIfLogging stopLog
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
 doIfLogging i f = ask >>= \md ->
-    IM.lookup i <$> readTVarIO (md^.plaLogTblTVar) >>= maybeVoid (f . snd)
+    maybeVoid (f . snd) =<< IM.lookup i <$> (liftIO . readTVarIO $ md^.plaLogTblTVar)
 
 
 closeLogs :: MudStack ()
 closeLogs = do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    [ (na, nq), (ea, eq) ] <- sequence [ fromJust <$> use (nonWorldState.noticeLog)
-                                       , fromJust <$> use (nonWorldState.errorLog ) ]
-    (unzip -> (as, qs)) <- IM.elems <$> readTMVarInNWS plaLogTblTMVar
-    mapM_ stopLog         $ nq : eq : qs
-    mapM_ (liftIO . wait) $ na : ea : as
+    ask >>= liftIO . atomically . helperSTM >>= mapM_ (liftIO . wait)
     liftIO removeAllHandlers
+  where
+    helperSTM md | (na, nq) <- md^.noticeLog, (ea, eq) <- md^.errorLog = do
+        (as, qs) <- unzip . IM.elems <$> readTVar (md^.plaLogTblTVar)
+        mapM_ stopLogSTM $ nq : eq : qs
+        return $ na : ea : as
 
 
 -- ==================================================
@@ -173,17 +176,21 @@ closeLogs = do
 
 
 registerMsg :: T.Text -> LogQueue -> MudStack ()
-registerMsg msg = liftIO . atomically . flip writeTQueue (LogMsg msg)
+registerMsg msg q = liftIO . atomically . registerMsgSTM msg $ q
+
+
+registerMsgSTM :: T.Text -> LogQueue -> STM ()
+registerMsgSTM msg = flip writeTQueue (LogMsg msg)
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
-logNotice modName (dblQuote -> funName) msg = maybeVoid helper =<< use (nonWorldState.noticeLog)
+logNotice modName (dblQuote -> funName) msg = helper . view noticeLog =<< ask
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ]) . snd
 
 
 logError :: T.Text -> MudStack ()
-logError msg = maybeVoid (registerMsg msg . snd) =<< use (nonWorldState.errorLog)
+logError msg = registerMsg msg . snd . view errorLog =<< ask
 
 
 logExMsg :: T.Text -> T.Text -> T.Text -> SomeException -> MudStack ()
@@ -224,11 +231,11 @@ logPlaOut modName (dblQuote -> cn) i (T.intercalate " / " -> msgs) = helper =<< 
 
 
 getPlaLogQueue :: Id -> MudStack LogQueue
-getPlaLogQueue i = snd . (! i) <$> readTMVarInNWS plaLogTblTMVar
+getPlaLogQueue i = snd . (! i) <$> (liftIO . readTVarIO . view plaLogTblTVar =<< ask)
 
 
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
-massLogPla modName (dblQuote -> funName) msg = plaLogTblTMVar |$| readTMVarInNWS >=> helper
+massLogPla modName (dblQuote -> funName) msg = liftIO . atomically . helperSTM =<< ask
   where
-    helper (map snd . IM.elems -> logQueues) =
-        forM_ logQueues $ registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
+    helperSTM md = (map snd . IM.elems <$> (readTVar $ md^.plaLogTblTVar)) >>=
+        mapM_ (registerMsgSTM (T.concat [ modName, " ", funName, ": ", msg ]))
