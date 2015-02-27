@@ -24,7 +24,6 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.List (nubSort)
@@ -34,19 +33,21 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (putTMVar)
+import Control.Applicative ((<$>), (<*>))
+import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens.Getter (view, views)
+import Control.Concurrent.STM.TVar (readTVar)
+import Control.Lens.Getter (views)
 import Control.Lens.Operators ((^.))
-import Control.Monad ((>=>), forM_)
+import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (IntMap, elems, keys)
+import qualified Data.IntMap.Lazy as IM (elems, keys)
 import qualified Data.Text as T
 
 
@@ -65,7 +66,7 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 send :: MsgQueue -> T.Text -> MudStack ()
-send = liftIO . atomically . sendSTM
+send mq = liftIO . atomically . sendSTM mq
 
 
 sendSTM :: MsgQueue -> T.Text -> STM ()
@@ -114,7 +115,7 @@ parsePCDesig i mt pt msg = views introduced (`helper` msg) $ pt ! i
       | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig = (left, pcd, rest)
 
 
-expandPCEntName :: Id -> MobTbl -> PlaTbl -> Bool -> T.Text -> Id -> Inv -> T.Text
+expandPCEntName :: Id -> MobTbl -> PCTbl -> Bool -> T.Text -> Id -> Inv -> T.Text
 expandPCEntName i mt pt ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
     T.concat [ leading, "he ", xth, expandSex h, " ", t ]
   where
@@ -149,7 +150,7 @@ mkNTBroadcast i msg = [NonTargetBroadcast (msg, [i])]
 
 bcastOthersInRm :: Id -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> TypeTbl -> T.Text -> MudStack ()
 bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
-                                                      ris = i `delete` it ! ri
+                                                      ris = i `delete` (it ! ri)
                                                       bs  = [(msg, findPCIds tt ris)]
                                                   in bcast mt mqt pcTbl plaTbl bs
 
@@ -157,7 +158,7 @@ bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
 massMsg :: Msg -> MudStack ()
 massMsg msg = liftIO . atomically . helperSTM =<< ask
   where
-    helperSTM md = flip writeTQueue msg =<< (IM.elems <$> readTVar (md^.msgQueueTblTVar)) -- TODO: Parens?
+    helperSTM md = mapM_ (flip writeTQueue msg) =<< IM.elems <$> readTVar (md^.msgQueueTblTVar)
 
 
 massSend :: T.Text -> MudStack ()
