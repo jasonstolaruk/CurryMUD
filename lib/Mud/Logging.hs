@@ -31,6 +31,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
+import Control.Concurrent.STM.TVar (readTVar, readTVarIO, modifyTVar)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
@@ -38,8 +39,10 @@ import Control.Lens.Getter (use)
 import Control.Lens.Operators ((&), (.=), (?~))
 import Control.Monad ((>=>), forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Control.Monad.STM (atomically)
 import Data.IntMap.Lazy ((!))
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.Directory (doesFileExist, renameFile)
 import System.FilePath ((<.>), (</>))
@@ -69,7 +72,7 @@ initLogging = do
     (nq, eq) <- (,) <$> newTQueueIO <*> newTQueueIO
     (na, ea) <- (,) <$> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq
                     <*> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq
-    retrun ((na, nq), (ea, eq))
+    return ((na, nq), (ea, eq))
 
 
 type LogName    = T.Text
@@ -132,8 +135,9 @@ initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
     q <- liftIO newTQueueIO
     a <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM $ q
-    modifyNWS plaLogTblTMVar $ \plt ->
-        plt & at i ?~ (a, q)
+    liftIO . atomically . helperSTM (a, q) =<< ask
+  where
+    helperSTM aq md = modifyTVar (md^.plaLogTblTVar) $ at i ?~ aq
 
 
 -- ==================================================
@@ -149,7 +153,8 @@ closePlaLog = flip doIfLogging stopLog
 
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = IM.lookup i <$> readTMVarInNWS plaLogTblTMVar >>= maybeVoid (f . snd)
+doIfLogging i f = ask >>= \md ->
+    IM.lookup i <$> readTVarIO (md^.plaLogTblTVar) >>= maybeVoid (f . snd)
 
 
 closeLogs :: MudStack ()

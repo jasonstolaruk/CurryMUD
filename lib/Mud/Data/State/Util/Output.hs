@@ -158,7 +158,7 @@ bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
 massMsg :: Msg -> MudStack ()
 massMsg msg = liftIO . atomically . helperSTM =<< ask
   where
-    helperSTM md = mapM_ (flip writeTQueue msg) =<< IM.elems <$> readTVar (md^.msgQueueTblTVar)
+    helperSTM md = mapM_ (`writeTQueue` msg) =<< IM.elems <$> readTVar (md^.msgQueueTblTVar)
 
 
 massSend :: T.Text -> MudStack ()
