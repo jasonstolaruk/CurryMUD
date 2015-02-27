@@ -6,13 +6,16 @@ module Mud.TheWorld.TheWorld ( initMudData
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
-import Mud.Data.State.Util.STM
+import Mud.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
 import qualified Mud.Logging as L (logNotice)
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (modifyTVar, newTVarIO, readTVar)
-import Control.Lens.Operators ((&), (.~), (^.))
+import Control.Lens.Operators ((^.))
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Data.Bits (zeroBits)
 import Data.Monoid (mempty)
 import Formatting ((%), sformat)
@@ -56,28 +59,28 @@ initMudData = do
                                                                           <*> newTVarIO IM.empty
     (o, p) <- (,) <$> newTVarIO M.empty <*> newTVarIO M.empty
     (noticeLogService, errorLogService) <- initLogging
-    startTime                           <- getTime Monotonic
-    return MudData { _armTblTVar       = TVar a
-                   , _clothTblTVar     = TVar b
-                   , _coinsTblTVar     = TVar c
-                   , _conTblTVar       = TVar d
-                   , _entTblTVar       = TVar e
-                   , _eqTblTVar        = TVar f
+    start                               <- getTime Monotonic
+    return MudData { _armTblTVar       = a
+                   , _clothTblTVar     = b
+                   , _coinsTblTVar     = c
+                   , _conTblTVar       = d
+                   , _entTblTVar       = e
+                   , _eqTblTVar        = f
                    , _errorLog         = errorLogService
-                   , _invTblTVar       = TVar g
-                   , _mobTblTVar       = TVar h
-                   , _msgQueueTblTVar  = TVar i
+                   , _invTblTVar       = g
+                   , _mobTblTVar       = h
+                   , _msgQueueTblTVar  = i
                    , _noticeLog        = noticeLogService
-                   , _objTblTVar       = TVar j
-                   , _pcTblTVar        = TVar k
-                   , _plaLogTblTVar    = TVar l
-                   , _plaTblTVar       = TVar m
-                   , _rmTblTVar        = TVar n
-                   , _startTime        = startTime
-                   , _talkAsyncTblTVar = TVar o
-                   , _threadTblTVar    = TVar p
-                   , _typeTblTVar      = TVar q
-                   , _wpnTblTVar       = TVar r }
+                   , _objTblTVar       = j
+                   , _pcTblTVar        = k
+                   , _plaLogTblTVar    = l
+                   , _plaTblTVar       = m
+                   , _rmTblTVar        = n
+                   , _startTime        = start
+                   , _talkAsyncTblTVar = o
+                   , _threadTblTVar    = p
+                   , _typeTblTVar      = q
+                   , _wpnTblTVar       = r }
 
 
 initWorld :: MudStack ()
@@ -174,7 +177,7 @@ createWorld = do
 
 
 sortAllInvs :: MudStack ()
-sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> asks (liftIO . atomically . helperSTM)
+sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> (liftIO . atomically . helperSTM =<< ask)
   where
     helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.typeTblTVar) >>= \(et, tt) ->
-        modifyTVar (md^.invTblTVar) $ IM.map (sortInv tt et)
+        modifyTVar (md^.invTblTVar) $ IM.map (sortInv et tt)
