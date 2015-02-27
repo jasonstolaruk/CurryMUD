@@ -135,23 +135,12 @@ checkWordsDict cn mq = nonWorldState.dicts.wordsDict |$| use >=> \case
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
-  Just True -> do
-      oldSing <- onWS $ \(t, ws) ->
-          let e       = (ws^.entTbl) ! i
-              oldSing = e^.sing
-              e'      = e & sing .~ s
-          in putTMVar t (ws & entTbl.at i ?~ e') >> return oldSing
-      (pt, p) <- onNWS plaTblTMVar $ \(ptTMVar, pt) ->
-          let p   = pt ! i
-              p'  = setPlaFlag IsAdmin (T.head s == 'Z') p & interp .~ Nothing
-              pt' = pt & at i ?~ p'
-          in putTMVar ptTMVar pt' >> return (pt, p')
+  Just True -> (liftIO . atomically . helperSTM) |$| asks >=> \(it, mt, mqt, oldSing, pcTbl, p, plaTbl) -> do
       logNotice "interpConfirmName" $ dblQuote oldSing <> " has logged on as " <> s <> "."
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
       when (getPlaFlag IsAdmin p) . stopInacTimer i $ mq
-      movePC
-      notifyArrival i pt
+      notifyArrival i it mt mqt pcTbl plaTbl
       send mq . nl $ ""
       showMotd mq cols
       look ActionParams { plaId       = i
@@ -162,16 +151,29 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just False -> promptRetryName mq "" >> (void . modifyPla i interp . Just $ interpName)
   Nothing    -> promptRetryYesNo mq
   where
-    movePC = onWS $ \(t, ws) ->
-        let p         = (ws^.pcTbl)  ! i
-            p'        = p & rmId .~ iCentral
-            originIs  = (ws^.invTbl) ! iWelcome
-            originIs' = i `delete` originIs
-            destIs    = (ws^.invTbl) ! iCentral
-            destIs'   = sortInv et tt $ destIs ++ [i]
-        in putTMVar t (ws & pcTbl.at  i        ?~ p'
-                          & invTbl.at iWelcome ?~ originIs'
-                          & invTbl.at iCentral ?~ destIs')
+    helperSTM md = (,) <$> readTVar (md^.entTblTVar)
+                       <*> readTVar (md^.invTblTVar)
+                       <*> readTVar (md^.mobTblTVar)
+                       <*> readTVar (md^.msgQueueTblTVar)
+                       <*> readTVar (md^.pcTblTVar)
+                       <*> readTVar (md^.plaTblTVar)
+                       <*> readTVar (md^.typeTblTVar) -> \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+        let e        = et ! i
+            oldSing  = e^.sing
+            et'      = et & at i ?~ (e & sing .~ s)
+            originIs = i `delete` it ! iWelcome
+            destIs   = sortInv et' tt $ it ! iCentral ++ [i]
+            it'      = it & at iWelcome ?~ originIs & at iCentral ?~ destIs
+            pc        = (pcTbl ! i) & rmId .~ iCentral -- TODO: Parens needed?
+            pcTbl'    = pcTbl & at i ?~ pc
+            pla       = setPlaFlag IsAdmin (T.head s == 'Z') (plaTbl ! i) & interp .~ Nothing
+            plaTbl'   = plaTbl & at i ?~ pla
+        in do
+            writeTVar (md^.entTblTVar) et'
+            writeTVar (md^.invTblTVar) it'
+            writeTVar (md^.pcTblTVar)  pcTbl'
+            writeTVar (md^.plaTblTVar) plaTbl'
+            return (it', mt, mqt, oldSing, pcTbl', pla, plaTbl')
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
 
