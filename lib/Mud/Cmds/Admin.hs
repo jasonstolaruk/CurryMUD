@@ -9,11 +9,9 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
-import Mud.Data.State.Util.STM
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs
@@ -29,7 +27,6 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
 import Control.Exception (IOException)
@@ -51,7 +48,7 @@ import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
-import qualified Data.IntMap.Lazy as IM (IntMap, filter, keys)
+import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
@@ -152,7 +149,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (MsgWithTarget i mq cols target msg) = ask >>= \md -> (liftIO . atomically . helperSTM) >>= \(et, mqt) ->
+adminBoot (MsgWithTarget i mq cols target msg) = ask >>= \md -> (liftIO . atomically . helperSTM $ md) >>= \(et, mqt) ->
   case [ k | k <- IM.keys mqt, (et ! k)^.sing == target ] of
     []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
                                   \you must specify the full PC name of the player you wish to boot.)"
@@ -330,8 +327,8 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
-adminTell (MsgWithTarget i mq cols target msg) = ask >>= \md -> do
-    (et, mqt, pt) <- liftIO . atomically . helperSTM $ md
+adminTell (MsgWithTarget i mq cols target msg) = do
+    (et, mqt, pt) <- liftIO . atomically . helperSTM =<< ask
     let s                = (et ! i)^.sing
         piss             = mkPlaIdsSingsList et pt
         notFound         = wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently \
@@ -355,16 +352,16 @@ adminTell (MsgWithTarget i mq cols target msg) = ask >>= \md -> do
                           else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
     maybe notFound found . findFullNameForAbbrev target . map snd $ piss
   where
-    helperSTM md = (,) <$> readTVar (md^.entTblTVar)
-                       <*> readTVar (md^.msgQueueTblTVar)
-                       <*> readTVar (md^.plaTblTVar)
+    helperSTM md = (,,) <$> readTVar (md^.entTblTVar)
+                        <*> readTVar (md^.msgQueueTblTVar)
+                        <*> readTVar (md^.plaTblTVar)
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
 firstAdminTell :: Id -> Sing -> MudStack [T.Text]
 firstAdminTell i s = do
     modifyPlaFlag i IsNotFirstAdminTell True
-    return $ T.concat [ hintANSI
+    return [ T.concat [ hintANSI
                       , "Hint:"
                       , noHintANSI
                       , " the above is a message from "
@@ -379,7 +376,7 @@ firstAdminTell i s = do
                       , dfltColor
                       , " is the message you want to send to "
                       , s
-                      , "." ]
+                      , "." ] ]
 
 -----
 
@@ -428,14 +425,17 @@ adminWho p@(ActionParams { plaId, args }) = do
 
 
 mkPlaListTxt :: MudStack [T.Text]
-mkPlaListTxt = ask >>= \md -> (liftIO . atomically . helperSTM $ md) >>= \(et, pt) ->
-    let pis         = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ pt
-        (pis', pss) = unzip [ (pi, s) | pi <- pis, let s = (et ! pi)^.sing, then sortWith by s ]
-        pias        = zip pis' . styleAbbrevs Don'tBracket $ pss
+mkPlaListTxt = ask >>= \md -> (liftIO . atomically . helperSTM $ md) >>= \(et, mt, pcTbl, plaTbl) ->
+    let pis              = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ plaTbl
+        (pis', pss)      = unzip [ (pi, s) | pi <- pis, let s = (et ! pi)^.sing, then sortWith by s ]
+        pias             = zip pis' . styleAbbrevs Don'tBracket $ pss
+        mkPlaTxt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi mt pcTbl
+                           in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
     in return $ map mkPlaTxt pias ++ [ mkNumOfPlayersTxt pis <> " connected." ]
   where
-    helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar)
-    mkPlaTxt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi mt pt
-                       in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
+    helperSTM md = (,,,) <$> readTVar (md^.entTblTVar)
+                         <*> readTVar (md^.mobTblTVar)
+                         <*> readTVar (md^.pcTblTVar)
+                         <*> readTVar (md^.plaTblTVar)
     mkNumOfPlayersTxt (length -> nop) | nop == 1  = "1 player"
                                       | otherwise = showText nop <> " players"
