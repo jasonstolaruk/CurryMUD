@@ -157,7 +157,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
                        <*> readTVar (md^.msgQueueTblTVar)
                        <*> readTVar (md^.pcTblTVar)
                        <*> readTVar (md^.plaTblTVar)
-                       <*> readTVar (md^.typeTblTVar) -> \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+                       <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let e        = et ! i
             oldSing  = e^.sing
             et'      = et & at i ?~ (e & sing .~ s)
