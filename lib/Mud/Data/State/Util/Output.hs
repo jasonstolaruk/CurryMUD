@@ -57,12 +57,19 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
+-- TODO: Sort function definitions.
+
+
 prompt :: MsgQueue -> T.Text -> MudStack ()
 prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 send :: MsgQueue -> T.Text -> MudStack ()
-send mq = liftIO . atomically . writeTQueue mq . FromServer
+send = liftIO . atomically . sendSTM
+
+
+sendSTM :: MsgQueue -> T.Text -> STM ()
+sendSTM mq = writeTQueue mq . FromServer
 
 
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
@@ -148,15 +155,18 @@ bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
 
 
 massMsg :: Msg -> MudStack ()
-massMsg m = msgQueueTblTVar |$| readTMVarInNWS >=> \(IM.elems -> is) ->
-    forM_ is $ liftIO . atomically . flip writeTQueue m
+massMsg msg = liftIO . atomically . helperSTM =<< ask
+  where
+    helperSTM md = flip writeTQueue msg =<< (IM.elems <$> readTVar (md^.msgQueueTblTVar)) -- TODO: Parens?
 
 
 massSend :: T.Text -> MudStack ()
-massSend msg = getMqtPt >>= \(mqt, pt) -> do
-    let helper i | mq   <- mqt ! i
-                 , cols <- (pt ! i)^.columns = send mq . frame cols . wrapUnlines cols $ msg
-    forM_ (IM.keys pt) helper
+massSend msg = liftIO . atomically . helperSTM =<< ask
+  where
+    helperSTM md = (,) <$> readTVar (md^.msgQueueTblTVar) <*> readTVar (md^.plaTblTVar) >>= \(mqt, pt) ->
+        let helper i | mq   <- mqt ! i
+                     , cols <- (pt ! i)^.columns = sendSTM mq . frame cols . wrapUnlines cols $ msg
+        in forM_ (IM.keys pt) helper
 
 
 frame :: Cols -> T.Text -> T.Text
