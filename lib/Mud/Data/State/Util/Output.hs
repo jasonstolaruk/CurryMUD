@@ -3,7 +3,9 @@
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
                                   , bcastNl
+                                  , bcastNlSTM
                                   , bcastOthersInRm
+                                  , bcastSTM
                                   , expandPCEntName
                                   , frame
                                   , massMsg
@@ -17,6 +19,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , prompt
                                   , send
                                   , sendMsgBoot
+                                  , sendSTM
                                   , wrapSend ) where
 
 import Mud.ANSI
@@ -86,11 +89,15 @@ sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dflt
 
 
 bcast :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
-bcast mt mqt pcTbl plaTbl = mapM_ (\(msg, is) -> mapM_ (helper msg) is)
+bcast mt mqt pcTbl plaTbl = liftIO . atomically . bcastSTM mt mqt pcTbl plaTbl
+
+
+bcastSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> STM ()
+bcastSTM mt mqt pcTbl plaTbl = mapM_ (\(msg, is) -> mapM_ (helper msg) is)
   where
-    helper msg i | mq   <- mqt ! i
-                 , cols <- (plaTbl ! i)^.columns
-                 = send mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i mt pcTbl $ msg
+    helper msg i = let mq   = mqt ! i
+                       cols = (plaTbl ! i)^.columns
+                   in sendSTM mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i mt pcTbl $ msg
 
 
 parsePCDesig :: Id -> MobTbl -> PCTbl -> T.Text -> T.Text
@@ -130,8 +137,12 @@ expandPCEntName i mt pt ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
 
 
 bcastNl :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
-bcastNl mt mqt pcTbl plaTbl bs =
-    bcast mt mqt pcTbl plaTbl . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
+bcastNl mt mqt pcTbl plaTbl = liftIO . atomically . bcastNlSTM mt mqt pcTbl plaTbl
+
+
+bcastNlSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> STM ()
+bcastNlSTM mt mqt pcTbl plaTbl bs =
+    bcastSTM mt mqt pcTbl plaTbl . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
 
 
 bcastAdmins :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> MudStack ()

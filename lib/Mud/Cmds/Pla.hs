@@ -445,18 +445,28 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dblQuote "remove ring sack"
                                   , dfltColor
                                   , "." ]
-getAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
+getAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "get" i $ logMsgs
-    bcastNl mt mqt pcTbl plaTbl bs
   where
-    helper = onWS $ \(t, ws) ->
-        let (d, ri, _, ris, rc) = mkGetLookBindings i ws
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+        let (d, ri, _, ris, rc) = mkGetLookBindings i ct et pcTbl it
         in if uncurry (||) . over both (/= mempty) $ (ris, rc)
-          then let (eiss, ecs)           = resolveRmInvCoins i ws as ris rc
-                   (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Get ri i) (ws,  [], []     ) eiss
-                   (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ws', bs, logMsgs) ecs
-               in putTMVar t ws'' >> return (bs', logMsgs')
-          else    putTMVar t ws   >> return (mkBroadcast i "You don't see anything here to pick up.", [])
+          then let (eiss, ecs)          = resolveRmInvCoins i et mt pcTbl as ris rc
+                   (it', bs,  logMsgs ) = foldl' (helperGetDropEitherInv i et mt pcTbl tt d Get ri i) (it, [], []) eiss
+                   (ct', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ct, bs, logMsgs) ecs
+               in do
+                   writeTVar (md^.coinsTblTVar) ct'
+                   writeTVar (md^.invTblTVar)   it'
+                   bcastNlSTM mt mqt pcTbl plaTbl bs'
+                   return logMsgs'
+          else return (mkBroadcast i "You don't see anything here to pick up.", [])
 getAction p = patternMatchFail "getAction" [ showText p ]
 
 

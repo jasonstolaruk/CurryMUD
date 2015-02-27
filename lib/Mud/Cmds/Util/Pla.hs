@@ -126,12 +126,12 @@ armSubToSlot = \case Head      -> HeadS
 
 bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
 bugTypoLogger (Msg i mq msg) wl@(pp -> wl') =
-    (liftIO . atomically . helperSTM) |$| asks >=> \( view sing . (! i) -> s
-                                                    , mt
-                                                    , mqt
-                                                    , pcTbl@(view rmId . (! i) -> ri)
-                                                    , plaTbl
-                                                    , rt ) -> do
+    ask >>= (liftIO . atomically . helperSTM) >>= \( view sing . (! i) -> s
+                                                   , mt
+                                                   , mqt
+                                                   , pcTbl@(view rmId . (! i) -> ri)
+                                                   , plaTbl
+                                                   , rt ) -> do
     logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
     liftIO (try . logIt s ri $ (rt ! ri)^.rmName) >>= eitherRet (fileIOExHandler "bugTypoLogger")
     send mq . nlnl $ "Thank you."
@@ -215,16 +215,16 @@ helperGetDropEitherCoins :: Id
                          -> GetOrDrop
                          -> FromId
                          -> ToId
-                         -> (WorldState, [Broadcast], [T.Text])
+                         -> (CoinsTbl, [Broadcast], [T.Text])
                          -> Either [T.Text] Coins
-                         -> (WorldState, [Broadcast], [T.Text])
-helperGetDropEitherCoins i d god fi ti a@(ws, _, _) = \case
+                         -> (CoinsTbl, [Broadcast], [T.Text])
+helperGetDropEitherCoins i d god fi ti a@(ct, _, _) = \case
   Left  msgs -> a & _2 <>~ [ (msg, [i]) | msg <- msgs ]
-  Right c | (fc, tc)      <- over both ((ws^.coinsTbl) !) (fi, ti)
-          , ws'           <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                                & coinsTbl.at ti ?~ tc <> c
+  Right c | (fc, tc)      <- over both (ct !) (fi, ti)
+          , ct'           <- ct & at fi ?~ fc <> negateCoins c
+                                & at ti ?~ tc <> c
           , (bs, logMsgs) <- mkGetDropCoinsDesc i d god c
-          -> a & _1 .~ ws' & _2 <>~ bs & _3 <>~ logMsgs
+          -> a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
@@ -262,24 +262,29 @@ mkGodVerb Drop ThrPer = "drops"
 
 
 helperGetDropEitherInv :: Id
+                       -> EntTbl
+                       -> MobTbl
+                       -> PCTbl
+                       -> TypeTbl
                        -> PCDesig
                        -> GetOrDrop
                        -> FromId
                        -> ToId
-                       -> (WorldState, [Broadcast], [T.Text])
+                       -> (InvTbl, [Broadcast], [T.Text])
                        -> Either T.Text Inv
-                       -> (WorldState, [Broadcast], [T.Text])
-helperGetDropEitherInv i d god fi ti a@(ws, _, _) = \case
+                       -> (InvTbl, [Broadcast], [T.Text])
+helperGetDropEitherInv i et mt pt tt d god fi ti a@(it, _, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is | (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
-           , ws'             <- ws & invTbl.at fi ?~ fis \\ is
-                                   & invTbl.at ti ?~ sortInv et tt (tis ++ is)
-           , (bs', logMsgs') <- mkGetDropInvDesc i ws' d god is
-           -> a & _1 .~ ws' & _2 <>~ bs' & _3 <>~ logMsgs'
+  Right is                   -> let (fis, tis)    = over both (it !) (fi, ti)
+                                    it'           = it & at fi ?~ fis \\ is
+                                                       & at ti ?~ sortInv et tt (tis ++ is)
+                                    (bs, logMsgs) = mkGetDropInvDesc i et mt pt d god is
+                                in a & _1 .~ it' & _2 <>~ bs & _3 <>~ logMsgs
 
 
-mkGetDropInvDesc :: Id -> WorldState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
-mkGetDropInvDesc i ws d god (mkNameCountBothList i ws -> ncbs) | bs <- concatMap helper ncbs = (bs, extractLogMsgs i bs)
+mkGetDropInvDesc :: Id -> EntTbl -> MobTbl -> PCTbl -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
+mkGetDropInvDesc i et mt pt d god (mkNameCountBothList i et mt pt -> ncbs) =
+    let bs = concatMap helper ncbs in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _))
       | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], [i])
@@ -652,9 +657,9 @@ isNonStdLink _               = False
 -----
 
 
-mkGetLookBindings :: Id -> WorldState -> (PCDesig, Id, Inv, Inv, Coins)
-mkGetLookBindings i ws | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i ws
-                       , rc                                        <- (ws^.coinsTbl) ! ri = (d, ri, ris, ris', rc)
+mkGetLookBindings :: Id -> CoinsTbl -> EntTbl -> PCTbl -> InvTbl -> (PCDesig, Id, Inv, Inv, Coins)
+mkGetLookBindings i ct et pt it | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i et pt it
+                                , rc                                        <- ct ! ri = (d, ri, ris, ris', rc)
 
 
 -----
@@ -758,7 +763,14 @@ resolvePCInvCoins i ws as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ws 
 -----
 
 
-resolveRmInvCoins :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolveRmInvCoins i ws as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ws as is c
-                               , eiss               <- zipWith (curry procGecrMisRm) gecrs miss
-                               , ecs                <- map procReconciledCoinsRm rcs = (eiss, ecs)
+resolveRmInvCoins :: Id
+                  -> EntTbl
+                  -> MobTbl
+                  -> PCTbl
+                  -> Args
+                  -> Inv
+                  -> Coins
+                  -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolveRmInvCoins i et mt pt as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i et mt pt as is c
+                                     , eiss               <- zipWith (curry procGecrMisRm) gecrs miss
+                                     , ecs                <- map procReconciledCoinsRm rcs = (eiss, ecs)
