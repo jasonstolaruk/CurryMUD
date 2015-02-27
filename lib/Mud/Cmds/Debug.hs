@@ -27,16 +27,19 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))
-import Control.Concurrent (myThreadId)
+import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
+import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (both, over)
-import Control.Lens.Getter (use, views)
-import Control.Monad ((>=>), replicateM, replicateM_, unless)
+import Control.Lens.Getter (views)
+import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
+import Control.Monad ((>=>), replicateM, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask, runReaderT)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, foldl', sort)
 import Data.Maybe (fromJust, isNothing)
@@ -220,7 +223,7 @@ mkEnvListTxt = map (mkAssocTxt . over both . T.pack)
 debugLog :: Action
 debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
-    helper       = replicateM_ 100 . asks $ liftIO . void . forkIO . runReaderT heavyLogging
+    helper       = replicateM_ 100 $ liftIO . void . forkIO . runReaderT heavyLogging =<< ask
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
@@ -304,7 +307,7 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 debugRotate :: Action
-debugRotate (NoArgs' i mq) = (\md -> liftIO . readTVarIO $ md^.plaLogTblTVar) |$| asks >=> \plt -> do
+debugRotate (NoArgs' i mq) = ask >>= \md -> (liftIO . readTVarIO $ md^.plaLogTblTVar) >>= \plt -> do
     logPlaExec (prefixDebugCmd "rotate") i
     liftIO . atomically . writeTQueue (snd $ plt ! i) $ RotateLog
     ok mq
@@ -315,7 +318,7 @@ debugRotate p = withoutArgs debugRotate p
 
 
 debugTalk :: Action
-debugTalk (NoArgs i mq cols) = (\md -> liftIO . readTVarIO $ md^.talkAsyncTblTVar) |$| asks >=> \tat -> do
+debugTalk (NoArgs i mq cols) = ask >>= \md -> (liftIO . readTVarIO $ md^.talkAsyncTblTVar) >>= \tat -> do
     logPlaExec (prefixDebugCmd "talk") i
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . M.elems $ tat)
   where

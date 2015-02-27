@@ -149,16 +149,17 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (MsgWithTarget i mq cols target msg) = ask >>= \md -> (liftIO . atomically . helperSTM $ md) >>= \(et, mqt) ->
-  case [ k | k <- IM.keys mqt, (et ! k)^.sing == target ] of
-    []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note that \
-                                  \you must specify the full PC name of the player you wish to boot.)"
-    [bootI] | s <- (et ! i)^.sing -> if s == target
-              then wrapSend mq cols "You can't boot yourself."
-              else let bootMq = mqt ! bootI in do
-                  ok mq
-                  T.null msg ? dfltMsg bootI s bootMq :? customMsg bootI s bootMq
-    xs      -> patternMatchFail "adminBoot" [ showText xs ]
+adminBoot (MsgWithTarget i mq cols target msg) =
+    ask >>= \md -> md |$| (liftIO . atomically . helperSTM) >=> \(et, mqt) ->
+        case [ k | k <- IM.keys mqt, (et ! k)^.sing == target ] of
+          []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note \
+                                        \that you must specify the full PC name of the player you wish to boot.)"
+          [bootI] | s <- (et ! i)^.sing -> if s == target
+                    then wrapSend mq cols "You can't boot yourself."
+                    else let bootMq = mqt ! bootI in do
+                        ok mq
+                        T.null msg ? dfltMsg bootI s bootMq :? customMsg bootI s bootMq
+          xs      -> patternMatchFail "adminBoot" [ showText xs ]
   where
     helperSTM md             = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.msgQueueTblTVar)
     dfltMsg   bootI s bootMq = do
@@ -425,7 +426,7 @@ adminWho p@(ActionParams { plaId, args }) = do
 
 
 mkPlaListTxt :: MudStack [T.Text]
-mkPlaListTxt = ask >>= \md -> (liftIO . atomically . helperSTM $ md) >>= \(et, mt, pcTbl, plaTbl) ->
+mkPlaListTxt = ask >>= \md -> md |$| (liftIO . atomically . helperSTM) >=> \(et, mt, pcTbl, plaTbl) ->
     let pis              = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ plaTbl
         (pis', pss)      = unzip [ (pi, s) | pi <- pis, let s = (et ! pi)^.sing, then sortWith by s ]
         pias             = zip pis' . styleAbbrevs Don'tBracket $ pss

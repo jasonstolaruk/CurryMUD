@@ -237,5 +237,5 @@ getPlaLogQueue i = snd . (! i) <$> (liftIO . readTVarIO . view plaLogTblTVar =<<
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
 massLogPla modName (dblQuote -> funName) msg = liftIO . atomically . helperSTM =<< ask
   where
-    helperSTM md = (map snd . IM.elems <$> (readTVar $ md^.plaLogTblTVar)) >>=
+    helperSTM md = (map snd . IM.elems <$> readTVar (md^.plaLogTblTVar)) >>=
         mapM_ (registerMsgSTM (T.concat [ modName, " ", funName, ": ", msg ]))
