@@ -945,19 +945,25 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dblQuote $ "put " <> a <> " sack"
                       , dfltColor
                       , "." ]
-putAction (Lower' i as) = helper >>= \(bs, logMsgs) -> do
+putAction (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "put" i $ logMsgs
-    bcastNl mt mqt pcTbl plaTbl bs
   where
-    helper = onWS $ \(t, ws) ->
-      let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ws as
-      in if uncurry (||) . over both (/= mempty) $ (pis, pc)
-        then if T.head cn == rmChar && cn /= T.singleton rmChar
-          then if not . null $ ris
-            then shufflePutSTM i (t, ws) d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
-            else putTMVar t ws >> return (mkBroadcast i "You don't see any containers here.", [])
-          else shufflePutSTM i (t, ws) d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
-        else putTMVar t ws >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i et it pcTbl as
+        in if uncurry (||) . over both (/= mempty) $ (pis, pc)
+          then if T.head cn == rmChar && cn /= T.singleton rmChar
+            then if not . null $ ris
+              then shufflePutSTM i ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
+              else return (mkBroadcast i "You don't see any containers here.", [])
+            else shufflePutSTM i ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
+          else return (mkBroadcast i dudeYourHandsAreEmpty, [])
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -967,7 +973,14 @@ type PCCoins      = Coins
 
 
 shufflePutSTM :: Id
-              -> (TMVar WorldState, WorldState)
+              -> CoinsTbl
+              -> EntTbl
+              -> InvTbl
+              -> MobTbl
+              -> MsgQueueTbl
+              -> PCTbl
+              -> PlaTbl
+              -> TypeTbl
               -> PCDesig
               -> ConName
               -> IsConInRm
@@ -977,22 +990,29 @@ shufflePutSTM :: Id
               -> PCInv
               -> PCCoins
               -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-              -> STM ([Broadcast], [T.Text])
-shufflePutSTM i (t, ws) d cn icir as is c pis pc f | (conGecrs, conMiss, conRcs) <- resolveEntCoinNames i ws [cn] is c =
-    if null conMiss && (not . null $ conRcs)
-      then putTMVar t ws >> return (mkBroadcast i "You can't put something inside a coin.", [])
+              -> STM [T.Text]
+shufflePutSTM i ct et it mt mqt pcTbl plaTbl tt d cn icir as is c pis pc f =
+    let (conGecrs, conMiss, conRcs) <- resolveEntCoinNames i et mt pcTbl [cn] is c =
+    in if null conMiss && (not . null $ conRcs)
+      then return (mkBroadcast i "You can't put something inside a coin.", [])
       else case f . head . zip conGecrs $ conMiss of
-        Left  (mkBroadcast i -> bc) -> putTMVar t ws >> return (bc, [])
-        Right [ci] | e <- (ws^.entTbl) ! ci, typ <- (ws^.typeTbl) ! ci -> if typ /= ConType
-          then putTMVar t ws >> return (mkBroadcast i $ theOnLowerCap (e^.sing) <> " isn't a container.", [])
-          else let (gecrs, miss, rcs)    = resolveEntCoinNames i ws as pis pc
-                   eiss                  = zipWith (curry procGecrMisPCInv) gecrs miss
-                   ecs                   = map procReconciledCoinsPCInv rcs
-                   mnom                  = mkMaybeNthOfM icir ws ci e is
-                   (ws',  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i d Put mnom i ci e) (ws,  [], []     ) eiss
-                   (ws'', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i ci e) (ws', bs, logMsgs) ecs
-               in  putTMVar t ws'' >> return (bs', logMsgs')
-        Right _ -> putTMVar t ws   >> return (mkBroadcast i "You can only put things into one container at a time.", [])
+        Left  (mkBroadcast i -> bc) -> return (bc, [])
+        Right [ci] | e <- et ! ci, typ <- tt ! ci -> if typ /= ConType
+          then return (mkBroadcast i $ theOnLowerCap (e^.sing) <> " isn't a container.", [])
+          else let (gecrs, miss, rcs)   = resolveEntCoinNames i et mt pcTbl as pis pc
+                   eiss                 = zipWith (curry procGecrMisPCInv) gecrs miss
+                   ecs                  = map procReconciledCoinsPCInv rcs
+                   mnom                 = mkMaybeNthOfM icir et ci e is
+                   (it', bs,  logMsgs ) = foldl' (helperPutRemEitherInv i et mt pcTbl tt d Put mnom i ci e)
+                                                 (it, [], [])
+                                                 eiss
+                   (ct', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i ci e) (ct, bs, logMsgs) ecs
+               in do
+                   writeTVar (md^.coinsTblTVar) ct'
+                   writeTVar (md^.invTblTVar)   it'
+                   bcastNlSTM mt mqt pcTbl plaTbl bs'
+                   return logMsgs'
+        Right _ -> return (mkBroadcast i "You can only put things into one container at a time.", [])
 
 
 -----

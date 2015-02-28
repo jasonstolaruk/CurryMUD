@@ -317,16 +317,16 @@ helperPutRemEitherCoins :: Id
                         -> FromId
                         -> ToId
                         -> ToEnt
-                        -> (WorldState, [Broadcast], [T.Text])
+                        -> (CoinsTbl, [Broadcast], [T.Text])
                         -> Either [T.Text] Coins
-                        -> (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherCoins i d por mnom fi ti te a@(ws, _, _) = \case
+                        -> (CoinsTbl, [Broadcast], [T.Text])
+helperPutRemEitherCoins i d por mnom fi ti te a@(ct, _, _) = \case
   Left  msgs -> a & _2 <>~ [ (msg, [i]) | msg <- msgs ]
-  Right c | (fc, tc)      <- over both ((ws^.coinsTbl) !) (fi, ti)
-          , ws'           <- ws & coinsTbl.at fi ?~ fc <> negateCoins c
-                                & coinsTbl.at ti ?~ tc <> c
+  Right c | (fc, tc)      <- over both (ct !) (fi, ti)
+          , ct'           <- ct & at fi ?~ fc <> negateCoins c
+                                & at ti ?~ tc <> c
           , (bs, logMsgs) <- mkPutRemCoinsDescs i d por mnom c te
-          -> a & _1 .~ ws' & _2 <>~ bs & _3 <>~ logMsgs
+          -> a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
@@ -404,32 +404,46 @@ onTheGround _       = " on the ground"
 
 
 helperPutRemEitherInv :: Id
+                      -> EntTbl
+                      -> MobTbl
+                      -> PCTbl
+                      -> TypeTbl
                       -> PCDesig
                       -> PutOrRem
                       -> Maybe NthOfM
                       -> FromId
                       -> ToId
                       -> ToEnt
-                      -> (WorldState, [Broadcast], [T.Text])
+                      -> (InvTbl, [Broadcast], [T.Text])
                       -> Either T.Text Inv
-                      -> (WorldState, [Broadcast], [T.Text])
-helperPutRemEitherInv i d por mnom fi ti te a@(ws, bs, _) = \case
+                      -> (InvTbl, [Broadcast], [T.Text])
+helperPutRemEitherInv i et mt pt tt d por mnom fi ti te a@(it, bs, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is | (is', bs')      <- if ti `elem` is
                                   then (filter (/= ti) is, bs ++ [sorry])
                                   else (is, bs)
-           , (fis, tis)      <- over both ((ws^.invTbl) !) (fi, ti)
-           , ws'             <- ws & invTbl.at fi ?~ fis \\ is'
-                                   & invTbl.at ti ?~ (sortInv et tt . (tis ++) $ is')
-           , (bs'', logMsgs) <- mkPutRemInvDesc i ws' d por mnom is' te
-           -> a & _1 .~ ws' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs
+           , (fis, tis)      <- over both (it !) (fi, ti)
+           , it'             <- it & at fi ?~ fis \\ is'
+                                   & at ti ?~ (sortInv et tt $ tis ++ is')
+           , (bs'', logMsgs) <- mkPutRemInvDesc i et mt pt d por mnom is' te
+           -> a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs
   where
     sorry = ("You can't put the " <> te^.sing <> " inside itself.", [i])
 
 
-mkPutRemInvDesc :: Id -> WorldState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i ws d por mnom is (view sing -> ts) | bs <- concatMap helper . mkNameCountBothList i ws $ is
-                                                     = (bs, extractLogMsgs i bs)
+mkPutRemInvDesc :: Id
+                -> EntTbl
+                -> MobTbl
+                -> PCTbl
+                -> PCDesig
+                -> PutOrRem
+                -> Maybe NthOfM
+                -> Inv
+                -> ToEnt
+                -> ([Broadcast], [T.Text])
+mkPutRemInvDesc i et mt pt d por mnom is (view sing -> ts) =
+    let bs = concatMap helper . mkNameCountBothList i et mt pt $ is
+    in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
         [ (T.concat [ "You "
@@ -669,11 +683,11 @@ type IsConInRm  = Bool
 type InvWithCon = Inv
 
 
-mkMaybeNthOfM :: IsConInRm -> WorldState -> Id -> Ent -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM icir ws i (view sing -> s) is = guard icir >> (return . helper . dup $ matches)
+mkMaybeNthOfM :: IsConInRm -> EntTbl -> Id -> Ent -> InvWithCon -> Maybe NthOfM
+mkMaybeNthOfM icir et i (view sing -> s) is = guard icir >> (return . helper . dup $ matches)
   where
     helper  = succ . fromJust . elemIndex i *** length
-    matches = filter (\i' -> views sing (== s) $ (ws^.entTbl) ! i') is
+    matches = filter (\i' -> (et ! i')^.sing == s) is
 
 
 -----
@@ -688,15 +702,15 @@ mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
 -----
 
 
-mkPutRemBindings :: Id -> WorldState -> Args -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
-mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it pcTbl
-                               pis                                = (ws^.invTbl) ! i
-                               (pc, rc)                           = over both ((ws^.coinsTbl) !) (i, ri)
-                               cn                                 = last as
-                               (init -> argsWithoutCon)           = case as of
-                                                                      [_, _] -> as
-                                                                      _      -> (++ [cn]) . nub . init $ as
-                           in (d, ris, rc, pis, pc, cn, argsWithoutCon)
+mkPutRemBindings :: Id -> EntTbl -> InvTbl -> PCTbl -> Args -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
+mkPutRemBindings i et it pt as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it pt
+                                     pis                                = it ! i
+                                     (pc, rc)                           = over both (ct !) (i, ri)
+                                     cn                                 = last as
+                                     (init -> argsWithoutCon)           = case as of
+                                                                            [_, _] -> as
+                                                                            _      -> (++ [cn]) . nub . init $ as
+                                 in (d, ris, rc, pis, pc, cn, argsWithoutCon)
 
 
 -----
