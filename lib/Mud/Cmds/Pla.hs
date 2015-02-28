@@ -293,18 +293,28 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dblQuote "drop sword"
                       , dfltColor
                       , "." ]
-dropAction (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
+dropAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "drop" i $ logMsgs
-    bcastNl mt mqt pcTbl plaTbl bs
   where
-    helper = onWS $ \(t, ws) ->
-        let (d, ri, is, c) = mkDropReadyBindings i ws
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+        let (d, ri, is, c) = mkDropReadyBindings i ct et it pcTbl
         in if uncurry (||) . over both (/= mempty) $ (is, c)
-          then let (eiss, ecs)           = resolvePCInvCoins i ws as is c
-                   (ws',  bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i d Drop i ri) (ws,  [], []     ) eiss
-                   (ws'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ws', bs, logMsgs) ecs
-               in putTMVar t ws'' >> return (bs', logMsgs')
-          else    putTMVar t ws   >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+          then let (eiss, ecs)          = resolvePCInvCoins i et mt pcTbl as is c
+                   (it', bs,  logMsgs ) = foldl' (helperGetDropEitherInv i et mt pcTbl tt d Drop i ri) (it, [], []) eiss
+                   (ct', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ct, bs, logMsgs) ecs
+               in do
+                   writeTVar (md^.coinsTblTVar) ct'
+                   writeTVar (md^.invTblTVar)   it'
+                   bcastNlSTM mt mqt pcTbl plaTbl bs'
+                   return logMsgs'
+          else return (mkBroadcast i "You don't see anything here to pick up.", [])
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
@@ -321,7 +331,7 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , "." ]
 emote p@(ActionParams { plaId, args })
   | any (`elem` args) [ enc, enc <> "'s" ] = readWSTMVar >>= \ws ->
-      let (d, s, _, _, _) = mkCapStdDesig plaId ws
+      let (d, s, _, _, _) = mkCapStdDesig plaId et it pcTbl
           toSelfMsg       = bracketQuote . T.replace enc s . formatMsgArgs $ args
           toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
           toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
@@ -331,7 +341,7 @@ emote p@(ActionParams { plaId, args })
       in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
   | otherwise = readWSTMVar >>= \ws ->
-    let (d, s, _, _, _) = mkCapStdDesig plaId ws
+    let (d, s, _, _, _) = mkCapStdDesig plaId et it pcTbl
         msg             = punctuateMsg . T.unwords $ args
         toSelfMsg       = bracketQuote $ s <> " " <> msg
         toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
@@ -493,7 +503,7 @@ tryMove i mq cols dir = helper >>= \case
       look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
   where
     helper = onWS $ \(t, ws) ->
-        let (originD, s, p, originRi, (i `delete`) -> originIs) = mkCapStdDesig i ws
+        let (originD, s, p, originRi, (i `delete`) -> originIs) = mkCapStdDesig i et it pcTbl
             originRm                                            = (ws^.rmTbl) ! originRi
         in case findExit originRm dir of
           Nothing -> putTMVar t ws >> (return . Left $ sorry)
@@ -1053,7 +1063,7 @@ handleEgress i = i |$| getPCRmId >=> \ri -> do
 notifyEgress :: Id -> MudStack ()
 notifyEgress i =
     bcast mt mqt pcTbl plaTbl =<< [ [(nlnl $ serialize d <> " has left the game.", pis)] | ws <- readWSTMVar
-                                  , let (d, _, _, _, _) = mkCapStdDesig i ws, let pis = i `delete` pcIds d ]
+                                  , let (d, _, _, _, _) = mkCapStdDesig i et it pcTbl, let pis = i `delete` pcIds d ]
 
 
 -----
@@ -1463,7 +1473,7 @@ say p@(WithArgs i mq cols args@(a:_))
                                  , "." ]
     sorry             = advise p ["say"]
     sayTo ma (T.words -> (target:rest@(r:_))) = readWSTMVar >>= \ws ->
-        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i ws
+        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it pcTbl
             c                                         = (ws^.coinsTbl) ! ri
             in if uncurry (||) . over both (/= mempty) $ (ris', c)
           then case resolveRmInvCoins i ws [target] ris' c of
@@ -1519,7 +1529,7 @@ say p@(WithArgs i mq cols args@(a:_))
     simpleSayHelper ma rest = readWSTMVar >>= \ws ->
         let adverb          = case ma of Nothing  -> ""
                                          Just adv -> " " <> adv
-            (d, _, _, _, _) = mkCapStdDesig i ws
+            (d, _, _, _, _) = mkCapStdDesig i et it pcTbl
             msg             = formatMsg rest
             toSelfMsg       = T.concat [ "You say", adverb, ", ", msg ]
             toSelfBrdcst    = (nlnl toSelfMsg, [i])
@@ -1640,7 +1650,7 @@ unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (d, _, _, _, _) = mkCapStdDesig i ws
+        let (d, _, _, _, _) = mkCapStdDesig i et it pcTbl
             em              = (ws^.eqTbl) ! i
             is              = M.elems em
         in if not . null $ is

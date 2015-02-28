@@ -493,8 +493,8 @@ maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
 -----
 
 
-mkCapStdDesig :: Id -> EntTbl -> PCTbl -> InvTbl -> (PCDesig, Sing, PC, Id, Inv)
-mkCapStdDesig i et pt it | s                   <- (et ! i)^.sing
+mkCapStdDesig :: Id -> EntTbl -> InvTbl -> PCTbl -> (PCDesig, Sing, PC, Id, Inv)
+mkCapStdDesig i et it pt | s                   <- (et ! i)^.sing
                          , p@(view rmId -> ri) <- pt ! i
                          , ris                 <- it ! ri = (mkStdDesig i ws s True ris, s, p, ri, ris)
 
@@ -524,10 +524,10 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
 -----
 
 
-mkDropReadyBindings :: Id -> WorldState -> (PCDesig, Id, Inv, Coins)
-mkDropReadyBindings i ws | (d, _, _, ri, _) <- mkCapStdDesig i ws
-                         , is               <- (ws^.invTbl)   ! i
-                         , c                <- (ws^.coinsTbl) ! i = (d, ri, is, c)
+mkDropReadyBindings :: Id -> CoinsTbl -> EntTbl -> InvTbl -> PCTbl -> (PCDesig, Id, Inv, Coins)
+mkDropReadyBindings i ct et it pt | (d, _, _, ri, _) <- mkCapStdDesig i et it pt
+                                  , is               <- it ! i
+                                  , c                <- ct ! i = (d, ri, is, c)
 
 
 -----
@@ -658,7 +658,7 @@ isNonStdLink _               = False
 
 
 mkGetLookBindings :: Id -> CoinsTbl -> EntTbl -> PCTbl -> InvTbl -> (PCDesig, Id, Inv, Inv, Coins)
-mkGetLookBindings i ct et pt it | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i et pt it
+mkGetLookBindings i ct et pt it | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i et it pt
                                 , rc                                        <- ct ! ri = (d, ri, ris, ris', rc)
 
 
@@ -689,7 +689,7 @@ mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
 
 
 mkPutRemBindings :: Id -> WorldState -> Args -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
-mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i ws
+mkPutRemBindings i ws as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it pcTbl
                                pis                                = (ws^.invTbl) ! i
                                (pc, rc)                           = over both ((ws^.coinsTbl) !) (i, ri)
                                cn                                 = last as
@@ -754,10 +754,17 @@ putOnMsgs = mkReadyMsgs "put on" "puts on"
 -----
 
 
-resolvePCInvCoins :: Id -> WorldState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolvePCInvCoins i ws as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ws as is c
-                               , eiss               <- zipWith (curry procGecrMisPCInv) gecrs miss
-                               , ecs                <- map procReconciledCoinsPCInv rcs = (eiss, ecs)
+resolvePCInvCoins :: Id
+                  -> EntTbl
+                  -> MobTbl
+                  -> PCTbl
+                  -> Args
+                  -> Inv
+                  -> Coins
+                  -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolvePCInvCoins i et mt pt as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i et mt pt as is c
+                                     , eiss               <- zipWith (curry procGecrMisPCInv) gecrs miss
+                                     , ecs                <- map procReconciledCoinsPCInv rcs = (eiss, ecs)
 
 
 -----
