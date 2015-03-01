@@ -956,7 +956,7 @@ putAction (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs -
                             <*> readTVar (md^.pcTblTVar)
                             <*> readTVar (md^.plaTblTVar)
                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i et it mt pcTbl tt as
+        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ct et it mt pcTbl tt as
         in if uncurry (||) . over both (/= mempty) $ (pis, pc)
           then if T.head cn == rmChar && cn /= T.singleton rmChar
             then if not . null $ ris
@@ -1407,7 +1407,7 @@ remove (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
                             <*> readTVar (md^.pcTblTVar)
                             <*> readTVar (md^.plaTblTVar)
                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i et it mt pcTbl tt as
+        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ct et it mt pcTbl tt as
         in if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
             then shuffleRemSTM i ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm

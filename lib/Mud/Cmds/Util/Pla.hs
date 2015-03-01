@@ -547,29 +547,30 @@ mkDropReadyBindings i ct et it mt pt tt | (d, _, _, ri, _) <- mkCapStdDesig i et
 -----
 
 
-mkEntDescs :: Id -> Cols -> WorldState -> Inv -> T.Text
-mkEntDescs i cols ws eis = T.intercalate "\n" [ mkEntDesc i cols ws (ei, e) | ei <- eis, let e = (ws^.entTbl) ! ei ]
+mkEntDescs :: Id -> Cols -> CoinsTbl -> InvTbl -> EntTbl -> EqTbl -> MobTbl -> PCTbl -> TypeTbl -> Inv -> T.Text
+mkEntDescs i cols ct it entTbl eqTbl mt pt tt eis =
+    T.intercalate "\n" [ mkEntDesc i cols ct it entTbl eqTbl mt pt tt (ei, e) | ei <- eis, let e = entTbl ! ei ]
 
 
-mkEntDesc :: Id -> Cols -> WorldState -> (Id, Ent) -> T.Text
-mkEntDesc i cols ws (ei@(((ws^.typeTbl) !) -> t), e@(views entDesc (wrapUnlines cols) -> ed)) =
-    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ws ei $ e
-              MobType ->                 (ed <>) . mkEqDesc       i cols ws ei   e $ t
-              PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ws ei   e $ t
+mkEntDesc :: Id -> Cols -> CoinsTbl -> InvTbl -> EntTbl -> EqTbl -> MobTbl -> PCTbl -> TypeTbl -> (Id, Ent) -> T.Text
+mkEntDesc i cols ct it entTbl eqTbl mt pt tt (ei@((tt !) -> t), e@(views entDesc (wrapUnlines cols) -> ed)) =
+    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ct it entTbl mt pt ei $ e
+              MobType ->                 (ed <>) . mkEqDesc       i cols entTbl eqTbl mt pt ei e $ t
+              PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols entTbl eqTbl mt pt ei e $ t
               _       -> ed
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
     mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei mt pt = T.concat [ "You see a ", s, " ", r, "." ]
 
 
-mkInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> Ent -> T.Text
-mkInvCoinsDesc i cols ws descI (view sing -> descS)
-  | descIs <- (ws^.invTbl)   ! descI
-  , descC  <- (ws^.coinsTbl) ! descI = case (not . null $ descIs, descC /= mempty) of
+mkInvCoinsDesc :: Id -> Cols -> CoinsTbl -> InvTbl -> EntTbl -> MobTbl -> PCTbl -> Id -> Ent -> T.Text
+mkInvCoinsDesc i cols ct it et mt pt descI (view sing -> descS)
+  | descIs <- it ! descI
+  , descC  <- ct ! descI = case (not . null $ descIs, descC /= mempty) of
     (False, False) -> wrapUnlines cols (descI == i ? dudeYourHandsAreEmpty :? "The " <> descS <> " is empty.")
-    (True,  False) -> header <> mkEntsInInvDesc i cols ws descIs
-    (False, True ) -> header <>                                     mkCoinsSummary cols descC
-    (True,  True ) -> header <> mkEntsInInvDesc i cols ws descIs <> mkCoinsSummary cols descC
+    (True,  False) -> header <> mkEntsInInvDesc i cols et mt pt descIs
+    (False, True ) -> header <>                                           mkCoinsSummary cols descC
+    (True,  True ) -> header <> mkEntsInInvDesc i cols et mt pt descIs <> mkCoinsSummary cols descC
   where
     header | descI == i = nl "You are carrying:"
            | otherwise  = wrapUnlines cols $ "The " <> descS <> " contains:"
@@ -579,8 +580,9 @@ dudeYourHandsAreEmpty :: T.Text
 dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 
-mkEntsInInvDesc :: Id -> Cols -> WorldState -> Inv -> T.Text
-mkEntsInInvDesc i cols ws = T.unlines . concatMap (wrapIndent ind cols . helper) . mkStyledName_Count_BothList i ws
+mkEntsInInvDesc :: Id -> Cols -> EntTbl -> MobTbl -> PCTbl -> Inv -> T.Text
+mkEntsInInvDesc i cols et mt pt =
+    T.unlines . concatMap (wrapIndent ind cols . helper) . mkStyledName_Count_BothList i et mt pt
   where
     helper (pad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
     helper (pad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
@@ -602,31 +604,32 @@ mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . mkListFromCoins $
     helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
-mkEqDesc :: Id -> Cols -> WorldState -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ws descI (view sing -> descS) descT | descs <- descI == i ? mkDescsSelf :? mkDescsOther =
-    case descs of [] -> none
-                  _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
+mkEqDesc :: Id -> Cols -> EntTbl -> EqTbl -> MobTbl -> PCTbl -> Id -> Ent -> Type -> T.Text
+mkEqDesc i cols entTbl eqTbl mt pt descI (view sing -> descS) descT =
+    let descs = descI == i ? mkDescsSelf :? mkDescsOther
+    in case descs of [] -> none
+                     _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
   where
-    mkDescsSelf | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! i
+    mkDescsSelf | (ss, is) <- unzip . M.toList $ eqTbl ! i
                 , sns      <- [ pp s                  | s  <- ss ]
-                , es       <- [ (ws^.entTbl) ! ei     | ei <- is ]
+                , es       <- [ entTbl ! ei           | ei <- is ]
                 , ess      <- [ e^.sing               | e  <- es ]
                 , ens      <- [ fromJust $ e^.entName | e  <- es ]
                 , styleds  <- styleAbbrevs DoBracket ens = map helper . zip3 sns ess $ styleds
       where
         helper (T.breakOn " finger" -> (sn, _), es, styled) = T.concat [ parensPad 15 sn, es, " ", styled ]
-    mkDescsOther | (ss, is) <- unzip . M.toList $ (ws^.eqTbl) ! descI
+    mkDescsOther | (ss, is) <- unzip . M.toList $ eqTbl ! descI
                  , sns      <- [ pp s | s <- ss ]
-                 , ess      <- [ e^.sing | ei <- is, let e = (ws^.entTbl) ! ei ] = zipWith helper sns ess
+                 , ess      <- [ e^.sing | ei <- is, let e = entTbl ! ei ] = zipWith helper sns ess
       where
         helper (T.breakOn " finger" -> (sn, _)) es = parensPad 15 sn <> es
     none = wrapUnlines cols $ if
       | descI == i      -> dudeYou'reNaked
-      | descT == PCType -> parsePCDesig i ws $ d <> " doesn't have anything readied."
+      | descT == PCType -> parsePCDesig i mt pt $ d <> " doesn't have anything readied."
       | otherwise       -> theOnLowerCap descS   <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
       | descI == i      -> "You have readied the following equipment:"
-      | descT == PCType -> parsePCDesig i ws $ d <> " has readied the following equipment:"
+      | descT == PCType -> parsePCDesig i mt pt $ d <> " has readied the following equipment:"
       | otherwise       -> theOnLowerCap descS   <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig descI mt pt descS The
 
@@ -710,6 +713,7 @@ mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
 
 
 mkPutRemBindings :: Id
+                 -> CoinsTbl
                  -> EntTbl
                  -> InvTbl
                  -> MobTbl
@@ -717,14 +721,14 @@ mkPutRemBindings :: Id
                  -> TypeTbl
                  -> Args
                  -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
-mkPutRemBindings i et it mt pt tt as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it mt pt tt
-                                           pis                                = it ! i
-                                           (pc, rc)                           = over both (ct !) (i, ri)
-                                           cn                                 = last as
-                                           (init -> argsWithoutCon)           = case as of
-                                                                                  [_, _] -> as
-                                                                                  _      -> (++ [cn]) . nub . init $ as
-                                       in (d, ris, rc, pis, pc, cn, argsWithoutCon)
+mkPutRemBindings i ct et it mt pt tt as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it mt pt tt
+                                              pis                      = it ! i
+                                              (pc, rc)                 = over both (ct !) (i, ri)
+                                              cn                       = last as
+                                              (init -> argsWithoutCon) = case as of
+                                                                           [_, _] -> as
+                                                                           _      -> (++ [cn]) . nub . init $ as
+                                          in (d, ris, rc, pis, pc, cn, argsWithoutCon)
 
 
 -----
