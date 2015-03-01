@@ -164,7 +164,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
             originIs = i `delete` it ! iWelcome
             destIs   = sortInv et' tt $ it ! iCentral ++ [i]
             it'      = it & at iWelcome ?~ originIs & at iCentral ?~ destIs
-            pc        = (pcTbl ! i) & rmId .~ iCentral -- TODO: Parens needed?
+            pc        = pcTbl ! i & rmId .~ iCentral
             pcTbl'    = pcTbl & at i ?~ pc
             pla       = setPlaFlag IsAdmin (T.head s == 'Z') (plaTbl ! i) & interp .~ Nothing
             plaTbl'   = plaTbl & at i ?~ pla

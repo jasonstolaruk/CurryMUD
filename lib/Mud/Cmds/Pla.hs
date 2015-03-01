@@ -51,7 +51,9 @@ import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ReaderT, ask)
 import Control.Monad.Reader (ask)
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Data.Conduit -- TODO: (($$), (=$))
 import Data.Function (on)
@@ -200,7 +202,7 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 
 
 about :: Action
-about (NoArgs i mq cols) = do
+about (NoArgs i mq cols) = do -- TODO: Conduit.
     logPlaExec "about" i
     -- helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
     runResourceT $ source $$ conduit =$ sink
@@ -208,7 +210,7 @@ about (NoArgs i mq cols) = do
     -- helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
     source  = CB.sourceFile aboutFile
     conduit = CT.decodeUtf8
-    sink :: Sink T.Text (ResourceT (StateT MudState IO)) ()
+    sink :: Sink T.Text (ResourceT (ReaderT MudData IO)) ()
     sink    = awaitForever $ lift . lift . multiWrapSend mq cols . T.lines
 about p = withoutArgs about p
 
@@ -1132,7 +1134,11 @@ ready (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
                    bs                          = rcs |!| mkBroadcast i "You can't ready coins."
                    (eqTbl', it', bs', logMsgs) = foldl' (helperReady i armTbl clothTbl conTbl entTbl mt tt wt d)
                                                         (eqTbl, it, bs, []) . zip eiss $ mrols
-               in return logMsgs -- TODO
+               in do
+                   writeTVar (md^.eqTblTVar)  eqTbl'
+                   writeTVar (md^.invTblTVar) it'
+                   bcastNlSTM mt mqt pcTbl plaTbl bs'
+                   return logMsgs
           else return (mkBroadcast i dudeYourHandsAreEmpty, [])
 ready p = patternMatchFail "ready" [ showText p ]
 
