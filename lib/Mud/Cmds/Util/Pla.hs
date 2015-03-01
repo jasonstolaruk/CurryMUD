@@ -545,8 +545,8 @@ mkDropReadyBindings i ct et it mt pt tt | (d, _, _, ri, _) <- mkCapStdDesig i et
 -----
 
 
-mkEntDescs :: Id -> Cols -> CoinsTbl -> InvTbl -> EntTbl -> EqTbl -> MobTbl -> PCTbl -> TypeTbl -> Inv -> T.Text
-mkEntDescs i cols ct it entTbl eqTbl mt pt tt eis =
+mkEntDescs :: Id -> Cols -> CoinsTbl -> EntTbl -> EqTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> Inv -> T.Text
+mkEntDescs i cols ct entTbl eqTbl it mt pt tt eis =
     T.intercalate "\n" [ mkEntDesc i cols ct it entTbl eqTbl mt pt tt (ei, e) | ei <- eis, let e = entTbl ! ei ]
 
 

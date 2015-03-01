@@ -50,7 +50,6 @@ import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ReaderT, ask)
-import Control.Monad.Reader (ask)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Data.Conduit -- TODO: (($$), (=$))
@@ -380,21 +379,34 @@ emote p@(ActionParams { plaId, args })
 
 
 equip :: Action
-equip (NoArgs i mq cols) = send mq . nl =<< [ mkEqDesc i cols ws i e PCType | (ws, e) <- getEnt' i ]
-equip (LowerNub i mq cols as) = do
-    (ws, em@(M.elems -> is)) <- getEq' i
-    send mq $ if not . M.null $ em
-      then let (gecrs, miss, rcs)           = resolveEntCoinNames i ws as is mempty
-               eiss                         = zipWith (curry procGecrMisPCEq) gecrs miss
-               invDesc                      = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc | not . null $ rcs = wrapUnlinesNl cols "You don't have any coins among your readied \
-                                                                 \equipment."
-                         | otherwise        = ""
+equip (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(entTbl, eqTbl, mt, pt) ->
+    send mq . nl . mkEqDesc i cols entTbl eqTbl mt pt i (entTbl ! i) $ PCType
+  where
+    helperSTM md = (,,,) <$> readTVar (md^.entTblTVar)
+                         <*> readTVar (md^.eqTblTVar)
+                         <*> readTVar (md^.mobTblTVar)
+                         <*> readTVar (md^.pcTblTVar)
+equip (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \(ct, entTbl, eqTbl, it, mt, pt, tt) ->
+    let em@(M.elems -> is) = eqTbl ! i
+    in send mq $ if not . M.null $ em
+      then let (gecrs, miss, rcs)              = resolveEntCoinNames i entTbl mt pt as is mempty
+               eiss                            = zipWith (curry procGecrMisPCEq) gecrs miss
+               helperEitherInv acc (Left  msg) = (acc <>) . wrapUnlinesNl cols $ msg
+               helperEitherInv acc (Right is ) = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pt tt is
+               invDesc                         = foldl' helperEitherInv "" eiss
+               coinsDesc | not . null $ rcs    = wrapUnlinesNl cols "You don't have any coins among your readied \
+                                                                    \equipment."
+                         | otherwise           = ""
            in invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYou'reNaked
   where
-    helperEitherInv _  acc (Left  msg) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperEitherInv ws acc (Right is ) = nl $ acc <> mkEntDescs i cols ws is
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.eqTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.typeTblTVar)
 equip p = patternMatchFail "equip" [ showText p ]
 
 
@@ -469,7 +481,7 @@ getAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsg
     unless (null logMsgs) . logPlaOut "get" i $ logMsgs
   where
     helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblVar)
+                            <*> readTVar (md^.entTblTVar)
                             <*> readTVar (md^.invTblTVar)
                             <*> readTVar (md^.mobTblTVar)
                             <*> readTVar (md^.msgQueueTblTVar)
@@ -773,7 +785,7 @@ inv (LowerNub i mq cols as) = i |$| getInvCoins' >=> \(ws, (is, c)) ->
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
     helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
+    helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pcTbl tt is
     helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 inv p = patternMatchFail "inv" [ showText p ]
@@ -815,7 +827,7 @@ look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
           else    putTMVar t ws >> return ( Left . wrapUnlinesNl cols $ "You don't see anything here to look at."
                                           , Nothing )
     helperLookEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ws is
+    helperLookEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pcTbl tt is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 look p = patternMatchFail "look" [ showText p ]
@@ -1742,7 +1754,7 @@ unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
             em              = (ws^.eqTbl) ! i
             is              = M.elems em
         in if not . null $ is
-          then let (gecrs, miss, rcs)  = resolveEntCoinNames i ws as is mempty
+          then let (gecrs, miss, rcs)  = resolveEntCoinNames i et mt pcTbl as is mempty
                    eiss                = zipWith (curry procGecrMisPCEq) gecrs miss
                    bs                  = rcs |!| mkBroadcast i "You can't unready coins."
                    (ws', bs', logMsgs) = foldl' (helperUnready i d em) (ws, bs, []) eiss
@@ -1903,7 +1915,7 @@ whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
   then whatInvEnts i cols ws it n (head gecrs) is
   else T.concat . map (whatInvCoins cols it n) $ rcs
   where
-    resolveName | (is, c) <- getLocInvCoins, (gecrs, _, rcs) <- resolveEntCoinNames i ws [n] is c = (is, gecrs, rcs)
+    resolveName | (is, c) <- getLocInvCoins, (gecrs, _, rcs) <- resolveEntCoinNames i et mt pcTbl [n] is c = (is, gecrs, rcs)
     getLocInvCoins    = case it of PCInv -> (((ws^.invTbl) !) *** ((ws^.coinsTbl) !)) . dup $ i
                                    PCEq  -> (M.elems $ (ws^.eqTbl) ! i, mempty)
                                    RmInv -> (((ws^.invTbl) !) *** ((ws^.coinsTbl) !)) . dup $ ri
