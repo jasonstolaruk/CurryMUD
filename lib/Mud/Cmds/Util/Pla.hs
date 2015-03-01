@@ -75,7 +75,7 @@ import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, at, both, over, to)
+import Control.Lens (_1, _2, _3, _4, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard)
@@ -753,18 +753,16 @@ mkThrPerPro s      = patternMatchFail "mkThrPerPro" [ showText s ]
 
 
 moveReadiedItem :: Id
-                -> (WorldState, [Broadcast], [T.Text])
+                -> (EqTbl, InvTbl, [Broadcast], [T.Text])
                 -> EqMap
                 -> Slot
                 -> Id
                 -> (T.Text, Broadcast)
-                -> (WorldState, [Broadcast], [T.Text])
-moveReadiedItem i a@(ws, _, _) em s ei (msg, b)
-  | is  <- (ws^.invTbl) ! i
-  , ws' <- ws & invTbl.at i ?~ filter (/= ei) is
-              & eqTbl.at  i ?~ (em & at s ?~ ei)
-  , bs  <- mkBroadcast i msg ++ [b]
-  = a & _1 .~ ws' & _2 <>~ bs & _3 <>~ [msg]
+                -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+moveReadiedItem i a@(et, it, _, _) em s ei (msg, b) = let et' = et & at i ?~ (em & at s ?~ ei)
+                                                          it' = it & at i ?~ filter (/= ei) (it ! i)
+                                                          bs  = mkBroadcast i msg ++ [b]
+                                                      in a & _1 .~ et' & _2 .~ it' & _3 <>~ bs & _4 <>~ [msg]
 
 
 -----
