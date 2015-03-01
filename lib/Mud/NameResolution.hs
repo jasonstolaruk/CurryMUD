@@ -252,10 +252,10 @@ resolveEntCoinNamesWithRols :: Id
                             -> Inv
                             -> Coins
                             -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNamesWithRols i et mt pt (map T.toLower -> as) is c
-  | (unzip -> (gecrs, mrols)) <- map (mkGecrWithRol i et mt pt is c) as
-  , (gecrs', miss, rcs)       <- expandGecrs c gecrs
-  = (gecrs', mrols, miss, rcs)
+resolveEntCoinNamesWithRols i et mt pt (map T.toLower -> as) is c =
+    let (unzip -> (gecrs, mrols)) = map (mkGecrWithRol i et mt pt is c) as
+        (gecrs', miss, rcs)       = expandGecrs c gecrs
+    in (gecrs', mrols, miss, rcs)
 
 
 mkGecrWithRol :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)

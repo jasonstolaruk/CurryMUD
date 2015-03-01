@@ -1110,45 +1110,72 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dblQuote "ready sword"
                       , dfltColor
                       , "." ]
-ready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
+ready (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "ready" i $ logMsgs
-    bcastNl mt mqt pcTbl plaTbl bs
   where
-    helper = onWS $ \(t, ws) ->
-        let (d, _, is, c) = mkDropReadyBindings i ct et it mt pcTbl tt
+    helperSTM md = (,,,,,,) <$> readTVar (md^.armTblTVar) -- TODO: We don't really need to get all these tables here.
+                            <*> readTVar (md^.clothTblTVar)
+                            <*> readTVar (md^.conTblTVar)
+                            <*> readTVar (md^.entTblVar)
+                            <*> readTVar (md^.eqTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar)
+                            <*> readTVar (md^.wpnTblTVar) >>= \(armTbl, clothTbl, conTbl, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) ->
+        let (d, _, is, c) = mkDropReadyBindings i coinsTbl et it mt pcTbl tt
         in if uncurry (||) . over both (/= mempty) $ (is, c)
-          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
+          then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i et mt pcTbl as is mempty
                    eiss                      = zipWith (curry procGecrMisReady) gecrs miss
                    bs                        = rcs |!| mkBroadcast i "You can't ready coins."
-                   (ws', bs', logMsgs)       = foldl' (helperReady i d) (ws, bs, []) . zip eiss $ mrols
-               in putTMVar t ws' >> return (bs', logMsgs)
-          else    putTMVar t ws  >> return (mkBroadcast i dudeYourHandsAreEmpty, [])
+                   (ws', bs', logMsgs)       = foldl' (helperReady i armTbl clothTbl conTbl entTbl eqTbl mt tt wt d) (ws, bs, []) . zip eiss $ mrols
+               in return logMsgs
+          else return (mkBroadcast i dudeYourHandsAreEmpty, [])
 ready p = patternMatchFail "ready" [ showText p ]
 
 
 helperReady :: Id
+            -> ArmTbl
+            -> ClothTbl
+            -> ConTbl
+            -> EntTbl
+            -> EqTbl
+            -> MobTbl
+            -> TypeTbl
+            -> WpnTbl
             -> PCDesig
             -> (WorldState, [Broadcast], [T.Text])
             -> (Either T.Text Inv, Maybe RightOrLeft)
             -> (WorldState, [Broadcast], [T.Text])
-helperReady i d a (eis, mrol) = case eis of
+helperReady i armTbl clothTbl conTbl entTbl eqTbl mt tt wt d a (eis, mrol) = case eis of
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is                   -> foldl' (readyDispatcher i d mrol) a is
+  Right is                   -> foldl' (readyDispatcher i armTbl clothTbl conTbl entTbl eqTbl mt tt wt d mrol) a is
 
 
 readyDispatcher :: Id
+                -> ArmTbl
+                -> ClothTbl
+                -> ConTbl
+                -> EntTbl
+                -> EqTbl
+                -> MobTbl
+                -> TypeTbl
+                -> WpnTbl
                 -> PCDesig
                 -> Maybe RightOrLeft
                 -> (WorldState, [Broadcast], [T.Text])
                 -> Id
                 -> (WorldState, [Broadcast], [T.Text])
-readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = maybe sorry (\f -> f i d mrol a ei e) mf
+readyDispatcher i armTbl clothTbl conTbl entTbl eqTbl mt tt wt d mrol a@(ws, _, _) ei@((entTbl !) -> e) =
+    maybe sorry (\f -> f d mrol a ei e) mf
   where
-    mf = case (ws^.typeTbl) ! ei of
-      ClothType -> Just readyCloth
-      ConType   -> toMaybe (view isCloth $ (ws^.conTbl) ! ei) readyCloth
-      WpnType   -> Just readyWpn
-      ArmType   -> Just readyArm
+    mf = case tt ! ei of
+      ClothType -> Just $ readyCloth i clothTbl entTbl eqTbl mt
+      ConType   -> toMaybe ((conTbl ! ei)^.isCloth) $ readyCloth i clothTbl entTbl eqTbl mt
+      WpnType   -> Just $ readyWpn i entTbl eqTbl mt wt
+      ArmType   -> Just $ readyArm i armTbl entTbl eqTbl
       _         -> Nothing
     sorry | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." = a & _2 <>~ b
 
@@ -1157,16 +1184,20 @@ readyDispatcher i d mrol a@(ws, _, _) ei@(((ws^.entTbl) !) -> e) = maybe sorry (
 
 
 readyCloth :: Id
+           -> ClothTbl
+           -> EntTbl
+           -> EqTbl
+           -> MobTbl
            -> PCDesig
            -> Maybe RightOrLeft
            -> (WorldState, [Broadcast], [T.Text])
            -> Id
            -> Ent
            -> (WorldState, [Broadcast], [T.Text])
-readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
-    let em = (ws^.eqTbl)    ! i
-        c  = (ws^.clothTbl) ! ei
-    in case maybe (getAvailClothSlot ws i c em) (getDesigClothSlot ws e c em) mrol of
+readyCloth i ct entTbl eqTbl mt d mrol a@(ws, _, _) ei e@(view sing -> s) =
+    let em = eqTbl ! i
+        c  = ct    ! ei
+    in case maybe (getAvailClothSlot mt i c em) (getDesigClothSlot entTbl e c em) mrol of
       Left  (mkBroadcast i -> b) -> a & _2 <>~ b
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyClothMsgs slot $ c
   where
@@ -1183,12 +1214,12 @@ readyCloth i d mrol a@(ws, _, _) ei e@(view sing -> s) =
                      , (T.concat [ serialize d, " wears ",  aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
         slideMsgs  = (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
                      , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-        p          = views sex mkPossPro $ (ws^.mobTbl) ! i
+        p          = views sex mkPossPro $ mt ! i
         otherPCIds = i `delete` pcIds d
 
 
-getAvailClothSlot :: WorldState -> Id -> Cloth -> EqMap -> Either T.Text Slot
-getAvailClothSlot ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.hand = procMaybe $ case c of
+getAvailClothSlot :: MobTbl -> Id -> Cloth -> EqMap -> Either T.Text Slot
+getAvailClothSlot mt i c em | m <- mt ! i, s <- m^.sex, h <- m^.hand = procMaybe $ case c of
   Earring  -> getEarringSlotForSex s `mplus` (getEarringSlotForSex . otherSex $ s)
   NoseRing -> findAvailSlot em noseRingSlots
   Necklace -> findAvailSlot em necklaceSlots
@@ -1196,7 +1227,7 @@ getAvailClothSlot ws i c em | m <- (ws^.mobTbl) ! i, s <- m^.sex, h <- m^.hand =
   Ring     -> getRingSlot s h
   _        -> maybeSingleSlot em . clothToSlot $ c
   where
-    procMaybe                = maybe (Left . sorryFullClothSlots ws c $ em) Right
+    procMaybe                = maybe (Left . sorryFullClothSlots entTbl c $ em) Right
     getEarringSlotForSex s   = findAvailSlot em $ case s of
       Male   -> lEarringSlots
       Female -> rEarringSlots
@@ -1232,17 +1263,17 @@ rBraceletSlots = [ BraceletR1S .. BraceletR3S ]
 lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
 
 
-sorryFullClothSlots :: WorldState -> Cloth -> EqMap -> T.Text
-sorryFullClothSlots ws c@(pp -> c') em
+sorryFullClothSlots :: EntTbl -> Cloth -> EqMap -> T.Text
+sorryFullClothSlots et c@(pp -> c') em
   | c `elem` [ Earring .. Ring ]               = "You can't wear any more " <> c'       <> "s."
   | c `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn c' <> "."
   | otherwise = let i = em^.at (clothToSlot c).to fromJust
-                    e = (ws^.entTbl) ! i
+                    e = et ! i
                 in "You're already wearing " <> aOrAn (e^.sing) <> "."
 
 
-getDesigClothSlot :: WorldState -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigClothSlot ws (view sing -> s) c em rol
+getDesigClothSlot :: EntTbl -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigClothSlot et (view sing -> s) c em rol
   | c `elem` [ NoseRing, Necklace ] ++ [ Shirt .. Cloak ] = Left sorryCan'tWearThere
   | isRingRol rol, c /= Ring                              = Left sorryCan'tWearThere
   | c == Ring, not . isRingRol $ rol                      = Left ringHelp
@@ -1250,7 +1281,7 @@ getDesigClothSlot ws (view sing -> s) c em rol
     Earring  -> maybe (Left  sorryEarring)  Right (findSlotFromList rEarringSlots  lEarringSlots)
     Bracelet -> maybe (Left  sorryBracelet) Right (findSlotFromList rBraceletSlots lBraceletSlots)
     Ring     -> maybe (Right slotFromRol)
-                      (\i -> let e = (ws^.entTbl) ! i in Left . sorryRing slotFromRol $ e)
+                      (\i -> let e = et ! i in Left . sorryRing slotFromRol $ e)
                       (em^.at slotFromRol)
     _        -> patternMatchFail "getDesigClothSlot" [ showText c ]
   where
@@ -1285,37 +1316,43 @@ sorryFullClothSlotsOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any 
 
 
 readyWpn :: Id
+         -> EntTbl
+         -> EqTbl
+         -> MobTbl
+         -> WpnTbl
          -> PCDesig
          -> Maybe RightOrLeft
          -> (WorldState, [Broadcast], [T.Text])
          -> Id
          -> Ent
          -> (WorldState, [Broadcast], [T.Text])
-readyWpn i d mrol a@(ws, _, _) ei e@(view sing -> s) | em  <- (ws^.eqTbl)  ! i
-                                                     , w   <- (ws^.wpnTbl) ! ei
-                                                     , sub <- w^.wpnSub = if not . isSlotAvail em $ BothHandsS
-  then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _2 <>~ b
-  else case maybe (getAvailWpnSlot ws i em) (getDesigWpnSlot ws e em) mrol of
-    Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-    Right slot  -> case sub of
-      OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", s, " with your ", pp slot, "." ]
-                                   , ( T.concat [ serialize d, " wields ", aOrAn s, " with ", p, " ", pp slot, "." ]
-                                     , otherPCIds ) )
-                   in moveReadiedItem i a em slot ei readyMsgs
-      TwoHanded
-        | all (isSlotAvail em) [ RHandS, LHandS ] ->
-            let readyMsgs = ( "You wield the " <> s <> " with both hands."
-                            , ( T.concat [ serialize d, " wields ", aOrAn s, " with both hands." ], otherPCIds ) )
-            in moveReadiedItem i a em BothHandsS ei readyMsgs
-        | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> s <> "."
-                       in a & _2 <>~ b
+readyWpn i entTbl eqTbl mt wt d mrol a@(ws, _, _) ei e@(view sing -> s) =
+    let em  <- eqTbl  ! i
+        w   <- wt ! ei
+        sub <- w^.wpnSub
+    in if not . isSlotAvail em $ BothHandsS
+      then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _2 <>~ b
+      else case maybe (getAvailWpnSlot mt i em) (getDesigWpnSlot entTbl e em) mrol of
+        Left  (mkBroadcast i -> b) -> a & _2 <>~ b
+        Right slot  -> case sub of
+          OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", s, " with your ", pp slot, "." ]
+                                       , ( T.concat [ serialize d, " wields ", aOrAn s, " with ", p, " ", pp slot, "." ]
+                                         , otherPCIds ) )
+                       in moveReadiedItem i a em slot ei readyMsgs
+          TwoHanded
+            | all (isSlotAvail em) [ RHandS, LHandS ] ->
+                let readyMsgs = ( "You wield the " <> s <> " with both hands."
+                                , ( T.concat [ serialize d, " wields ", aOrAn s, " with both hands." ], otherPCIds ) )
+                in moveReadiedItem i a em BothHandsS ei readyMsgs
+            | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> s <> "."
+                           in a & _2 <>~ b
   where
-    p          = views sex mkPossPro $ (ws^.mobTbl) ! i
+    p          = mkPossPro $ (mt ! i)^.sex
     otherPCIds = i `delete` pcIds d
 
 
-getAvailWpnSlot :: WorldState -> Id -> EqMap -> Either T.Text Slot
-getAvailWpnSlot ws i em | (view hand -> h@(otherHand -> oh)) <- (ws^.mobTbl) ! i =
+getAvailWpnSlot :: MobTbl -> Id -> EqMap -> Either T.Text Slot
+getAvailWpnSlot mt i em | (view hand -> h@(otherHand -> oh)) <- mt ! i =
     maybe (Left "You're already wielding two weapons.")
           Right
           (findAvailSlot em . map getSlotForHand $ [ h, oh ])
@@ -1325,11 +1362,11 @@ getAvailWpnSlot ws i em | (view hand -> h@(otherHand -> oh)) <- (ws^.mobTbl) ! i
                                  _     -> patternMatchFail "getAvailWpnSlot getSlotForHand" [ showText h ]
 
 
-getDesigWpnSlot :: WorldState -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigWpnSlot ws (views sing aOrAn -> s) em rol
+getDesigWpnSlot :: EntTbl -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigWpnSlot et (views sing aOrAn -> s) em rol
   | isRingRol rol = Left $ "You can't wield " <> s <> " with your finger!"
   | otherwise     = maybe (Right desigSlot)
-                          (\i -> let e = (ws^.entTbl) ! i in Left . sorry $ e)
+                          (\i -> let e = et ! i in Left . sorry $ e)
                           (em^.at desigSlot)
   where
     sorry (views sing aOrAn -> wpnS) = T.concat [ "You're already wielding "
@@ -1346,16 +1383,19 @@ getDesigWpnSlot ws (views sing aOrAn -> s) em rol
 
 
 readyArm :: Id
+         -> ArmTbl
+         -> EntTbl
+         -> EqTbl
          -> PCDesig
          -> Maybe RightOrLeft
          -> (WorldState, [Broadcast], [T.Text])
          -> Id
          -> Ent
          -> (WorldState, [Broadcast], [T.Text])
-readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
-    let em                   = (ws^.eqTbl)  ! i
-        (view armSub -> sub) = (ws^.armTbl) ! ei
-    in case maybe (getAvailArmSlot ws sub em) sorryCan'tWearThere mrol of
+readyArm i armTbl entTbl eqTbl d mrol a@(ws, _, _) ei (view sing -> s) =
+    let em                   = eqTbl  ! i
+        (view armSub -> sub) = armTbl ! ei
+    in case maybe (getAvailArmSlot entTbl sub em) sorryCan'tWearThere mrol of
       Left  (mkBroadcast i -> b) -> a & _2 <>~ b
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyArmMsgs $ sub
   where
@@ -1368,12 +1408,12 @@ readyArm i d mrol a@(ws, _, _) ei (view sing -> s) =
       _      -> donMsgs                       i d s
 
 
-getAvailArmSlot :: WorldState -> ArmSub -> EqMap -> Either T.Text Slot
-getAvailArmSlot ws sub em = procMaybe . maybeSingleSlot em . armSubToSlot $ sub
+getAvailArmSlot :: EntTbl -> ArmSub -> EqMap -> Either T.Text Slot
+getAvailArmSlot et sub em = procMaybe . maybeSingleSlot em . armSubToSlot $ sub
   where
     procMaybe        = maybe (Left sorryFullArmSlot) Right
     sorryFullArmSlot = let i = em^.at (armSubToSlot sub).to fromJust
-                           e = (ws^.entTbl) ! i
+                           e = et ! i
                        in "You're already wearing " <> aOrAn (e^.sing) <> "."
 
 
