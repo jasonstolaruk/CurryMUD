@@ -8,18 +8,21 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.STM
-import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Lens.Getter (view)
+import Control.Applicative ((<$>), (<*>))
+import Control.Arrow ((***))
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TVar (readTVar)
 import Control.Lens.Operators ((^.))
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete)
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), mempty)
 import qualified Data.Set as S (Set, fromList, foldr)
 import qualified Data.Text as T
 
@@ -676,7 +679,7 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
-    helper toSelf toOthers = (liftIO . atomically . helperSTM) |$| asks >=> \(et, it, mt, pt) ->
+    helper toSelf toOthers = ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let (d, _, _, _, _)             = mkCapStdDesig i et it mt pcTbl tt
             toSelfBrdcst                = (nlnl toSelf, [i])
             serialized                  = mkSerializedDesig d toOthers
@@ -685,10 +688,13 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBrdcst              = (nlnl toOthers', i `delete` pcIds d)
         in logPlaOut ecn i [toSelf] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
-    helperSTM md = (,) <$> readTVar (md^.entTblTVar)
-                       <*> readTVar (md^.invTblTVar)
-                       <*> readTVar (md^.mobTblTVar)
-                       <*> readTVar (md^.plaTblTVar)
+    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar)
 expCmd ecn (NoTarget {}) (WithArgs _ mq cols (_:_))  = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
                                                                           \command cannot be used with a target."
 expCmd ecn ect           (OneArg   i mq cols target) = case ect of
@@ -696,11 +702,11 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
-    helper toSelf toTarget toOthers = (liftIO . atomically . helperSTM) |$| asks >=> \(ct, et, it, mt, pt, tt) ->
+    helper toSelf toTarget toOthers = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it mt pcTbl tt
             c                                         = ct ! ri
-        in if uncurry (||) . over both (/= mempty) $ (ris', c)
-          then case resolveRmInvCoins i ws [target] ris' c of
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (ris', c)
+          then case resolveRmInvCoins i et mt pcTbl [target] ris' c of
             (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
             (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot \
                                                                              \be used with coins."
@@ -716,7 +722,7 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
                           toTarget'      = replace [ ("%", serialized), ("&", hisHer) ] toTarget
                           toTargetBrdcst = (nlnl toTarget', [targetId])
                       in do
-                          logPlaOut ecn i [ parsePCDesig i mt pt toSelf' ]
+                          logPlaOut ecn i [ parsePCDesig i mt pcTbl toSelf' ]
                           bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
                   onMob targetNoun =
                       let (toSelf', toSelfBrdcst, _, _, toOthers') = mkBindings targetNoun
@@ -728,21 +734,23 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
                       let toSelf'        = replace [("@", targetTxt)] toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
                           serialized     = mkSerializedDesig d toOthers
-                          (_, hisHer, _) = mkPros i tt
+                          (_, hisHer, _) = mkPros i mt
                           toOthers'      = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
                       in (toSelf', toSelfBrdcst, serialized, hisHer, toOthers')
               in case tt ! targetId of
-                PCType  -> onPC  . serialize . mkStdDesig targetId mt pt tt targetSing False $ ris
+                PCType  -> onPC  . serialize . mkStdDesig targetId mt pcTbl tt targetSing False $ ris
                 MobType -> onMob . theOnLower $ targetSing
                 _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
             x -> patternMatchFail "expCmd helper" [ showText x ]
           else wrapSend mq cols "You don't see anyone here."
-    helperSTM md = (,) <$> readTVar (md^.coinsTblTVar)
-                       <*> readTVar (md^.entTblTVar)
-                       <*> readTVar (md^.invTblTVar)
-                       <*> readTVar (md^.mobTblTVar)
-                       <*> readTVar (md^.plaTblTVar)
-                       <*> readTVar (md^.typeTblTvar)
+    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                             <*> readTVar (md^.entTblTVar)
+                             <*> readTVar (md^.invTblTVar)
+                             <*> readTVar (md^.mobTblTVar)
+                             <*> readTVar (md^.msgQueueTblTVar)
+                             <*> readTVar (md^.pcTblTVar)
+                             <*> readTVar (md^.plaTblTVar)
+                             <*> readTVar (md^.typeTblTVar)
 expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only target one person at a time with expressive commands."
 

@@ -54,10 +54,8 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.State
 import Mud.Data.State.Util.Coins
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.STM
 import Mud.NameResolution
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
@@ -73,12 +71,12 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
+import Control.Concurrent.STM.TVar (readTVar)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), guard)
+import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
@@ -137,12 +135,12 @@ bugTypoLogger (Msg i mq msg) wl@(pp -> wl') =
     send mq . nlnl $ "Thank you."
     bcastAdmins mt mqt pcTbl plaTbl $ s <> " has logged a " <> wl' <> "."
   where
-    helperSTM md = (,) <$> readTVar (md^.entTblTVar)
-                       <*> readTVar (md^.mobTblTVar)
-                       <*> readTVar (md^.msgQueueTblTVar)
-                       <*> readTVar (md^.pcTblTVar)
-                       <*> readTVar (md^.plaTblTVar)
-                       <*> readTVar (md^.rmTblTVar)
+    helperSTM md = (,,,,,) <$> readTVar (md^.entTblTVar)
+                           <*> readTVar (md^.mobTblTVar)
+                           <*> readTVar (md^.msgQueueTblTVar)
+                           <*> readTVar (md^.pcTblTVar)
+                           <*> readTVar (md^.plaTblTVar)
+                           <*> readTVar (md^.rmTblTVar)
     logIt s ri rn = mkTimestamp >>= \ts -> -- TODO: Why not just append to the end of the file?
         let newEntry = T.concat [ ts
                                 , " "
@@ -424,7 +422,7 @@ helperPutRemEitherInv i et mt pt tt d por mnom fi ti te a@(it, bs, _) = \case
                                   else (is, bs)
            , (fis, tis)      <- over both (it !) (fi, ti)
            , it'             <- it & at fi ?~ fis \\ is'
-                                   & at ti ?~ (sortInv et tt $ tis ++ is')
+                                   & at ti ?~ sortInv et tt (tis ++ is')
            , (bs'', logMsgs) <- mkPutRemInvDesc i et mt pt d por mnom is' te
            -> a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs
   where
