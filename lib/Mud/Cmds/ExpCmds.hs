@@ -677,7 +677,7 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
     helper toSelf toOthers = (liftIO . atomically . helperSTM) |$| asks >=> \(et, it, mt, pt) ->
-        let (d, _, _, _, _)             = mkCapStdDesig i et it pt
+        let (d, _, _, _, _)             = mkCapStdDesig i et it mt pcTbl tt
             toSelfBrdcst                = (nlnl toSelf, [i])
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros i mt
@@ -697,7 +697,7 @@ expCmd ecn ect           (OneArg   i mq cols target) = case ect of
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
     helper toSelf toTarget toOthers = (liftIO . atomically . helperSTM) |$| asks >=> \(ct, et, it, mt, pt, tt) ->
-        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it pt
+        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it mt pcTbl tt
             c                                         = ct ! ri
         in if uncurry (||) . over both (/= mempty) $ (ris', c)
           then case resolveRmInvCoins i ws [target] ris' c of

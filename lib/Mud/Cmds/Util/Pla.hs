@@ -507,10 +507,10 @@ maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
 -----
 
 
-mkCapStdDesig :: Id -> EntTbl -> InvTbl -> PCTbl -> (PCDesig, Sing, PC, Id, Inv)
-mkCapStdDesig i et it pt | s                   <- (et ! i)^.sing
-                         , p@(view rmId -> ri) <- pt ! i
-                         , ris                 <- it ! ri = (mkStdDesig i ws s True ris, s, p, ri, ris)
+mkCapStdDesig :: Id -> EntTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> (PCDesig, Sing, PC, Id, Inv)
+mkCapStdDesig i et it mt pt tt | s                   <- (et ! i)^.sing
+                               , p@(view rmId -> ri) <- pt ! i
+                               , ris                 <- it ! ri = (mkStdDesig i mt pt tt s True ris, s, p, ri, ris)
 
 
 mkStdDesig :: Id -> MobTbl -> PCTbl -> TypeTbl -> Sing -> Bool -> Inv -> PCDesig
@@ -538,10 +538,10 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
 -----
 
 
-mkDropReadyBindings :: Id -> CoinsTbl -> EntTbl -> InvTbl -> PCTbl -> (PCDesig, Id, Inv, Coins)
-mkDropReadyBindings i ct et it pt | (d, _, _, ri, _) <- mkCapStdDesig i et it pt
-                                  , is               <- it ! i
-                                  , c                <- ct ! i = (d, ri, is, c)
+mkDropReadyBindings :: Id -> CoinsTbl -> EntTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> (PCDesig, Id, Inv, Coins)
+mkDropReadyBindings i ct et it mt pt tt | (d, _, _, ri, _) <- mkCapStdDesig i et it mt pt tt
+                                        , is               <- it ! i
+                                        , c                <- ct ! i = (d, ri, is, c)
 
 
 -----
@@ -671,9 +671,16 @@ isNonStdLink _               = False
 -----
 
 
-mkGetLookBindings :: Id -> CoinsTbl -> EntTbl -> PCTbl -> InvTbl -> (PCDesig, Id, Inv, Inv, Coins)
-mkGetLookBindings i ct et pt it | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i et it pt
-                                , rc                                        <- ct ! ri = (d, ri, ris, ris', rc)
+mkGetLookBindings :: Id
+                  -> CoinsTbl
+                  -> EntTbl
+                  -> InvTbl
+                  -> MobTbl
+                  -> PCTbl
+                  -> TypeTbl
+                  -> (PCDesig, Id, Inv, Inv, Coins)
+mkGetLookBindings i ct et it mt pt tt | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i et it mt pt tt
+                                      , rc                                        <- ct ! ri = (d, ri, ris, ris', rc)
 
 
 -----
@@ -702,15 +709,22 @@ mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
 -----
 
 
-mkPutRemBindings :: Id -> EntTbl -> InvTbl -> PCTbl -> Args -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
-mkPutRemBindings i et it pt as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it pt
-                                     pis                                = it ! i
-                                     (pc, rc)                           = over both (ct !) (i, ri)
-                                     cn                                 = last as
-                                     (init -> argsWithoutCon)           = case as of
-                                                                            [_, _] -> as
-                                                                            _      -> (++ [cn]) . nub . init $ as
-                                 in (d, ris, rc, pis, pc, cn, argsWithoutCon)
+mkPutRemBindings :: Id
+                 -> EntTbl
+                 -> InvTbl
+                 -> MobTbl
+                 -> PCTbl
+                 -> TypeTbl
+                 -> Args
+                 -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
+mkPutRemBindings i et it mt pt tt as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it mt pt tt
+                                           pis                                = it ! i
+                                           (pc, rc)                           = over both (ct !) (i, ri)
+                                           cn                                 = last as
+                                           (init -> argsWithoutCon)           = case as of
+                                                                                  [_, _] -> as
+                                                                                  _      -> (++ [cn]) . nub . init $ as
+                                       in (d, ris, rc, pis, pc, cn, argsWithoutCon)
 
 
 -----

@@ -304,7 +304,7 @@ dropAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMs
                             <*> readTVar (md^.pcTblTVar)
                             <*> readTVar (md^.plaTblTVar)
                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ri, is, c) = mkDropReadyBindings i ct et it pcTbl
+        let (d, ri, is, c) = mkDropReadyBindings i ct et it mt pcTbl tt
         in if uncurry (||) . over both (/= mempty) $ (is, c)
           then let (eiss, ecs)          = resolvePCInvCoins i et mt pcTbl as is c
                    (it', bs,  logMsgs ) = foldl' (helperGetDropEitherInv i et mt pcTbl tt d Drop i ri) (it, [], []) eiss
@@ -331,7 +331,7 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , "." ]
 emote p@(ActionParams { plaId, args })
   | any (`elem` args) [ enc, enc <> "'s" ] = readWSTMVar >>= \ws ->
-      let (d, s, _, _, _) = mkCapStdDesig plaId et it pcTbl
+      let (d, s, _, _, _) = mkCapStdDesig plaId et it mt pcTbl tt
           toSelfMsg       = bracketQuote . T.replace enc s . formatMsgArgs $ args
           toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
           toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
@@ -341,7 +341,7 @@ emote p@(ActionParams { plaId, args })
       in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
   | otherwise = readWSTMVar >>= \ws ->
-    let (d, s, _, _, _) = mkCapStdDesig plaId et it pcTbl
+    let (d, s, _, _, _) = mkCapStdDesig plaId et it mt pcTbl tt
         msg             = punctuateMsg . T.unwords $ args
         toSelfMsg       = bracketQuote $ s <> " " <> msg
         toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
@@ -466,7 +466,7 @@ getAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsg
                             <*> readTVar (md^.pcTblTVar)
                             <*> readTVar (md^.plaTblTVar)
                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ri, _, ris, rc) = mkGetLookBindings i ct et pcTbl it
+        let (d, ri, _, ris, rc) = mkGetLookBindings i ct et it mt pcTbl tt
         in if uncurry (||) . over both (/= mempty) $ (ris, rc)
           then let (eiss, ecs)          = resolveRmInvCoins i et mt pcTbl as ris rc
                    (it', bs,  logMsgs ) = foldl' (helperGetDropEitherInv i et mt pcTbl tt d Get ri i) (it, [], []) eiss
@@ -503,7 +503,7 @@ tryMove i mq cols dir = helper >>= \case
       look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
   where
     helper = onWS $ \(t, ws) ->
-        let (originD, s, p, originRi, (i `delete`) -> originIs) = mkCapStdDesig i et it pcTbl
+        let (originD, s, p, originRi, (i `delete`) -> originIs) = mkCapStdDesig i et it mt pcTbl tt
             originRm                                            = (ws^.rmTbl) ! originRi
         in case findExit originRm dir of
           Nothing -> putTMVar t ws >> (return . Left $ sorry)
@@ -794,7 +794,7 @@ look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
           bcast mt mqt pcTbl plaTbl . foldr f [] $ ds
   where
     helper = onWS $ \(t, ws) ->
-        let (d, _, ris, ris', rc) = mkGetLookBindings i ws
+        let (d, _, ris, ris', rc) = mkGetLookBindings i ct et it mt pcTbl tt
         in if uncurry (||) . over both (/= mempty) $ (ris', rc)
           then let (eiss, ecs) = resolveRmInvCoins i ws as ris' rc
                    invDesc     = foldl' (helperLookEitherInv ws) "" eiss
@@ -956,7 +956,7 @@ putAction (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs -
                             <*> readTVar (md^.pcTblTVar)
                             <*> readTVar (md^.plaTblTVar)
                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i et it pcTbl as
+        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i et it mt pcTbl tt as
         in if uncurry (||) . over both (/= mempty) $ (pis, pc)
           then if T.head cn == rmChar && cn /= T.singleton rmChar
             then if not . null $ ris
@@ -1083,7 +1083,8 @@ handleEgress i = i |$| getPCRmId >=> \ri -> do
 notifyEgress :: Id -> MudStack ()
 notifyEgress i =
     bcast mt mqt pcTbl plaTbl =<< [ [(nlnl $ serialize d <> " has left the game.", pis)] | ws <- readWSTMVar
-                                  , let (d, _, _, _, _) = mkCapStdDesig i et it pcTbl, let pis = i `delete` pcIds d ]
+                                  , let (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
+                                  , let pis             = i `delete` pcIds d ]
 
 
 -----
@@ -1114,7 +1115,7 @@ ready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (d, _, is, c) = mkDropReadyBindings i ws
+        let (d, _, is, c) = mkDropReadyBindings i ct et it mt pcTbl tt
         in if uncurry (||) . over both (/= mempty) $ (is, c)
           then let (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ws as is mempty
                    eiss                      = zipWith (curry procGecrMisReady) gecrs miss
@@ -1406,7 +1407,7 @@ remove (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
                             <*> readTVar (md^.pcTblTVar)
                             <*> readTVar (md^.plaTblTVar)
                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i et it pcTbl as
+        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i et it mt pcTbl tt as
         in if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
             then shuffleRemSTM i ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
@@ -1511,7 +1512,7 @@ say p@(WithArgs i mq cols args@(a:_))
                                  , "." ]
     sorry             = advise p ["say"]
     sayTo ma (T.words -> (target:rest@(r:_))) = readWSTMVar >>= \ws ->
-        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it pcTbl
+        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it mt pcTbl tt
             c                                         = (ws^.coinsTbl) ! ri
             in if uncurry (||) . over both (/= mempty) $ (ris', c)
           then case resolveRmInvCoins i ws [target] ris' c of
@@ -1567,7 +1568,7 @@ say p@(WithArgs i mq cols args@(a:_))
     simpleSayHelper ma rest = readWSTMVar >>= \ws ->
         let adverb          = case ma of Nothing  -> ""
                                          Just adv -> " " <> adv
-            (d, _, _, _, _) = mkCapStdDesig i et it pcTbl
+            (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
             msg             = formatMsg rest
             toSelfMsg       = T.concat [ "You say", adverb, ", ", msg ]
             toSelfBrdcst    = (nlnl toSelfMsg, [i])
@@ -1688,7 +1689,7 @@ unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
     bcastNl mt mqt pcTbl plaTbl bs
   where
     helper = onWS $ \(t, ws) ->
-        let (d, _, _, _, _) = mkCapStdDesig i et it pcTbl
+        let (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
             em              = (ws^.eqTbl) ! i
             is              = M.elems em
         in if not . null $ is
