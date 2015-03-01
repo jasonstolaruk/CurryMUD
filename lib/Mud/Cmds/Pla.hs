@@ -231,9 +231,7 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dblQuote $ "admin " <> a <> " are you available? I need your assistance"
                       , dfltColor
                       , "." ]
-admin (MsgWithTarget i mq cols target msg) = do
-    et        <- getEntTbl
-    (mqt, pt) <- getMqtPt
+admin (MsgWithTarget i mq cols target msg) = ask >>= liftIO . atomically . helperSTM >>= \(et, mqt, pt) ->
     let aiss = mkAdminIdsSingsList i et pt
         s    = (et ! i)^.sing
         notFound    | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
@@ -248,7 +246,11 @@ admin (MsgWithTarget i mq cols target msg) = do
                        logPla    "admin" ai . T.concat $ [ "received message from ", s,       ": ", dblQuote msg ]
                        wrapSend mq  cols    . T.concat $ [ "You send ",              target', ": ", dblQuote msg ]
                        wrapSend amq aCols   . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor    ]
-    maybe notFound found . findFullNameForAbbrev target . map snd $ aiss
+    in maybe notFound found . findFullNameForAbbrev target . map snd $ aiss
+  where
+    helperSTM md = (,,) <$> readTVar (md^.entTblTVar)
+                        <*> readTVar (md^.msgQueueTblTVar)
+                        <*> readTVar (md^.plaTblTVar)
 admin p = patternMatchFail "admin" [ showText p ]
 
 
@@ -297,7 +299,7 @@ dropAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMs
     unless (null logMsgs) . logPlaOut "drop" i $ logMsgs
   where
     helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblVar)
+                            <*> readTVar (md^.entTblTVar)
                             <*> readTVar (md^.invTblTVar)
                             <*> readTVar (md^.mobTblTVar)
                             <*> readTVar (md^.msgQueueTblTVar)
@@ -330,17 +332,18 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , dfltColor
                       , "." ]
 emote p@(ActionParams { plaId, args })
-  | any (`elem` args) [ enc, enc <> "'s" ] = readWSTMVar >>= \ws ->
-      let (d, s, _, _, _) = mkCapStdDesig plaId et it mt pcTbl tt
-          toSelfMsg       = bracketQuote . T.replace enc s . formatMsgArgs $ args
-          toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
-          toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
-                      | otherwise          = capitalizeMsg . T.unwords $ args
-          toOthersMsg'    = T.replace enc (serialize d { isCap = False }) . punctuateMsg $ toOthersMsg
-          toOthersBrdcst  = (nlnl toOthersMsg', plaId `delete` pcIds d)
-      in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
+  | any (`elem` args) [ enc, enc <> "'s" ] =
+      ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+          let (d, s, _, _, _) = mkCapStdDesig plaId et it mt pcTbl tt
+              toSelfMsg       = bracketQuote . T.replace enc s . formatMsgArgs $ args
+              toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
+              toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
+                          | otherwise          = capitalizeMsg . T.unwords $ args
+              toOthersMsg'    = T.replace enc (serialize d { isCap = False }) . punctuateMsg $ toOthersMsg
+              toOthersBrdcst  = (nlnl toOthersMsg', plaId `delete` pcIds d)
+          in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
-  | otherwise = readWSTMVar >>= \ws ->
+  | otherwise = ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
     let (d, s, _, _, _) = mkCapStdDesig plaId et it mt pcTbl tt
         msg             = punctuateMsg . T.unwords $ args
         toSelfMsg       = bracketQuote $ s <> " " <> msg
@@ -349,6 +352,13 @@ emote p@(ActionParams { plaId, args })
         toOthersBrdcst  = (nlnl toOthersMsg, plaId `delete` pcIds d)
     in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
   where
+    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar)
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
     advice          = T.concat [ dblQuote enc
