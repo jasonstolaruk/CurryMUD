@@ -8,7 +8,6 @@ import Mud.Cmds.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.State
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
 import Mud.TopLvlDefs.Misc

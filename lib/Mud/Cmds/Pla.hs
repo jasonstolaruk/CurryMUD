@@ -18,11 +18,9 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Pla
-import Mud.Data.State.Util.STM
 import Mud.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.NameResolution
 import Mud.TheWorld.Ids
