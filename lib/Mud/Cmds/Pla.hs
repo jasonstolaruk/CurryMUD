@@ -707,7 +707,8 @@ getHelpByName cols hs name =
 
 
 intro :: Action
-intro (NoArgs i mq cols) = i |$| getPCIntroduced >=> \intros ->
+intro (NoArgs i mq cols) = ask >>= \md -> do
+    intros <- view introduced . (! i) <$> (liftIO . readTVarIO $ md^.pcTblTVar)
     if null intros
       then let introsTxt = "No one has introduced themselves to you yet." in do
           wrapSend mq cols introsTxt
