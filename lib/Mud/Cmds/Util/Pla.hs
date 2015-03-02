@@ -552,7 +552,7 @@ mkEntDescs i cols ct entTbl eqTbl it mt pt tt eis =
 
 mkEntDesc :: Id -> Cols -> CoinsTbl -> InvTbl -> EntTbl -> EqTbl -> MobTbl -> PCTbl -> TypeTbl -> (Id, Ent) -> T.Text
 mkEntDesc i cols ct it entTbl eqTbl mt pt tt (ei@((tt !) -> t), e@(views entDesc (wrapUnlines cols) -> ed)) =
-    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ct it entTbl mt pt ei $ e
+    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ct entTbl it mt pt ei $ e
               MobType ->                 (ed <>) . mkEqDesc       i cols entTbl eqTbl mt pt ei e $ t
               PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols entTbl eqTbl mt pt ei e $ t
               _       -> ed
@@ -561,8 +561,8 @@ mkEntDesc i cols ct it entTbl eqTbl mt pt tt (ei@((tt !) -> t), e@(views entDesc
     mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei mt pt = T.concat [ "You see a ", s, " ", r, "." ]
 
 
-mkInvCoinsDesc :: Id -> Cols -> CoinsTbl -> InvTbl -> EntTbl -> MobTbl -> PCTbl -> Id -> Ent -> T.Text
-mkInvCoinsDesc i cols ct it et mt pt descI (view sing -> descS)
+mkInvCoinsDesc :: Id -> Cols -> CoinsTbl -> EntTbl -> InvTbl -> MobTbl -> PCTbl -> Id -> Ent -> T.Text
+mkInvCoinsDesc i cols ct et it mt pt descI (view sing -> descS)
   | descIs <- it ! descI
   , descC  <- ct ! descI = case (not . null $ descIs, descC /= mempty) of
     (False, False) -> wrapUnlines cols (descI == i ? dudeYourHandsAreEmpty :? "The " <> descS <> " is empty.")

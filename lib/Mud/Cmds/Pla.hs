@@ -797,19 +797,35 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 
 inv :: Action -- TODO: Give some indication of encumbrance.
-inv (NoArgs i mq cols) = send mq . nl =<< [ mkInvCoinsDesc i cols ws i e | (ws, e) <- getEnt' i ]
-inv (LowerNub i mq cols as) = i |$| getInvCoins' >=> \(ws, (is, c)) ->
-  send mq $ if uncurry (||) . over both (/= mempty) $ (is, c)
-      then let (eiss, ecs) = resolvePCInvCoins i ws as is c
-               invDesc     = foldl' (helperEitherInv ws) "" eiss
-               coinsDesc   = foldl' helperEitherCoins    "" ecs
+inv (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, pt) ->
+    send mq . nl . mkInvCoinsDesc i cols ct it et mt pt i $ et ! i
+  where
+    helperSTM md = (,,,,) <$> readTVar (md^.coinsTblTVar)
+                          <*> readTVar (md^.entTblTVar)
+                          <*> readTVar (md^.invTblTVar)
+                          <*> readTVar (md^.mobTblTVar)
+                          <*> readTVar (md^.pcTblTVar)
+inv (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \(ct, entTbl, eqTbl, it, mt, pt, tt) ->
+    let c  = ct ! i
+        is = it ! i
+    in send mq $ if uncurry (||) . over both (/= mempty) $ (is, c)
+      then let (eiss, ecs) = resolvePCInvCoins i entTbl mt pt as is c
+               invDesc     = foldl' (helperEitherInv ct entTbl eqTbl it mt pt tt) "" eiss
+               coinsDesc   = foldl' helperEitherCoins                             "" ecs
            in invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
-    helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperEitherInv ws acc (Right is  ) = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pcTbl tt is
-    helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
-    helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.eqTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.typeTblTVar)
+    helperEitherInv _  _      _     _  _  _  _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
+    helperEitherInv ct entTbl eqTbl it mt pt tt acc (Right is  ) = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pt tt is
+    helperEitherCoins acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
+    helperEitherCoins acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 inv p = patternMatchFail "inv" [ showText p ]
 
 
