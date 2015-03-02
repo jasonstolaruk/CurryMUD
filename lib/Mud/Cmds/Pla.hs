@@ -833,10 +833,19 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 look :: Action
-look (NoArgs i mq cols) = send mq . nl . uncurry (<>) =<<
-    [ ( multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
-      , mkExitsSummary cols r <> mkRmInvCoinsDesc i cols ws ri )
-    | (ws, (ri, r)) <- getPCRmIdRm' i ]
+look (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, pt, rt, tt) ->
+    let ri = (pt ! i)^.rmId
+        r  = rt ! ri
+    in send mq . nl $ multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ] ++
+                      mkExitsSummary cols r <> mkRmInvCoinsDesc i cols ct et it mt pt tt ri
+  where
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.rmTblTVar)
+                            <*> readTVar (md^.typeTblTVar)
 look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
   (Left  msg, _           ) -> send mq msg
   (Right msg, Nothing     ) -> send mq msg
@@ -869,6 +878,45 @@ look (LowerNub i mq cols as) = helper >>= firstLook i cols >>= \case
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 look p = patternMatchFail "look" [ showText p ]
+
+
+mkRmInvCoinsDesc :: Id -> Cols -> CoinsTbl -> EntTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> Id -> T.Text
+mkRmInvCoinsDesc i cols ct et it mt pt tt ri =
+    let ((i `delete`) -> ris) = it ! ri
+        (pcNcbs, otherNcbs)   = splitPCsOthers . mkIsPC_StyledName_Count_BothList i et mt pt tt $ ris
+        pcDescs               = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
+        otherDescs            = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
+        c                     = ct ! ri
+    in (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
+  where
+    splitPCsOthers                       = over both (map snd) . span fst
+    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s
+                                             then knownNameColor   <> s       <> dfltColor
+                                             else unknownNameColor <> aOrAn s <> dfltColor
+    mkPCDesc    (en, c, b     )          = T.concat [ unknownNameColor
+                                                    , showText c
+                                                    , " "
+                                                    , mkPlurFromBoth b
+                                                    , dfltColor
+                                                    , " "
+                                                    , en ]
+    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAnOnLower s <> " " <> en
+    mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
+
+
+mkIsPC_StyledName_Count_BothList :: Id
+                                 -> EntTbl
+                                 -> MobTbl
+                                 -> PCTbl
+                                 -> TypeTbl
+                                 -> Inv
+                                 -> [(Bool, (T.Text, Int, BothGramNos))]
+mkIsPC_StyledName_Count_BothList i et mt pt tt is =
+  let ips   =                        [ tt ! i' == PCType               | i' <- is ]
+      ens   = styleAbbrevs DoBracket [ getEffName        i et mt pt i' | i' <- is ]
+      ebgns =                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
+      cs    = mkCountList ebgns
+  in nub . zip ips . zip3 ens cs $ ebgns
 
 
 firstLook :: Id
@@ -906,44 +954,6 @@ firstLook i cols a = getPlaFlag IsNotFirstLook <$> getPla i >>= \infl -> if infl
   where
     appendToEither msg (Left sorryMsg) = Left $ sorryMsg <> msg
     appendToEither msg right           = (<> msg) <$> right
-
-
-mkRmInvCoinsDesc :: Id -> Cols -> WorldState -> Id -> T.Text
-mkRmInvCoinsDesc i cols ws ri | ((i `delete`) -> ris) <- (ws^.invTbl) ! ri
-                              , (pcNcbs, otherNcbs)   <- splitPCsOthers . mkIsPC_StyledName_Count_BothList i ws $ ris
-                              , pcDescs    <- T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
-                              , otherDescs <- T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
-                              , c          <- (ws^.coinsTbl) ! ri
-                              = (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
-  where
-    splitPCsOthers                       = over both (map snd) . span fst
-    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s
-                                             then knownNameColor   <> s       <> dfltColor
-                                             else unknownNameColor <> aOrAn s <> dfltColor
-    mkPCDesc    (en, c, b     )          = T.concat [ unknownNameColor
-                                                    , showText c
-                                                    , " "
-                                                    , mkPlurFromBoth b
-                                                    , dfltColor
-                                                    , " "
-                                                    , en ]
-    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAnOnLower s <> " " <> en
-    mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
-
-
-mkIsPC_StyledName_Count_BothList :: Id
-                                 -> EntTbl
-                                 -> MobTbl
-                                 -> PCTbl
-                                 -> TypeTbl
-                                 -> Inv
-                                 -> [(Bool, (T.Text, Int, BothGramNos))]
-mkIsPC_StyledName_Count_BothList i et mt pt tt is =
-  let ips   =                        [ tt ! i' == PCType               | i' <- is ]
-      ens   = styleAbbrevs DoBracket [ getEffName        i et mt pt i' | i' <- is ]
-      ebgns =                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
-      cs    = mkCountList ebgns
-  in nub . zip ips . zip3 ens cs $ ebgns
 
 
 isKnownPCSing :: Sing -> Bool
