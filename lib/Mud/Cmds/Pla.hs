@@ -1247,7 +1247,8 @@ readyDispatcher :: Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
                 -> Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyDispatcher i armTbl clothTbl conTbl entTbl mt tt wt d mrol a ei = maybe sorry (\f -> f d mrol a ei e) mf
+readyDispatcher i armTbl clothTbl conTbl entTbl mt tt wt d mrol a ei =
+    let e = entTbl ! ei in maybe (sorry e) (\f -> f d mrol a ei e) mf
   where
     mf = case tt ! ei of
       ClothType -> Just $ readyCloth i clothTbl entTbl mt
@@ -1255,7 +1256,7 @@ readyDispatcher i armTbl clothTbl conTbl entTbl mt tt wt d mrol a ei = maybe sor
       WpnType   -> Just $ readyWpn i entTbl mt wt
       ArmType   -> Just $ readyArm i armTbl entTbl
       _         -> Nothing
-    sorry | b <- mkBroadcast i $ "You can't ready " <> aOrAn ((et ! ei)^.sing) <> "." = a & _3 <>~ b
+    sorry e | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." = a & _3 <>~ b
 
 
 -- Readying clothing:
