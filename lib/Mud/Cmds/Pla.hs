@@ -1275,7 +1275,7 @@ readyCloth :: Id
 readyCloth i ct entTbl mt d mrol a@(eqTbl, _, _, _) ei e@(view sing -> s) =
     let em = eqTbl ! i
         c  = ct    ! ei
-    in case maybe (getAvailClothSlot mt i c em) (getDesigClothSlot entTbl e c em) mrol of
+    in case maybe (getAvailClothSlot entTbl mt i c em) (getDesigClothSlot entTbl e c em) mrol of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyClothMsgs slot $ c
   where
@@ -1296,8 +1296,8 @@ readyCloth i ct entTbl mt d mrol a@(eqTbl, _, _, _) ei e@(view sing -> s) =
         otherPCIds = i `delete` pcIds d
 
 
-getAvailClothSlot :: MobTbl -> Id -> Cloth -> EqMap -> Either T.Text Slot
-getAvailClothSlot mt i c em | m <- mt ! i, s <- m^.sex, h <- m^.hand = procMaybe $ case c of
+getAvailClothSlot :: EntTbl -> MobTbl -> Id -> Cloth -> EqMap -> Either T.Text Slot
+getAvailClothSlot et mt i c em | m <- mt ! i, s <- m^.sex, h <- m^.hand = procMaybe $ case c of
   Earring  -> getEarringSlotForSex s `mplus` (getEarringSlotForSex . otherSex $ s)
   NoseRing -> findAvailSlot em noseRingSlots
   Necklace -> findAvailSlot em necklaceSlots
@@ -1305,7 +1305,7 @@ getAvailClothSlot mt i c em | m <- mt ! i, s <- m^.sex, h <- m^.hand = procMaybe
   Ring     -> getRingSlot s h
   _        -> maybeSingleSlot em . clothToSlot $ c
   where
-    procMaybe                = maybe (Left . sorryFullClothSlots entTbl c $ em) Right
+    procMaybe                = maybe (Left . sorryFullClothSlots et c $ em) Right
     getEarringSlotForSex s   = findAvailSlot em $ case s of
       Male   -> lEarringSlots
       Female -> rEarringSlots
@@ -1516,7 +1516,7 @@ remove (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "remove" i $ logMsgs
   where
     helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblVar)
+                            <*> readTVar (md^.entTblTVar)
                             <*> readTVar (md^.invTblTVar)
                             <*> readTVar (md^.mobTblTVar)
                             <*> readTVar (md^.msgQueueTblTVar)
@@ -1526,13 +1526,14 @@ remove (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
         let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ct et it mt pcTbl tt as
         in if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
-            then shuffleRemSTM i ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
+            then shuffleRemSTM i md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
             else return (mkBroadcast i "You don't see any containers here.", [])
-          else shuffleRemSTM i ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc procGecrMisPCInv
+          else shuffleRemSTM i md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 
 
 shuffleRemSTM :: Id
+              -> MudData
               -> CoinsTbl
               -> EntTbl
               -> InvTbl
@@ -1549,7 +1550,7 @@ shuffleRemSTM :: Id
               -> CoinsWithCon
               -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
               -> STM [T.Text]
-shuffleRemSTM i ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
+shuffleRemSTM i md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
     let (conGecrs, conMiss, conRcs) = resolveEntCoinNames i et mt pcTbl [cn] is c
     in if null conMiss && (not . null $ conRcs)
       then return (mkBroadcast i "You can't remove something from a coin.", [])
