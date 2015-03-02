@@ -42,7 +42,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***), first)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
+import Control.Concurrent.STM.TVar (modifyTVar, readTVar, readTVarIO, writeTVar)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, over, to)
 import Control.Lens.Getter (view, views)
@@ -1037,7 +1037,7 @@ putAction (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs -
         in if uncurry (||) . over both (/= mempty) $ (pis, pc)
           then if T.head cn == rmChar && cn /= T.singleton rmChar
             then if not . null $ ris
-              then shufflePutSTM i ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
+              then shufflePutSTM i md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
               else return (mkBroadcast i "You don't see any containers here.", [])
             else shufflePutSTM i ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
           else return (mkBroadcast i dudeYourHandsAreEmpty, [])
@@ -1050,6 +1050,7 @@ type PCCoins      = Coins
 
 
 shufflePutSTM :: Id
+              -> MudData
               -> CoinsTbl
               -> EntTbl
               -> InvTbl
@@ -1068,7 +1069,7 @@ shufflePutSTM :: Id
               -> PCCoins
               -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
               -> STM [T.Text]
-shufflePutSTM i ct et it mt mqt pcTbl plaTbl tt d cn icir as is c pis pc f =
+shufflePutSTM i md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c pis pc f =
     let (conGecrs, conMiss, conRcs) = resolveEntCoinNames i et mt pcTbl [cn] is c
     in if null conMiss && (not . null $ conRcs)
       then return (mkBroadcast i "You can't put something inside a coin.", [])
@@ -1103,34 +1104,38 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 
 
 handleEgress :: Id -> MudStack ()
-handleEgress i = i |$| getPCRmId >=> \ri -> do
-    unless (ri == iWelcome) . notifyEgress $ i
-    (wsTMVar, mqtTMVar, ptTMVar) <- (,,) <$> getWSTMVar        <*> getNWSRec msgQueueTblTMVar <*> getNWSRec plaTblTMVar
-    let takeTMVarsSTM =             (,,) <$> takeTMVar wsTMVar <*> takeTMVar mqtTMVar         <*> takeTMVar ptTMVar
-    (s, bs, logMsgs, pt)         <- liftIO . atomically $ takeTMVarsSTM >>= \(ws, mqt, pt) ->
-        let (view rmId -> ri')    = (ws^.pcTbl)  ! i
-            ((i `delete`) -> ris) = (ws^.invTbl) ! ri'
-            (view sing -> s)      = (ws^.entTbl) ! i
-            (pt', bs, logMsgs)    = peepHelper pt s
-            ws'                   = ws  & typeTbl.at  i   .~ Nothing
-                                        & entTbl.at   i   .~ Nothing
-                                        & invTbl.at   i   .~ Nothing
-                                        & coinsTbl.at i   .~ Nothing
-                                        & eqTbl.at    i   .~ Nothing
-                                        & mobTbl.at   i   .~ Nothing
-                                        & pcTbl.at    i   .~ Nothing
-                                        & invTbl.at   ri' ?~ ris
-            mqt'                  = mqt & at i .~ Nothing
-            pt''                  = pt' & at i .~ Nothing
-        in do
-            sequence_ [ putTMVar wsTMVar ws', putTMVar mqtTMVar mqt', putTMVar ptTMVar pt'' ]
-            return (s, bs, logMsgs, pt'')
+handleEgress i = ask >>= liftIO . atomically . helperSTM >>= \(s, logMsgs) -> do
     forM_ logMsgs $ uncurry (logPla "handleEgress")
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
-    bcastNl mt mqt pcTbl plaTbl bs
-    bcastAdmins mt mqt pcTbl plaTbl $ s <> " has left the game."
   where
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.eqTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) -> do
+        let ri = (pcTbl ! i)^.rmId
+        unless (ri == iWelcome) $ let (d, _, _, _, _) = mkCapStdDesig i entTbl it mt pcTbl tt
+                                      pis             = i `delete` pcIds d
+                                  in bcast mt mqt pcTbl plaTbl [(nlnl $ serialize d <> " has left the game.", pis)]
+        let ris                    = i `delete` it ! ri
+            s                      = entTbl ! i
+            (plaTbl', bs, logMsgs) = peepHelper plaTbl s
+        bcastNl mt mqt pcTbl plaTbl' bs
+        bcastAdmins mt mqt pcTbl plaTbl' $ s <> " has left the game."
+        modifyTVar (md^.coinsTblTVar)    $ at i .~ Nothing
+        modifyTVar (md^.entTblTVar)      $ at i .~ Nothing
+        modifyTVar (md^.eqTblTVar)       $ at i .~ Nothing
+        modifyTVar (md^.msgQueueTblTVar) $ at i .~ Nothing
+        modifyTVar (md^.pcTblTVar)       $ at i .~ Nothing
+        modifyTVar (md^.typeTblTVar)     $ at i .~ Nothing
+        writeTVar (md^.invTblTVar) $ it      & at i .~ Nothing & at ri ?~ ris
+        writeTVar (md^.plaTblTVar) $ plaTbl' & at i .~ Nothing
+        return (s, logMsgs)
     peepHelper pt@((! i) -> p) s =
         let pt'       = stopPeeping
             peeperIds = p^.peepers
@@ -1155,13 +1160,6 @@ handleEgress i = i |$| getPCRmId >=> \ri -> do
             let helper peeperId ptAcc = let thePeeper = ptAcc ! peeperId
                                         in ptAcc & at peeperId ?~ over peeping (i `delete`) thePeeper
             in foldr helper pt' peeperIds
-
-
-notifyEgress :: Id -> MudStack ()
-notifyEgress i =
-    bcast mt mqt pcTbl plaTbl =<< [ [(nlnl $ serialize d <> " has left the game.", pis)] | ws <- readWSTMVar
-                                  , let (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
-                                  , let pis             = i `delete` pcIds d ]
 
 
 -----
@@ -1190,21 +1188,22 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
 ready (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "ready" i $ logMsgs
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.armTblTVar) -- TODO: We don't really need to get all these tables here...?
-                            <*> readTVar (md^.clothTblTVar)
-                            <*> readTVar (md^.conTblTVar)
-                            <*> readTVar (md^.entTblVar)
-                            <*> readTVar (md^.eqTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar)
-                            <*> readTVar (md^.wpnTblTVar) >>= \(armTbl, clothTbl, conTbl, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, _, is, c) = mkDropReadyBindings i coinsTbl et it mt pcTbl tt
+    helperSTM md = (,,,,,,,,,,,,) <$> readTVar (md^.armTblTVar) -- TODO: We don't really need to get all these tables here...?
+                                  <*> readTVar (md^.clothTblTVar)
+                                  <*> readTVar (md^.coinsTblTVar)
+                                  <*> readTVar (md^.conTblTVar)
+                                  <*> readTVar (md^.entTblTVar)
+                                  <*> readTVar (md^.eqTblTVar)
+                                  <*> readTVar (md^.invTblTVar)
+                                  <*> readTVar (md^.mobTblTVar)
+                                  <*> readTVar (md^.msgQueueTblTVar)
+                                  <*> readTVar (md^.pcTblTVar)
+                                  <*> readTVar (md^.plaTblTVar)
+                                  <*> readTVar (md^.typeTblTVar)
+                                  <*> readTVar (md^.wpnTblTVar) >>= \(armTbl, clothTbl, coinsTbl, conTbl, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt, wt) ->
+        let (d, _, is, c) = mkDropReadyBindings i coinsTbl entTbl it mt pcTbl tt
         in if uncurry (||) . over both (/= mempty) $ (is, c)
-          then let (gecrs, mrols, miss, rcs)   = resolveEntCoinNamesWithRols i et mt pcTbl as is mempty
+          then let (gecrs, mrols, miss, rcs)   = resolveEntCoinNamesWithRols i entTbl mt pcTbl as is mempty
                    eiss                        = zipWith (curry procGecrMisReady) gecrs miss
                    bs                          = rcs |!| mkBroadcast i "You can't ready coins."
                    (eqTbl', it', bs', logMsgs) = foldl' (helperReady i armTbl clothTbl conTbl entTbl mt tt wt d)
