@@ -1983,14 +1983,14 @@ what p@AdviseNoArgs = advise p ["what"] advice
                       , "." ]
 what (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >> logPlaExecArgs "what" as i
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.eqTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.rmTblTVar)
-                            <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, pt, rt, tt) ->
+    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                             <*> readTVar (md^.entTblTVar)
+                             <*> readTVar (md^.eqTblTVar)
+                             <*> readTVar (md^.invTblTVar)
+                             <*> readTVar (md^.mobTblTVar)
+                             <*> readTVar (md^.pcTblTVar)
+                             <*> readTVar (md^.rmTblTVar)
+                             <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, pt, rt, tt) ->
         let ri       = (pt ! i)^.rmId
             r        = rt ! ri
             helper n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ct entTbl eqTbl it mt pt tt invType n | invType <- [ PCInv, PCEq, RmInv ] ]
@@ -2165,26 +2165,21 @@ whatInvCoins cols invType@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
 
 
 whoAdmin :: Action
-whoAdmin (NoArgs i mq cols) = do
-    logPlaExec "whoadmin" i
-    multiWrapSend mq cols =<< mkAdminListTxt i <$> readWSTMVar <*> readTMVarInNWS plaTblTMVar
-whoAdmin p = withoutArgs whoAdmin p
-
-
-mkAdminListTxt :: Id -> WorldState -> IM.IntMap Pla -> [T.Text]
-mkAdminListTxt i ws pt =
-    let ais                         = [ pi | pi <- IM.keys pt, getPlaFlag IsAdmin (pt ! pi) ]
-        (ais', self) | i `elem` ais = (i `delete` ais, selfColor <> view sing ((ws^.entTbl) ! i) <> dfltColor)
-                     | otherwise    = (ais, "")
-        aas                         = styleAbbrevs Don'tBracket [ s | ai <- ais'
-                                                                    , let s = view sing $ (ws^.entTbl) ! ai
-                                                                    , then sortWith by s ]
-        aas'                        = dropBlanks $ self : aas
-        footer                      = [ numOfAdmins ais <> " logged in." ]
-    in null aas' ? footer :? T.intercalate ", " aas' : footer
+whoAdmin (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >> logPlaExec "whoadmin" i
   where
-    numOfAdmins (length -> noa) | noa == 1  = "1 administrator"
-                                | otherwise = showText noa <> " administrators"
+    helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar) >>= \(et, pt) ->
+        let ais                         = [ pi | pi <- IM.keys pt, getPlaFlag IsAdmin (pt ! pi) ]
+            (ais', self) | i `elem` ais = (i `delete` ais, selfColor <> view sing (et ! i) <> dfltColor)
+                         | otherwise    = (ais, "")
+            aas                         = styleAbbrevs Don'tBracket [ s | ai <- ais'
+                                                                        , let s = (et ! ai)^.sing, then sortWith by s ]
+            aas'                        = dropBlanks $ self : aas
+            footer                      = [ numOfAdmins ais <> " logged in." ]
+        in multiWrapSend mq cols $ null aas' ? footer :? T.intercalate ", " aas' : footer
+      where
+        numOfAdmins (length -> noa) | noa == 1  = "1 administrator"
+                                    | otherwise = showText noa <> " administrators"
+whoAdmin p = withoutArgs whoAdmin p
 
 
 -----
