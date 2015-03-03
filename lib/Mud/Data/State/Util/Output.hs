@@ -14,6 +14,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , mkDividerTxt
                                   , mkNTBroadcast
                                   , multiWrapSend
+                                  , multiWrapSendSTM
                                   , ok
                                   , parsePCDesig
                                   , prompt
@@ -78,7 +79,7 @@ sendSTM mq = writeTQueue mq . FromServer
 
 
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
-wrapSend mq cols = send mq . wrapUnlinesNl cols
+wrapSend mq cols = liftIO . atomically . wrapSendSTM mq cols
 
 
 wrapSendSTM :: MsgQueue -> Cols -> T.Text -> STM ()
@@ -86,7 +87,11 @@ wrapSendSTM mq cols = sendSTM mq . wrapUnlinesNl cols
 
 
 multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
-multiWrapSend mq cols = send mq . multiWrapNl cols
+multiWrapSend mq cols = liftIO . atomically . multiWrapSendSTM mq cols
+
+
+multiWrapSendSTM :: MsgQueue -> Cols -> [T.Text] -> STM ()
+multiWrapSendSTM mq cols = sendSTM mq . multiWrapNl cols
 
 
 sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()

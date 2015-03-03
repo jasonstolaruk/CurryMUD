@@ -1734,18 +1734,19 @@ firstMobSay i pt = let p = pt ! i in if getPlaFlag IsNotFirstMobSay p
 setAction :: Action
 setAction (NoArgs i mq cols) = do
     logPlaExecArgs "set" [] i
-    multiWrapSend mq cols =<< [ [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] | p <- getPla i
+    multiWrapSend mq cols =<< [ [ pad 9 (n <> ": ") <> v | n <- names | v <- values ]
+                              | p <- (! i) <$> liftIO . readTVarIO $ plaTblTVar
                               , let values = map showText [ cols, p^.pageLines ]
                               , let names  = styleAbbrevs Don'tBracket settingNames ]
-setAction (LowerNub i mq cols as) = helper >>= \(msgs, logMsgs) -> do
+setAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs -> do
     unless (null logMsgs) . logPlaOut "set" i $ logMsgs
-    multiWrapSend mq cols msgs
   where
-    helper = onNWS plaTblTMVar $ \(ptTMVar, pt) ->
-        let p                   = pt ! i
-            (p', msgs, logMsgs) = foldl' helperSettings (p, [], []) as
-            pt'                 = pt & at i ?~ p'
-        in putTMVar ptTMVar pt' >> return (msgs, logMsgs)
+    helperSTM md = readTVar (md^.plaTblTVar) >>= \pt ->
+        let (p', msgs, logMsgs) = foldl' helperSettings (pt ! i, [], []) as
+        in do
+            modifyTVar (md^.plaTblTVar) $ at i ?~ p'
+            multiWrapSendSTM mq cols msgs
+            return logMsgs
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
