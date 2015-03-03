@@ -1027,22 +1027,22 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
 putAction (Lower i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "put" i $ logMsgs
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                             <*> readTVar (md^.entTblTVar)
+                             <*> readTVar (md^.invTblTVar)
+                             <*> readTVar (md^.mobTblTVar)
+                             <*> readTVar (md^.msgQueueTblTVar)
+                             <*> readTVar (md^.pcTblTVar)
+                             <*> readTVar (md^.plaTblTVar)
+                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ct et it mt pcTbl tt as
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (pis, pc)
           then if T.head cn == rmChar && cn /= T.singleton rmChar
             then if not . null $ ris
-              then shufflePutSTM i md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
-              else wrapSendSTM mq cols "You don't see any containers here."
-            else shufflePutSTM i ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
-          else wrapSendSTM mq cols dudeYourHandsAreEmpty
+              then shufflePutSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
+              else wrapSendSTM mq cols "You don't see any containers here." >> return []
+            else shufflePutSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
+          else wrapSendSTM mq cols dudeYourHandsAreEmpty >> return []
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -1052,6 +1052,8 @@ type PCCoins      = Coins
 
 
 shufflePutSTM :: Id
+              -> MsgQueue
+              -> Cols
               -> MudData
               -> CoinsTbl
               -> EntTbl
@@ -1071,14 +1073,14 @@ shufflePutSTM :: Id
               -> PCCoins
               -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
               -> STM [T.Text]
-shufflePutSTM i md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c pis pc f =
+shufflePutSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c pis pc f =
     let (conGecrs, conMiss, conRcs) = resolveEntCoinNames i et mt pcTbl [cn] is c
     in if null conMiss && (not . null $ conRcs)
-      then return (mkBroadcast i "You can't put something inside a coin.", [])
+      then wrapSendSTM mq cols "You can't put something inside a coin." >> return []
       else case f . head . zip conGecrs $ conMiss of
-        Left  (mkBroadcast i -> bc) -> return (bc, [])
+        Left  (mkBroadcast i -> bc) -> bcastNlSTM mt mqt pcTbl plaTbl bc >> return []
         Right [ci] | e <- et ! ci, typ <- tt ! ci -> if typ /= ConType
-          then return (mkBroadcast i $ theOnLowerCap (e^.sing) <> " isn't a container.", [])
+          then (wrapSendSTM mq cols $ theOnLowerCap (e^.sing) <> " isn't a container.") >> return []
           else let (gecrs, miss, rcs)   = resolveEntCoinNames i et mt pcTbl as pis pc
                    eiss                 = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                  = map procReconciledCoinsPCInv rcs
@@ -1092,7 +1094,7 @@ shufflePutSTM i md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c pis pc f =
                    writeTVar (md^.invTblTVar)   it'
                    bcastNlSTM mt mqt pcTbl plaTbl bs'
                    return logMsgs'
-        Right _ -> return (mkBroadcast i "You can only put things into one container at a time.", [])
+        Right _ -> sendSTM mq "You can only put things into one container at a time." >> return []
 
 
 -----
