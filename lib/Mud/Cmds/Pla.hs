@@ -1819,41 +1819,70 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dblQuote "unready sword"
                       , dfltColor
                       , "." ]
-unready (LowerNub' i as) = helper >>= \(bs, logMsgs) -> do
+unready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
-    bcastNl mt mqt pcTbl plaTbl bs
   where
-    helper = onWS $ \(t, ws) ->
-        let (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
-            em              = (ws^.eqTbl) ! i
+    helperSTM md = (,,,,,,,,,,,,) <$> readTVar (md^.armTblTVar)
+                                  <*> readTVar (md^.clothTblTVar)
+                                  <*> readTVar (md^.entTblTVar)
+                                  <*> readTVar (md^.eqTblTVar)
+                                  <*> readTVar (md^.invTblTVar)
+                                  <*> readTVar (md^.mobTblTVar)
+                                  <*> readTVar (md^.msgQueueTblTVar)
+                                  <*> readTVar (md^.pcTblTVar)
+                                  <*> readTVar (md^.plaTblTVar)
+                                  <*> readTVar (md^.typeTblTVar)
+                                  <*> readTVar (md^.wpnTblTVar) >>= \(armTbl, ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt, wt) ->
+        let (d, _, _, _, _) = mkCapStdDesig i entTbl it mt pcTbl tt
+            em              = eqTbl ! i
             is              = M.elems em
         in if not . null $ is
-          then let (gecrs, miss, rcs)  = resolveEntCoinNames i et mt pcTbl as is mempty
-                   eiss                = zipWith (curry procGecrMisPCEq) gecrs miss
-                   bs                  = rcs |!| mkBroadcast i "You can't unready coins."
-                   (ws', bs', logMsgs) = foldl' (helperUnready i d em) (ws, bs, []) eiss
-               in putTMVar t ws' >> return (bs', logMsgs)
-          else    putTMVar t ws  >> return (mkBroadcast i dudeYou'reNaked, [])
+          then let (gecrs, miss, rcs)          = resolveEntCoinNames i entTbl mt pcTbl as is mempty
+                   eiss                        = zipWith (curry procGecrMisPCEq) gecrs miss
+                   bs                          = rcs |!| mkBroadcast i "You can't unready coins."
+                   (eqTbl', it', bs', logMsgs) = foldl' (helperUnready i armTbl ct entTbl mt pcTbl tt d em) (eqTbl, it, bs, []) eiss
+               in do
+                   writeTVar (md^.eqTblTVar) eqTbl'
+                   writeTVar (md^.invTblTVar) it'
+                   bcastNl mt mqt pcTbl plaTbl bs'
+                   return logMsgs
+          else wrapSendSTM mq cols dudeYou'reNaked
 unready p = patternMatchFail "unready" [ showText p ]
 
 
 helperUnready :: Id
+              -> ArmTbl
+              -> ClothTbl
+              -> EntTbl
+              -> MobTbl
+              -> PCTbl
+              -> TypeTbl
               -> PCDesig
               -> EqMap
-              -> (WorldState, [Broadcast], [T.Text])
+              -> (EqTbl, InvTbl, [Broadcast], [T.Text])
               -> Either T.Text Inv
-              -> (WorldState, [Broadcast], [T.Text])
-helperUnready i d em a@(ws, _, _) = \case
-  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is | pis        <- (ws^.invTbl) ! i
-           , ws'        <- ws & eqTbl.at  i ?~ M.filter (`notElem` is) em
-                              & invTbl.at i ?~ (sortInv et tt . (pis ++) $ is)
-           , (bs, msgs) <- mkUnreadyDescs i ws' d is
-           -> a & _1 .~ ws' & _2 <>~ bs & _3 <>~ msgs
+              -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+helperUnready i armTbl ct entTbl mt pt tt d em a@(eqTbl, it, _, _) = \case
+  Left  (mkBroadcast i -> b) -> a & _3 <>~ b
+  Right is | pis        <- it ! i
+           , eqTbl'     <- eqTbl & at i ?~ M.filter (`notElem` is) em
+           , it'        <- it    & at i ?~ (sortInv entTbl tt $ pis ++ is)
+           , (bs, msgs) <- mkUnreadyDescs i armTbl ct entTbl mt pt tt d is
+           -> a & _1 .~ eqTbl' & _2 .~ it' & _3 <>~ bs & _4 <>~ msgs
 
 
-mkUnreadyDescs :: Id -> WorldState -> PCDesig -> Inv -> ([Broadcast], [T.Text])
-mkUnreadyDescs i ws d is = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ws is ]
+mkUnreadyDescs :: Id
+               -> ArmTbl
+               -> ClothTbl
+               -> EntTbl
+               -> MobTbl
+               -> PCTbl
+               -> TypeTbl
+               -> PCDesig
+               -> Inv
+               -> ([Broadcast], [T.Text])
+mkUnreadyDescs i armTbl ct et mt pt tt d is =
+    first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i et mt pt is ]
   where
     helper (ei, c, b@(s, _)) = if c == 1
       then let msg = T.concat [ "You ", mkVerb ei SndPer, " the ", s, "." ] in
@@ -1865,8 +1894,8 @@ mkUnreadyDescs i ws d is = first concat . unzip $ [ helper icb | icb <- mkIdCoun
             , ( T.concat [ serialize d, " ", mkVerb ei ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ]
               , otherPCIds ) ]
           , msg )
-    mkVerb ei p =  case (ws^.typeTbl)  ! ei of
-      ClothType -> case (ws^.clothTbl) ! ei of
+    mkVerb ei p =  case tt ! ei of
+      ClothType -> case ct ! ei of
         Earring  -> mkVerbRemove  p
         NoseRing -> mkVerbRemove  p
         Necklace -> mkVerbTakeOff p
@@ -1877,7 +1906,7 @@ mkUnreadyDescs i ws d is = first concat . unzip $ [ helper icb | icb <- mkIdCoun
       ConType -> mkVerbTakeOff p
       WpnType | p == SndPer -> "stop wielding"
               | otherwise   -> "stops wielding"
-      ArmType -> case view armSub $ (ws^.armTbl) ! ei of
+      ArmType -> case view armSub $ armTbl ! ei of
         Head   -> mkVerbTakeOff p
         Hands  -> mkVerbTakeOff p
         Feet   -> mkVerbTakeOff p
@@ -1895,8 +1924,8 @@ mkUnreadyDescs i ws d is = first concat . unzip $ [ helper icb | icb <- mkIdCoun
     otherPCIds    = i `delete` pcIds d
 
 
-mkIdCountBothList :: Id -> WorldState -> Inv -> [(Id, Int, BothGramNos)]
-mkIdCountBothList i ws is | ebgns <- [ getEffBothGramNos i et mt pt i' | i' <- is ], cs <- mkCountList ebgns =
+mkIdCountBothList :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> [(Id, Int, BothGramNos)]
+mkIdCountBothList i et mt pt is | ebgns <- [ getEffBothGramNos i et mt pt i' | i' <- is ], cs <- mkCountList ebgns =
     nubBy equalCountsAndBoths . zip3 is cs $ ebgns
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
