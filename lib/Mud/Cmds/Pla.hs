@@ -294,7 +294,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dblQuote "drop sword"
                       , dfltColor
                       , "." ]
-dropAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
+dropAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "drop" i $ logMsgs
   where
     helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
@@ -315,7 +315,7 @@ dropAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMs
                    writeTVar (md^.invTblTVar)   it'
                    bcastNlSTM mt mqt pcTbl plaTbl bs'
                    return logMsgs'
-          else return (mkBroadcast i "You don't see anything here to pick up.", [])
+          else wrapSendSTM mq cols "You don't see anything here to pick up." >> return []
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
@@ -483,17 +483,17 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dblQuote "remove ring sack"
                                   , dfltColor
                                   , "." ]
-getAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
+getAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "get" i $ logMsgs
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                             <*> readTVar (md^.entTblTVar)
+                             <*> readTVar (md^.invTblTVar)
+                             <*> readTVar (md^.mobTblTVar)
+                             <*> readTVar (md^.msgQueueTblTVar)
+                             <*> readTVar (md^.pcTblTVar)
+                             <*> readTVar (md^.plaTblTVar)
+                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let (d, ri, _, ris, rc) = mkGetLookBindings i ct et it mt pcTbl tt
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (ris, rc)
           then let (eiss, ecs)          = resolveRmInvCoins i et mt pcTbl as ris rc
@@ -504,7 +504,7 @@ getAction (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsg
                    writeTVar (md^.invTblTVar)   it'
                    bcastNlSTM mt mqt pcTbl plaTbl bs'
                    return logMsgs'
-          else return (mkBroadcast i "You don't see anything here to pick up.", [])
+          else wrapSendSTM mq cols "You don't see anything here to pick up." >> return []
 getAction p = patternMatchFail "getAction" [ showText p ]
 
 
@@ -529,14 +529,14 @@ tryMove i mq cols dir = ask >>= liftIO . atomically . helperSTM >>= \case
       logPla "tryMove" i logMsg
       look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.rmTblTVar)
-                            <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, rt, tt) ->
+    helperSTM md = (,,,,,,,) <$> readTVar (md^.entTblTVar)
+                             <*> readTVar (md^.invTblTVar)
+                             <*> readTVar (md^.mobTblTVar)
+                             <*> readTVar (md^.msgQueueTblTVar)
+                             <*> readTVar (md^.pcTblTVar)
+                             <*> readTVar (md^.plaTblTVar)
+                             <*> readTVar (md^.rmTblTVar)
+                             <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, rt, tt) ->
         let (originD, s, p, originRi, (i `delete`) -> originIs) = mkCapStdDesig i et it mt pcTbl tt
             originRm                                            = rt ! originRi
         in case findExit originRm dir of
@@ -565,8 +565,8 @@ tryMove i mq cols dir = ask >>= liftIO . atomically . helperSTM >>= \case
                                          , "." ]
               in do
                   writeTVar (md^.pcTblTVar) pcTbl'
-                  writeTVar (md^.invTblTVar) $ at originRi ?~ originIs & at destRi ?~ destIs'
-                  bcast mt mqt pcTbl' plaTbl [ (msgAtOrigin, originPis), (msgAtDest, destPis) ]
+                  writeTVar (md^.invTblTVar) $ it & at originRi ?~ originIs & at destRi ?~ destIs'
+                  bcastSTM mt mqt pcTbl' plaTbl [ (msgAtOrigin, originPis), (msgAtDest, destPis) ]
                   return . Right $ logMsg
     sorry | dir `elem` stdLinkNames = "You can't go that way."
           | otherwise               = dblQuote dir <> " is not a valid exit."
@@ -633,7 +633,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
     handler e = do
         fileIOExHandler "help" e
         wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
-    helper rootHelpTxt = i |$| liftIO mkHelpData >=> \(sortBy (compare `on` helpName) -> hs) ->
+    helper rootHelpTxt = ask >>= liftIO . mkHelpData i >>= \(sortBy (compare `on` helpName) -> hs) ->
         let styleds                = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = over both (formatHelpNames . mkHelpNames) . partition (isCmdHelp . snd) $ styleds
             helpTxt                = T.concat [ nl rootHelpTxt
@@ -650,7 +650,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote hs           = any isAdminHelp hs |?| nlPrefix $ asterisk <> " indicates help that is available only to \
                                                                           \administrators."
-help (LowerNub i mq cols as) = i |$| liftIO mkHelpData >=> \hs -> do
+help (LowerNub i mq cols as) = ask >>= liftIO . mkHelpData i >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
@@ -1022,7 +1022,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dblQuote $ "put " <> a <> " sack"
                       , dfltColor
                       , "." ]
-putAction (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
+putAction (Lower i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "put" i $ logMsgs
   where
     helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
@@ -1038,9 +1038,9 @@ putAction (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs -
           then if T.head cn == rmChar && cn /= T.singleton rmChar
             then if not . null $ ris
               then shufflePutSTM i md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
-              else return (mkBroadcast i "You don't see any containers here.", [])
+              else wrapSendSTM mq cols "You don't see any containers here."
             else shufflePutSTM i ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
-          else return (mkBroadcast i dudeYourHandsAreEmpty, [])
+          else wrapSendSTM mq cols dudeYourHandsAreEmpty
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -1185,7 +1185,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dblQuote "ready sword"
                       , dfltColor
                       , "." ]
-ready (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
+ready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "ready" i $ logMsgs
   where
     helperSTM md = (,,,,,,,,,,,,) <$> readTVar (md^.armTblTVar) -- TODO: We don't really need to get all these tables here...?
@@ -1213,7 +1213,7 @@ ready (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
                    writeTVar (md^.invTblTVar) it'
                    bcastNlSTM mt mqt pcTbl plaTbl bs'
                    return logMsgs
-          else return (mkBroadcast i dudeYourHandsAreEmpty, [])
+          else wrapSendSTM mq cols dudeYourHandsAreEmpty
 ready p = patternMatchFail "ready" [ showText p ]
 
 
@@ -1512,7 +1512,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dblQuote $ "remove " <> a <> " sack"
                       , dfltColor
                       , "." ]
-remove (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
+remove (Lower i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "remove" i $ logMsgs
   where
     helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
@@ -1527,7 +1527,7 @@ remove (Lower' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
         in if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
             then shuffleRemSTM i md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
-            else return (mkBroadcast i "You don't see any containers here.", [])
+            else wrapSendSTM mq cols "You don't see any containers here."
           else shuffleRemSTM i md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 
