@@ -1634,6 +1634,7 @@ say p@(WithArgs i mq cols args@(a:_))
                                  , dfltColor
                                  , "." ]
     sorry             = advise p ["say"]
+    sorrySTM msg      = adviseSTM p ["say"] msg >> return Nothing
     sayToSTM md ma (T.words -> (target:rest@(r:_))) = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
                                                                 <*> readTVar (md^.entTblTVar)
                                                                 <*> readTVar (md^.invTblTVar)
@@ -1656,11 +1657,11 @@ say p@(WithArgs i mq cols args@(a:_))
                   targetSing = (et ! targetId)^.sing
               in case targetType of
                 PCType  | targetDesig <- serialize . mkStdDesig targetId mt pcTbl tt targetSing False $ ris
-                        -> either sorry (sayToHelper    mt mqt pcTbl plaTbl d targetId targetDesig) parseRearAdverb
-                MobType -> either sorry (sayToMobHelper mt mqt pcTbl plaTbl d targetSing)           parseRearAdverb
-                _       -> wrapSendSTM mq cols $ "You can't talk to " <> aOrAn targetSing <> "."
+                        -> either sorrySTM (sayToHelper    mt mqt pcTbl plaTbl d targetId targetDesig) parseRearAdverb
+                MobType -> either sorrySTM (sayToMobHelper mt mqt pcTbl plaTbl d targetSing)           parseRearAdverb
+                _       -> (wrapSendSTM mq cols $ "You can't talk to " <> aOrAn targetSing <> ".") >> return Nothing
             x -> patternMatchFail "say sayTo" [ showText x ]
-          else wrapSendSTM mq cols "You don't see anyone here to talk to."
+          else wrapSendSTM mq cols "You don't see anyone here to talk to." >> return Nothing
       where
         parseRearAdverb = case ma of
           Just adv -> Right (adv <> " ", "", formatMsg . T.unwords $ rest)
@@ -1676,7 +1677,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBrdcst = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
             in do
-                bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
+                bcastSTM mt mqt pcTbl plaTbl [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
                 return . Just $ [ parsePCDesig i mt pcTbl toSelfMsg ]
         sayToMobHelper mt mqt pcTbl plaTbl d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg      = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
@@ -1692,7 +1693,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 (plaTbl', fms) = firstMobSay i plaTbl
             in do
                 writeTVar (md^.plaTblTVar) plaTbl'
-                bcast mt mqt pcTbl plaTbl [ (nlnl toSelfMsg <> fms, [i]), toOthersBrdcst ]
+                bcastSTM mt mqt pcTbl plaTbl [ (nlnl toSelfMsg <> fms, [i]), toOthersBrdcst ]
                 return . Just $ [ toSelfMsg ]
     sayToSTM md ma msg            = patternMatchFail "say sayToSTM" [ showText ma, msg ] -- TODO: Elided md...
     formatMsg                     = dblQuote . capitalizeMsg . punctuateMsg
@@ -1702,7 +1703,7 @@ say p@(WithArgs i mq cols args@(a:_))
                                              <*> readTVar (md^.msgQueueTblTVar)
                                              <*> readTVar (md^.pcTblTVar)
                                              <*> readTVar (md^.plaTblTVar)
-                                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+                                             <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let adverb          = case ma of Nothing  -> ""
                                          Just adv -> " " <> adv
             (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
@@ -1712,7 +1713,7 @@ say p@(WithArgs i mq cols args@(a:_))
             toOthersMsg     = T.concat [ serialize d, " says", adverb, ", ", msg ]
             toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
         in do
-            bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
+            bcastSTM mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
             return [toSelfMsg]
 say p = patternMatchFail "say" [ showText p ]
 

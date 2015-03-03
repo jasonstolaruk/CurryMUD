@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( advise
+                          , adviseSTM
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
@@ -28,7 +29,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Logging as L (logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)
@@ -65,15 +66,19 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
-advise (Advising mq cols) []  msg = wrapSend mq cols msg
-advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For more information, type "
-                                                          , quoteColor
-                                                          , dblQuote $ "help " <> h
-                                                          , dfltColor
-                                                          , "." ] ]
-advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
-    multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
-advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
+advise params hns = liftIO . atomically . adviseSTM params hns
+
+
+adviseSTM :: ActionParams -> [HelpName] -> T.Text -> STM ()
+adviseSTM (Advising mq cols) []  msg = wrapSendSTM mq cols msg
+adviseSTM (Advising mq cols) [h] msg = multiWrapSendSTM mq cols [ msg, T.concat [ "For more information, type "
+                                                                , quoteColor
+                                                                , dblQuote $ "help " <> h
+                                                                , dfltColor
+                                                                , "." ] ]
+adviseSTM (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
+    multiWrapSendSTM mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
+adviseSTM p hs msg = patternMatchFail "adviseSTM" [ showText p, showText hs, msg ]
 
 
 -----
