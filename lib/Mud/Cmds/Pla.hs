@@ -1519,24 +1519,26 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
 remove (Lower i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "remove" i $ logMsgs
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                             <*> readTVar (md^.entTblTVar)
+                             <*> readTVar (md^.invTblTVar)
+                             <*> readTVar (md^.mobTblTVar)
+                             <*> readTVar (md^.msgQueueTblTVar)
+                             <*> readTVar (md^.pcTblTVar)
+                             <*> readTVar (md^.plaTblTVar)
+                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ct et it mt pcTbl tt as
         in if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
-            then shuffleRemSTM i md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
+            then shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
             else wrapSendSTM mq cols "You don't see any containers here."
-          else shuffleRemSTM i md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc procGecrMisPCInv
+          else shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 
 
 shuffleRemSTM :: Id
+              -> MsgQueue
+              -> Cols
               -> MudData
               -> CoinsTbl
               -> EntTbl
@@ -1554,12 +1556,12 @@ shuffleRemSTM :: Id
               -> CoinsWithCon
               -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
               -> STM [T.Text]
-shuffleRemSTM i md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
+shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
     let (conGecrs, conMiss, conRcs) = resolveEntCoinNames i et mt pcTbl [cn] is c
     in if null conMiss && (not . null $ conRcs)
-      then return (mkBroadcast i "You can't remove something from a coin.", [])
+      then wrapSendSTM mq cols "You can't remove something from a coin." >> return []
       else case f . head . zip conGecrs $ conMiss of
-        Left  msg -> return (mkBroadcast i msg, [])
+        Left  msg -> wrapSendSTM mq cols msg >> return []
         Right [ci] | e@(view sing -> s) <- et ! ci, typ <- tt ! ci ->
           if typ /= ConType
             then return (mkBroadcast i $ theOnLowerCap s <> " isn't a container.", [])
