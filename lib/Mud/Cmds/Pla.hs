@@ -1113,24 +1113,24 @@ handleEgress i = ask >>= liftIO . atomically . helperSTM >>= \(s, logMsgs) -> do
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.eqTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) -> do
+    helperSTM md = (,,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                              <*> readTVar (md^.entTblTVar)
+                              <*> readTVar (md^.eqTblTVar)
+                              <*> readTVar (md^.invTblTVar)
+                              <*> readTVar (md^.mobTblTVar)
+                              <*> readTVar (md^.msgQueueTblTVar)
+                              <*> readTVar (md^.pcTblTVar)
+                              <*> readTVar (md^.plaTblTVar)
+                              <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) -> do
         let ri = (pcTbl ! i)^.rmId
         unless (ri == iWelcome) $ let (d, _, _, _, _) = mkCapStdDesig i entTbl it mt pcTbl tt
                                       pis             = i `delete` pcIds d
-                                  in bcast mt mqt pcTbl plaTbl [(nlnl $ serialize d <> " has left the game.", pis)]
-        let ris                    = i `delete` it ! ri
-            s                      = entTbl ! i
+                                  in bcastSTM mt mqt pcTbl plaTbl [(nlnl $ serialize d <> " has left the game.", pis)]
+        let ris                    = i `delete` (it ! ri)
+            s                      = (entTbl ! i)^.sing
             (plaTbl', bs, logMsgs) = peepHelper plaTbl s
-        bcastNl mt mqt pcTbl plaTbl' bs
-        bcastAdmins mt mqt pcTbl plaTbl' $ s <> " has left the game."
+        bcastNlSTM mt mqt pcTbl plaTbl' bs
+        bcastAdminsSTM mt mqt pcTbl plaTbl' $ s <> " has left the game."
         modifyTVar (md^.coinsTblTVar)    $ at i .~ Nothing
         modifyTVar (md^.entTblTVar)      $ at i .~ Nothing
         modifyTVar (md^.eqTblTVar)       $ at i .~ Nothing
@@ -1217,7 +1217,7 @@ ready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \log
                    writeTVar (md^.invTblTVar) it'
                    bcastNlSTM mt mqt pcTbl plaTbl bs'
                    return logMsgs
-          else wrapSendSTM mq cols dudeYourHandsAreEmpty
+          else wrapSendSTM mq cols dudeYourHandsAreEmpty >> return []
 ready p = patternMatchFail "ready" [ showText p ]
 
 

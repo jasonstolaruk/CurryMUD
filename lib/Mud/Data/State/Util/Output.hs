@@ -2,6 +2,7 @@
 
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
+                                  , bcastAdminsSTM
                                   , bcastNl
                                   , bcastNlSTM
                                   , bcastOthersInRm
@@ -156,8 +157,12 @@ bcastNlSTM mt mqt pcTbl plaTbl bs =
 
 
 bcastAdmins :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> MudStack ()
-bcastAdmins mt mqt pcTbl plaTbl msg =
-    bcastNl mt mqt pcTbl plaTbl [( adminNoticeColor <> msg <> dfltColor
+bcastAdmins mt mqt pcTbl plaTbl = liftIO . atomically . bcastAdminsSTM mt mqt pcTbl plaTbl
+
+
+bcastAdminsSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> STM ()
+bcastAdminsSTM mt mqt pcTbl plaTbl msg =
+    bcastNlSTM mt mqt pcTbl plaTbl [( adminNoticeColor <> msg <> dfltColor
                                  , [ pi | pi <- IM.keys plaTbl, getPlaFlag IsAdmin (plaTbl ! pi) ] )]
 
 
