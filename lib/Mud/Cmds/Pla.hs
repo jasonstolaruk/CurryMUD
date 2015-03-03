@@ -1531,7 +1531,7 @@ remove (Lower i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMs
         in if T.head cn == rmChar && cn /= T.singleton rmChar
           then if not . null $ ris
             then shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc procGecrMisRm
-            else wrapSendSTM mq cols "You don't see any containers here."
+            else wrapSendSTM mq cols "You don't see any containers here." >> return []
           else shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 
@@ -1564,7 +1564,7 @@ shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
         Left  msg -> wrapSendSTM mq cols msg >> return []
         Right [ci] | e@(view sing -> s) <- et ! ci, typ <- tt ! ci ->
           if typ /= ConType
-            then return (mkBroadcast i $ theOnLowerCap s <> " isn't a container.", [])
+            then (wrapSendSTM mq cols $ theOnLowerCap s <> " isn't a container.") >> return []
             else let cis                  = it ! ci
                      cc                   = ct ! ci
                      (gecrs, miss, rcs)   = resolveEntCoinNames i et mt pcTbl as cis cc
@@ -1580,7 +1580,7 @@ shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
                      writeTVar (md^.invTblTVar)   it'
                      bcastNlSTM mt mqt pcTbl plaTbl bs'
                      return logMsgs'
-        Right _ -> return (mkBroadcast i "You can only remove things from one container at a time.", [])
+        Right _ -> wrapSendSTM mq cols "You can only remove things from one container at a time." >> return []
 
 
 -----
@@ -1599,13 +1599,13 @@ say p@(WithArgs i mq cols args@(a:_))
     Left  sorryMsg -> sorry sorryMsg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
-        then ask >>= \md -> (liftIO . atomically . sayToSTM md (Just adverb) . T.tail $ rest) >>= maybeRet (logPlaOut "say" i)
+        then ask >>= \md -> (liftIO . atomically . sayToSTM md (Just adverb) . T.tail $ rest) >>= maybeVoid (logPlaOut "say" i)
         else sorry adviceEmptySayTo
-      | otherwise -> ask >>= \md -> (liftIO . atomically . simpleSayHelperSTM md (Just adverb) $ rest) >>= maybeRet (logPlaOut "say" i)
+      | otherwise -> ask >>= \md -> (liftIO . atomically . simpleSayHelperSTM md (Just adverb) $ rest) >>= logPlaOut "say" i
   | T.head a == sayToChar, T.length a > 1 = if length args > 1
-    then ask >>= \md -> (liftIO . atomically . sayToSTM md Nothing . T.tail . T.unwords $ args) >>= maybeRet (logPlaOut "say" i)
+    then ask >>= \md -> (liftIO . atomically . sayToSTM md Nothing . T.tail . T.unwords $ args) >>= maybeVoid (logPlaOut "say" i)
     else sorry adviceEmptySayTo
-  | otherwise = ask >>= \md -> (liftIO . atomically . simpleSayHelperSTM md Nothing . T.unwords $ args) >>= maybeRet (logPlaOut "say" i)
+  | otherwise = ask >>= \md -> (liftIO . atomically . simpleSayHelperSTM md Nothing . T.unwords $ args) >>= logPlaOut "say" i
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
       (_,   "")            -> Left adviceCloseChar
@@ -1634,14 +1634,14 @@ say p@(WithArgs i mq cols args@(a:_))
                                  , dfltColor
                                  , "." ]
     sorry             = advise p ["say"]
-    sayToSTM md ma (T.words -> (target:rest@(r:_))) = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                                                               <*> readTVar (md^.entTblTVar)
-                                                               <*> readTVar (md^.invTblTVar)
-                                                               <*> readTVar (md^.mobTblTVar)
-                                                               <*> readTVar (md^.msgQueueTblTVar)
-                                                               <*> readTVar (md^.pcTblTVar)
-                                                               <*> readTVar (md^.plaTblTVar)
-                                                               <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+    sayToSTM md ma (T.words -> (target:rest@(r:_))) = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                                                                <*> readTVar (md^.entTblTVar)
+                                                                <*> readTVar (md^.invTblTVar)
+                                                                <*> readTVar (md^.mobTblTVar)
+                                                                <*> readTVar (md^.msgQueueTblTVar)
+                                                                <*> readTVar (md^.pcTblTVar)
+                                                                <*> readTVar (md^.plaTblTVar)
+                                                                <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it mt pcTbl tt
             c                                         = ct ! ri
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (ris', c)
