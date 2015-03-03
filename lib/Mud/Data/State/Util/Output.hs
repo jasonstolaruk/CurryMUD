@@ -20,7 +20,8 @@ module Mud.Data.State.Util.Output ( bcast
                                   , send
                                   , sendMsgBoot
                                   , sendSTM
-                                  , wrapSend ) where
+                                  , wrapSend
+                                  , wrapSendSTM ) where
 
 import Mud.ANSI
 import Mud.Data.Misc
@@ -78,6 +79,10 @@ sendSTM mq = writeTQueue mq . FromServer
 
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
 wrapSend mq cols = send mq . wrapUnlinesNl cols
+
+
+wrapSendSTM :: MsgQueue -> Cols -> T.Text -> STM ()
+wrapSendSTM mq cols = sendSTM mq . wrapUnlinesNl cols
 
 
 multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
