@@ -678,7 +678,7 @@ mkHelpData i md = helpDirs |$| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNa
                       , helpFilePath = adminHelpTopicsDir </> whtn
                       , isCmdHelp    = False
                       , isAdminHelp  = True }  | whtn <- adminHelpTopicNames ]
-    ia <- getPlaFlag IsAdmin . (! i) <$> readTVarIO $ md^.plaTblTVar
+    ia <- getPlaFlag IsAdmin . (! i) <$> readTVarIO (md^.plaTblTVar)
     return $ phcs ++ phts ++ (guard ia >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
@@ -716,18 +716,18 @@ intro (NoArgs i mq cols) = ask >>= \md -> do
       else let introsTxt = T.intercalate ", " intros in do
           multiWrapSend mq cols [ "You know the following names:", introsTxt ]
           logPlaOut "intro" i [introsTxt]
-intro (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
+intro (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "intro" i $ logMsgs
   where
-    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                             <*> readTVar (md^.entTblTVar)
-                             <*> readTVar (md^.invTblTVar)
-                             <*> readTVar (md^.mobTblTVar)
-                             <*> readTVar (md^.msgQueueTblTVar)
-                             <*> readTVar (md^.pcTblTVar)
-                             <*> readTVar (md^.plaTblTVar)
-                             <*> readTVar (md^.rmTblTVar)
-                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, rt, tt) ->
+    helperSTM md = (,,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                              <*> readTVar (md^.entTblTVar)
+                              <*> readTVar (md^.invTblTVar)
+                              <*> readTVar (md^.mobTblTVar)
+                              <*> readTVar (md^.msgQueueTblTVar)
+                              <*> readTVar (md^.pcTblTVar)
+                              <*> readTVar (md^.plaTblTVar)
+                              <*> readTVar (md^.rmTblTVar)
+                              <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, rt, tt) ->
         let ri                       = (pcTbl ! i)^.rmId
             is@((i `delete`) -> is') = it ! ri
             c                        = ct ! ri
@@ -737,9 +737,9 @@ intro (LowerNub' i as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
                    (        cbs', logMsgs') = foldl' helperIntroEitherCoins             (       cbs, logMsgs) ecs
                in do
                  writeTVar (md^.pcTblTVar) pcTbl'
-                 bcast mt mqt pcTbl' plaTbl . map fromClassifiedBroadcast . sort $ cbs'
+                 bcastSTM mt mqt pcTbl' plaTbl . map fromClassifiedBroadcast . sort $ cbs'
                  return logMsgs'
-          else return (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])
+          else (wrapSendSTM mq cols . nlnl $ "You don't see anyone here to introduce yourself to.") >> return []
     helperIntroEitherInv _  _  _  _   a (Left msg) | T.null msg = a
                                                    | otherwise  = a & _2 <>~ (mkNTBroadcast i . nlnl $ msg)
     helperIntroEitherInv et mt tt ris a (Right is) = foldl' tryIntro a is
@@ -798,7 +798,7 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 inv :: Action -- TODO: Give some indication of encumbrance.
 inv (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, pt) ->
-    send mq . nl . mkInvCoinsDesc i cols ct it et mt pt i $ et ! i
+    send mq . nl . mkInvCoinsDesc i cols ct et it mt pt i $ et ! i
   where
     helperSTM md = (,,,,) <$> readTVar (md^.coinsTblTVar)
                           <*> readTVar (md^.entTblTVar)
@@ -836,8 +836,10 @@ look :: Action
 look (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, pt, rt, tt) ->
     let ri = (pt ! i)^.rmId
         r  = rt ! ri
-    in send mq . nl $ multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ] ++
-                      mkExitsSummary cols r <> mkRmInvCoinsDesc i cols ct et it mt pt tt ri
+    in send mq . nl $ multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ]
+                                     , r^.rmDesc
+                                     , mkExitsSummary cols r
+                                     , mkRmInvCoinsDesc i cols ct et it mt pt tt ri ]
   where
     helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
                             <*> readTVar (md^.entTblTVar)
