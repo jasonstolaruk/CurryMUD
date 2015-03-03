@@ -1965,7 +1965,9 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 
 
 getUptime :: MudStack Int
-getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` getNWSRec startTime
+getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` st -- TODO: sec?
+  where
+    st = ask >>= \md -> md^.startTime
 
 
 -----
@@ -1979,10 +1981,20 @@ what p@AdviseNoArgs = advise p ["what"] advice
                       , dblQuote "what up"
                       , dfltColor
                       , "." ]
-what (LowerNub i mq cols as) =
-    logPlaExecArgs "what" as i >> (send mq =<< [ T.concat . map (helper ws r) $ as | (ws, r) <- getPCRm' i ])
+what (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >> logPlaExecArgs "what" as i
   where
-    helper ws r n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ws it n | it <- [ PCInv, PCEq, RmInv ] ]
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.eqTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.rmTblTVar)
+                            <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, pt, rt, tt) ->
+        let ri       = (pt ! i)^.rmId
+            r        = rt ! ri
+            helper n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ct entTbl eqTbl it mt pt tt invType n | invType <- [ PCInv, PCEq, RmInv ] ]
+        in sendSTM mq . T.concat . map helper $ as
 what p = patternMatchFail "what" [ showText p ]
 
 
@@ -2013,16 +2025,16 @@ whatQuote :: T.Text -> T.Text
 whatQuote = (<> dfltColor) . (quoteColor <>) . dblQuote
 
 
-whatInv :: Id -> Cols -> WorldState -> InvType -> T.Text -> T.Text
-whatInv i cols ws it n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
-  then whatInvEnts i cols ws it n (head gecrs) is
-  else T.concat . map (whatInvCoins cols it n) $ rcs
+whatInv :: Id -> Cols -> CoinsTbl -> EntTbl -> EqTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> InvType -> T.Text -> T.Text
+whatInv i cols ct entTbl eqTbl it mt pt tt invType n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
+  then whatInvEnts i cols entTbl mt pt tt invType n (head gecrs) is
+  else T.concat . map (whatInvCoins cols invType n) $ rcs
   where
-    resolveName | (is, c) <- getLocInvCoins, (gecrs, _, rcs) <- resolveEntCoinNames i et mt pcTbl [n] is c = (is, gecrs, rcs)
-    getLocInvCoins    = case it of PCInv -> (((ws^.invTbl) !) *** ((ws^.coinsTbl) !)) . dup $ i
-                                   PCEq  -> (M.elems $ (ws^.eqTbl) ! i, mempty)
-                                   RmInv -> (((ws^.invTbl) !) *** ((ws^.coinsTbl) !)) . dup $ ri
-    (view rmId -> ri) = (ws^.pcTbl) ! i
+    resolveName | (is, c) <- getLocInvCoins, (gecrs, _, rcs) <- resolveEntCoinNames i entTbl mt pt [n] is c = (is, gecrs, rcs)
+    getLocInvCoins = case invType of PCInv -> ((it !) *** (ct !)) . dup $ i
+                                     PCEq  -> (M.elems $ eqTbl ! i, mempty)
+                                     RmInv -> ((it !) *** (ct !)) . dup $ ri
+    ri             = (pt ! i)^.rmId
 
 
 whatInvEnts :: Id
@@ -2036,7 +2048,7 @@ whatInvEnts :: Id
             -> GetEntsCoinsRes
             -> Inv
             -> T.Text
-whatInvEnts i cols et mt pt it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is =
+whatInvEnts i cols et mt pt invType@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is =
     wrapUnlines cols $ case gecr of
       Mult { entsRes = (Just es), .. }
         | nameSearchedFor == acp -> T.concat [ whatQuote acp
@@ -2081,8 +2093,8 @@ whatInvEnts i cols et mt pt it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) 
                                                                       , "." ]
   where
     acp                                     = T.singleton allChar
-    supplement | it `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
-               | otherwise                  = ""
+    supplement | invType `elem` [ PCInv, RmInv ] = " " <> parensQuote "including any coins"
+               | otherwise                       = ""
     checkFirst e ens | en <- getEffName i et mt pt $ e^.entId, matches <- filter (== en) ens =
         guard (length matches > 1) >> "first "
 
@@ -2094,9 +2106,9 @@ getLocTxtForInvType = \case PCInv -> "in your inventory"
 
 
 whatInvCoins :: Cols -> InvType -> T.Text -> ReconciledCoins -> T.Text
-whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
-  | it == PCEq = ""
-  | otherwise  = wrapUnlines cols $ case rc of
+whatInvCoins cols invType@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
+  | invType == PCEq = ""
+  | otherwise       = wrapUnlines cols $ case rc of
     Left  Empty                                 -> T.concat [ r
                                                             , " doesn't refer to any coins "
                                                             , locTxt
@@ -2127,12 +2139,12 @@ whatInvCoins cols it@(getLocTxtForInvType -> locTxt) (whatQuote -> r) rc
                                                             , "." ]
     _                                           -> patternMatchFail "whatInvCoins" [ showText rc ]
   where
-    supplementNone cn      = case it of PCInv -> parensQuote $ "you don't have any "       <> cn
-                                        RmInv -> parensQuote $ "there aren't any "         <> cn <> " here"
-                                        PCEq  -> oops "supplementNone"
-    supplementNotEnough cn = case it of PCInv -> parensQuote $ "you don't have that many " <> cn
-                                        RmInv -> parensQuote $ "there aren't that many "   <> cn <> " here"
-                                        PCEq  -> oops "supplementNotEnough"
+    supplementNone cn      = case invType of PCInv -> parensQuote $ "you don't have any "       <> cn
+                                             RmInv -> parensQuote $ "there aren't any "         <> cn <> " here"
+                                             PCEq  -> oops "supplementNone"
+    supplementNotEnough cn = case invType of PCInv -> parensQuote $ "you don't have that many " <> cn
+                                             RmInv -> parensQuote $ "there aren't that many "   <> cn <> " here"
+                                             PCEq  -> oops "supplementNotEnough"
     oops fn                = blowUp ("whatInvCoins " <> fn) "called for InvType of PCEq" []
     mkTxtForCoins c@(Coins (cop, sil, gol))
       | cop /= 0  = "copper pieces"
