@@ -11,7 +11,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Pla
 import Mud.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
@@ -27,9 +26,9 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import Control.Exception.Lifted (try)
 import Control.Lens (at)
-import Control.Lens.Getter (use, views)
+import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
-import Control.Monad ((>=>), guard, unless, void, when)
+import Control.Monad ((>=>), guard, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
@@ -37,8 +36,7 @@ import Data.List (delete, sort)
 import Data.Monoid ((<>))
 import Network (HostName)
 import System.Directory (doesFileExist)
-import qualified Data.IntMap.Lazy as IM (IntMap)
-import qualified Data.Set as S (member)
+-- import qualified Data.Set as S (member) -- TODO
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile, writeFile)
 
@@ -90,15 +88,15 @@ checkProfanity cn i mq =
   where
     helper profanities = if cn `notElem` T.lines profanities
       then return False
-      else do
-          logNotice "checkProfanity" =<< [ T.concat [ "booting player ", showText i, " ", s, " due to profanity." ]
-                                         | (parensQuote -> s) <- getEntSing i ]
-          views hostName (logProfanity cn) =<< getPla i
+      else ask >>= liftIO . atomically . helperSTM >>= \(parensQuote . view sing . (! i) -> s, view hostName . (! i) -> hn) -> do
+          logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
+          logProfanity cn hn
           send mq . nlPrefix . nl $ bootMsgColor                                                                     <>
                                     "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
                                     dfltColor
           sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
           return True
+    helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar)
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()
@@ -138,12 +136,12 @@ checkWordsDict cn mq = nonWorldState.dicts.wordsDict |$| use >=> \case
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
-  Just True -> ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, oldSing, pcTbl, p, plaTbl) -> do
+  Just True -> ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, oldSing, pcTbl, p, plaTbl, tt) -> do
       logNotice "interpConfirmName" $ dblQuote oldSing <> " has logged on as " <> s <> "."
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
       when (getPlaFlag IsAdmin p) . stopInacTimer i $ mq
-      notifyArrival i et it mt mqt pcTbl plaTbl
+      notifyArrival i et it mt mqt pcTbl plaTbl tt
       send mq . nl $ ""
       showMotd mq cols
       look ActionParams { plaId       = i
@@ -151,20 +149,23 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
                         , plaCols     = cols
                         , args        = [] }
       prompt mq dfltPrompt
-  Just False -> promptRetryName mq "" >> (void . modifyPla i interp . Just $ interpName)
+  Just False -> promptRetryName mq "" >> ask >>= \md -> liftIO . atomically $ do
+      pt <- readTVar $ md^.plaTblTVar
+      let p = pt ! i & interp .~ Just interpName
+      writeTVar (md^.plaTblTVar) $ pt & at i ?~ p
   Nothing    -> promptRetryYesNo mq
   where
-    helperSTM md = (,) <$> readTVar (md^.entTblTVar)
-                       <*> readTVar (md^.invTblTVar)
-                       <*> readTVar (md^.mobTblTVar)
-                       <*> readTVar (md^.msgQueueTblTVar)
-                       <*> readTVar (md^.pcTblTVar)
-                       <*> readTVar (md^.plaTblTVar)
-                       <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
+    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let e        = et ! i
             oldSing  = e^.sing
             et'      = et & at i ?~ (e & sing .~ s)
-            originIs = i `delete` it ! iWelcome
+            originIs = i `delete` (it ! iWelcome)
             destIs   = sortInv et' tt $ it ! iCentral ++ [i]
             it'      = it & at iWelcome ?~ originIs & at iCentral ?~ destIs
             pc        = pcTbl ! i & rmId .~ iCentral
@@ -176,7 +177,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
             writeTVar (md^.invTblTVar) it'
             writeTVar (md^.pcTblTVar)  pcTbl'
             writeTVar (md^.plaTblTVar) plaTbl'
-            return (it', mt, mqt, oldSing, pcTbl', pla, plaTbl')
+            return (et', it', mt, mqt, oldSing, pcTbl', pla, plaTbl', tt)
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
 
@@ -194,7 +195,7 @@ stopInacTimer i mq = do
     liftIO . atomically . writeTQueue mq $ InacStop
 
 
-notifyArrival :: Id -> EntTbl -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> MudStack ()
+notifyArrival :: Id -> EntTbl -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> TypeTbl -> MudStack ()
 notifyArrival i et it mt mqt pcTbl plaTbl tt = let s = (et ! i)^.sing in do
     bcastAdmins mt mqt pcTbl plaTbl $ s <> " has logged on."
     bcastOthersInRm i it mt mqt pcTbl plaTbl tt . nlnl $ mkSerializedNonStdDesig i mt pcTbl s A <> " has arrived in \

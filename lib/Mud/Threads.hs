@@ -32,11 +32,12 @@ import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
+import Control.Concurrent (forkIO)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryReadTMQueue, writeTMQueue)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Concurrent.STM.TVar (modifyTVar)
+import Control.Concurrent.STM.TVar (modifyTVar, readTVar, readTVarIO, writeTVar)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
@@ -141,7 +142,7 @@ listenExHandler e = case fromException e of
 
 registerThread :: ThreadType -> MudStack ()
 registerThread threadType = liftIO myThreadId >>= \ti ->
-    asks (\md -> liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType)
+    ask >>= \md -> (liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType)
 
 
 -- TODO: Figure out what to do with dictionaries.
@@ -180,7 +181,7 @@ threadTblPurgerExHandler e = do
 
 
 getListenThreadId :: MudStack ThreadId
-getListenThreadId = asks (\md -> reverseLookup Listen <$> liftIO . readTVarIO $ md^.threadTblTVar)
+getListenThreadId = ask >>= \md -> reverseLookup Listen <$> (liftIO . readTVarIO $ md^.threadTblTVar)
 
 
 -- ==================================================
@@ -194,10 +195,7 @@ talk h host = helper `finally` cleanUp
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         registerThread . Talk $ i
-        handle (plaThreadExHandler "talk" i) $ (liftIO . atomically . helperSTM) |$| asks >=> \( mt
-                                                                                               , mqt
-                                                                                               , pcTbl
-                                                                                               , plaTbl ) ->
+        handle (plaThreadExHandler "talk" i) $ ask >>= liftIO . atomically . helperSTM >>= \(mt, mqt, pcTbl, plaTbl ) -> do
             logNotice "talk helper" $ "new PC name for incoming player: "    <> s <> "."
             bcastAdmins mt mqt pcTbl plaTbl $ "A new player has connected: " <> s <> "."
             liftIO configBuffer
@@ -206,10 +204,10 @@ talk h host = helper `finally` cleanUp
             liftIO . void . forkIO . runReaderT (inacTimer i mq itq) $ md
             liftIO $ race_ (runReaderT (server  h i mq itq) md)
                            (runReaderT (receive h i mq)     md)
-    helperSTM md = (,) <$> readTVar (md^.mobTblTVar)
-                       <*> readTVar (md^.msgQueueTblTVar)
-                       <*> readTVar (md^.pcTblTVar)
-                       <*> readTVar (md^.plaTblTVar)
+    helperSTM md = (,,,) <$> readTVar (md^.mobTblTVar)
+                         <*> readTVar (md^.msgQueueTblTVar)
+                         <*> readTVar (md^.pcTblTVar)
+                         <*> readTVar (md^.plaTblTVar)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
@@ -219,7 +217,7 @@ adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = ask >>= \md -> do
     (sexy, r) <- liftIO $ (,) <$> randomSex <*> randomRace
     liftIO . atomically $ do
-        (et, it, tt) <- (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.invTblTVar) <*> readTVar (md^.typeTblTVar)
+        (et, it, tt) <- (,,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.invTblTVar) <*> readTVar (md^.typeTblTVar)
         let i    = getUnusedId tt
             s    = showText r <> showText i
             e    = Ent { _entId    = i
@@ -311,7 +309,7 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
           Just (Just ResetTimer)             -> loop 0
           Nothing                            -> return ()
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = do
-        (parensQuote -> s) <- getEntSing i
+        s <- ask >>= \md -> parensQuote . view sing . (! i) <$> (liftIO . readTVarIO $ (md^.entTblTVar))
         logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", s, " due to inactivity." ]
         logPla "inacTimer" i $ "booted due to inactivity " <> secs <>  "."
         liftIO . atomically . writeTQueue mq $ InacBoot
