@@ -1829,17 +1829,17 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
 unready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
   where
-    helperSTM md = (,,,,,,,,,,,,) <$> readTVar (md^.armTblTVar)
-                                  <*> readTVar (md^.clothTblTVar)
-                                  <*> readTVar (md^.entTblTVar)
-                                  <*> readTVar (md^.eqTblTVar)
-                                  <*> readTVar (md^.invTblTVar)
-                                  <*> readTVar (md^.mobTblTVar)
-                                  <*> readTVar (md^.msgQueueTblTVar)
-                                  <*> readTVar (md^.pcTblTVar)
-                                  <*> readTVar (md^.plaTblTVar)
-                                  <*> readTVar (md^.typeTblTVar)
-                                  <*> readTVar (md^.wpnTblTVar) >>= \(armTbl, ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt, wt) ->
+    helperSTM md = (,,,,,,,,,,) <$> readTVar (md^.armTblTVar)
+                                <*> readTVar (md^.clothTblTVar)
+                                <*> readTVar (md^.entTblTVar)
+                                <*> readTVar (md^.eqTblTVar)
+                                <*> readTVar (md^.invTblTVar)
+                                <*> readTVar (md^.mobTblTVar)
+                                <*> readTVar (md^.msgQueueTblTVar)
+                                <*> readTVar (md^.pcTblTVar)
+                                <*> readTVar (md^.plaTblTVar)
+                                <*> readTVar (md^.typeTblTVar)
+                                <*> readTVar (md^.wpnTblTVar) >>= \(armTbl, ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt, wt) ->
         let (d, _, _, _, _) = mkCapStdDesig i entTbl it mt pcTbl tt
             em              = eqTbl ! i
             is              = M.elems em
@@ -1851,9 +1851,9 @@ unready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \l
                in do
                    writeTVar (md^.eqTblTVar) eqTbl'
                    writeTVar (md^.invTblTVar) it'
-                   bcastNl mt mqt pcTbl plaTbl bs'
+                   bcastNlSTM mt mqt pcTbl plaTbl bs'
                    return logMsgs
-          else wrapSendSTM mq cols dudeYou'reNaked
+          else wrapSendSTM mq cols dudeYou'reNaked >> return []
 unready p = patternMatchFail "unready" [ showText p ]
 
 
