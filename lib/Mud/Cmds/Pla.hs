@@ -1739,10 +1739,10 @@ firstMobSay i pt = let p = pt ! i in if getPlaFlag IsNotFirstMobSay p
 
 
 setAction :: Action
-setAction (NoArgs i mq cols) = do
+setAction (NoArgs i mq cols) = ask >>= \md -> do
     logPlaExecArgs "set" [] i
     multiWrapSend mq cols =<< [ [ pad 9 (n <> ": ") <> v | n <- names | v <- values ]
-                              | p <- (! i) <$> liftIO . readTVarIO $ plaTblTVar
+                              | p <- (! i) <$> (liftIO . readTVarIO $ md^.plaTblTVar)
                               , let values = map showText [ cols, p^.pageLines ]
                               , let names  = styleAbbrevs Don'tBracket settingNames ]
 setAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs -> do
