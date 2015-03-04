@@ -19,6 +19,7 @@ import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 
+import Control.Monad.Reader (runReaderT)
 import Network (withSocketsDo)
 import System.Directory (setCurrentDirectory)
 import System.Environment (getEnv, getProgName)
