@@ -15,7 +15,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Pla
 import Mud.Interp.CentralDispatch
 import Mud.Interp.Login
 import Mud.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
@@ -41,11 +40,11 @@ import Control.Concurrent.STM.TVar (modifyTVar, readTVar, readTVarIO, writeTVar)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
-import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((&), (.=), (?~), (^.))
+import Control.Lens.Getter (view)
+import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask, asks, runReaderT)
+import Control.Monad.Reader (ask, runReaderT)
 import Data.Bits (zeroBits)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\))
@@ -58,7 +57,7 @@ import System.Random (randomIO, randomRIO) -- TODO: Use mwc-random or tf-random.
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, empty)
-import qualified Data.Set as S (Set, fromList)
+-- import qualified Data.Set as S (Set, fromList) -- TODO
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
@@ -109,7 +108,7 @@ saveUptime ut@(T.pack . renderSecs . toInteger -> utTxt) = getRecordUptime >>= m
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     registerThread Listen
-    asks $ liftIO . void . forkIO . runReaderT threadTblPurger
+    ask >>= liftIO . void . forkIO . runReaderT threadTblPurger
     initWorld
     logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
@@ -392,9 +391,9 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = massMsg SilentBoot >> asks $ liftIO . void . forkIO . runReaderT commitSuicide
+shutDown = massMsg SilentBoot >> ask >>= liftIO . void . forkIO . runReaderT commitSuicide
   where
-    commitSuicide = (\md -> liftIO . readTVarIO $ md^.talkAsyncTblTVar) |$| asks >=> \tat ->
+    commitSuicide = ask >>= liftIO . readTVarIO . view talkAsyncTblTVar >>= \tat -> do
         liftIO . mapM_ wait . M.elems $ tat
         logNotice "shutDown commitSuicide" "all players have been disconnected; killing the listen thread."
         liftIO . killThread =<< getListenThreadId
