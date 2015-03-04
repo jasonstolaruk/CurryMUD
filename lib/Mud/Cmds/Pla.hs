@@ -834,10 +834,7 @@ look :: Action
 look (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, pt, rt, tt) ->
     let ri = (pt ! i)^.rmId
         r  = rt ! ri
-    in send mq . nl $ multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ]
-                                     , r^.rmDesc
-                                     , mkExitsSummary cols r
-                                     , mkRmInvCoinsDesc i cols ct et it mt pt tt ri ]
+    in send mq . nl . T.concat $ multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ] : [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ct et it mt pt tt ri ]
   where
     helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
                             <*> readTVar (md^.entTblTVar)
