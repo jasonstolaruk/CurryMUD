@@ -144,7 +144,7 @@ pager i mq txt@(length -> txtLen) = ask >>= liftIO . atomically . helperSTM >>= 
             pageLen = p^.pageLines
         in if txtLen + 3 <= pageLen
           then return Nothing
-          else let (page, rest) = splitAt (pageLen - 2) txt
+          else let (page, rest) = splitAt (pageLen - 3) txt
                    p'           = p & interp .~ (Just $ interpPager pageLen txtLen (page, rest))
                in writeTVar (md^.plaTblTVar) (pt & at i ?~ p') >> (return . Just $ (page, pageLen))
 
