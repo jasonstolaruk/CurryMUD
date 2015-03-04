@@ -20,7 +20,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Pla
 import Mud.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.NameResolution
 import Mud.TheWorld.Ids
@@ -47,7 +46,7 @@ import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
-import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
+import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ReaderT, ask)
 import Control.Monad.Trans.Class (lift)
@@ -68,7 +67,7 @@ import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.Conduit.Binary as CB -- TODO: (sourceFile)
 import qualified Data.Conduit.Text as CT -- TODO
-import qualified Data.IntMap.Lazy as IM (IntMap, keys)
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -392,7 +391,7 @@ equip (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \(ct
       then let (gecrs, miss, rcs)              = resolveEntCoinNames i entTbl mt pt as is mempty
                eiss                            = zipWith (curry procGecrMisPCEq) gecrs miss
                helperEitherInv acc (Left  msg) = (acc <>) . wrapUnlinesNl cols $ msg
-               helperEitherInv acc (Right is ) = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pt tt is
+               helperEitherInv acc (Right is') = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pt tt is'
                invDesc                         = foldl' helperEitherInv "" eiss
                coinsDesc | not . null $ rcs    = wrapUnlinesNl cols "You don't have any coins among your readied \
                                                                     \equipment."
@@ -719,15 +718,14 @@ intro (NoArgs i mq cols) = ask >>= \md -> do
 intro (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "intro" i $ logMsgs
   where
-    helperSTM md = (,,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                              <*> readTVar (md^.entTblTVar)
-                              <*> readTVar (md^.invTblTVar)
-                              <*> readTVar (md^.mobTblTVar)
-                              <*> readTVar (md^.msgQueueTblTVar)
-                              <*> readTVar (md^.pcTblTVar)
-                              <*> readTVar (md^.plaTblTVar)
-                              <*> readTVar (md^.rmTblTVar)
-                              <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, rt, tt) ->
+    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                             <*> readTVar (md^.entTblTVar)
+                             <*> readTVar (md^.invTblTVar)
+                             <*> readTVar (md^.mobTblTVar)
+                             <*> readTVar (md^.msgQueueTblTVar)
+                             <*> readTVar (md^.pcTblTVar)
+                             <*> readTVar (md^.plaTblTVar)
+                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let ri                       = (pcTbl ! i)^.rmId
             is@((i `delete`) -> is') = it ! ri
             c                        = ct ! ri
@@ -1113,21 +1111,19 @@ handleEgress i = ask >>= liftIO . atomically . helperSTM >>= \(s, logMsgs) -> do
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
   where
-    helperSTM md = (,,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                              <*> readTVar (md^.entTblTVar)
-                              <*> readTVar (md^.eqTblTVar)
-                              <*> readTVar (md^.invTblTVar)
-                              <*> readTVar (md^.mobTblTVar)
-                              <*> readTVar (md^.msgQueueTblTVar)
-                              <*> readTVar (md^.pcTblTVar)
-                              <*> readTVar (md^.plaTblTVar)
-                              <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) -> do
+    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.msgQueueTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.plaTblTVar)
+                            <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) -> do
         let ri = (pcTbl ! i)^.rmId
-        unless (ri == iWelcome) $ let (d, _, _, _, _) = mkCapStdDesig i entTbl it mt pcTbl tt
+        unless (ri == iWelcome) $ let (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
                                       pis             = i `delete` pcIds d
                                   in bcastSTM mt mqt pcTbl plaTbl [(nlnl $ serialize d <> " has left the game.", pis)]
         let ris                    = i `delete` (it ! ri)
-            s                      = (entTbl ! i)^.sing
+            s                      = (et ! i)^.sing
             (plaTbl', bs, logMsgs) = peepHelper plaTbl s
         bcastNlSTM mt mqt pcTbl plaTbl' bs
         bcastAdminsSTM mt mqt pcTbl plaTbl' $ s <> " has left the game."
