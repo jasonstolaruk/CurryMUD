@@ -1974,7 +1974,7 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 getUptime :: MudStack Int
 getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` st -- TODO: sec?
   where
-    st = ask >>= \md -> md^.startTime
+    st = ask >>= return . view startTime
 
 
 -----
