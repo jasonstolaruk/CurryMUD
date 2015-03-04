@@ -2055,7 +2055,7 @@ whatInvEnts :: Id
             -> GetEntsCoinsRes
             -> Inv
             -> T.Text
-whatInvEnts i cols et mt pt invType@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is =
+whatInvEnts i cols et mt pt tt invType@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is =
     wrapUnlines cols $ case gecr of
       Mult { entsRes = (Just es), .. }
         | nameSearchedFor == acp -> T.concat [ whatQuote acp
@@ -2182,7 +2182,7 @@ whoAdmin (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >> logPlaE
                                                                         , let s = (et ! ai)^.sing, then sortWith by s ]
             aas'                        = dropBlanks $ self : aas
             footer                      = [ numOfAdmins ais <> " logged in." ]
-        in multiWrapSend mq cols (null aas' ? footer :? T.intercalate ", " aas' : footer)
+        in multiWrapSendSTM mq cols (null aas' ? footer :? T.intercalate ", " aas' : footer)
       where
         numOfAdmins (length -> noa) | noa == 1  = "1 administrator"
                                     | otherwise = showText noa <> " administrators"
