@@ -21,10 +21,10 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Logging as L (logNotice, logPla)
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (putTMVar)
 import Control.Concurrent.STM.TQueue (writeTQueue)
+import Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import Control.Exception.Lifted (try)
 import Control.Lens (at)
 import Control.Lens.Getter (use, views)
