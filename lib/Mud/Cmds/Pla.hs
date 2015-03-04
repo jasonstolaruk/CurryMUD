@@ -847,7 +847,7 @@ look (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= maybe
   where
     -- TODO: Shouldn't we do all our logging inside a single transaction?
     helper ds = forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
-        logPla "look" i $ ("looked at " <> es <> ".")
+        logPla "look" i $ "looked at " <> es <> "."
     helperSTM md = (,,,,,,,,) <$> readTVar (md^.coinsTblTVar)
                               <*> readTVar (md^.entTblTVar)
                               <*> readTVar (md^.eqTblTVar)
@@ -1075,7 +1075,7 @@ shufflePutSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c pis
       else case f . head . zip conGecrs $ conMiss of
         Left  (mkBroadcast i -> bc) -> bcastNlSTM mt mqt pcTbl plaTbl bc >> return []
         Right [ci] | e <- et ! ci, typ <- tt ! ci -> if typ /= ConType
-          then (wrapSendSTM mq cols $ theOnLowerCap (e^.sing) <> " isn't a container.") >> return []
+          then wrapSendSTM mq cols (theOnLowerCap (e^.sing) <> " isn't a container.") >> return []
           else let (gecrs, miss, rcs)   = resolveEntCoinNames i et mt pcTbl as pis pc
                    eiss                 = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                  = map procReconciledCoinsPCInv rcs
@@ -1557,7 +1557,7 @@ shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
         Left  msg -> wrapSendSTM mq cols msg >> return []
         Right [ci] | e@(view sing -> s) <- et ! ci, typ <- tt ! ci ->
           if typ /= ConType
-            then (wrapSendSTM mq cols $ theOnLowerCap s <> " isn't a container.") >> return []
+            then wrapSendSTM mq cols (theOnLowerCap s <> " isn't a container.") >> return []
             else let cis                  = it ! ci
                      cc                   = ct ! ci
                      (gecrs, miss, rcs)   = resolveEntCoinNames i et mt pcTbl as cis cc
@@ -1652,7 +1652,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 PCType  | targetDesig <- serialize . mkStdDesig targetId mt pcTbl tt targetSing False $ ris
                         -> either sorrySTM (sayToHelper    mt mqt pcTbl plaTbl d targetId targetDesig) parseRearAdverb
                 MobType -> either sorrySTM (sayToMobHelper mt mqt pcTbl plaTbl d targetSing)           parseRearAdverb
-                _       -> (wrapSendSTM mq cols $ "You can't talk to " <> aOrAn targetSing <> ".") >> return Nothing
+                _       -> wrapSendSTM mq cols ("You can't talk to " <> aOrAn targetSing <> ".") >> return Nothing
             x -> patternMatchFail "say sayTo" [ showText x ]
           else wrapSendSTM mq cols "You don't see anyone here to talk to." >> return Nothing
       where
@@ -1738,7 +1738,7 @@ setAction (NoArgs i mq cols) = ask >>= \md -> do
                               | p <- (! i) <$> (liftIO . readTVarIO $ md^.plaTblTVar)
                               , let values = map showText [ cols, p^.pageLines ]
                               , let names  = styleAbbrevs Don'tBracket settingNames ]
-setAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs -> do
+setAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "set" i $ logMsgs
   where
     helperSTM md = readTVar (md^.plaTblTVar) >>= \pt ->
@@ -1865,7 +1865,7 @@ helperUnready i armTbl ct entTbl mt pt tt d em a@(eqTbl, it, _, _) = \case
   Left  (mkBroadcast i -> b) -> a & _3 <>~ b
   Right is | pis        <- it ! i
            , eqTbl'     <- eqTbl & at i ?~ M.filter (`notElem` is) em
-           , it'        <- it    & at i ?~ (sortInv entTbl tt $ pis ++ is)
+           , it'        <- it    & at i ?~ sortInv entTbl tt (pis ++ is)
            , (bs, msgs) <- mkUnreadyDescs i armTbl ct entTbl mt pt tt d is
            -> a & _1 .~ eqTbl' & _2 .~ it' & _3 <>~ bs & _4 <>~ msgs
 
@@ -1964,9 +1964,7 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 
 
 getUptime :: MudStack Int
-getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` start -- TODO: sec?
-  where
-    start = ask >>= return . view startTime
+getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` (view startTime <$> ask) -- TODO: sec?
 
 
 -----

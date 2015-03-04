@@ -30,8 +30,7 @@ import Mud.Util.Text hiding (headTail)
 import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent (ThreadId, killThread, myThreadId, threadDelay)
-import Control.Concurrent (forkIO)
+import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryReadTMQueue, writeTMQueue)
@@ -141,7 +140,7 @@ listenExHandler e = case fromException e of
 
 registerThread :: ThreadType -> MudStack ()
 registerThread threadType = liftIO myThreadId >>= \ti ->
-    ask >>= \md -> (liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType)
+    ask >>= \md -> liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType
 
 
 -- TODO: Figure out what to do with dictionaries.
