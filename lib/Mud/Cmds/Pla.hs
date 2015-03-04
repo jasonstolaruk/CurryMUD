@@ -2195,10 +2195,10 @@ whoAdmin p = withoutArgs whoAdmin p
 whoAmI :: Action
 whoAmI (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >> logPlaExec "whoami" i
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.pcTblTVar) >>= \(et, mt, pt) ->
+    helperSTM md = (,,) <$> readTVar (md^.entTblTVar)
+                        <*> readTVar (md^.mobTblTVar)
+                        <*> readTVar (md^.pcTblTVar) >>= \(et, mt, pt) ->
         let s         = (et ! i)^.sing
-            (sexy, r) = over both pp ((mt ! i)^.sex, (pt ! i)^.race)
+            (sexy, r) = (pp *** pp) ((mt ! i)^.sex, (pt ! i)^.race)
         in wrapSendSTM mq cols . T.concat $ [ "You are ", knownNameColor, s, dfltColor, " (a ", sexy, " ", r, ")." ]
 whoAmI p = withoutArgs whoAmI p
