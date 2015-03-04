@@ -44,7 +44,7 @@ import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Concurrent.STM.TVar (modifyTVar, readTVar, readTVarIO, writeTVar)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, at, both, over, to)
+import Control.Lens (_1, _2, _3, _4, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
@@ -1720,7 +1720,7 @@ say p = patternMatchFail "say" [ showText p ]
 
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, T.Text)
 firstMobSay i pt = let p = pt ! i in if getPlaFlag IsNotFirstMobSay p
-  then return ""
+  then (pt, "")
   else let msg = nlnl . T.concat $ [ hintANSI
                                    , "Hint:"
                                    , noHintANSI
