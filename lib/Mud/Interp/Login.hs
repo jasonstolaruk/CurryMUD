@@ -31,6 +31,7 @@ import Control.Lens.Getter (use, views)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Monad ((>=>), guard, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete, sort)
 import Data.Monoid ((<>))
@@ -54,7 +55,7 @@ logPla = L.logPla "Mud.Interp.Login"
 
 
 interpName :: Interp
-interpName (T.toLower -> cn) (NoArgs' i mq)
+interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise                         = do
@@ -63,11 +64,15 @@ interpName (T.toLower -> cn) (NoArgs' i mq)
           isPropName <- checkPropNamesDict cn mq
           unless isPropName $ do
               isWord <- checkWordsDict cn mq
-              unless isWord $ let cn' = capitalize cn in do
+              unless isWord $ do
                   prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
-                  void . modifyPla i interp . Just $ interpConfirmName cn'
+                  ask >>= liftIO . atomically . helperSTM
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
+    helperSTM md = do
+        pt <- readTVar $ md^.plaTblTVar
+        let p = pt ! i & interp .~ (Just . interpConfirmName $ cn')
+        writeTVar (md^.plaTblTVar) $ pt & at i ?~ p
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
 
@@ -133,12 +138,12 @@ checkWordsDict cn mq = nonWorldState.dicts.wordsDict |$| use >=> \case
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
-  Just True -> (liftIO . atomically . helperSTM) |$| asks >=> \(it, mt, mqt, oldSing, pcTbl, p, plaTbl) -> do
+  Just True -> ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, oldSing, pcTbl, p, plaTbl) -> do
       logNotice "interpConfirmName" $ dblQuote oldSing <> " has logged on as " <> s <> "."
       initPlaLog i s
       logPla "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
       when (getPlaFlag IsAdmin p) . stopInacTimer i $ mq
-      notifyArrival i it mt mqt pcTbl plaTbl
+      notifyArrival i et it mt mqt pcTbl plaTbl
       send mq . nl $ ""
       showMotd mq cols
       look ActionParams { plaId       = i
@@ -189,8 +194,8 @@ stopInacTimer i mq = do
     liftIO . atomically . writeTQueue mq $ InacStop
 
 
-notifyArrival :: Id -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> MudStack ()
-notifyArrival i it mt mqt pcTbl plaTbl tt = let s = (et ! i)^.sing in do
+notifyArrival :: Id -> EntTbl -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> MudStack ()
+notifyArrival i et it mt mqt pcTbl plaTbl tt = let s = (et ! i)^.sing in do
     bcastAdmins mt mqt pcTbl plaTbl $ s <> " has logged on."
     bcastOthersInRm i it mt mqt pcTbl plaTbl tt . nlnl $ mkSerializedNonStdDesig i mt pcTbl s A <> " has arrived in \
                                                                                                    \the game."
