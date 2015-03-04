@@ -1691,7 +1691,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 writeTVar (md^.plaTblTVar) plaTbl'
                 bcastSTM mt mqt pcTbl plaTbl [ (nlnl toSelfMsg <> fms, [i]), toOthersBrdcst ]
                 return . Just $ [ toSelfMsg ]
-    sayToSTM md ma msg            = patternMatchFail "say sayToSTM" [ showText ma, msg ] -- TODO: Elided md...
+    sayToSTM _ ma msg             = patternMatchFail "say sayToSTM" [ showText ma, msg ] -- TODO: Elided md...
     formatMsg                     = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelperSTM md ma rest = (,,,,,,) <$> readTVar (md^.entTblTVar)
                                              <*> readTVar (md^.invTblTVar)
@@ -1825,17 +1825,16 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
 unready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
   where
-    helperSTM md = (,,,,,,,,,,) <$> readTVar (md^.armTblTVar)
-                                <*> readTVar (md^.clothTblTVar)
-                                <*> readTVar (md^.entTblTVar)
-                                <*> readTVar (md^.eqTblTVar)
-                                <*> readTVar (md^.invTblTVar)
-                                <*> readTVar (md^.mobTblTVar)
-                                <*> readTVar (md^.msgQueueTblTVar)
-                                <*> readTVar (md^.pcTblTVar)
-                                <*> readTVar (md^.plaTblTVar)
-                                <*> readTVar (md^.typeTblTVar)
-                                <*> readTVar (md^.wpnTblTVar) >>= \(armTbl, ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt, wt) ->
+    helperSTM md = (,,,,,,,,,) <$> readTVar (md^.armTblTVar)
+                               <*> readTVar (md^.clothTblTVar)
+                               <*> readTVar (md^.entTblTVar)
+                               <*> readTVar (md^.eqTblTVar)
+                               <*> readTVar (md^.invTblTVar)
+                               <*> readTVar (md^.mobTblTVar)
+                               <*> readTVar (md^.msgQueueTblTVar)
+                               <*> readTVar (md^.pcTblTVar)
+                               <*> readTVar (md^.plaTblTVar)
+                               <*> readTVar (md^.typeTblTVar) >>= \(armTbl, ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) ->
         let (d, _, _, _, _) = mkCapStdDesig i entTbl it mt pcTbl tt
             em              = eqTbl ! i
             is              = M.elems em
@@ -1968,9 +1967,9 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 
 
 getUptime :: MudStack Int
-getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` st -- TODO: sec?
+getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` start -- TODO: sec?
   where
-    st = ask >>= return . view startTime
+    start = ask >>= return . view startTime
 
 
 -----
@@ -1986,17 +1985,16 @@ what p@AdviseNoArgs = advise p ["what"] advice
                       , "." ]
 what (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >> logPlaExecArgs "what" as i
   where
-    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                             <*> readTVar (md^.entTblTVar)
-                             <*> readTVar (md^.eqTblTVar)
-                             <*> readTVar (md^.invTblTVar)
-                             <*> readTVar (md^.mobTblTVar)
-                             <*> readTVar (md^.pcTblTVar)
-                             <*> readTVar (md^.rmTblTVar)
-                             <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, pt, rt, tt) ->
+    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
+                            <*> readTVar (md^.entTblTVar)
+                            <*> readTVar (md^.eqTblTVar)
+                            <*> readTVar (md^.invTblTVar)
+                            <*> readTVar (md^.mobTblTVar)
+                            <*> readTVar (md^.pcTblTVar)
+                            <*> readTVar (md^.rmTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, pt, rt) ->
         let ri       = (pt ! i)^.rmId
             r        = rt ! ri
-            helper n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ct entTbl eqTbl it mt pt tt invType n | invType <- [ PCInv, PCEq, RmInv ] ]
+            helper n = nl . T.concat $ whatCmd cols r n : [ whatInv i cols ct entTbl eqTbl it mt pt invType n | invType <- [ PCInv, PCEq, RmInv ] ]
         in sendSTM mq . T.concat . map helper $ as
 what p = patternMatchFail "what" [ showText p ]
 
@@ -2028,9 +2026,9 @@ whatQuote :: T.Text -> T.Text
 whatQuote = (<> dfltColor) . (quoteColor <>) . dblQuote
 
 
-whatInv :: Id -> Cols -> CoinsTbl -> EntTbl -> EqTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> InvType -> T.Text -> T.Text
-whatInv i cols ct entTbl eqTbl it mt pt tt invType n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
-  then whatInvEnts i cols entTbl mt pt tt invType n (head gecrs) is
+whatInv :: Id -> Cols -> CoinsTbl -> EntTbl -> EqTbl -> InvTbl -> MobTbl -> PCTbl -> InvType -> T.Text -> T.Text
+whatInv i cols ct entTbl eqTbl it mt pt invType n | (is, gecrs, rcs) <- resolveName = if not . null $ gecrs
+  then whatInvEnts i cols entTbl mt pt invType n (head gecrs) is
   else T.concat . map (whatInvCoins cols invType n) $ rcs
   where
     resolveName | (is, c) <- getLocInvCoins, (gecrs, _, rcs) <- resolveEntCoinNames i entTbl mt pt [n] is c = (is, gecrs, rcs)
@@ -2045,13 +2043,12 @@ whatInvEnts :: Id
             -> EntTbl
             -> MobTbl
             -> PCTbl
-            -> TypeTbl
             -> InvType
             -> T.Text
             -> GetEntsCoinsRes
             -> Inv
             -> T.Text
-whatInvEnts i cols et mt pt tt invType@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is =
+whatInvEnts i cols et mt pt invType@(getLocTxtForInvType -> locTxt) (whatQuote -> r) gecr is =
     wrapUnlines cols $ case gecr of
       Mult { entsRes = (Just es), .. }
         | nameSearchedFor == acp -> T.concat [ whatQuote acp
