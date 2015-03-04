@@ -248,7 +248,7 @@ adHoc mq host = ask >>= \md -> do
                        , _peeping   = [] }
             tt'  = tt & at i ?~ PCType
             et'  = et & at i ?~ e
-            ris  = sortInv tt' et' $ it ! iWelcome ++ [i]
+            ris  = sortInv et' tt' $ it ! iWelcome ++ [i]
         writeTVar  (md^.typeTblTVar) tt'
         writeTVar  (md^.entTblTVar)  et'
         writeTVar  (md^.invTblTVar)      $ it & at i ?~ [] & at iWelcome ?~ ris
@@ -339,7 +339,7 @@ server h i mq itq = sequence_ [ registerThread . Server $ i, loop `catch` plaThr
 
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) =
-    (\md -> liftIO . readTVarIO $ md^.plaTblTVar) |$| asks >=> \((! i) -> p) ->
+    ask >>= liftIO . readTVarIO . view plaTblTVar >>= \((! i) -> p) ->
         let thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
             thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
         in maybe thruCentral thruOther $ p^.interp
@@ -362,7 +362,7 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< 
 
 
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
-handleFromServer i h msg = (\md -> liftIO . readTVarIO $ md^.plaTblTVar) |$| asks >=> \((! i) -> p) -> do
+handleFromServer i h msg = ask >>= liftIO . readTVarIO . view plaTblTVar >>= \((! i) -> p) -> do
     forwardToPeepers i (p^.peepers) ToThePeeped msg
     liftIO . T.hPutStr h $ msg
 
