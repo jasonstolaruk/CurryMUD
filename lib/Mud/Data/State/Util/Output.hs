@@ -64,41 +64,6 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
--- TODO: Sort function definitions.
-
-
-prompt :: MsgQueue -> T.Text -> MudStack ()
-prompt mq = liftIO . atomically . writeTQueue mq . Prompt
-
-
-send :: MsgQueue -> T.Text -> MudStack ()
-send mq = liftIO . atomically . sendSTM mq
-
-
-sendSTM :: MsgQueue -> T.Text -> STM ()
-sendSTM mq = writeTQueue mq . FromServer
-
-
-wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
-wrapSend mq cols = liftIO . atomically . wrapSendSTM mq cols
-
-
-wrapSendSTM :: MsgQueue -> Cols -> T.Text -> STM ()
-wrapSendSTM mq cols = sendSTM mq . wrapUnlinesNl cols
-
-
-multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
-multiWrapSend mq cols = liftIO . atomically . multiWrapSendSTM mq cols
-
-
-multiWrapSendSTM :: MsgQueue -> Cols -> [T.Text] -> STM ()
-multiWrapSendSTM mq cols = sendSTM mq . multiWrapNl cols
-
-
-sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
-sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
-
-
 bcast :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
 bcast mt mqt pcTbl plaTbl = liftIO . atomically . bcastSTM mt mqt pcTbl plaTbl
 
@@ -109,6 +74,128 @@ bcastSTM mt mqt pcTbl plaTbl = mapM_ (\(msg, is) -> mapM_ (helper msg) is)
     helper msg i = let mq   = mqt ! i
                        cols = (plaTbl ! i)^.columns
                    in sendSTM mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i mt pcTbl $ msg
+
+
+-----
+
+
+bcastAdmins :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> MudStack ()
+bcastAdmins mt mqt pcTbl plaTbl = liftIO . atomically . bcastAdminsSTM mt mqt pcTbl plaTbl
+
+
+bcastAdminsSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> STM ()
+bcastAdminsSTM mt mqt pcTbl plaTbl msg =
+    bcastNlSTM mt mqt pcTbl plaTbl [( adminNoticeColor <> msg <> dfltColor
+                                 , [ pi | pi <- IM.keys plaTbl, getPlaFlag IsAdmin (plaTbl ! pi) ] )]
+
+
+-----
+
+
+bcastNl :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
+bcastNl mt mqt pcTbl plaTbl = liftIO . atomically . bcastNlSTM mt mqt pcTbl plaTbl
+
+
+bcastNlSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> STM ()
+bcastNlSTM mt mqt pcTbl plaTbl bs =
+    bcastSTM mt mqt pcTbl plaTbl . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
+
+
+-----
+
+
+bcastOthersInRm :: Id -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> TypeTbl -> T.Text -> MudStack ()
+bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
+                                                      ris = i `delete` (it ! ri)
+                                                      bs  = [(msg, findPCIds tt ris)]
+                                                  in bcast mt mqt pcTbl plaTbl bs
+
+
+-----
+
+
+expandPCEntName :: Id -> MobTbl -> PCTbl -> Bool -> T.Text -> Id -> Inv -> T.Text
+expandPCEntName i mt pt ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
+    T.concat [ leading, "he ", xth, expandSex h, " ", t ]
+  where
+    leading | ic        = "T"
+            | otherwise = "t"
+    xth = let matches = foldr (\pcI acc -> mkUnknownPCEntName pcI mt pt == pen ? pcI : acc :? acc) [] pis
+          in case matches of [_] -> ""
+                             _   -> (<> " ") . mkOrdinal . (+ 1) . fromJust . elemIndex pi $ matches
+    expandSex 'm'                = "male"
+    expandSex 'f'                = "female"
+    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
+
+
+-----
+
+
+frame :: Cols -> T.Text -> T.Text
+frame cols | divider <- nl . mkDividerTxt $ cols = nl . (<> divider) . (divider <>)
+
+
+-----
+
+
+massMsg :: Msg -> MudStack ()
+massMsg msg = liftIO . atomically . helperSTM =<< ask
+  where
+    helperSTM md = mapM_ (`writeTQueue` msg) =<< IM.elems <$> readTVar (md^.msgQueueTblTVar)
+
+
+-----
+
+
+massSend :: T.Text -> MudStack ()
+massSend msg = liftIO . atomically . helperSTM =<< ask
+  where
+    helperSTM md = (,) <$> readTVar (md^.msgQueueTblTVar) <*> readTVar (md^.plaTblTVar) >>= \(mqt, pt) ->
+        let helper i | mq   <- mqt ! i
+                     , cols <- (pt ! i)^.columns = sendSTM mq . frame cols . wrapUnlines cols $ msg
+        in forM_ (IM.keys pt) helper
+
+
+-----
+
+
+mkBroadcast :: Id -> T.Text -> [Broadcast]
+mkBroadcast i msg = [(msg, [i])]
+
+
+-----
+
+
+mkDividerTxt :: Cols -> T.Text
+mkDividerTxt = flip T.replicate "="
+
+
+-----
+
+
+mkNTBroadcast :: Id -> T.Text -> [ClassifiedBroadcast]
+mkNTBroadcast i msg = [NonTargetBroadcast (msg, [i])]
+
+
+-----
+
+
+multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
+multiWrapSend mq cols = liftIO . atomically . multiWrapSendSTM mq cols
+
+
+multiWrapSendSTM :: MsgQueue -> Cols -> [T.Text] -> STM ()
+multiWrapSendSTM mq cols = sendSTM mq . multiWrapNl cols
+
+
+-----
+
+
+ok :: MsgQueue -> MudStack ()
+ok mq = send mq . nlnl $ "OK!"
+
+
+-----
 
 
 parsePCDesig :: Id -> MobTbl -> PCTbl -> T.Text -> T.Text
@@ -133,76 +220,37 @@ parsePCDesig i mt pt msg = views introduced (`helper` msg) $ pt ! i
       | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig = (left, pcd, rest)
 
 
-expandPCEntName :: Id -> MobTbl -> PCTbl -> Bool -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i mt pt ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
-    T.concat [ leading, "he ", xth, expandSex h, " ", t ]
-  where
-    leading | ic        = "T"
-            | otherwise = "t"
-    xth = let matches = foldr (\pcI acc -> mkUnknownPCEntName pcI mt pt == pen ? pcI : acc :? acc) [] pis
-          in case matches of [_] -> ""
-                             _   -> (<> " ") . mkOrdinal . (+ 1) . fromJust . elemIndex pi $ matches
-    expandSex 'm'                = "male"
-    expandSex 'f'                = "female"
-    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
+-----
 
 
-bcastNl :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
-bcastNl mt mqt pcTbl plaTbl = liftIO . atomically . bcastNlSTM mt mqt pcTbl plaTbl
+prompt :: MsgQueue -> T.Text -> MudStack ()
+prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
-bcastNlSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> STM ()
-bcastNlSTM mt mqt pcTbl plaTbl bs =
-    bcastSTM mt mqt pcTbl plaTbl . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
+-----
 
 
-bcastAdmins :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> MudStack ()
-bcastAdmins mt mqt pcTbl plaTbl = liftIO . atomically . bcastAdminsSTM mt mqt pcTbl plaTbl
+send :: MsgQueue -> T.Text -> MudStack ()
+send mq = liftIO . atomically . sendSTM mq
 
 
-bcastAdminsSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> STM ()
-bcastAdminsSTM mt mqt pcTbl plaTbl msg =
-    bcastNlSTM mt mqt pcTbl plaTbl [( adminNoticeColor <> msg <> dfltColor
-                                 , [ pi | pi <- IM.keys plaTbl, getPlaFlag IsAdmin (plaTbl ! pi) ] )]
+sendSTM :: MsgQueue -> T.Text -> STM ()
+sendSTM mq = writeTQueue mq . FromServer
 
 
-mkBroadcast :: Id -> T.Text -> [Broadcast]
-mkBroadcast i msg = [(msg, [i])]
+-----
 
 
-mkNTBroadcast :: Id -> T.Text -> [ClassifiedBroadcast]
-mkNTBroadcast i msg = [NonTargetBroadcast (msg, [i])]
+sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
+sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
 
 
-bcastOthersInRm :: Id -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> TypeTbl -> T.Text -> MudStack ()
-bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
-                                                      ris = i `delete` (it ! ri)
-                                                      bs  = [(msg, findPCIds tt ris)]
-                                                  in bcast mt mqt pcTbl plaTbl bs
+-----
 
 
-massMsg :: Msg -> MudStack ()
-massMsg msg = liftIO . atomically . helperSTM =<< ask
-  where
-    helperSTM md = mapM_ (`writeTQueue` msg) =<< IM.elems <$> readTVar (md^.msgQueueTblTVar)
+wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
+wrapSend mq cols = liftIO . atomically . wrapSendSTM mq cols
 
 
-massSend :: T.Text -> MudStack ()
-massSend msg = liftIO . atomically . helperSTM =<< ask
-  where
-    helperSTM md = (,) <$> readTVar (md^.msgQueueTblTVar) <*> readTVar (md^.plaTblTVar) >>= \(mqt, pt) ->
-        let helper i | mq   <- mqt ! i
-                     , cols <- (pt ! i)^.columns = sendSTM mq . frame cols . wrapUnlines cols $ msg
-        in forM_ (IM.keys pt) helper
-
-
-frame :: Cols -> T.Text -> T.Text
-frame cols | divider <- nl . mkDividerTxt $ cols = nl . (<> divider) . (divider <>)
-
-
-mkDividerTxt :: Cols -> T.Text
-mkDividerTxt = flip T.replicate "="
-
-
-ok :: MsgQueue -> MudStack ()
-ok mq = send mq . nlnl $ "OK!"
+wrapSendSTM :: MsgQueue -> Cols -> T.Text -> STM ()
+wrapSendSTM mq cols = sendSTM mq . wrapUnlinesNl cols
