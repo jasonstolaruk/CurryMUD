@@ -1,11 +1,11 @@
 module MudTests.TestUtil where
 
 import Mud.Data.State.State
-import Mud.Data.State.StateInIORefT
 import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Misc
 
 import Control.Monad (replicateM)
+import Control.Monad.Reader (runReaderT)
 import Data.Char (chr)
 import Data.Functor ((<$>))
 import System.IO.Unsafe (unsafePerformIO)
@@ -17,7 +17,7 @@ import qualified Data.Text as T
 inWorld :: MudStack a -> PropertyM IO a
 inWorld f = run helper
   where
-    helper = fst <$> runStateInIORefT (initWorld >> f) (unsafePerformIO initMudState)
+    helper = runReaderT (initWorld >> f) (unsafePerformIO initMudData)
 
 
 genAsciiAlphaNum :: Gen Char

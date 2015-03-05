@@ -147,8 +147,11 @@ test-suite             test
                        containers >=0.5 && <0.6,
                        currymud,
                        lens >=4.6 && <5.0,
+                       mtl >=2.2 && <3.0,
                        quickcheck-instances >=0.3 && <0.4,
+                       stm >=2.4 && <3.0,
                        tasty >=0.10 && <1.0,
                        tasty-hunit >=0.9 && <1.0,
                        tasty-quickcheck >=0.8 && <0.9,
-                       text >=1.1 && <2.0
+                       text >=1.1 && <2.0,
+                       transformers >=0.4 && <0.5

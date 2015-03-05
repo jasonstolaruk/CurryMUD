@@ -1,7 +1,6 @@
 module MudTests.TheWorld.TheWorld where
 
 import Mud.Data.State.State
-import Mud.Data.State.Util.STM
 import MudTests.TestUtil
 
 import Control.Lens.Getter (view)
