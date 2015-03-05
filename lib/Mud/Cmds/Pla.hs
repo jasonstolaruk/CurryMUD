@@ -844,7 +844,6 @@ look (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, 
                             <*> readTVar (md^.typeTblTVar)
 look (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= maybeVoid helper
   where
-    -- TODO: Shouldn't we do all our logging inside a single transaction?
     helper ds = forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
         logPla "look" i $ "looked at " <> es <> "."
     helperSTM md = (,,,,,,,,) <$> readTVar (md^.coinsTblTVar)
@@ -1184,7 +1183,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
 ready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "ready" i $ logMsgs
   where
-    helperSTM md = (,,,,,,,,,,,,) <$> readTVar (md^.armTblTVar) -- TODO: We don't really need to get all these tables here...?
+    helperSTM md = (,,,,,,,,,,,,) <$> readTVar (md^.armTblTVar)
                                   <*> readTVar (md^.clothTblTVar)
                                   <*> readTVar (md^.coinsTblTVar)
                                   <*> readTVar (md^.conTblTVar)
