@@ -8,6 +8,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
+import Mud.TopLvlDefs.FilePaths
 import qualified Mud.Logging as L (logNotice)
 
 import Control.Applicative ((<$>), (<*>))
@@ -23,7 +24,9 @@ import Formatting.Formatters (stext)
 import System.Clock (Clock(..), getTime)
 import qualified Data.IntMap.Lazy as IM (empty, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
+import qualified Data.Set as S (Set, fromList)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T (readFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -59,6 +62,7 @@ initMudData = do
                                                                           <*> newTVarIO IM.empty
     (o, p) <- (,) <$> newTVarIO M.empty <*> newTVarIO M.empty
     (noticeLogService, errorLogService) <- initLogging
+    (maybeWords,       maybePropNames ) <- loadDictFiles
     start                               <- getTime Monotonic
     return MudData { _armTblTVar       = a
                    , _clothTblTVar     = b
@@ -75,12 +79,24 @@ initMudData = do
                    , _pcTblTVar        = k
                    , _plaLogTblTVar    = l
                    , _plaTblTVar       = m
+                   , _propNamesSet     = maybePropNames
                    , _rmTblTVar        = n
                    , _startTime        = start
                    , _talkAsyncTblTVar = o
                    , _threadTblTVar    = p
                    , _typeTblTVar      = q
+                   , _wordsSet         = maybeWords
                    , _wpnTblTVar       = r }
+
+
+loadDictFiles :: IO (Maybe Dict, Maybe Dict)
+loadDictFiles = (,) <$> loadDictFile wordsFile <*> loadDictFile propNamesFile
+
+
+loadDictFile :: Maybe FilePath -> IO (Maybe (S.Set T.Text))
+loadDictFile = maybe (return Nothing) loadIt
+  where
+    loadIt fn = Just . S.fromList . T.lines . T.toLower <$> T.readFile fn
 
 
 initWorld :: MudStack ()

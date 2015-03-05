@@ -56,7 +56,6 @@ import System.Random (randomIO, randomRIO) -- TODO: Use mwc-random or tf-random.
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, empty)
--- import qualified Data.Set as S (Set, fromList) -- TODO
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
@@ -141,23 +140,6 @@ listenExHandler e = case fromException e of
 registerThread :: ThreadType -> MudStack ()
 registerThread threadType = liftIO myThreadId >>= \ti ->
     ask >>= \md -> liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType
-
-
--- TODO: Figure out what to do with dictionaries.
-{-
-loadDictFiles :: MudStack ()
-loadDictFiles = (nonWorldState.dicts .=) =<< [ Dicts mWSet mPnSet | mWSet  <- loadDictFile wordsFile
-                                                                  , mPnSet <- loadDictFile propNamesFile ]
-
-
-loadDictFile :: Maybe FilePath -> MudStack (Maybe (S.Set T.Text))
-loadDictFile = maybe (return Nothing) loadIt
-  where
-    loadIt fn@(dblQuote . T.pack -> fn') = do
-      logNotice "loadDictFile" $ "loading dictionary " <> fn' <> "."
-      let helper = Just . S.fromList . T.lines . T.toLower <$> (liftIO . T.readFile $ fn)
-      helper `catch` (\e -> fileIOExHandler "loadDictFile" e >> return Nothing)
--}
 
 
 -- ==================================================

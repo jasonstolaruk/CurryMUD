@@ -36,7 +36,7 @@ import Data.List (delete, sort)
 import Data.Monoid ((<>))
 import Network (HostName)
 import System.Directory (doesFileExist)
--- import qualified Data.Set as S (member) -- TODO
+import qualified Data.Set as S (member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile, writeFile)
 
@@ -111,27 +111,23 @@ logProfanity cn (T.pack -> hn) =
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
-checkPropNamesDict _ _ = return False -- TODO: Dictionaries?
-{-
-checkPropNamesDict cn mq = nonWorldState.dicts.propNamesDict |$| use >=> \case
-  Nothing                      -> return False
-  Just pnd | cn `S.member` pnd -> do
-      promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
-      return True
-  _                            -> return False
--}
+checkPropNamesDict cn mq = ask >>= maybe (return False) helper . view propNamesSet
+  where
+    helper pns = if cn `S.member` pns
+      then do
+          promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
+          return True
+      else return False
 
 
 checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
-checkWordsDict _ _ = return False -- TODO: Dictionaries?
-{-
-checkWordsDict cn mq = nonWorldState.dicts.wordsDict |$| use >=> \case
-  Nothing                    -> return False
-  Just wd | cn `S.member` wd -> do
-      promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
-      return True
-  _                          -> return False
--}
+checkWordsDict cn mq = ask >>= maybe (return False) helper . view wordsSet
+  where
+    helper ws = if cn `S.member` ws
+      then do
+          promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
+          return True
+      else return False
 
 
 interpConfirmName :: Sing -> Interp

@@ -18,6 +18,7 @@ import System.Clock (TimeSpec)
 import System.Random (Random, random, randomR)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
+import qualified Data.Set as S (Set)
 import qualified Data.Text as T
 
 
@@ -42,11 +43,13 @@ data MudData = MudData { _armTblTVar       :: TVar ArmTbl
                        , _pcTblTVar        :: TVar PCTbl
                        , _plaLogTblTVar    :: TVar PlaLogTbl
                        , _plaTblTVar       :: TVar PlaTbl
+                       , _propNamesSet     :: Maybe Dict
                        , _rmTblTVar        :: TVar RmTbl
                        , _startTime        :: TimeSpec
                        , _talkAsyncTblTVar :: TVar TalkAsyncTbl
                        , _threadTblTVar    :: TVar ThreadTbl
                        , _typeTblTVar      :: TVar TypeTbl
+                       , _wordsSet         :: Maybe Dict
                        , _wpnTblTVar       :: TVar WpnTbl }
 
 
@@ -54,6 +57,7 @@ type ArmTbl       = IM.IntMap Arm
 type ClothTbl     = IM.IntMap Cloth
 type CoinsTbl     = IM.IntMap Coins
 type ConTbl       = IM.IntMap Con
+type Dict         = S.Set T.Text
 type EntTbl       = IM.IntMap Ent
 type EqTbl        = IM.IntMap EqMap
 type InvTbl       = IM.IntMap Inv
