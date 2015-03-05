@@ -27,7 +27,7 @@ module Mud.Data.State.Util.Output ( bcast
 
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars

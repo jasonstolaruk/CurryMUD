@@ -14,7 +14,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , sortInv ) where
 
 import Mud.Data.Misc
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Util.Misc
 import Mud.Util.Text
 

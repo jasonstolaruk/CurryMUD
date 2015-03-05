@@ -4,7 +4,7 @@ module Mud.Data.State.Util.Coins ( mkCoinsFromList
                                  , mkListFromCoins
                                  , negateCoins ) where
 
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 

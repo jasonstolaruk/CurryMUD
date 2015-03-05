@@ -42,7 +42,7 @@ module Mud.Data.Misc ( AOrThe(..)
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting

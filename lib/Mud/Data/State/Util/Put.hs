@@ -1,6 +1,6 @@
 module Mud.Data.State.Util.Put where
 
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (modifyTVar)

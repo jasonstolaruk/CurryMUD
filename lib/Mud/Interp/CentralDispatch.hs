@@ -7,7 +7,7 @@ import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc

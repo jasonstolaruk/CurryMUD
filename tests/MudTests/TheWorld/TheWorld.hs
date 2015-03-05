@@ -1,6 +1,6 @@
 module MudTests.TheWorld.TheWorld where
 
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import MudTests.TestUtil
 
 import Control.Concurrent.STM.TVar (readTVarIO)

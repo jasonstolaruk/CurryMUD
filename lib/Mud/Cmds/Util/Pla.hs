@@ -51,7 +51,7 @@ import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output

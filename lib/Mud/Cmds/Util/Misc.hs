@@ -14,7 +14,7 @@ import Mud.Cmds.Util.Abbrev
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Data.State.Util.Output
 import Mud.Interp.Pager
 import Mud.Misc.ANSI

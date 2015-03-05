@@ -15,7 +15,7 @@ module Mud.Misc.NameResolution ( ReconciledCoins
                                , ringHelp ) where
 
 import Mud.Data.Misc
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI

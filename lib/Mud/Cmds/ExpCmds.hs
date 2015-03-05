@@ -6,7 +6,7 @@ module Mud.Cmds.ExpCmds ( expCmdSet
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Data.State.Util.Output
 import Mud.Util.Quoting
 import Mud.Util.Text

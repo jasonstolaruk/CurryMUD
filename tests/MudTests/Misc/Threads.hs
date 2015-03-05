@@ -1,6 +1,6 @@
 module MudTests.Misc.Threads where
 
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Misc.Threads
 import MudTests.TestUtil
 

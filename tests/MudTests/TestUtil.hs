@@ -1,6 +1,6 @@
 module MudTests.TestUtil where
 
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Misc
 

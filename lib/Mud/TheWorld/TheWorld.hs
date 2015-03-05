@@ -3,7 +3,7 @@
 module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
 
-import Mud.Data.State.State
+import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Misc.Logging hiding (logNotice)
