@@ -793,7 +793,7 @@ intro p = patternMatchFail "intro" [ showText p ]
 -----
 
 
-inv :: Action -- TODO: Give some indication of encumbrance.
+inv :: Action
 inv (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, pt) ->
     send mq . nl . mkInvCoinsDesc i cols ct et it mt pt i $ et ! i
   where

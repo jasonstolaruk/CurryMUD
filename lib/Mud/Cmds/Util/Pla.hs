@@ -526,7 +526,7 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
     T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ Sum cop |!| copDesc
                                                                              , Sum sil |!| silDesc
                                                                              , Sum gol |!| golDesc ]
-  where -- TODO: Come up with good descriptions.
+  where
     copDesc = "The copper piece is round and shiny."
     silDesc = "The silver piece is round and shiny."
     golDesc = "The gold piece is round and shiny."

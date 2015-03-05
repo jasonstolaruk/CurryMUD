@@ -1,20 +1,20 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Logging ( closeLogs
-                   , closePlaLog
-                   , initLogging
-                   , initPlaLog
-                   , logAndDispIOEx
-                   , logError
-                   , logExMsg
-                   , logIOEx
-                   , logNotice
-                   , logPla
-                   , logPlaExec
-                   , logPlaExecArgs
-                   , logPlaOut
-                   , massLogPla ) where
+module Mud.Misc.Logging ( closeLogs
+                        , closePlaLog
+                        , initLogging
+                        , initPlaLog
+                        , logAndDispIOEx
+                        , logError
+                        , logExMsg
+                        , logIOEx
+                        , logNotice
+                        , logPla
+                        , logPlaExec
+                        , logPlaExecArgs
+                        , logPlaOut
+                        , massLogPla ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue

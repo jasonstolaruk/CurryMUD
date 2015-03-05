@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Threads ( getUnusedId
-                   , listenWrapper) where
+module Mud.Misc.Threads ( getUnusedId
+                        , listenWrapper) where
 
 import Mud.ANSI
 import Mud.Cmds.Debug

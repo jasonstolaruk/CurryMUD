@@ -1,45 +1,45 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.ANSI ( abbrevColor
-                , adminMsgColor
-                , adminNoticeColor
-                , adminTellColor
-                , announceColor
-                , arrowColor
-                , asteriskColor
-                , blinkANSI
-                , bootMsgColor
-                , colors
-                , dfltColor
-                , dfltColor'
-                , envVarColor
-                , exitsColor
-                , fromPeepedColor
-                , headerColor
-                , hintANSI
-                , intensities
-                , knownNameColor
-                , mkBgColorANSI
-                , mkColorANSI
-                , mkFgColorANSI
-                , motdColor
-                , newRecordColor
-                , noBlinkANSI
-                , noHintANSI
-                , noUnderlineANSI
-                , pagerPromptColor
-                , printConsoleColor
-                , promptColor
-                , quoteColor
-                , resetANSI
-                , selfColor
-                , shutdownMsgColor
-                , syntaxSymbolColor
-                , toPeepedColor
-                , underlineANSI
-                , unknownNameColor
-                , wtfColor
-                , zingColor ) where
+module Mud.Misc.ANSI ( abbrevColor
+                     , adminMsgColor
+                     , adminNoticeColor
+                     , adminTellColor
+                     , announceColor
+                     , arrowColor
+                     , asteriskColor
+                     , blinkANSI
+                     , bootMsgColor
+                     , colors
+                     , dfltColor
+                     , dfltColor'
+                     , envVarColor
+                     , exitsColor
+                     , fromPeepedColor
+                     , headerColor
+                     , hintANSI
+                     , intensities
+                     , knownNameColor
+                     , mkBgColorANSI
+                     , mkColorANSI
+                     , mkFgColorANSI
+                     , motdColor
+                     , newRecordColor
+                     , noBlinkANSI
+                     , noHintANSI
+                     , noUnderlineANSI
+                     , pagerPromptColor
+                     , printConsoleColor
+                     , promptColor
+                     , quoteColor
+                     , resetANSI
+                     , selfColor
+                     , shutdownMsgColor
+                     , syntaxSymbolColor
+                     , toPeepedColor
+                     , underlineANSI
+                     , unknownNameColor
+                     , wtfColor
+                     , zingColor ) where
 
 import Mud.TopLvlDefs.Chars
 

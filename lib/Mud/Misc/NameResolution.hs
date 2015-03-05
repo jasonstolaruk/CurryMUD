@@ -1,18 +1,18 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, RebindableSyntax, ViewPatterns #-}
 
-module Mud.NameResolution ( ReconciledCoins
-                          , procGecrMisCon
-                          , procGecrMisPCEq
-                          , procGecrMisPCInv
-                          , procGecrMisReady
-                          , procGecrMisRm
-                          , procReconciledCoinsCon
-                          , procReconciledCoinsPCInv
-                          , procReconciledCoinsRm
-                          , resolveEntCoinNames
-                          , resolveEntCoinNamesWithRols
-                          , ringHelp ) where
+module Mud.Misc.NameResolution ( ReconciledCoins
+                               , procGecrMisCon
+                               , procGecrMisPCEq
+                               , procGecrMisPCInv
+                               , procGecrMisReady
+                               , procGecrMisRm
+                               , procReconciledCoinsCon
+                               , procReconciledCoinsPCInv
+                               , procReconciledCoinsRm
+                               , resolveEntCoinNames
+                               , resolveEntCoinNamesWithRols
+                               , ringHelp ) where
 
 import Mud.ANSI
 import Mud.Data.Misc
