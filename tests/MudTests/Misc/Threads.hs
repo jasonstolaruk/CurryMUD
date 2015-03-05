@@ -1,7 +1,7 @@
-module MudTests.Threads where
+module MudTests.Misc.Threads where
 
 import Mud.Data.State.State
-import Mud.Threads
+import Mud.Misc.Threads
 import MudTests.TestUtil
 
 import Control.Concurrent.STM.TVar (readTVarIO)
