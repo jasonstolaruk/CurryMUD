@@ -96,12 +96,12 @@ spawnLogger fn@(T.pack -> fn') p (T.unpack -> ln) f q =
                             (loop gh))
                        (sequence_ [ close gh, loop =<< initLog ])
       where
-        rotateIt = mkDateTimeTxt >>= \(date, time) -> do
+        rotateIt = mkDateTimeTxt >>= \(date, T.replace ":" "-" -> time) -> do
             atomically . writeTQueue q . LogMsg $ "Mud.Logging spawnLogger rotateLog rotateIt: log rotated."
             close gh
             renameFile fn . T.unpack . T.concat $ [ dropExt fn', ".", date, "_", time, ".log" ]
             loop =<< initLog
-        dropExt = T.reverse . T.drop 4 . T.reverse
+        dropExt = T.reverse . T.drop 4 . T.reverse -- TODO: Use the library that helps with filenames.
 
 
 loggingThreadExHandler :: T.Text -> SomeException -> IO ()

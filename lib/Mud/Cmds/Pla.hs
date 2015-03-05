@@ -1568,7 +1568,7 @@ shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
                                                    (it, [], [])
                                                    eiss
                      (ct', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem mnom ci i e) (ct, bs, logMsgs) ecs
-                 in null cis ? (wrapSendSTM mq cols ("The " <> s <> " is empty.") >> return []) :? do
+                 in null cis && cc == mempty ? (wrapSendSTM mq cols ("The " <> s <> " is empty.") >> return []) :? do
                      writeTVar (md^.coinsTblTVar) ct'
                      writeTVar (md^.invTblTVar)   it'
                      bcastNlSTM mt mqt pcTbl plaTbl bs'
@@ -1970,6 +1970,7 @@ getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` (vi
 -----
 
 
+-- TODO: "f" may refer to the Zap in this room.
 what :: Action
 what p@AdviseNoArgs = advise p ["what"] advice
   where
