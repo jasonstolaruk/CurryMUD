@@ -417,16 +417,15 @@ helperPutRemEitherInv :: Id
                       -> (InvTbl, [Broadcast], [T.Text])
 helperPutRemEitherInv i et mt pt tt d por mnom fi ti te a@(it, bs, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is | (is', bs')      <- if ti `elem` is
-                                  then (filter (/= ti) is, bs ++ [sorry])
-                                  else (is, bs)
-           , (fis, tis)      <- over both (it !) (fi, ti)
-           , it'             <- it & at fi ?~ fis \\ is'
-                                   & at ti ?~ sortInv et tt (tis ++ is')
-           , (bs'', logMsgs) <- mkPutRemInvDesc i et mt pt d por mnom is' te
-           -> a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs
+  Right is -> let (is', bs')      = if ti `elem` is then (filter (/= ti) is, bs ++ [sorryInsideSelf]) else (is, bs)
+                  (fis, tis)      = over both (it !) (fi, ti)
+                  it'             = it & at fi ?~ fis \\ is'
+                                       & at ti ?~ sortInv et tt (tis ++ is')
+                  (bs'', logMsgs) = mkPutRemInvDesc i et mt pt d por mnom is' te
+              in if null fis then sorryEmpty else (a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs)
   where
-    sorry = ("You can't put the " <> te^.sing <> " inside itself.", [i])
+    sorryInsideSelf = ("You can't put the " <> te^.sing <> " inside itself.", [i])
+    sorryEmpty      = a & _2 <>~ [("The " <> (et ! fi)^.sing <> " is empty.", [i])]
 
 
 mkPutRemInvDesc :: Id

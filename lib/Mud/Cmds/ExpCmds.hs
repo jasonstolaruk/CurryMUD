@@ -671,6 +671,7 @@ expCmds = S.foldr helper [] expCmdSet
 -----
 
 
+-- TODO: Nub args?
 expCmd :: ExpCmdName -> ExpCmdType -> Action
 expCmd ecn (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive command \
                                                                     \requires a single target."
