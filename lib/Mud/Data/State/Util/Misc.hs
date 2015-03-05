@@ -89,7 +89,6 @@ mkUnknownPCEntName i mt pt | s <- (mt ! i)^.sex
                            , r <- (pt ! i)^.race = (T.singleton . T.head . pp $ s) <> pp r
 
 
--- TODO: Changed fold from "foldl'" to "foldr"... everything OK?
 sortInv :: EntTbl -> TypeTbl -> Inv -> Inv
 sortInv et tt is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, tt ! i) | i <- is ]
                  = (pcIs ++) . sortNonPCs $ nonPCIs

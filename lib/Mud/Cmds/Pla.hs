@@ -48,9 +48,9 @@ import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ReaderT, ask)
+import Control.Monad.Reader (ask)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
+import Control.Monad.Trans.Resource (runResourceT)
 import Data.Conduit (($$), (=$), awaitForever)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -1963,7 +1963,7 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 
 
 getUptime :: MudStack Int
-getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` (view startTime <$> ask) -- TODO: sec?
+getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` (view startTime <$> ask)
 
 
 -----
