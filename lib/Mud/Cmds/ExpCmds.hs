@@ -10,7 +10,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Output
 import Mud.Util.Quoting
 import Mud.Util.Text
-import qualified Mud.Logging as L (logPlaOut)
+import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))

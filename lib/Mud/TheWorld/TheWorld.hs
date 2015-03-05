@@ -6,10 +6,10 @@ module Mud.TheWorld.TheWorld ( initMudData
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
-import Mud.Logging hiding (logNotice)
+import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
-import qualified Mud.Logging as L (logNotice)
+import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM (atomically)

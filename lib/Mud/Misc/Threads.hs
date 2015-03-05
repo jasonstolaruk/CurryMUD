@@ -16,8 +16,8 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Interp.CentralDispatch
 import Mud.Interp.Login
-import Mud.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.Misc.ANSI
+import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars
@@ -27,7 +27,7 @@ import Mud.Util.List (headTail)
 import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text hiding (headTail)
-import qualified Mud.Logging as L (logExMsg, logIOEx, logNotice, logPla)
+import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId, threadDelay)

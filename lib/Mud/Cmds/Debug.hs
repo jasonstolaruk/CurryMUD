@@ -20,7 +20,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Token
 import Mud.Util.Wrapping
-import qualified Mud.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
+import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>), pure)
