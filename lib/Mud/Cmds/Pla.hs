@@ -21,7 +21,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
-import Mud.NameResolution
+import Mud.Misc.NameResolution
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths

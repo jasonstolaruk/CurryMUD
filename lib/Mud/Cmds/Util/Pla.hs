@@ -56,7 +56,7 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
-import Mud.NameResolution
+import Mud.Misc.NameResolution
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List (mkCountList)
