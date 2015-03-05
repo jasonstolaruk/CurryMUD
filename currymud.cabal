@@ -60,7 +60,6 @@ library
                        Mud.Data.State.Util.Coins,
                        Mud.Data.State.Util.Misc,
                        Mud.Data.State.Util.Output,
-                       Mud.Data.State.Util.Pla,
                        Mud.Data.State.Util.Put,
                        Mud.Interp.CentralDispatch
                        Mud.Interp.Login,
