@@ -20,7 +20,6 @@ import Mud.Util.Text
 
 import Control.Arrow ((***))
 import Control.Lens (_1, _2, both, over)
-import Control.Lens.Cons (cons) -- TODO: There is an operator for this: (<|) ...?
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
@@ -93,8 +92,8 @@ sortInv :: EntTbl -> TypeTbl -> Inv -> Inv
 sortInv et tt is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, tt ! i) | i <- is ]
                  = (pcIs ++) . sortNonPCs $ nonPCIs
   where
-    helper (i, t) a                    = let consTo lens = over lens (cons i) a
-                                         in if t == PCType then consTo _1 else consTo _2
+    helper (i, t) a                    = let consTo lens = over lens (i :) a
+                                         in t == PCType ? consTo _1 :? consTo _2
     sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped nonPCIs                     = [ (i, fromJust $ e^.entName, e^.sing) | i <- nonPCIs

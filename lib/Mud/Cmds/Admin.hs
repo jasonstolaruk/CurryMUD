@@ -31,7 +31,6 @@ import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, over)
-import Control.Lens.Cons (cons)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_, unless)
@@ -232,21 +231,21 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = ask >>= \md -> do
         writeTVar (md^.plaTblTVar) pt'
         return (msgs, logMsgs)
     peep s piss target a@(pt, _, _) =
-        let notFound    = over _2 (cons sorry) a
+        let notFound    = over _2 (sorry :) a
             sorry       = "No player by the name of " <> dblQuote target <> " is currently connected."
             found match | (peepI, peepS) <- head . filter ((== match) . snd) $ piss
                         , thePeeper      <- pt ! i
                         , thePeeped      <- pt ! peepI = if peepI `notElem` thePeeper^.peeping
-                          then let pt'     = pt & at i     ?~ over peeping (cons peepI) thePeeper
-                                                & at peepI ?~ over peepers (cons i    ) thePeeped
+                          then let pt'     = pt & at i     ?~ over peeping (peepI :) thePeeper
+                                                & at peepI ?~ over peepers (i     :) thePeeped
                                    msg     = "You are now peeping " <> peepS <> "."
                                    logMsgs = [("started peeping " <> peepS, (peepI, s <> " started peeping."))]
-                               in a & _1 .~ pt' & over _2 (cons msg) & _3 <>~ logMsgs
+                               in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
                           else let pt'     = pt & at i     ?~ over peeping (peepI `delete`) thePeeper
                                                 & at peepI ?~ over peepers (i     `delete`) thePeeped
                                    msg     = "You are no longer peeping " <> peepS <> "."
                                    logMsgs = [("stopped peeping " <> peepS, (peepI, s <> " stopped peeping."))]
-                               in a & _1 .~ pt' & over _2 (cons msg) & _3 <>~ logMsgs
+                               in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
         in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
