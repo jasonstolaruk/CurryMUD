@@ -50,7 +50,7 @@ resIsIndented :: Int -> [T.Text] -> Bool
 resIsIndented n (t:wrapped) = (not . T.null $ t) && all lineIsIndented wrapped
   where
     lineIsIndented (T.splitAt n -> (indent, rest)) = T.all isSpace indent && (not . T.null $ rest)
-resIsIndented _ ls = patternMatchFail "resIsIndented" ls
+resIsIndented n ls = patternMatchFail "resIsIndented" [ showText n, showText ls ]
 
 
 prop_xformLeading :: Char -> Char -> Property

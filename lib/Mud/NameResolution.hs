@@ -408,7 +408,7 @@ procGecrMisCon cn (SorryIndexed x p) | res <- doesn'tContainIndexed cn x p = res
 procGecrMisCon _  (FoundIndexed                          res)              = res
 procGecrMisCon _  SorryCoins         | res <- sorryIndexedCoins            = res
 procGecrMisCon cn (GenericSorry (doesn'tContain    cn -> res))             = res
-procGecrMisCon _  gecrMis = patternMatchFail "procGecrMisCon" [ showText gecrMis ]
+procGecrMisCon cn gecrMis = patternMatchFail "procGecrMisCon" [ cn, showText gecrMis ]
 
 
 doesn'tContain :: T.Text -> T.Text -> Either T.Text Inv
@@ -497,7 +497,7 @@ procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extr
     c = msgOnNonzero cop . sformat (do { "The "; "doesn't contain " % int % " copper pieces." }) cn $ cop
     s = msgOnNonzero sil . sformat (do { "The "; "doesn't contain " % int % " silver pieces." }) cn $ sil
     g = msgOnNonzero gol . sformat (do { "The "; "doesn't contain " % int % " gold pieces."   }) cn $ gol
-procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" [ showText rc ]
+procReconciledCoinsCon cn rc = patternMatchFail "procReconciledCoinsCon" [ cn, showText rc ]
 
 
 doesn'tContainAnyCoins :: T.Text -> Either [T.Text] Coins

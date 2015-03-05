@@ -51,7 +51,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ReaderT, ask)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
-import Data.Conduit -- TODO: (($$), (=$))
+import Data.Conduit (($$), (=$), awaitForever)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
@@ -65,8 +65,8 @@ import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.Conduit.Binary as CB -- TODO: (sourceFile)
-import qualified Data.Conduit.Text as CT -- TODO
+import qualified Data.Conduit.Binary as CB (sourceFile)
+import qualified Data.Conduit.Text as CT (decodeUtf8)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
 import qualified Data.Set as S (filter, toList)
@@ -206,7 +206,6 @@ about (NoArgs i mq cols) = do -- TODO: Conduit.
     -- helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
     source  = CB.sourceFile aboutFile
     conduit = CT.decodeUtf8
-    sink :: Sink T.Text (ResourceT (ReaderT MudData IO)) ()
     sink    = awaitForever $ lift . lift . multiWrapSend mq cols . T.lines
 about p = withoutArgs about p
 
@@ -1688,7 +1687,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 writeTVar (md^.plaTblTVar) plaTbl'
                 bcastSTM mt mqt pcTbl plaTbl [ (nlnl toSelfMsg <> fms, [i]), toOthersBrdcst ]
                 return . Just $ [ toSelfMsg ]
-    sayToSTM _ ma msg             = patternMatchFail "say sayToSTM" [ showText ma, msg ] -- TODO: Elided md...
+    sayToSTM _ ma msg             = patternMatchFail "say sayToSTM" [ showText ma, msg ]
     formatMsg                     = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelperSTM md ma rest = (,,,,,,) <$> readTVar (md^.entTblTVar)
                                              <*> readTVar (md^.invTblTVar)
