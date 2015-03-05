@@ -44,8 +44,7 @@ executable             curry-prof
 library
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
-  exposed-modules:     Mud.ANSI,
-                       Mud.Cmds.Admin,
+  exposed-modules:     Mud.Cmds.Admin,
                        Mud.Cmds.Debug,
                        Mud.Cmds.ExpCmds
                        Mud.Cmds.Pla,
@@ -64,11 +63,12 @@ library
                        Mud.Interp.CentralDispatch
                        Mud.Interp.Login,
                        Mud.Interp.Pager,
-                       Mud.Logging,
-                       Mud.NameResolution,
+                       Mud.Misc.ANSI,
+                       Mud.Misc.Logging,
+                       Mud.Misc.NameResolution,
+                       Mud.Misc.Threads,
                        Mud.TheWorld.Ids,
                        Mud.TheWorld.TheWorld,
-                       Mud.Threads,
                        Mud.TopLvlDefs.Chars,
                        Mud.TopLvlDefs.FilePaths,
                        Mud.TopLvlDefs.Misc,
