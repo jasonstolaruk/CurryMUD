@@ -2,8 +2,8 @@
 
 module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
 
-import Mud.ANSI
 import Mud.Data.Misc
+import Mud.Misc.ANSI
 import Mud.Util.List (nubSort)
 import Mud.Util.Quoting
 import Mud.Util.Text

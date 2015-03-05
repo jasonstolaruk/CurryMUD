@@ -14,11 +14,11 @@ module Mud.Misc.NameResolution ( ReconciledCoins
                                , resolveEntCoinNamesWithRols
                                , ringHelp ) where
 
-import Mud.ANSI
 import Mud.Data.Misc
 import Mud.Data.State.State
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Misc
+import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)

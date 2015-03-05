@@ -2,7 +2,6 @@
 
 module Mud.Interp.Login (interpName) where
 
-import Mud.ANSI
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
@@ -12,6 +11,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Logging hiding (logNotice, logPla)
+import Mud.Misc.ANSI
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc

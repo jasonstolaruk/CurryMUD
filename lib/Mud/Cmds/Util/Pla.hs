@@ -47,7 +47,6 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , resolvePCInvCoins
                          , resolveRmInvCoins ) where
 
-import Mud.ANSI
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
@@ -56,6 +55,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Misc.ANSI
 import Mud.NameResolution
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc

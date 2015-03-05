@@ -10,7 +10,6 @@ module Mud.Cmds.Util.Misc ( advise
                           , sendGenericErrorMsg
                           , withoutArgs ) where
 
-import Mud.ANSI
 import Mud.Cmds.Util.Abbrev
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -18,6 +17,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
 import Mud.Interp.Pager
+import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.ANSI

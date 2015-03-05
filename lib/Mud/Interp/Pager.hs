@@ -4,11 +4,11 @@
 module Mud.Interp.Pager ( interpPager
                         , sendPagerPrompt ) where
 
-import Mud.ANSI
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
+import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text

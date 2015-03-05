@@ -4,13 +4,13 @@
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls ) where
 
-import Mud.ANSI
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Output
+import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs

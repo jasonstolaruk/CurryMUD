@@ -4,7 +4,6 @@
 module Mud.Misc.Threads ( getUnusedId
                         , listenWrapper) where
 
-import Mud.ANSI
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
@@ -18,6 +17,7 @@ import Mud.Data.State.Util.Output
 import Mud.Interp.CentralDispatch
 import Mud.Interp.Login
 import Mud.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
+import Mud.Misc.ANSI
 import Mud.TheWorld.Ids
 import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars

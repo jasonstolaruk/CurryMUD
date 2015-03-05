@@ -5,7 +5,7 @@ module Mud.Util.ANSI ( colorizeFileTxt
                      , extractANSI
                      , insertANSI ) where
 
-import Mud.ANSI
+import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)

@@ -8,7 +8,6 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , plaCmds
                     , showMotd ) where
 
-import Mud.ANSI
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
@@ -21,6 +20,7 @@ import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import Mud.Misc.ANSI
 import Mud.NameResolution
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars

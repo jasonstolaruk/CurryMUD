@@ -2,7 +2,6 @@
 
 module Mud.Cmds.Admin (adminCmds) where
 
-import Mud.ANSI
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
@@ -11,6 +10,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs

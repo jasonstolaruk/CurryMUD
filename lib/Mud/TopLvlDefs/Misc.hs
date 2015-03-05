@@ -2,7 +2,7 @@
 
 module Mud.TopLvlDefs.Misc where
 
-import Mud.ANSI
+import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 
 import Data.Monoid ((<>))
