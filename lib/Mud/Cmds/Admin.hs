@@ -11,7 +11,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.State
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Pla
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs
@@ -26,7 +25,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
-import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
 import Control.Exception (IOException)
@@ -35,7 +34,7 @@ import Control.Lens (_1, _2, _3, at, over)
 import Control.Lens.Cons (cons)
 import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), forM_)
+import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
@@ -328,40 +327,36 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
-adminTell (MsgWithTarget i mq cols target msg) = do
-    (et, mqt, pt) <- liftIO . atomically . helperSTM =<< ask
-    let s                = (et ! i)^.sing
-        piss             = mkPlaIdsSingsList et pt
-        notFound         = wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently \
-                                              \logged in."
-        found match | (tellI, tellS) <- head . filter ((== match) . snd) $ piss
-                    , tellMq         <- mqt ! tellI
-                    , p              <- pt  ! tellI
-                    , tellCols       <- p^.columns = do
-                        logPla (prefixAdminCmd "tell") i     . T.concat $ [ "sent message to "
-                                                                          , tellS
-                                                                          , ": "
-                                                                          , dblQuote msg ]
-                        logPla (prefixAdminCmd "tell") tellI . T.concat $ [ "received message from "
-                                                                          , s
-                                                                          , ": "
-                                                                          , dblQuote msg ]
-                        wrapSend mq cols . T.concat $ [ "You send ", tellS, ": ", dblQuote msg ]
-                        let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
-                        if getPlaFlag IsNotFirstAdminTell p
-                          then wrapSend tellMq tellCols targetMsg
-                          else multiWrapSend tellMq tellCols . (targetMsg :) =<< firstAdminTell tellI s
-    maybe notFound found . findFullNameForAbbrev target . map snd $ piss
+adminTell (MsgWithTarget i mq cols target msg) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
+    let f = uncurry $ logPla (prefixAdminCmd "tell") in unless (null logMsgs) $ mapM_ f logMsgs
   where
     helperSTM md = (,,) <$> readTVar (md^.entTblTVar)
                         <*> readTVar (md^.msgQueueTblTVar)
-                        <*> readTVar (md^.plaTblTVar)
+                        <*> readTVar (md^.plaTblTVar) >>= \(et, mqt, pt) ->
+        let s        = (et ! i)^.sing
+            piss     = mkPlaIdsSingsList et pt
+            notFound = do
+                wrapSendSTM mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently logged in."
+                return []
+            found match | (tellI, tellS) <- head . filter ((== match) . snd) $ piss
+                        , tellMq         <- mqt ! tellI
+                        , p              <- pt  ! tellI
+                        , tellCols       <- p^.columns
+                        , sentLogMsg     <- (i, T.concat [ "sent message to ", tellS, ": ", dblQuote msg ])
+                        , receivedLogMsg <- (tellI, T.concat [ "received message from ", s, ": ", dblQuote msg ]) = do
+                            wrapSendSTM mq cols . T.concat $ [ "You send ", tellS, ": ", dblQuote msg ]
+                            let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+                            if getPlaFlag IsNotFirstAdminTell p
+                              then wrapSendSTM tellMq tellCols targetMsg
+                              else multiWrapSendSTM tellMq tellCols . (targetMsg :) =<< firstAdminTellSTM tellI md pt p s
+                            return [ sentLogMsg, receivedLogMsg ]
+        in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
-firstAdminTell :: Id -> Sing -> MudStack [T.Text]
-firstAdminTell i s = do
-    modifyPlaFlag i IsNotFirstAdminTell True
+firstAdminTellSTM :: Id -> MudData -> PlaTbl -> Pla -> Sing -> STM [T.Text]
+firstAdminTellSTM i md pt (setPlaFlag IsNotFirstAdminTell True -> p) s = do
+    writeTVar (md^.plaTblTVar) (pt & at i ?~ p)
     return [ T.concat [ hintANSI
                       , "Hint:"
                       , noHintANSI
@@ -378,6 +373,7 @@ firstAdminTell i s = do
                       , " is the message you want to send to "
                       , s
                       , "." ] ]
+
 
 -----
 
