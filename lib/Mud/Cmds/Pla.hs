@@ -46,7 +46,7 @@ import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
-import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
+import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Control.Monad.Trans.Class (lift)
@@ -197,23 +197,14 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 about :: Action
 about (NoArgs i mq cols) = do
     logPlaExec "about" i
-    -- helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
     runResourceT $ source $$ conduit =$ sink
   where
-    -- helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
     source  = CB.sourceFile aboutFile `catchC` handler
     handler :: IOException -> Source (ResourceT MudStack) B.ByteString
-    handler e = (lift . lift . wrapSend mq cols . showText $ e) >> return ()
+    handler e = void . lift . lift $ fileIOExHandler "about" e >> sendGenericErrorMsg mq cols
     conduit = CT.decodeUtf8
     sink    = awaitForever $ lift . lift . multiWrapSend mq cols . T.lines
 about p = withoutArgs about p
-{-
-source :: Source (ResourceT IO) B.ByteString
-source = catchC (CB.sourceFile "test.txt") handler
-  where
-    handler :: IOException -> Source (ResourceT IO) B.ByteString
-    handler _ = (liftIO . T.putStrLn $ "In exception handler.") >> return ()
--}
 
 
 -----
