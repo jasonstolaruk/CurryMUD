@@ -3,7 +3,6 @@
 module Mud.TopLvlDefs.Misc where
 
 import Mud.Misc.ANSI
-import Mud.TopLvlDefs.Chars
 
 import Data.Monoid ((<>))
 import System.Posix.Types (FileOffset)
@@ -16,10 +15,6 @@ aggregateCoinNames = [ "coin", "coins" ]
 
 allCoinNames :: [T.Text]
 allCoinNames = coinNames ++ aggregateCoinNames
-
-
-ansiCSI :: T.Text
-ansiCSI = T.pack [ ansiEsc, ansiBracket ]
 
 
 coinNames :: [T.Text]

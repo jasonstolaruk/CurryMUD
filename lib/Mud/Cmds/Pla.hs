@@ -26,7 +26,6 @@ import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.ANSI
 import Mud.Util.List (appendIfUnique, mkCountList)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Padding

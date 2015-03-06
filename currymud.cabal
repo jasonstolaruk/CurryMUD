@@ -73,7 +73,6 @@ library
                        Mud.TopLvlDefs.FilePaths,
                        Mud.TopLvlDefs.Misc,
                        Mud.TopLvlDefs.Msgs,
-                       Mud.Util.ANSI,
                        Mud.Util.List,
                        Mud.Util.Misc,
                        Mud.Util.Padding,

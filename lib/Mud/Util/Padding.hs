@@ -2,7 +2,7 @@
 
 module Mud.Util.Padding where
 
-import Mud.Util.ANSI
+import Mud.Misc.ANSI
 import Mud.Util.Quoting
 
 import Data.Monoid ((<>))

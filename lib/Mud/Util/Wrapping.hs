@@ -12,8 +12,8 @@ module Mud.Util.Wrapping ( adjustIndent
                          , wrapUnlinesNl
                          , xformLeading ) where
 
+import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
-import Mud.Util.ANSI
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)

@@ -20,7 +20,6 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
-import Mud.Util.ANSI
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
