@@ -60,24 +60,23 @@ patternMatchFail = U.patternMatchFail "Mud.Misc.ANSI"
 
 
 -- ==================================================
+-- Misc. definitions and helpers:
+
+
+ansiCSI :: T.Text
+ansiCSI = T.pack [ ansiEsc, ansiBracket ]
 
 
 resetANSI :: T.Text
 resetANSI = T.pack . setSGRCode $ [Reset]
 
 
------
-
-
-intensities :: [ColorIntensity]
-intensities = [ Dull, Vivid ]
-
-
 colors :: [Color]
 colors = [ Black .. White ]
 
 
------
+intensities :: [ColorIntensity]
+intensities = [ Dull, Vivid ]
 
 
 mkFgColorANSI :: (ColorIntensity, Color) -> T.Text
@@ -92,7 +91,8 @@ mkColorANSI :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> T.Text
 mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
 
 
------
+-- ==================================================
+-- ANSI color codes by color name:
 
 
 blue, cyan, green, magenta, red, yellow :: T.Text
@@ -104,7 +104,8 @@ red     = mkFgColorANSI (Dull, Red)
 yellow  = mkFgColorANSI (Dull, Yellow)
 
 
------
+-- ==================================================
+-- ANSI color codes by usage:
 
 
 abbrevColor :: T.Text
@@ -243,6 +244,10 @@ zingColor :: T.Text
 zingColor = red
 
 
+-- ==================================================
+-- Helpers for working with embedded ANSI codes:
+
+
 colorizeFileTxt :: T.Text -> T.Text -> T.Text
 colorizeFileTxt c t | T.last t == '\n' = nl . T.concat $ [ c, T.init t, dfltColor ]
                     | otherwise        = c <> t <> dfltColor
@@ -302,7 +307,3 @@ loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
   | y == breakMarker  = breakMarker  `T.cons` loopOverExtractedTxt a  ys
 loopOverExtractedTxt "" _ = ""
 loopOverExtractedTxt a  b = patternMatchFail "loopOverExtractedTxt" [ a, b ]
-
-
-ansiCSI :: T.Text
-ansiCSI = T.pack [ ansiEsc, ansiBracket ]
