@@ -200,10 +200,10 @@ about (NoArgs i mq cols) = do
     runResourceT $ source $$ conduit =$ sink
   where
     source  = CB.sourceFile aboutFile `catchC` handler
-    handler :: IOException -> Source (ResourceT MudStack) B.ByteString
-    handler e = void . lift . lift $ fileIOExHandler "about" e >> sendGenericErrorMsg mq cols
     conduit = CT.decodeUtf8
     sink    = awaitForever $ lift . lift . multiWrapSend mq cols . T.lines
+    handler :: IOException -> Source (ResourceT MudStack) B.ByteString
+    handler e = void . lift . lift $ fileIOExHandler "about" e >> sendGenericErrorMsg mq cols
 about p = withoutArgs about p
 
 
@@ -977,14 +977,15 @@ motd p                  = withoutArgs motd p
 
 
 showMotd :: MsgQueue -> Cols -> MudStack ()
-showMotd mq cols = send mq =<< helper
+showMotd mq cols = runResourceT $ source $$ conduit =$ sink
   where
-    helper    = liftIO readMotd |$| try >=> eitherRet handler
-    readMotd  = [ frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor $ cont
-                | cont <- T.readFile motdFile ]
-    handler e = do
+    source  = CB.sourceFile motdFile `catchC` handler
+    conduit = CT.decodeUtf8
+    sink    = awaitForever $ lift . lift . send mq . frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor
+    handler :: IOException -> Source (ResourceT MudStack) B.ByteString
+    handler e = void . lift . lift $ do
         fileIOExHandler "showMotd" e
-        return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
+        wrapSend mq cols "Unfortunately, the message of the day could not be retrieved."
 
 
 -----
