@@ -104,6 +104,7 @@ library
                        ansi-terminal >=0.6 && <0.7,
                        async >=2.0 && <3.0,
                        base >=4.7 && <5.0,
+                       bytestring >=0.10 && <0.11,
                        clock >=0.4 && <0.5,
                        conduit >=1.2 && <2.0,
                        conduit-extra >=1.1 && <2.0,

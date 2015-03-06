@@ -2,9 +2,9 @@
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
+                    , go
                     , handleEgress
                     , look
-                    , mkCmdListWithNonStdRmLinks
                     , plaCmds
                     , showMotd ) where
 
@@ -34,13 +34,14 @@ import Mud.Util.Text
 import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***), first)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Concurrent.STM.TVar (modifyTVar, readTVar, readTVarIO, writeTVar)
+import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to)
 import Control.Lens.Getter (view, views)
@@ -49,8 +50,9 @@ import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Resource (ResourceT)
 import Control.Monad.Trans.Resource (runResourceT)
-import Data.Conduit (($$), (=$), awaitForever)
+import Data.Conduit (($$), (=$), Source, awaitForever, catchC)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
@@ -64,6 +66,7 @@ import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Conduit.Binary as CB (sourceFile)
 import qualified Data.Conduit.Text as CT (decodeUtf8)
 import qualified Data.IntMap.Lazy as IM (keys)
@@ -77,10 +80,6 @@ import qualified Data.Text.IO as T (readFile)
 
 
 -----
-
-
-blowUp :: T.Text -> T.Text -> [T.Text] -> a
-blowUp = U.blowUp "Mud.Cmds.Pla"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -196,16 +195,25 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 
 
 about :: Action
-about (NoArgs i mq cols) = do -- TODO: Conduit.
+about (NoArgs i mq cols) = do
     logPlaExec "about" i
     -- helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
     runResourceT $ source $$ conduit =$ sink
   where
     -- helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
-    source  = CB.sourceFile aboutFile
+    source  = CB.sourceFile aboutFile `catchC` handler
+    handler :: IOException -> Source (ResourceT MudStack) B.ByteString
+    handler e = (lift . lift . wrapSend mq cols . showText $ e) >> return ()
     conduit = CT.decodeUtf8
     sink    = awaitForever $ lift . lift . multiWrapSend mq cols . T.lines
 about p = withoutArgs about p
+{-
+source :: Source (ResourceT IO) B.ByteString
+source = catchC (CB.sourceFile "test.txt") handler
+  where
+    handler :: IOException -> Source (ResourceT IO) B.ByteString
+    handler _ = (liftIO . T.putStrLn $ "In exception handler.") >> return ()
+-}
 
 
 -----

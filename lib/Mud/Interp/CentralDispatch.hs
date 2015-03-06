@@ -1,10 +1,11 @@
-{-# LANGUAGE MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ViewPatterns #-}
 
 module Mud.Interp.CentralDispatch (centralDispatch) where
 
 import Mud.Cmds.Admin
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
+import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
@@ -16,14 +17,15 @@ import Mud.Util.Text
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (readTVar)
+import Control.Lens.Getter (view)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
+import Data.List (sort)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
-
 
 centralDispatch :: Interp
 centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = ask >>= liftIO . atomically . helperSTM >>= \(pcTbl, plaTbl, rt) -> do
@@ -48,3 +50,17 @@ findAction i pcTbl plaTbl rt (T.toLower -> cn) = helper mkCmdList
                     r  = rt ! ri
                     ia = getPlaFlag IsAdmin $ plaTbl ! i
                 in mkCmdListWithNonStdRmLinks r ++ (ia |?| adminCmds) ++ (ia && isDebug |?| debugCmds)
+
+
+mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
+mkCmdListWithNonStdRmLinks (view rmLinks -> rls) = sort $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
+
+
+mkCmdForRmLink :: RmLink -> Cmd
+mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) =
+    Cmd { cmdName = cn, cmdPriorityAbbrev = Nothing, cmdFullName = cn, action = go cn, cmdDesc = "" }
+
+
+mkCmdNameForRmLink :: RmLink -> T.Text
+mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _linkDir
+                                               NonStdLink { .. } -> _linkName
