@@ -20,7 +20,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Help(..)
                      , HelpName
                      , Index
-                     , InvType(..)
                      , PCDesig(..)
                      , PutOrRem(..)
                      , RightOrLeft(..)
@@ -403,12 +402,6 @@ data Help = Help { helpName     :: HelpName
 
 
 -----
-
-data InvType = PCInv | PCEq | RmInv deriving Eq
-
-
------
-
 
 data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
                            , isCap           :: Bool
