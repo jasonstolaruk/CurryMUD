@@ -68,19 +68,19 @@ default (Int)
 
 
 logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
-logExMsg = L.logExMsg "Mud.Threads"
+logExMsg = L.logExMsg "Mud.Misc.Threads"
 
 
 logIOEx :: T.Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Threads"
+logIOEx = L.logIOEx "Mud.Misc.Threads"
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
-logNotice = L.logNotice "Mud.Threads"
+logNotice = L.logNotice "Mud.Misc.Threads"
 
 
 logPla :: T.Text -> Id -> T.Text -> MudStack ()
-logPla = L.logPla "Mud.Threads"
+logPla = L.logPla "Mud.Misc.Threads"
 
 
 -- ==================================================

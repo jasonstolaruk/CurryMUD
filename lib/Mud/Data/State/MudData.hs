@@ -82,12 +82,12 @@ data Arm = Arm { _armSub   :: ArmSub
                , _armClass :: AC } deriving (Eq, Show)
 
 
-data ArmSub = Head -- cap, helmet, etc.
+data ArmSub = Head
             | Torso
-            | Arms -- bracers, etc.
-            | Hands -- gloves, mittens
-            | LowerBody -- leggings, etc.
-            | Feet -- any footwear
+            | Arms
+            | Hands
+            | LowerBody
+            | Feet
             | Shield
             deriving (Eq, Show)
 

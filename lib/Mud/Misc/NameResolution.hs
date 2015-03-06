@@ -58,11 +58,11 @@ a >> b = a % stext % b
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
-blowUp = U.blowUp "Mud.NameResolution"
+blowUp = U.blowUp "Mud.Misc.NameResolution"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.NameResolution"
+patternMatchFail = U.patternMatchFail "Mud.Misc.NameResolution"
 
 
 -- ==================================================
