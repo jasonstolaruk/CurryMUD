@@ -671,7 +671,6 @@ expCmds = S.foldr helper [] expCmdSet
 -----
 
 
--- TODO: Nub args?
 expCmd :: ExpCmdName -> ExpCmdType -> Action
 expCmd ecn (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive command \
                                                                     \requires a single target."
@@ -696,9 +695,9 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
                             <*> readTVar (md^.pcTblTVar)
                             <*> readTVar (md^.plaTblTVar)
                             <*> readTVar (md^.typeTblTVar)
-expCmd ecn (NoTarget {}) (WithArgs _ mq cols (_:_))  = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
-                                                                          \command cannot be used with a target."
-expCmd ecn ect           (OneArg   i mq cols target) = case ect of
+expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_))  = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
+                                                                              \command cannot be used with a target."
+expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
