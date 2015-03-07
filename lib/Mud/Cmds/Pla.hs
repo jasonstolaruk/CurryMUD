@@ -41,18 +41,13 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Concurrent.STM.TVar (modifyTVar, readTVar, readTVarIO, writeTVar)
-import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
-import Control.Monad ((>=>), forM, forM_, guard, mplus, unless, void)
+import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Resource (ResourceT)
-import Control.Monad.Trans.Resource (runResourceT)
-import Data.Conduit (($$), (=$), Source, awaitForever, catchC)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
@@ -66,9 +61,6 @@ import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.ByteString.Char8 as B
-import qualified Data.Conduit.Binary as CB (sourceFile)
-import qualified Data.Conduit.Text as CT (decodeUtf8)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (elems, filter, null)
 import qualified Data.Set as S (filter, toList)
@@ -197,13 +189,9 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 about :: Action
 about (NoArgs i mq cols) = do
     logPlaExec "about" i
-    runResourceT $ source $$ conduit =$ sink
+    helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
   where
-    source  = CB.sourceFile aboutFile `catchC` handler
-    conduit = CT.decodeUtf8
-    sink    = awaitForever $ lift . lift . multiWrapSend mq cols . T.lines
-    handler :: IOException -> Source (ResourceT MudStack) B.ByteString
-    handler e = void . lift . lift $ fileIOExHandler "about" e >> sendGenericErrorMsg mq cols
+    helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
 about p = withoutArgs about p
 
 
@@ -977,15 +965,14 @@ motd p                  = withoutArgs motd p
 
 
 showMotd :: MsgQueue -> Cols -> MudStack ()
-showMotd mq cols = runResourceT $ source $$ conduit =$ sink
+showMotd mq cols = send mq =<< helper
   where
-    source  = CB.sourceFile motdFile `catchC` handler
-    conduit = CT.decodeUtf8
-    sink    = awaitForever $ lift . lift . send mq . frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor
-    handler :: IOException -> Source (ResourceT MudStack) B.ByteString
-    handler e = void . lift . lift $ do
+    helper    = liftIO readMotd |$| try >=> eitherRet handler
+    readMotd  = [ frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor $ cont
+                | cont <- T.readFile motdFile ]
+    handler e = do
         fileIOExHandler "showMotd" e
-        wrapSend mq cols "Unfortunately, the message of the day could not be retrieved."
+        return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
 
 
 -----
