@@ -9,9 +9,9 @@ import Control.Arrow ((***), first)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TQueue (TQueue)
-import Control.Concurrent.STM.TVar (TVar)
 import Control.Lens (makeLenses)
 import Control.Monad.Reader (ReaderT)
+import Data.IORef (IORef)
 import Data.Monoid (Monoid, mappend, mempty)
 import Network (HostName)
 import System.Clock (TimeSpec)
@@ -28,36 +28,36 @@ type MudStack = ReaderT MudData IO
 -- ==================================================
 
 
-data MudData = MudData { _armTblTVar       :: TVar ArmTbl
-                       , _clothTblTVar     :: TVar ClothTbl
-                       , _coinsTblTVar     :: TVar CoinsTbl
-                       , _conTblTVar       :: TVar ConTbl
-                       , _entTblTVar       :: TVar EntTbl
-                       , _eqTblTVar        :: TVar EqTbl
-                       , _errorLog         :: LogService
-                       , _invTblTVar       :: TVar InvTbl
-                       , _mobTblTVar       :: TVar MobTbl
-                       , _msgQueueTblTVar  :: TVar MsgQueueTbl
-                       , _noticeLog        :: LogService
-                       , _objTblTVar       :: TVar ObjTbl
-                       , _pcTblTVar        :: TVar PCTbl
-                       , _plaLogTblTVar    :: TVar PlaLogTbl
-                       , _plaTblTVar       :: TVar PlaTbl
-                       , _propNamesSet     :: Maybe Dict
-                       , _rmTblTVar        :: TVar RmTbl
-                       , _startTime        :: TimeSpec
-                       , _talkAsyncTblTVar :: TVar TalkAsyncTbl
-                       , _threadTblTVar    :: TVar ThreadTbl
-                       , _typeTblTVar      :: TVar TypeTbl
-                       , _wordsSet         :: Maybe Dict
-                       , _wpnTblTVar       :: TVar WpnTbl }
+data MudData = MudData { _mudStateIORef :: IORef MudState
+                       , _errorLog      :: LogService
+                       , _noticeLog     :: LogService
+                       , _startTime     :: TimeSpec }
+
+
+data MudState = MudState { _armTbl       :: ArmTbl
+                         , _clothTbl     :: ClothTbl
+                         , _coinsTbl     :: CoinsTbl
+                         , _conTbl       :: ConTbl
+                         , _entTbl       :: EntTbl
+                         , _eqTbl        :: EqTbl
+                         , _invTbl       :: InvTbl
+                         , _mobTbl       :: MobTbl
+                         , _msgQueueTbl  :: MsgQueueTbl
+                         , _objTbl       :: ObjTbl
+                         , _pcTbl        :: PCTbl
+                         , _plaLogTbl    :: PlaLogTbl
+                         , _plaTbl       :: PlaTbl
+                         , _rmTbl        :: RmTbl
+                         , _talkAsyncTbl :: TalkAsyncTbl
+                         , _threadTbl    :: ThreadTbl
+                         , _typeTbl      :: TypeTbl
+                         , _wpnTbl       :: WpnTbl }
 
 
 type ArmTbl       = IM.IntMap Arm
 type ClothTbl     = IM.IntMap Cloth
 type CoinsTbl     = IM.IntMap Coins
 type ConTbl       = IM.IntMap Con
-type Dict         = S.Set T.Text
 type EntTbl       = IM.IntMap Ent
 type EqTbl        = IM.IntMap EqMap
 type InvTbl       = IM.IntMap Inv
@@ -404,6 +404,7 @@ makeLenses ''Con
 makeLenses ''Ent
 makeLenses ''Mob
 makeLenses ''MudData
+makeLenses ''MudState
 makeLenses ''Obj
 makeLenses ''PC
 makeLenses ''Pla
