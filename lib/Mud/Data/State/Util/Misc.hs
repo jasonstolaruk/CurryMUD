@@ -36,7 +36,7 @@ import qualified Data.Text as T
 
 
 findPCIds :: MudState -> [Id] -> [Id]
-findPCIds (view typeTble -> tt) haystack = [ i | i <- haystack, tt ! i == PCType ]
+findPCIds (view typeTbl -> tt) haystack = [ i | i <- haystack, tt ! i == PCType ]
 
 
 getEffBothGramNos :: Id -> MudState -> Id -> BothGramNos
@@ -45,7 +45,7 @@ getEffBothGramNos i ms targetId =
     in case targetEnt^.entName of
       Nothing | intros                                  <- views pcTbl (view introduced . (! i)) ms
               , targetSing                              <- targetEnt^.sing
-              , (pp *** pp -> (targetSexy, targetRace)) <- getSexRace targetId
+              , (pp *** pp -> (targetSexy, targetRace)) <- getSexRace targetId ms
               -> if targetSing `elem` intros
                 then (targetSing, "")
                 else over both ((targetSexy <>) . (" " <>)) (targetRace, pluralize targetRace)
@@ -58,11 +58,10 @@ getEffBothGramNos i ms targetId =
 
 getEffName :: Id -> MudState -> Id -> T.Text
 getEffName i ms targetId = let targetEnt  = views entTbl (! targetId) ms
-                               targetSing = targetEnt^.sing
-                           in fromMaybe helper $ targetEnt^.entName
+                           in fromMaybe (helper $ targetEnt^.sing) $ targetEnt^.entName
   where
-    helper | views introduced (targetSing `elem`) (views pcTbl (! i) ms) = uncapitalize targetSing
-           | otherwise                                                   = mkUnknownPCEntName targetId ms
+    helper targetSing | views introduced (targetSing `elem`) (views pcTbl (! i) ms) = uncapitalize targetSing
+                      | otherwise                                                   = mkUnknownPCEntName targetId ms
 
 
 getSexRace :: Id -> MudState -> (Sex, Race)
