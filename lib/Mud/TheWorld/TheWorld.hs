@@ -12,7 +12,7 @@ import Mud.TopLvlDefs.FilePaths
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens.Operators ((^.))
+import Control.Lens.Getter (views)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.Bits (zeroBits)
@@ -163,7 +163,6 @@ createWorld = do
 
 
 sortAllInvs :: MudStack ()
-sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> (liftIO . helper =<< ask)
+sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState helper
   where
-    helper md = atomicModifyIORef (md^.mudStateIORef) $ \ms ->
-        let it = IM.map (sortInv ms) $ ms^.invTbl in (ms { _invTbl = it }, ())
+    helper ms = let it = views invTbl (IM.map (sortInv ms)) ms in (ms { _invTbl = it }, ())

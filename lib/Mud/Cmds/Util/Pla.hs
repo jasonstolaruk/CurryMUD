@@ -513,7 +513,7 @@ mkCapStdDesig i et it mt pt tt | s                   <- (et ! i)^.sing
 mkStdDesig :: Id -> MobTbl -> PCTbl -> TypeTbl -> Sing -> Bool -> Inv -> PCDesig
 mkStdDesig i mt pt tt s ic ris = StdDesig { stdPCEntSing = Just s
                                           , isCap        = ic
-                                          , pcEntName    = mkUnknownPCEntName i mt pt
+                                          , pcEntName    = mkUnknownPCEntName i ms
                                           , pcId         = i
                                           , pcIds        = findPCIds tt ris }
 

@@ -4,7 +4,6 @@ module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
                                   , bcastNl
                                   , bcastOthersInRm
-                                  , expandPCEntName
                                   , frame
                                   , massMsg
                                   , massSend
@@ -101,23 +100,6 @@ bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
 -----
 
 
-expandPCEntName :: Id -> MobTbl -> PCTbl -> Bool -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i mt pt ic pen@(headTail -> (h, t)) pi ((i `delete`) -> pis) =
-    T.concat [ leading, "he ", xth, expandSex h, " ", t ]
-  where
-    leading | ic        = "T"
-            | otherwise = "t"
-    xth = let matches = foldr (\pcI acc -> mkUnknownPCEntName pcI mt pt == pen ? pcI : acc :? acc) [] pis
-          in case matches of [_] -> ""
-                             _   -> (<> " ") . mkOrdinal . (+ 1) . fromJust . elemIndex pi $ matches
-    expandSex 'm'                = "male"
-    expandSex 'f'                = "female"
-    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
-
-
------
-
-
 frame :: Cols -> T.Text -> T.Text
 frame cols | divider <- nl . mkDividerTxt $ cols = nl . (<> divider) . (divider <>)
 
@@ -191,18 +173,31 @@ parsePCDesig i ms@(view pcTbl -> pt) msg = views introduced (`helper` msg) $ pt 
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt, mt <- ms^.mobTbl
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
-          left                                                                            <>
-          (pes `elem` intros ? pes :? expandPCEntName i mt pt isCap pcEntName pcId pcIds) <>
+          left                                                                         <>
+          (pes `elem` intros ? pes :? expandPCEntName i ms isCap pcEntName pcId pcIds) <> -- HERE
           helper intros rest
         StdDesig { stdPCEntSing = Nothing,  .. } ->
-          left <> expandPCEntName i mt pt isCap pcEntName pcId pcIds <> helper intros rest
+          left <> expandPCEntName i ms isCap pcEntName pcId pcIds <> helper intros rest
         _ -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter txt
       = left <> (nonStdPCEntSing `elem` intros ? nonStdPCEntSing :? nonStdDesc) <> helper intros rest
-      | otherwise = txt
+      | otherwise
+      = txt
     extractPCDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig = (left, pcd, rest)
+
+
+expandPCEntName :: Id -> MudState -> Bool -> T.Text -> Id -> Inv -> T.Text
+expandPCEntName i ms ic pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm) =
+    T.concat [ leading, "he ", xth, expandSex h, " ", t ]
+  where
+    leading = ic ? "T" :? "t"
+    xth     = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] pcIdsInRm
+              in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
+    expandSex 'm'                = "male"
+    expandSex 'f'                = "female"
+    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
 
 
 -----
