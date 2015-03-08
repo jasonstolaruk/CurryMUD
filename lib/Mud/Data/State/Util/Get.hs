@@ -1,10 +1,16 @@
 module Mud.Data.State.Util.Get where
 
+import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 
 import Control.Lens.Getter (views)
 import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
+
+
+getColumns :: Id -> MudState -> Cols
+getColumns i ms = (getPla i ms)^.columns
 
 
 getEnt :: Id -> MudState -> Ent
@@ -17,6 +23,10 @@ getIntroduced i ms = (getPC i ms)^.introduced
 
 getMob :: Id -> MudState -> Mob
 getMob i = views mobTbl (! i)
+
+
+getMsgQueue :: Id -> MudState -> MsgQueue
+getMsgQueue i = views msgQueueTbl (! i)
 
 
 getPC :: Id -> MudState -> PC

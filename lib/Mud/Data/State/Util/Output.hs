@@ -21,6 +21,7 @@ module Mud.Data.State.Util.Output ( bcast
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
@@ -33,6 +34,8 @@ import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens.Getter (views)
 import Control.Lens.Operators ((^.))
 import Control.Monad (forM_)
@@ -55,11 +58,11 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 
 
 bcast :: MudState -> [Broadcast] -> MudStack ()
-bcast mt mqt pcTbl plaTbl = mapM_ (\(msg, is) -> mapM_ (helper msg) is)
+bcast ms = liftIO . atomically . mapM_ sendBcastSTM
   where
-    helper msg i = let mq   = (ms^.msgQueueTbl) ! i
-                       cols = view columns $ (ms^.plaTbl) ! i
-                   in sendSTM mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i mt pcTbl $ msg
+    sendBcastSTM (msg, is) = mapM_ (sendMsgToIdSTM msg) is
+    sendMsgToIdSTM msg i | mq <- getMsgQueue i ms, cols <- getColumns i ms =
+        writeTQueue mq . FromServer . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i mt pcTbl $ msg
 
 
 -----
