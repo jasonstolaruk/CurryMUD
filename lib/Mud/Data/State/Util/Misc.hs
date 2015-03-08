@@ -88,13 +88,13 @@ mkUnknownPCEntName i mt pt | s <- (mt ! i)^.sex
                            , r <- (pt ! i)^.race = (T.singleton . T.head . pp $ s) <> pp r
 
 
-sortInv :: EntTbl -> TypeTbl -> Inv -> Inv
-sortInv et tt is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, tt ! i) | i <- is ]
-                 = (pcIs ++) . sortNonPCs $ nonPCIs
+sortInv :: MudState -> Inv -> Inv
+sortInv ms is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, (ms^.typeTbl) ! i) | i <- is ]
+              = (pcIs ++) . sortNonPCs $ nonPCIs
   where
     helper (i, t) a                    = let consTo lens = over lens (i :) a
                                          in t == PCType ? consTo _1 :? consTo _2
     sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped nonPCIs                     = [ (i, fromJust $ e^.entName, e^.sing) | i <- nonPCIs
-                                                                               , let e = et ! i ]
+                                                                               , let e = (ms^.entTbl) ! i ]

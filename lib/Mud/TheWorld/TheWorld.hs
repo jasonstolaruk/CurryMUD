@@ -16,6 +16,7 @@ import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.Bits (zeroBits)
+import Data.IORef (atomicModifyIORef)
 import Data.Monoid (mempty)
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
@@ -162,7 +163,7 @@ createWorld = do
 
 
 sortAllInvs :: MudStack ()
-sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> (liftIO . atomically . helperSTM =<< ask)
+sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> (liftIO . helper =<< ask)
   where
-    helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.typeTblTVar) >>= \(et, tt) ->
-        modifyTVar (md^.invTblTVar) $ IM.map (sortInv et tt)
+    helper md = atomicModifyIORef (md^.mudStateIORef) $ \ms ->
+        let it = IM.map (sortInv ms) $ ms^.invTbl in (ms { _invTbl = it }, ())

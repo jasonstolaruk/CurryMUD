@@ -3,7 +3,7 @@ module Mud.Data.State.Util.Put where
 import Mud.Data.State.MudData
 
 import Control.Lens (at)
-import Control.Lens.Operators ((.~), (?~), (^.))
+import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IORef (atomicModifyIORef)
@@ -63,7 +63,6 @@ putMob i e is c em m = liftIO . helper =<< ask
                      & eqTbl.at    i ?~ em
                      & invTbl.at   i ?~ is
                      & mobTbl.at   i ?~ m
-                     & objTbl.at   i ?~ o
                      & typeTbl.at  i ?~ MobType
         in (ms', ())
 

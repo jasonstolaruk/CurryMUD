@@ -18,7 +18,6 @@ import System.Clock (TimeSpec)
 import System.Random (Random, random, randomR)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
-import qualified Data.Set as S (Set)
 import qualified Data.Text as T
 
 
