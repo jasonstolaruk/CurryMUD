@@ -12,8 +12,6 @@ import Mud.TopLvlDefs.FilePaths
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TVar (modifyTVar, newTVarIO, readTVar)
 import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -44,59 +42,30 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 initMudData :: IO MudData
 initMudData = do
-    (a, b, c, d, e, f, g, h, i, j, k, l, m, n, q, r) <- (,,,,,,,,,,,,,,,) <$> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-                                                                          <*> newTVarIO IM.empty
-    (o, p) <- (,) <$> newTVarIO M.empty <*> newTVarIO M.empty
+    msIORef <- newIORef MudState { _armTbl       = IM.empty
+                                 , _clothTbl     = IM.empty
+                                 , _coinsTbl     = IM.empty
+                                 , _conTbl       = IM.empty
+                                 , _entTbl       = IM.empty
+                                 , _eqTbl        = IM.empty
+                                 , _invTbl       = IM.empty
+                                 , _mobTbl       = IM.empty
+                                 , _msgQueueTbl  = IM.empty
+                                 , _objTbl       = IM.empty
+                                 , _pcTbl        = IM.empty
+                                 , _plaLogTbl    = IM.empty
+                                 , _plaTbl       = IM.empty
+                                 , _rmTbl        = IM.empty
+                                 , _talkAsyncTbl = M.empty
+                                 , _threadTbl    = M.empty
+                                 , _typeTbl      = IM.empty
+                                 , _wpnTbl       = IM.empty }
     (noticeLogService, errorLogService) <- initLogging
-    (maybeWords,       maybePropNames ) <- loadDictFiles
     start                               <- getTime Monotonic
-    return MudData { _armTblTVar       = a
-                   , _clothTblTVar     = b
-                   , _coinsTblTVar     = c
-                   , _conTblTVar       = d
-                   , _entTblTVar       = e
-                   , _eqTblTVar        = f
-                   , _errorLog         = errorLogService
-                   , _invTblTVar       = g
-                   , _mobTblTVar       = h
-                   , _msgQueueTblTVar  = i
-                   , _noticeLog        = noticeLogService
-                   , _objTblTVar       = j
-                   , _pcTblTVar        = k
-                   , _plaLogTblTVar    = l
-                   , _plaTblTVar       = m
-                   , _propNamesSet     = maybePropNames
-                   , _rmTblTVar        = n
-                   , _startTime        = start
-                   , _talkAsyncTblTVar = o
-                   , _threadTblTVar    = p
-                   , _typeTblTVar      = q
-                   , _wordsSet         = maybeWords
-                   , _wpnTblTVar       = r }
-
-
-loadDictFiles :: IO (Maybe Dict, Maybe Dict)
-loadDictFiles = (,) <$> loadDictFile wordsFile <*> loadDictFile propNamesFile
-
-
-loadDictFile :: Maybe FilePath -> IO (Maybe (S.Set T.Text))
-loadDictFile = maybe (return Nothing) loadIt
-  where
-    loadIt fn = Just . S.fromList . T.lines . T.toLower <$> T.readFile fn
+    return MudData { _mudStateIORef = msIORef
+                   , _noticeLog     = noticeLogService
+                   , _errorLog      = errorLogService
+                   , _startTime     = start }
 
 
 initWorld :: MudStack ()
