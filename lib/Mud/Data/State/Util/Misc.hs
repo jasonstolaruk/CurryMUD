@@ -6,7 +6,6 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , findPCIds
                                 , getEffBothGramNos
                                 , getEffName
-                                , getSexRace
                                 , mkPlaIdsSingsList
                                 , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
@@ -16,6 +15,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Util.Misc
 import Mud.Util.Text
 
@@ -36,20 +36,19 @@ import qualified Data.Text as T
 
 
 findPCIds :: MudState -> [Id] -> [Id]
-findPCIds (view typeTbl -> tt) haystack = [ i | i <- haystack, tt ! i == PCType ]
+findPCIds ms haystack = [ i | i <- haystack, getType i ms == PCType ]
 
 
 getEffBothGramNos :: Id -> MudState -> Id -> BothGramNos
 getEffBothGramNos i ms targetId =
-    let targetEnt = views entTbl (! targetId) ms
+    let targetEnt  = getEnt targetId ms
+        targetSing = targetEnt^.sing
     in case targetEnt^.entName of
-      Nothing | intros                                  <- views pcTbl (view introduced . (! i)) ms
-              , targetSing                              <- targetEnt^.sing
-              , (pp *** pp -> (targetSexy, targetRace)) <- getSexRace targetId ms
-              -> if targetSing `elem` intros
-                then (targetSing, "")
-                else over both ((targetSexy <>) . (" " <>)) (targetRace, pluralize targetRace)
-      Just _  -> (targetEnt^.sing, targetEnt^.plur)
+      Nothing -> let (pp *** pp -> (targetSexy, targetRace)) = getSexRace targetId ms
+                 in if targetSing `elem` getIntroduced i ms
+                   then (targetSing, "")
+                   else over both ((targetSexy <>) . (" " <>)) (targetRace, pluralize targetRace)
+      Just _  -> (targetSing, targetEnt^.plur)
   where
     pluralize "dwarf" = "dwarves"
     pluralize "elf"   = "elves"
@@ -57,21 +56,17 @@ getEffBothGramNos i ms targetId =
 
 
 getEffName :: Id -> MudState -> Id -> T.Text
-getEffName i ms targetId = let targetEnt  = views entTbl (! targetId) ms
+getEffName i ms targetId = let targetEnt = getEnt targetId ms
                            in fromMaybe (helper $ targetEnt^.sing) $ targetEnt^.entName
   where
-    helper targetSing | views introduced (targetSing `elem`) (views pcTbl (! i) ms) = uncapitalize targetSing
-                      | otherwise                                                   = mkUnknownPCEntName targetId ms
-
-
-getSexRace :: Id -> MudState -> (Sex, Race)
-getSexRace i ms = (views mobTbl (view sex . (! i)) ms, views pcTbl (view race . (! i)) ms)
+    helper targetSing | views introduced (targetSing `elem`) (getPC i ms) = uncapitalize targetSing
+                      | otherwise                                         = mkUnknownPCEntName targetId ms
 
 
 mkPlaIdsSingsList :: MudState -> [(Id, Sing)]
 mkPlaIdsSingsList ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
                                            , not . getPlaFlag IsAdmin $ pt ! i
-                                           , let s = views entTbl (view sing . (! i)) ms
+                                           , let s = getSing i ms
                                            , then sortWith by s ]
 
 

@@ -174,7 +174,7 @@ parsePCDesig i ms@(view pcTbl -> pt) msg = views introduced (`helper` msg) $ pt 
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
           left                                                                         <>
-          (pes `elem` intros ? pes :? expandPCEntName i ms isCap pcEntName pcId pcIds) <> -- HERE
+          (pes `elem` intros ? pes :? expandPCEntName i ms isCap pcEntName pcId pcIds) <>
           helper intros rest
         StdDesig { stdPCEntSing = Nothing,  .. } ->
           left <> expandPCEntName i ms isCap pcEntName pcId pcIds <> helper intros rest
