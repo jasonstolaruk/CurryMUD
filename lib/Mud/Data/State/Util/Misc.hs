@@ -84,8 +84,7 @@ mkSerializedNonStdDesig i ms s (capitalize . pp -> aot) = let (pp *** pp -> (sex
 
 
 mkUnknownPCEntName :: Id -> MudState -> T.Text
-mkUnknownPCEntName i ms | s <- views mobTbl (view sex  . (! i)) ms
-                        , r <- views pcTbl  (view race . (! i)) ms = (T.singleton . T.head . pp $ s) <> pp r
+mkUnknownPCEntName i ms = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
 
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
@@ -93,12 +92,12 @@ modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $
 
 
 sortInv :: MudState -> Inv -> Inv
-sortInv ms is | (foldr helper ([], []) -> (pcIs, nonPCIs)) <- [ (i, views typeTbl (! i) ms) | i <- is ]
-              = (pcIs ++) . sortNonPCs $ nonPCIs
+sortInv ms is = let (foldr helper ([], []) -> (pcIs, nonPCIs)) = [ (i, getType i ms) | i <- is ]
+                in (pcIs ++) . sortNonPCs $ nonPCIs
   where
     helper (i, t) acc                  = let consTo lens = over lens (i :) acc
                                          in t == PCType ? consTo _1 :? consTo _2
     sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped nonPCIs                     = [ (i, views entName fromJust e, e^.sing) | i <- nonPCIs
-                                                                                  , let e = views entTbl (! i) ms ]
+                                                                                  , let e = getEnt i ms ]
