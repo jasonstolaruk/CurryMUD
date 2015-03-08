@@ -2,11 +2,8 @@
 
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
-                                  , bcastAdminsSTM
                                   , bcastNl
-                                  , bcastNlSTM
                                   , bcastOthersInRm
-                                  , bcastSTM
                                   , expandPCEntName
                                   , frame
                                   , massMsg
@@ -15,15 +12,12 @@ module Mud.Data.State.Util.Output ( bcast
                                   , mkDividerTxt
                                   , mkNTBroadcast
                                   , multiWrapSend
-                                  , multiWrapSendSTM
                                   , ok
                                   , parsePCDesig
                                   , prompt
                                   , send
                                   , sendMsgBoot
-                                  , sendSTM
-                                  , wrapSend
-                                  , wrapSendSTM ) where
+                                  , wrapSend ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
@@ -40,9 +34,6 @@ import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent.STM (STM, atomically)
-import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Concurrent.STM.TVar (readTVar)
 import Control.Lens.Getter (views)
 import Control.Lens.Operators ((^.))
 import Control.Monad (forM_)
@@ -64,15 +55,11 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
-bcast :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
-bcast mt mqt pcTbl plaTbl = liftIO . atomically . bcastSTM mt mqt pcTbl plaTbl
-
-
-bcastSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> STM ()
-bcastSTM mt mqt pcTbl plaTbl = mapM_ (\(msg, is) -> mapM_ (helper msg) is)
+bcast :: MudState -> [Broadcast] -> MudStack ()
+bcast mt mqt pcTbl plaTbl = mapM_ (\(msg, is) -> mapM_ (helper msg) is)
   where
-    helper msg i = let mq   = mqt ! i
-                       cols = (plaTbl ! i)^.columns
+    helper msg i = let mq   = (ms^.msgQueueTbl) ! i
+                       cols = view columns $ (ms^.plaTbl) ! i
                    in sendSTM mq . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i mt pcTbl $ msg
 
 
@@ -147,13 +134,15 @@ massMsg msg = liftIO . atomically . helperSTM =<< ask
 -----
 
 
-massSend :: T.Text -> MudStack ()
-massSend msg = liftIO . atomically . helperSTM =<< ask
+massSend :: MudState -> T.Text -> MudStack ()
+massSend ms msg = liftIO . atomically $ helperSTM
   where
-    helperSTM md = (,) <$> readTVar (md^.msgQueueTblTVar) <*> readTVar (md^.plaTblTVar) >>= \(mqt, pt) ->
-        let helper i | mq   <- mqt ! i
-                     , cols <- (pt ! i)^.columns = sendSTM mq . frame cols . wrapUnlines cols $ msg
-        in forM_ (IM.keys pt) helper
+    helperSTM = let mqt = ms^.msgQueueTbl
+                    pt  = ms^.plaTbl
+                    helper i | mq   <- mqt ! i
+                             , cols <- (pt ! i)^.columns
+                             = writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
+                in forM_ (IM.keys pt) helper
 
 
 -----
@@ -181,11 +170,7 @@ mkNTBroadcast i msg = [NonTargetBroadcast (msg, [i])]
 
 
 multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
-multiWrapSend mq cols = liftIO . atomically . multiWrapSendSTM mq cols
-
-
-multiWrapSendSTM :: MsgQueue -> Cols -> [T.Text] -> STM ()
-multiWrapSendSTM mq cols = sendSTM mq . multiWrapNl cols
+multiWrapSend mq cols = send mq . multiWrapNl cols
 
 
 -----
@@ -198,12 +183,12 @@ ok mq = send mq . nlnl $ "OK!"
 -----
 
 
-parsePCDesig :: Id -> MobTbl -> PCTbl -> T.Text -> T.Text
-parsePCDesig i mt pt msg = views introduced (`helper` msg) $ pt ! i
+parsePCDesig :: Id -> MudState -> T.Text -> T.Text
+parsePCDesig i ms@(view pcTbl -> pt) msg = views introduced (`helper` msg) $ pt ! i
   where
     helper intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
-      , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt
+      , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt, mt <- ms^.mobTbl
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
           left                                                                            <>
@@ -231,11 +216,7 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 send :: MsgQueue -> T.Text -> MudStack ()
-send mq = liftIO . atomically . sendSTM mq
-
-
-sendSTM :: MsgQueue -> T.Text -> STM ()
-sendSTM mq = writeTQueue mq . FromServer
+send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
 -----
@@ -249,8 +230,4 @@ sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dflt
 
 
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
-wrapSend mq cols = liftIO . atomically . wrapSendSTM mq cols
-
-
-wrapSendSTM :: MsgQueue -> Cols -> T.Text -> STM ()
-wrapSendSTM mq cols = sendSTM mq . wrapUnlinesNl cols
+wrapSend mq cols = send mq wrapUnlinesNl cols
