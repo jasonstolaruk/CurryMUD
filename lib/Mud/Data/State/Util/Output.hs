@@ -33,15 +33,11 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens.Getter (views)
-import Control.Lens.Operators ((^.))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
-import Data.IntMap.Lazy ((!))
 import Data.List (delete, elemIndex)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
@@ -84,7 +80,8 @@ bcastNl bs = bcast . concat $ bs : [ mkBroadcast i "\n" | i <- nubSort . concatM
 
 
 bcastOthersInRm :: Id -> T.Text -> MudStack ()
-bcastOthersInRm i msg = getState >>= \ms -> let (i `delete` -> ris) = getPCRmInv i ms in bcast [(msg, findPCIds ms ris)]
+bcastOthersInRm i msg = getState >>= \ms ->
+    let ((i `delete`) -> ris) = getPCRmInv i ms in bcast [(msg, findPCIds ms ris)]
 
 
 -----
@@ -100,7 +97,7 @@ frame cols | divider <- nl . mkDividerTxt $ cols = nl . (<> divider) . (divider 
 massMsg :: Msg -> MudStack ()
 massMsg msg = liftIO . atomically . helperSTM =<< getState
   where
-    helperSTM (view msgQueueTbl IM.elems -> mqs) = mapM_ (`writeTQueue` msg) mqs
+    helperSTM (views msgQueueTbl IM.elems -> mqs) = mapM_ (`writeTQueue` msg) mqs
 
 
 -----
@@ -212,4 +209,4 @@ sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dflt
 
 
 wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
-wrapSend mq cols = send mq wrapUnlinesNl cols
+wrapSend mq cols = send mq . wrapUnlinesNl cols

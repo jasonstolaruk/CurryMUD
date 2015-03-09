@@ -17,6 +17,7 @@ module Mud.Misc.NameResolution ( ReconciledCoins
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
@@ -72,15 +73,8 @@ patternMatchFail = U.patternMatchFail "Mud.Misc.NameResolution"
 type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
 
 
-resolveEntCoinNames :: Id
-                    -> EntTbl
-                    -> MobTbl
-                    -> PCTbl
-                    -> Args
-                    -> Inv
-                    -> Coins
-                    -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNames i et mt pt (map T.toLower -> as) is c = expandGecrs c [ mkGecr i et mt pt is c a | a <- as ]
+resolveEntCoinNames :: Id -> MudState -> Args -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
+resolveEntCoinNames i ms (map T.toLower -> as) is c = expandGecrs c [ mkGecr i ms is c a | a <- as ]
 
 
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
@@ -122,11 +116,11 @@ pruneDupIds = dropJustNulls . pruneThem []
     pruneThem _       []               = []
     pruneThem uniques (Nothing : rest) = Nothing : pruneThem uniques rest
     pruneThem uniques (Just is : rest) = let is' = is \\ uniques in Just is' : pruneThem (is' ++ uniques) rest
-    dropJustNulls                      = foldr helper []
+    dropJustNulls = foldr helper []
       where
-        helper   Nothing   acc = Nothing : acc
-        helper   (Just []) acc = acc
-        helper a@(Just _ ) acc = a : acc
+        helper Nothing   acc = Nothing : acc
+        helper (Just []) acc = acc
+        helper x         acc = x : acc
 
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
@@ -161,33 +155,32 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
 
 
-mkGecr :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
-mkGecr i et mt pt searchIs searchC searchName@(headTail -> (h, t))
+mkGecr :: Id -> MudState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
+mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
   | searchName == T.singleton allChar
-  , allEs <- [ et ! searchI | searchI <- searchIs ] = Mult { amount          = length searchIs
-                                                           , nameSearchedFor = searchName
-                                                           , entsRes         = Just allEs
-                                                           , coinsRes        = Just . SomeOf $ searchC }
-  | h == allChar = mkGecrMult i et mt pt (maxBound :: Int) t searchIs searchC
+  , allEs <- [ getEnt si ms | si <- searchIs ] = Mult { amount          = length searchIs
+                                                      , nameSearchedFor = searchName
+                                                      , entsRes         = Just allEs
+                                                      , coinsRes        = Just . SomeOf $ searchCoins }
+  | h == allChar = mkGecrMult i ms (maxBound :: Int) t searchIs searchCoins
   | isDigit h
   , (numText, rest) <- T.span isDigit searchName
-  , numInt <- either (oops numText) fst . decimal $ numText = if numText /= "0"
-                                                                then parse rest numInt
-                                                                else Sorry searchName
-  | otherwise                                               = mkGecrMult i et mt pt 1 searchName searchIs searchC
+  , numInt <- either (oops numText) fst . decimal $ numText
+  = numText /= "0" ? parse rest numInt :? Sorry searchName
+  | otherwise = mkGecrMult i ms 1 searchName searchIs searchCoins
   where
-    oops numText = blowUp "mkGecr" "unable to convert Text to Int" [ showText numText ]
+    oops numText = blowUp "mkGecr" "unable to convert Text to Int" [numText]
     parse rest numInt
       | T.length rest < 2               = Sorry searchName
       | (delim, rest') <- headTail rest =
-          if | delim == amountChar -> mkGecrMult    i et mt pt numInt rest' searchIs searchC
-             | delim == indexChar  -> mkGecrIndexed i et mt pt numInt rest' searchIs
+          if | delim == amountChar -> mkGecrMult    i ms numInt rest' searchIs searchCoins
+             | delim == indexChar  -> mkGecrIndexed i ms numInt rest' searchIs
              | otherwise           -> Sorry searchName
 
 
-mkGecrMult :: Id -> EntTbl -> MobTbl -> PCTbl -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
-mkGecrMult i et mt pt a n is c | n `elem` allCoinNames = mkGecrMultForCoins           a n c
-                               | otherwise             = mkGecrMultForEnts i et mt pt a n is
+mkGecrMult :: Id -> MudState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
+mkGecrMult i ms a n is c | n `elem` allCoinNames = mkGecrMultForCoins     a n c
+                         | otherwise             = mkGecrMultForEnts i ms a n is
 
 
 mkGecrMultForCoins :: Amount -> T.Text -> Coins -> GetEntsCoinsRes
