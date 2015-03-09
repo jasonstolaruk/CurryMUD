@@ -322,14 +322,13 @@ debugTalk p = withoutArgs debugTalk p
 
 
 debugThread :: Action
-debugThread (NoArgs i mq cols) = ask >>= \md -> do
+debugThread (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "thread") i
-    let (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) = over both asyncThreadId . getLogAsyncs $ md
-    (plt, M.assocs -> threadTblKvs) <- liftIO . atomically . helperSTM $ md
-    let plaLogTblKvs = [ (asyncThreadId . fst $ e, PlaLog k) | e <- IM.elems plt | k <- IM.keys plt ]
+    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId . getLogAsyncs <$> ask -- TODO: Does reader have a more idiomatic way rather than just fmapping onto ask?
+    (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
+    let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
   where
-    helperSTM md = (,) <$> readTVar (md^.plaLogTblTVar) <*> readTVar (md^.threadTblTVar)
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
     mkTypeName (PlaLog  (showText -> plaI)) = padOrTrunc 10 "PlaLog"  <> plaI
@@ -358,12 +357,8 @@ debugThrow p            = withoutArgs debugThrow p
 
 
 debugThrowLog :: Action
-debugThrowLog (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "throwlog") i
-    liftIO . atomically . helperSTM =<< ask
-    ok mq
-  where
-    helperSTM md = flip writeTQueue Throw . snd . (! i) =<< readTVar (md^.plaLogTblTVar)
+debugThrowLog (NoArgs' i mq) = getState >>= \ms -> let lq = getPlaLog i ms in
+    logPlaExec (prefixDebugCmd "throwlog") i >> (liftIO . atomically . writeTQueue lq $ Throw) >> ok mq
 debugThrowLog p = withoutArgs debugThrowLog p
 
 
@@ -432,24 +427,11 @@ debugWrap (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)
   _               -> sorryParse
   where
     sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-    helper lineLen
-      | lineLen < 0                            = sorryWtf
-      | lineLen < minCols || lineLen > maxCols = sorryLineLen
-      | otherwise                              = do
-          logPlaExecArgs (prefixDebugCmd "wrap") [a] i
-          send mq . frame lineLen . wrapUnlines lineLen $ msg
-    sorryWtf     = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
-    sorryLineLen = wrapSend mq cols . T.concat $ [ "The line length must be between "
-                                                 , showText minCols
-                                                 , " and "
-                                                 , showText maxCols
-                                                 , " characters." ]
-    msg = let ls = [ T.concat [ u
-                              , mkFgColorANSI (Dull, c)
-                              , "This is "
-                              , showText c
-                              , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
-          in (<> dfltColor) . T.unwords $ ls
+    helper lineLen | lineLen < 0                            = wrapSorryWtf     mq cols
+                   | lineLen < minCols || lineLen > maxCols = wrapSorryLineLen mq cols
+                   | otherwise                              = do
+                       logPlaExecArgs (prefixDebugCmd "wrap") [a] i
+                       send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
 debugWrap p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: line length, as in "
@@ -457,6 +439,27 @@ debugWrap p = advise p [] advice
                       , dblQuote $ prefixDebugCmd "wrap" <> " 40"
                       , dfltColor
                       , "." ]
+
+
+wrapSorryWtf :: MsgQueue -> Cols -> MudStack ()
+wrapSorryWtf mq cols = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
+
+
+wrapSorryLineLen :: MsgQueue -> Cols -> MudStack ()
+wrapSorryLineLen mq cols = wrapSend mq cols . T.concat $ [ "The line length must be between "
+                                                         , showText minCols
+                                                         , " and "
+                                                         , showText maxCols
+                                                         , " characters." ]
+
+
+wrapMsg :: T.Text
+wrapMsg = let ls = [ T.concat [ u
+                              , mkFgColorANSI (Dull, c)
+                              , "This is "
+                              , showText c
+                              , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
+          in (<> dfltColor) . T.unwords $ ls
 
 
 -----
@@ -487,26 +490,13 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
       _         -> sorry >> return Nothing
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
-    helper lineLen indent
-      | lineLen < 0 || indent < 0              = sorryWtf
-      | lineLen < minCols || lineLen > maxCols = sorryLineLen
-      | indent >= lineLen                      = sorryIndent
-      | otherwise                              = do
-          logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
-          send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ msg
-    sorryWtf     = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
-    sorryLineLen = wrapSend mq cols . T.concat $ [ "The line length must be between "
-                                                 , showText minCols
-                                                 , " and "
-                                                 , showText maxCols
-                                                 , " characters." ]
-    sorryIndent  = wrapSend mq cols "The indent amount must be less than the line length."
-    msg = let ls = [ T.concat [ u
-                   , mkFgColorANSI (Dull, c)
-                   , "This is "
-                   , showText c
-                   , " text." ] | c <- Black `delete` colors , u <- [ underlineANSI , noUnderlineANSI ] ]
-          in (<> dfltColor) . T.unwords $ ls
+    helper lineLen indent | lineLen < 0 || indent < 0              = wrapSorryWtf     mq cols
+                          | lineLen < minCols || lineLen > maxCols = wrapSorryLineLen mq cols
+                          | indent >= lineLen                      = sorryIndent
+                          | otherwise                              = do
+                              logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
+                              send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
+    sorryIndent = wrapSend mq cols "The indent amount must be less than the line length."
 debugWrapIndent p = advise p [] advice
   where
     advice = T.concat [ "Please provide two arguments: line length and indent amount, as in "
