@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( advise
-                          , adviseSTM
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
@@ -15,6 +14,8 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
 import Mud.Interp.Pager
@@ -29,15 +30,8 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Concurrent.STM (STM, atomically)
-import Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (throwIO)
-import Control.Lens (at)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
-import Data.IntMap.Lazy ((!))
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
@@ -73,7 +67,7 @@ advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For
                                                           , dfltColor
                                                           , "." ] ]
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
-    multiWrapSendSTM mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
+    multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 
@@ -127,7 +121,7 @@ fileIOExHandler fn e = if any (e |$|) [ isAlreadyInUseError, isDoesNotExistError
 
 
 pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
-pager i mq txt@(length -> txtLen) = let pl = getPageLines i ms in if txtLen + 3 <= pl
+pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 3 <= pl
   then send mq . nl . T.unlines $ txt
   else let (page, rest) = splitAt (pl - 3) txt in do
       send mq . T.unlines $ page

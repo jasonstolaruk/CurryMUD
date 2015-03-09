@@ -31,7 +31,6 @@ import Control.Arrow (first)
 import Control.Lens.Getter (view)
 import Control.Monad (guard)
 import Data.Char (isDigit)
-import Data.IntMap.Lazy ((!))
 import Data.List ((\\), foldl')
 import Data.Monoid ((<>), mempty)
 import Data.String (fromString)
@@ -218,7 +217,7 @@ mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targ
   where
     notFound                          = (Nothing, Nothing)
     found (zip is -> zipped) fullName = (Just . takeMatchingEnts zipped $ fullName, Nothing)
-    takeMatchingEnts zipped  fullName = take a [ getEnt ms targetId | (targetId, effName) <- zipped
+    takeMatchingEnts zipped  fullName = take a [ getEnt targetId ms | (targetId, effName) <- zipped
                                                                     , effName == fullName ]
 
 
