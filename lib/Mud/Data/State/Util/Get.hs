@@ -56,6 +56,10 @@ getPla :: Id -> MudState -> Pla
 getPla i = views plaTbl (! i)
 
 
+getPlaLogQueue :: Id -> MudState -> LogQueue
+getPlaLogQueue i = views plaLogTbl (snd . (! i))
+
+
 getRace :: Id -> MudState -> Race
 getRace i ms = getPC i ms ^.race
 

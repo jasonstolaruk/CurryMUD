@@ -168,17 +168,13 @@ closeLogs = ask >>= \md -> do
 
 
 registerMsg :: T.Text -> LogQueue -> MudStack ()
-registerMsg msg q = liftIO . atomically . registerMsgSTM msg $ q
-
-
-registerMsgSTM :: T.Text -> LogQueue -> STM ()
-registerMsgSTM msg = flip writeTQueue (LogMsg msg)
+registerMsg msg = liftIO . atomically . flip writeTQueue (LogMsg msg)
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
-logNotice modName (dblQuote -> funName) msg = helper . view noticeLog =<< ask
+logNotice modName (dblQuote -> funName) msg = helper . snd . view noticeLog =<< ask
   where
-    helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ]) . snd
+    helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
 
 logError :: T.Text -> MudStack ()
@@ -196,8 +192,8 @@ logIOEx modName (dblQuote -> funName) (dblQuote . showText -> e) =
 
 
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> T.Text -> IOException -> MudStack ()
-logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showText -> e)
-  | msg <- T.concat [ modName, " ", funName, ": ", e ] = logError msg >> wrapSend mq cols msg
+logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showText -> e) =
+    let msg = T.concat [ modName, " ", funName, ": ", e ] in logError msg >> wrapSend mq cols msg
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
@@ -212,22 +208,18 @@ logPlaExec modName cn i = logPla modName cn i $ "executed " <> dblQuote cn <> ".
 logPlaExecArgs :: T.Text -> CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs modName cn as i = logPla modName cn i $ "executed " <> helper <> "."
   where
-    helper = case as of [] -> dblQuote cn <> " with no arguments"
-                        _  -> dblQuote . T.unwords $ cn : as
+    helper | null as   = dblQuote cn <> " with no arguments"
+           | otherwise = dblQuote . T.unwords $ cn : as
 
 
 logPlaOut :: T.Text -> CmdName -> Id -> [T.Text] -> MudStack ()
-logPlaOut modName (dblQuote -> cn) i (T.intercalate " / " -> msgs) = helper =<< getPlaLogQueue i
+logPlaOut modName (dblQuote -> cn) i (T.intercalate " / " -> msgs) = helper . getPlaLogQueue i =<< getState
   where
     helper = registerMsg (T.concat [ modName, " ", cn, " (output): ", msgs ])
 
 
-getPlaLogQueue :: Id -> MudStack LogQueue
-getPlaLogQueue i = snd . (! i) <$> (liftIO . readTVarIO . view plaLogTblTVar =<< ask)
-
-
 massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
-massLogPla modName (dblQuote -> funName) msg = liftIO . atomically . helperSTM =<< ask
+massLogPla modName (dblQuote -> funName) msg = liftIO . atomically . helperSTM =<< getState
   where
-    helperSTM md = (map snd . IM.elems <$> readTVar (md^.plaLogTblTVar)) >>=
-        mapM_ (registerMsgSTM (T.concat [ modName, " ", funName, ": ", msg ]))
+    helperSTM (views plaLogTbl (map snd . IM.elems) -> qs) =
+        forM_ qs (`writeTQueue` (LogMsg . T.concat $ [ modName, " ", funName, ": ", msg ]))
