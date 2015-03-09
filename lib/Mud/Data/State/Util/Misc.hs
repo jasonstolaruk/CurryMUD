@@ -64,7 +64,7 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
                       | otherwise                                         = mkUnknownPCEntName targetId ms
 
 
-getState :: MudStack (MudState)
+getState :: MudStack MudState
 getState = liftIO . readIORef . view mudStateIORef =<< ask
 
 

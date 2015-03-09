@@ -17,7 +17,7 @@ getAdminIds (view plaTbl -> pt) = [ i | i <- IM.keys pt, getPlaFlag IsAdmin $ pt
 
 
 getColumns :: Id -> MudState -> Cols
-getColumns i ms = (getPla i ms)^.columns
+getColumns i ms = getPla i ms ^.columns
 
 
 getEnt :: Id -> MudState -> Ent
@@ -25,7 +25,7 @@ getEnt i = views entTbl (! i)
 
 
 getIntroduced :: Id -> MudState -> [Sing]
-getIntroduced i ms = (getPC i ms)^.introduced
+getIntroduced i ms = getPC i ms ^.introduced
 
 
 getInv :: Id -> MudState -> Inv
@@ -57,15 +57,15 @@ getPla i = views plaTbl (! i)
 
 
 getRace :: Id -> MudState -> Race
-getRace i ms = (getPC i ms)^.race
+getRace i ms = getPC i ms ^.race
 
 
 getRmId :: Id -> MudState -> Id
-getRmId i ms = (getPC i ms)^.rmId
+getRmId i ms = getPC i ms ^.rmId
 
 
 getSex :: Id -> MudState -> Sex
-getSex i ms = (getMob i ms)^.sex
+getSex i ms = getMob i ms ^.sex
 
 
 getSexRace :: Id -> MudState -> (Sex, Race)
@@ -73,7 +73,7 @@ getSexRace i ms = (getSex i ms, getRace i ms)
 
 
 getSing :: Id -> MudState -> Sing
-getSing i ms = (getEnt i ms)^.sing
+getSing i ms = getEnt i ms ^.sing
 
 
 getType :: Id -> MudState -> Type
