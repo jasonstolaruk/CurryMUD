@@ -128,14 +128,10 @@ debugBoot p              = withoutArgs debugBoot p
 
 
 debugBroad :: Action
-debugBroad (NoArgs'' i) = ask >>= liftIO . atomically . helperSTM >>= \(mt, mqt, pcTbl, plaTbl) -> do
+debugBroad (NoArgs'' i) = do
     logPlaExec (prefixDebugCmd "broad") i
-    bcastNl mt mqt pcTbl plaTbl . mkBroadcast i $ msg
+    bcastNl . mkBroadcast i $ msg
   where
-    helperSTM md = (,,,) <$> readTVar (md^.mobTblTVar)
-                         <*> readTVar (md^.msgQueueTblTVar)
-                         <*> readTVar (md^.pcTblTVar)
-                         <*> readTVar (md^.plaTblTVar)
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\
           \[3] abcdefghij abcdefghij abcdefghij\n\
@@ -207,7 +203,7 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 debugDispEnv :: Action
 debugDispEnv (NoArgs i mq cols)  = do
     logPlaExecArgs (prefixDebugCmd "env") [] i
-    pager i mq =<< concatMap (wrapIndent 2 cols) . mkEnvListTxt <$> liftIO getEnvironment
+    pager i mq =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env | env <- liftIO getEnvironment ]
 debugDispEnv p@(ActionParams { plaId, args }) = do
     logPlaExecArgs (prefixDebugCmd "env") args plaId
     dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO getEnvironment ]
@@ -235,9 +231,7 @@ debugLog p = withoutArgs debugLog p
 
 
 debugParams :: Action
-debugParams p@(WithArgs i mq cols _) = do
-    logPlaExec (prefixDebugCmd "params") i
-    wrapSend mq cols . showText $ p
+debugParams p@(WithArgs i mq cols _) = logPlaExec (prefixDebugCmd "params") i >> (wrapSend mq cols . showText $ p)
 debugParams p = patternMatchFail "debugParams" [ showText p ]
 
 
@@ -256,26 +250,23 @@ purgeThreadTbls = do
 
 
 purgePlaLogTbl :: MudStack ()
-purgePlaLogTbl = ask >>= \md -> do
-    (IM.assocs -> kvs) <- liftIO . readTVarIO $ md^.plaLogTblTVar
-    let (is, asyncs) = unzip [ (fst kv, fst . snd $ kv) | kv <- kvs ]
-    liftIO . atomically . helperSTM md =<< (zip is <$> (liftIO . mapM poll $ asyncs))
+purgePlaLogTbl = getState >>= \(views plaLogTbl IM.assocs -> kvs) -> do
+    zipped <- [ (i, status) | (i, fst -> async) <- kvs, status <- liftIO . poll $ async  ]
+    modifyState $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped
+                         in (ms & plaLogTbl .~ plt, ())
   where
-    helperSTM md zipped = (md^.plaLogTblTVar) |$| readTVar >=> \plt ->
-        writeTVar (md^.plaLogTblTVar) . foldr purger plt $ zipped
     purger (_, Nothing) tbl = tbl
     purger (i, _      ) tbl = IM.delete i tbl
 
 
 purgeTalkAsyncTbl :: MudStack ()
-purgeTalkAsyncTbl = ask >>= \md -> do
-    (M.elems -> asyncs) <- liftIO . readTVarIO $ md^.talkAsyncTblTVar
-    liftIO . atomically . helperSTM md =<< (zip asyncs <$> (liftIO . mapM poll $ asyncs))
+purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl IM.elems -> asyncs) -> do
+    zipped <- [ (a, status) | a <- asyncs, status <- liftIO . poll $ a ]
+    modifyState $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) $ zipped
+                         in (ms & talkAsyncTbl .~ tat, ())
   where
-    helperSTM md zipped = (md^.talkAsyncTblTVar) |$| readTVar >=> \tat ->
-        writeTVar (md^.talkAsyncTblTVar) . foldr purger tat $ zipped
-    purger (_, Nothing) tbl = tbl
-    purger (a, _      ) tbl = M.delete (asyncThreadId a) tbl
+    purger (_,                   Nothing) tbl = tbl
+    purger (asyncThreadId -> ti, _      ) tbl = M.delete ti tbl
 
 
 purgeThreadTbl :: MudStack ()
