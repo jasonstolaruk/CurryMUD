@@ -252,8 +252,7 @@ purgeThreadTbls = do
 purgePlaLogTbl :: MudStack ()
 purgePlaLogTbl = getState >>= \(views plaLogTbl IM.assocs -> kvs) -> do
     zipped <- [ (i, status) | (i, fst -> async) <- kvs, status <- liftIO . poll $ async  ]
-    modifyState $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped
-                         in (ms & plaLogTbl .~ plt, ())
+    modifyState $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped in (ms & plaLogTbl .~ plt, ())
   where
     purger (_, Nothing) tbl = tbl
     purger (i, _      ) tbl = IM.delete i tbl
@@ -262,22 +261,18 @@ purgePlaLogTbl = getState >>= \(views plaLogTbl IM.assocs -> kvs) -> do
 purgeTalkAsyncTbl :: MudStack ()
 purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl IM.elems -> asyncs) -> do
     zipped <- [ (a, status) | a <- asyncs, status <- liftIO . poll $ a ]
-    modifyState $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) $ zipped
-                         in (ms & talkAsyncTbl .~ tat, ())
+    modifyState $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) zipped in (ms & talkAsyncTbl .~ tat, ())
   where
     purger (_,                   Nothing) tbl = tbl
     purger (asyncThreadId -> ti, _      ) tbl = M.delete ti tbl
 
 
 purgeThreadTbl :: MudStack ()
-purgeThreadTbl = ask >>= \md -> do
-    (M.keys -> tis) <- liftIO . readTVarIO $ md^.threadTblTVar
-    liftIO . atomically . helperSTM md =<< (zip tis <$> (liftIO . mapM threadStatus $ tis))
+purgeThreadTbl = getState >>= \(views threadTbl IM.keys -> threadIds) -> do
+    zipped <- [ (ti, status) | ti <- threadIds, status <- liftIO . threadStatus $ ti ]
+    modifyState $ \ms -> let tt = foldr purger (ms^.threadTbl) zipped in (ms & threadTbl .~ tt, ())
   where
-    helperSTM md zipped = (md^.threadTblTVar) |$| readTVar >=> \tt ->
-        writeTVar (md^.threadTblTVar) . foldr purger tt $ zipped
-    purger (ti, status) tbl | status == ThreadFinished = M.delete ti tbl
-                            | otherwise                = tbl
+    purger (ti, status) tbl = status == ThreadFinished ? M.delete ti tbl :? tbl
 
 
 -----
