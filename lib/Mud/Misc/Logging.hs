@@ -19,6 +19,7 @@ module Mud.Misc.Logging ( closeLogs
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
@@ -31,12 +32,11 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Concurrent.STM.TVar (readTVar, readTVarIO, modifyTVar)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
 import Control.Lens.Getter (view)
-import Control.Lens.Operators ((?~), (^.))
+import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad ((>=>), forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -124,7 +124,7 @@ logRotationFlagger :: LogQueue -> IO ()
 logRotationFlagger q = forever loop
   where
     loop = do
-        threadDelay $ logRotationFlaggerDelay * 10 ^ 6
+        threadDelay $ logRotationDelay * 10 ^ 6
         atomically . writeTQueue q $ RotateLog
 
 
@@ -132,9 +132,7 @@ initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
     q <- liftIO newTQueueIO
     a <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM $ q
-    liftIO . atomically . helperSTM (a, q) =<< ask
-  where
-    helperSTM aq md = modifyTVar (md^.plaLogTblTVar) $ at i ?~ aq
+    modifyState $ \ms -> (ms & plaLogTbl.at i ?~ (a, q), ())
 
 
 -- ==================================================
@@ -142,11 +140,7 @@ initPlaLog i n@(T.unpack -> n') = do
 
 
 stopLog :: LogQueue -> MudStack ()
-stopLog = liftIO . atomically . stopLogSTM
-
-
-stopLogSTM :: LogQueue -> STM ()
-stopLogSTM = flip writeTQueue StopLog
+stopLog = liftIO . atomically . flip writeTQueue StopLog
 
 
 closePlaLog :: Id -> MudStack ()
@@ -154,20 +148,19 @@ closePlaLog = flip doIfLogging stopLog
 
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = ask >>= \md ->
-    maybeVoid (f . snd) =<< IM.lookup i <$> (liftIO . readTVarIO $ md^.plaLogTblTVar)
+doIfLogging i f = getState >>= \(view plaLogTbl -> plt) -> maybeVoid (f . snd) . IM.lookup i $ plt
 
 
 closeLogs :: MudStack ()
-closeLogs = do
+closeLogs = ask >>= \md -> do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    ask >>= liftIO . atomically . helperSTM >>= mapM_ (liftIO . wait)
-    liftIO removeAllHandlers
-  where
-    helperSTM md | (na, nq) <- md^.noticeLog, (ea, eq) <- md^.errorLog = do
-        (as, qs) <- unzip . IM.elems <$> readTVar (md^.plaLogTblTVar)
-        mapM_ stopLogSTM $ nq : eq : qs
-        return $ na : ea : as
+    let (na, nq) = md^.noticeLog
+        (ea, eq) = md^.errorLog
+    (as, qs) <- unzip . views plaLogTbl IM.elems <$> getState
+    liftIO $ do
+        atomically . mapM_ (`writeTQueue` StopLog) $ nq : eq : qs
+        mapM_ wait $ na : ea : as
+        removeAllHandlers
 
 
 -- ==================================================

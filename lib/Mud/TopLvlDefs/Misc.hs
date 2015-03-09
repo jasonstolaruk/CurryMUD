@@ -29,8 +29,8 @@ isDebug :: Bool
 isDebug = True
 
 
-logRotationFlaggerDelay :: Int
-logRotationFlaggerDelay = 5 * 60
+logRotationDelay :: Int
+logRotationDelay = 5 * 60
 
 
 maxCmdLen :: Int
