@@ -6,6 +6,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , findPCIds
                                 , getEffBothGramNos
                                 , getEffName
+                                , getState
                                 , mkPlaIdsSingsList
                                 , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
@@ -25,7 +26,7 @@ import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
-import Data.IORef (atomicModifyIORef)
+import Data.IORef (atomicModifyIORef, readIORef)
 import Data.IntMap.Lazy ((!))
 import Data.List (sortBy)
 import Data.Maybe (fromJust, fromMaybe)
@@ -61,6 +62,10 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
   where
     helper targetSing | views introduced (targetSing `elem`) (getPC i ms) = uncapitalize targetSing
                       | otherwise                                         = mkUnknownPCEntName targetId ms
+
+
+getState :: MudStack (MudState)
+getState = liftIO . readIORef . view mudStateIORef =<< ask
 
 
 mkPlaIdsSingsList :: MudState -> [(Id, Sing)]

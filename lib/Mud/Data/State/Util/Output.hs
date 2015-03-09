@@ -57,47 +57,34 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
-bcast :: MudState -> [Broadcast] -> MudStack ()
-bcast ms = liftIO . atomically . mapM_ sendBcastSTM
+bcast :: [Broadcast] -> MudStack ()
+bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ bs
   where
-    sendBcastSTM (msg, is) = mapM_ (sendMsgToIdSTM msg) is
-    sendMsgToIdSTM msg i | mq <- getMsgQueue i ms, cols <- getColumns i ms =
-        writeTQueue mq . FromServer . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i mt pcTbl $ msg
+    sendBcastSTM ms (msg, is) = forM_ is $ \i ->
+        let mq   = getMsgQueue i ms
+            cols = getColumns  i ms
+        in writeTQueue mq . FromServer . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ms $ msg
 
 
 -----
 
 
-bcastAdmins :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> MudStack ()
-bcastAdmins mt mqt pcTbl plaTbl = liftIO . atomically . bcastAdminsSTM mt mqt pcTbl plaTbl
-
-
-bcastAdminsSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> T.Text -> STM ()
-bcastAdminsSTM mt mqt pcTbl plaTbl msg =
-    bcastNlSTM mt mqt pcTbl plaTbl [( adminNoticeColor <> msg <> dfltColor
-                                 , [ pi | pi <- IM.keys plaTbl, getPlaFlag IsAdmin (plaTbl ! pi) ] )]
+bcastAdmins :: T.Text -> MudStack ()
+bcastAdmins msg = getState >>= \ms -> bcast [( adminBroadcastColor <> msg <> dfltColor, getAdminIds ms )]
 
 
 -----
 
 
-bcastNl :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> MudStack ()
-bcastNl mt mqt pcTbl plaTbl = liftIO . atomically . bcastNlSTM mt mqt pcTbl plaTbl
-
-
-bcastNlSTM :: MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> [Broadcast] -> STM ()
-bcastNlSTM mt mqt pcTbl plaTbl bs =
-    bcastSTM mt mqt pcTbl plaTbl . (bs ++) . concat $ [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
+bcastNl :: [Broadcast] -> MudStack ()
+bcastNl bs = bcast . concat $ bs : [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
 
 
 -----
 
 
-bcastOthersInRm :: Id -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> TypeTbl -> T.Text -> MudStack ()
-bcastOthersInRm i it mt mqt pcTbl plaTbl tt msg = let ri  = (pcTbl ! i)^.rmId
-                                                      ris = i `delete` (it ! ri)
-                                                      bs  = [(msg, findPCIds tt ris)]
-                                                  in bcast mt mqt pcTbl plaTbl bs
+bcastOthersInRm :: Id -> T.Text -> MudStack ()
+bcastOthersInRm i msg = getState >>= \ms -> let (i `delete` -> ris) = getPCRmInv i ms in bcast [(msg, findPCIds ms ris)]
 
 
 -----
@@ -169,26 +156,26 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 parsePCDesig :: Id -> MudState -> T.Text -> T.Text
-parsePCDesig i ms@(view pcTbl -> pt) msg = views introduced (`helper` msg) $ pt ! i
+parsePCDesig i ms = loop (getIntroduced i ms)
   where
-    helper intros txt
+    loop intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
-      , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt, mt <- ms^.mobTbl
+      , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
           left                                                                         <>
           (pes `elem` intros ? pes :? expandPCEntName i ms isCap pcEntName pcId pcIds) <>
-          helper intros rest
+          loop intros rest
         StdDesig { stdPCEntSing = Nothing,  .. } ->
-          left <> expandPCEntName i ms isCap pcEntName pcId pcIds <> helper intros rest
-        _ -> patternMatchFail "parsePCDesig helper" [ showText pcd ]
+          left <> expandPCEntName i ms isCap pcEntName pcId pcIds <> loop intros rest
+        _ -> patternMatchFail "parsePCDesig loop" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter txt
-      = left <> (nonStdPCEntSing `elem` intros ? nonStdPCEntSing :? nonStdDesc) <> helper intros rest
-      | otherwise
-      = txt
+      = left <> (nonStdPCEntSing `elem` intros ? nonStdPCEntSing :? nonStdDesc) <> loop intros rest
+      | otherwise = txt
     extractPCDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
-      | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig = (left, pcd, rest)
+      | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig
+      = (left, pcd, rest)
 
 
 expandPCEntName :: Id -> MudState -> Bool -> T.Text -> Id -> Inv -> T.Text

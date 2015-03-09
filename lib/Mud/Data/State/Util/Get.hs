@@ -1,12 +1,19 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Mud.Data.State.Util.Get where
 
-import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 
-import Control.Lens.Getter (views)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
+import qualified Data.IntMap.Lazy as IM (keys)
+
+
+getAdminIds :: MudState -> Inv
+getAdminIds (view plaTbl -> pt) = [ i | i <- IM.keys pt, getPlaFlag IsAdmin $ pt ! i ]
 
 
 getColumns :: Id -> MudState -> Cols
@@ -21,6 +28,10 @@ getIntroduced :: Id -> MudState -> [Sing]
 getIntroduced i ms = (getPC i ms)^.introduced
 
 
+getInv :: Id -> MudState -> Inv
+getInv i = views invTbl (! i)
+
+
 getMob :: Id -> MudState -> Mob
 getMob i = views mobTbl (! i)
 
@@ -33,12 +44,20 @@ getPC :: Id -> MudState -> PC
 getPC i = views pcTbl (! i)
 
 
+getPCRmInv :: Id -> MudState -> Inv
+getPCRmInv i ms = let ri = getRmId i ms in getInv ri ms
+
+
 getPla :: Id -> MudState -> Pla
 getPla i = views plaTbl (! i)
 
 
 getRace :: Id -> MudState -> Race
 getRace i ms = (getPC i ms)^.race
+
+
+getRmId :: Id -> MudState -> Id
+getRmId i ms = (getPC i ms)^.rmId
 
 
 getSex :: Id -> MudState -> Sex
