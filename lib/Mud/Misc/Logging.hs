@@ -19,6 +19,7 @@ module Mud.Misc.Logging ( closeLogs
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.FilePaths
@@ -30,17 +31,16 @@ import Mud.Util.Text
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
-import Control.Concurrent.STM (STM, atomically)
+import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (at)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad ((>=>), forever, guard)
+import Control.Monad ((>=>), forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
-import Data.IntMap.Lazy ((!))
 import Data.Monoid ((<>))
 import System.Directory (doesFileExist, renameFile)
 import System.FilePath ((<.>), (</>), replaceExtension)
@@ -132,7 +132,7 @@ initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
     q <- liftIO newTQueueIO
     a <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM $ q
-    modifyState $ \ms -> (ms & plaLogTbl.at i ?~ (a, q), ())
+    modifyState $ \ms -> let plt = ms^.plaLogTbl & at i ?~ (a, q) in (ms & plaLogTbl .~ plt, ())
 
 
 -- ==================================================

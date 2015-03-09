@@ -7,6 +7,7 @@ module Mud.Interp.Pager ( interpPager
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Misc
@@ -14,12 +15,8 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import Control.Lens (at, both, over)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -31,42 +28,31 @@ type EntireTxtLen = Int
 
 interpPager :: PageLen -> EntireTxtLen -> ([T.Text], [T.Text]) -> Interp
 interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
-    case cn of
-      ""  -> next
-      "b" -> prev
-      "d" -> next
-      "f" -> next
-      "n" -> next
-      "p" -> prev
-      "q" -> (prompt mq . nlPrefix $ dfltPrompt) >> (liftIO . atomically . (`setInterpSTM` Nothing) =<< ask)
-      "u" -> prev
-      _   -> promptRetry mq cols
+    case cn of ""  -> next
+               "b" -> prev
+               "d" -> next
+               "f" -> next
+               "n" -> next
+               "p" -> prev
+               "q" -> (prompt mq . nlPrefix $ dfltPrompt) >> setInterp Nothing
+               "u" -> prev
+               _   -> promptRetry mq cols
   where
     next = if length right + 3 <= pageLen
-      then do
-          send mq . nl . T.unlines $ right
-          prompt mq dfltPrompt
-          liftIO . atomically . (`setInterpSTM` Nothing) =<< ask
+      then (send mq . nl . T.unlines $ right) >> prompt mq dfltPrompt >> setInterp Nothing
       else let (page, right') = splitAt (pageLen - 2) right in do
           send mq . T.unlines $ page
           sendPagerPrompt mq (length left + pageLen - 2) txtLen
-          let f = interpPager pageLen txtLen (left ++ page, right')
-          liftIO . atomically . (`setInterpSTM` Just f) =<< ask
-    prev | length left == pageLen - 2 = do
-             send mq . T.unlines $ left
-             sendPagerPrompt mq (pageLen - 2) txtLen
-         | otherwise = let (reverse -> currPage, left') = splitAt (pageLen - 2) . reverse $ left
-                           (prevPage, left'') = over both reverse . splitAt (pageLen - 2) $ left'
-                       in do
-                           send mq . T.unlines $ prevPage
-                           sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
-                           md <- ask
-                           let f = interpPager pageLen txtLen (left'' ++ prevPage, currPage ++ right)
-                           liftIO . atomically . setInterpSTM md . Just $ f
-    setInterpSTM md mf = do
-        pt <- readTVar $ md^.plaTblTVar
-        let p = pt ! i & interp .~ mf
-        writeTVar (md^.plaTblTVar) $ pt & at i ?~ p
+          setInterp $ Just (interpPager pageLen txtLen (left ++ page, right'))
+    prev | length left == pageLen - 2 = (send mq . T.unlines $ left) >> sendPagerPrompt mq (pageLen - 2) txtLen
+         | (reverse -> currPage, left') <- splitAt (pageLen - 2) . reverse $ left
+         , (prevPage, left'')           <- over both reverse . splitAt (pageLen - 2) $ left' = do
+             send mq . T.unlines $ prevPage
+             sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
+             setInterp $ Just (interpPager pageLen txtLen (left'' ++ prevPage, currPage ++ right))
+    setInterp mf = modifyState $ \ms -> let pt = ms^.plaTbl -- TODO: Should this be pulled out?
+                                            p  = pt ! i & interp .~ mf
+                                        in (ms & plaTbl .~ (pt & at i ?~ p), ())
 interpPager _ _ _ _ (ActionParams { plaMsgQueue, plaCols }) = promptRetry plaMsgQueue plaCols
 
 
