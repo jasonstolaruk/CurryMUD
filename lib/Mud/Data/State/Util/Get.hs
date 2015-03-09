@@ -52,6 +52,10 @@ getPCRmInv :: Id -> MudState -> Inv
 getPCRmInv i ms = let ri = getRmId i ms in getInv ri ms
 
 
+getPageLines :: Id -> MudState -> Int
+getPageLines i ms = getPla i ms ^.pageLines
+
+
 getPla :: Id -> MudState -> Pla
 getPla i = views plaTbl (! i)
 

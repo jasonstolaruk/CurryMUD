@@ -65,28 +65,23 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
-advise params hns = liftIO . atomically . adviseSTM params hns
-
-
-adviseSTM :: ActionParams -> [HelpName] -> T.Text -> STM ()
-adviseSTM (Advising mq cols) []  msg = wrapSendSTM mq cols msg
-adviseSTM (Advising mq cols) [h] msg = multiWrapSendSTM mq cols [ msg, T.concat [ "For more information, type "
-                                                                , quoteColor
-                                                                , dblQuote $ "help " <> h
-                                                                , dfltColor
-                                                                , "." ] ]
-adviseSTM (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
+advise (Advising mq cols) []  msg = wrapSend mq cols msg
+advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For more information, type "
+                                                          , quoteColor
+                                                          , dblQuote $ "help " <> h
+                                                          , dfltColor
+                                                          , "." ] ]
+advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSendSTM mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
-adviseSTM p hs msg = patternMatchFail "adviseSTM" [ showText p, showText hs, msg ]
+advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 
 -----
 
 
 dispCmdList :: [Cmd] -> Action
-dispCmdList cmds (NoArgs i mq cols) =
-    pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds p = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
+dispCmdList cmds (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
+dispCmdList cmds p                  = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
 
 
 mkCmdListText :: [Cmd] -> [T.Text]
@@ -108,9 +103,8 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
 
 
 dispMatches :: ActionParams -> Int -> [T.Text] -> MudStack ()
-dispMatches (LowerNub i mq cols needles) indent haystack =
-    let (filter (not . null) -> matches) = map grep needles
-    in if null matches
+dispMatches (LowerNub i mq cols needles) indent haystack = let (filter (not . null) -> matches) = map grep needles in
+    if null matches
       then wrapSend mq cols "No matches found."
       else pager i mq . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
   where
@@ -132,20 +126,18 @@ fileIOExHandler fn e = if any (e |$|) [ isAlreadyInUseError, isDoesNotExistError
 
 
 pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
-pager i mq txt@(length -> txtLen) = ask >>= liftIO . atomically . helperSTM >>= \case
-    Nothing              -> send mq . nl . T.unlines $ txt
-    Just (page, pageLen) -> do
-        send mq . T.unlines $ page
-        sendPagerPrompt mq (pageLen - 2) txtLen
-  where
-    helperSTM md = readTVar (md^.plaTblTVar) >>= \pt ->
-        let p       = pt ! i
-            pageLen = p^.pageLines
-        in if txtLen + 3 <= pageLen
-          then return Nothing
-          else let (page, rest) = splitAt (pageLen - 3) txt
-                   p'           = p & interp .~ (Just $ interpPager pageLen txtLen (page, rest))
-               in writeTVar (md^.plaTblTVar) (pt & at i ?~ p') >> (return . Just $ (page, pageLen))
+pager i mq txt@(length -> txtLen) = let pl = getPageLines i ms in if txtLen + 3 <= pl
+  then send mq . nl . T.unlines $ txt
+  else let (page, rest) = splitAt (pl - 3) txt in do
+      send mq . T.unlines $ page
+      sendPagerPrompt mq (pl - 2) txtLen
+      setInterp i . Just $ interpPager pl txtLen (page, rest)
+
+
+setInterp :: Id -> Maybe Interp -> MudStack ()
+setInterp i mi = modifyState $ \ms -> let pt = ms^.plaTbl
+                                          p  = pt ! i & interp .~ mi
+                                      in (ms & plaTbl .~ (pt & at i ?~ p), ())
 
 
 -----

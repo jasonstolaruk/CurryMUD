@@ -43,16 +43,13 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
       else let (page, right') = splitAt (pageLen - 2) right in do
           send mq . T.unlines $ page
           sendPagerPrompt mq (length left + pageLen - 2) txtLen
-          setInterp $ Just (interpPager pageLen txtLen (left ++ page, right'))
+          setInterp . Just $ interpPager pageLen txtLen (left ++ page, right')
     prev | length left == pageLen - 2 = (send mq . T.unlines $ left) >> sendPagerPrompt mq (pageLen - 2) txtLen
          | (reverse -> currPage, left') <- splitAt (pageLen - 2) . reverse $ left
          , (prevPage, left'')           <- over both reverse . splitAt (pageLen - 2) $ left' = do
              send mq . T.unlines $ prevPage
              sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
-             setInterp $ Just (interpPager pageLen txtLen (left'' ++ prevPage, currPage ++ right))
-    setInterp mf = modifyState $ \ms -> let pt = ms^.plaTbl -- TODO: Should this be pulled out?
-                                            p  = pt ! i & interp .~ mf
-                                        in (ms & plaTbl .~ (pt & at i ?~ p), ())
+             setInterp . Just $ interpPager pageLen txtLen (left'' ++ prevPage, currPage ++ right)
 interpPager _ _ _ _ (ActionParams { plaMsgQueue, plaCols }) = promptRetry plaMsgQueue plaCols
 
 
