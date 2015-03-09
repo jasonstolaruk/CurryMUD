@@ -98,9 +98,9 @@ frame cols | divider <- nl . mkDividerTxt $ cols = nl . (<> divider) . (divider 
 
 
 massMsg :: Msg -> MudStack ()
-massMsg msg = liftIO . atomically . helperSTM =<< ask
+massMsg msg = liftIO . atomically . helperSTM =<< getState
   where
-    helperSTM md = mapM_ (`writeTQueue` msg) =<< IM.elems <$> readTVar (md^.msgQueueTblTVar)
+    helperSTM (view msgQueueTbl IM.elems -> mqs) = mapM_ (`writeTQueue` msg) mqs
 
 
 -----
