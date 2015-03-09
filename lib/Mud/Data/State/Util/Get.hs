@@ -40,6 +40,10 @@ getMsgQueue :: Id -> MudState -> MsgQueue
 getMsgQueue i = views msgQueueTbl (! i)
 
 
+getMsgQueueColumns :: Id -> MudState -> (MsgQueue, Cols)
+getMsgQueueColumns i ms = (getMsgQueue i ms, getColumns i ms)
+
+
 getPC :: Id -> MudState -> PC
 getPC i = views pcTbl (! i)
 

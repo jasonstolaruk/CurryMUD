@@ -106,15 +106,12 @@ massMsg msg = liftIO . atomically . helperSTM =<< getState
 -----
 
 
-massSend :: MudState -> T.Text -> MudStack ()
-massSend ms msg = liftIO . atomically $ helperSTM
+massSend :: T.Text -> MudStack ()
+massSend msg = liftIO . atomically . helperSTM =<< getState
   where
-    helperSTM = let mqt = ms^.msgQueueTbl
-                    pt  = ms^.plaTbl
-                    helper i | mq   <- mqt ! i
-                             , cols <- (pt ! i)^.columns
-                             = writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
-                in forM_ (IM.keys pt) helper
+    helperSTM ms@(views plaTbl IM.keys -> is) = forM_ is $ \i ->
+        let (mq, cols) = getMsgQueueColumns i ms
+        in writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
 
 
 -----
