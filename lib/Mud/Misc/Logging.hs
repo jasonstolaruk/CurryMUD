@@ -22,6 +22,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Set
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -35,9 +36,8 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
-import Control.Lens (at)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
+import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -132,7 +132,7 @@ initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
     q <- liftIO newTQueueIO
     a <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM $ q
-    modifyState $ \ms -> let plt = ms^.plaLogTbl & at i ?~ (a, q) in (ms & plaLogTbl .~ plt, ())
+    setLogService i (a, q)
 
 
 -- ==================================================

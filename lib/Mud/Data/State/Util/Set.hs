@@ -13,3 +13,6 @@ setInterp i mi = modifyState $ \ms -> let pt = ms^.plaTbl
                                           p  = pt ! i & interp .~ mi
                                       in (ms & plaTbl .~ (pt & at i ?~ p), ())
 
+
+setLogService :: Id -> LogService -> MudStack ()
+setLogService i ls = modifyState $ \ms -> let plt = ms^.plaLogTbl & at i ?~ ls in (ms & plaLogTbl .~ plt, ())
