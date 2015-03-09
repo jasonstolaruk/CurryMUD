@@ -212,25 +212,26 @@ distributeAmt amt (c:cs) | diff <- amt - c, diff >= 0 = c   : distributeAmt diff
                          | otherwise                  = amt : distributeAmt 0    cs
 
 
-mkGecrMultForEnts :: Id -> EntTbl -> MobTbl -> PCTbl -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
-mkGecrMultForEnts i et mt pt a n is | effNames <- [ getEffName i et mt pt i' | i' <- is ] =
+mkGecrMultForEnts :: Id -> MudState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
+mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targetId <- is ] in
     uncurry (Mult a n) . maybe notFound (found effNames) . findFullNameForAbbrev n $ effNames
   where
     notFound                          = (Nothing, Nothing)
     found (zip is -> zipped) fullName = (Just . takeMatchingEnts zipped $ fullName, Nothing)
-    takeMatchingEnts zipped  fullName = take a [ et ! i' | (i', effName) <- zipped, effName == fullName ]
+    takeMatchingEnts zipped  fullName = take a [ getEnt ms targetId | (targetId, effName) <- zipped
+                                                                    , effName == fullName ]
 
 
-mkGecrIndexed :: Id -> EntTbl -> MobTbl -> PCTbl -> Index -> T.Text -> Inv -> GetEntsCoinsRes
-mkGecrIndexed i et mt pt x n is
+mkGecrIndexed :: Id -> MudState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
+mkGecrIndexed i ms x n is
   | n `elem` allCoinNames = SorryIndexedCoins
-  | otherwise             = let ens = [ getEffName i et mt pt i' | i' <- is ]
-                            in Indexed x n . maybe notFound (found ens) . findFullNameForAbbrev n $ ens
+  | otherwise             = let effNames = [ getEffName i ms targetId | targetId <- is ]
+                            in Indexed x n . maybe notFound (found effNames) . findFullNameForAbbrev n $ effNames
   where
     notFound = Left ""
-    found ens fn | matches <- filter ((== fn) . snd) . zip is $ ens = if length matches < x
-      then Left . mkPlurFromBoth . getEffBothGramNos i et mt pt . fst . head $ matches
-      else Right . (et !) . fst $ matches !! pred x
+    found effNames fn | matches <- filter ((== fn) . snd) . zip is $ effNames = if length matches < x
+      then Left . mkPlurFromBoth . getEffBothGramNos i ms . fst . head $ matches
+      else Right . (flip getEnt ms) . fst $ matches !! pred x
 
 
 -- ============================================================
@@ -238,25 +239,23 @@ mkGecrIndexed i et mt pt x n is
 
 
 resolveEntCoinNamesWithRols :: Id
-                            -> EntTbl
-                            -> MobTbl
-                            -> PCTbl
+                            -> MudState
                             -> Args
                             -> Inv
                             -> Coins
                             -> ([GetEntsCoinsRes], [Maybe RightOrLeft], [Maybe Inv], [ReconciledCoins])
-resolveEntCoinNamesWithRols i et mt pt (map T.toLower -> as) is c =
-    let (unzip -> (gecrs, mrols)) = map (mkGecrWithRol i et mt pt is c) as
+resolveEntCoinNamesWithRols i ms (map T.toLower -> as) is c =
+    let (unzip -> (gecrs, mrols)) = map (mkGecrWithRol i ms is c) as
         (gecrs', miss, rcs)       = expandGecrs c gecrs
     in (gecrs', mrols, miss, rcs)
 
 
-mkGecrWithRol :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
-mkGecrWithRol i et mt pt is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
-  | T.null b        = (mkGecr i et mt pt is c n, Nothing)
+mkGecrWithRol :: Id -> MudState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
+mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
+  | T.null b        = (mkGecr i ms is c n, Nothing)
   | T.length b == 1 = sorry
   | parsed <- reads (T.unpack . T.toUpper . T.drop 1 $ b) :: [(RightOrLeft, String)] =
-      case parsed of [(rol, _)] -> (mkGecr i et mt pt is c a, Just rol)
+      case parsed of [(rol, _)] -> (mkGecr i ms is c a, Just rol)
                      _          -> sorry
   where
     sorry = (Sorry n, Nothing)
