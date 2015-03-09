@@ -7,17 +7,15 @@ module Mud.Interp.Pager ( interpPager
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Set
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 
-import Control.Lens (at, both, over)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Data.IntMap.Lazy ((!))
+import Control.Lens (both, over)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
@@ -34,22 +32,22 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
                "f" -> next
                "n" -> next
                "p" -> prev
-               "q" -> (prompt mq . nlPrefix $ dfltPrompt) >> setInterp Nothing
+               "q" -> (prompt mq . nlPrefix $ dfltPrompt) >> setInterp i Nothing
                "u" -> prev
                _   -> promptRetry mq cols
   where
     next = if length right + 3 <= pageLen
-      then (send mq . nl . T.unlines $ right) >> prompt mq dfltPrompt >> setInterp Nothing
+      then (send mq . nl . T.unlines $ right) >> prompt mq dfltPrompt >> setInterp i Nothing
       else let (page, right') = splitAt (pageLen - 2) right in do
           send mq . T.unlines $ page
           sendPagerPrompt mq (length left + pageLen - 2) txtLen
-          setInterp . Just $ interpPager pageLen txtLen (left ++ page, right')
+          setInterp i . Just $ interpPager pageLen txtLen (left ++ page, right')
     prev | length left == pageLen - 2 = (send mq . T.unlines $ left) >> sendPagerPrompt mq (pageLen - 2) txtLen
          | (reverse -> currPage, left') <- splitAt (pageLen - 2) . reverse $ left
          , (prevPage, left'')           <- over both reverse . splitAt (pageLen - 2) $ left' = do
              send mq . T.unlines $ prevPage
              sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
-             setInterp . Just $ interpPager pageLen txtLen (left'' ++ prevPage, currPage ++ right)
+             setInterp i . Just $ interpPager pageLen txtLen (left'' ++ prevPage, currPage ++ right)
 interpPager _ _ _ _ (ActionParams { plaMsgQueue, plaCols }) = promptRetry plaMsgQueue plaCols
 
 

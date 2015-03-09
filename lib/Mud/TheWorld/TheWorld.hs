@@ -8,25 +8,19 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
-import Mud.TopLvlDefs.FilePaths
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Lens.Getter (views)
 import Control.Lens.Operators ((&), (.~))
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
 import Data.Bits (zeroBits)
-import Data.IORef (atomicModifyIORef, newIORef)
+import Data.IORef (newIORef)
 import Data.Monoid (mempty)
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
 import System.Clock (Clock(..), getTime)
 import qualified Data.IntMap.Lazy as IM (empty, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
-import qualified Data.Set as S (Set, fromList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

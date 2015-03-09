@@ -16,6 +16,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Set
 import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Misc
@@ -132,12 +133,6 @@ pager i mq txt@(length -> txtLen) = let pl = getPageLines i ms in if txtLen + 3 
       send mq . T.unlines $ page
       sendPagerPrompt mq (pl - 2) txtLen
       setInterp i . Just $ interpPager pl txtLen (page, rest)
-
-
-setInterp :: Id -> Maybe Interp -> MudStack ()
-setInterp i mi = modifyState $ \ms -> let pt = ms^.plaTbl
-                                          p  = pt ! i & interp .~ mi
-                                      in (ms & plaTbl .~ (pt & at i ?~ p), ())
 
 
 -----
