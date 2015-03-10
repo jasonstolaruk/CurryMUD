@@ -133,9 +133,9 @@ adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
                                                   \minutes"
                       , dfltColor
                       , "." ]
-adminAnnounce (Msg i mq msg) = ask >>= \md -> (liftIO . readTVarIO $ md^.entTblTVar) >>= \(view sing . (! i) -> s) -> do
-    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
+adminAnnounce (Msg i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
+    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
     ok mq
     massSend $ announceColor <> msg <> dfltColor
 adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
@@ -147,27 +147,25 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
-adminBoot (MsgWithTarget i mq cols target msg) =
-    ask >>= \md -> md |$| (liftIO . atomically . helperSTM) >=> \(et, mqt) ->
-        case [ k | k <- IM.keys mqt, (et ! k)^.sing == target ] of
-          []      -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note \
-                                        \that you must specify the full PC name of the player you wish to boot.)"
-          [bootI] | s <- (et ! i)^.sing -> if s == target
+adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+    case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
+      []       -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note \
+                                     \that you must specify the full PC name of the player you wish to boot.)"
+      [bootId] -> let selfSing = getSing i ms in if selfSing == target
                     then wrapSend mq cols "You can't boot yourself."
-                    else let bootMq = mqt ! bootI in do
-                        ok mq
-                        T.null msg ? dfltMsg bootI s bootMq :? customMsg bootI s bootMq
-          xs      -> patternMatchFail "adminBoot" [ showText xs ]
+                    else let bootMq = getMsgQueue bootId ms
+                             f      = T.null msg ? dlfMsg :? customMsg
+                         in ok mq >> (sendMsgBoot bootMq =<< f bootId selfSing)
+      xs       -> patternMatchFail "adminBoot" [ showText xs ]
   where
-    helperSTM md             = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.msgQueueTblTVar)
-    dfltMsg   bootI s bootMq = do
-        logPla "adminBoot dfltMsg"   i     $ T.concat [ "booted ", target, " ", parensQuote "no message given", "." ]
-        logPla "adminBoot dfltMsg"   bootI $ T.concat [ "booted by ", s,   " ", parensQuote "no message given", "." ]
-        sendMsgBoot bootMq Nothing
-    customMsg bootI s bootMq = do
-        logPla "adminBoot customMsg" i     $ T.concat [ "booted ", target, "; message: ", dblQuote msg ]
-        logPla "adminBoot customMsg" bootI $ T.concat [ "booted by ", s,   "; message: ", dblQuote msg ]
-        sendMsgBoot bootMq . Just $ msg
+    dfltMsg   bootId s = do
+        logPla "adminBoot dfltMsg"   i      $ T.concat [ "booted ", target, " ", parensQuote "no message given", "." ]
+        logPla "adminBoot dfltMsg"   bootId $ T.concat [ "booted by ", s,   " ", parensQuote "no message given", "." ]
+        return Nothing
+    customMsg bootId s = do
+        logPla "adminBoot customMsg" i      $ T.concat [ "booted ", target, "; message: ", dblQuote msg ]
+        logPla "adminBoot customMsg" bootId $ T.concat [ "booted by ", s,   "; message: ", dblQuote msg ]
+        return . Just $ msg
 adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
 
