@@ -214,37 +214,30 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 adminPeep :: Action
 adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify one or more PC names of the player(s) \
                                                               \you wish to start or stop peeping."
-adminPeep (LowerNub i mq cols (map capitalize -> as)) = ask >>= \md -> do
-    (msgs, logMsgs) <- liftIO . atomically . helperSTM $ md
-    multiWrapSend mq cols msgs
-    let (logMsgsSelf, logMsgsOthers) = unzip logMsgs
+adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
+    (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
     logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
     forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
+    multiWrapSend mq cols msgs
   where
-    helperSTM md = do
-        (et, pt) <- (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar)
-        let s                    = (et ! i)^.sing
-            piss                 = mkPlaIdsSingsList et pt
-            (pt', msgs, logMsgs) = foldr (peep s piss) (pt, [], []) as
-        writeTVar (md^.plaTblTVar) pt'
-        return (msgs, logMsgs)
+    helper ms = let (pt, msgs, logMsgs) = foldr (peep (getSing i ms) (mkPlaIdsSingsList ms)) (ms^.plaTbl, [], []) as
+                in (ms & plaTbl .~ pt, (msgs, logMsgs))
     peep s piss target a@(pt, _, _) =
-        let notFound    = over _2 (sorry :) a
-            sorry       = "No player by the name of " <> dblQuote target <> " is currently connected."
-            found match | (peepI, peepS) <- head . filter ((== match) . snd) $ piss
-                        , thePeeper      <- pt ! i
-                        , thePeeped      <- pt ! peepI = if peepI `notElem` thePeeper^.peeping
-                          then let pt'     = pt & at i     ?~ over peeping (peepI :) thePeeper
-                                                & at peepI ?~ over peepers (i     :) thePeeped
-                                   msg     = "You are now peeping " <> peepS <> "."
-                                   logMsgs = [("started peeping " <> peepS, (peepI, s <> " started peeping."))]
-                               in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
-                          else let pt'     = pt & at i     ?~ over peeping (peepI `delete`) thePeeper
-                                                & at peepI ?~ over peepers (i     `delete`) thePeeped
-                                   msg     = "You are no longer peeping " <> peepS <> "."
-                                   logMsgs = [("stopped peeping " <> peepS, (peepI, s <> " stopped peeping."))]
-                               in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
-        in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
+        let notFound = over _2 (sorry :) a
+            sorry    = "No player by the name of " <> dblQuote target <> " is currently connected."
+            found (head -> (peepId, peepSing)) = let (thePeeper, thePeeped) = over both (pt !) (i, peepId) in
+                if peepId `notElem` thePeeper^.peeping
+                  then let pt'     = pt & at i      ?~ over peeping (peepId :) thePeeper
+                                        & at peepId ?~ over peepers (i      :) thePeeped
+                           msg     = "You are now peeping " <> peepSing <> "."
+                           logMsgs = [("started peeping " <> peepSing, (peepId, s <> " started peeping."))]
+                       in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
+                  else let pt'     = pt & at i      ?~ over peeping (peepId `delete`) thePeeper
+                                        & at peepId ?~ over peepers (i      `delete`) thePeeped
+                           msg     = "You are no longer peeping " <> peepSing <> "."
+                           logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
+                       in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
+        in maybe notFound found . findFullNameForAbbrevSnd target $ piss
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 

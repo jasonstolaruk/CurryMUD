@@ -5,6 +5,7 @@ module Mud.Util.Text ( aOrAn
                      , capitalize
                      , dropBlanks
                      , findFullNameForAbbrev
+                     , findFullNameForAbbrevSnd
                      , headTail
                      , isCapital
                      , mkDateTimeTxt
@@ -76,14 +77,16 @@ dropBlanks ( x:xs) = x : dropBlanks xs
 
 
 findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
-findFullNameForAbbrev needle hay = do
-    guard . not . null $ res
-    return . head $ res
-  where
-    res = sort . filter (needle `T.isPrefixOf`) $ hay
+findFullNameForAbbrev needle hay = let res = sort . filter (needle `T.isPrefixOf`) $ hay in
+    (guard . not . null $ res) >> (return . head $ res)
 
 
------
+findFullNameForAbbrevSnd :: (Ord a) => T.Text -> [(a, T.Text)] -> Maybe (a, T.Text)
+findFullNameForAbbrevSnd needle hay = let res = sort . filter ((needle `T.isPrefixOf`) . snd) $ hay in
+    (guard . not . null $ res) >> (return . head $ res)
+
+
+----
 
 
 headTail :: T.Text -> (Char, T.Text)
