@@ -8,6 +8,7 @@ module Mud.Util.Misc ( (?)
                      , blowUp
                      , dup
                      , eitherRet
+                     , emptied
                      , ifThenElse
                      , isVowel
                      , mIf
@@ -69,6 +70,11 @@ dup x = (x, x)
 
 eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
 eitherRet = flip either return
+
+
+-- TODO: Use this.
+emptied :: (Monad m, Monoid b) => m a -> m b
+emptied m = m >> return mempty
 
 
 ifThenElse :: Bool -> a -> a -> a

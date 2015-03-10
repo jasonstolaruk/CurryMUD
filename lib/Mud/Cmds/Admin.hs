@@ -158,10 +158,9 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          in ok mq >> (sendMsgBoot bootMq =<< f bootId selfSing)
       xs       -> patternMatchFail "adminBoot" [ showText xs ]
   where
-    dfltMsg   bootId s = do
+    dfltMsg   bootId s = emptied $ do
         logPla "adminBoot dfltMsg"   i      $ T.concat [ "booted ", target, " ", parensQuote "no message given", "." ]
         logPla "adminBoot dfltMsg"   bootId $ T.concat [ "booted by ", s,   " ", parensQuote "no message given", "." ]
-        return Nothing
     customMsg bootId s = do
         logPla "adminBoot customMsg" i      $ T.concat [ "booted ", target, "; message: ", dblQuote msg ]
         logPla "adminBoot customMsg" bootId $ T.concat [ "booted by ", s,   "; message: ", dblQuote msg ]
@@ -315,44 +314,45 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     helper ms =
         let s        = getSing ms i
             piss     = mkPlaIdsSingsList ms
-            notFound = do
-                wrapSendSTM mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently logged in."
-                return []
-            found match | (tellI, tellS) <- head . filter ((== match) . snd) $ piss
-                        , tellMq         <- mqt ! tellI
-                        , p              <- pt  ! tellI
-                        , tellCols       <- p^.columns
-                        , sentLogMsg     <- (i, T.concat [ "sent message to ", tellS, ": ", dblQuote msg ])
-                        , receivedLogMsg <- (tellI, T.concat [ "received message from ", s, ": ", dblQuote msg ]) = do
-                            wrapSendSTM mq cols . T.concat $ [ "You send ", tellS, ": ", dblQuote msg ]
-                            let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
-                            if getPlaFlag IsNotFirstAdminTell p
-                              then wrapSendSTM tellMq tellCols targetMsg
-                              else multiWrapSendSTM tellMq tellCols . (targetMsg :) =<< firstAdminTellSTM tellI md pt p s
-                            return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target . map snd $ piss
+            notFound = emptied . wrapSendSTM mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
+                                                       \currently logged in."
+            found (tellId, tellSing)
+              | tellMq         <- getMsgQueue tellId ms
+              , tellPla        <- getPla      tellId ms
+              , tellCols       <- tellPla^.columns
+              , sentLogMsg     <- (i,      T.concat [ "sent message to ", tellSing, ": ", dblQuote msg ])
+              , receivedLogMsg <- (tellId, T.concat [ "received message from ", s, ": ",  dblQuote msg ]) = do
+                  wrapSendSTM mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
+                  let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+                  if getPlaFlag IsNotFirstAdminTell tellPla
+                    then wrapSend tellMq tellCols targetMsg
+                    else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs
+                                                           | msgs <- firstAdminTell tellId ms tellPla s ]
+                  return [ sentLogMsg, receivedLogMsg ]
+        in maybe notFound found . findFullNameForAbbrevSnd target $ piss
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
-firstAdminTellSTM :: Id -> MudData -> PlaTbl -> Pla -> Sing -> STM [T.Text]
-firstAdminTellSTM i md pt (setPlaFlag IsNotFirstAdminTell True -> p) s = do
-    writeTVar (md^.plaTblTVar) (pt & at i ?~ p)
-    return [ T.concat [ hintANSI
-                      , "Hint:"
-                      , noHintANSI
-                      , " the above is a message from "
-                      , s
-                      , ", a CurryMUD administrator. To reply, type "
-                      , quoteColor
-                      , dblQuote $ "admin " <> s <> " msg"
-                      , dfltColor
-                      , ", where "
-                      , quoteColor
-                      , dblQuote "msg"
-                      , dfltColor
-                      , " is the message you want to send to "
-                      , s
-                      , "." ] ]
+firstAdminTell :: Id -> MudState -> Pla -> Sing -> MudStack [T.Text]
+firstAdminTell tellId ms (setPlaFlag IsNotFirstAdminTell True -> tellPla) adminSing =
+    modifyState $ \ms -> let pt = ms^.plaTbl in (ms & plaTbl .~ (pt & at i ?~ tellPla), msg)
+  where
+    msg = [ T.concat [ hintANSI
+                     , "Hint:"
+                     , noHintANSI
+                     , " the above is a message from "
+                     , adminSing
+                     , ", a CurryMUD administrator. To reply, type "
+                     , quoteColor
+                     , dblQuote $ "admin " <> adminSing <> " msg"
+                     , dfltColor
+                     , ", where "
+                     , quoteColor
+                     , dblQuote "msg"
+                     , dfltColor
+                     , " is the message you want to send to "
+                     , adminSing
+                     , "." ] ]
 
 
 -----

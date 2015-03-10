@@ -3,7 +3,6 @@
 -- This module contains state-related functions used by multiple modules.
 
 module Mud.Data.State.Util.Misc ( BothGramNos
-                                , emptied
                                 , findPCIds
                                 , getEffBothGramNos
                                 , getEffName
@@ -31,14 +30,10 @@ import Data.IORef (atomicModifyIORef, readIORef)
 import Data.IntMap.Lazy ((!))
 import Data.List (sortBy)
 import Data.Maybe (fromJust, fromMaybe)
-import Data.Monoid ((<>), Monoid, mempty)
+import Data.Monoid ((<>))
 import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
-
-
-emptied :: (Monad m, Monoid b) => m a -> m b
-emptied m = m >> return mempty
 
 
 findPCIds :: MudState -> [Id] -> [Id]
