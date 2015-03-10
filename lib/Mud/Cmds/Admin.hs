@@ -134,8 +134,8 @@ adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
                       , dfltColor
                       , "." ]
 adminAnnounce (Msg i mq msg) = getState >>= \ms -> let s = getSing i ms in do
-    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
     logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
+    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
     ok mq
     massSend $ announceColor <> msg <> dfltColor
 adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
@@ -252,7 +252,7 @@ adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
                       , dblQuote $ prefixAdminCmd "print" <> " Is anybody home?"
                       , dfltColor
                       , "." ]
-adminPrint (Msg i mq msg) = ask >>= \md -> view sing . (! i) <$> (liftIO . readTVarIO $ md^.entTblTVar) >>= \s -> do
+adminPrint (Msg i mq msg) = getState >>= \ms -> let s = getEnt ms i in do
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
     logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
@@ -273,30 +273,21 @@ adminProfanity p = withoutArgs adminProfanity p
 
 
 adminShutdown :: Action
-adminShutdown (NoArgs' i mq) = ask >>= \md -> view sing . (! i) <$> (liftIO . readTVarIO $ md^.entTblTVar) >>= \s -> do
-    logPla "adminShutdown" i $ "initiating shutdown " <> parensQuote "no message given" <> "."
-    massSend $ shutdownMsgColor <> dfltShutdownMsg <> dfltColor
-    massLogPla "adminShutdown" $ T.concat [ "closing connection due to server shutdown initiated by "
-                                          , s
-                                          , " "
-                                          , parensQuote "no message given"
-                                          , "." ]
-    logNotice  "adminShutdown" $ T.concat [ "server shutdown initiated by "
-                                          , s
-                                          , " "
-                                          , parensQuote "no message given"
-                                          , "." ]
-    liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown (Msg i mq msg) = ask >>= \md -> view sing . (! i) <$> (liftIO . readTVarIO $ md^.entTblTVar) >>= \s -> do
-    logPla "adminShutdown" i $ "initiating shutdown; message: " <> dblQuote msg
-    massSend $ shutdownMsgColor <> msg <> dfltColor
-    massLogPla "adminShutdown" . T.concat $ [ "closing connection due to server shutdown initiated by "
-                                            , s
-                                            , "; message: "
-                                            , dblQuote msg ]
-    logNotice  "adminShutdown" . T.concat $ [ "server shutdown initiated by ", s, "; message: ", dblQuote msg ]
-    liftIO . atomically . writeTQueue mq $ Shutdown
-adminShutdown p = patternMatchFail "adminShutdown" [ showText p ]
+adminShutdown (NoArgs' i mq) = shutdownHelper i mq Nothing
+adminShutdown (Msg i mq msg) = shutdownHelper i mq . Just $ msg
+adminShutdown p              = patternMatchFail "adminShutdown" [ showText p ]
+
+
+shutdownHelper :: Id -> MsgQueue -> Maybe T.Text -> MudStack ()
+shutdownHelper i mq maybeMsg = getState >>= \ms ->
+    let s    = getSing ms i
+        rest = maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote) maybeMsg
+    in do
+        logPla "adminShutdown" i $ "initiating shutdown" <> rest
+        massSend $ shutdownMsgColor <> maybe dfltShutdownMsg id maybeMsg <> dfltColor
+        massLogPla "adminShutdown" $ "closing connection due to server shutdown initiated by " <> s <> rest
+        logNotice  "adminShutdown" $ "server shutdown initiated by "                           <> s <> rest
+        liftIO . atomically . writeTQueue mq $ Shutdown
 
 
 -----
