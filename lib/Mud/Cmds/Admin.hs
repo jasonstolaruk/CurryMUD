@@ -308,14 +308,13 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
-adminTell (MsgWithTarget i mq cols target msg) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
-    let f = uncurry $ logPla (prefixAdminCmd "tell") in unless (null logMsgs) $ mapM_ f logMsgs
+adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+    let logMsgs = helper ms
+    in unless (null logMsgs) $ forM_ logMsgs (uncurry logPla (prefixAdminCmd "tell"))
   where
-    helperSTM md = (,,) <$> readTVar (md^.entTblTVar)
-                        <*> readTVar (md^.msgQueueTblTVar)
-                        <*> readTVar (md^.plaTblTVar) >>= \(et, mqt, pt) ->
-        let s        = (et ! i)^.sing
-            piss     = mkPlaIdsSingsList et pt
+    helper ms =
+        let s        = getSing ms i
+            piss     = mkPlaIdsSingsList ms
             notFound = do
                 wrapSendSTM mq cols $ "No player with the PC name of " <> dblQuote target <> " is currently logged in."
                 return []
