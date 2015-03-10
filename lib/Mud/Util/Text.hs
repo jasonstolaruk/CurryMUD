@@ -76,6 +76,7 @@ dropBlanks ( x:xs) = x : dropBlanks xs
 -----
 
 
+-- TODO: Is it possible/practical to write a single function that can handle both types?
 findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
 findFullNameForAbbrev needle hay = let res = sort . filter (needle `T.isPrefixOf`) $ hay in
     (guard . not . null $ res) >> (return . head $ res)

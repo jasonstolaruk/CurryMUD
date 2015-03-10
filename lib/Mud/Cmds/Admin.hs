@@ -225,7 +225,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     peep s piss target a@(pt, _, _) =
         let notFound = over _2 (sorry :) a
             sorry    = "No player by the name of " <> dblQuote target <> " is currently connected."
-            found (head -> (peepId, peepSing)) = let (thePeeper, thePeeped) = over both (pt !) (i, peepId) in
+            found (peepId, peepSing) = let (thePeeper, thePeeped) = over both (pt !) (i, peepId) in
                 if peepId `notElem` thePeeper^.peeping
                   then let pt'     = pt & at i      ?~ over peeping (peepId :) thePeeper
                                         & at peepId ?~ over peepers (i      :) thePeeped
