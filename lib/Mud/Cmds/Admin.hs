@@ -335,7 +335,7 @@ adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 firstAdminTell :: Id -> MudState -> Pla -> Sing -> MudStack [T.Text]
 firstAdminTell tellId ms (setPlaFlag IsNotFirstAdminTell True -> tellPla) adminSing =
-    modifyState $ \ms -> let pt = ms^.plaTbl in (ms & plaTbl .~ (pt & at i ?~ tellPla), msg)
+    modifyState $ \ms -> let pt = ms^.plaTbl & at i ?~ tellPla in (ms & plaTbl .~ pt, msg)
   where
     msg = [ T.concat [ hintANSI
                      , "Hint:"
@@ -364,8 +364,8 @@ adminTime (NoArgs i mq cols) = do
     (ct, zt) <- liftIO $ (,) <$> formatThat `fmap` getCurrentTime <*> formatThat `fmap` getZonedTime
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
   where
-    formatThat (T.words . showText -> wordy@(headLast -> (date, zone)))
-      | time <- T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy = T.concat [ zone, ": ", date, " ", time ]
+    formatThat (T.words . showText -> wordy@(headLast -> (date, zone))) =
+        let time = T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy in T.concat [ zone, ": ", date, " ", time ]
 adminTime p = withoutArgs adminTime p
 
 
