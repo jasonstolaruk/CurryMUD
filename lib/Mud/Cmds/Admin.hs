@@ -395,10 +395,9 @@ adminUptime p = withoutArgs adminUptime p
 adminWho :: Action
 adminWho (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
-    pager i mq . concatMap (wrapIndent 20 cols) =<< mkPlaListTxt
+    pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt ]
 adminWho p@(ActionParams { plaId, args }) = do
-    logPlaExecArgs (prefixAdminCmd "who") args plaId
-    dispMatches p 20 =<< mkPlaListTxt
+    logPlaExecArgs (prefixAdminCmd "who") args plaId >> (dispMatches p 20 =<< mkPlaListTxt)
 
 
 mkPlaListTxt :: MudStack [T.Text]
