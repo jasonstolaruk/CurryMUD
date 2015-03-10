@@ -32,6 +32,10 @@ getInv :: Id -> MudState -> Inv
 getInv i = views invTbl (! i)
 
 
+getLogQueue :: Id -> MudState -> LogQueue
+getLogQueue i = views plaLogTbl (snd . (! i))
+
+
 getMob :: Id -> MudState -> Mob
 getMob i = views mobTbl (! i)
 
@@ -58,10 +62,6 @@ getPageLines i ms = getPla i ms ^.pageLines
 
 getPla :: Id -> MudState -> Pla
 getPla i = views plaTbl (! i)
-
-
-getPlaLogQueue :: Id -> MudState -> LogQueue
-getPlaLogQueue i = views plaLogTbl (snd . (! i))
 
 
 getRace :: Id -> MudState -> Race

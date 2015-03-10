@@ -8,6 +8,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
@@ -27,11 +28,10 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, over)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)

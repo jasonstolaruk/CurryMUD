@@ -9,6 +9,8 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
@@ -29,16 +31,14 @@ import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Concurrent.STM.TVar (readTVar, readTVarIO, writeTVar)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (both, over)
-import Control.Lens.Getter (views)
-import Control.Lens.Operators ((^.))
+import Control.Lens.Getter (view, views)
+import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask, runReaderT)
-import Data.IntMap.Lazy ((!))
 import Data.List (delete, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>))
@@ -48,7 +48,7 @@ import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import qualified Data.IntMap.Lazy as IM (assocs, delete, elems, keys)
+import qualified Data.IntMap.Lazy as IM (assocs, delete)
 import qualified Data.Map.Lazy as M (assocs, delete, elems, keys)
 import qualified Data.Text as T
 
@@ -250,8 +250,8 @@ purgeThreadTbls = do
 
 
 purgePlaLogTbl :: MudStack ()
-purgePlaLogTbl = getState >>= \(views plaLogTbl IM.assocs -> kvs) -> do
-    zipped <- [ (i, status) | (i, fst -> async) <- kvs, status <- liftIO . poll $ async  ]
+purgePlaLogTbl = getState >>= \(views plaLogTbl (unzip . IM.assocs) -> (is, map fst -> asyncs)) -> do
+    zipped <- [ zip is statuses | statuses <- liftIO . mapM poll $ asyncs ]
     modifyState $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped in (ms & plaLogTbl .~ plt, ())
   where
     purger (_, Nothing) tbl = tbl
@@ -259,8 +259,8 @@ purgePlaLogTbl = getState >>= \(views plaLogTbl IM.assocs -> kvs) -> do
 
 
 purgeTalkAsyncTbl :: MudStack ()
-purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl IM.elems -> asyncs) -> do
-    zipped <- [ (a, status) | a <- asyncs, status <- liftIO . poll $ a ]
+purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
+    zipped <- [ zip asyncs statuses | statuses <- liftIO . mapM poll $ asyncs ]
     modifyState $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) zipped in (ms & talkAsyncTbl .~ tat, ())
   where
     purger (_,                   Nothing) tbl = tbl
@@ -268,8 +268,8 @@ purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl IM.elems -> asyncs) -> do
 
 
 purgeThreadTbl :: MudStack ()
-purgeThreadTbl = getState >>= \(views threadTbl IM.keys -> threadIds) -> do
-    zipped <- [ (ti, status) | ti <- threadIds, status <- liftIO . threadStatus $ ti ]
+purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
+    zipped <- [ zip threadIds statuses | statuses <- liftIO . mapM threadStatus $ threadIds ]
     modifyState $ \ms -> let tt = foldr purger (ms^.threadTbl) zipped in (ms & threadTbl .~ tt, ())
   where
     purger (ti, status) tbl = status == ThreadFinished ? M.delete ti tbl :? tbl
@@ -295,7 +295,7 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 debugRotate :: Action
-debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getPlaLogQueue i ms in do
+debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in do
     logPlaExec (prefixDebugCmd "rotate") i
     liftIO . atomically . writeTQueue lq $ RotateLog
     ok mq
@@ -306,12 +306,12 @@ debugRotate p = withoutArgs debugRotate p
 
 
 debugTalk :: Action
-debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl (mapM mkDesc . M.elems) -> descs) -> do
+debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
     logPlaExec (prefixDebugCmd "talk") i
-    send mq . frame cols . multiWrap cols $ descs
+    send mq =<< [ frame cols . multiWrap cols $ descs | descs <- mapM mkDesc asyncs ]
   where
-    mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", status, "." ]
-                  | status <- mkStatusTxt <$> (liftIO . poll $ a) ]
+    mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
+                  | statusTxt <- mkStatusTxt <$> (liftIO . poll $ a) ]
     mkStatusTxt = \case Nothing                                    -> "running"
                         Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
                         Just (Right ()                           ) -> "finished"
@@ -326,7 +326,7 @@ debugThread (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "thread") i
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId . getLogAsyncs <$> ask -- TODO: Does reader have a more idiomatic way rather than just fmapping onto ask?
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
-    let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs ]
+    let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
   where
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
@@ -357,7 +357,7 @@ debugThrow p            = withoutArgs debugThrow p
 
 
 debugThrowLog :: Action
-debugThrowLog (NoArgs' i mq) = getState >>= \ms -> let lq = getPlaLog i ms in
+debugThrowLog (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in
     logPlaExec (prefixDebugCmd "throwlog") i >> (liftIO . atomically . writeTQueue lq $ Throw) >> ok mq
 debugThrowLog p = withoutArgs debugThrowLog p
 
