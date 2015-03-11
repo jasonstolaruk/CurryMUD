@@ -395,23 +395,18 @@ adminUptime p = withoutArgs adminUptime p
 adminWho :: Action
 adminWho (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
-    pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt ]
+    pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt <$> getState ]
 adminWho p@(ActionParams { plaId, args }) = do
-    logPlaExecArgs (prefixAdminCmd "who") args plaId >> (dispMatches p 20 =<< mkPlaListTxt)
+    logPlaExecArgs (prefixAdminCmd "who") args plaId >> (dispMatches p 20 =<< mkPlaListTxt <$> getState)
 
 
-mkPlaListTxt :: MudStack [T.Text]
-mkPlaListTxt = ask >>= \md -> md |$| (liftIO . atomically . helperSTM) >=> \(et, mt, pcTbl, plaTbl) ->
-    let pis              = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ plaTbl
-        (pis', pss)      = unzip [ (pi, s) | pi <- pis, let s = (et ! pi)^.sing, then sortWith by s ]
-        pias             = zip pis' . styleAbbrevs Don'tBracket $ pss
-        mkPlaTxt (pi, a) = let ((pp *** pp) -> (s, r)) = getSexRace pi mt pcTbl
-                           in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
-    in return $ map mkPlaTxt pias ++ [ mkNumOfPlayersTxt pis <> " connected." ]
+mkPlaListTxt :: MudState -> [T.Text]
+mkPlaListTxt ms = let is              = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ ms^.plaTbl
+                      (is', ss)       = unzip [ (i, s) | i <- is, let s = getSing i ms then sortWith by s ]
+                      ias             = zip is' . styleAbbrevs Don'tBracket $ ss
+                      mkPlaTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
+                                        in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
+                  in map mkPlaTxt ias ++ [ mkNumOfPlayersTxt is <> " connected." ]
   where
-    helperSTM md = (,,,) <$> readTVar (md^.entTblTVar)
-                         <*> readTVar (md^.mobTblTVar)
-                         <*> readTVar (md^.pcTblTVar)
-                         <*> readTVar (md^.plaTblTVar)
     mkNumOfPlayersTxt (length -> nop) | nop == 1  = "1 player"
                                       | otherwise = showText nop <> " players"
