@@ -25,6 +25,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , RightOrLeft(..)
                      , Serializable
                      , ShouldBracketQuote(..)
+                     , ShouldCap(..)
                      , ToOrFromThePeeped(..)
                      , Verb(..)
                      , WhichLog(..)
@@ -260,7 +261,7 @@ class Serializable a where
 
 instance Serializable PCDesig where
   serialize StdDesig { .. }
-    | fields <- [ serMaybeText stdPCEntSing, showText isCap, pcEntName, showText pcId, showText pcIds ]
+    | fields <- [ serMaybeText stdPCEntSing, showText shouldCap, pcEntName, showText pcId, showText pcIds ]
     = quoteWith sdd . T.intercalate dd $ fields
     where
       serMaybeText Nothing    = ""
@@ -274,9 +275,9 @@ instance Serializable PCDesig where
       (>>)       = (<>)
       (nsdd, dd) = over both T.singleton (nonStdDesigDelimiter, desigDelimiter)
   deserialize a@(headTail -> (c, T.init -> t))
-    | c == stdDesigDelimiter, [ pes, ic, pen, pi, pis ] <- T.splitOn dd t =
+    | c == stdDesigDelimiter, [ pes, sc, pen, pi, pis ] <- T.splitOn dd t =
         StdDesig { stdPCEntSing = deserMaybeText pes
-                 , isCap        = read . T.unpack $ ic
+                 , shouldCap    = read . T.unpack $ sc
                  , pcEntName    = pen
                  , pcId         = read . T.unpack $ pi
                  , pcIds        = read . T.unpack $ pis }
@@ -403,13 +404,17 @@ data Help = Help { helpName     :: HelpName
 
 -----
 
+
 data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
-                           , isCap           :: Bool
+                           , shouldCap       :: ShouldCap
                            , pcEntName       :: T.Text
                            , pcId            :: Id
                            , pcIds           :: Inv }
              | NonStdDesig { nonStdPCEntSing :: T.Text
                            , nonStdDesc      :: T.Text } deriving (Eq, Show)
+
+
+data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)
 
 
 -----

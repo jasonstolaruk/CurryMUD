@@ -16,6 +16,10 @@ getAdminIds :: MudState -> Inv
 getAdminIds (view plaTbl -> pt) = [ i | i <- IM.keys pt, getPlaFlag IsAdmin $ pt ! i ]
 
 
+getCoins :: Id -> MudState -> Coins
+getCoins i = views coinsTbl (! i)
+
+
 getColumns :: Id -> MudState -> Cols
 getColumns i ms = getPla i ms ^.columns
 
@@ -30,6 +34,10 @@ getIntroduced i ms = getPC i ms ^.introduced
 
 getInv :: Id -> MudState -> Inv
 getInv i = views invTbl (! i)
+
+
+getInvCoins :: Id -> MudState -> (Inv, Coins)
+getInvCoins i ms = (getInv i ms, getCoins i ms)
 
 
 getLogQueue :: Id -> MudState -> LogQueue

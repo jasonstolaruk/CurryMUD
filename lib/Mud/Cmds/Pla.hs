@@ -263,28 +263,19 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dblQuote "drop sword"
                       , dfltColor
                       , "." ]
-dropAction (LowerNub i mq cols as) = helper |$| modifyState >=> \logMsgs ->
-    unless (null logMsgs) . logPlaOut "drop" i $ logMsgs
+dropAction (LowerNub i mq cols as) = let invCoins = getInvCoins i ms in
+    if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+      then helper invCoins |$| modifyState >=> \(bs, logMsgs) ->
+          (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs) >> bcast bs
+      else wrapSend mq cols dudeYourHandsAreEmpty
   where
-    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                             <*> readTVar (md^.entTblTVar)
-                             <*> readTVar (md^.invTblTVar)
-                             <*> readTVar (md^.mobTblTVar)
-                             <*> readTVar (md^.msgQueueTblTVar)
-                             <*> readTVar (md^.pcTblTVar)
-                             <*> readTVar (md^.plaTblTVar)
-                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ri, is, c) = mkDropReadyBindings i ct et it mt pcTbl tt
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is, c)
-          then let (eiss, ecs)          = resolvePCInvCoins i et mt pcTbl as is c
-                   (it', bs,  logMsgs ) = foldl' (helperGetDropEitherInv i et mt pcTbl tt d Drop i ri) (it, [], []) eiss
-                   (ct', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ct, bs, logMsgs) ecs
-               in do
-                   writeTVar (md^.coinsTblTVar) ct'
-                   writeTVar (md^.invTblTVar)   it'
-                   bcastNlSTM mt mqt pcTbl plaTbl bs'
-                   return logMsgs'
-          else wrapSendSTM mq cols "You don't see anything here to pick up." >> return []
+    helper invCoins ms =
+        let d                   = mkStdDesig i ms DoCap
+            ri                  = getRmId    i ms
+            (eiss, ecs)         = uncurry (resolvePCInvCoins i ms as) invCoins
+            (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Drop i ri) (ms^.invTbl,   [], []     ) eiss
+            (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Drop i ri) (ms^.coinsTbl, bs, logMsgs) ecs
+        in (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 

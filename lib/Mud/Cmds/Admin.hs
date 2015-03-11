@@ -38,6 +38,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
@@ -283,7 +284,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
         rest = maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote) maybeMsg
     in do
         logPla "adminShutdown" i $ "initiating shutdown" <> rest
-        massSend $ shutdownMsgColor <> maybe dfltShutdownMsg id maybeMsg <> dfltColor
+        massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg <> dfltColor
         massLogPla "adminShutdown" $ "closing connection due to server shutdown initiated by " <> s <> rest
         logNotice  "adminShutdown" $ "server shutdown initiated by "                           <> s <> rest
         liftIO . atomically . writeTQueue mq $ Shutdown
@@ -396,13 +397,13 @@ adminWho :: Action
 adminWho (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd "who") [] i
     pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt <$> getState ]
-adminWho p@(ActionParams { plaId, args }) = do
+adminWho p@(ActionParams { plaId, args }) =
     logPlaExecArgs (prefixAdminCmd "who") args plaId >> (dispMatches p 20 =<< mkPlaListTxt <$> getState)
 
 
 mkPlaListTxt :: MudState -> [T.Text]
 mkPlaListTxt ms = let is              = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ ms^.plaTbl
-                      (is', ss)       = unzip [ (i, s) | i <- is, let s = getSing i ms then sortWith by s ]
+                      (is', ss)       = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
                       ias             = zip is' . styleAbbrevs Don'tBracket $ ss
                       mkPlaTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
                                         in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]

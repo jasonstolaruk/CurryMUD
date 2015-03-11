@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
@@ -157,11 +157,11 @@ parsePCDesig i ms = loop (getIntroduced i ms)
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt
       = case pcd of
         StdDesig { stdPCEntSing = Just pes, .. } ->
-          left                                                                         <>
-          (pes `elem` intros ? pes :? expandPCEntName i ms isCap pcEntName pcId pcIds) <>
+          left                                                                             <>
+          (pes `elem` intros ? pes :? expandPCEntName i ms shouldCap pcEntName pcId pcIds) <>
           loop intros rest
         StdDesig { stdPCEntSing = Nothing,  .. } ->
-          left <> expandPCEntName i ms isCap pcEntName pcId pcIds <> loop intros rest
+          left <> expandPCEntName i ms shouldCap pcEntName pcId pcIds <> loop intros rest
         _ -> patternMatchFail "parsePCDesig loop" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter txt
@@ -172,11 +172,12 @@ parsePCDesig i ms = loop (getIntroduced i ms)
       = (left, pcd, rest)
 
 
-expandPCEntName :: Id -> MudState -> Bool -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ms ic pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm) =
-    T.concat [ leading, "he ", xth, expandSex h, " ", t ]
+expandPCEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
+expandPCEntName i ms sc pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm) =
+    T.concat [ leading sc, "he ", xth, expandSex h, " ", t ]
   where
-    leading = ic ? "T" :? "t"
+    leading = \case DoCap    -> "T"
+                    Don'tCap -> "t"
     xth     = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] pcIdsInRm
               in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
     expandSex 'm'                = "male"

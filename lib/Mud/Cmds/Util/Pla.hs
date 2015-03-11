@@ -21,10 +21,8 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , isSlotAvail
                          , linkDirToCmdName
                          , maybeSingleSlot
-                         , mkCapStdDesig
                          , mkCoinsDesc
                          , mkCoinsSummary
-                         , mkDropReadyBindings
                          , mkEntDescs
                          , mkEqDesc
                          , mkExitsSummary
@@ -271,7 +269,7 @@ helperGetDropEitherInv :: Id
                        -> (InvTbl, [Broadcast], [T.Text])
                        -> Either T.Text Inv
                        -> (InvTbl, [Broadcast], [T.Text])
-helperGetDropEitherInv i et mt pt tt d god fi ti a@(it, _, _) = \case
+helperGetDropEitherInv i ms d god fi ti a@(it, _, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is                   -> let (fis, tis)    = over both (it !) (fi, ti)
                                     it'           = it & at fi ?~ fis \\ is
@@ -504,18 +502,12 @@ maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
 -----
 
 
-mkCapStdDesig :: Id -> EntTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> (PCDesig, Sing, PC, Id, Inv)
-mkCapStdDesig i et it mt pt tt | s                   <- (et ! i)^.sing
-                               , p@(view rmId -> ri) <- pt ! i
-                               , ris                 <- it ! ri = (mkStdDesig i mt pt tt s True ris, s, p, ri, ris)
-
-
-mkStdDesig :: Id -> MobTbl -> PCTbl -> TypeTbl -> Sing -> Bool -> Inv -> PCDesig
-mkStdDesig i mt pt tt s ic ris = StdDesig { stdPCEntSing = Just s
-                                          , isCap        = ic
-                                          , pcEntName    = mkUnknownPCEntName i ms
-                                          , pcId         = i
-                                          , pcIds        = findPCIds tt ris }
+mkStdDesig :: Id -> MudState -> ShouldCap -> PCDesig
+mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
+                              , shouldCap    = sc
+                              , pcEntName    = mkUnknownPCEntName i ms
+                              , pcId         = i
+                              , pcIds        = findPCIds ms . getPCRmInv i $ ms }
 
 
 -----
@@ -530,15 +522,6 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
     copDesc = "The copper piece is round and shiny."
     silDesc = "The silver piece is round and shiny."
     golDesc = "The gold piece is round and shiny."
-
-
------
-
-
-mkDropReadyBindings :: Id -> CoinsTbl -> EntTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> (PCDesig, Id, Inv, Coins)
-mkDropReadyBindings i ct et it mt pt tt | (d, _, _, ri, _) <- mkCapStdDesig i et it mt pt tt
-                                        , is               <- it ! i
-                                        , c                <- ct ! i = (d, ri, is, c)
 
 
 -----
@@ -781,17 +764,10 @@ putOnMsgs = mkReadyMsgs "put on" "puts on"
 -----
 
 
-resolvePCInvCoins :: Id
-                  -> EntTbl
-                  -> MobTbl
-                  -> PCTbl
-                  -> Args
-                  -> Inv
-                  -> Coins
-                  -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolvePCInvCoins i et mt pt as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i et mt pt as is c
-                                     , eiss               <- zipWith (curry procGecrMisPCInv) gecrs miss
-                                     , ecs                <- map procReconciledCoinsPCInv rcs = (eiss, ecs)
+resolvePCInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolvePCInvCoins i ms as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms as is c
+                               , eiss               <- zipWith (curry procGecrMisPCInv) gecrs miss
+                               , ecs                <- map procReconciledCoinsPCInv rcs = (eiss, ecs)
 
 
 -----
