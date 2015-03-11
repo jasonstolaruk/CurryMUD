@@ -263,7 +263,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dblQuote "drop sword"
                       , dfltColor
                       , "." ]
-dropAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
+dropAction (LowerNub i mq cols as) = helper |$| modifyState >=> \logMsgs ->
     unless (null logMsgs) . logPlaOut "drop" i $ logMsgs
   where
     helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
