@@ -214,19 +214,19 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dfltColor
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let aiss = filter ((/= i) . fst) . mkAdminIdSingList $ ms
-        s    = getSing i ms
+    let adminIdSings = filter ((/= i) . fst) . mkAdminIdSingList $ ms
+        s            = getSing i ms
         notFound | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
                  | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
                                                                dblQuote target                    <>
                                                                " is currently logged in."
-        found (ai, as) | amq <- getMsgQueue ai ms, ac <- getColumns ai ms = do
-            logNotice "admin"    . T.concat $ [ s, " sent message to ",   as, ": ", dblQuote msg   ]
-            logPla    "admin" i  . T.concat $ [     "sent message to "  , as, ": ", dblQuote msg   ]
-            logPla    "admin" ai . T.concat $ [ "received message from ", s,  ": ", dblQuote msg   ]
-            wrapSend mq  cols    . T.concat $ [ "You send ",              as, ": ", dblQuote msg   ]
-            wrapSend amq ac      . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor ]
-    in maybe notFound found . findFullNameForAbbrevSnd target $ aiss
+        found (adminId, adminSing) | adminMq <- getMsgQueue adminId ms, adminCols <- getColumns adminId ms = do
+            logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
+            logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
+            logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
+            wrapSend mq      cols      . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
+            wrapSend adminMq adminCols . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor      ]
+    in maybe notFound found . findFullNameForAbbrevSnd target $ adminIdSings
 admin p = patternMatchFail "admin" [ showText p ]
 
 
