@@ -221,7 +221,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
   where
     helper ms = let (pt, msgs, logMsgs) = foldr (peep (getSing i ms) (mkPlaIdSingList ms)) (ms^.plaTbl, [], []) as
                 in (ms & plaTbl .~ pt, (msgs, logMsgs))
-    peep s piss target a@(pt, _, _) =
+    peep s plaIdSings target a@(pt, _, _) =
         let notFound = over _2 (sorry :) a
             sorry    = "No player by the name of " <> dblQuote target <> " is currently connected."
             found (peepId, peepSing) = let (thePeeper, thePeeped) = over both (pt !) (i, peepId) in
@@ -236,7 +236,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
                            msg     = "You are no longer peeping " <> peepSing <> "."
                            logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                        in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
-        in maybe notFound found . findFullNameForAbbrevSnd target $ piss
+        in maybe notFound found . findFullNameForAbbrevSnd target $ plaIdSings
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 
@@ -312,10 +312,10 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     in unless (null logMsgs) $ forM_ logMsgs (uncurry logPla (prefixAdminCmd "tell"))
   where
     helper ms =
-        let s        = getSing ms i
-            piss     = mkPlaIdSingList ms
-            notFound = emptied . wrapSendSTM mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
-                                                       \currently logged in."
+        let s          = getSing ms i
+            plaIdSings = mkPlaIdSingList ms
+            notFound   = emptied . wrapSendSTM mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
+                                                         \currently logged in."
             found (tellId, tellSing)
               | tellMq         <- getMsgQueue tellId ms
               , tellPla        <- getPla      tellId ms
@@ -329,7 +329,7 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                     else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs
                                                            | msgs <- firstAdminTell tellId ms tellPla s ]
                   return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrevSnd target $ piss
+        in maybe notFound found . findFullNameForAbbrevSnd target $ plaIdSings
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 

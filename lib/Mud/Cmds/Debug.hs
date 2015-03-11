@@ -331,10 +331,10 @@ debugThread (NoArgs i mq cols) = do
   where
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    mkTypeName (PlaLog  (showText -> plaI)) = padOrTrunc 10 "PlaLog"  <> plaI
-    mkTypeName (Receive (showText -> plaI)) = padOrTrunc 10 "Receive" <> plaI
-    mkTypeName (Server  (showText -> plaI)) = padOrTrunc 10 "Server"  <> plaI
-    mkTypeName (Talk    (showText -> plaI)) = padOrTrunc 10 "Talk"    <> plaI
+    mkTypeName (PlaLog  (showText -> pi)) = padOrTrunc 10 "PlaLog"  <> pi
+    mkTypeName (Receive (showText -> pi)) = padOrTrunc 10 "Receive" <> pi
+    mkTypeName (Server  (showText -> pi)) = padOrTrunc 10 "Server"  <> pi
+    mkTypeName (Talk    (showText -> pi)) = padOrTrunc 10 "Talk"    <> pi
     mkTypeName (showText -> tt)             = tt
 debugThread p = withoutArgs debugThread p
 
