@@ -220,14 +220,12 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                  | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
                                                                dblQuote target                    <>
                                                                " is currently logged in."
-        found (ai, as)
-          | amq   <- getMsgQueue ai ms
-          , aCols <- getColumns  ai ms
-              logNotice "admin"    . T.concat $ [ s, " sent message to ",   target', ": ", dblQuote msg ]
-              logPla    "admin" i  . T.concat $ [     "sent message to "  , target', ": ", dblQuote msg ]
-              logPla    "admin" ai . T.concat $ [ "received message from ", s,       ": ", dblQuote msg ]
-              wrapSend mq  cols    . T.concat $ [ "You send ",              target', ": ", dblQuote msg ]
-              wrapSend amq aCols   . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor    ]
+        found (ai, as) | amq <- getMsgQueue ai ms, ac <- getColumns ai ms
+              logNotice "admin"    . T.concat $ [ s, " sent message to ",   as, ": ", dblQuote msg   ]
+              logPla    "admin" i  . T.concat $ [     "sent message to "  , as, ": ", dblQuote msg   ]
+              logPla    "admin" ai . T.concat $ [ "received message from ", s,  ": ", dblQuote msg   ]
+              wrapSend mq  cols    . T.concat $ [ "You send ",              as, ": ", dblQuote msg   ]
+              wrapSend amq ac      . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor ]
     in maybe notFound found . findFullNameForAbbrevSnd target $ aiss
 admin p = patternMatchFail "admin" [ showText p ]
 
