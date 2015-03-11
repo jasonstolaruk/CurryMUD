@@ -7,8 +7,8 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , getEffBothGramNos
                                 , getEffName
                                 , getState
-                                , mkAdminIdsSingsList
-                                , mkPlaIdsSingsList
+                                , mkAdminIdSingList
+                                , mkPlaIdSingList
                                 , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
                                 , mkUnknownPCEntName
@@ -85,22 +85,22 @@ getState = liftIO . readIORef . view mudStateIORef =<< ask
 -----
 
 
-mkAdminIdsSingsList :: MudState -> [(Id, Sing)]
-mkAdminIdsSingsList = mkIdsSingsListHelper id
+mkAdminIdSingList :: MudState -> [(Id, Sing)]
+mkAdminIdSingList = mkIdSingListHelper id
 
 
-mkIdsSingsListHelper :: (Bool -> Bool) -> MudState -> [(Id, Sing)]
-mkIdsSingsListHelper f ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
-                                                         , f . getPlaFlag IsAdmin $ pt ! i
-                                                         , let s = getSing i ms
-                                                         , then sortWith by s ]
+mkIdSingListHelper :: (Bool -> Bool) -> MudState -> [(Id, Sing)]
+mkIdSingListHelper f ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
+                                                       , f . getPlaFlag IsAdmin $ pt ! i
+                                                       , let s = getSing i ms
+                                                       , then sortWith by s ]
 
 
 -----
 
 
-mkPlaIdsSingsList :: MudState -> [(Id, Sing)]
-mkPlaIdsSingsList = mkIdsSingsListHelper not
+mkPlaIdSingList :: MudState -> [(Id, Sing)]
+mkPlaIdSingList = mkIdSingListHelper not
 
 
 -----

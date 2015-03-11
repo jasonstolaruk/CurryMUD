@@ -219,7 +219,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
     multiWrapSend mq cols msgs
   where
-    helper ms = let (pt, msgs, logMsgs) = foldr (peep (getSing i ms) (mkPlaIdsSingsList ms)) (ms^.plaTbl, [], []) as
+    helper ms = let (pt, msgs, logMsgs) = foldr (peep (getSing i ms) (mkPlaIdSingList ms)) (ms^.plaTbl, [], []) as
                 in (ms & plaTbl .~ pt, (msgs, logMsgs))
     peep s piss target a@(pt, _, _) =
         let notFound = over _2 (sorry :) a
@@ -313,7 +313,7 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
   where
     helper ms =
         let s        = getSing ms i
-            piss     = mkPlaIdsSingsList ms
+            piss     = mkPlaIdSingList ms
             notFound = emptied . wrapSendSTM mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
                                                        \currently logged in."
             found (tellId, tellSing)

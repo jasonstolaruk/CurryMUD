@@ -214,21 +214,21 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dfltColor
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let aiss = filter ((/= i) . fst) . mkAdminIdsSingsList $ ms
-        s    = (et ! i)^.sing
-        notFound    | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
-                    | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
-                                                                  dblQuote target                    <>
-                                                                  " is currently logged in."
-        found match | (ai, target') <- head . filter ((== match) . snd) $ aiss
-                    , amq           <- mqt ! ai
-                    , aCols         <- (pt ! ai)^.columns = do
-                       logNotice "admin"    . T.concat $ [ s, " sent message to ",   target', ": ", dblQuote msg ]
-                       logPla    "admin" i  . T.concat $ [     "sent message to "  , target', ": ", dblQuote msg ]
-                       logPla    "admin" ai . T.concat $ [ "received message from ", s,       ": ", dblQuote msg ]
-                       wrapSend mq  cols    . T.concat $ [ "You send ",              target', ": ", dblQuote msg ]
-                       wrapSend amq aCols   . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor    ]
-    in maybe notFound found . findFullNameForAbbrev target . map snd $ aiss
+    let aiss = filter ((/= i) . fst) . mkAdminIdSingList $ ms
+        s    = getSing i ms
+        notFound | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
+                 | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
+                                                               dblQuote target                    <>
+                                                               " is currently logged in."
+        found (ai, as)
+          | amq   <- getMsgQueue ai ms
+          , aCols <- getColumns  ai ms
+              logNotice "admin"    . T.concat $ [ s, " sent message to ",   target', ": ", dblQuote msg ]
+              logPla    "admin" i  . T.concat $ [     "sent message to "  , target', ": ", dblQuote msg ]
+              logPla    "admin" ai . T.concat $ [ "received message from ", s,       ": ", dblQuote msg ]
+              wrapSend mq  cols    . T.concat $ [ "You send ",              target', ": ", dblQuote msg ]
+              wrapSend amq aCols   . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor    ]
+    in maybe notFound found . findFullNameForAbbrevSnd target $ aiss
 admin p = patternMatchFail "admin" [ showText p ]
 
 
