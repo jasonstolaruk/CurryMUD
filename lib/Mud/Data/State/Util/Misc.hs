@@ -7,6 +7,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , getEffBothGramNos
                                 , getEffName
                                 , getState
+                                , mkAdminIdsSingsList
                                 , mkPlaIdsSingsList
                                 , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
@@ -40,6 +41,9 @@ findPCIds :: MudState -> [Id] -> [Id]
 findPCIds ms haystack = [ i | i <- haystack, getType i ms == PCType ]
 
 
+-----
+
+
 getEffBothGramNos :: Id -> MudState -> Id -> BothGramNos
 getEffBothGramNos i ms targetId =
     let targetEnt  = getEnt targetId ms
@@ -56,6 +60,9 @@ getEffBothGramNos i ms targetId =
     pluralize r       = r <> "s"
 
 
+-----
+
+
 getEffName :: Id -> MudState -> Id -> T.Text
 getEffName i ms targetId = let targetEnt = getEnt targetId ms
                            in fromMaybe (helper $ targetEnt^.sing) $ targetEnt^.entName
@@ -64,15 +71,39 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
                       | otherwise                                         = mkUnknownPCEntName targetId ms
 
 
+mkUnknownPCEntName :: Id -> MudState -> T.Text
+mkUnknownPCEntName i ms = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
+
+
+-----
+
+
 getState :: MudStack MudState
 getState = liftIO . readIORef . view mudStateIORef =<< ask
 
 
+-----
+
+
+mkAdminIdsSingsList :: MudState -> [(Id, Sing)]
+mkAdminIdsSingsList = mkIdsSingsListHelper id
+
+
+mkIdsSingsListHelper :: (Bool -> Bool) -> MudState -> [(Id, Sing)]
+mkIdsSingsListHelper f ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
+                                                         , f . getPlaFlag IsAdmin $ pt ! i
+                                                         , let s = getSing i ms
+                                                         , then sortWith by s ]
+
+
+-----
+
+
 mkPlaIdsSingsList :: MudState -> [(Id, Sing)]
-mkPlaIdsSingsList ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
-                                           , not . getPlaFlag IsAdmin $ pt ! i
-                                           , let s = getSing i ms
-                                           , then sortWith by s ]
+mkPlaIdsSingsList = mkIdsSingsListHelper not
+
+
+-----
 
 
 type BothGramNos = (Sing, Plur)
@@ -83,17 +114,22 @@ mkPlurFromBoth (s, "") = s <> "s"
 mkPlurFromBoth (_, p ) = p
 
 
+-----
+
+
 mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> T.Text
 mkSerializedNonStdDesig i ms s (capitalize . pp -> aot) = let (pp *** pp -> (sexy, r)) = getSexRace i ms in
     serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = T.concat [ aot, " ", sexy, " ", r ] }
 
 
-mkUnknownPCEntName :: Id -> MudState -> T.Text
-mkUnknownPCEntName i ms = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
+-----
 
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
+
+
+-----
 
 
 sortInv :: MudState -> Inv -> Inv

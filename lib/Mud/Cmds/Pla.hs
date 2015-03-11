@@ -213,8 +213,8 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dblQuote $ "admin " <> a <> " are you available? I need your assistance"
                       , dfltColor
                       , "." ]
-admin (MsgWithTarget i mq cols target msg) = ask >>= liftIO . atomically . helperSTM >>= \(et, mqt, pt) ->
-    let aiss = mkAdminIdsSingsList i et pt
+admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+    let aiss = filter ((/= i) . fst) . mkAdminIdsSingsList $ ms
         s    = (et ! i)^.sing
         notFound    | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
                     | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
@@ -229,19 +229,7 @@ admin (MsgWithTarget i mq cols target msg) = ask >>= liftIO . atomically . helpe
                        wrapSend mq  cols    . T.concat $ [ "You send ",              target', ": ", dblQuote msg ]
                        wrapSend amq aCols   . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor    ]
     in maybe notFound found . findFullNameForAbbrev target . map snd $ aiss
-  where
-    helperSTM md = (,,) <$> readTVar (md^.entTblTVar)
-                        <*> readTVar (md^.msgQueueTblTVar)
-                        <*> readTVar (md^.plaTblTVar)
 admin p = patternMatchFail "admin" [ showText p ]
-
-
-mkAdminIdsSingsList :: Id -> EntTbl -> PlaTbl -> [(Id, Sing)]
-mkAdminIdsSingsList i et pt = [ (pi, s) | pi <- IM.keys pt
-                                        , getPlaFlag IsAdmin (pt ! pi)
-                                        , pi /= i
-                                        , let s = (et ! pi)^.sing
-                                        , then sortWith by s ]
 
 
 -----
