@@ -293,8 +293,8 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
 emote p@(ActionParams { plaId, args })
   | any (`elem` args) [ enc, enc <> "'s" ] = getState >>= \ms ->
       let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
-          toSelfMsg                  = T.replace enc s . formatMsgArgs $ args
-          toSelfBrdcst               = over _1 (nlnl . bracketQuote) . mkBroadcast plaId $ toSelfMsg
+          toSelfMsg                  = bracketQuote . T.replace enc s . formatMsgArgs $ args
+          toSelfBrdcst               = over _1 nlnl . mkBroadcast plaId $ toSelfMsg
           toOthersMsg | c == emoteNameChar = T.concat $ [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
                       | otherwise          = capitalizeMsg . T.unwords $ args
           toOthersMsg'   = T.replace enc (serialize d { shouldCap = Don'tCap }) . punctuateMsg $ toOthersMsg
@@ -305,8 +305,8 @@ emote p@(ActionParams { plaId, args })
     let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
         msg                        = punctuateMsg . T.unwords $ args
         toSelfMsg                  = bracketQuote $ s <> " " <> msg
-        toSelfBrdcst               = (nlnl toSelfMsg, [plaId])
-        toOthersMsg                = serialize d <> " " <> msg
+        toSelfBrdcst               = over _1 nlnl . mkBroadcast plaId $ toSelfMsg
+        toOthersMsg                = bracketQuote $ serialize d <> " " <> msg
         toOthersBrdcst             = (nlnl toOthersMsg, plaId `delete` pcIds d)
     in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
   where
