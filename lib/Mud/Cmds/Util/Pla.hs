@@ -549,28 +549,27 @@ mkInvCoinsDesc i cols ms descId descSing | descInv <- getInv descId ms, descCoin
       (False, True ) -> header                                      <> mkCoinsSummary cols descCoins
       (True,  True ) -> header <> mkEntsInInvDesc i cols ms descInv <> mkCoinsSummary cols descCoins
   where
-    header = descId == i ? nl "You are carrying:" ?: (wrapUnlines cols $ "The " <> descSing <> " contains:")
+    header = descId == i ? nl "You are carrying:" :? (wrapUnlines cols $ "The " <> descSing <> " contains:")
 
 
 dudeYourHandsAreEmpty :: T.Text
 dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 
-mkEntsInInvDesc :: Id -> Cols -> EntTbl -> MobTbl -> PCTbl -> Inv -> T.Text
-mkEntsInInvDesc i cols et mt pt =
-    T.unlines . concatMap (wrapIndent ind cols . helper) . mkStyledName_Count_BothList i et mt pt
+mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> T.Text
+mkEntsInInvDesc i cols ms =
+    T.unlines . concatMap (wrapIndent ind cols . helper) . mkStyledName_Count_BothList i ms
   where
     helper (pad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
     helper (pad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
     ind = 11
 
 
-mkStyledName_Count_BothList :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> [(T.Text, Int, BothGramNos)]
-mkStyledName_Count_BothList i et mt pt is =
-    let ens   = styleAbbrevs DoBracket [ getEffName        i et mt pt i' | i' <- is ]
-        ebgns =                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
-        cs    = mkCountList ebgns
-    in nub . zip3 ens cs $ ebgns
+mkStyledName_Count_BothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkStyledName_Count_BothList i ms is =
+    let styleds                       = styleAbbrevs DoBracket [ getEffName        i ms targetId | targetId <- is ]
+        boths@(mkCountList -> counts) =                        [ getEffBothGramNos i ms targetId | targetId <- is ]
+    in nub . zip3 styleds counts $ boths
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
