@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Data.State.Util.Coins ( mkCoinsFromList
-                                 , mkListFromCoins
+module Mud.Data.State.Util.Coins ( coinsFromList
+                                 , coinsToList
                                  , negateCoins ) where
 
 import Mud.Data.State.MudData
@@ -20,13 +20,13 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Coins"
 -- ============================================================
 
 
-mkCoinsFromList :: [Int] -> Coins
-mkCoinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
-mkCoinsFromList xs                = patternMatchFail "mkCoinsFromList" [ showText xs ]
+coinsFromList :: [Int] -> Coins
+coinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
+coinsFromList xs                = patternMatchFail "coinsFromList" [ showText xs ]
 
 
-mkListFromCoins :: Coins -> [Int]
-mkListFromCoins (Coins (c, g, s)) = [ c, g, s ]
+coinsToList :: Coins -> [Int]
+coinsToList (Coins (c, g, s)) = [ c, g, s ]
 
 
 negateCoins :: Coins -> Coins

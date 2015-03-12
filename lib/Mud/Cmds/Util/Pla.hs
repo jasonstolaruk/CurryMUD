@@ -573,7 +573,7 @@ mkStyledName_Count_BothList i ms is =
 
 
 mkCoinsSummary :: Cols -> Coins -> T.Text
-mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . mkListFromCoins $ c
+mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . coinsToList $ c
   where
     mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
     helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
