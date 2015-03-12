@@ -272,7 +272,7 @@ dropAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) -
             (eiss, ecs)         = uncurry (resolvePCInvCoins i ms as) invCoins
             (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Drop i ri) (ms^.invTbl,   [], []     ) eiss
             (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Drop i ri) (ms^.coinsTbl, bs, logMsgs) ecs
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins -- TODO: Can't we use "over both" here?
           then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
           else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
@@ -414,29 +414,19 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dblQuote "remove ring sack"
                                   , dfltColor
                                   , "." ]
-getAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
-    unless (null logMsgs) . logPlaOut "get" i $ logMsgs
+getAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+    (unless (null logMsgs) . logPlaOut "get" i $ logMsgs) >> bcast bs
   where
-    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                             <*> readTVar (md^.entTblTVar)
-                             <*> readTVar (md^.invTblTVar)
-                             <*> readTVar (md^.mobTblTVar)
-                             <*> readTVar (md^.msgQueueTblTVar)
-                             <*> readTVar (md^.pcTblTVar)
-                             <*> readTVar (md^.plaTblTVar)
-                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ri, _, ris, rc) = mkGetLookBindings i ct et it mt pcTbl tt
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (ris, rc)
-          then let (eiss, ecs)          = resolveRmInvCoins i et mt pcTbl as ris rc
-                   (it', bs,  logMsgs ) = foldl' (helperGetDropEitherInv i et mt pcTbl tt d Get ri i) (it, [], []) eiss
-                   (ct', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ct, bs, logMsgs) ecs
-               in do
-                   writeTVar (md^.coinsTblTVar) ct'
-                   writeTVar (md^.invTblTVar)   it'
-                   bcastNlSTM mt mqt pcTbl plaTbl bs'
-                   return logMsgs'
-          else wrapSendSTM mq cols "You don't see anything here to pick up." >> return []
-getAction p = patternMatchFail "getAction" [ showText p ]
+    helper ms =
+        let ri                  = getRmId     i  ms
+            invCoins            = getInvCoins ri ms
+            d                   = mkStdDesig  i  ms DoCap
+            (eiss, ecs)         = uncurry (resolveRmInvCoins i ms as) invCoins
+            (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Get ri i) (ms^.invTbl,   [], []     ) eiss
+            (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Get ri i) (ms^.coinsTbl, bs, logMsgs) ecs
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+          then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
+          else (ms, (mkBroadcast i "You don't see anything here to pick up.", []))
 
 
 -----
