@@ -526,33 +526,30 @@ mkCoinsDesc cols (Coins (cop, sil, gol)) =
 -----
 
 
-mkEntDescs :: Id -> Cols -> CoinsTbl -> EntTbl -> EqTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> Inv -> T.Text
-mkEntDescs i cols ct entTbl eqTbl it mt pt tt eis =
-    T.intercalate "\n" [ mkEntDesc i cols ct it entTbl eqTbl mt pt tt (ei, e) | ei <- eis, let e = entTbl ! ei ]
+mkEntDescs :: Id -> Cols -> MudState -> Inv -> T.Text
+mkEntDescs i cols ms eis = T.intercalate "\n" [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: Id -> Cols -> CoinsTbl -> InvTbl -> EntTbl -> EqTbl -> MobTbl -> PCTbl -> TypeTbl -> (Id, Ent) -> T.Text
-mkEntDesc i cols ct it entTbl eqTbl mt pt tt (ei@((tt !) -> t), e@(views entDesc (wrapUnlines cols) -> ed)) =
-    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ct entTbl it mt pt ei $ e
-              MobType ->                 (ed <>) . mkEqDesc       i cols entTbl eqTbl mt pt ei e $ t
-              PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols entTbl eqTbl mt pt ei e $ t
+mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> T.Text
+mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- getSing ei ms, t <- getType ei ms =
+    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ms ei $ s
+              MobType ->                 (ed <>) . mkEqDesc       i cols ms ei   s $ t
+              PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ms ei   s $ t
               _       -> ed
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
-    mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei mt pt = T.concat [ "You see a ", s, " ", r, "." ]
+    mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ms = T.concat [ "You see a ", s, " ", r, "." ]
 
 
-mkInvCoinsDesc :: Id -> Cols -> CoinsTbl -> EntTbl -> InvTbl -> MobTbl -> PCTbl -> Id -> Ent -> T.Text
-mkInvCoinsDesc i cols ct et it mt pt descI (view sing -> descS)
-  | descIs <- it ! descI
-  , descC  <- ct ! descI = case (not . null $ descIs, descC /= mempty) of
-    (False, False) -> wrapUnlines cols (descI == i ? dudeYourHandsAreEmpty :? "The " <> descS <> " is empty.")
-    (True,  False) -> header <> mkEntsInInvDesc i cols et mt pt descIs
-    (False, True ) -> header <>                                           mkCoinsSummary cols descC
-    (True,  True ) -> header <> mkEntsInInvDesc i cols et mt pt descIs <> mkCoinsSummary cols descC
+mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> T.Text
+mkInvCoinsDesc i cols ms descId descSing | descInv <- getInv descId ms, descCoins <- getCoins descId ms =
+    case (not . null $ descInv, descCoins /= mempty) of
+      (False, False) -> wrapUnlines cols (descId == i ? dudeYourHandsAreEmpty :? "The " <> descSing <> " is empty.")
+      (True,  False) -> header <> mkEntsInInvDesc i cols ms descInv
+      (False, True ) -> header                                      <> mkCoinsSummary cols descCoins
+      (True,  True ) -> header <> mkEntsInInvDesc i cols ms descInv <> mkCoinsSummary cols descCoins
   where
-    header | descI == i = nl "You are carrying:"
-           | otherwise  = wrapUnlines cols $ "The " <> descS <> " contains:"
+    header = descId == i ? nl "You are carrying:" ?: (wrapUnlines cols $ "The " <> descSing <> " contains:")
 
 
 dudeYourHandsAreEmpty :: T.Text

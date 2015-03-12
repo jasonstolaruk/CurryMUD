@@ -28,6 +28,10 @@ getEnt :: Id -> MudState -> Ent
 getEnt i = views entTbl (! i)
 
 
+getEntDesc :: Id -> MudState -> T.Text
+getEntDesc i ms = getEnt i ms ^.entDesc
+
+
 getEqMap :: Id -> MudState -> EqMap
 getEqMap i = views eqTbl (! i)
 
