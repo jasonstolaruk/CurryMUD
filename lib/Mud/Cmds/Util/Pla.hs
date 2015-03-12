@@ -51,6 +51,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
@@ -226,7 +227,7 @@ helperGetDropEitherCoins i d god fi ti a@(ct, _, _) = \case
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
 mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
-    helper a cn | a == 1 =
+    helper 1 cn =
         [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", aOrAn cn, "." ], [i])
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn cn, "." ], otherPCIds) ]
     helper a cn =
@@ -238,13 +239,13 @@ mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLo
 mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
 mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
   where
-    c = cop /= 0 ? (Just . f cop $ "copper piece") :? Nothing
-    s = sil /= 0 ? (Just . f sil $ "silver piece") :? Nothing
-    g = gol /= 0 ? (Just . f gol $ "gold piece"  ) :? Nothing
+    c = cop /= 0 |?| Just . f cop $ "copper piece"
+    s = sil /= 0 |?| Just . f sil $ "silver piece"
+    g = gol /= 0 |?| Just . f gol $ "gold piece"
 
 
 extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
-extractLogMsgs i bs = [ fst b | b <- bs, snd b == [i] ]
+extractLogMsgs i bs = [ msg | (msg, targets) <- bs, targets == [i] ]
 
 
 mkGodVerb :: GetOrDrop -> Verb -> T.Text
@@ -258,10 +259,7 @@ mkGodVerb Drop ThrPer = "drops"
 
 
 helperGetDropEitherInv :: Id
-                       -> EntTbl
-                       -> MobTbl
-                       -> PCTbl
-                       -> TypeTbl
+                       -> MudState
                        -> PCDesig
                        -> GetOrDrop
                        -> FromId
@@ -273,13 +271,13 @@ helperGetDropEitherInv i ms d god fi ti a@(it, _, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is                   -> let (fis, tis)    = over both (it !) (fi, ti)
                                     it'           = it & at fi ?~ fis \\ is
-                                                       & at ti ?~ sortInv et tt (tis ++ is)
-                                    (bs, logMsgs) = mkGetDropInvDesc i et mt pt d god is
+                                                       & at ti ?~ sortInv ms (tis ++ is)
+                                    (bs, logMsgs) = mkGetDropInvDesc i ms d god is
                                 in a & _1 .~ it' & _2 <>~ bs & _3 <>~ logMsgs
 
 
-mkGetDropInvDesc :: Id -> EntTbl -> MobTbl -> PCTbl -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
-mkGetDropInvDesc i et mt pt d god (mkNameCountBothList i et mt pt -> ncbs) =
+mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
+mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
     let bs = concatMap helper ncbs in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _))
@@ -293,10 +291,11 @@ mkGetDropInvDesc i et mt pt d god (mkNameCountBothList i et mt pt -> ncbs) =
     otherPCIds = i `delete` pcIds d
 
 
-mkNameCountBothList :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> [(T.Text, Int, BothGramNos)]
-mkNameCountBothList i et mt pt is | ens   <- [ getEffName        i et mt pt i' | i' <- is ]
-                                  , ebgns <- [ getEffBothGramNos i et mt pt i' | i' <- is ]
-                                  , cs    <- mkCountList ebgns = nub . zip3 ens cs $ ebgns
+mkNameCountBothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms targetId | targetId <- targetIds ]
+                                         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+                                         cs    = mkCountList ebgns
+                                     in nub . zip3 ens cs $ ebgns
 
 
 -----
