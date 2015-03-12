@@ -331,34 +331,19 @@ emote p@(ActionParams { plaId, args })
 
 
 equip :: Action
-equip (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(entTbl, eqTbl, mt, pt) ->
-    send mq . nl . mkEqDesc i cols entTbl eqTbl mt pt i (entTbl ! i) $ PCType
-  where
-    helperSTM md = (,,,) <$> readTVar (md^.entTblTVar)
-                         <*> readTVar (md^.eqTblTVar)
-                         <*> readTVar (md^.mobTblTVar)
-                         <*> readTVar (md^.pcTblTVar)
-equip (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \(ct, entTbl, eqTbl, it, mt, pt, tt) ->
-    let em@(M.elems -> is) = eqTbl ! i
+equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getEnt i ms) $ PCType
+equip (LowerNub i mq cols as) = getState >>= \ms ->
+    let em@(M.elems -> is) = getEqMap ms i
     in send mq $ if not . M.null $ em
-      then let (gecrs, miss, rcs)              = resolveEntCoinNames i entTbl mt pt as is mempty
-               eiss                            = zipWith (curry procGecrMisPCEq) gecrs miss
-               helperEitherInv acc (Left  msg) = (acc <>) . wrapUnlinesNl cols $ msg
-               helperEitherInv acc (Right is') = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pt tt is'
-               invDesc                         = foldl' helperEitherInv "" eiss
-               coinsDesc | not . null $ rcs    = wrapUnlinesNl cols "You don't have any coins among your readied \
-                                                                    \equipment."
-                         | otherwise           = ""
+      then let (gecrs, miss, rcs)                    = resolveEntCoinNames i ms as is mempty
+               eiss                                  = zipWith (curry procGecrMisPCEq) gecrs miss
+               invDesc                               = foldl' helperEitherInv "" eiss
+               helperEitherInv acc (Left  msg)       = (acc <>) . wrapUnlinesNl cols $ msg
+               helperEitherInv acc (Right targetIds) = nl $ acc <> mkEntDescs i cols ms targetIds
+               coinsDesc                             = rcs |!| wrapUnlinesNl cols "You don't have any coins among your \
+                                                                                  \readied equipment."
            in invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYou'reNaked
-  where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.eqTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.typeTblTVar)
 equip p = patternMatchFail "equip" [ showText p ]
 
 

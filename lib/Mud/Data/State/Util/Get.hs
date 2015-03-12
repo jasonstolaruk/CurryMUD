@@ -28,6 +28,10 @@ getEnt :: Id -> MudState -> Ent
 getEnt i = views entTbl (! i)
 
 
+getEqMap :: Id -> MudState -> EqMap
+getEqMap i = views eqTbl (! i)
+
+
 getIntroduced :: Id -> MudState -> [Sing]
 getIntroduced i ms = getPC i ms ^.introduced
 
