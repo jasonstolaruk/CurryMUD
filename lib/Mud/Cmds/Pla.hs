@@ -262,19 +262,19 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dblQuote "drop sword"
                       , dfltColor
                       , "." ]
-dropAction (LowerNub i mq cols as) = let invCoins = getInvCoins i ms in
-    if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
-      then helper invCoins |$| modifyState >=> \(bs, logMsgs) ->
-          (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs) >> bcast bs
-      else wrapSend mq cols dudeYourHandsAreEmpty
+dropAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+    (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs) >> bcast bs
   where
-    helper invCoins ms =
-        let d                   = mkStdDesig i ms DoCap
-            ri                  = getRmId    i ms
+    helper ms =
+        let invCoins            = getInvCoins i ms
+            d                   = mkStdDesig  i ms DoCap
+            ri                  = getRmId     i ms
             (eiss, ecs)         = uncurry (resolvePCInvCoins i ms as) invCoins
             (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Drop i ri) (ms^.invTbl,   [], []     ) eiss
             (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Drop i ri) (ms^.coinsTbl, bs, logMsgs) ecs
-        in (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+          then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
+          else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
