@@ -583,20 +583,16 @@ mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . mkListFromCoins $
     helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
 
 
-mkEqDesc :: Id -> Cols -> EntTbl -> EqTbl -> MobTbl -> PCTbl -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols ms descId (view sing -> descSing) descType =
-    let descs = descI == i ? mkDescsSelf :? mkDescsOther
-    in case descs of [] -> none
-                     _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
+mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> T.Text
+mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsSelf :? mkDescsOther in
+    null descs ? none :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
-    mkDescsSelf | (ss, is) <- unzip . M.toList $ eqTbl ! i
-                , sns      <- [ pp s                  | s  <- ss ]
-                , es       <- [ entTbl ! ei           | ei <- is ]
-                , ess      <- [ e^.sing               | e  <- es ]
-                , ens      <- [ fromJust $ e^.entName | e  <- es ]
-                , styleds  <- styleAbbrevs DoBracket ens = map helper . zip3 sns ess $ styleds
+    mkDescsSelf =
+        let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)          | (slot, ei) <- M.toList . getEqMap i $ ms ]
+            (sings,      ens) = unzip [ (e^.sing, fromJust $ e^.entName) | e          <- es                         ]
+        in map helper . zip3 slotNames sings . styleAbbrevs DoBracket $ ens
       where
-        helper (T.breakOn " finger" -> (sn, _), es, styled) = T.concat [ parensPad 15 sn, es, " ", styled ]
+        helper (T.breakOn " finger" -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, sing, " ", styled ]
     mkDescsOther | (ss, is) <- unzip . M.toList $ eqTbl ! descI
                  , sns      <- [ pp s | s <- ss ]
                  , ess      <- [ e^.sing | ei <- is, let e = entTbl ! ei ] = zipWith helper sns ess

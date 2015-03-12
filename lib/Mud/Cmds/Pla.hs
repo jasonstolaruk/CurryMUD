@@ -331,7 +331,7 @@ emote p@(ActionParams { plaId, args })
 
 
 equip :: Action
-equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getEnt i ms) $ PCType
+equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
     let em@(M.elems -> is) = getEqMap ms i
     in send mq $ if not . M.null $ em
