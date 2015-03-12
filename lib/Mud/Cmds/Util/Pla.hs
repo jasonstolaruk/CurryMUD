@@ -584,7 +584,7 @@ mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . mkListFromCoins $
 
 
 mkEqDesc :: Id -> Cols -> EntTbl -> EqTbl -> MobTbl -> PCTbl -> Id -> Ent -> Type -> T.Text
-mkEqDesc i cols entTbl eqTbl mt pt descI (view sing -> descS) descT =
+mkEqDesc i cols ms descId (view sing -> descSing) descType =
     let descs = descI == i ? mkDescsSelf :? mkDescsOther
     in case descs of [] -> none
                      _  -> (header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs
