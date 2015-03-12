@@ -592,21 +592,19 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
             (sings,      ens) = unzip [ (e^.sing, fromJust $ e^.entName) | e          <- es                         ]
         in map helper . zip3 slotNames sings . styleAbbrevs DoBracket $ ens
       where
-        helper (T.breakOn " finger" -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, sing, " ", styled ]
-    mkDescsOther | (ss, is) <- unzip . M.toList $ eqTbl ! descI
-                 , sns      <- [ pp s | s <- ss ]
-                 , ess      <- [ e^.sing | ei <- is, let e = entTbl ! ei ] = zipWith helper sns ess
+        helper (T.breakOn " finger" -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, s, " ", styled ]
+    mkDescsOther = helper [ (pp slot, getSing ei ms) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
       where
-        helper (T.breakOn " finger" -> (sn, _)) es = parensPad 15 sn <> es
+        helper (T.breakOn " finger" -> (slotName, _), s) = parensPad 15 slotName <> s
     none = wrapUnlines cols $ if
-      | descI == i      -> dudeYou'reNaked
-      | descT == PCType -> parsePCDesig i mt pt $ d <> " doesn't have anything readied."
-      | otherwise       -> theOnLowerCap descS   <> " doesn't have anything readied."
+      | descId   == i      -> dudeYou'reNaked
+      | descType == PCType -> parsePCDesig i ms $ d  <> " doesn't have anything readied."
+      | otherwise          -> theOnLowerCap descSing <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
-      | descI == i      -> "You have readied the following equipment:"
-      | descT == PCType -> parsePCDesig i mt pt $ d <> " has readied the following equipment:"
-      | otherwise       -> theOnLowerCap descS   <> " has readied the following equipment:"
-    d = mkSerializedNonStdDesig descI mt pt descS The
+      | descId   == i      -> "You have readied the following equipment:"
+      | descType == PCType -> parsePCDesig i ms $ d  <> " has readied the following equipment:"
+      | otherwise          -> theOnLowerCap descSing <> " has readied the following equipment:"
+    d = mkSerializedNonStdDesig descId ms descSing The
 
 
 dudeYou'reNaked :: T.Text
