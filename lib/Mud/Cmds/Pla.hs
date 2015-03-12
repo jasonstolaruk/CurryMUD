@@ -351,13 +351,7 @@ equip p = patternMatchFail "equip" [ showText p ]
 
 
 exits :: Action
-exits (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(rt, pt) ->
-    let ri = (pt ! i)^.rmId
-        r  = rt ! ri
-    in logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols $ r)
-  where
-    helperSTM md = (,) <$> readTVar (md^.rmTblTVar)
-                       <*> readTVar (md^.pcTblTVar)
+exits (NoArgs i mq cols) = logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols . getPCRm i $ ms)
 exits p = withoutArgs exits p
 
 

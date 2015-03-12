@@ -69,6 +69,10 @@ getPC :: Id -> MudState -> PC
 getPC i = views pcTbl (! i)
 
 
+getPCRm :: Id -> MudState -> Rm
+getPCRm i ms = let ri = getRmId i ms in getRm ri ms
+
+
 getPCRmInv :: Id -> MudState -> Inv
 getPCRmInv i ms = let ri = getRmId i ms in getInv ri ms
 
@@ -83,6 +87,10 @@ getPla i = views plaTbl (! i)
 
 getRace :: Id -> MudState -> Race
 getRace i ms = getPC i ms ^.race
+
+
+getRm :: Id -> MudState -> Rm
+getRm i = views rmTbl (! i)
 
 
 getRmId :: Id -> MudState -> Id
