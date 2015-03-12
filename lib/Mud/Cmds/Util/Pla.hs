@@ -28,7 +28,6 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkExitsSummary
                          , mkGetDropCoinsDesc
                          , mkGetDropInvDesc
-                         , mkGetLookBindings
                          , mkInvCoinsDesc
                          , mkMaybeNthOfM
                          , mkPossPro
@@ -638,21 +637,6 @@ linkDirToCmdName Down      = "d"
 isNonStdLink :: RmLink -> Bool
 isNonStdLink (NonStdLink {}) = True
 isNonStdLink _               = False
-
-
------
-
-
-mkGetLookBindings :: Id
-                  -> CoinsTbl
-                  -> EntTbl
-                  -> InvTbl
-                  -> MobTbl
-                  -> PCTbl
-                  -> TypeTbl
-                  -> (PCDesig, Id, Inv, Inv, Coins)
-mkGetLookBindings i ct et it mt pt tt | (d, _, _, ri, ris@((i `delete`) -> ris')) <- mkCapStdDesig i et it mt pt tt
-                                      , rc                                        <- ct ! ri = (d, ri, ris, ris', rc)
 
 
 -----

@@ -433,12 +433,12 @@ getAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
 
 
 go :: T.Text -> Action
-go dir p@(ActionParams { args = [], .. }) = goDispatcher p { args = [dir] }
-go dir p@(ActionParams { args,      .. }) = goDispatcher p { args = dir : args }
+go dir p@(ActionParams { args = [], .. }) = goDispatcher p { args = [dir]      } -- TODO: Is ".." needed?
+go dir p@(ActionParams { args,      .. }) = goDispatcher p { args = dir : args } -- TODO: Is ".." needed?
 
 
 goDispatcher :: Action
-goDispatcher (ActionParams { args = [], .. }) = return ()
+goDispatcher (ActionParams { args = [], .. }) = return () -- TODO: Is ".." needed?
 goDispatcher (Lower i mq cols as)             = mapM_ (tryMove i mq cols) as
 goDispatcher p                                = patternMatchFail "goDispatcher" [ showText p ]
 
@@ -450,47 +450,43 @@ tryMove i mq cols dir = ask >>= liftIO . atomically . helperSTM >>= \case
       logPla "tryMove" i logMsg
       look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
   where
-    helperSTM md = (,,,,,,,) <$> readTVar (md^.entTblTVar)
-                             <*> readTVar (md^.invTblTVar)
-                             <*> readTVar (md^.mobTblTVar)
-                             <*> readTVar (md^.msgQueueTblTVar)
-                             <*> readTVar (md^.pcTblTVar)
-                             <*> readTVar (md^.plaTblTVar)
-                             <*> readTVar (md^.rmTblTVar)
-                             <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, rt, tt) ->
-        let (originD, s, p, originRi, (i `delete`) -> originIs) = mkCapStdDesig i et it mt pcTbl tt
-            originRm                                            = rt ! originRi
+    helper ms =
+        let originDesig = mkStdDesig i ms DoCap
+            s           = fromJust . stdPCEntSing $ originDesig
+            p           = getPC ms i
+            originId    = p^.rmId
+            originRm    = getRm originId ms
+            originPCIds = i `delete` pcIds originDesig
         in case findExit originRm dir of
-          Nothing                          -> return . Left $ sorry
-          Just (linkTxt, destRi, mom, mdm) ->
-              let p'          = p & rmId .~ destRi
-                  pcTbl'      = pcTbl & at i ?~ p'
-                  destRm      = rt ! destRi
-                  destIs      = it ! destRi
-                  destIs'     = sortInv et tt $ destIs ++ [i]
-                  originPis   = i `delete` pcIds originD
-                  destPis     = findPCIds tt destIs
-                  msgAtOrigin = nlnl $ case mom of
-                                  Nothing -> T.concat [ serialize originD, " ", verb, " ", expandLinkName dir, "." ]
-                                  Just f  -> f . serialize $ originD
-                  msgAtDest   = let destD = mkSerializedNonStdDesig i mt pcTbl' s A
-                                in nlnl $ case mdm of
-                                  Nothing -> T.concat [ destD, " arrives from ", expandOppLinkName dir, "." ]
-                                  Just f  -> f destD
-                  logMsg      = T.concat [ "moved "
-                                         , linkTxt
-                                         , " from room "
-                                         , showRm originRi originRm
-                                         , " to room "
-                                         , showRm destRi   destRm
-                                         , "." ]
-              in do
-                  writeTVar (md^.pcTblTVar) pcTbl'
-                  writeTVar (md^.invTblTVar) $ it & at originRi ?~ originIs & at destRi ?~ destIs'
-                  bcastSTM mt mqt pcTbl' plaTbl [ (msgAtOrigin, originPis), (msgAtDest, destPis) ]
-                  return . Right $ logMsg
-    sorry | dir `elem` stdLinkNames = "You can't go that way."
-          | otherwise               = dblQuote dir <> " is not a valid exit."
+          Nothing                            -> (ms, Left sorry)
+          Just (linkTxt, destRmId, mom, mdm) ->
+            let p'          = p & rmId .~ destRmId
+                pcTbl'      = pcTbl & at i ?~ p'
+                destRm      = rt ! destRi
+                destIs      = it ! destRi
+                destIs'     = sortInv et tt $ destIs ++ [i]
+                originPis   = i `delete` pcIds originD
+                destPis     = findPCIds tt destIs
+                msgAtOrigin = nlnl $ case mom of
+                                Nothing -> T.concat [ serialize originD, " ", verb, " ", expandLinkName dir, "." ]
+                                Just f  -> f . serialize $ originD
+                msgAtDest   = let destD = mkSerializedNonStdDesig i mt pcTbl' s A
+                              in nlnl $ case mdm of
+                                Nothing -> T.concat [ destD, " arrives from ", expandOppLinkName dir, "." ]
+                                Just f  -> f destD
+                logMsg      = T.concat [ "moved "
+                                       , linkTxt
+                                       , " from room "
+                                       , showRm originRi originRm
+                                       , " to room "
+                                       , showRm destRi   destRm
+                                       , "." ]
+            in do
+                writeTVar (md^.pcTblTVar) pcTbl'
+                writeTVar (md^.invTblTVar) $ it & at originRi ?~ originIs & at destRi ?~ destIs'
+                bcastSTM mt mqt pcTbl' plaTbl [ (msgAtOrigin, originPis), (msgAtDest, destPis) ]
+                return . Right $ logMsg
+    sorry = dir `elem` stdLinkNames ? "You can't go that way." :? dblQuote dir <> " is not a valid exit."
     verb
       | dir == "u"              = "goes"
       | dir == "d"              = "heads"
