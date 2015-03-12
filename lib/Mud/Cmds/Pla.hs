@@ -281,6 +281,7 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
+-- TODO: Added bracket quotes - ok?
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
@@ -290,33 +291,25 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , dfltColor
                       , "." ]
 emote p@(ActionParams { plaId, args })
-  | any (`elem` args) [ enc, enc <> "'s" ] =
-      ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-          let (d, s, _, _, _) = mkCapStdDesig plaId et it mt pcTbl tt
-              toSelfMsg       = bracketQuote . T.replace enc s . formatMsgArgs $ args
-              toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
-              toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
-                          | otherwise          = capitalizeMsg . T.unwords $ args
-              toOthersMsg'    = T.replace enc (serialize d { isCap = False }) . punctuateMsg $ toOthersMsg
-              toOthersBrdcst  = (nlnl toOthersMsg', plaId `delete` pcIds d)
-          in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
+  | any (`elem` args) [ enc, enc <> "'s" ] = getState >>= \ms ->
+      let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
+          toSelfMsg                  = T.replace enc s . formatMsgArgs $ args
+          toSelfBrdcst               = over _1 (nlnl . bracketQuote) . mkBroadcast plaId $ toSelfMsg
+          toOthersMsg | c == emoteNameChar = T.concat $ [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
+                      | otherwise          = capitalizeMsg . T.unwords $ args
+          toOthersMsg'   = T.replace enc (serialize d { shouldCap = Don'tCap }) . punctuateMsg $ toOthersMsg
+          toOthersBrdcst = (nlnl . bracketQuote $ toOthersMsg', plaId `delete` pcIds d)
+      in logPlaOut "emote" plaId [toSelfMsg] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
-  | otherwise = ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-    let (d, s, _, _, _) = mkCapStdDesig plaId et it mt pcTbl tt
-        msg             = punctuateMsg . T.unwords $ args
-        toSelfMsg       = bracketQuote $ s <> " " <> msg
-        toSelfBrdcst    = (nlnl toSelfMsg, [plaId])
-        toOthersMsg     = serialize d <> " " <> msg
-        toOthersBrdcst  = (nlnl toOthersMsg, plaId `delete` pcIds d)
+  | otherwise = getState >>= \ms ->
+    let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
+        msg                        = punctuateMsg . T.unwords $ args
+        toSelfMsg                  = bracketQuote $ s <> " " <> msg
+        toSelfBrdcst               = (nlnl toSelfMsg, [plaId])
+        toOthersMsg                = serialize d <> " " <> msg
+        toOthersBrdcst             = (nlnl toOthersMsg, plaId `delete` pcIds d)
     in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar)
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
     advice          = T.concat [ dblQuote enc
