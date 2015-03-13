@@ -560,7 +560,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
     formatHelpNames names = let wordsPerLine = cols `div` padding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
-help (LowerNub i mq cols as) = getState |$| fmap . getPlaFlag IsAdmin . getPla i >=> liftIO . mkHelpData >=> \hs ->
+help (LowerNub i mq cols as) = getState |$| fmap . getPlaFlag IsAdmin . getPla i >=> liftIO . mkHelpData >=> \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
@@ -599,17 +599,15 @@ parseHelpTxt cols = concat . wrapLines cols . T.lines . parseTokens
 
 
 getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (T.Text, T.Text)
-getHelpByName cols hs name =
-    maybe sorry found . findFullNameForAbbrev name $ [ helpName h | h <- hs ]
+getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrevSnd name $ [ (h, helpName h) | h <- hs ]
   where
-    sorry           = return ("No help is available on " <> dblQuote name <> ".", "")
-    found hn        = let h = head . filter ((== hn) . helpName) $ hs
-                      in (,) <$> readHelpFile (hn, helpFilePath h) <*> (return . dblQuote $ hn)
-    readHelpFile (hn, hf) = (liftIO . T.readFile $ hf) |$| try >=> eitherRet handler
+    sorry                                      = return ("No help is available on " <> dblQuote name <> ".", "")
+    found (helpFilePath -> hf, dblQuote -> hn) = (,) <$> readHelpFile hf hn <*> return hn
+    readHelpFile hf hn                         = (liftIO . T.readFile $ hf) |$| try >=> eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpByName readHelpFile" e
-            return . wrapUnlines cols $ "Unfortunately, the " <> dblQuote hn <> " help file could not be retrieved."
+            return . wrapUnlines cols $ "Unfortunately, the " <> hn <> " help file could not be retrieved."
 
 
 -----
