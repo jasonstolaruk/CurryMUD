@@ -73,8 +73,16 @@ getPCRm :: Id -> MudState -> Rm
 getPCRm i ms = let ri = getRmId i ms in getRm ri ms
 
 
+getPCRmCoins :: Id -> MudState -> Coins
+getPCRmCoins i ms = let ri = getRmId i ms in getCoins ri ms
+
+
 getPCRmInv :: Id -> MudState -> Inv
 getPCRmInv i ms = let ri = getRmId i ms in getInv ri ms
+
+
+getPCRmInvCoins :: Id -> MudState -> (Inv, Coins)
+getPCRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
 
 
 getPageLines :: Id -> MudState -> Int

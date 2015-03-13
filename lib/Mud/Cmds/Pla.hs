@@ -614,38 +614,28 @@ getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrevSnd name $
 
 
 intro :: Action
-intro (NoArgs i mq cols) = ask >>= \md -> do
-    intros <- view introduced . (! i) <$> (liftIO . readTVarIO $ md^.pcTblTVar)
-    if null intros
-      then let introsTxt = "No one has introduced themselves to you yet." in do
-          wrapSend mq cols introsTxt
-          logPlaOut "intro" i [introsTxt]
-      else let introsTxt = T.intercalate ", " intros in do
-          multiWrapSend mq cols [ "You know the following names:", introsTxt ]
-          logPlaOut "intro" i [introsTxt]
+intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced ms i in if null intros
+  then let introsTxt = "No one has introduced themselves to you yet." in do
+      wrapSend mq cols introsTxt
+      logPlaOut "intro" i [introsTxt]
+  else let introsTxt = T.intercalate ", " intros in do
+      multiWrapSend mq cols [ "You know the following names:", introsTxt ]
+      logPlaOut "intro" i [introsTxt]
 intro (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
     unless (null logMsgs) . logPlaOut "intro" i $ logMsgs
   where
-    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                             <*> readTVar (md^.entTblTVar)
-                             <*> readTVar (md^.invTblTVar)
-                             <*> readTVar (md^.mobTblTVar)
-                             <*> readTVar (md^.msgQueueTblTVar)
-                             <*> readTVar (md^.pcTblTVar)
-                             <*> readTVar (md^.plaTblTVar)
-                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let ri                       = (pcTbl ! i)^.rmId
-            is@((i `delete`) -> is') = it ! ri
-            c                        = ct ! ri
+    helper ms =
+        let (is@((i `delete`) -> is'), c) = getPCRmInvCoins ms i
+            (eiss, ecs)                   = resolveRmInvCoins i ms as is' c
+            (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms is) (ms^.pcTbl, [],  []     ) eiss
+            (    cbs', logMsgs') = foldl' helperIntroEitherCoins       (           cbs, logMsgs) ecs
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is', c)
-          then let (eiss, ecs)           = resolveRmInvCoins i et mt pcTbl as is' c
-                   (pcTbl', cbs,  logMsgs ) = foldl' (helperIntroEitherInv et mt tt is) (pcTbl, [],  []     ) eiss
-                   (        cbs', logMsgs') = foldl' helperIntroEitherCoins             (       cbs, logMsgs) ecs
+          then let
                in do
                  writeTVar (md^.pcTblTVar) pcTbl'
                  bcastSTM mt mqt pcTbl' plaTbl . map fromClassifiedBroadcast . sort $ cbs'
                  return logMsgs'
-          else (wrapSendSTM mq cols . nlnl $ "You don't see anyone here to introduce yourself to.") >> return []
+          else (mkBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []) -- TODO: Newlines OK?
     helperIntroEitherInv _  _  _  _   a (Left msg) | T.null msg = a
                                                    | otherwise  = a & _2 <>~ (mkNTBroadcast i . nlnl $ msg)
     helperIntroEitherInv et mt tt ris a (Right is) = foldl' tryIntro a is
