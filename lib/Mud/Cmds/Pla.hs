@@ -542,38 +542,36 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
   where
-    handler e = do
-        fileIOExHandler "help" e
-        wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
-    helper rootHelpTxt = ask >>= liftIO . mkHelpData i >>= \(sortBy (compare `on` helpName) -> hs) ->
-        let styleds                = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
-            (cmdNames, topicNames) = over both (formatHelpNames . mkHelpNames) . partition (isCmdHelp . snd) $ styleds
+    handler e = fileIOExHandler "help" e >> wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
+    helper rootHelpTxt = getPlaFlag IsAdmin . getPla i `fmap` getState >>= \isAdmin -> do -- TODO: fmap vs. <$> ?
+        (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ isAdmin
+        let zipped                 = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
+            (cmdNames, topicNames) = over both (formatHelpNames . mkHelpNames) . partition (isCmdHelp . snd) $ zipped
             helpTxt                = T.concat [ nl rootHelpTxt
                                               , nl "Help is available on the following commands:"
                                               , nl cmdNames
                                               , nl "Help is available on the following topics:"
                                               , topicNames
-                                              , footnote hs ]
-        in logPla "help" i "read root help file." >> (pager i mq . parseHelpTxt cols $ helpTxt)
-    mkHelpNames styleds   = [ pad padding . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- styleds ]
+                                              , isAdmin |?| footnote ]
+        logPla "help" i "read root help file." >> (pager i mq . parseHelpTxt cols $ helpTxt)
+    mkHelpNames zipped    = [ pad padding . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     padding               = maxHelpTopicLen + 2
     asterisk              = asteriskColor <> "*" <> dfltColor
     formatHelpNames names = let wordsPerLine = cols `div` padding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
-    footnote hs           = any isAdminHelp hs |?| nlPrefix $ asterisk <> " indicates help that is available only to \
-                                                                          \administrators."
-help (LowerNub i mq cols as) = ask >>= liftIO . mkHelpData i >>= \hs -> do
+    footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
+help (LowerNub i mq cols as) = getPlaFlag IsAdmin . getPla i `fmap` getState >>= liftIO . mkHelpData >>= \hs -> -- TODO: fmap vs. <$> ?
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
 help p = patternMatchFail "help" [ showText p ]
 
 
-mkHelpData :: Id -> MudData -> IO [Help]
-mkHelpData i md = helpDirs |$| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
-                                                                  , plaHelpTopicNames
-                                                                  , adminHelpCmdNames
-                                                                  , adminHelpTopicNames ] -> do
+mkHelpData :: Bool -> IO [Help]
+mkHelpData isAdmin = helpDirs |$| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
+                                                                     , plaHelpTopicNames
+                                                                     , adminHelpCmdNames
+                                                                     , adminHelpTopicNames ] -> do
     let phcs = [ Help { helpName     = T.pack phcn
                       , helpFilePath = plaHelpCmdsDir     </> phcn
                       , isCmdHelp    = True
@@ -590,8 +588,7 @@ mkHelpData i md = helpDirs |$| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNa
                       , helpFilePath = adminHelpTopicsDir </> whtn
                       , isCmdHelp    = False
                       , isAdminHelp  = True }  | whtn <- adminHelpTopicNames ]
-    ia <- getPlaFlag IsAdmin . (! i) <$> readTVarIO (md^.plaTblTVar)
-    return $ phcs ++ phts ++ (guard ia >> ahcs ++ ahts)
+    return $ phcs ++ phts ++ (guard isAdmin >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
     getHelpDirectoryContents dir = delete ".DS_Store" . drop 2 . sort <$> getDirectoryContents dir
