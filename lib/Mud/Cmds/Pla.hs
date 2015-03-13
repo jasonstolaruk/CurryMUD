@@ -627,15 +627,11 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(cbs, logMsgs) ->
     helper ms =
         let (is@((i `delete`) -> is'), c) = getPCRmInvCoins ms i
             (eiss, ecs)                   = resolveRmInvCoins i ms as is' c
-            (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms is) (ms^.pcTbl, [],  []     ) eiss
-            (    cbs', logMsgs') = foldl' helperIntroEitherCoins       (           cbs, logMsgs) ecs
+            (pt, cbs,  logMsgs )          = foldl' (helperIntroEitherInv ms is) (ms^.pcTbl, [],  []     ) eiss
+            (    cbs', logMsgs')          = foldl' helperIntroEitherCoins       (           cbs, logMsgs) ecs
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is', c)
-          then let
-               in do
-                 writeTVar (md^.pcTblTVar) pcTbl'
-                 bcastSTM mt mqt pcTbl' plaTbl . map fromClassifiedBroadcast . sort $ cbs'
-                 return logMsgs'
-          else (mkBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []) -- TODO: Newlines OK?
+          then (ms & pcTbl .~ pt, (cbs', logMsgs'))
+          else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", [])) -- TODO: Newlines OK?
     helperIntroEitherInv _  _  _  _   a (Left msg) | T.null msg = a
                                                    | otherwise  = a & _2 <>~ (mkNTBroadcast i . nlnl $ msg)
     helperIntroEitherInv et mt tt ris a (Right is) = foldl' tryIntro a is
