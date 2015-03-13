@@ -444,48 +444,43 @@ goDispatcher p                                = patternMatchFail "goDispatcher" 
 
 
 tryMove :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
-tryMove i mq cols dir = ask >>= liftIO . atomically . helperSTM >>= \case
-  Left  msg    -> wrapSend mq cols msg
-  Right logMsg -> do
+tryMove i mq cols dir = helper |$| modifyState >=> \case
+  Left  msg          -> wrapSend mq cols msg
+  Right (bs, logMsg) -> do
       logPla "tryMove" i logMsg
+      bcast bs
       look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
   where
     helper ms =
-        let originDesig = mkStdDesig i ms DoCap
-            s           = fromJust . stdPCEntSing $ originDesig
-            p           = getPC ms i
-            originId    = p^.rmId
-            originRm    = getRm originId ms
-            originPCIds = i `delete` pcIds originDesig
+        let p        = getPC ms i
+            originId = p^.rmId
+            originRm = getRm originId ms
         in case findExit originRm dir of
-          Nothing                            -> (ms, Left sorry)
-          Just (linkTxt, destRmId, mom, mdm) ->
-            let p'          = p & rmId .~ destRmId
-                pcTbl'      = pcTbl & at i ?~ p'
-                destRm      = rt ! destRi
-                destIs      = it ! destRi
-                destIs'     = sortInv et tt $ destIs ++ [i]
-                originPis   = i `delete` pcIds originD
-                destPis     = findPCIds tt destIs
-                msgAtOrigin = nlnl $ case mom of
-                                Nothing -> T.concat [ serialize originD, " ", verb, " ", expandLinkName dir, "." ]
-                                Just f  -> f . serialize $ originD
-                msgAtDest   = let destD = mkSerializedNonStdDesig i mt pcTbl' s A
-                              in nlnl $ case mdm of
-                                Nothing -> T.concat [ destD, " arrives from ", expandOppLinkName dir, "." ]
-                                Just f  -> f destD
+          Nothing -> (ms, Left sorry)
+          Just (linkTxt, destId, maybeOriginMsgFun, maybeDestMsgFun) ->
+            let originDesig = mkStdDesig i ms DoCap
+                s           = fromJust . stdPCEntSing $ originDesig
+                originInv   = i `delete` getInv originId ms
+                originPCIds = i `delete` pcIds originDesig
+                destInv     = getInv destId ms
+                destInv'    = sortInv ms $ destInv ++ [i]
+                destPCIds   = findPCIds ms destInv
+                pt          = ms^.pcTbl  & at i ?~ (p & rmId .~ destId)
+                it          = ms^.invTbl & at originId ?~ originInv & at destId ?~ destInv'
+                msgAtOrigin = nlnl $ case maybeOriginMsgFun of
+                                Nothing -> T.concat [ serialize originDesig, " ", verb, " ", expandLinkName dir, "." ]
+                                Just f  -> f . serialize $ originDesig
+                msgAtDest   = let destDesig = mkSerializedNonStdDesig i ms s A in nlnl $ case maybeDestMsgFun of
+                                Nothing -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
+                                Just f  -> f destDesig
                 logMsg      = T.concat [ "moved "
                                        , linkTxt
                                        , " from room "
-                                       , showRm originRi originRm
+                                       , showRm originId originRm
                                        , " to room "
-                                       , showRm destRi   destRm
+                                       , showRm destId . getRm destId $ ms
                                        , "." ]
-            in do
-                writeTVar (md^.pcTblTVar) pcTbl'
-                writeTVar (md^.invTblTVar) $ it & at originRi ?~ originIs & at destRi ?~ destIs'
-                bcastSTM mt mqt pcTbl' plaTbl [ (msgAtOrigin, originPis), (msgAtDest, destPis) ]
-                return . Right $ logMsg
+            in (ms & pcTbl .~ pt & invTbl .~ it, Right ([ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ], logMsg))
     sorry = dir `elem` stdLinkNames ? "You can't go that way." :? dblQuote dir <> " is not a valid exit."
     verb
       | dir == "u"              = "goes"

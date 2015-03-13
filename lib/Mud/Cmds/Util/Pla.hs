@@ -548,7 +548,7 @@ mkInvCoinsDesc i cols ms descId descSing | descInv <- getInv descId ms, descCoin
       (False, True ) -> header                                      <> mkCoinsSummary cols descCoins
       (True,  True ) -> header <> mkEntsInInvDesc i cols ms descInv <> mkCoinsSummary cols descCoins
   where
-    header = descId == i ? nl "You are carrying:" :? (wrapUnlines cols $ "The " <> descSing <> " contains:")
+    header = descId == i ? nl "You are carrying:" :? wrapUnlines cols ("The " <> descSing <> " contains:")
 
 
 dudeYourHandsAreEmpty :: T.Text
