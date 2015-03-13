@@ -543,7 +543,7 @@ help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
   where
     handler e = fileIOExHandler "help" e >> wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
-    helper rootHelpTxt = getPlaFlag IsAdmin . getPla i `fmap` getState >>= \isAdmin -> do -- TODO: fmap vs. <$> ?
+    helper rootHelpTxt = getState |$| fmap . getPlaFlag IsAdmin . getPla i >=> \isAdmin -> do
         (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ isAdmin
         let zipped                 = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = over both (formatHelpNames . mkHelpNames) . partition (isCmdHelp . snd) $ zipped
@@ -560,7 +560,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
     formatHelpNames names = let wordsPerLine = cols `div` padding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
-help (LowerNub i mq cols as) = getPlaFlag IsAdmin . getPla i `fmap` getState >>= liftIO . mkHelpData >>= \hs -> -- TODO: fmap vs. <$> ?
+help (LowerNub i mq cols as) = getState |$| fmap . getPlaFlag IsAdmin . getPla i >=> liftIO . mkHelpData >=> \hs ->
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
