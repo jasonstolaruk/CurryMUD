@@ -621,8 +621,8 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced ms i i
   else let introsTxt = T.intercalate ", " intros in do
       multiWrapSend mq cols [ "You know the following names:", introsTxt ]
       logPlaOut "intro" i [introsTxt]
-intro (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
-    unless (null logMsgs) . logPlaOut "intro" i $ logMsgs
+intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(cbs, logMsgs) ->
+    (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs) >> (bcast . map fromClassifiedBroadcast . sort $ cbs)
   where
     helper ms =
         let (is@((i `delete`) -> is'), c) = getPCRmInvCoins ms i
