@@ -713,10 +713,13 @@ look (NoArgs i mq cols) = getState >>= \ms ->
         top    = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
         bottom = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
     in send mq . nl . T.concat $ top : bottom
-look (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= maybeVoid helper
+look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeDesigs) -> do
+    send mq msg
+    bcast bs
+    let logHelper targetDesigs = forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- targetDesigs ]
+                                       (\targetSing -> logPla "look" i $ "looked at " <> targetSing <> ".")
+    maybeVoid logHelper maybeDesigs
   where
-    helper ds = forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
-        logPla "look" i $ "looked at " <> es <> "."
     helper ms
       | invCoins@(first (`delete` i) -> invCoins') <- getPCRmInvCoins i ms -- TODO: Use "first" like this elsewhere?
       = if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
