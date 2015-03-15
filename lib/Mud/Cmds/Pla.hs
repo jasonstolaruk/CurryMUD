@@ -706,68 +706,51 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 look :: Action
-look (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, pt, rt, tt) ->
-    let ri = (pt ! i)^.rmId
-        r  = rt ! ri
-    in send mq . nl . T.concat $ multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ] : [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ct et it mt pt tt ri ]
-  where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.rmTblTVar)
-                            <*> readTVar (md^.typeTblTVar)
+look (NoArgs i mq cols) = getState >>= \ms ->
+    let r      = getPCRm i ms
+        top    = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
+        bottom = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
+    in send mq . nl . T.concat $ top : bottom
 look (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= maybeVoid helper
   where
     helper ds = forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
         logPla "look" i $ "looked at " <> es <> "."
-    helperSTM md = (,,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                              <*> readTVar (md^.entTblTVar)
-                              <*> readTVar (md^.eqTblTVar)
-                              <*> readTVar (md^.invTblTVar)
-                              <*> readTVar (md^.mobTblTVar)
-                              <*> readTVar (md^.msgQueueTblTVar)
-                              <*> readTVar (md^.pcTblTVar)
-                              <*> readTVar (md^.plaTblTVar)
-                              <*> readTVar (md^.typeTblTVar) >>= \(ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, _, ris, ris', rc) = mkGetLookBindings i ct entTbl it mt pcTbl tt
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (ris', rc)
-          then let (eiss, ecs)     = resolveRmInvCoins i entTbl mt pcTbl as ris' rc
-                   invDesc         = foldl' (helperLookEitherInv ct entTbl eqTbl it mt pcTbl tt) "" eiss
-                   coinsDesc       = foldl' helperLookEitherCoins                                "" ecs
-                   msg             = invDesc <> coinsDesc
-                   (plaTbl', msg') = firstLook i cols (plaTbl, msg)
-                   ds              = [ mkStdDesig pi mt pcTbl tt s False ris | pi <- extractPCIdsFromEiss tt eiss
-                                     , let s = (entTbl ! pi)^.sing ]
-                   pis             = i `delete` pcIds d
-                   d'              = serialize d
-                   f targetDesig acc | targetId <- pcId targetDesig =
-                       (nlnl $ d' <> " looks at you.", [targetId]) :
-                       (nlnl . T.concat $ [ d', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
-                       acc
-               in do
+    helper ms =
+        let invCoins@(first (`delete` i) -> invCoins') = getPCRmInvCoins i ms -- TODO: Use "first" like this elsewhere?
+            (eiss, ecs)     = uncurry (resolveRmInvCoins i ms as) invCoins'
+            invDesc         = foldl' (helperLookEitherInv ms) "" eiss
+            coinsDesc       = foldl' helperLookEitherCoins    "" ecs
+            (pt, msg)       = firstLook i cols (ms^.plaTbl, invDesc <> coinsDesc)
+            targetDesigs    = [ mkStdDesig targetId ms Don'tCap | targetId <- extractPCIdsFromEiss ms eiss ]
+            selfDesig       = mkStdDesig i ms DoCap
+            selfDesig'      = serialize selfDesig
+            pis             = i `delete` pcIds selfDesig
+            f targetDesig acc = let targetId = pcId targetDesig in
+                (nlnl $ selfDesig' <> " looks at you.", [targetId])                                                 :
+                (nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
+                acc
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+          then
                    writeTVar (md^.plaTblTVar) plaTbl'
-                   bcastSTM mt mqt pcTbl plaTbl' . foldr f [] $ ds
+                   bcastSTM mt mqt pcTbl plaTbl' . foldr f [] $ targetDesigs
                    sendSTM mq msg'
                    return . Just $ ds
           else let msg             = wrapUnlinesNl cols "You don't see anything here to look at."
                    (plaTbl', msg') = firstLook i cols (plaTbl, msg)
                in writeTVar (md^.plaTblTVar) plaTbl' >> sendSTM mq msg' >> return Nothing
-    helperLookEitherInv _  _      _     _  _  _     _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperLookEitherInv ct entTbl eqTbl it mt pcTbl tt acc (Right is  ) = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pcTbl tt is
+    helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
+    helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 look p = patternMatchFail "look" [ showText p ]
 
 
-mkRmInvCoinsDesc :: Id -> Cols -> CoinsTbl -> EntTbl -> InvTbl -> MobTbl -> PCTbl -> TypeTbl -> Id -> T.Text
-mkRmInvCoinsDesc i cols ct et it mt pt tt ri =
-    let ((i `delete`) -> ris) = it ! ri
-        (pcNcbs, otherNcbs)   = splitPCsOthers . mkIsPC_StyledName_Count_BothList i et mt pt tt $ ris
-        pcDescs               = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
-        otherDescs            = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
-        c                     = ct ! ri
+mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> T.Text
+mkRmInvCoinsDesc i cols ms ri =
+    let ((i `delete`) -> ris, c) = getInvCoins ri ms
+        (pcNcbs, otherNcbs)      = splitPCsOthers . mkIsPC_StyledName_Count_BothList i ms $ ris
+        pcDescs                  = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
+        otherDescs               = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
     in (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
   where
     splitPCsOthers                       = over both (map snd) . span fst
@@ -785,25 +768,16 @@ mkRmInvCoinsDesc i cols ct et it mt pt tt ri =
     mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
 
 
-mkIsPC_StyledName_Count_BothList :: Id
-                                 -> EntTbl
-                                 -> MobTbl
-                                 -> PCTbl
-                                 -> TypeTbl
-                                 -> Inv
-                                 -> [(Bool, (T.Text, Int, BothGramNos))]
-mkIsPC_StyledName_Count_BothList i et mt pt tt is =
-  let ips   =                        [ tt ! i' == PCType               | i' <- is ]
-      ens   = styleAbbrevs DoBracket [ getEffName        i et mt pt i' | i' <- is ]
-      ebgns =                        [ getEffBothGramNos i et mt pt i' | i' <- is ]
-      cs    = mkCountList ebgns
-  in nub . zip ips . zip3 ens cs $ ebgns
+mkIsPC_StyledName_Count_BothList :: Id -> MudState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
+mkIsPC_StyledName_Count_BothList i ms targetIds =
+  let isPCs   =                        [ getType targetIs ms == PCType   | targetId <- targetIds ]
+      styleds = styleAbbrevs DoBracket [ getEffName        i ms targetId | targetId <- targetIds ]
+      counts  = mkCountList ebgns
+      boths   =                        [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+  in nub . zip isPCs . zip3 styleds counts $ boths
 
 
-firstLook :: Id
-          -> Cols
-          -> (PlaTbl, T.Text)
-          -> (PlaTbl, T.Text)
+firstLook :: Id -> Cols -> (PlaTbl, T.Text) -> (PlaTbl, T.Text)
 firstLook i cols a@(pt, _) = let p = pt ! i in if getPlaFlag IsNotFirstLook p
   then a
   else let msg = T.concat [ hintANSI
@@ -835,16 +809,16 @@ firstLook i cols a@(pt, _) = let p = pt ! i in if getPlaFlag IsNotFirstLook p
 
 
 isKnownPCSing :: Sing -> Bool
-isKnownPCSing (T.words -> ss) = case ss of [ "male",   _ ] -> False
-                                           [ "female", _ ] -> False
-                                           _               -> True
+isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
+                                    [ "female", _ ] -> False
+                                    _               -> True
 
 
-extractPCIdsFromEiss :: TypeTbl -> [Either T.Text Inv] -> [Id]
-extractPCIdsFromEiss tt = foldl' helper []
+extractPCIdsFromEiss :: MudState -> [Either T.Text Inv] -> [Id]
+extractPCIdsFromEiss ms = foldl' helper []
   where
     helper acc (Left  _ )  = acc
-    helper acc (Right is)  = acc ++ findPCIds tt is
+    helper acc (Right is)  = acc ++ findPCIds ms is
 
 
 -----
