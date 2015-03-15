@@ -705,9 +705,11 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
+-- TODO: Test extensively.
 look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
-    let r      = getPCRm i ms
+    let ri     = getRmId i  ms
+        r      = getRm   ri ms
         top    = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
         bottom = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
     in send mq . nl . T.concat $ top : bottom
@@ -715,29 +717,27 @@ look (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= maybe
   where
     helper ds = forM_ [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- ds ] $ \es ->
         logPla "look" i $ "looked at " <> es <> "."
-    helper ms =
-        let invCoins@(first (`delete` i) -> invCoins') = getPCRmInvCoins i ms -- TODO: Use "first" like this elsewhere?
-            (eiss, ecs)     = uncurry (resolveRmInvCoins i ms as) invCoins'
-            invDesc         = foldl' (helperLookEitherInv ms) "" eiss
-            coinsDesc       = foldl' helperLookEitherCoins    "" ecs
-            (pt, msg)       = firstLook i cols (ms^.plaTbl, invDesc <> coinsDesc)
-            targetDesigs    = [ mkStdDesig targetId ms Don'tCap | targetId <- extractPCIdsFromEiss ms eiss ]
-            selfDesig       = mkStdDesig i ms DoCap
-            selfDesig'      = serialize selfDesig
-            pis             = i `delete` pcIds selfDesig
-            f targetDesig acc = let targetId = pcId targetDesig in
-                (nlnl $ selfDesig' <> " looks at you.", [targetId])                                                 :
-                (nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ], targetId `delete` pis) :
-                acc
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
-          then
-                   writeTVar (md^.plaTblTVar) plaTbl'
-                   bcastSTM mt mqt pcTbl plaTbl' . foldr f [] $ targetDesigs
-                   sendSTM mq msg'
-                   return . Just $ ds
-          else let msg             = wrapUnlinesNl cols "You don't see anything here to look at."
-                   (plaTbl', msg') = firstLook i cols (plaTbl, msg)
-               in writeTVar (md^.plaTblTVar) plaTbl' >> sendSTM mq msg' >> return Nothing
+    helper ms
+      | invCoins@(first (`delete` i) -> invCoins') <- getPCRmInvCoins i ms -- TODO: Use "first" like this elsewhere?
+      = if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+          then let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms as) invCoins'
+                   invDesc      = foldl' (helperLookEitherInv ms) "" eiss
+                   coinsDesc    = foldl' helperLookEitherCoins    "" ecs
+                   (pt, msg)    = firstLook i cols (ms^.plaTbl, invDesc <> coinsDesc)
+                   selfDesig    = mkStdDesig i ms DoCap
+                   selfDesig'   = serialize selfDesig
+                   pis          = i `delete` pcIds selfDesig
+                   targetDesigs = [ mkStdDesig targetId ms Don'tCap | targetId <- extractPCIdsFromEiss ms eiss ]
+                   mkBroadcastsForTarget targetDesig acc =
+                       let targetId = pcId targetDesig
+                           toTarget = (nlnl $ selfDesig' <> " looks at you.", [targetId])
+                           toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
+                                      , targetId `delete` pis)
+                       in toTarget : toOthers : acc
+               in (ms & plaTbl .~ pt, (msg, foldr mkBroadcastsForTarget [] targetDesigs, Just targetDesigs))
+          else let msg        = wrapUnlinesNl cols "You don't see anything here to look at."
+                   (pt, msg') = firstLook i cols (ms^.plaTbl, msg)
+               in (ms & plaTbl .~ pt, (msg', [], Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
