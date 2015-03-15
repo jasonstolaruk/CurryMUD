@@ -828,7 +828,7 @@ extractPCIdsFromEiss ms = foldl' helper []
 
 
 motd :: Action
-motd (NoArgs i mq cols) = logPlaExec "motd" i >> showMotd mq cols
+motd (NoArgs i mq cols) = showMotd mq cols >> logPlaExec "motd" i
 motd p                  = withoutArgs motd p
 
 
@@ -847,7 +847,7 @@ showMotd mq cols = send mq =<< helper
 
 
 plaDispCmdList :: Action
-plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList plaCmds p
+plaDispCmdList p@(LowerNub' i as) = dispCmdList plaCmds p >> logPlaExecArgs "?" as i
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
 
 
