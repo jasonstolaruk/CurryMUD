@@ -135,10 +135,10 @@ adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
                       , dfltColor
                       , "." ]
 adminAnnounce (Msg i mq msg) = getState >>= \ms -> let s = getSing i ms in do
-    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
-    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
     ok mq
     massSend $ announceColor <> msg <> dfltColor
+    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
+    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
 adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 
 
@@ -174,7 +174,7 @@ adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
 adminBug :: Action
 adminBug (NoArgs i mq cols) =
-    logPlaExec (prefixAdminCmd "bug") i >> dumpLog mq cols bugLogFile ("bug", "bugs")
+    dumpLog mq cols bugLogFile ("bug", "bugs") >> logPlaExec (prefixAdminCmd "bug") i
 adminBug p = withoutArgs adminBug p
 
 
@@ -195,8 +195,8 @@ dumpLog mq cols logFile (s, p) = send mq =<< helper
 
 adminDate :: Action
 adminDate (NoArgs' i mq) = do
-    logPlaExec (prefixAdminCmd "date") i
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
+    logPlaExec (prefixAdminCmd "date") i
 adminDate p = withoutArgs adminDate p
 
 
@@ -204,7 +204,7 @@ adminDate p = withoutArgs adminDate p
 
 
 adminDispCmdList :: Action
-adminDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixAdminCmd "?") as i >> dispCmdList adminCmds p
+adminDispCmdList p@(LowerNub' i as) = dispCmdList adminCmds p >> logPlaExecArgs (prefixAdminCmd "?") as i
 adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ showText p ]
 
 
@@ -216,9 +216,9 @@ adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify on
                                                               \you wish to start or stop peeping."
 adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
+    multiWrapSend mq cols msgs
     logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
     forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
-    multiWrapSend mq cols msgs
   where
     helper ms = let (pt, msgs, logMsgs) = foldr (peep (getSing i ms) (mkPlaIdSingList ms)) (ms^.plaTbl, [], []) as
                 in (ms & plaTbl .~ pt, (msgs, logMsgs))
@@ -253,10 +253,10 @@ adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
                       , dfltColor
                       , "." ]
 adminPrint (Msg i mq msg) = getState >>= \ms -> let s = getEnt ms i in do
-    logPla    "adminPrint" i $       "printed "  <> dblQuote msg
-    logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
     ok mq
+    logPla    "adminPrint" i $       "printed "  <> dblQuote msg
+    logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
 adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 
@@ -265,7 +265,7 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 adminProfanity :: Action
 adminProfanity (NoArgs i mq cols) =
-    logPlaExec (prefixAdminCmd "profanity") i >> dumpLog mq cols profanityLogFile ("profanity", "profanities")
+    dumpLog mq cols profanityLogFile ("profanity", "profanities") >> logPlaExec (prefixAdminCmd "profanity") i
 adminProfanity p = withoutArgs adminProfanity p
 
 
@@ -283,10 +283,10 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing ms i
         rest = maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote) maybeMsg
     in do
-        logPla "adminShutdown" i $ "initiating shutdown" <> rest
         massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg <> dfltColor
-        massLogPla "adminShutdown" $ "closing connection due to server shutdown initiated by " <> s <> rest
-        logNotice  "adminShutdown" $ "server shutdown initiated by "                           <> s <> rest
+        logPla     "adminShutdown" i $ "initiating shutdown" <> rest
+        massLogPla "adminShutdown"   $ "closing connection due to server shutdown initiated by " <> s <> rest
+        logNotice  "adminShutdown"   $ "server shutdown initiated by "                           <> s <> rest
         liftIO . atomically . writeTQueue mq $ Shutdown
 
 
@@ -308,9 +308,8 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
-adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let logMsgs = helper ms
-    in unless (null logMsgs) $ forM_ logMsgs (uncurry logPla (prefixAdminCmd "tell"))
+adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms -> let logMsgs = helper ms in
+    unless (null logMsgs) $ forM_ logMsgs (uncurry logPla (prefixAdminCmd "tell"))
   where
     helper ms =
         let s          = getSing ms i
@@ -361,9 +360,9 @@ firstAdminTell tellId ms (setPlaFlag IsNotFirstAdminTell True -> tellPla) adminS
 
 adminTime :: Action
 adminTime (NoArgs i mq cols) = do
-    logPlaExec (prefixAdminCmd "time") i
     (ct, zt) <- liftIO $ (,) <$> formatThat `fmap` getCurrentTime <*> formatThat `fmap` getZonedTime
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
+    logPlaExec (prefixAdminCmd "time") i
   where
     formatThat (T.words . showText -> wordy@(headLast -> (date, zone))) =
         let time = T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy in T.concat [ zone, ": ", date, " ", time ]
@@ -374,7 +373,7 @@ adminTime p = withoutArgs adminTime p
 
 
 adminTypo :: Action
-adminTypo (NoArgs i mq cols) = logPlaExec (prefixAdminCmd "typo") i >> dumpLog mq cols typoLogFile ("typo", "typos")
+adminTypo (NoArgs i mq cols) = dumpLog mq cols typoLogFile ("typo", "typos") >> logPlaExec (prefixAdminCmd "typo") i
 adminTypo p                  = withoutArgs adminTypo p
 
 
@@ -383,8 +382,8 @@ adminTypo p                  = withoutArgs adminTypo p
 
 adminUptime :: Action
 adminUptime (NoArgs i mq cols) = do
-    logPlaExec (prefixAdminCmd "uptime") i
     send mq . nl =<< liftIO uptime |$| try >=> eitherRet (\e -> logIOEx "adminUptime" e >> sendGenericErrorMsg mq cols)
+    logPlaExec (prefixAdminCmd "uptime") i
   where
     uptime = T.pack <$> readProcess "uptime" [] ""
 adminUptime p = withoutArgs adminUptime p
@@ -395,10 +394,10 @@ adminUptime p = withoutArgs adminUptime p
 
 adminWho :: Action
 adminWho (NoArgs i mq cols) = do
-    logPlaExecArgs (prefixAdminCmd "who") [] i
     pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt <$> getState ]
+    logPlaExecArgs (prefixAdminCmd "who") [] i
 adminWho p@(ActionParams { plaId, args }) =
-    logPlaExecArgs (prefixAdminCmd "who") args plaId >> (dispMatches p 20 =<< mkPlaListTxt <$> getState)
+    (dispMatches p 20 =<< mkPlaListTxt <$> getState) >> logPlaExecArgs (prefixAdminCmd "who") args plaId
 
 
 mkPlaListTxt :: MudState -> [T.Text]
