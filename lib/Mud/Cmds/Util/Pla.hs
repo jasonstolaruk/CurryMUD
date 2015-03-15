@@ -738,7 +738,7 @@ putOnMsgs = mkReadyMsgs "put on" "puts on"
 
 
 resolvePCInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolvePCInvCoins i ms as is = resolveHelper i ms procGecrMisPCInv procReconciledCoinsPCInv as is
+resolvePCInvCoins i ms = resolveHelper i ms procGecrMisPCInv procReconciledCoinsPCInv
 
 
 -- TODO: Sig.
@@ -751,4 +751,4 @@ resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms 
 
 
 resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolveRmInvCoins i ms as is = resolveHelper i ms procGecrMisRm procReconciledCoinsRm as is
+resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
