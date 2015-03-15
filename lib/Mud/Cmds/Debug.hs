@@ -121,7 +121,7 @@ prefixDebugCmd = prefixCmd debugCmdChar
 
 
 debugBoot :: Action
-debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> (massMsg . MsgBoot $ dfltBootMsg)
+debugBoot (NoArgs' i mq) = ok mq >> (massMsg . MsgBoot $ dfltBootMsg) >> logPlaExec (prefixDebugCmd "boot") i
 debugBoot p              = withoutArgs debugBoot p
 
 
@@ -129,9 +129,7 @@ debugBoot p              = withoutArgs debugBoot p
 
 
 debugBroad :: Action
-debugBroad (NoArgs'' i) = do
-    logPlaExec (prefixDebugCmd "broad") i
-    bcastNl . mkBroadcast i $ msg
+debugBroad (NoArgs'' i) = (bcastNl . mkBroadcast i $ msg) >> logPlaExec (prefixDebugCmd "broad") i
   where
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\
@@ -151,8 +149,8 @@ debugBroad p = withoutArgs debugBroad p
 
 debugBuffCheck :: Action
 debugBuffCheck (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "buffer") i
     helper |$| try >=> eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
+    logPlaExec (prefixDebugCmd "buffer") i
   where
     helper = liftIO (flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do
         send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | (mkMsg fn -> msg) <- liftIO . hGetBuffering $ h ]
@@ -166,9 +164,7 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 
 
 debugColor :: Action
-debugColor (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "color") i
-    send mq . nl . T.concat $ msg
+debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefixDebugCmd "color") i
   where
     msg = [ nl . T.concat $ [ padOrTrunc 15 . showText $ ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColor ]
           | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
@@ -183,8 +179,8 @@ debugColor p = withoutArgs debugColor p
 
 debugCPU :: Action
 debugCPU (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "cpu") i
     wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO cpuTime ]
+    logPlaExec (prefixDebugCmd "cpu") i
   where
     cpuTime = showText . (/ fromIntegral (10 ^ 12)) . fromIntegral <$> getCPUTime
 debugCPU p = withoutArgs debugCPU p
@@ -194,7 +190,7 @@ debugCPU p = withoutArgs debugCPU p
 
 
 debugDispCmdList :: Action
-debugDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixDebugCmd "?") as i >> dispCmdList debugCmds p
+debugDispCmdList p@(LowerNub' i as) = dispCmdList debugCmds p >> logPlaExecArgs (prefixDebugCmd "?") as i
 debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ showText p ]
 
 
@@ -203,11 +199,11 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 
 debugDispEnv :: Action
 debugDispEnv (NoArgs i mq cols)  = do
-    logPlaExecArgs (prefixDebugCmd "env") [] i
     pager i mq =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env | env <- liftIO getEnvironment ]
+    logPlaExecArgs (prefixDebugCmd "env") [] i
 debugDispEnv p@(ActionParams { plaId, args }) = do
-    logPlaExecArgs (prefixDebugCmd "env") args plaId
     dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO getEnvironment ]
+    logPlaExecArgs (prefixDebugCmd "env") args plaId
 
 
 mkEnvListTxt :: [(String, String)] -> [T.Text]
@@ -220,7 +216,7 @@ mkEnvListTxt = map (mkAssocTxt . over both T.pack)
 
 
 debugLog :: Action
-debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
+debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
     helper       = replicateM_ 100 $ liftIO . void . forkIO . runReaderT heavyLogging =<< ask
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
@@ -232,7 +228,7 @@ debugLog p = withoutArgs debugLog p
 
 
 debugParams :: Action
-debugParams p@(WithArgs i mq cols _) = logPlaExec (prefixDebugCmd "params") i >> (wrapSend mq cols . showText $ p)
+debugParams p@(WithArgs i mq cols _) = (wrapSend mq cols . showText $ p) >> logPlaExec (prefixDebugCmd "params") i
 debugParams p = patternMatchFail "debugParams" [ showText p ]
 
 
@@ -240,14 +236,14 @@ debugParams p = patternMatchFail "debugParams" [ showText p ]
 
 
 debugPurge :: Action
-debugPurge (NoArgs' i mq) = logPlaExec (prefixDebugCmd "purge") i >> purgeThreadTbls >> ok mq
+debugPurge (NoArgs' i mq) = purgeThreadTbls >> ok mq >> logPlaExec (prefixDebugCmd "purge") i
 debugPurge p              = withoutArgs debugPurge p
 
 
 purgeThreadTbls :: MudStack ()
 purgeThreadTbls = do
-    logNotice "purgeThreadTbls" "purging the thread tables."
     sequence_ [ purgePlaLogTbl, purgeTalkAsyncTbl, purgeThreadTbl ]
+    logNotice "purgeThreadTbls" "purging the thread tables."
 
 
 purgePlaLogTbl :: MudStack ()
@@ -281,8 +277,8 @@ purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
 
 debugRemPut :: Action
 debugRemPut (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "remput") i
     mapM_ (fakeClientInput mq) . take 10 . cycle . map (<> rest) $ [ "remove", "put" ]
+    logPlaExec (prefixDebugCmd "remput") i
   where
     rest = T.concat [ " ", T.singleton allChar, " ", T.singleton rmChar, "sack" ]
 debugRemPut p = withoutArgs debugRemPut p
@@ -297,9 +293,9 @@ fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 debugRotate :: Action
 debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in do
-    logPlaExec (prefixDebugCmd "rotate") i
     liftIO . atomically . writeTQueue lq $ RotateLog
     ok mq
+    logPlaExec (prefixDebugCmd "rotate") i
 debugRotate p = withoutArgs debugRotate p
 
 
@@ -308,8 +304,8 @@ debugRotate p = withoutArgs debugRotate p
 
 debugTalk :: Action
 debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
-    logPlaExec (prefixDebugCmd "talk") i
     send mq =<< [ frame cols . multiWrap cols $ descs | descs <- mapM mkDesc asyncs ]
+    logPlaExec (prefixDebugCmd "talk") i
   where
     mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
                   | statusTxt <- mkStatusTxt <$> (liftIO . poll $ a) ]
@@ -324,11 +320,11 @@ debugTalk p = withoutArgs debugTalk p
 
 debugThread :: Action
 debugThread (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "thread") i
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId . getLogAsyncs <$> ask -- TODO: Does reader have a more idiomatic way rather than just fmapping onto ask?
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
+    logPlaExec (prefixDebugCmd "thread") i
   where
     mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
@@ -359,7 +355,7 @@ debugThrow p            = withoutArgs debugThrow p
 
 debugThrowLog :: Action
 debugThrowLog (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in
-    logPlaExec (prefixDebugCmd "throwlog") i >> (liftIO . atomically . writeTQueue lq $ Throw) >> ok mq
+    (liftIO . atomically . writeTQueue lq $ Throw) >> ok mq >> logPlaExec (prefixDebugCmd "throwlog") i
 debugThrowLog p = withoutArgs debugThrowLog p
 
 
@@ -368,8 +364,8 @@ debugThrowLog p = withoutArgs debugThrowLog p
 
 debugToken :: Action
 debugToken (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "token") i
     multiWrapSend mq cols . T.lines . parseTokens . T.unlines $ tokenTxts
+    logPlaExec (prefixDebugCmd "token") i
   where
     tokenTxts = [ charTokenDelimiter  `T.cons` "a allChar"
                 , charTokenDelimiter  `T.cons` "c adverbCloseChar"
@@ -402,12 +398,12 @@ debugToken p = withoutArgs debugToken p
 
 debugUnderline :: Action
 debugUnderline (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "underline") i
     wrapSend mq cols . T.concat $ [ showText underlineANSI
                                   , underlineANSI
                                   , " This text is underlined. "
                                   , noUnderlineANSI
                                   , showText noUnderlineANSI ]
+    logPlaExec (prefixDebugCmd "underline") i
 debugUnderline p = withoutArgs debugUnderline p
 
 
@@ -431,8 +427,8 @@ debugWrap (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)
     helper lineLen | lineLen < 0                            = wrapSorryWtf     mq cols
                    | lineLen < minCols || lineLen > maxCols = wrapSorryLineLen mq cols
                    | otherwise                              = do
-                       logPlaExecArgs (prefixDebugCmd "wrap") [a] i
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
+                       logPlaExecArgs (prefixDebugCmd "wrap") [a] i
 debugWrap p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: line length, as in "
@@ -495,8 +491,8 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
                           | lineLen < minCols || lineLen > maxCols = wrapSorryLineLen mq cols
                           | indent >= lineLen                      = sorryIndent
                           | otherwise                              = do
-                              logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
                               send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
+                              logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
     sorryIndent = wrapSend mq cols "The indent amount must be less than the line length."
 debugWrapIndent p = advise p [] advice
   where
