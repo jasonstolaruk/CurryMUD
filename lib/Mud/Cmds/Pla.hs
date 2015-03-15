@@ -272,7 +272,7 @@ dropAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) -
             (eiss, ecs)         = uncurry (resolvePCInvCoins i ms as) invCoins
             (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Drop i ri) (ms^.invTbl,   [], []     ) eiss
             (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Drop i ri) (ms^.coinsTbl, bs, logMsgs) ecs
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins -- TODO: Can't we use "over both" here?
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins -- TODO: Can't we use "over both" here? Use "|$|"?
           then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
           else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
@@ -685,35 +685,20 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 
 inv :: Action
-inv (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, pt) ->
-    send mq . nl . mkInvCoinsDesc i cols ct et it mt pt i $ et ! i
-  where
-    helperSTM md = (,,,,) <$> readTVar (md^.coinsTblTVar)
-                          <*> readTVar (md^.entTblTVar)
-                          <*> readTVar (md^.invTblTVar)
-                          <*> readTVar (md^.mobTblTVar)
-                          <*> readTVar (md^.pcTblTVar)
-inv (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \(ct, entTbl, eqTbl, it, mt, pt, tt) ->
-    let c  = ct ! i
-        is = it ! i
-    in send mq $ if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is, c)
-      then let (eiss, ecs) = resolvePCInvCoins i entTbl mt pt as is c
-               invDesc     = foldl' (helperEitherInv ct entTbl eqTbl it mt pt tt) "" eiss
-               coinsDesc   = foldl' helperEitherCoins                             "" ecs
-           in invDesc <> coinsDesc
+inv (NoArgs i mq cols)      = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
+inv (LowerNub i mq cols as) = getState >>= \ms ->
+    let invCoins    = getInvCoins i ms
+        (eiss, ecs) = uncurry (resolvePCInvCoins i ms as) invCoins
+        invDesc     = foldl' (helperEitherInv ms) "" eiss
+        coinsDesc   = foldl' helperEitherCoins    "" ecs
+    in send mq $ if uncurry (||) (((/= mempty) *** (/= mempty)) invCoins)
+      then invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                            <*> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.eqTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.typeTblTVar)
-    helperEitherInv _  _      _     _  _  _  _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
-    helperEitherInv ct entTbl eqTbl it mt pt tt acc (Right is  ) = nl $ acc <> mkEntDescs i cols ct entTbl eqTbl it mt pt tt is
-    helperEitherCoins acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
-    helperEitherCoins acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
+    helperEitherInv ms acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
+    helperEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
+    helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
+    helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 inv p = patternMatchFail "inv" [ showText p ]
 
 
