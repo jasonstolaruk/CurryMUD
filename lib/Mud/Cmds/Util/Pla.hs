@@ -738,22 +738,17 @@ putOnMsgs = mkReadyMsgs "put on" "puts on"
 
 
 resolvePCInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolvePCInvCoins i ms as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms as is c
-                               , eiss               <- zipWith (curry procGecrMisPCInv) gecrs miss
-                               , ecs                <- map procReconciledCoinsPCInv rcs = (eiss, ecs)
+resolvePCInvCoins i ms as is = resolveHelper i ms procGecrMisPCInv procReconciledCoinsPCInv as is
+
+
+-- TODO: Sig.
+resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms as is c
+                               , eiss               <- zipWith (curry f) gecrs miss
+                               , ecs                <- map g rcs = (eiss, ecs)
 
 
 -----
 
 
-resolveRmInvCoins :: Id
-                  -> EntTbl
-                  -> MobTbl
-                  -> PCTbl
-                  -> Args
-                  -> Inv
-                  -> Coins
-                  -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolveRmInvCoins i et mt pt as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i et mt pt as is c
-                                     , eiss               <- zipWith (curry procGecrMisRm) gecrs miss
-                                     , ecs                <- map procReconciledCoinsRm rcs = (eiss, ecs)
+resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolveRmInvCoins i ms as is = resolveHelper i ms procGecrMisRm procReconciledCoinsRm as is
