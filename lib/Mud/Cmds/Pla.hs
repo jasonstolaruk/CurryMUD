@@ -187,8 +187,8 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 
 about :: Action
 about (NoArgs i mq cols) = do
-    logPlaExec "about" i
     helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
+    logPlaExec "about" i
   where
     helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
 about p = withoutArgs about p
@@ -220,11 +220,11 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                                                                dblQuote target                    <>
                                                                " is currently logged in."
         found (adminId, adminSing) | adminMq <- getMsgQueue adminId ms, adminCols <- getColumns adminId ms = do
-            logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
-            logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
-            logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
             wrapSend mq      cols      . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
             wrapSend adminMq adminCols . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor      ]
+            logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
+            logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
+            logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
     in maybe notFound found . findFullNameForAbbrevSnd target $ adminIdSings
 admin p = patternMatchFail "admin" [ showText p ]
 
@@ -247,7 +247,7 @@ bug p = bugTypoLogger p BugLog
 
 
 clear :: Action
-clear (NoArgs' i mq) = logPlaExec "clear" i >> (send mq . T.pack $ clearScreenCode)
+clear (NoArgs' i mq) = (send mq . T.pack $ clearScreenCode) >> logPlaExec "clear" i
 clear p              = withoutArgs clear p
 
 
@@ -263,7 +263,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dfltColor
                       , "." ]
 dropAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs) >> bcast bs
+    bcast bs >> (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs)
   where
     helper ms =
         let invCoins            = getInvCoins i ms
@@ -299,7 +299,7 @@ emote p@(ActionParams { plaId, args })
                       | otherwise          = capitalizeMsg . T.unwords $ args
           toOthersMsg'   = T.replace enc (serialize d { shouldCap = Don'tCap }) . punctuateMsg $ toOthersMsg
           toOthersBrdcst = (nlnl . bracketQuote $ toOthersMsg', plaId `delete` pcIds d)
-      in logPlaOut "emote" plaId [toSelfMsg] >> bcast [ toSelfBrdcst, toOthersBrdcst ]
+      in bcast [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut "emote" plaId [toSelfMsg]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
   | otherwise = getState >>= \ms ->
     let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
@@ -308,7 +308,7 @@ emote p@(ActionParams { plaId, args })
         toSelfBrdcst               = over _1 nlnl . mkBroadcast plaId $ toSelfMsg
         toOthersMsg                = bracketQuote $ serialize d <> " " <> msg
         toOthersBrdcst             = (nlnl toOthersMsg, plaId `delete` pcIds d)
-    in logPlaOut "emote" plaId [toSelfMsg] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
+    in bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut "emote" plaId [toSelfMsg]
   where
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
@@ -351,7 +351,7 @@ equip p = patternMatchFail "equip" [ showText p ]
 
 
 exits :: Action
-exits (NoArgs i mq cols) = logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols . getPCRm i $ ms)
+exits (NoArgs i mq cols) = (send mq . nl . mkExitsSummary cols . getPCRm i $ ms) >> logPlaExec "exits" i
 exits p = withoutArgs exits p
 
 
@@ -415,7 +415,7 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dfltColor
                                   , "." ]
 getAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    (unless (null logMsgs) . logPlaOut "get" i $ logMsgs) >> bcast bs
+    bcast bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
   where
     helper ms =
         let ri                  = getRmId     i  ms
@@ -447,9 +447,9 @@ tryMove :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
 tryMove i mq cols dir = helper |$| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
   Right (bs, logMsg) -> do
-      logPla "tryMove" i logMsg
-      bcast bs
       look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
+      bcast bs
+      logPla "tryMove" i logMsg
   where
     helper ms =
         let p        = getPC ms i
@@ -553,7 +553,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
                                               , nl "Help is available on the following topics:"
                                               , topicNames
                                               , isAdmin |?| footnote ]
-        logPla "help" i "read root help file." >> (pager i mq . parseHelpTxt cols $ helpTxt)
+        (pager i mq . parseHelpTxt cols $ helpTxt) >> logPla "help" i "read root help file."
     mkHelpNames zipped    = [ pad padding . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     padding               = maxHelpTopicLen + 2
     asterisk              = asteriskColor <> "*" <> dfltColor
@@ -562,8 +562,8 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
 help (LowerNub i mq cols as) = getState |$| fmap . getPlaFlag IsAdmin . getPla i >=> liftIO . mkHelpData >=> \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
-    unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
+    unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
 help p = patternMatchFail "help" [ showText p ]
 
 
@@ -616,11 +616,11 @@ getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrevSnd name $
 intro :: Action
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced ms i in if null intros
   then let introsTxt = "No one has introduced themselves to you yet." in
-      logPlaOut "intro" i [introsTxt] >> wrapSend mq cols introsTxt
+      wrapSend mq cols introsTxt >> logPlaOut "intro" i [introsTxt]
   else let introsTxt = T.intercalate ", " intros in
-      logPlaOut "intro" i [introsTxt] >> multiWrapSend mq cols [ "You know the following names:", introsTxt ]
+      multiWrapSend mq cols [ "You know the following names:", introsTxt ] >> logPlaOut "intro" i [introsTxt]
 intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
-    (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs) >> bcast bs
+    bcast bs >> (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs)
   where
     helper ms =
         let (is@((i `delete`) -> is'), c) = getPCRmInvCoins i ms
