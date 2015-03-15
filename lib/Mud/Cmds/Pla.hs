@@ -631,49 +631,49 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedB
           then (ms & pcTbl .~ pt, (cbs', logMsgs'))
           else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []))
     helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? a & _2 <>~ (mkNTBroadcast i . nlnl $ msg)
-    helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds -- TODO: ris includes self...
+    helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
         tryIntro a'@(pt, _, _) targetId = case getType targetId ms of
-          PCType -> let s                                    = getSing i ms
-                        targetSing                           = getSing targetId ms
-                        targetPC@(view introduced -> intros) = pt ! targetId
-                        pi                                   = findPCIds ms ris
-                        targetDesig                          = serialize . mkStdDesig targetId ms Don'tCap $ ris
-                        himHerself                           = mkReflexPro . getSex i $ ms
-                        pt'       = pt & at targetId ?~ (targetPC & introduced .~ sort (s : intros))
-                        msg       = "You introduce yourself to " <> targetDesig <> "."
-                        logMsg    = parsePCDesig i ms msg
-                        srcMsg    = nlnl msg
-                        srcDesig  = StdDesig { stdPCEntSing = Nothing
-                                             , shouldCap    = DoCap
-                                             , pcEntName    = mkUnknownPCEntName i ms
-                                             , pcId         = i
-                                             , pcIds        = pis }
-                        targetMsg = nlnl . T.concat $ [ serialize srcDesig
-                                                      , " introduces "
-                                                      , himHerself
-                                                      , " to you as "
-                                                      , knownNameColor
-                                                      , s
-                                                      , dfltColor
-                                                      , "." ]
-                        othersMsg = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
-                                                      , " introduces "
-                                                      , himHerself
-                                                      , " to "
-                                                      , targetDesig
-                                                      , "." ]
-                        cbs       = [ NonTargetBroadcast (srcMsg,    [i]                   )
-                                    , TargetBroadcast    (targetMsg, [targetId]            )
-                                    , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
+          PCType -> let targetPC    = pt ! targetId
+                        s           = getSing i ms
+                        intros      = targetPC^.introduced
+                        pt'         = pt & at targetId ?~ (targetPC & introduced .~ sort (s : intros))
+                        targetDesig = serialize . mkStdDesig targetId ms Don'tCap $ ris
+                        msg         = "You introduce yourself to " <> targetDesig <> "."
+                        logMsg      = parsePCDesig i ms msg
+                        srcMsg      = nlnl msg
+                        pis         = findPCIds ms ris
+                        srcDesig    = StdDesig { stdPCEntSing = Nothing
+                                               , shouldCap    = DoCap
+                                               , pcEntName    = mkUnknownPCEntName i ms
+                                               , pcId         = i
+                                               , pcIds        = pis }
+                        himHerself  = mkReflexPro . getSex i $ ms
+                        targetMsg   = nlnl . T.concat $ [ serialize srcDesig
+                                                        , " introduces "
+                                                        , himHerself
+                                                        , " to you as "
+                                                        , knownNameColor
+                                                        , s
+                                                        , dfltColor
+                                                        , "." ]
+                        othersMsg   = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
+                                                        , " introduces "
+                                                        , himHerself
+                                                        , " to "
+                                                        , targetDesig
+                                                        , "." ]
+                        cbs         = [ NonTargetBroadcast (srcMsg,    [i]                   )
+                                      , TargetBroadcast    (targetMsg, [targetId]            )
+                                      , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
                     in if s `elem` intros
                       then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
                            in a' & _2 <>~ mkNTBroadcast i msg
                       else a' & _1 .~ pt' & _2 <>~ cbs & _3 <>~ [logMsg]
-          _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower targetSing <> "."
+          _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower (getSing targetId ms) <> "."
                         b   = NonTargetBroadcast (nlnl msg, [i])
                     in over _2 (`appendIfUnique` b) a'
-    helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ] -- TODO: Can't we consolidate this into a single broadcast?
+    helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ]) -- TODO: OK? Was "concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]"...
     helperIntroEitherCoins a (Right _   ) =
         first (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
