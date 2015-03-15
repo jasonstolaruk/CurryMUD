@@ -687,7 +687,7 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
             toOthers'                   = replace substitutions toOthers
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBrdcst              = (nlnl toOthers', i `delete` pcIds d)
-        in logPlaOut ecn i [toSelf] >> bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
+        in bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut ecn i [toSelf]
     helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
                             <*> readTVar (md^.invTblTVar)
                             <*> readTVar (md^.mobTblTVar)
@@ -722,14 +722,14 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                           toTarget'      = replace [ ("%", serialized), ("&", hisHer) ] toTarget
                           toTargetBrdcst = (nlnl toTarget', [targetId])
                       in do
-                          logPlaOut ecn i [ parsePCDesig i mt pcTbl toSelf' ]
                           bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
+                          logPlaOut ecn i [ parsePCDesig i mt pcTbl toSelf' ]
                   onMob targetNoun =
                       let (toSelf', toSelfBrdcst, _, _, toOthers') = mkBindings targetNoun
                           toOthersBrdcst                           = (nlnl toOthers', i `delete` pcIds d)
                       in do
-                          logPlaOut ecn i [toSelf']
                           bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
+                          logPlaOut ecn i [toSelf']
                   mkBindings targetTxt =
                       let toSelf'        = replace [("@", targetTxt)] toSelf
                           toSelfBrdcst   = (nlnl toSelf', [i])
