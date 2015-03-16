@@ -74,7 +74,7 @@ import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
-import Control.Monad (guard)
+import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
@@ -84,7 +84,7 @@ import Data.Monoid ((<>), Sum(..), mempty)
 import System.Directory (doesFileExist)
 import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile, writeFile)
+import qualified Data.Text.IO as T (readFile, appendFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -121,38 +121,25 @@ armSubToSlot = \case Head      -> HeadS
 
 
 bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
-bugTypoLogger (Msg i mq msg) wl@(pp -> wl') =
-    ask >>= (liftIO . atomically . helperSTM) >>= \( view sing . (! i) -> s
-                                                   , mt
-                                                   , mqt
-                                                   , pcTbl@(view rmId . (! i) -> ri)
-                                                   , plaTbl
-                                                   , rt ) -> do
-    logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
-    liftIO (try . logIt s ri $ (rt ! ri)^.rmName) >>= eitherRet (fileIOExHandler "bugTypoLogger")
-    send mq . nlnl $ "Thank you."
-    bcastAdmins mt mqt pcTbl plaTbl $ s <> " has logged a " <> wl' <> "."
+bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getState >>= \ms ->
+    let s  = getSing i  ms
+        ri = getRmId i  ms
+    in do
+        logIt s ri (getRm ri ms ^.rmName) |$| liftIO . try >=> eitherRet (fileIOExHandler "bugTypoLogger")
+        send mq . nlnl $ "Thank you."
+        bcastAdmins $ s <> " has logged a " <> wl' <> "."
+        logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
   where
-    helperSTM md = (,,,,,) <$> readTVar (md^.entTblTVar)
-                           <*> readTVar (md^.mobTblTVar)
-                           <*> readTVar (md^.msgQueueTblTVar)
-                           <*> readTVar (md^.pcTblTVar)
-                           <*> readTVar (md^.plaTblTVar)
-                           <*> readTVar (md^.rmTblTVar)
-    logIt s ri rn = mkTimestamp >>= \ts -> -- TODO: Why not just append to the end of the file?
-        let newEntry = T.concat [ ts
-                                , " "
-                                , s
-                                , " "
-                                , parensQuote $ showText ri <> " " <> dblQuote rn
-                                , ": "
-                                , msg ]
-        in T.writeFile logFile =<< [ T.unlines . sort $ newEntry : cont | cont <- getLogConts ]
-    logFile     = case wl of BugLog  -> bugLogFile
-                             TypoLog -> typoLogFile
-    getLogConts = mIf (doesFileExist logFile)
-                      (T.lines <$> T.readFile logFile)
-                      (return [])
+    logIt s (showText -> ri) (dblQuote -> rn) = mkTimestamp >>= \ts ->
+        T.appendFile logFile . T.concat $ [ ts
+                                          , " "
+                                          , s
+                                          , " "
+                                          , parensQuote $ ri <> " " <> rn
+                                          , ": "
+                                          , msg ]
+    logFile = case wl of BugLog  -> bugLogFile
+                         TypoLog -> typoLogFile
 bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
 
 
