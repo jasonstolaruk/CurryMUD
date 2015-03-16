@@ -384,10 +384,7 @@ onTheGround = (|!| " on the ground")
 
 
 helperPutRemEitherInv :: Id
-                      -> EntTbl
-                      -> MobTbl
-                      -> PCTbl
-                      -> TypeTbl
+                      -> MudState
                       -> PCDesig
                       -> PutOrRem
                       -> Maybe NthOfM
@@ -397,17 +394,17 @@ helperPutRemEitherInv :: Id
                       -> (InvTbl, [Broadcast], [T.Text])
                       -> Either T.Text Inv
                       -> (InvTbl, [Broadcast], [T.Text])
-helperPutRemEitherInv i et mt pt tt d por mnom fi ti te a@(it, bs, _) = \case
+helperPutRemEitherInv i ms d por mnom fi ti te a@(it, bs, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is -> let (is', bs')      = if ti `elem` is then (filter (/= ti) is, bs ++ [sorryInsideSelf]) else (is, bs)
+  Right is -> let (is', bs')      = ti `elem` is ? (filter (/= ti) is, bs ++ sorryInsideSelf) :? (is, bs)
                   (fis, tis)      = over both (it !) (fi, ti)
                   it'             = it & at fi ?~ fis \\ is'
                                        & at ti ?~ sortInv et tt (tis ++ is')
-                  (bs'', logMsgs) = mkPutRemInvDesc i et mt pt d por mnom is' te
-              in if null fis then sorryEmpty else (a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs)
+                  (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' te
+              in null fis ? sorryEmpty :? (a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs)
   where
-    sorryInsideSelf = ("You can't put the " <> te^.sing <> " inside itself.", [i])
-    sorryEmpty      = a & _2 <>~ [("The " <> (et ! fi)^.sing <> " is empty.", [i])]
+    sorryInsideSelf = mkBroadcast i $ "You can't put the " <> te^.sing <> " inside itself."
+    sorryEmpty      = a & _2 <>~ mkBroadcast i ("The " <> getSing fi ms <> " is empty.")
 
 
 mkPutRemInvDesc :: Id
