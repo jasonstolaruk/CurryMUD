@@ -223,11 +223,11 @@ mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLo
 
 
 mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
-mkCoinsBroadcasts (Coins (over each Sum -> (cop, sil, gol))) f = concat . catMaybes $ [ c, s, g ]
+mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
   where
-    c = cop |!| Just . f cop $ "copper piece"
-    s = sil |!| Just . f sil $ "silver piece"
-    g = gol |!| Just . f gol $ "gold piece"
+    c = Sum cop |!| Just . f cop $ "copper piece"
+    s = Sum sil |!| Just . f sil $ "silver piece"
+    g = Sum gol |!| Just . f gol $ "gold piece"
 
 
 extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
@@ -377,7 +377,7 @@ descNthOfM n _ = mkOrdinal n <> " "
 
 
 onTheGround :: Maybe NthOfM -> T.Text
-onTheGround = (|!| " on the ground")
+onTheGround = (|!| " on the ground") . (over both Sum <$>)
 
 
 -----
