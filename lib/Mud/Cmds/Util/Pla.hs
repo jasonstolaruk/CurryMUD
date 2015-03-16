@@ -71,7 +71,7 @@ import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (readTVar)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, _4, at, both, over, to)
+import Control.Lens (_1, _2, _3, _4, at, both, each, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard)
@@ -204,7 +204,8 @@ helperGetDropEitherCoins :: Id
 helperGetDropEitherCoins i d god fi ti a@(ct, _, _) = \case
   Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs) -- TODO: OK? Was "[ (msg, [i]) | msg <- msgs ]".
   Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
-                    ct'           = ct & at fi ?~ fc <> negateCoins c & at ti ?~ tc <> c
+                    ct'           = ct & at fi ?~ fc <> negateCoins c
+                                       & at ti ?~ tc <> c
                     (bs, logMsgs) = mkGetDropCoinsDesc i d god c
                 in a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
 
@@ -222,15 +223,15 @@ mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLo
 
 
 mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
-mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
+mkCoinsBroadcasts (Coins (over each Sum -> (cop, sil, gol))) f = concat . catMaybes $ [ c, s, g ]
   where
-    c = cop /= 0 |?| Just . f cop $ "copper piece"
-    s = sil /= 0 |?| Just . f sil $ "silver piece"
-    g = gol /= 0 |?| Just . f gol $ "gold piece"
+    c = cop |!| Just . f cop $ "copper piece"
+    s = sil |!| Just . f sil $ "silver piece"
+    g = gol |!| Just . f gol $ "gold piece"
 
 
 extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
-extractLogMsgs i bs = [ msg | (msg, targets) <- bs, targets == [i] ]
+extractLogMsgs i bs = [ msg | (msg, targetIds) <- bs, targetIds == [i] ]
 
 
 mkGodVerb :: GetOrDrop -> Verb -> T.Text
@@ -498,10 +499,10 @@ mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
-mkCoinsDesc cols (Coins (cop, sil, gol)) =
-    T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ Sum cop |!| copDesc
-                                                                             , Sum sil |!| silDesc
-                                                                             , Sum gol |!| golDesc ]
+mkCoinsDesc cols (Coins (over each Sum -> (cop, sil, gol))) =
+    T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ cop |!| copDesc
+                                                                             , sil |!| silDesc
+                                                                             , gol |!| golDesc ]
   where
     copDesc = "The copper piece is round and shiny."
     silDesc = "The silver piece is round and shiny."
