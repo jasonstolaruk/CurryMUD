@@ -407,19 +407,9 @@ helperPutRemEitherInv i ms d por mnom fi ti te a@(it, bs, _) = \case
     sorryEmpty      = a & _2 <>~ mkBroadcast i ("The " <> getSing fi ms <> " is empty.")
 
 
-mkPutRemInvDesc :: Id
-                -> EntTbl
-                -> MobTbl
-                -> PCTbl
-                -> PCDesig
-                -> PutOrRem
-                -> Maybe NthOfM
-                -> Inv
-                -> ToEnt
-                -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i et mt pt d por mnom is (view sing -> ts) =
-    let bs = concatMap helper . mkNameCountBothList i et mt pt $ is
-    in (bs, extractLogMsgs i bs)
+mkPutRemInvDesc :: Id -> MudState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToEnt -> ([Broadcast], [T.Text])
+mkPutRemInvDesc i ms d por mnom is (view sing -> ts) =
+    let bs = concatMap helper . mkNameCountBothList i ms $ is in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
         [ (T.concat [ "You "
@@ -438,8 +428,7 @@ mkPutRemInvDesc i et mt pt d por mnom is (view sing -> ts) =
                     , mkPorPrep por ThrPer mnom ts
                     , rest ], otherPCIds) ]
       where
-        withArticle | por == Put = "the " <> s
-                    | otherwise  = aOrAn s
+        withArticle = por == Put ? "the " <> s :? aOrAn s
     helper (_, c, b) =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
