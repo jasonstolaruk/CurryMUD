@@ -399,7 +399,7 @@ helperPutRemEitherInv i ms d por mnom fi ti te a@(it, bs, _) = \case
   Right is -> let (is', bs')      = ti `elem` is ? (filter (/= ti) is, bs ++ sorryInsideSelf) :? (is, bs)
                   (fis, tis)      = over both (it !) (fi, ti)
                   it'             = it & at fi ?~ fis \\ is'
-                                       & at ti ?~ sortInv et tt (tis ++ is')
+                                       & at ti ?~ sortInv ms (tis ++ is')
                   (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' te
               in null fis ? sorryEmpty :? (a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs)
   where
@@ -582,7 +582,7 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 
 mkExitsSummary :: Cols -> Rm -> T.Text
-mkExitsSummary cols (view rmLinks -> rls)
+mkExitsSummary cols (view rmLinks -> rls) =
     let stdNames    = [ exitsColor <> rl^.linkDir.to linkDirToCmdName <> dfltColor | rl <- rls
                                                                                    , not . isNonStdLink $ rl ]
         customNames = [ exitsColor <> rl^.linkName                    <> dfltColor | rl <- rls
@@ -618,11 +618,11 @@ type IsConInRm  = Bool
 type InvWithCon = Inv
 
 
-mkMaybeNthOfM :: IsConInRm -> EntTbl -> Id -> Ent -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM icir et i (view sing -> s) is = guard icir >> (return . helper . dup $ matches)
+mkMaybeNthOfM :: MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
+mkMaybeNthOfM ms icir targetId targetSing invWithCon = guard icir >> helper
   where
-    helper  = succ . fromJust . elemIndex i *** length
-    matches = filter (\i' -> (et ! i')^.sing == s) is
+    helper  = ((succ <$> elemIndex targetId) *** length) . dup $ matches
+    matches = filter ((== targetSing) . flip getSing ms) invWithCon
 
 
 -----
@@ -637,23 +637,24 @@ mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
 -----
 
 
-mkPutRemBindings :: Id
-                 -> CoinsTbl
-                 -> EntTbl
-                 -> InvTbl
-                 -> MobTbl
-                 -> PCTbl
-                 -> TypeTbl
-                 -> Args
-                 -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
-mkPutRemBindings i ct et it mt pt tt as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it mt pt tt
-                                              pis                      = it ! i
-                                              (pc, rc)                 = over both (ct !) (i, ri)
-                                              cn                       = last as
-                                              (init -> argsWithoutCon) = case as of
-                                                                           [_, _] -> as
-                                                                           _      -> (++ [cn]) . nub . init $ as
-                                          in (d, ris, rc, pis, pc, cn, argsWithoutCon)
+-- TODO: Delete.
+-- mkPutRemBindings :: Id
+--                  -> CoinsTbl
+--                  -> EntTbl
+--                  -> InvTbl
+--                  -> MobTbl
+--                  -> PCTbl
+--                  -> TypeTbl
+--                  -> Args
+--                  -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
+-- mkPutRemBindings i ct et it mt pt tt as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it mt pt tt
+--                                               pis                      = it ! i
+--                                               (pc, rc)                 = over both (ct !) (i, ri)
+--                                               cn                       = last as
+--                                               (init -> argsWithoutCon) = case as of
+--                                                                            [_, _] -> as
+--                                                                            _      -> (++ [cn]) . nub . init $ as
+--                                           in (d, ris, rc, pis, pc, cn, argsWithoutCon)
 
 
 -----
