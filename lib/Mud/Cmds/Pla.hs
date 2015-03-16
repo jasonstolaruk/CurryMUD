@@ -721,7 +721,7 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTarget
     maybeVoid logHelper maybeTargetDesigs
   where
     helper ms
-      | invCoins@(first (`delete` i) -> invCoins') <- getPCRmInvCoins i ms -- TODO: Use "first" like this elsewhere?
+      | invCoins@(first (i `delete`) -> invCoins') <- getPCRmInvCoins i ms -- TODO: Use "first" like this elsewhere?
       = if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
           then let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms as) invCoins'
                    invDesc      = foldl' (helperLookEitherInv ms) "" eiss

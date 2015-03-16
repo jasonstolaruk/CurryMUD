@@ -689,21 +689,20 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-            toOthers'                   = replace substitutions toOthers
-            toOthersBroadcast           = mkBroadcast (i `delete` pcIds d) . nlnl $ toOthers'
+            toOthersBroadcast           = mkBroadcast (i `delete` pcIds d) . nlnl . replace substitutions $ toOthers
         in bcast (toOthersBroadcast : toSelfBroadcast) >> logPlaOut ecn i [toSelf]
-expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_))  = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
+expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_) ) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
                                                                               \command cannot be used with a target."
 expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
-    helper toSelf toTarget toOthers = ask >>= liftIO . atomically . helperSTM >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it mt pcTbl tt
-            c                                         = ct ! ri
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (ris', c)
-          then case resolveRmInvCoins i et mt pcTbl [target] ris' c of
+    helper toSelf toTarget toOthers = getState >>= \ms ->
+        let d                                          = mkStdDesig i ms DoCap
+            invCoins@(first (i `delete`) -> invCoins') = getPCRmInvCoins i ms
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins'
+          then case uncurry (resolveRmInvCoins i ms [target]) invCoins' of
             (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
             (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot \
                                                                              \be used with coins."
@@ -712,8 +711,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                                                                              \person at a time with expressive \
                                                                              \commands."
             ([ Right [targetId] ], _                   ) ->
-              let targetSing = (et ! targetId)^.sing
-                  onPC targetDesig =
+              let onPC targetDesig =
                       let (toSelf', toSelfBrdcst, serialized, hisHer, toOthers') = mkBindings targetDesig
                           toOthersBrdcst = (nlnl toOthers', pcIds d \\ [ i, targetId ])
                           toTarget'      = replace [ ("%", serialized), ("&", hisHer) ] toTarget
@@ -728,26 +726,18 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                           bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
                           logPlaOut ecn i [toSelf']
                   mkBindings targetTxt =
-                      let toSelf'        = replace [("@", targetTxt)] toSelf
-                          toSelfBrdcst   = head . mkBroadcast i . nlnl $ toSelf'
-                          serialized     = mkSerializedDesig d toOthers
-                          (_, hisHer, _) = mkPros i mt
-                          toOthers'      = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
+                      let toSelf'         = replace [("@", targetTxt)] toSelf
+                          toSelfBroadcast = head . mkBroadcast i . nlnl $ toSelf'
+                          serialized      = mkSerializedDesig d toOthers
+                          (_, hisHer, _)  = mkPros . getSex i $ ms
+                          toOthers'       = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
                       in (toSelf', toSelfBrdcst, serialized, hisHer, toOthers')
-              in case tt ! targetId of
-                PCType  -> onPC  . serialize . mkStdDesig targetId mt pcTbl tt targetSing False $ ris
-                MobType -> onMob . theOnLower $ targetSing
+              in case getType targetId ms
+                PCType  -> onPC  . serialize . mkStdDesig targetId ms Don'tCap $ ris
+                MobType -> onMob . theOnLower . getSing targetId $ ms
                 _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
             x -> patternMatchFail "expCmd helper" [ showText x ]
           else wrapSend mq cols "You don't see anyone here."
-    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                             <*> readTVar (md^.entTblTVar)
-                             <*> readTVar (md^.invTblTVar)
-                             <*> readTVar (md^.mobTblTVar)
-                             <*> readTVar (md^.msgQueueTblTVar)
-                             <*> readTVar (md^.pcTblTVar)
-                             <*> readTVar (md^.plaTblTVar)
-                             <*> readTVar (md^.typeTblTVar)
 expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only target one person at a time with expressive commands."
 
