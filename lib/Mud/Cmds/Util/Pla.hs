@@ -583,11 +583,11 @@ dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 mkExitsSummary :: Cols -> Rm -> T.Text
 mkExitsSummary cols (view rmLinks -> rls)
-  | stdNames    <- [ exitsColor <> rl^.linkDir.to linkDirToCmdName <> dfltColor | rl <- rls
-                                                                                , not . isNonStdLink $ rl ]
-  , customNames <- [ exitsColor <> rl^.linkName                    <> dfltColor | rl <- rls
-                                                                                ,       isNonStdLink   rl ]
-  = T.unlines . wrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
+    let stdNames    = [ exitsColor <> rl^.linkDir.to linkDirToCmdName <> dfltColor | rl <- rls
+                                                                                   , not . isNonStdLink $ rl ]
+        customNames = [ exitsColor <> rl^.linkName                    <> dfltColor | rl <- rls
+                                                                                   ,       isNonStdLink   rl ]
+    in T.unlines . wrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"
     summarize std cus = T.intercalate ", " . (std ++) $ cus
