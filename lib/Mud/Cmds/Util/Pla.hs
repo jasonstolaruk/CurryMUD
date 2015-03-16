@@ -377,8 +377,7 @@ descNthOfM n _ = mkOrdinal n <> " "
 
 
 onTheGround :: Maybe NthOfM -> T.Text
-onTheGround Nothing = ""
-onTheGround _       = " on the ground"
+onTheGround = (|!| " on the ground")
 
 
 -----
