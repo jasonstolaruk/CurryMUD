@@ -266,9 +266,9 @@ mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast
 mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
     let bs = concatMap helper ncbs in (bs, extractLogMsgs i bs)
   where
-    helper (_, c, (s, _))
-      | c == 1 = [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], [i])
-                 , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
+    helper (_, c, (s, _)) | c == 1 =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
     helper (_, c, b) =
         [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], [i])
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
@@ -279,8 +279,8 @@ mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
 
 mkNameCountBothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
 mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms targetId | targetId <- targetIds ]
-                                         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
                                          cs    = mkCountList ebgns
+                                         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
                                      in nub . zip3 ens cs $ ebgns
 
 
@@ -303,11 +303,11 @@ helperPutRemEitherCoins :: Id
                         -> (CoinsTbl, [Broadcast], [T.Text])
 helperPutRemEitherCoins i d por mnom fi ti te a@(ct, _, _) = \case
   Left  msgs -> a & _2 <>~ [ (msg, [i]) | msg <- msgs ]
-  Right c | (fc, tc)      <- over both (ct !) (fi, ti)
-          , ct'           <- ct & at fi ?~ fc <> negateCoins c
-                                & at ti ?~ tc <> c
-          , (bs, logMsgs) <- mkPutRemCoinsDescs i d por mnom c te
-          -> a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
+  Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
+                    ct'           = ct & at fi ?~ fc <> negateCoins c
+                                       & at ti ?~ tc <> c
+                    (bs, logMsgs) = mkPutRemCoinsDescs i d por mnom c te
+                in a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
