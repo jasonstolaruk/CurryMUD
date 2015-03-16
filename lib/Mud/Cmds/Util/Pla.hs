@@ -202,12 +202,11 @@ helperGetDropEitherCoins :: Id
                          -> Either [T.Text] Coins
                          -> (CoinsTbl, [Broadcast], [T.Text])
 helperGetDropEitherCoins i d god fi ti a@(ct, _, _) = \case
-  Left  msgs -> a & _2 <>~ [ (msg, [i]) | msg <- msgs ]
-  Right c | (fc, tc)      <- over both (ct !) (fi, ti)
-          , ct'           <- ct & at fi ?~ fc <> negateCoins c
-                                & at ti ?~ tc <> c
-          , (bs, logMsgs) <- mkGetDropCoinsDesc i d god c
-          -> a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
+  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs) -- TODO: OK? Was "[ (msg, [i]) | msg <- msgs ]".
+  Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
+                    ct'           = ct & at fi ?~ fc <> negateCoins c & at ti ?~ tc <> c
+                    (bs, logMsgs) = mkGetDropCoinsDesc i d god c
+                in a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
