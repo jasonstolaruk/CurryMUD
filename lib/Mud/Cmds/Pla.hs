@@ -671,11 +671,11 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedB
                            in a' & _2 <>~ mkNTBroadcast i msg
                       else a' & _1 .~ pt' & _2 <>~ cbs & _3 <>~ [logMsg]
           _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower (getSing targetId ms) <> "."
-                        b   = NonTargetBroadcast (nlnl msg, [i])
+                        b   = mkNTBroadcast i . nlnl $ msg
                     in over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ]) -- TODO: OK? Was "concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]"...
     helperIntroEitherCoins a (Right _   ) =
-        first (`appendIfUnique` NonTargetBroadcast (nlnl "You can't introduce yourself to a coin.", [i])) a
+        first (`appendIfUnique` mkNTBroadcast i (nlnl "You can't introduce yourself to a coin.")) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
 intro p = patternMatchFail "intro" [ showText p ]
@@ -1516,7 +1516,7 @@ say p@(WithArgs i mq cols args@(a:_))
                    | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
         sayToHelper mt mqt pcTbl plaTbl d targetId targetDesig (frontAdv, rearAdv, msg) =
             let toSelfMsg      = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                toSelfBrdcst   = (nlnl toSelfMsg, [i])
+                toSelfBrdcst   = head . mkBroadcast i . nlnl $ toSelfMsg
                 toTargetMsg    = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
                 toTargetBrdcst = (nlnl toTargetMsg, [targetId])
                 toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
@@ -1538,7 +1538,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 (plaTbl', fms) = firstMobSay i plaTbl
             in do
                 writeTVar (md^.plaTblTVar) plaTbl'
-                bcastSTM mt mqt pcTbl plaTbl [ (nlnl toSelfMsg <> fms, [i]), toOthersBrdcst ]
+                bcastSTM mt mqt pcTbl plaTbl [ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBrdcst ]
                 return . Just $ [ toSelfMsg ]
     sayToSTM _ ma msg             = patternMatchFail "say sayToSTM" [ showText ma, msg ]
     formatMsg                     = dblQuote . capitalizeMsg . punctuateMsg
@@ -1554,7 +1554,7 @@ say p@(WithArgs i mq cols args@(a:_))
             (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
             msg             = formatMsg rest
             toSelfMsg       = T.concat [ "You say", adverb, ", ", msg ]
-            toSelfBrdcst    = (nlnl toSelfMsg, [i])
+            toSelfBrdcst    = mkBroadcast i . nlnl $ toSelfMsg
             toOthersMsg     = T.concat [ serialize d, " says", adverb, ", ", msg ]
             toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
         in do

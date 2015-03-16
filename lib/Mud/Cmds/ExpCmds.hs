@@ -679,22 +679,15 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
-    helper toSelf toOthers = ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, _, _, _, _)             = mkCapStdDesig i et it mt pcTbl tt
-            toSelfBrdcst                = (nlnl toSelf, [i])
+    helper toSelf toOthers =
+        let d                           = mkStdDesig i ms DoCap
+            toSelfBrdcst                = head . mkBroadcast i . nlnl $ toSelf
             serialized                  = mkSerializedDesig d toOthers
-            (heShe, hisHer, himHerself) = mkPros i mt
+            (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             toOthers'                   = replace substitutions toOthers
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBrdcst              = (nlnl toOthers', i `delete` pcIds d)
         in bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut ecn i [toSelf]
-    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar)
 expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_))  = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
                                                                               \command cannot be used with a target."
 expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
@@ -732,7 +725,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                           logPlaOut ecn i [toSelf']
                   mkBindings targetTxt =
                       let toSelf'        = replace [("@", targetTxt)] toSelf
-                          toSelfBrdcst   = (nlnl toSelf', [i])
+                          toSelfBrdcst   = head . mkBroadcast i . nlnl $ toSelf'
                           serialized     = mkSerializedDesig d toOthers
                           (_, hisHer, _) = mkPros i mt
                           toOthers'      = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
@@ -756,12 +749,11 @@ expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
 
 
 mkSerializedDesig :: PCDesig -> T.Text -> T.Text
-mkSerializedDesig d toOthers | T.head toOthers == '%' = serialize d
-                             | otherwise              = serialize d { isCap = False }
+mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { isCap = False })
 
 
-mkPros :: Id -> MobTbl -> (T.Text, T.Text, T.Text)
-mkPros i mt = let s = (mt ! i)^.sex in (mkThrPerPro s, mkPossPro s, mkReflexPro s)
+mkPros :: Sex -> (T.Text, T.Text, T.Text)
+mkPros sexy = over each (sexy |$|) (mkThrPerPro, mkPossPro, mkReflexPro)
 
 
 replace :: [(T.Text, T.Text)] -> T.Text -> T.Text

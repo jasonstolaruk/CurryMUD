@@ -297,7 +297,7 @@ helperPutRemEitherCoins :: Id
                         -> Either [T.Text] Coins
                         -> (CoinsTbl, [Broadcast], [T.Text])
 helperPutRemEitherCoins i d por mnom fi ti te a@(ct, _, _) = \case
-  Left  msgs -> a & _2 <>~ [ (msg, [i]) | msg <- msgs ]
+  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs) -- TODO: OK? Was "[ (msg, [i]) | msg <- msgs ]".
   Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
                     ct'           = ct & at fi ?~ fc <> negateCoins c
                                        & at ti ?~ tc <> c
@@ -682,7 +682,7 @@ moveReadiedItem :: Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 moveReadiedItem i a@(et, it, _, _) em s targetId (msg, b) = let et' = et & at i ?~ (em & at s ?~ targetId)
                                                                 it' = it & at i ?~ (targetId `delete` (it ! i))
-                                                                bs  = (msg, [i]) : [b]
+                                                                bs  = mkBroadcast i msg ++ [b]
                                                             in a & _1 .~ et' & _2 .~ it' & _3 <>~ bs & _4 <>~ [msg]
 
 
