@@ -31,7 +31,6 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkInvCoinsDesc
                          , mkMaybeNthOfM
                          , mkPossPro
-                         , mkPutRemBindings
                          , mkPutRemCoinsDescs
                          , mkPutRemInvDesc
                          , mkReadyMsgs
@@ -66,25 +65,21 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>))
 import Control.Arrow ((***))
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TVar (readTVar)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, over, to)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
-import Data.List ((\\), delete, elemIndex, find, intercalate, nub, sort)
+import Data.List ((\\), delete, elemIndex, find, intercalate, nub)
 import Data.Maybe (catMaybes, fromJust, isNothing)
 import Data.Monoid ((<>), Sum(..), mempty)
-import System.Directory (doesFileExist)
 import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile, appendFile)
+import qualified Data.Text.IO as T (appendFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -686,7 +681,7 @@ moveReadiedItem :: Id
                 -> (T.Text, Broadcast)
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 moveReadiedItem i a@(et, it, _, _) em s targetId (msg, b) = let et' = et & at i ?~ (em & at s ?~ targetId)
-                                                                it' = it & at i ?~ (targetId `delete` it ! i)
+                                                                it' = it & at i ?~ (targetId `delete` (it ! i))
                                                                 bs  = (msg, [i]) : [b]
                                                             in a & _1 .~ et' & _2 .~ it' & _3 <>~ bs & _4 <>~ [msg]
 
@@ -714,7 +709,14 @@ resolvePCInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text I
 resolvePCInvCoins i ms = resolveHelper i ms procGecrMisPCInv procReconciledCoinsPCInv
 
 
--- TODO: Sig.
+resolveHelper :: Id
+              -> MudState
+              -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
+              -> (ReconciledCoins -> Either [T.Text] Coins)
+              -> Args
+              -> Inv
+              -> Coins
+              -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms as is c
                                , eiss               <- zipWith (curry f) gecrs miss
                                , ecs                <- map g rcs = (eiss, ecs)
