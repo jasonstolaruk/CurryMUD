@@ -7,7 +7,10 @@ import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPlaOut)
@@ -17,6 +20,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (readTVar)
+import Control.Lens (each, over)
 import Control.Lens.Operators ((^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -679,15 +683,15 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
-    helper toSelf toOthers =
-        let d                           = mkStdDesig i ms DoCap
-            toSelfBrdcst                = head . mkBroadcast i . nlnl $ toSelf
+    helper toSelf toOthers = getState >>= \ms ->
+        let toSelfBroadcast             = mkBroadcast i . nlnl $ toSelf
+            d                           = mkStdDesig i ms DoCap
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
-            toOthers'                   = replace substitutions toOthers
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-            toOthersBrdcst              = (nlnl toOthers', i `delete` pcIds d)
-        in bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut ecn i [toSelf]
+            toOthers'                   = replace substitutions toOthers
+            toOthersBroadcast           = mkBroadcast (i `delete` pcIds d) . nlnl $ toOthers'
+        in bcast (toOthersBroadcast : toSelfBroadcast) >> logPlaOut ecn i [toSelf]
 expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_))  = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
                                                                               \command cannot be used with a target."
 expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
