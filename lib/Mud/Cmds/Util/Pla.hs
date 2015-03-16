@@ -685,10 +685,10 @@ moveReadiedItem :: Id
                 -> Id
                 -> (T.Text, Broadcast)
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-moveReadiedItem i a@(et, it, _, _) em s ei (msg, b) = let et' = et & at i ?~ (em & at s ?~ ei)
-                                                          it' = it & at i ?~ filter (/= ei) (it ! i)
-                                                          bs  = mkBroadcast i msg ++ [b]
-                                                      in a & _1 .~ et' & _2 .~ it' & _3 <>~ bs & _4 <>~ [msg]
+moveReadiedItem i a@(et, it, _, _) em s targetId (msg, b) = let et' = et & at i ?~ (em & at s ?~ targetId)
+                                                                it' = it & at i ?~ (targetId `delete` it ! i)
+                                                                bs  = (msg, [i]) : [b]
+                                                            in a & _1 .~ et' & _2 .~ it' & _3 <>~ bs & _4 <>~ [msg]
 
 
 -----
