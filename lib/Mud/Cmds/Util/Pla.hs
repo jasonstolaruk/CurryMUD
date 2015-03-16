@@ -560,7 +560,7 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
         in map helper . zip3 slotNames sings . styleAbbrevs DoBracket $ ens
       where
         helper (T.breakOn " finger" -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, s, " ", styled ]
-    mkDescsOther = helper [ (pp slot, getSing ei ms) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
+    mkDescsOther = map helper [ (pp slot, getSing ei ms) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
       where
         helper (T.breakOn " finger" -> (slotName, _), s) = parensPad 15 slotName <> s
     none = wrapUnlines cols $ if
@@ -619,9 +619,9 @@ type InvWithCon = Inv
 
 
 mkMaybeNthOfM :: MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM ms icir targetId targetSing invWithCon = guard icir >> helper
+mkMaybeNthOfM ms icir targetId targetSing invWithCon = guard icir >> return helper
   where
-    helper  = ((succ <$> elemIndex targetId) *** length) . dup $ matches
+    helper  = (succ . fromJust . elemIndex targetId *** length) . dup $ matches
     matches = filter ((== targetSing) . flip getSing ms) invWithCon
 
 
