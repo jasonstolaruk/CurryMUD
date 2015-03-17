@@ -1273,18 +1273,16 @@ getAvailWpnSlot mt i em | (view hand -> h@(otherHand -> oh)) <- mt ! i =
                                  _     -> patternMatchFail "getAvailWpnSlot getSlotForHand" [ showText h ]
 
 
-getDesigWpnSlot :: EntTbl -> Ent -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigWpnSlot et (views sing aOrAn -> s) em rol
-  | isRingRol rol = Left $ "You can't wield " <> s <> " with your finger!"
-  | otherwise     = maybe (Right desigSlot)
-                          (\i -> let e = et ! i in Left . sorry $ e)
-                          (em^.at desigSlot)
+getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigWpnSlot ms wpnSing em rol
+  | isRingRol rol = Left $ "You can't wield " <> aOrAn wpnSing <> " with your finger!"
+  | otherwise     = maybe (Right desigSlot) (Left . sorry) $ em^.at desigSlot
   where
-    sorry (views sing aOrAn -> wpnS) = T.concat [ "You're already wielding "
-                                                , wpnS
-                                                , " with your "
-                                                , pp desigSlot
-                                                , "." ]
+    sorry i = let s = getSing i ms in T.concat [ "You're already wielding "
+                                               , aOrAn s
+                                               , " with your "
+                                               , pp desigSlot
+                                               , "." ]
     desigSlot = case rol of R -> RHandS
                             L -> LHandS
                             _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
