@@ -876,20 +876,20 @@ putAction (Lower i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
     helper ms =
-        let d                        = mkStdDesig      i ms DoCap
-            pcInvCoins               = getInvCoins     i ms
-            rmInvCoins               = getPCRmInvCoins i ms
-            conName                  = last as
-            (init -> argsWithoutCon) = case as of
-                                         [_, _] -> as
-                                         _      -> (++ [conName]) . nub . init $ as
+        let d                                  = mkStdDesig      i ms DoCap
+            pcInvCoins                         = getInvCoins     i ms
+            (first (i `delete`) -> rmInvCoins) = getPCRmInvCoins i ms
+            conName                            = last as
+            (init -> argsWithoutCon)           = case as of
+                                                   [_, _] -> as
+                                                   _      -> (++ [conName]) . nub . init $ as
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ pcInvCoins
           then if T.head conName == rmChar && conName /= T.singleton rmChar
-            then if not . null $ ris
-              then shufflePut i mq cols md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
-              else (mkBroadcast i "You don't see any containers here.", [])
-            else shufflePut i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
-          else (mkBroadcast i dudeYourHandsAreEmpty, [])
+            then if not . null . fst $ rmInvCoins
+              then shufflePut i ms d conName True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
+              else (ms, (mkBroadcast i "You don't see any containers here.", []))
+            else shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
+          else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -921,7 +921,7 @@ shufflePut i ms d conName icir as invCoinsWithCon pcInvCoins f =
                    ecs                 = map procReconciledCoinsPCInv rcs
                    mnom                = mkMaybeNthOfM ms icir conId conSing . fst $ invCoinsWithCon
                    (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
-                                                (ms^.invTbl, [], [])
+                                                (ms^.invTbl,   [], [])
                                                 eiss
                    (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i    d Put mnom i conId conSing)
                                                 (ms^.coinsTbl, bs, logMsgs)
