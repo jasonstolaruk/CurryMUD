@@ -945,48 +945,45 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 
 handleEgress :: Id -> MudStack ()
 handleEgress i = helper |$| modifyState >=> \(s, bs, logMsgs) -> do
+    closePlaLog i
+    bcastNl bs -- TODO: Newlines ok?
+    bcastAdmins $ s <> " has left the game."
     forM_ logMsgs $ uncurry (logPla "handleEgress")
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
-    closePlaLog i
-    bcastAdmins $ s <> " has left the game."
   where
     helper ms =
-        let ri = (pcTbl ! i)^.rmId
-        unless (ri == iWelcome) $ let (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
-                                      pis             = i `delete` pcIds d
-                                  in bcastSTM mt mqt pcTbl plaTbl [(nlnl $ serialize d <> " has left the game.", pis)]
-        let ris                    = i `delete` (it ! ri)
-            s                      = (et ! i)^.sing
-            (plaTbl', bs, logMsgs) = peepHelper plaTbl s
-        bcastNlSTM mt mqt pcTbl plaTbl' bs
-
-        ms & coinsTbl   .at i .~ Nothing
-           & entTbl     .at i .~ Nothing
-           & eqTbl      .at i .~ Nothing
-           & invTbl     .at i .~ Nothing
-           & mobTbl     .at i .~ Nothing
-           & msgQueueTbl.at i .~ Nothing
-           & pcTbl      .at i .~ Nothing
-           & plaTbl     .at i .~ Nothing
-           & typeTbl    .at i .~ Nothing
-
-        (ms', (s, bs, logMsgs))
-
+        let ri                  = getRmId i ms
+            ris                 = i `delete` getInv ri ms
+            d                   = mkStdDesig i ms DoCap
+            bs                  = ri /= iWelcome |?| [(nlnl $ serialize d <> " has left the game.", i `delete` pcIds d)]
+            s                   = fromJust . stdPCEntSing $ d
+            (ms', bs', logMsgs) = peepHelper ms s
+            ms''                = ms' & coinsTbl   .at i  .~ Nothing
+                                      & entTbl     .at i  .~ Nothing
+                                      & eqTbl      .at i  .~ Nothing
+                                      & invTbl     .at i  .~ Nothing
+                                      & invTbl     .at ri .~ ris
+                                      & mobTbl     .at i  .~ Nothing
+                                      & msgQueueTbl.at i  .~ Nothing
+                                      & pcTbl      .at i  .~ Nothing
+                                      & plaTbl     .at i  .~ Nothing
+                                      & typeTbl    .at i  .~ Nothing
+        in (ms'', (s, bs ++ bs', logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
-            pt        = stopPeeping     (ms^.plaTbl) peepingIds
-            pt'       = stopBeingPeeped pt           peeperIds
-            bs        = [ (T.concat [ "You are no longer peeping "
-                                    , s
-                                    , " "
-                                    , parensQuote $ s <> " has disconnected"
-                                    , "." ], [peeperId]) | peeperId <- peeperIds ]
-            logMsgs   = [ (peeperId, T.concat [ "no longer peeping "
-                                              , s
-                                              , " "
-                                              , parensQuote $ s <> " has disconnected"
-                                              , "." ]) | peeperId <- peeperIds ]
-        in (pt', bs, logMsgs)
+            pt      = stopPeeping     (ms^.plaTbl) peepingIds
+            pt'     = stopBeingPeeped pt           peeperIds
+            bs      = [ (T.concat [ "You are no longer peeping "
+                                  , s
+                                  , " "
+                                  , parensQuote $ s <> " has disconnected"
+                                  , "." ], [peeperId]) | peeperId <- peeperIds ]
+            logMsgs = [ (peeperId, T.concat [ "no longer peeping "
+                                            , s
+                                            , " "
+                                            , parensQuote $ s <> " has disconnected"
+                                            , "." ]) | peeperId <- peeperIds ]
+        in (ms & plaTbl .~ pt', bs, logMsgs)
       where
         stopPeeping pt peepingIds =
             let helper peepedId ptAcc = let thePeeped = ptAcc ! peepedId
@@ -1002,11 +999,12 @@ handleEgress i = helper |$| modifyState >=> \(s, bs, logMsgs) -> do
 
 
 quitCan'tAbbrev :: Action
-quitCan'tAbbrev (NoArgs _ mq cols) | msg <- T.concat [ "The "
-                                                     , dblQuote "quit"
-                                                     , " command may not be abbreviated. Type "
-                                                     , dblQuote "quit"
-                                                     , " with no arguments to quit the game." ] = wrapSend mq cols msg
+quitCan'tAbbrev (NoArgs _ mq cols) =
+    wrapSend mq cols . T.concat $ [ "The "
+                                  , dblQuote "quit"
+                                  , " command may not be abbreviated. Type "
+                                  , dblQuote "quit"
+                                  , " with no arguments to quit CurryMUD." ]
 quitCan'tAbbrev p = withoutArgs quitCan'tAbbrev p
 
 
