@@ -1175,13 +1175,12 @@ rBraceletSlots = [ BraceletR1S .. BraceletR3S ]
 lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
 
 
-sorryFullClothSlots :: EntTbl -> Cloth -> EqMap -> T.Text
-sorryFullClothSlots et c@(pp -> c') em
-  | c `elem` [ Earring .. Ring ]               = "You can't wear any more " <> c'       <> "s."
-  | c `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn c' <> "."
-  | otherwise = let i = em^.at (clothToSlot c).to fromJust
-                    e = et ! i
-                in "You're already wearing " <> aOrAn (e^.sing) <> "."
+sorryFullClothSlots :: MudState -> Cloth -> EqMap -> T.Text
+sorryFullClothSlots ms cloth@(pp -> cloth') em
+  | cloth `elem` [ Earring .. Ring ]               = "You can't wear any more " <> cloth'       <> "s."
+  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn cloth' <> "."
+  | otherwise = let i = em ! clothToSlot cloth
+                in "You're already wearing " <> aOrAn (getSing i ms) <> "."
 
 
 getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
