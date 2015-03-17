@@ -45,6 +45,10 @@ getEqMap :: Id -> MudState -> EqMap
 getEqMap i = views eqTbl (! i)
 
 
+getHand :: Id -> MudState -> Hand
+getHand i ms = getMob i ms ^.hand
+
+
 getIntroduced :: Id -> MudState -> [Sing]
 getIntroduced i ms = getPC i ms ^.introduced
 

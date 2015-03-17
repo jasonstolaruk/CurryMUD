@@ -1262,11 +1262,9 @@ readyWpn i entTbl mt wt d mrol a@(eqTbl, _, _, _) ei e@(view sing -> s) =
     otherPCIds = i `delete` pcIds d
 
 
-getAvailWpnSlot :: MobTbl -> Id -> EqMap -> Either T.Text Slot
-getAvailWpnSlot mt i em | (view hand -> h@(otherHand -> oh)) <- mt ! i =
-    maybe (Left "You're already wielding two weapons.")
-          Right
-          (findAvailSlot em . map getSlotForHand $ [ h, oh ])
+getAvailWpnSlot :: MudState -> Id -> EqMap -> Either T.Text Slot
+getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
+    maybe (Left "You're already wielding two weapons.") Right . findAvailSlot em . map getSlotForHand $ [ h, oh ]
   where
     getSlotForHand h = case h of RHand -> RHandS
                                  LHand -> LHandS
