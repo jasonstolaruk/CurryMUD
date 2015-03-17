@@ -925,8 +925,8 @@ shufflePut i mq cols md ct et it mt mqt pcTbl plaTbl tt d conName icir as is c p
     in if null conMiss && (not . null $ conRcs)
       then (mkBroadcast i "You can't put something inside a coin.", [])
       else case f . head . zip conGecrs $ conMiss of
-        Left  msg -> (mkBroadcast i . nl $ msg, []) -- TODO: Newlines ok?
-        Right [conId] | conSing <- getSing conId ms -> if getType conId ms /= ConType
+        Left  msg     -> (mkBroadcast i . nl $ msg, []) -- TODO: Newlines ok?
+        Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
           then (mkBroadcast i $ theOnLowerCap (conEnt^.sing) <> " isn't a container.", [])
           else let (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) pcInvCoins
                    eiss                = zipWith (curry procGecrMisPCInv) gecrs miss
