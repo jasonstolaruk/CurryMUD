@@ -1228,37 +1228,43 @@ sorryFullClothSlotsOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any 
 
 
 readyWpn :: Id
-         -> EntTbl
-         -> MobTbl
-         -> WpnTbl
+         -> MudState
          -> PCDesig
          -> Maybe RightOrLeft
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
          -> Id
-         -> Ent
+         -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyWpn i entTbl mt wt d mrol a@(eqTbl, _, _, _) ei e@(view sing -> s) =
-    let em  = eqTbl ! i
-        w   = wt    ! ei
-        sub = w^.wpnSub
+readyWpn i ms d mrol a@(eqTbl, _, _, _) wpnId wpnSing =
+    let em  = getEqMap ms i
+        wpn = getWpn   ms wpnId
+        sub = wpn^.wpnSub
     in if not . isSlotAvail em $ BothHandsS
       then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _3 <>~ b
-      else case maybe (getAvailWpnSlot mt i em) (getDesigWpnSlot entTbl e em) mrol of
+      else case maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) mrol of
         Left  (mkBroadcast i -> b) -> a & _3 <>~ b
         Right slot  -> case sub of
-          OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", s, " with your ", pp slot, "." ]
-                                       , ( T.concat [ serialize d, " wields ", aOrAn s, " with ", p, " ", pp slot, "." ]
+          OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", wpnSing, " with your ", pp slot, "." ]
+                                       , ( T.concat [ serialize d
+                                                    , " wields "
+                                                    , aOrAn wpnSing
+                                                    , " with "
+                                                    , poss
+                                                    , " "
+                                                    , pp slot
+                                                    , "." ]
                                          , otherPCIds ) )
-                       in moveReadiedItem i a em slot ei readyMsgs
+                       in moveReadiedItem i a em slot wpnId readyMsgs
           TwoHanded
             | all (isSlotAvail em) [ RHandS, LHandS ] ->
-                let readyMsgs = ( "You wield the " <> s <> " with both hands."
-                                , ( T.concat [ serialize d, " wields ", aOrAn s, " with both hands." ], otherPCIds ) )
-                in moveReadiedItem i a em BothHandsS ei readyMsgs
-            | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> s <> "."
+                let readyMsgs = ( "You wield the " <> wpnSing <> " with both hands."
+                                , ( T.concat [ serialize d, " wields ", aOrAn wpnSing, " with both hands." ]
+                                  , otherPCIds ) )
+                in moveReadiedItem i a em BothHandsS wpnId readyMsgs
+            | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> wpnSing <> "."
                            in a & _3 <>~ b
   where
-    p          = mkPossPro $ (mt ! i)^.sex
+    poss       = mkPossPro . getSex ms $ i
     otherPCIds = i `delete` pcIds d
 
 

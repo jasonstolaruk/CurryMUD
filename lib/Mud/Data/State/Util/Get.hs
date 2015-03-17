@@ -143,3 +143,11 @@ getSing i ms = getEnt i ms ^.sing
 
 getType :: Id -> MudState -> Type
 getType i = views typeTbl (! i)
+
+
+getWpn :: Id -> MudState -> Wpn
+getWpn i = views wpnTbl (! i)
+
+
+getWpnSub :: Id -> MudState -> WpnSub
+getWpnSub i ms = getWpn i ms ^.wpnSub
