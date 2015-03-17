@@ -1294,17 +1294,15 @@ getDesigWpnSlot et (views sing aOrAn -> s) em rol
 
 
 readyArm :: Id
-         -> ArmTbl
-         -> EntTbl
          -> PCDesig
          -> Maybe RightOrLeft
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
          -> Id
          -> Ent
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyArm i armTbl entTbl d mrol a@(eqTbl, _, _, _) ei (view sing -> s) =
-    let em                   = eqTbl  ! i
-        (view armSub -> sub) = armTbl ! ei
+readyArm i ms d mrol a@(eqTbl, _, _, _) targetId targetSing =
+    let em  = getEqMap  i        ms
+        sub = getArmSub targetId ms
     in case maybe (getAvailArmSlot entTbl sub em) sorryCan'tWearThere mrol of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a em slot ei . mkReadyArmMsgs $ sub
@@ -1318,13 +1316,10 @@ readyArm i armTbl entTbl d mrol a@(eqTbl, _, _, _) ei (view sing -> s) =
       _      -> donMsgs                       i d s
 
 
-getAvailArmSlot :: EntTbl -> ArmSub -> EqMap -> Either T.Text Slot
-getAvailArmSlot et sub em = procMaybe . maybeSingleSlot em . armSubToSlot $ sub
+getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
+getAvailArmSlot ms (armSubToSlot -> armSlot) em = maybe (Left sorryFullArmSlot) Right . maybeSingleSlot em $ armSlot
   where
-    procMaybe        = maybe (Left sorryFullArmSlot) Right
-    sorryFullArmSlot = let i = em^.at (armSubToSlot sub).to fromJust
-                           e = et ! i
-                       in "You're already wearing " <> aOrAn (e^.sing) <> "."
+    sorryFullArmSlot | i <- em^.at armSlot.to fromJust, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
 
 
 -----

@@ -17,6 +17,14 @@ getAdminIds :: MudState -> Inv
 getAdminIds (view plaTbl -> pt) = [ i | i <- IM.keys pt, getPlaFlag IsAdmin $ pt ! i ]
 
 
+getArm :: Id -> MudState -> Arm
+getArm i = views armTbl (! i)
+
+
+getArmSub :: Id -> MudState -> ArmSub
+getArmSub i ms = getArm i ms ^.armSub
+
+
 getCoins :: Id -> MudState -> Coins
 getCoins i = views coinsTbl (! i)
 
