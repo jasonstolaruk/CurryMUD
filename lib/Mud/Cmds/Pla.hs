@@ -1184,20 +1184,20 @@ sorryFullClothSlots et c@(pp -> c') em
                 in "You're already wearing " <> aOrAn (e^.sing) <> "."
 
 
-getDesigClothSlot :: EntTbl -> Ent -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
-getDesigClothSlot et (view sing -> s) c em rol
-  | c `elem` [ NoseRing, Necklace ] ++ [ Shirt .. Cloak ] = Left sorryCan'tWearThere
-  | isRingRol rol, c /= Ring                              = Left sorryCan'tWearThere
-  | c == Ring, not . isRingRol $ rol                      = Left ringHelp
-  | otherwise                                             = case c of
-    Earring  -> maybe (Left  sorryEarring)  Right (findSlotFromList rEarringSlots  lEarringSlots)
-    Bracelet -> maybe (Left  sorryBracelet) Right (findSlotFromList rBraceletSlots lBraceletSlots)
+getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigClothSlot ms clothSing cloth em rol
+  | cloth `elem` [ NoseRing, Necklace ] ++ [ Shirt .. Cloak ] = Left sorryCan'tWearThere
+  | isRingRol rol, cloth /= Ring                              = Left sorryCan'tWearThere
+  | cloth == Ring, not . isRingRol $ rol                      = Left ringHelp
+  | otherwise = case cloth of
+    Earring  -> maybe (Left sorryEarring ) Right (findSlotFromList rEarringSlots  lEarringSlots )
+    Bracelet -> maybe (Left sorryBracelet) Right (findSlotFromList rBraceletSlots lBraceletSlots)
     Ring     -> maybe (Right slotFromRol)
-                      (\i -> let e = et ! i in Left . sorryRing slotFromRol $ e)
+                      (Left . sorryRing slotFromRol)
                       (em^.at slotFromRol)
     _        -> patternMatchFail "getDesigClothSlot" [ showText c ]
   where
-    sorryCan'tWearThere    = T.concat [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
+    sorryCan'tWearThere    = T.concat [ "You can't wear ", aOrAn clothSing, " on your ", pp rol, "." ]
     findSlotFromList rs ls = findAvailSlot em $ case rol of
       R -> rs
       L -> ls
@@ -1206,14 +1206,14 @@ getDesigClothSlot et (view sing -> s) c em rol
       R -> rs
       L -> ls
       _ -> patternMatchFail "getDesigClothSlot getSlotFromList"  [ showText rol ]
-    sorryEarring  = sorryFullClothSlotsOneSide c . getSlotFromList rEarringSlots  $ lEarringSlots
-    sorryBracelet = sorryFullClothSlotsOneSide c . getSlotFromList rBraceletSlots $ lBraceletSlots
+    sorryEarring  = sorryFullClothSlotsOneSide cloth . getSlotFromList rEarringSlots  $ lEarringSlots
+    sorryBracelet = sorryFullClothSlotsOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
     slotFromRol   = fromRol rol :: Slot
-    sorryRing (pp -> slot) (view sing -> ringS) = T.concat [ "You're already wearing "
-                                                           , aOrAn ringS
-                                                           , " on your "
-                                                           , slot
-                                                           , "." ]
+    sorryRing (pp -> slot) i = T.concat [ "You're already wearing "
+                                        , aOrAn . getSing ms $ i
+                                        , " on your "
+                                        , slot
+                                        , "." ]
 
 
 sorryFullClothSlotsOneSide :: Cloth -> Slot -> T.Text
