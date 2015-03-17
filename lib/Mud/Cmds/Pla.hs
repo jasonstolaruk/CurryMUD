@@ -1294,32 +1294,33 @@ getDesigWpnSlot et (views sing aOrAn -> s) em rol
 
 
 readyArm :: Id
+         -> MudState
          -> PCDesig
          -> Maybe RightOrLeft
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
          -> Id
-         -> Ent
+         -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyArm i ms d mrol a@(eqTbl, _, _, _) targetId targetSing =
-    let em  = getEqMap  i        ms
-        sub = getArmSub targetId ms
-    in case maybe (getAvailArmSlot entTbl sub em) sorryCan'tWearThere mrol of
+readyArm i ms d mrol a@(et, _, _, _) armId armSing =
+    let em  = et ! i
+        sub = getArmSub armId ms
+    in case maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere mrol of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
-      Right slot                 -> moveReadiedItem i a em slot ei . mkReadyArmMsgs $ sub
+      Right slot                 -> moveReadiedItem i a em slot armId . mkReadyArmMsgs $ sub
   where
-    sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
+    sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear ", aOrAn armSing, " on your ", pp rol, "." ]
     mkReadyArmMsgs = \case
-      Head   -> putOnMsgs                     i d s
-      Hands  -> putOnMsgs                     i d s
-      Feet   -> putOnMsgs                     i d s
-      Shield -> mkReadyMsgs "ready" "readies" i d s
-      _      -> donMsgs                       i d s
+      Head   -> putOnMsgs                     i d armSing
+      Hands  -> putOnMsgs                     i d armSing
+      Feet   -> putOnMsgs                     i d armSing
+      Shield -> mkReadyMsgs "ready" "readies" i d armSing
+      _      -> donMsgs                       i d armSing
 
 
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
-getAvailArmSlot ms (armSubToSlot -> armSlot) em = maybe (Left sorryFullArmSlot) Right . maybeSingleSlot em $ armSlot
+getAvailArmSlot ms (armSubToSlot -> slot) em = maybe (Left sorryFullArmSlot) Right . maybeSingleSlot em $ slot
   where
-    sorryFullArmSlot | i <- em^.at armSlot.to fromJust, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
+    sorryFullArmSlot | i <- em^.at slot.to fromJust, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
 
 
 -----
