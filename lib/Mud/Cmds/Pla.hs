@@ -872,25 +872,24 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dblQuote $ "put " <> a <> " sack"
                       , dfltColor
                       , "." ]
-putAction (Lower i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
-    unless (null logMsgs) . logPlaOut "put" i $ logMsgs
+putAction (Lower i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+    bcast bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
-    helperSTM md = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                             <*> readTVar (md^.entTblTVar)
-                             <*> readTVar (md^.invTblTVar)
-                             <*> readTVar (md^.mobTblTVar)
-                             <*> readTVar (md^.msgQueueTblTVar)
-                             <*> readTVar (md^.pcTblTVar)
-                             <*> readTVar (md^.plaTblTVar)
-                             <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, ris, rc, pis, pc, cn, argsWithoutCon) = mkPutRemBindings i ct et it mt pcTbl tt as
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (pis, pc)
-          then if T.head cn == rmChar && cn /= T.singleton rmChar
+    helper ms =
+        let d                        = mkStdDesig      i ms DoCap
+            pcInvCoins               = getInvCoins     i ms
+            rmInvCoins               = getPCRmInvCoins i ms
+            conName                  = last as
+            (init -> argsWithoutCon) = case as of
+                                         [_, _] -> as
+                                         _      -> (++ [conName]) . nub . init $ as
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ pcInvCoins
+          then if T.head conName == rmChar && conName /= T.singleton rmChar
             then if not . null $ ris
-              then shufflePutSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
-              else wrapSendSTM mq cols "You don't see any containers here." >> return []
-            else shufflePutSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
-          else wrapSendSTM mq cols dudeYourHandsAreEmpty >> return []
+              then shufflePut i mq cols md ct et it mt mqt pcTbl plaTbl tt d (T.tail cn) True argsWithoutCon ris rc pis pc procGecrMisRm
+              else (mkBroadcast i "You don't see any containers here.", [])
+            else shufflePut i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn False argsWithoutCon pis pc pis pc procGecrMisPCInv
+          else (mkBroadcast i dudeYourHandsAreEmpty, [])
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -899,50 +898,52 @@ type PCInv        = Inv
 type PCCoins      = Coins
 
 
-shufflePutSTM :: Id
-              -> MsgQueue
-              -> Cols
-              -> MudData
-              -> CoinsTbl
-              -> EntTbl
-              -> InvTbl
-              -> MobTbl
-              -> MsgQueueTbl
-              -> PCTbl
-              -> PlaTbl
-              -> TypeTbl
-              -> PCDesig
-              -> ConName
-              -> IsConInRm
-              -> Args
-              -> InvWithCon
-              -> CoinsWithCon
-              -> PCInv
-              -> PCCoins
-              -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-              -> STM [T.Text]
-shufflePutSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c pis pc f =
-    let (conGecrs, conMiss, conRcs) = resolveEntCoinNames i et mt pcTbl [cn] is c
+shufflePut :: Id
+           -> MsgQueue
+           -> Cols
+           -> MudData
+           -> CoinsTbl
+           -> EntTbl
+           -> InvTbl
+           -> MobTbl
+           -> MsgQueueTbl
+           -> PCTbl
+           -> PlaTbl
+           -> TypeTbl
+           -> PCDesig
+           -> ConName
+           -> IsConInRm
+           -> Args
+           -> InvWithCon
+           -> CoinsWithCon
+           -> PCInv
+           -> PCCoins
+           -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
+           -> ([Broadcast], [T.Text])
+shufflePut i mq cols md ct et it mt mqt pcTbl plaTbl tt d conName icir as is c pis pc f =
+    let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms [conName]) rmInvCoins
     in if null conMiss && (not . null $ conRcs)
-      then wrapSendSTM mq cols "You can't put something inside a coin." >> return []
+      then (mkBroadcast i "You can't put something inside a coin.", [])
       else case f . head . zip conGecrs $ conMiss of
-        Left  (mkBroadcast i -> bc) -> bcastNlSTM mt mqt pcTbl plaTbl bc >> return []
-        Right [ci] | e <- et ! ci, typ <- tt ! ci -> if typ /= ConType
-          then wrapSendSTM mq cols (theOnLowerCap (e^.sing) <> " isn't a container.") >> return []
-          else let (gecrs, miss, rcs)   = resolveEntCoinNames i et mt pcTbl as pis pc
-                   eiss                 = zipWith (curry procGecrMisPCInv) gecrs miss
-                   ecs                  = map procReconciledCoinsPCInv rcs
-                   mnom                 = mkMaybeNthOfM icir et ci e is
-                   (it', bs,  logMsgs ) = foldl' (helperPutRemEitherInv i et mt pcTbl tt d Put mnom i ci e)
-                                                 (it, [], [])
-                                                 eiss
-                   (ct', bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i ci e) (ct, bs, logMsgs) ecs
+        Left  msg -> (mkBroadcast i . nl $ msg, []) -- TODO: Newlines ok?
+        Right [conId] | conSing <- getSing conId ms -> if getType conId ms /= ConType
+          then (mkBroadcast i $ theOnLowerCap (conEnt^.sing) <> " isn't a container.", [])
+          else let (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) pcInvCoins
+                   eiss                = zipWith (curry procGecrMisPCInv) gecrs miss
+                   ecs                 = map procReconciledCoinsPCInv rcs
+                   mnom                = mkMaybeNthOfM ms icir conId (conEnt^.sing) . snd $ rmInvCoins
+                   (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv i ms d Put mnom i conId conEnt)
+                                                (ms^.invTbl, [], [])
+                                                eiss
+                   (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Put mnom i conId conEnt)
+                                                (ms^.coinsTbl, bs, logMsgs)
+                                                ecs
                in do
-                   writeTVar (md^.coinsTblTVar) ct'
-                   writeTVar (md^.invTblTVar)   it'
+                   writeTVar (md^.coinsTblTVar) ct
+                   writeTVar (md^.invTblTVar)   it
                    bcastNlSTM mt mqt pcTbl plaTbl bs'
                    return logMsgs'
-        Right _ -> sendSTM mq "You can only put things into one container at a time." >> return []
+        Right _ -> (mkBroadcast i "You can only put things into one container at a time.", [])
 
 
 -----

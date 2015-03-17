@@ -283,7 +283,7 @@ mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms target
 
 
 type NthOfM = (Int, Int)
-type ToEnt  = Ent
+type ToSing = Sing
 
 
 helperPutRemEitherCoins :: Id
@@ -292,21 +292,21 @@ helperPutRemEitherCoins :: Id
                         -> Maybe NthOfM
                         -> FromId
                         -> ToId
-                        -> ToEnt
+                        -> ToSing
                         -> (CoinsTbl, [Broadcast], [T.Text])
                         -> Either [T.Text] Coins
                         -> (CoinsTbl, [Broadcast], [T.Text])
-helperPutRemEitherCoins i d por mnom fi ti te a@(ct, _, _) = \case
+helperPutRemEitherCoins i d por mnom fi ti ts a@(ct, _, _) = \case
   Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs) -- TODO: OK? Was "[ (msg, [i]) | msg <- msgs ]".
   Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
                     ct'           = ct & at fi ?~ fc <> negateCoins c
                                        & at ti ?~ tc <> c
-                    (bs, logMsgs) = mkPutRemCoinsDescs i d por mnom c te
+                    (bs, logMsgs) = mkPutRemCoinsDescs i d por mnom c ts
                 in a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
 
 
-mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescs i d por mnom c (view sing -> ts) | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> ([Broadcast], [T.Text])
+mkPutRemCoinsDescs i d por mnom c ts | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
     helper a cn | a == 1 =
         [ (T.concat [ "You "
@@ -385,25 +385,25 @@ helperPutRemEitherInv :: Id
                       -> Maybe NthOfM
                       -> FromId
                       -> ToId
-                      -> ToEnt
+                      -> ToSing
                       -> (InvTbl, [Broadcast], [T.Text])
                       -> Either T.Text Inv
                       -> (InvTbl, [Broadcast], [T.Text])
-helperPutRemEitherInv i ms d por mnom fi ti te a@(it, bs, _) = \case
+helperPutRemEitherInv i ms d por mnom fi ti ts a@(it, bs, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is -> let (is', bs')      = ti `elem` is ? (filter (/= ti) is, bs ++ sorryInsideSelf) :? (is, bs)
                   (fis, tis)      = over both (it !) (fi, ti)
                   it'             = it & at fi ?~ fis \\ is'
                                        & at ti ?~ sortInv ms (tis ++ is')
-                  (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' te
+                  (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' ts
               in null fis ? sorryEmpty :? (a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs)
   where
-    sorryInsideSelf = mkBroadcast i $ "You can't put the " <> te^.sing <> " inside itself."
+    sorryInsideSelf = mkBroadcast i $ "You can't put the " <> ts <> " inside itself."
     sorryEmpty      = a & _2 <>~ mkBroadcast i ("The " <> getSing fi ms <> " is empty.")
 
 
-mkPutRemInvDesc :: Id -> MudState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToEnt -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i ms d por mnom is (view sing -> ts) =
+mkPutRemInvDesc :: Id -> MudState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Broadcast], [T.Text])
+mkPutRemInvDesc i ms d por mnom is ts =
     let bs = concatMap helper . mkNameCountBothList i ms $ is in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
@@ -614,10 +614,10 @@ type InvWithCon = Inv
 
 
 mkMaybeNthOfM :: MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM ms icir targetId targetSing invWithCon = guard icir >> return helper
+mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
   where
-    helper  = (succ . fromJust . elemIndex targetId *** length) . dup $ matches
-    matches = filter ((== targetSing) . flip getSing ms) invWithCon
+    helper  = (succ . fromJust . elemIndex conId *** length) . dup $ matches
+    matches = filter ((== conSing) . flip getSing ms) invWithCon
 
 
 -----
