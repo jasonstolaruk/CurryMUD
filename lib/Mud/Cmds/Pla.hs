@@ -856,6 +856,7 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 -----
 
 
+-- TODO: Test extensively.
 putAction :: Action
 putAction p@AdviseNoArgs = advise p ["put"] advice
   where
@@ -884,11 +885,11 @@ putAction (Lower i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
                                                    [_, _] -> as
                                                    _      -> (++ [conName]) . nub . init $ as
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ pcInvCoins
-          then if T.head conName == rmChar && conName /= T.singleton rmChar
-            then if not . null . fst $ rmInvCoins
+          then case T.uncons conName of
+            Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
               then shufflePut i ms d conName True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
               else (ms, (mkBroadcast i "You don't see any containers here.", []))
-            else shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
+            _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
           else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 putAction p = patternMatchFail "putAction" [ showText p ]
 
@@ -936,25 +937,19 @@ shufflePut i ms d conName icir as invCoinsWithCon pcInvCoins f =
 
 
 quit :: Action
-quit (NoArgs' i mq)                        = (liftIO . atomically . writeTQueue mq $ Quit) >> logPlaExec "quit" i
+quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . atomically . writeTQueue mq $ Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
   where
     msg = "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
 
 
 handleEgress :: Id -> MudStack ()
-handleEgress i = ask >>= liftIO . atomically . helperSTM >>= \(s, logMsgs) -> do
+handleEgress i = helper |$| modifyState >=> \(s, logMsgs) -> do
     forM_ logMsgs $ uncurry (logPla "handleEgress")
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) -> do
+    helper ms =
         let ri = (pcTbl ! i)^.rmId
         unless (ri == iWelcome) $ let (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
                                       pis             = i `delete` pcIds d
