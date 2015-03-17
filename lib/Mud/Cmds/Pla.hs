@@ -944,10 +944,11 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 
 
 handleEgress :: Id -> MudStack ()
-handleEgress i = helper |$| modifyState >=> \(s, logMsgs) -> do
+handleEgress i = helper |$| modifyState >=> \(s, bs, logMsgs) -> do
     forM_ logMsgs $ uncurry (logPla "handleEgress")
     logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
     closePlaLog i
+    bcastAdmins $ s <> " has left the game."
   where
     helper ms =
         let ri = (pcTbl ! i)^.rmId
@@ -958,20 +959,23 @@ handleEgress i = helper |$| modifyState >=> \(s, logMsgs) -> do
             s                      = (et ! i)^.sing
             (plaTbl', bs, logMsgs) = peepHelper plaTbl s
         bcastNlSTM mt mqt pcTbl plaTbl' bs
-        bcastAdminsSTM mt mqt pcTbl plaTbl' $ s <> " has left the game."
-        modifyTVar (md^.coinsTblTVar)    $ at i .~ Nothing
-        modifyTVar (md^.entTblTVar)      $ at i .~ Nothing
-        modifyTVar (md^.eqTblTVar)       $ at i .~ Nothing
-        modifyTVar (md^.msgQueueTblTVar) $ at i .~ Nothing
-        modifyTVar (md^.pcTblTVar)       $ at i .~ Nothing
-        modifyTVar (md^.typeTblTVar)     $ at i .~ Nothing
-        writeTVar (md^.invTblTVar) $ it      & at i .~ Nothing & at ri ?~ ris
-        writeTVar (md^.plaTblTVar) $ plaTbl' & at i .~ Nothing
-        return (s, logMsgs)
-    peepHelper pt@((! i) -> p) s =
-        let pt'       = stopPeeping
-            peeperIds = p^.peepers
-            pt''      = stopBeingPeeped pt' peeperIds
+
+        ms & coinsTbl   .at i .~ Nothing
+           & entTbl     .at i .~ Nothing
+           & eqTbl      .at i .~ Nothing
+           & invTbl     .at i .~ Nothing
+           & mobTbl     .at i .~ Nothing
+           & msgQueueTbl.at i .~ Nothing
+           & pcTbl      .at i .~ Nothing
+           & plaTbl     .at i .~ Nothing
+           & typeTbl    .at i .~ Nothing
+
+        (ms', (s, bs, logMsgs))
+
+    peepHelper ms s =
+        let (peeperIds, peepingIds) = getPeepersPeeping i ms
+            pt        = stopPeeping     (ms^.plaTbl) peepingIds
+            pt'       = stopBeingPeeped pt           peeperIds
             bs        = [ (T.concat [ "You are no longer peeping "
                                     , s
                                     , " "
@@ -982,16 +986,16 @@ handleEgress i = helper |$| modifyState >=> \(s, logMsgs) -> do
                                               , " "
                                               , parensQuote $ s <> " has disconnected"
                                               , "." ]) | peeperId <- peeperIds ]
-        in (pt'', bs, logMsgs)
+        in (pt', bs, logMsgs)
       where
-        stopPeeping                   =
+        stopPeeping pt peepingIds =
             let helper peepedId ptAcc = let thePeeped = ptAcc ! peepedId
                                         in ptAcc & at peepedId ?~ over peepers (i `delete`) thePeeped
-            in foldr helper pt $ p^.peeping
-        stopBeingPeeped pt' peeperIds =
+            in foldr helper pt peepingIds
+        stopBeingPeeped pt peeperIds =
             let helper peeperId ptAcc = let thePeeper = ptAcc ! peeperId
                                         in ptAcc & at peeperId ?~ over peeping (i `delete`) thePeeper
-            in foldr helper pt' peeperIds
+            in foldr helper pt peeperIds
 
 
 -----

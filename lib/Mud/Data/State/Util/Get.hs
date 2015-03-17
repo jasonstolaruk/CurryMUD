@@ -89,6 +89,18 @@ getPageLines :: Id -> MudState -> Int
 getPageLines i ms = getPla i ms ^.pageLines
 
 
+getPeepers :: Id -> MudState -> [Inv]
+getPeepers i ms = getPla i ms ^.peepers
+
+
+getPeepersPeeping :: Id -> MudState -> ([Inv], [Inv])
+getPeepersPeeping i ms = let p = getPla i ms in (p^.peepers, p^.peeping)
+
+
+getPeeping :: Id -> MudState -> [Inv]
+getPeeping i ms = getPla i ms ^.peeping
+
+
 getPla :: Id -> MudState -> Pla
 getPla i = views plaTbl (! i)
 
