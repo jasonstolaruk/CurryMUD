@@ -17,6 +17,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
@@ -308,7 +309,7 @@ emote p@(ActionParams { plaId, args })
         toSelfBrdcst               = over _1 nlnl . mkBroadcast plaId $ toSelfMsg
         toOthersMsg                = bracketQuote $ serialize d <> " " <> msg
         toOthersBrdcst             = (nlnl toOthersMsg, plaId `delete` pcIds d)
-    in bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut "emote" plaId [toSelfMsg]
+    in bcast [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut "emote" plaId [toSelfMsg]
   where
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
@@ -351,7 +352,8 @@ equip p = patternMatchFail "equip" [ showText p ]
 
 
 exits :: Action
-exits (NoArgs i mq cols) = (send mq . nl . mkExitsSummary cols . getPCRm i $ ms) >> logPlaExec "exits" i
+exits (NoArgs i mq cols) = getState >>= \ms ->
+    (send mq . nl . mkExitsSummary cols . getPCRm i $ ms) >> logPlaExec "exits" i
 exits p = withoutArgs exits p
 
 
@@ -773,10 +775,10 @@ mkRmInvCoinsDesc i cols ms ri =
 
 mkIsPC_StyledName_Count_BothList :: Id -> MudState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
 mkIsPC_StyledName_Count_BothList i ms targetIds =
-  let isPCs   =                        [ getType targetIs ms == PCType   | targetId <- targetIds ]
+  let isPCs   =                        [ getType targetId ms == PCType   | targetId <- targetIds ]
       styleds = styleAbbrevs DoBracket [ getEffName        i ms targetId | targetId <- targetIds ]
-      counts  = mkCountList ebgns
       boths   =                        [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+      counts  = mkCountList boths
   in nub . zip isPCs . zip3 styleds counts $ boths
 
 
@@ -854,7 +856,6 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 -----
 
 
--- TODO: HERE.
 putAction :: Action
 putAction p@AdviseNoArgs = advise p ["put"] advice
   where
