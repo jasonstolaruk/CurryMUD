@@ -1130,25 +1130,27 @@ readyCloth i ct entTbl mt d mrol a@(eqTbl, _, _, _) ei e@(view sing -> s) =
         otherPCIds = i `delete` pcIds d
 
 
-getAvailClothSlot :: EntTbl -> MobTbl -> Id -> Cloth -> EqMap -> Either T.Text Slot
-getAvailClothSlot et mt i c em | m <- mt ! i, s <- m^.sex, h <- m^.hand = procMaybe $ case c of
-  Earring  -> getEarringSlotForSex s `mplus` (getEarringSlotForSex . otherSex $ s)
-  NoseRing -> findAvailSlot em noseRingSlots
-  Necklace -> findAvailSlot em necklaceSlots
-  Bracelet -> getBraceletSlotForHand h `mplus` (getBraceletSlotForHand . otherHand $ h)
-  Ring     -> getRingSlot s h
-  _        -> maybeSingleSlot em . clothToSlot $ c
+getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either T.Text Slot
+getAvailClothSlot i ms cloth em =
+    let sexy = getSex  i ms
+        h    = getHand i ms
+    in maybe (Left . sorryFullClothSlots ms cloth $ em) Right $ case cloth of
+      Earring  -> getEarringSlotForSex sexy `mplus` (getEarringSlotForSex . otherSex $ sexy)
+      NoseRing -> findAvailSlot em noseRingSlots
+      Necklace -> findAvailSlot em necklaceSlots
+      Bracelet -> getBraceletSlotForHand h `mplus` (getBraceletSlotForHand . otherHand $ h)
+      Ring     -> getRingSlot sexy h
+      _        -> maybeSingleSlot em . clothToSlot $ cloth
   where
-    procMaybe                = maybe (Left . sorryFullClothSlots et c $ em) Right
-    getEarringSlotForSex s   = findAvailSlot em $ case s of
+    getEarringSlotForSex sexy = findAvailSlot em $ case sexy of
       Male   -> lEarringSlots
       Female -> rEarringSlots
       _      -> patternMatchFail "getAvailClothSlot getEarringSlotForSex"   [ showText s ]
-    getBraceletSlotForHand h = findAvailSlot em $ case h of
+    getBraceletSlotForHand h  = findAvailSlot em $ case h of
       RHand  -> lBraceletSlots
       LHand  -> rBraceletSlots
       _      -> patternMatchFail "getAvailClothSlot getBraceletSlotForHand" [ showText h ]
-    getRingSlot s h          = findAvailSlot em $ case s of
+    getRingSlot sexy h        = findAvailSlot em $ case sexy of
       Male    -> case h of
         RHand -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLMS, RingRMS, RingLPS, RingRPS ]
         LHand -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRMS, RingLMS, RingRPS, RingLPS ]
@@ -1156,8 +1158,8 @@ getAvailClothSlot et mt i c em | m <- mt ! i, s <- m^.sex, h <- m^.hand = procMa
       Female  -> case h of
         RHand -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLPS, RingRPS, RingLMS, RingRMS ]
         LHand -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRPS, RingLPS, RingRMS, RingLMS ]
-        _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
-      _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText s ]
+        _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h    ]
+      _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText sexy ]
 
 
 otherSex :: Sex -> Sex
