@@ -1373,7 +1373,7 @@ say p@AdviseNoArgs = advise p ["say"] advice
                       , "." ]
 say p@(WithArgs i mq cols args@(a:_))
   | T.head a == adverbOpenChar = case parseAdverb . T.unwords $ args of
-    Left  sorryMsg -> sorry sorryMsg
+    Left  msg -> sorry msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
         then ask >>= \md -> (liftIO . atomically . sayToSTM md (Just adverb) . T.tail $ rest) >>= maybeVoid (logPlaOut "say" i)
@@ -1472,26 +1472,15 @@ say p@(WithArgs i mq cols args@(a:_))
                 writeTVar (md^.plaTblTVar) plaTbl'
                 bcastSTM mt mqt pcTbl plaTbl [ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBrdcst ]
                 return . Just $ [ toSelfMsg ]
-    sayToSTM _ ma msg             = patternMatchFail "say sayToSTM" [ showText ma, msg ]
+    sayTo _ maybeAdverb msg = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                     = dblQuote . capitalizeMsg . punctuateMsg
-    simpleSayHelperSTM md ma rest = (,,,,,,) <$> readTVar (md^.entTblTVar)
-                                             <*> readTVar (md^.invTblTVar)
-                                             <*> readTVar (md^.mobTblTVar)
-                                             <*> readTVar (md^.msgQueueTblTVar)
-                                             <*> readTVar (md^.pcTblTVar)
-                                             <*> readTVar (md^.plaTblTVar)
-                                             <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let adverb          = case ma of Nothing  -> ""
-                                         Just adv -> " " <> adv
-            (d, _, _, _, _) = mkCapStdDesig i et it mt pcTbl tt
-            msg             = formatMsg rest
-            toSelfMsg       = T.concat [ "You say", adverb, ", ", msg ]
-            toSelfBrdcst    = mkBroadcast i . nlnl $ toSelfMsg
-            toOthersMsg     = T.concat [ serialize d, " says", adverb, ", ", msg ]
-            toOthersBrdcst  = (nlnl toOthersMsg, i `delete` pcIds d)
-        in do
-            bcastSTM mt mqt pcTbl plaTbl [ toSelfBrdcst, toOthersBrdcst ]
-            return [toSelfMsg]
+    simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
+        let d              = mkStdDesig i ms DoCap
+            toSelfMsg      = T.concat [ "You say", adverb, ", ", msg ]
+            toSelfBrdcst   = mkBroadcast i . nlnl $ toSelfMsg
+            toOthersMsg    = T.concat [ serialize d, " says", adverb, ", ", msg ]
+            toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
+        in ([ toSelfBrdcst, toOthersBrdcst ], [toSelfMsg])
 say p = patternMatchFail "say" [ showText p ]
 
 
