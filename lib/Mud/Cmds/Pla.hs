@@ -1376,13 +1376,13 @@ say p@(WithArgs i mq cols args@(a:_))
     Left  msg -> sorry msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
-        then ask >>= \md -> (liftIO . atomically . sayToSTM md (Just adverb) . T.tail $ rest) >>= maybeVoid (logPlaOut "say" i)
+        then ask >>= \md -> (liftIO . atomically . sayTo md (Just adverb) . T.tail $ rest) >>= maybeVoid (logPlaOut "say" i)
         else sorry adviceEmptySayTo
-      | otherwise -> ask >>= \md -> (liftIO . atomically . simpleSayHelperSTM md (Just adverb) $ rest) >>= logPlaOut "say" i
+      | otherwise -> ask >>= \md -> (liftIO . atomically . simpleSayHelper md (Just adverb) $ rest) >>= logPlaOut "say" i
   | T.head a == sayToChar, T.length a > 1 = if length args > 1
-    then ask >>= \md -> (liftIO . atomically . sayToSTM md Nothing . T.tail . T.unwords $ args) >>= maybeVoid (logPlaOut "say" i)
+    then ask >>= \md -> (liftIO . atomically . sayTo md Nothing . T.tail . T.unwords $ args) >>= maybeVoid (logPlaOut "say" i)
     else sorry adviceEmptySayTo
-  | otherwise = ask >>= \md -> (liftIO . atomically . simpleSayHelperSTM md Nothing . T.unwords $ args) >>= logPlaOut "say" i
+  | otherwise = ask >>= \md -> (liftIO . atomically . simpleSayHelper md Nothing . T.unwords $ args) >>= logPlaOut "say" i
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
       (_,   "")            -> Left adviceCloseChar
@@ -1411,34 +1411,27 @@ say p@(WithArgs i mq cols args@(a:_))
                                  , dfltColor
                                  , "." ]
     sorry             = advise p ["say"]
-    sorrySTM msg      = adviseSTM p ["say"] msg >> return Nothing
-    sayToSTM md ma (T.words -> (target:rest@(r:_))) = (,,,,,,,) <$> readTVar (md^.coinsTblTVar)
-                                                                <*> readTVar (md^.entTblTVar)
-                                                                <*> readTVar (md^.invTblTVar)
-                                                                <*> readTVar (md^.mobTblTVar)
-                                                                <*> readTVar (md^.msgQueueTblTVar)
-                                                                <*> readTVar (md^.pcTblTVar)
-                                                                <*> readTVar (md^.plaTblTVar)
-                                                                <*> readTVar (md^.typeTblTVar) >>= \(ct, et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, _, _, ri, ris@((i `delete`) -> ris')) = mkCapStdDesig i et it mt pcTbl tt
-            c                                         = ct ! ri
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (ris', c)
-          then case resolveRmInvCoins i et mt pcTbl [target] ris' c of
-            (_,                    [ Left  [sorryMsg] ]) -> wrapSendSTM mq cols sorryMsg >> return Nothing
-            (_,                    Right _:_           ) -> wrapSendSTM mq cols "You're talking to coins now?" >> return Nothing
-            ([ Left sorryMsg    ], _                   ) -> wrapSendSTM mq cols sorryMsg >> return Nothing
-            ([ Right (_:_:_)    ], _                   ) -> wrapSendSTM mq cols "Sorry, but you can only say something \
-                                                                                \to one person at a time." >> return Nothing
-            ([ Right [targetId] ], _                   ) ->
+    sorry msg      = advise p ["say"] msg >> return Nothing
+    sayTo ms maybeAdverb (T.words -> (target:rest@(r:_))) =
+        let d                             = mkStdDesig      i ms DoCap
+            (is@((i `delete`) -> is'), c) = getPCRmInvCoins i ms
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is', c)
+          then case resolveRmInvCoins i ms [target] is' c of
+            (_,                    [ Left [msg] ]) -> (mkBroadcast i msg,                            [])
+            (_,                    Right  _:_    ) -> (mkBroadcast i "You're talking to coins now?", [])
+            ([ Left  msg        ], _             ) -> (mkBroadcast i msg,                            [])
+            ([ Right (_:_:_)    ], _             ) -> (mkBroadcast i "Sorry, but you can only say something to one \
+                                                                     \person at a time.", [])
+            ([ Right [targetId] ], _             ) ->
               let targetType = tt ! targetId
                   targetSing = (et ! targetId)^.sing
               in case targetType of
-                PCType  | targetDesig <- serialize . mkStdDesig targetId mt pcTbl tt targetSing False $ ris
-                        -> either sorrySTM (sayToHelper    mt mqt pcTbl plaTbl d targetId targetDesig) parseRearAdverb
-                MobType -> either sorrySTM (sayToMobHelper mt mqt pcTbl plaTbl d targetSing)           parseRearAdverb
-                _       -> wrapSendSTM mq cols ("You can't talk to " <> aOrAn targetSing <> ".") >> return Nothing
+                PCType  | targetDesig <- serialize . mkStdDesig targetId mt pcTbl tt targetSing False $ is
+                        -> either sorry (sayToHelper    mt mqt pcTbl plaTbl d targetId targetDesig) parseRearAdverb
+                MobType -> either sorry (sayToMobHelper mt mqt pcTbl plaTbl d targetSing)           parseRearAdverb
+                _       -> wrapSend mq cols ("You can't talk to " <> aOrAn targetSing <> ".") >> return Nothing
             x -> patternMatchFail "say sayTo" [ showText x ]
-          else wrapSendSTM mq cols "You don't see anyone here to talk to." >> return Nothing
+          else wrapSend mq cols "You don't see anyone here to talk to." >> return Nothing
       where
         parseRearAdverb = case ma of
           Just adv -> Right (adv <> " ", "", formatMsg . T.unwords $ rest)
@@ -1454,7 +1447,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBrdcst = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
             in do
-                bcastSTM mt mqt pcTbl plaTbl [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
+                bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
                 return . Just $ [ parsePCDesig i mt pcTbl toSelfMsg ]
         sayToMobHelper mt mqt pcTbl plaTbl d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg      = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
@@ -1470,10 +1463,10 @@ say p@(WithArgs i mq cols args@(a:_))
                 (plaTbl', fms) = firstMobSay i plaTbl
             in do
                 writeTVar (md^.plaTblTVar) plaTbl'
-                bcastSTM mt mqt pcTbl plaTbl [ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBrdcst ]
+                bcast mt mqt pcTbl plaTbl [ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBrdcst ]
                 return . Just $ [ toSelfMsg ]
     sayTo _ maybeAdverb msg = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
-    formatMsg                     = dblQuote . capitalizeMsg . punctuateMsg
+    formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         let d              = mkStdDesig i ms DoCap
             toSelfMsg      = T.concat [ "You say", adverb, ", ", msg ]
