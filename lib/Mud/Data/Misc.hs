@@ -331,7 +331,7 @@ data ClassifiedBroadcast = TargetBroadcast    Broadcast
 instance Ord ClassifiedBroadcast where
   TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
   NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
-  _うんこ              `compare` _糞                  = EQ
+  _うんこ `compare` _糞 = EQ
 
 
 -----

@@ -1050,22 +1050,15 @@ ready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \log
 ready p = patternMatchFail "ready" [ showText p ]
 
 
--- TODO: HERE.
 helperReady :: Id
-            -> ArmTbl
-            -> ClothTbl
-            -> ConTbl
-            -> EntTbl
-            -> MobTbl
-            -> TypeTbl
-            -> WpnTbl
+            -> MudStack
             -> PCDesig
             -> (EqTbl, InvTbl, [Broadcast], [T.Text])
             -> (Either T.Text Inv, Maybe RightOrLeft)
             -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-helperReady i armTbl clothTbl conTbl entTbl mt tt wt d a (eis, mrol) = case eis of
+helperReady i ms d a (eis, mrol) = case eis of
   Left  (mkBroadcast i -> b) -> a & _3 <>~ b
-  Right is                   -> foldl' (readyDispatcher i armTbl clothTbl conTbl entTbl mt tt wt d mrol) a is
+  Right targetIds            -> foldl' (readyDispatcher i ms d mrol) a targetIds
 
 
 readyDispatcher :: Id
