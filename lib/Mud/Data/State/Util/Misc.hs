@@ -53,7 +53,7 @@ getEffBothGramNos i ms targetId =
                  in if targetSing `elem` getIntroduced i ms
                    then (targetSing, "")
                    else over both ((targetSexy <>) . (" " <>)) (targetRace, pluralize targetRace)
-      Just _  -> (targetSing, targetEnt^.plur)
+      Just {} -> (targetSing, targetEnt^.plur)
   where
     pluralize "dwarf" = "dwarves"
     pluralize "elf"   = "elves"

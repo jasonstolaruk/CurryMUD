@@ -334,8 +334,7 @@ emote p@(ActionParams { plaId, args })
 equip :: Action
 equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
-    let em@(M.elems -> is) = getEqMap ms i
-    in send mq $ if not . M.null $ em
+    let em@(M.elems -> is) = getEqMap ms i in send mq $ if not . M.null $ em
       then let (gecrs, miss, rcs)                    = resolveEntCoinNames i ms as is mempty
                eiss                                  = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                               = foldl' helperEitherInv "" eiss
@@ -676,7 +675,7 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedB
                         b   = mkNTBroadcast i . nlnl $ msg
                     in over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ]) -- TODO: OK? Was "concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]"...
-    helperIntroEitherCoins a (Right _   ) =
+    helperIntroEitherCoins a (Right {}  ) =
         first (`appendIfUnique` mkNTBroadcast i (nlnl "You can't introduce yourself to a coin.")) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
@@ -822,7 +821,7 @@ isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
 extractPCIdsFromEiss :: MudState -> [Either T.Text Inv] -> [Id]
 extractPCIdsFromEiss ms = foldl' helper []
   where
-    helper acc (Left  _ )  = acc
+    helper acc (Left  {})  = acc
     helper acc (Right is)  = acc ++ findPCIds ms is
 
 
@@ -928,7 +927,7 @@ shufflePut i ms d conName icir as invCoinsWithCon pcInvCoins f =
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
                in (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
-        Right _ -> sorry "You can only put things into one container at a time."
+        Right {} -> sorry "You can only put things into one container at a time."
   where
     sorry msg = (ms, (mkBroadcast i msg, []))
 
@@ -1395,7 +1394,7 @@ shuffleRemSTM i mq cols md ct et it mt mqt pcTbl plaTbl tt d cn icir as is c f =
                      writeTVar (md^.invTblTVar)   it'
                      bcastNlSTM mt mqt pcTbl plaTbl bs'
                      return logMsgs'
-        Right _ -> wrapSendSTM mq cols "You can only remove things from one container at a time." >> return []
+        Right {} -> wrapSendSTM mq cols "You can only remove things from one container at a time." >> return []
 
 
 -----

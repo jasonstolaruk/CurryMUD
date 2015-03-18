@@ -88,8 +88,8 @@ extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome
 extractEnscsFromGecrs = first reverse . foldl' helper ([], [])
   where
     helper (gecrs, enscs) gecr | isSorryGecr gecr                               = (gecr : gecrs,        enscs)
-    helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Just ensc } = (gecr : gecrs, ensc : enscs)
-    helper (gecrs, enscs) gecr@Mult { entsRes = Just _,  coinsRes = Nothing   } = (gecr : gecrs,        enscs)
+    helper (gecrs, enscs) gecr@Mult { entsRes = Just {}, coinsRes = Just ensc } = (gecr : gecrs, ensc : enscs)
+    helper (gecrs, enscs) gecr@Mult { entsRes = Just {}, coinsRes = Nothing   } = (gecr : gecrs,        enscs)
     helper (gecrs, enscs)      Mult { entsRes = Nothing, coinsRes = Just ensc } = (gecrs,        ensc : enscs)
     helper (gecrs, enscs) gecr@Mult { entsRes = Nothing, coinsRes = Nothing   } = (gecr : gecrs,        enscs)
     helper (gecrs, enscs) gecr@Indexed {}                                       = (gecr : gecrs,        enscs)
@@ -266,14 +266,14 @@ mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
 
 -- "DupIdsNull" applies when nothing is left after having eliminated duplicate IDs.
 pattern DupIdsNull       <- (_,                                                                        Just [])
-pattern SorryOne     n   <- (Mult { amount = 1,   nameSearchedFor = (aOrAn -> n), entsRes = Nothing }, Nothing)
-pattern NoneMult     n   <- (Mult {               nameSearchedFor = n,            entsRes = Nothing }, Nothing)
-pattern FoundMult    res <- (Mult {                                               entsRes = Just _  }, Just (Right -> res))
-pattern NoneIndexed  n   <- (Indexed {            nameSearchedFor = n,            entRes  = Left "" }, Nothing)
-pattern SorryIndexed x p <- (Indexed { index = x,                                 entRes  = Left p  }, Nothing)
-pattern FoundIndexed res <- (Indexed {                                            entRes  = Right _ }, Just (Right -> res))
-pattern SorryCoins       <- (SorryIndexedCoins,                                                        Nothing)
-pattern GenericSorry n   <- (Sorry   {            nameSearchedFor = (aOrAn -> n)                    }, Nothing)
+pattern SorryOne     n   <- (Mult { amount = 1,   nameSearchedFor = (aOrAn -> n), entsRes = Nothing  }, Nothing)
+pattern NoneMult     n   <- (Mult {               nameSearchedFor = n,            entsRes = Nothing  }, Nothing)
+pattern FoundMult    res <- (Mult {                                               entsRes = Just {}  }, Just (Right -> res))
+pattern NoneIndexed  n   <- (Indexed {            nameSearchedFor = n,            entRes  = Left ""  }, Nothing)
+pattern SorryIndexed x p <- (Indexed { index = x,                                 entRes  = Left p   }, Nothing)
+pattern FoundIndexed res <- (Indexed {                                            entRes  = Right {} }, Just (Right -> res))
+pattern SorryCoins       <- (SorryIndexedCoins,                                                         Nothing)
+pattern GenericSorry n   <- (Sorry   {            nameSearchedFor = (aOrAn -> n)                     }, Nothing)
 
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv

@@ -2,7 +2,8 @@
 {-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
-                      , purgeThreadTbls ) where
+                      , purgeThreadTbls
+                      , ) where
 
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
