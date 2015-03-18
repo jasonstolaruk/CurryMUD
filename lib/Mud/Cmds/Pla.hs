@@ -1348,7 +1348,7 @@ shuffleRem :: Id
            -> Args
            -> (InvWithCon, CoinsWithCon)
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-           -> [T.Text]
+           -> (MudState, ([Broadcast], [T.Text]))
 shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms [conName]) invCoinsWithCon
     in if null conMiss && (not . null $ conRcs)
@@ -1362,40 +1362,18 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                    eiss                = zipWith (curry procGecrMisCon conSing) gecrs miss
                    ecs                 = map (procReconciledCoinsCon conSing) rcs
                    mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
-                   (it,  bs,  logMsgs) = foldl' (helperPutRemEitherInv i ms d Rem mnom conId i conSing)
+                   (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
                                                 (ms^.invTbl, [], [])
                                                 eiss
-                   (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i d Rem mnom conId i conSing)
+                   (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i    d Rem mnom conId i conSing)
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
-               in if uncurry (||) . ((not . null) *** (/= mempty)) $ invCoins
+               in if uncurry (||) . ((not . null) *** (/= mempty)) $ invCoinsInCon
                  then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
-                 else (ms, (mkBroadcast i $ "The " <> s <> " is empty.", []))
-        Right {} -> wrapSendSTM mq cols "You can only remove things from one container at a time." >> return []
-{- -----
-shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
-    let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms [conName]) invCoinsWithCon
-    in if null conMiss && (not . null $ conRcs)
-      then sorry "You can't put something inside a coin."
-      else case f . head . zip conGecrs $ conMiss of
-        Left  msg     -> sorry . nl $ msg -- TODO: Newlines ok?
-        Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
-          then sorry $ theOnLowerCap conSing <> " isn't a container."
-          else let (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) pcInvCoins
-                   eiss                = zipWith (curry procGecrMisPCInv) gecrs miss
-                   ecs                 = map procReconciledCoinsPCInv rcs
-                   mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
-                   (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
-                                                (ms^.invTbl,   [], [])
-                                                eiss
-                   (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i    d Put mnom i conId conSing)
-                                                (ms^.coinsTbl, bs, logMsgs)
-                                                ecs
-               in (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
-        Right {} -> sorry "You can only put things into one container at a time."
+                 else sorry $ "The " <> conSing <> " is empty."
+        Right {} -> sorry "You can only remove things from one container at a time."
   where
     sorry msg = (ms, (mkBroadcast i msg, []))
------ -}
 
 
 -----
