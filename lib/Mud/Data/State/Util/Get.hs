@@ -33,6 +33,10 @@ getColumns :: Id -> MudState -> Cols
 getColumns i ms = getPla i ms ^.columns
 
 
+getCon :: Id -> MudState -> Con
+getCon i = views conTbl (! i)
+
+
 getEnt :: Id -> MudState -> Ent
 getEnt i = views entTbl (! i)
 
@@ -59,6 +63,10 @@ getInv i = views invTbl (! i)
 
 getInvCoins :: Id -> MudState -> (Inv, Coins)
 getInvCoins i ms = (getInv i ms, getCoins i ms)
+
+
+getIsCloth :: Id -> MudState -> Bool
+getIsCloth i ms = getCon i ms ^.isCloth
 
 
 getLogQueue :: Id -> MudState -> LogQueue

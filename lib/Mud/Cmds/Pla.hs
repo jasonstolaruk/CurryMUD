@@ -1069,28 +1069,22 @@ helperReady i armTbl clothTbl conTbl entTbl mt tt wt d a (eis, mrol) = case eis 
 
 
 readyDispatcher :: Id
-                -> ArmTbl
-                -> ClothTbl
-                -> ConTbl
-                -> EntTbl
-                -> MobTbl
-                -> TypeTbl
-                -> WpnTbl
+                -> MudState
                 -> PCDesig
                 -> Maybe RightOrLeft
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
                 -> Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyDispatcher i armTbl clothTbl conTbl entTbl mt tt wt d mrol a ei =
-    let e = entTbl ! ei in maybe (sorry e) (\f -> f d mrol a ei e) mf
+readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
+    maybe (sorry targetSing) (\f -> f i ms d mrol a targetId targetSing) helper
   where
-    mf = case tt ! ei of
-      ClothType -> Just $ readyCloth i clothTbl entTbl mt
-      ConType   -> toMaybe ((conTbl ! ei)^.isCloth) $ readyCloth i clothTbl entTbl mt
-      WpnType   -> Just $ readyWpn i entTbl mt wt
-      ArmType   -> Just $ readyArm i armTbl entTbl
+    helper = case getType targetId ms of
+      ClothType -> Just readyCloth
+      ConType   -> toMaybe (getIsCloth targetId ms) readyCloth
+      WpnType   -> Just readyWpn
+      ArmType   -> Just readyArm
       _         -> Nothing
-    sorry e | b <- mkBroadcast i $ "You can't ready " <> aOrAn (e^.sing) <> "." = a & _3 <>~ b
+    sorry targetSing = a & _3 <>~ (mkBroadcast i $ "You can't ready " <> aOrAn targetSing <> ".")
 
 
 -- Readying clothing:
