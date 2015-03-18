@@ -131,7 +131,11 @@ type Gol = Int
 
 instance Monoid Coins where
   mempty = Coins (0, 0, 0)
-  Coins (cop, sil, gol) `mappend` Coins (cop', sil', gol') = Coins (cop + cop', sil + sil', gol + gol')
+  Coins (cop, sil, gol) `mappend` Coins (cop', sil', gol') = do
+      let res = ( cop + cop'
+                , sil + sil'
+                , gol + gol')
+      Coins res
 
 
 -- ============================================================
@@ -352,7 +356,7 @@ instance Eq RmLink where
                                                            , i     == i'
                                                            , om "" == om' ""
                                                            , dm "" == dm' "" = True
-  _                        == _                            = False
+  _                        == _                                              = False
 
 
 -- ==================================================

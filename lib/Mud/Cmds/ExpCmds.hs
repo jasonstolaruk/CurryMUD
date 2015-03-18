@@ -658,11 +658,13 @@ expCmdSet = S.fromList
 expCmds :: [Cmd]
 expCmds = S.foldr helper [] expCmdSet
   where
-    helper (ExpCmd expCmdName expCmdType) = (Cmd { cmdName           = expCmdName
-                                                 , cmdPriorityAbbrev = Nothing
-                                                 , cmdFullName       = expCmdName
-                                                 , action            = expCmd expCmdName expCmdType
-                                                 , cmdDesc           = "" } :)
+    helper (ExpCmd expCmdName expCmdType) = do
+        let theCmd = Cmd { cmdName           = expCmdName
+                         , cmdPriorityAbbrev = Nothing
+                         , cmdFullName       = expCmdName
+                         , action            = expCmd expCmdName expCmdType
+                         , cmdDesc           = "" }
+        (theCmd :)
 
 
 -----
