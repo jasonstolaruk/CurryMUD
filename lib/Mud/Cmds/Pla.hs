@@ -1508,8 +1508,7 @@ firstMobSay i pt = let p = pt ! i in if getPlaFlag IsNotFirstMobSay p
                                    , dblQuote "ask guard crime"
                                    , dfltColor
                                    , "." ]
-           p' = setPlaFlag IsNotFirstMobSay True p
-       in (pt & at i ?~ p', msg)
+       in (pt & at i ?~ setPlaFlag IsNotFirstMobSay True p, msg)
 
 
 -----
