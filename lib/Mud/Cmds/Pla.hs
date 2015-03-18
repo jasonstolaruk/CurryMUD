@@ -876,16 +876,16 @@ putAction (Lower i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
     helper ms =
-        let d                                  = mkStdDesig      i ms DoCap
-            pcInvCoins                         = getInvCoins     i ms
-            (first (i `delete`) -> rmInvCoins) = getPCRmInvCoins i ms
-            conName                            = last as
-            (init -> argsWithoutCon)           = case as of
-                                                   [_, _] -> as
-                                                   _      -> (++ [conName]) . nub . init $ as
+        let d                                           = mkStdDesig      i ms DoCap
+            pcInvCoins                                  = getInvCoins     i ms
+            (first (i `delete`) -> rmInvCoins@(ris, _)) = getPCRmInvCoins i ms
+            conName                                     = last as
+            (init -> argsWithoutCon)                    = case as of
+                                                            [_, _] -> as
+                                                            _      -> (++ [conName]) . nub . init $ as
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ pcInvCoins
           then case T.uncons conName of
-            Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
+            Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . $ ris
               then shufflePut i ms d conName True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
               else (ms, (mkBroadcast i "You don't see any containers here.", []))
             _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
@@ -908,7 +908,7 @@ shufflePut :: Id
            -> (PCInv, PCCoins)
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
            -> (MudState, ([Broadcast], [T.Text]))
-shufflePut i ms d conName icir as invCoinsWithCon pcInvCoins f =
+shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms [conName]) invCoinsWithCon
     in if null conMiss && (not . null $ conRcs)
       then sorry "You can't put something inside a coin."
@@ -919,7 +919,7 @@ shufflePut i ms d conName icir as invCoinsWithCon pcInvCoins f =
           else let (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) pcInvCoins
                    eiss                = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                 = map procReconciledCoinsPCInv rcs
-                   mnom                = mkMaybeNthOfM ms icir conId conSing . fst $ invCoinsWithCon
+                   mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
                    (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
                                                 (ms^.invTbl,   [], [])
                                                 eiss
@@ -1018,35 +1018,19 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dblQuote "ready sword"
                       , dfltColor
                       , "." ]
-ready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
-    unless (null logMsgs) . logPlaOut "ready" i $ logMsgs
+ready (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) -> do
+    bcast bs >> (unless (null logMsgs) . logPlaOut "ready" i $ logMsgs)
   where
-    helperSTM md = (,,,,,,,,,,,,) <$> readTVar (md^.armTblTVar)
-                                  <*> readTVar (md^.clothTblTVar)
-                                  <*> readTVar (md^.coinsTblTVar)
-                                  <*> readTVar (md^.conTblTVar)
-                                  <*> readTVar (md^.entTblTVar)
-                                  <*> readTVar (md^.eqTblTVar)
-                                  <*> readTVar (md^.invTblTVar)
-                                  <*> readTVar (md^.mobTblTVar)
-                                  <*> readTVar (md^.msgQueueTblTVar)
-                                  <*> readTVar (md^.pcTblTVar)
-                                  <*> readTVar (md^.plaTblTVar)
-                                  <*> readTVar (md^.typeTblTVar)
-                                  <*> readTVar (md^.wpnTblTVar) >>= \(armTbl, clothTbl, coinsTbl, conTbl, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt, wt) ->
-        let (d, _, is, c) = mkDropReadyBindings i coinsTbl entTbl it mt pcTbl tt
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is, c)
-          then let (gecrs, mrols, miss, rcs)   = resolveEntCoinNamesWithRols i entTbl mt pcTbl as is mempty
-                   eiss                        = zipWith (curry procGecrMisReady) gecrs miss
-                   bs                          = rcs |!| mkBroadcast i "You can't ready coins."
-                   (eqTbl', it', bs', logMsgs) = foldl' (helperReady i armTbl clothTbl conTbl entTbl mt tt wt d)
-                                                        (eqTbl, it, bs, []) . zip eiss $ mrols
-               in do
-                   writeTVar (md^.eqTblTVar)  eqTbl'
-                   writeTVar (md^.invTblTVar) it'
-                   bcastNlSTM mt mqt pcTbl plaTbl bs'
-                   return logMsgs
-          else wrapSendSTM mq cols dudeYourHandsAreEmpty >> return []
+    helper ms =
+        let invCoins@(is, _)          = getInvCoins i ms
+            d                         = mkStdDesig  i ms DoCap
+            (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ms as is mempty
+            eiss                      = zipWith (curry procGecrMisReady) gecrs miss
+            bs                        = rcs |!| mkBroadcast i "You can't ready coins."
+            (et, it, bs', logMsgs)    = foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) . zip eiss $ mrols
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+          then (ms & eqTbl .~ et & invTbl .~ it, (bs', logMsgs))
+          else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 ready p = patternMatchFail "ready" [ showText p ]
 
 
