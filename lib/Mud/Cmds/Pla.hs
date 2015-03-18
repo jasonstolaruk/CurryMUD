@@ -1097,48 +1097,44 @@ readyDispatcher i armTbl clothTbl conTbl entTbl mt tt wt d mrol a ei =
 
 
 readyCloth :: Id
-           -> ClothTbl
-           -> EntTbl
-           -> MobTbl
+           -> MudState
            -> PCDesig
            -> Maybe RightOrLeft
            -> (EqTbl, InvTbl, [Broadcast], [T.Text])
            -> Id
-           -> Ent
+           -> Sing
            -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyCloth i ct entTbl mt d mrol a@(eqTbl, _, _, _) ei e@(view sing -> s) =
-    let em = eqTbl ! i
-        c  = ct    ! ei
-    in case maybe (getAvailClothSlot entTbl mt i c em) (getDesigClothSlot entTbl e c em) mrol of
+readyCloth i ms d mrol a clothId clothSing | em <- getEqMap i ms, cloth <- getCloth clothId ms =
+    case maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) mrol of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
-      Right slot                 -> moveReadiedItem i a em slot ei . mkReadyClothMsgs slot $ c
+      Right slot                 -> moveReadiedItem i a em slot clothId . mkReadyClothMsgs slot $ cloth
   where
     mkReadyClothMsgs (pp -> slot) = \case
       Earring  -> wearMsgs
-      NoseRing -> putOnMsgs i d s
-      Necklace -> putOnMsgs i d s
+      NoseRing -> putOnMsgs i d clothSing
+      Necklace -> putOnMsgs i d clothSing
       Bracelet -> wearMsgs
       Ring     -> slideMsgs
-      Backpack -> putOnMsgs i d s
-      _        -> donMsgs   i d s
+      Backpack -> putOnMsgs i d clothSing
+      _        -> donMsgs   i d clothSing
       where
-        wearMsgs   = (  T.concat [ "You wear the ",  s, " on your ", slot, "." ]
-                     , (T.concat [ serialize d, " wears ",  aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-        slideMsgs  = (  T.concat [ "You slide the ", s, " on your ", slot, "." ]
-                     , (T.concat [ serialize d, " slides ", aOrAn s, " on ", p, " ", slot, "." ], otherPCIds) )
-        p          = mkPossPro $ (mt ! i)^.sex
+        wearMsgs   = (   T.concat [ "You wear the ",  clothSing, " on your ", slot, "." ]
+                     , ( T.concat [ serialize d, " wears ",  aOrAn clothSing, " on ", poss, " ", slot, "." ]
+                       , otherPCIds ) )
+        slideMsgs  = (   T.concat [ "You slide the ", clothSing, " on your ", slot, "." ]
+                     , ( T.concat [ serialize d, " slides ", aOrAn clothSing, " on ", poss, " ", slot, "." ]
+                       , otherPCIds) )
+        poss       = mkPossPro . getSex i $ ms
         otherPCIds = i `delete` pcIds d
 
 
 getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either T.Text Slot
-getAvailClothSlot i ms cloth em =
-    let sexy = getSex  i ms
-        h    = getHand i ms
-    in maybe (Left . sorryFullClothSlots ms cloth $ em) Right $ case cloth of
+getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
+    maybe (Left . sorryFullClothSlots ms cloth $ em) Right $ case cloth of
       Earring  -> getEarringSlotForSex sexy `mplus` (getEarringSlotForSex . otherSex $ sexy)
       NoseRing -> findAvailSlot em noseRingSlots
       Necklace -> findAvailSlot em necklaceSlots
-      Bracelet -> getBraceletSlotForHand h `mplus` (getBraceletSlotForHand . otherHand $ h)
+      Bracelet -> getBraceletSlotForHand h  `mplus` (getBraceletSlotForHand . otherHand $ h)
       Ring     -> getRingSlot sexy h
       _        -> maybeSingleSlot em . clothToSlot $ cloth
   where
@@ -1236,11 +1232,8 @@ readyWpn :: Id
          -> Id
          -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyWpn i ms d mrol a@(eqTbl, _, _, _) wpnId wpnSing =
-    let em  = getEqMap ms i
-        wpn = getWpn   ms wpnId
-        sub = wpn^.wpnSub
-    in if not . isSlotAvail em $ BothHandsS
+readyWpn i ms d mrol a wpnId wpnSing | em <- getEqMap ms i, wpn <- getWpn ms wpnId, sub <- wpn^.wpnSub =
+    if not . isSlotAvail em $ BothHandsS
       then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _3 <>~ b
       else case maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) mrol of
         Left  (mkBroadcast i -> b) -> a & _3 <>~ b
@@ -1304,10 +1297,8 @@ readyArm :: Id
          -> Id
          -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyArm i ms d mrol a@(et, _, _, _) armId armSing =
-    let em  = et ! i
-        sub = getArmSub armId ms
-    in case maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere mrol of
+readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
+    case maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere mrol of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a em slot armId . mkReadyArmMsgs $ sub
   where
