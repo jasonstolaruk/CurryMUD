@@ -166,6 +166,7 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 debugColor :: Action
 debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefixDebugCmd "color") i
   where
+    msg :: [] T.Text
     msg = [ nl . T.concat $ [ padOrTrunc 15 . showText $ ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColor ]
           | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
@@ -251,8 +252,8 @@ purgePlaLogTbl = getState >>= \(views plaLogTbl (unzip . IM.assocs) -> (is, map 
     zipped <- [ zip is statuses | statuses <- liftIO . mapM poll $ asyncs ]
     modifyState $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped in (ms & plaLogTbl .~ plt, ())
   where
-    purger (_, Nothing) tbl = tbl
-    purger (i, _      ) tbl = IM.delete i tbl
+    purger (_poo, Nothing) tbl = tbl
+    purger (i,    _poo   ) tbl = IM.delete i tbl
 
 
 purgeTalkAsyncTbl :: MudStack ()
@@ -260,8 +261,8 @@ purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
     zipped <- [ zip asyncs statuses | statuses <- liftIO . mapM poll $ asyncs ]
     modifyState $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) zipped in (ms & talkAsyncTbl .~ tat, ())
   where
-    purger (_,                   Nothing) tbl = tbl
-    purger (asyncThreadId -> ti, _      ) tbl = M.delete ti tbl
+    purger (_poo,                Nothing) tbl = tbl
+    purger (asyncThreadId -> ti, _poo   ) tbl = M.delete ti tbl
 
 
 purgeThreadTbl :: MudStack ()
@@ -451,12 +452,14 @@ wrapSorryLineLen mq cols = wrapSend mq cols . T.concat $ [ "The line length must
 
 
 wrapMsg :: T.Text
-wrapMsg = let ls = [ T.concat [ u
-                              , mkFgColorANSI (Dull, c)
-                              , "This is "
-                              , showText c
-                              , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
-          in (<> dfltColor) . T.unwords $ ls
+wrapMsg = (<> dfltColor) . T.unwords $ wordy
+  where
+    wordy :: [] T.Text
+    wordy = [ T.concat [ u
+                       , mkFgColorANSI (Dull, c)
+                       , "This is "
+                       , showText c
+                       , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
 
 
 -----

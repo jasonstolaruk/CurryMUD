@@ -955,7 +955,7 @@ handleEgress i = helper |$| modifyState >=> \(s, bs, logMsgs) -> do
         let ri                  = getRmId i ms
             ris                 = i `delete` getInv ri ms
             d                   = mkStdDesig i ms DoCap
-            bs                  = ri /= iWelcome |?| [(nlnl $ serialize d <> " has left the game.", i `delete` pcIds d)]
+            bs                  = [ (nlnl $ serialize d <> " has left the game.", i `delete` pcIds d) | ri /= iWelcome ]
             s                   = fromJust . stdPCEntSing $ d
             (ms', bs', logMsgs) = peepHelper ms s
             ms''                = ms' & coinsTbl   .at i  .~ Nothing
@@ -1051,6 +1051,7 @@ ready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \log
 ready p = patternMatchFail "ready" [ showText p ]
 
 
+-- TODO: HERE.
 helperReady :: Id
             -> ArmTbl
             -> ClothTbl
@@ -1084,7 +1085,7 @@ readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
       WpnType   -> Just readyWpn
       ArmType   -> Just readyArm
       _         -> Nothing
-    sorry targetSing = a & _3 <>~ (mkBroadcast i $ "You can't ready " <> aOrAn targetSing <> ".")
+    sorry targetSing = a & _3 <>~ mkBroadcast i ("You can't ready " <> aOrAn targetSing <> ".")
 
 
 -- Readying clothing:
