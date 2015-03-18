@@ -875,21 +875,20 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
 putAction (Lower i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
-    helper ms =
-        let d                                           = mkStdDesig      i ms DoCap
-            pcInvCoins                                  = getInvCoins     i ms
-            (first (i `delete`) -> rmInvCoins@(ris, _)) = getPCRmInvCoins i ms
-            conName                                     = last as
-            (init -> argsWithoutCon)                    = case as of
-                                                            [_, _] -> as
-                                                            _      -> (++ [conName]) . nub . init $ as
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ pcInvCoins
-          then case T.uncons conName of
-            Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . $ ris
-              then shufflePut i ms d conName True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
-              else (ms, (mkBroadcast i "You don't see any containers here.", []))
-            _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
-          else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
+    helper ms = let d                                           = mkStdDesig      i ms DoCap
+                    pcInvCoins                                  = getInvCoins     i ms
+                    (first (i `delete`) -> rmInvCoins@(ris, _)) = getPCRmInvCoins i ms
+                    conName                                     = last as
+                    (init -> argsWithoutCon)                    = case as of
+                                                                    [_, _] -> as
+                                                                    _      -> (++ [conName]) . nub . init $ as
+                in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ pcInvCoins
+                  then case T.uncons conName of
+                    Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null $ ris
+                      then shufflePut i ms d conName True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
+                      else (ms, (mkBroadcast i "You don't see any containers here.", []))
+                    _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
+                  else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -1018,7 +1017,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dblQuote "ready sword"
                       , dfltColor
                       , "." ]
-ready (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) -> do
+ready (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "ready" i $ logMsgs)
   where
     helper ms =
@@ -1112,11 +1111,11 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
     getEarringSlotForSex sexy = findAvailSlot em $ case sexy of
       Male   -> lEarringSlots
       Female -> rEarringSlots
-      _      -> patternMatchFail "getAvailClothSlot getEarringSlotForSex"   [ showText s ]
+      _      -> patternMatchFail "getAvailClothSlot getEarringSlotForSex"   [ showText sexy ]
     getBraceletSlotForHand h  = findAvailSlot em $ case h of
       RHand  -> lBraceletSlots
       LHand  -> rBraceletSlots
-      _      -> patternMatchFail "getAvailClothSlot getBraceletSlotForHand" [ showText h ]
+      _      -> patternMatchFail "getAvailClothSlot getBraceletSlotForHand" [ showText h    ]
     getRingSlot sexy h        = findAvailSlot em $ case sexy of
       Male    -> case h of
         RHand -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLMS, RingRMS, RingLPS, RingRPS ]
@@ -1310,19 +1309,18 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
 remove (Lower i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
   where
-    helper ms =
-        let d                                           = mkStdDesig      i ms DoCap
-            pcInvCoins                                  = getInvCoins     i ms
-            (first (i `delete`) -> rmInvCoins@(ris, _)) = getPCRmInvCoins i ms
-            conName                                     = last as
-            (init -> argsWithoutCon)                    = case as of
-                                                            [_, _] -> as
-                                                            _      -> (++ [conName]) . nub . init $ as
-        in case T.uncons conName of
-          Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null $ ris
-            then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
-            else (ms, (mkBroadcast i "You don't see any containers here."))
-          else shuffleRem i ms d conName False argsWithoutCon pcInvCoins procGecrMisPCInv
+    helper ms = let d                                           = mkStdDesig      i ms DoCap
+                    pcInvCoins                                  = getInvCoins     i ms
+                    (first (i `delete`) -> rmInvCoins@(ris, _)) = getPCRmInvCoins i ms
+                    conName                                     = last as
+                    (init -> argsWithoutCon)                    = case as of
+                                                                    [_, _] -> as
+                                                                    _      -> (++ [conName]) . nub . init $ as
+                in case T.uncons conName of
+                  Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null $ ris
+                    then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
+                    else (ms, (mkBroadcast i "You don't see any containers here.", []))
+                  _ -> shuffleRem i ms d conName False argsWithoutCon pcInvCoins procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 
 

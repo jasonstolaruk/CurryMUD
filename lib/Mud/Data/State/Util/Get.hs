@@ -25,6 +25,10 @@ getArmSub :: Id -> MudState -> ArmSub
 getArmSub i ms = getArm i ms ^.armSub
 
 
+getCloth :: Id -> MudState -> Cloth
+getCloth i ms = views clothTbl (! i)
+
+
 getCoins :: Id -> MudState -> Coins
 getCoins i = views coinsTbl (! i)
 
