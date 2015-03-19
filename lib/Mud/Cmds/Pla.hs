@@ -1439,38 +1439,35 @@ say p@(WithArgs i mq cols args@(a:_))
                       Left  msg             -> Left  msg
                   | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
         sayToHelper ms d targetId targetDesig (frontAdv, rearAdv, msg) =
-            let toSelfMsg      = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                toSelfBrdcst   = head . mkBroadcast i . nlnl $ toSelfMsg
-                toTargetMsg    = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
-                toTargetBrdcst = (nlnl toTargetMsg, [targetId])
-                toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                toOthersBrdcst = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
-            in ([ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ], [ parsePCDesig i mt pcTbl toSelfMsg ])
+            let toSelfMsg         = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
+                toSelfBroadcast   = head . mkBroadcast i . nlnl $ toSelfMsg
+                toTargetMsg       = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
+                toTargetBroadcast = (nlnl toTargetMsg, [targetId])
+                toOthersMsg       = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
+                toOthersBroadcast = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
+            in ([ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ], [ parsePCDesig i mt pcTbl toSelfMsg ])
         sayToMobHelper ms d targetSing (frontAdv, rearAdv, msg) =
-            let toSelfMsg      = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
-                toOthersMsg    = T.concat [ serialize d
-                                          , " says "
-                                          , frontAdv
-                                          , "to "
-                                          , theOnLower targetSing
-                                          , rearAdv
-                                          , ", "
-                                          , msg ]
-                toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
-                (plaTbl', fms) = firstMobSay i plaTbl
-            in do
-                writeTVar (md^.plaTblTVar) plaTbl'
-                bcast mt mqt pcTbl plaTbl [ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBrdcst ]
-                return . Just $ [ toSelfMsg ]
+            let toSelfMsg         = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
+                toOthersMsg       = T.concat [ serialize d
+                                             , " says "
+                                             , frontAdv
+                                             , "to "
+                                             , theOnLower targetSing
+                                             , rearAdv
+                                             , ", "
+                                             , msg ]
+                toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
+                (pt', fms)        = firstMobSay i $ ms^.plaTbl
+            in (ms & plaTbl .~ pt', ([ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBroadcast, [toSelfMsg]))
     sayTo _ maybeAdverb msg = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
-        let d              = mkStdDesig i ms DoCap
-            toSelfMsg      = T.concat [ "You say", adverb, ", ", msg ]
-            toSelfBrdcst   = mkBroadcast i . nlnl $ toSelfMsg
-            toOthersMsg    = T.concat [ serialize d, " says", adverb, ", ", msg ]
-            toOthersBrdcst = (nlnl toOthersMsg, i `delete` pcIds d)
-        in ([ toSelfBrdcst, toOthersBrdcst ], [toSelfMsg])
+        let d                 = mkStdDesig i ms DoCap
+            toSelfMsg         = T.concat [ "You say", adverb, ", ", msg ]
+            toSelfBroadcast   = mkBroadcast i . nlnl $ toSelfMsg
+            toOthersMsg       = T.concat [ serialize d, " says", adverb, ", ", msg ]
+            toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
+        in ([ toSelfBroadcast, toOthersBroadcast ], [toSelfMsg])
 say p = patternMatchFail "say" [ showText p ]
 
 
