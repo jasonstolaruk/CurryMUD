@@ -1519,32 +1519,31 @@ helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
                             , "." ]
           f      = any (advice `T.isInfixOf`) msgs ? (++ [msg]) :? (++ [ msg <> advice ])
       in over _2 f a
-helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) =
-    maybe notFound found . findFullNameForAbbrev n $ settingNames
+helperSettings a@(p, _, _) (T.breakOn "=" -> (name, T.tail -> value)) =
+    maybe notFound found . findFullNameForAbbrev name $ settingNames
   where
-    notFound    = appendMsg $ dblQuote n <> " is not a valid setting name."
+    notFound    = appendMsg $ dblQuote name <> " is not a valid setting name."
     appendMsg m = a & _2 <>~ [m]
-    found       = \case "columns" -> procEither changeColumns
-                        "lines"   -> procEither changePageLines
+    found       = \case "columns" -> procEither (changeSetting minCols      maxCols      "columns" columns  )
+                        "lines"   -> procEither (changeSetting minPageLines maxPageLines "lines"   pageLines)
                         t         -> patternMatchFail "helperSettings found" [t]
       where
         procEither f = either appendMsg f parseInt
-        parseInt     = case (reads . T.unpack $ v :: [(Int, String)]) of
-          []        -> sorryParse
-          [(x, "")] -> Right x
-          _         -> sorryParse
-        sorryParse   = Left . T.concat $ [ dblQuote v, " is not a valid value for the ", dblQuote n, " setting." ]
-    changeColumns   = changeSetting minCols      maxCols      "columns" columns
-    changePageLines = changeSetting minPageLines maxPageLines "lines"   pageLines
-    changeSetting minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x@(showText -> xTxt)
+        parseInt     = case (reads . T.unpack $ v :: [(Int, String)]) of [(x, "")] -> Right x
+                                                                         _         -> sorryParse
+        sorryParse   = Left . T.concat $ [ dblQuote value
+                                         , " is not a valid value for the "
+                                         , dblQuote name
+                                         , " setting." ]
+    changeSetting minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x
       | x < minVal || x > maxVal = appendMsg . T.concat $ [ capitalize settingName
                                                           , " must be between "
                                                           , minValTxt
                                                           , " and "
                                                           , maxValTxt
                                                           , "." ]
-      | p'  <- p & lens .~ x, msg <- T.concat [ "Set ", settingName, " to ", xTxt, "." ]
-      = appendMsg msg & _1 .~ p' & _3 <>~ [msg]
+      | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ] in
+          appendMsg msg & _1 .~ (p & lens .~ x) & _3 <>~ [msg]
 
 
 -----
