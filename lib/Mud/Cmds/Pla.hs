@@ -1440,7 +1440,7 @@ say p@(WithArgs i mq cols args@(a:_))
             let toSelfMsg         = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toSelfBroadcast   = head . mkBroadcast i . nlnl $ toSelfMsg
                 toTargetMsg       = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
-                toTargetBroadcast = (nlnl toTargetMsg, [targetId])
+                toTargetBroadcast = head . mkBroadcast targetId . nlnl $ toTargetMsg
                 toOthersMsg       = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
             in (ms, ([ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ], [ parsePCDesig i ms toSelfMsg ]))
@@ -1456,8 +1456,8 @@ say p@(WithArgs i mq cols args@(a:_))
                                              , msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
                 (pt', fms)        = firstMobSay i $ ms^.plaTbl
-            in (ms & plaTbl .~ pt', ([ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBroadcast ], [toSelfMsg]))
-    sayTo _ maybeAdverb msg = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
+            in (ms & plaTbl .~ pt', ((toOthersBroadcast :) . mkBroadcast . nlnl $ toSelfMsg <> fms, [toSelfMsg]))
+    sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
     bcastAndLog (bs, logMsgs) = bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
     simpleSayHelper (maybe "" (" " <>) -> adverb) (formatMsg -> msg) ms =
@@ -1466,7 +1466,7 @@ say p@(WithArgs i mq cols args@(a:_))
             toSelfBroadcast   = mkBroadcast i . nlnl $ toSelfMsg
             toOthersMsg       = T.concat [ serialize d, " says", adverb, ", ", msg ]
             toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
-        in ([ toSelfBroadcast, toOthersBroadcast ], [toSelfMsg])
+        in (toOthersBroadcast : toSelfBroadcast, [toSelfMsg])
 say p = patternMatchFail "say" [ showText p ]
 
 
