@@ -1494,15 +1494,11 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
     let names  = styleAbbrevs Don'tBracket settingNames
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
-setAction (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
-    unless (null logMsgs) . logPlaOut "set" i $ logMsgs
+setAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+    bcast bs >> (unless (null logMsgs) . logPlaOut "set" i $ logMsgs)
   where
-    helperSTM md = readTVar (md^.plaTblTVar) >>= \pt ->
-        let (p', msgs, logMsgs) = foldl' helperSettings (pt ! i, [], []) as
-        in do
-            modifyTVar (md^.plaTblTVar) $ at i ?~ p'
-            multiWrapSendSTM mq cols msgs
-            return logMsgs
+    helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
+                in (ms & plaTbl.at i ?~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
