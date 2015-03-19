@@ -1427,7 +1427,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                            in either sorry (sayToHelper ms d targetId targetDesig) parseRearAdverb
                 MobType -> either sorry (sayToMobHelper ms d targetSing) parseRearAdverb
-                _       -> (mkStdDesig i $ "You can't talk to " <> aOrAn targetSing <> ".", [])
+                _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
           else (mkBroadcast i "You don't see anyone here to talk to.", [])
       where
@@ -1445,9 +1445,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toTargetBrdcst = (nlnl toTargetMsg, [targetId])
                 toOthersMsg    = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBrdcst = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
-            in do
-                bcast mt mqt pcTbl plaTbl [ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ]
-                return . Just $ [ parsePCDesig i mt pcTbl toSelfMsg ]
+            in ([ toSelfBrdcst, toTargetBrdcst, toOthersBrdcst ], [ parsePCDesig i mt pcTbl toSelfMsg ])
         sayToMobHelper ms d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg      = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
                 toOthersMsg    = T.concat [ serialize d
