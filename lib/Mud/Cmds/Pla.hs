@@ -1162,7 +1162,7 @@ getDesigClothSlot ms clothSing cloth em rol
     Ring     -> maybe (Right slotFromRol)
                       (Left . sorryRing slotFromRol)
                       (em^.at slotFromRol)
-    _        -> patternMatchFail "getDesigClothSlot" [ showText c ]
+    _        -> patternMatchFail "getDesigClothSlot" [ showText cloth ]
   where
     sorryCan'tWearThere    = T.concat [ "You can't wear ", aOrAn clothSing, " on your ", pp rol, "." ]
     findSlotFromList rs ls = findAvailSlot em $ case rol of
@@ -1443,7 +1443,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toTargetBroadcast = (nlnl toTargetMsg, [targetId])
                 toOthersMsg       = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
-            in (ms, ([ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ], [ parsePCDesig i mt pcTbl toSelfMsg ]))
+            in (ms, ([ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ], [ parsePCDesig i ms toSelfMsg ]))
         sayToMobHelper ms d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg         = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
                 toOthersMsg       = T.concat [ serialize d
@@ -1456,7 +1456,7 @@ say p@(WithArgs i mq cols args@(a:_))
                                              , msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
                 (pt', fms)        = firstMobSay i $ ms^.plaTbl
-            in (ms & plaTbl .~ pt', ([ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBroadcast, [toSelfMsg]))
+            in (ms & plaTbl .~ pt', ([ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBroadcast ], [toSelfMsg]))
     sayTo _ maybeAdverb msg = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
     bcastAndLog (bs, logMsgs) = bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
