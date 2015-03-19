@@ -1376,15 +1376,13 @@ say p@(WithArgs i mq cols args@(a:_))
     Left  msg -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
-        then getState >>= sayTo (Just adverb) (T.tail rest) >>= \(bs, logMsgs) ->
-            bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
+        then sayTo (Just adverb) (T.tail rest) |$| modifyState >=> bcastAndLog
         else adviseHelper adviceEmptySayTo
-      | otherwise -> getState >>= simpleSayHelper (Just adverb) rest >>= \(bs, logMsgs) ->
-          bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
+      | otherwise -> getState >>= simpleSayHelper (Just adverb) rest >>= bcastAndLog
   | T.head a == sayToChar, T.length a > 1 = if length args > 1
-    then ask >>= \md -> (liftIO . atomically . sayTo md Nothing . T.tail . T.unwords $ args) >>= maybeVoid (logPlaOut "say" i)
+    then sayTo Nothing (T.tail . T.unwords $ args) |$| modifyState >=> bcastAndLog
     else adviseHelper adviceEmptySayTo
-  | otherwise = ask >>= \md -> (liftIO . atomically . simpleSayHelper md Nothing . T.unwords $ args) >>= logPlaOut "say" i
+  | otherwise = getState >>= simpleSayHelper Nothing (T.unwords args) >>= bcastAndLog
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
       (_,   "")            -> Left adviceCloseChar
@@ -1429,9 +1427,9 @@ say p@(WithArgs i mq cols args@(a:_))
                 MobType -> either sorry (sayToMobHelper ms d targetSing) parseRearAdverb
                 _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
-          else (mkBroadcast i "You don't see anyone here to talk to.", [])
+          else sorry "You don't see anyone here to talk to."
       where
-        sorry msg       = (mkBroadcast i msg, [])
+        sorry msg       = (ms, (mkBroadcast i msg, []))
         parseRearAdverb = case maybeAdverb of
           Just adverb                          -> Right (adverb <> " ", "", formatMsg . T.unwords $ rest)
           Nothing | T.head r == adverbOpenChar -> case parseAdverb . T.unwords $ rest of
@@ -1445,7 +1443,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toTargetBroadcast = (nlnl toTargetMsg, [targetId])
                 toOthersMsg       = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
-            in ([ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ], [ parsePCDesig i mt pcTbl toSelfMsg ])
+            in (ms, ([ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ], [ parsePCDesig i mt pcTbl toSelfMsg ]))
         sayToMobHelper ms d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg         = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
                 toOthersMsg       = T.concat [ serialize d
@@ -1460,8 +1458,9 @@ say p@(WithArgs i mq cols args@(a:_))
                 (pt', fms)        = firstMobSay i $ ms^.plaTbl
             in (ms & plaTbl .~ pt', ([ head . mkBroadcast . nlnl $ toSelfMsg <> fms, toOthersBroadcast, [toSelfMsg]))
     sayTo _ maybeAdverb msg = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
-    formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
-    simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
+    formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
+    bcastAndLog (bs, logMsgs) = bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
+    simpleSayHelper (maybe "" (" " <>) -> adverb) (formatMsg -> msg) ms =
         let d                 = mkStdDesig i ms DoCap
             toSelfMsg         = T.concat [ "You say", adverb, ", ", msg ]
             toSelfBroadcast   = mkBroadcast i . nlnl $ toSelfMsg
