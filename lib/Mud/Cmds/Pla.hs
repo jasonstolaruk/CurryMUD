@@ -1614,28 +1614,19 @@ helperUnready i armTbl ct entTbl mt pt tt d em a@(eqTbl, it, _, _) = \case
 
 
 mkUnreadyDescs :: Id
-               -> ArmTbl
-               -> ClothTbl
-               -> EntTbl
-               -> MobTbl
-               -> PCTbl
-               -> TypeTbl
+               -> MudState
                -> PCDesig
                -> Inv
                -> ([Broadcast], [T.Text])
-mkUnreadyDescs i armTbl ct et mt pt tt d is =
-    first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i et mt pt is ]
+mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
   where
-    helper (ei, c, b@(s, _)) = if c == 1
-      then let msg = T.concat [ "You ", mkVerb ei SndPer, " the ", s, "." ] in
-          ( [ (msg, [i])
-            , (T.concat [ serialize d, " ", mkVerb ei ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
-          , msg )
-      else let msg = T.concat [ "You ", mkVerb ei SndPer, " ", showText c, " ", mkPlurFromBoth b, "." ] in
-          ( [ (msg, [i])
-            , ( T.concat [ serialize d, " ", mkVerb ei ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ]
-              , otherPCIds ) ]
-          , msg )
+    helper (targetId, count, both@(s, _)) = if count == 1
+      then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", s, "." ]
+               toOthersMsg = T.concat [ serialize d, " ", mkVerb targetId ThrPer, " ", aOrAn s, "." ]
+           in ((toOthersMsg, otherPCIds) : mkBroadcast i toSelfMsg, toSelfMsg)
+      else let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " ", showText count, " ", mkPlurFromBoth both, "." ]
+               toOthersMsg = T.concat [ serialize d, " ", mkVerb ei ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ]
+           in ((toOthersMsg, otherPCIds) : mkBroadcast i toSelfMsg, toSelfMsg)
     mkVerb ei p =  case tt ! ei of
       ClothType -> case ct ! ei of
         Earring  -> mkVerbRemove  p
