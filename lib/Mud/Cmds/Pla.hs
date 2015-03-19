@@ -1498,7 +1498,7 @@ setAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "set" i $ logMsgs)
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
-                in (ms & plaTbl.at i ?~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
+                in (ms & plaTbl.at i ?~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs)) -- TODO: Newlines ok?
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
@@ -1508,16 +1508,17 @@ settingNames = [ "columns", "lines" ]
 
 helperSettings :: (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
 helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
-  | noOfEqs /= 1 || T.head arg == '=' || T.last arg == '='
-  , msg    <- dblQuote arg <> " is not a valid argument."
-  , advice <- T.concat [ " Please specify the setting you want to change, followed immediately by "
-                       , dblQuote "="
-                       , ", followed immediately by the new value you want to assign, as in "
-                       , quoteColor
-                       , dblQuote "set columns=80"
-                       , dfltColor
-                       , "." ]
-  , f      <- any (advice `T.isInfixOf`) msgs ? (++ [msg]) :? (++ [ msg <> advice ]) = over _2 f a
+  | or (noOfEqs /= 1, T.head arg == '=', T.last arg == '=') =
+      let msg    = dblQuote arg <> " is not a valid argument."
+          advice = T.concat [ " Please specify the setting you want to change, followed immediately by "
+                            , dblQuote "="
+                            , ", followed immediately by the new value you want to assign, as in "
+                            , quoteColor
+                            , dblQuote "set columns=80"
+                            , dfltColor
+                            , "." ]
+          f      = any (advice `T.isInfixOf`) msgs ? (++ [msg]) :? (++ [ msg <> advice ])
+      in over _2 f a
 helperSettings a@(p, _, _) (T.breakOn "=" -> (n, T.tail -> v)) =
     maybe notFound found . findFullNameForAbbrev n $ settingNames
   where
