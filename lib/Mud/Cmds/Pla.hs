@@ -1529,8 +1529,8 @@ helperSettings a@(p, _, _) (T.breakOn "=" -> (name, T.tail -> value)) =
                         t         -> patternMatchFail "helperSettings found" [t]
       where
         procEither f = either appendMsg f parseInt
-        parseInt     = case (reads . T.unpack $ v :: [(Int, String)]) of [(x, "")] -> Right x
-                                                                         _         -> sorryParse
+        parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
+                                                                             _         -> sorryParse
         sorryParse   = Left . T.concat $ [ dblQuote value
                                          , " is not a valid value for the "
                                          , dblQuote name
@@ -1571,22 +1571,13 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dblQuote "unready sword"
                       , dfltColor
                       , "." ]
-unready (LowerNub i mq cols as) = ask >>= liftIO . atomically . helperSTM >>= \logMsgs ->
-    unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
+unready (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+    bcast bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
   where
-    helperSTM md = (,,,,,,,,,) <$> readTVar (md^.armTblTVar)
-                               <*> readTVar (md^.clothTblTVar)
-                               <*> readTVar (md^.entTblTVar)
-                               <*> readTVar (md^.eqTblTVar)
-                               <*> readTVar (md^.invTblTVar)
-                               <*> readTVar (md^.mobTblTVar)
-                               <*> readTVar (md^.msgQueueTblTVar)
-                               <*> readTVar (md^.pcTblTVar)
-                               <*> readTVar (md^.plaTblTVar)
-                               <*> readTVar (md^.typeTblTVar) >>= \(armTbl, ct, entTbl, eqTbl, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let (d, _, _, _, _) = mkCapStdDesig i entTbl it mt pcTbl tt
-            em              = eqTbl ! i
-            is              = M.elems em
+    helperSTM ms =
+        let d  = mkStdDesig i ms DoCap
+            em = getEqMap   i ms
+            is = M.elems em
         in if not . null $ is
           then let (gecrs, miss, rcs)          = resolveEntCoinNames i entTbl mt pcTbl as is mempty
                    eiss                        = zipWith (curry procGecrMisPCEq) gecrs miss
@@ -1675,9 +1666,10 @@ mkUnreadyDescs i armTbl ct et mt pt tt d is =
     otherPCIds    = i `delete` pcIds d
 
 
-mkIdCountBothList :: Id -> EntTbl -> MobTbl -> PCTbl -> Inv -> [(Id, Int, BothGramNos)]
-mkIdCountBothList i et mt pt is | ebgns <- [ getEffBothGramNos i et mt pt i' | i' <- is ], cs <- mkCountList ebgns =
-    nubBy equalCountsAndBoths . zip3 is cs $ ebgns
+mkIdCountBothList :: Id -> MudState -> Inv -> [(Id, Int, BothGramNos)]
+mkIdCountBothList i ms targetIds =
+    let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+    in nubBy equalCountsAndBoths . zip3 targetIds counts $ boths
   where
     equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
 
