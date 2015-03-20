@@ -1683,19 +1683,24 @@ uptime (NoArgs i mq cols) = do
 uptime p = withoutArgs uptime p
 
 
+getUptime :: MudStack Int
+getUptime = let start = view startTime <$> ask
+                now   = liftIO . getTime $ Monotonic
+            in (-) <$> sec `fmap` now <*> sec `fmap` start
+
+
 uptimeHelper :: Int -> MudStack T.Text
-uptimeHelper ut = helper <$> getRecordUptime
+uptimeHelper up = helper <$> getRecordUptime
   where
-    helper                     = \case Nothing  -> mkUptimeTxt
-                                       Just rut -> ut > rut ? mkNewRecTxt :? mkRecTxt rut
-    mkUptimeTxt                = mkTxtHelper "."
-    mkNewRecTxt                = mkTxtHelper . T.concat $ [ " - "
-                                                          , newRecordColor
-                                                          , "it's a new record!"
-                                                          , dfltColor ]
-    mkRecTxt (renderIt -> rut) = mkTxtHelper $ " (record uptime: " <> rut <> ")."
-    mkTxtHelper                = ("Up " <>) . (renderIt ut <>)
-    renderIt                   = T.pack . renderSecs . toInteger
+    helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
+    mkUptimeTxt    = mkTxtHelper "."
+    mkNewRecTxt    = mkTxtHelper . T.concat $ [ " - "
+                                              , newRecordColor
+                                              , "it's a new record!"
+                                              , dfltColor ]
+    mkRecTxt recUp = mkTxtHelper $ " (record uptime: " <> renderIt recUp <> ")."
+    mkTxtHelper    = ("Up " <>) . (renderIt up <>)
+    renderIt       = T.pack . renderSecs . toInteger
 
 
 getRecordUptime :: MudStack (Maybe Int)
@@ -1704,12 +1709,6 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
                       (return Nothing)
   where
     readUptime = Just . read <$> readFile uptimeFile
-
-
-getUptime :: MudStack Int
-getUptime = let start = view startTime <$> ask
-                now   = liftIO . getTime $ Monotonic
-            in (-) <$> sec `fmap` now <*> sec `fmap` start
 
 
 -----
