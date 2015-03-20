@@ -62,7 +62,7 @@ import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M (elems, filter, lookup, null)
+import qualified Data.Map.Lazy as M ((!), elems, filter, lookup, null)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -1145,10 +1145,9 @@ lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
 
 sorryFullClothSlots :: MudState -> Cloth -> EqMap -> T.Text
 sorryFullClothSlots ms cloth@(pp -> cloth') em
-  | cloth `elem` [ Earring .. Ring ]               = "You can't wear any more " <> cloth'       <> "s."
-  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn cloth' <> "."
-  | otherwise = let i = em ! clothToSlot cloth
-                in "You're already wearing " <> aOrAn (getSing i ms) <> "."
+  | cloth `elem` [ Earring .. Ring ]               = "You can't wear any more " <> cloth'               <> "s."
+  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn cloth'         <> "."
+  | otherwise = let i = em M.! clothToSlot cloth in  "You're already wearing "  <> aOrAn (getSing i ms) <> "."
 
 
 getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
@@ -1177,7 +1176,7 @@ getDesigClothSlot ms clothSing cloth em rol
     sorryBracelet = sorryFullClothSlotsOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
     slotFromRol   = fromRol rol :: Slot
     sorryRing (pp -> slot) i = T.concat [ "You're already wearing "
-                                        , aOrAn . getSing ms $ i
+                                        , aOrAn . getSing i $ ms
                                         , " on your "
                                         , slot
                                         , "." ]
@@ -1202,7 +1201,7 @@ readyWpn :: Id
          -> Id
          -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyWpn i ms d mrol a wpnId wpnSing | em <- getEqMap ms i, wpn <- getWpn ms wpnId, sub <- wpn^.wpnSub =
+readyWpn i ms d mrol a wpnId wpnSing | em <- getEqMap i ms, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
       then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _3 <>~ b
       else case maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) mrol of
