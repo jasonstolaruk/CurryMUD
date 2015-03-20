@@ -1034,7 +1034,7 @@ ready p = patternMatchFail "ready" [ showText p ]
 
 
 helperReady :: Id
-            -> MudStack
+            -> MudState
             -> PCDesig
             -> (EqTbl, InvTbl, [Broadcast], [T.Text])
             -> (Either T.Text Inv, Maybe RightOrLeft)
@@ -1723,7 +1723,7 @@ whoAdmin (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >>
                               | otherwise         = (           adminIds, ""                                    )
             adminSings                            = [ s | adminId <- adminIds', let s = getSing adminId ms
                                                                               , then sortWith by s ]
-            adminAbbrevs                          = dropBlanks $ self : styleAbbrevs Don'tBracket
+            adminAbbrevs                          = dropBlanks . (self :) . styleAbbrevs Don'tBracket $ adminSings
             footer                                = [ numOfAdmins adminIds <> " logged in." ]
         in return (null adminAbbrevs ? footer :? T.intercalate ", " adminAbbrevs : footer)
       where
@@ -1739,6 +1739,6 @@ whoAmI :: Action
 whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoami" i
   where
     helper ms = let s         = getSing    i ms
-                    (sexy, r) = getSexRace i ms
+                    (sexy, r) = (showText *** showText) . getSexRace i $ ms
                 in return . T.concat $ [ "You are ", knownNameColor, s, dfltColor, " (a ", sexy, " ", r, ")." ]
 whoAmI p = withoutArgs whoAmI p
