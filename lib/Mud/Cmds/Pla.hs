@@ -427,6 +427,7 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
           then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
           else (ms, (mkBroadcast i "You don't see anything here to pick up.", []))
+getAction p = patternMatchFail "getAction" [ showText p ]
 
 
 -----
@@ -543,7 +544,7 @@ help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
   where
     handler e = fileIOExHandler "help" e >> wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
-    helper rootHelpTxt = getState >>= return . getPlaFlag IsAdmin . getPla i >>= \isAdmin -> do
+    helper rootHelpTxt = (getPlaFlag IsAdmin . getPla i <$> getState) >>= \isAdmin -> do
         (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ isAdmin
         let zipped                 = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = over both (formatHelpNames . mkHelpNames) . partition (isCmdHelp . snd) $ zipped
@@ -560,7 +561,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
     formatHelpNames names = let wordsPerLine = cols `div` padding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
-help (LowerNub i mq cols as) = getState >>= return . getPlaFlag IsAdmin . getPla i >>= liftIO . mkHelpData >>= \hs -> do
+help (LowerNub i mq cols as) = (getPlaFlag IsAdmin . getPla i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
     unless (null hns) . logPla "help" i . ("read help on: " <>) . T.intercalate ", " $ hns
@@ -696,7 +697,7 @@ inv (LowerNub i mq cols as) = getState >>= \ms ->
       then invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
-    helperEitherInv ms acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
+    helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
     helperEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
@@ -872,7 +873,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dblQuote $ "put " <> a <> " sack"
                       , dfltColor
                       , "." ]
-putAction (Lower i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
     helper ms = let d                                           = mkStdDesig      i ms DoCap
@@ -984,13 +985,13 @@ handleEgress i = helper |$| modifyState >=> \(s, bs, logMsgs) -> do
         in (ms & plaTbl .~ pt', bs, logMsgs)
       where
         stopPeeping pt peepingIds =
-            let helper peepedId ptAcc = let thePeeped = ptAcc ! peepedId
-                                        in ptAcc & at peepedId ?~ over peepers (i `delete`) thePeeped
-            in foldr helper pt peepingIds
+            let f peepedId ptAcc = let thePeeped = ptAcc ! peepedId
+                                   in ptAcc & at peepedId ?~ over peepers (i `delete`) thePeeped
+            in foldr f pt peepingIds
         stopBeingPeeped pt peeperIds =
-            let helper peeperId ptAcc = let thePeeper = ptAcc ! peeperId
-                                        in ptAcc & at peeperId ?~ over peeping (i `delete`) thePeeper
-            in foldr helper pt peeperIds
+            let f peeperId ptAcc = let thePeeper = ptAcc ! peeperId
+                                   in ptAcc & at peeperId ?~ over peeping (i `delete`) thePeeper
+            in foldr f pt peeperIds
 
 
 -----
@@ -1017,7 +1018,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dblQuote "ready sword"
                       , dfltColor
                       , "." ]
-ready (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "ready" i $ logMsgs)
   where
     helper ms =
@@ -1305,7 +1306,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dblQuote $ "remove " <> a <> " sack"
                       , dfltColor
                       , "." ]
-remove (Lower i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
   where
     helper ms = let d                                           = mkStdDesig      i ms DoCap
@@ -1370,7 +1371,7 @@ say p@AdviseNoArgs = advise p ["say"] advice
                       , dblQuote "say nice to meet you, too"
                       , dfltColor
                       , "." ]
-say p@(WithArgs i mq cols args@(a:_))
+say p@(WithArgs i _ _ args@(a:_))
   | T.head a == adverbOpenChar = case parseAdverb . T.unwords $ args of
     Left  msg -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
@@ -1412,9 +1413,9 @@ say p@(WithArgs i mq cols args@(a:_))
     adviseHelper      = advise p ["say"]
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d                             = mkStdDesig      i ms DoCap
-            (is@((i `delete`) -> is'), c) = getPCRmInvCoins i ms
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is', c)
-          then case resolveRmInvCoins i ms [target] is' c of
+            ((i `delete`) -> is, c) = getPCRmInvCoins i ms
+        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is, c)
+          then case resolveRmInvCoins i ms [target] is c of
             (_,                    [ Left [msg] ]) -> sorry msg
             (_,                    Right  _:_    ) -> sorry "You're talking to coins now?"
             ([ Left  msg        ], _             ) -> sorry msg
@@ -1422,8 +1423,8 @@ say p@(WithArgs i mq cols args@(a:_))
                                                             \time."
             ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                           in either sorry (sayToHelper ms d targetId targetDesig) parseRearAdverb
-                MobType -> either sorry (sayToMobHelper ms d targetSing) parseRearAdverb
+                           in either sorry (sayToHelper d targetId targetDesig) parseRearAdverb
+                MobType -> either sorry (sayToMobHelper d targetSing) parseRearAdverb
                 _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
             x -> patternMatchFail "say sayTo" [ showText x ]
           else sorry "You don't see anyone here to talk to."
@@ -1435,7 +1436,7 @@ say p@(WithArgs i mq cols args@(a:_))
                       Right (adverb, rest') -> Right ("", " " <> adverb, formatMsg rest')
                       Left  msg             -> Left  msg
                   | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
-        sayToHelper ms d targetId targetDesig (frontAdv, rearAdv, msg) =
+        sayToHelper d targetId targetDesig (frontAdv, rearAdv, msg) =
             let toSelfMsg         = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toSelfBroadcast   = head . mkBroadcast i . nlnl $ toSelfMsg
                 toTargetMsg       = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
@@ -1443,7 +1444,7 @@ say p@(WithArgs i mq cols args@(a:_))
                 toOthersMsg       = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
             in (ms, ([ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ], [ parsePCDesig i ms toSelfMsg ]))
-        sayToMobHelper ms d targetSing (frontAdv, rearAdv, msg) =
+        sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg         = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
                 toOthersMsg       = T.concat [ serialize d
                                              , " says "
@@ -1493,7 +1494,7 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
     let names  = styleAbbrevs Don'tBracket settingNames
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
-setAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+setAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "set" i $ logMsgs)
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
@@ -1570,7 +1571,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dblQuote "unready sword"
                       , dfltColor
                       , "." ]
-unready (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs) -- TODO: Was "bcastNl"... ok?
   where
     helper ms = let d                      = mkStdDesig i ms DoCap
@@ -1609,7 +1610,7 @@ mkUnreadyDescs :: Id
                -> ([Broadcast], [T.Text])
 mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
   where
-    helper (targetId, count, both@(targetSing, _)) = if count == 1
+    helper (targetId, count, b@(targetSing, _)) = if count == 1
       then let toSelfMsg   = T.concat [ "You ",           mkVerb targetId SndPer, " the ",   targetSing, "." ]
                toOthersMsg = T.concat [ serialize d, " ", mkVerb targetId ThrPer, " ", aOrAn targetSing, "." ]
            in ((toOthersMsg, otherPCIds) : mkBroadcast i toSelfMsg, toSelfMsg)
@@ -1618,7 +1619,7 @@ mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- m
                                       , " "
                                       , showText count
                                       , " "
-                                      , mkPlurFromBoth both
+                                      , mkPlurFromBoth b
                                       , "." ]
                toOthersMsg = T.concat [ serialize d
                                       , " "
@@ -1626,7 +1627,7 @@ mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- m
                                       , " "
                                       , showText count
                                       , " "
-                                      , mkPlurFromBoth both
+                                      , mkPlurFromBoth b
                                       , "." ]
            in ((toOthersMsg, otherPCIds) : mkBroadcast i toSelfMsg, toSelfMsg)
     mkVerb targetId person = case getType targetId ms of
@@ -1684,7 +1685,7 @@ getUptime = let start = view startTime <$> ask
 
 
 uptimeHelper :: Int -> MudStack T.Text
-uptimeHelper up = helper <$> ((fmap . fmap) getSum) getRecordUptime -- TODO: Ok?
+uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime -- TODO: Ok?
     -- maybeRecUpSum <- getRecordUptime
     -- let maybeRecUpSum' = getSum <$> maybeRecUpSum
     -- return . helper $ maybeRecUpSum'
