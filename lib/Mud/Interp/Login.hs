@@ -90,7 +90,7 @@ promptRetryName mq msg = do
 
 
 checkProfanitiesDict :: CmdName -> Id -> MsgQueue -> MudStack Bool
-checkProfanitiesDict cn i mq = checkNameHelper profanitiesFile "checkProfanitiesDict" sorry
+checkProfanitiesDict cn i mq = checkNameHelper profanitiesFile "checkProfanitiesDict" sorry cn mq
   where
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
@@ -103,6 +103,14 @@ checkProfanitiesDict cn i mq = checkNameHelper profanitiesFile "checkProfanities
         logNotice "checkProfanitiesDict" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
 
 
+checkNameHelper :: FilePath -> T.Text -> MudStack () -> MsgQueue -> CmdName -> MudStack Bool
+checkNameHelper file funName sorry mq cn = (liftIO . T.readFile $ file) |$| try >=> either
+    (\e -> fileIOExHandler funName e >> return False) -- TODO: Use "emptied". "Any"?
+    helper
+  where
+    helper (S.fromList . T.lines -> set) = let isNG = cn `S.member` set in when isNG sorry >> return isNG
+
+
 logProfanity :: CmdName -> HostName -> MudStack ()
 logProfanity cn (T.pack -> hn) =
     liftIO (helper =<< mkTimestamp |$| try) >>= eitherRet (fileIOExHandler "logProfanity")
@@ -111,25 +119,15 @@ logProfanity cn (T.pack -> hn) =
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
-checkPropNamesDict = checkNameHelper propNamesFile "checkPropNamesDict" sorry
+checkPropNamesDict mq = checkNameHelper propNamesFile "checkPropNamesDict" sorry mq
   where
     sorry = promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
 
 
 checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
-checkWordsDict = checkNameHelper wordsFile "checkWordsDict" sorry
+checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry mq
   where
     sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
-
-
--- TODO: Move?
-checkNameHelper :: FilePath -> T.Text -> T.Text -> CmdName -> MsgQueue -> MudStack Bool
-checkNameHelper file funName sorryMsg cn mq = (liftIO . T.readFile $ file) |$| try >=> either
-    (\e -> fileIOExHandler funName e >> return False) -- TODO: Use "emptied". "Any"?
-    helper
-  where
-    helper (S.fromList . T.lines -> set) = let isNG = cn `S.member` set in when isNG sorry >> return isNG
-    sorry                                = promptRetryName mq sorryMsg
 
 
 interpConfirmName :: Sing -> Interp
@@ -182,22 +180,21 @@ interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQu
 yesNo :: T.Text -> Maybe Bool
 yesNo (T.toLower -> a) = guard (not . T.null $ a) >> helper
   where
-    helper | a `T.isPrefixOf` "yes" = Just True
-           | a `T.isPrefixOf` "no"  = Just False
+    helper | a `T.isPrefixOf` "yes" = return True
+           | a `T.isPrefixOf` "no"  = return False
            | otherwise              = Nothing
 
 
 stopInacTimer :: Id -> MsgQueue -> MudStack ()
 stopInacTimer i mq = do
-    logPla "stopInacTimer" i "stopping the inactivity timer."
     liftIO . atomically . writeTQueue mq $ InacStop
+    logPla "stopInacTimer" i "stopping the inactivity timer."
 
 
-notifyArrival :: Id -> EntTbl -> InvTbl -> MobTbl -> MsgQueueTbl -> PCTbl -> PlaTbl -> TypeTbl -> MudStack ()
-notifyArrival i et it mt mqt pcTbl plaTbl tt = let s = (et ! i)^.sing in do
-    bcastAdmins mt mqt pcTbl plaTbl $ s <> " has logged on."
-    bcastOthersInRm i it mt mqt pcTbl plaTbl tt . nlnl $ mkSerializedNonStdDesig i mt pcTbl s A <> " has arrived in \
-                                                                                                   \the game."
+notifyArrival :: Id -> MudState -> MudStack ()
+notifyArrival i ms = let s = getSing i ms in do
+    bcastAdmins $ s <> " has logged on."
+    bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ms s A <> " has arrived in the game."
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()
