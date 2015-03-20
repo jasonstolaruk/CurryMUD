@@ -1705,7 +1705,7 @@ uptimeHelper up = helper <$> getRecordUptime
 
 getRecordUptime :: MudStack (Maybe Int)
 getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
-                      (liftIO readUptime `catch` emptied . fileIOExHandler "getRecordUptime") -- TODO: We didn't need "\e ->" here... what about in other places?
+                      (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime")) -- TODO: We didn't need "\e ->" here... what about in other places?
                       (return Nothing)
   where
     readUptime = Just . read <$> readFile uptimeFile
@@ -1715,20 +1715,20 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 
 
 whoAdmin :: Action
-whoAdmin (NoArgs i mq cols) = ask >>= liftIO . atomically . helperSTM >> logPlaExec "whoadmin" i
+whoAdmin (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoadmin" i
   where
-    helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar) >>= \(et, pt) ->
-        let ais                         = [ pi | pi <- IM.keys pt, getPlaFlag IsAdmin (pt ! pi) ]
-            (ais', self) | i `elem` ais = (i `delete` ais, selfColor <> view sing (et ! i) <> dfltColor)
-                         | otherwise    = (ais, "")
-            aas                         = styleAbbrevs Don'tBracket [ s | ai <- ais'
-                                                                        , let s = (et ! ai)^.sing, then sortWith by s ]
-            aas'                        = dropBlanks $ self : aas
-            footer                      = [ numOfAdmins ais <> " logged in." ]
-        in multiWrapSendSTM mq cols (null aas' ? footer :? T.intercalate ", " aas' : footer)
+    helper ms =
+        let adminIds                                = getAdminIds ms
+            (adminIds', self) | i `elem` adminIds   = (i `delete` adminIds, selfColor <> getSing i ms <> dfltColor)
+                              | otherwise           = (           adminIds, ""                                    )
+            adminSings                              = [ s | adminId <- adminIds', let s = getSing adminId ms
+                                                                                , then sortWith by s ]
+            (dropBlanks . (self :) -> adminAbbrevs) = styleAbbrevs Don'tBracket
+            footer                                  = [ numOfAdmins adminIds <> " logged in." ]
+        in return $ null adminAbbrevs ? footer :? T.intercalate ", " adminAbbrevs : footer
       where
-        numOfAdmins (length -> noa) | noa == 1  = "1 administrator"
-                                    | otherwise = showText noa <> " administrators"
+        numOfAdmins (length -> num) | num == 1  = "1 administrator"
+                                    | otherwise = showText num <> " administrators"
 whoAdmin p = withoutArgs whoAdmin p
 
 
