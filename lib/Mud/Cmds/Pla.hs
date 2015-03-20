@@ -62,7 +62,7 @@ import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M (elems, filter, null)
+import qualified Data.Map.Lazy as M (elems, filter, lookup, null)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -1228,7 +1228,7 @@ readyWpn i ms d mrol a wpnId wpnSing | em <- getEqMap ms i, wpn <- getWpn ms wpn
             | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> wpnSing <> "."
                            in a & _3 <>~ b
   where
-    poss       = mkPossPro . getSex ms $ i
+    poss       = mkPossPro . getSex i $ ms
     otherPCIds = i `delete` pcIds d
 
 
@@ -1244,7 +1244,7 @@ getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
 getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigWpnSlot ms wpnSing em rol
   | isRingRol rol = Left $ "You can't wield " <> aOrAn wpnSing <> " with your finger!"
-  | otherwise     = maybe (Right desigSlot) (Left . sorry) $ em^.at desigSlot
+  | otherwise     = maybe (Right desigSlot) (Left . sorry) . M.lookup desigSlot $ em
   where
     sorry i = let s = getSing i ms in T.concat [ "You're already wielding "
                                                , aOrAn s
@@ -1343,7 +1343,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
           then sorry $ theOnLowerCap conSing <> " isn't a container."
           else let invCoinsInCon       = getInvCoins conId ms
                    (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) invCoinsInCon
-                   eiss                = zipWith (curry procGecrMisCon conSing) gecrs miss
+                   eiss                = zipWith (curry $ procGecrMisCon conSing) gecrs miss
                    ecs                 = map (procReconciledCoinsCon conSing) rcs
                    mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
                    (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
