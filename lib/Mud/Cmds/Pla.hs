@@ -1572,7 +1572,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dfltColor
                       , "." ]
 unready (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs -- TODO: Was "bcastNl"... ok?
+    bcast bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs) -- TODO: Was "bcastNl"... ok?
   where
     helper ms = let d                      = mkStdDesig i ms DoCap
                     em                     = getEqMap   i ms
@@ -1678,8 +1678,8 @@ mkIdCountBothList i ms targetIds =
 
 uptime :: Action
 uptime (NoArgs i mq cols) = do
-    logPlaExec "uptime" i
     wrapSend mq cols =<< uptimeHelper =<< getUptime
+    logPlaExec "uptime" i
 uptime p = withoutArgs uptime p
 
 
