@@ -22,25 +22,20 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import Control.Exception.Lifted (try)
 import Control.Lens (at)
-import Control.Lens.Getter (view)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
 import Control.Monad ((>=>), guard, unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
-import Data.List (delete, sort)
+import Data.List (delete)
 import Data.Monoid ((<>))
 import Network (HostName)
-import System.Directory (doesFileExist)
-import qualified Data.Set as S (fromList, member, notMember)
+import qualified Data.Set as S (fromList, member)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (appendFile, readFile, writeFile)
+import qualified Data.Text.IO as T (appendFile, readFile)
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
@@ -59,8 +54,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise                         = f [ checkProfanitiesDict cn i mq
-                                          , checkPropNamesDict   cn   mq
-                                          , checkWordsDict       cn   mq ] $ do
+                                          , checkPropNamesDict   mq cn
+                                          , checkWordsDict       mq cn ] $ do
                                             prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <>
                                                                    " is that OK? [yes/no]"
                                             setInterp i . Just . interpConfirmName $ cn'
@@ -79,7 +74,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
     f :: [MudStack Bool] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
     f []     b = b
     f [a]    b = a >>= flip unless b
-    f (a:as) _ = a >>= flip unless (f as)
+    f (a:as) b = a >>= flip unless (f as b)
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
 
@@ -90,7 +85,7 @@ promptRetryName mq msg = do
 
 
 checkProfanitiesDict :: CmdName -> Id -> MsgQueue -> MudStack Bool
-checkProfanitiesDict cn i mq = checkNameHelper profanitiesFile "checkProfanitiesDict" sorry mq cn
+checkProfanitiesDict cn i mq = checkNameHelper (Just profanitiesFile) "checkProfanitiesDict" sorry cn
   where
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
@@ -103,8 +98,9 @@ checkProfanitiesDict cn i mq = checkNameHelper profanitiesFile "checkProfanities
         logNotice "checkProfanitiesDict" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
 
 
-checkNameHelper :: FilePath -> T.Text -> MudStack () -> MsgQueue -> CmdName -> MudStack Bool
-checkNameHelper file funName sorry mq cn = (liftIO . T.readFile $ file) |$| try >=> either
+checkNameHelper :: Maybe FilePath -> T.Text -> MudStack () -> CmdName -> MudStack Bool
+checkNameHelper Nothing     _       _     _  = return False
+checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |$| try >=> either
     (\e -> fileIOExHandler funName e >> return False) -- TODO: Use "emptied". "Any"?
     helper
   where
@@ -119,13 +115,13 @@ logProfanity cn (T.pack -> hn) =
 
 
 checkPropNamesDict :: MsgQueue -> CmdName -> MudStack Bool
-checkPropNamesDict mq = checkNameHelper propNamesFile "checkPropNamesDict" sorry mq
+checkPropNamesDict mq = checkNameHelper propNamesFile "checkPropNamesDict" sorry
   where
     sorry = promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
 
 
 checkWordsDict :: MsgQueue -> CmdName -> MudStack Bool
-checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry mq
+checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
   where
     sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
 
@@ -137,15 +133,15 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
       showMotd mq cols
       look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       prompt mq dfltPrompt
-      notifyArrival i
+      notifyArrival i ms
       when (getPlaFlag IsAdmin p) . stopInacTimer i $ mq
       initPlaLog i s
       logPla    "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
       logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged on as " <> s <> "."
-  Just False -> promptRetryName  mq "" >> setInterp i . Just $ interpName
+  Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
-    helper ms = let et   = ms^.entTbl
+    helper ms = let et   = ms^.entTbl -- TODO: Can we make this prettier?
                     it   = ms^.invTbl
                     pct  = ms^.pcTbl
                     plat = ms^.plaTbl
@@ -159,10 +155,10 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
                     it'      = it & at iWelcome ?~ originIs & at iCentral ?~ destIs
 
                     pc       = pct ! i & rmId .~ iCentral
-                    pct'     = pcTbl & at i ?~ pc
+                    pct'     = pct & at i ?~ pc
 
-                    pla      = setPlaFlag IsAdmin (T.head s == 'Z') (plaTbl ! i) & interp .~ Nothing
-                    plat'    = plaTbl & at i ?~ pla
+                    pla      = setPlaFlag IsAdmin (T.head s == 'Z') (plat ! i) & interp .~ Nothing
+                    plat'    = plat & at i ?~ pla
 
                     ms'      = ms & entTbl .~ et' & invTbl .~ it' & pcTbl .~ pct' & plaTbl .~ plat'
         in (ms', (ms', oldSing))
