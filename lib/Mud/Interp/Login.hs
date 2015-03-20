@@ -8,6 +8,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
@@ -36,7 +37,7 @@ import Data.List (delete, sort)
 import Data.Monoid ((<>))
 import Network (HostName)
 import System.Directory (doesFileExist)
-import qualified Data.Set as S (member)
+import qualified Data.Set as S (fromList, member, notMember)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile, writeFile)
 
@@ -56,7 +57,13 @@ interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                         = do
+  | otherwise                         = f [ checkProfanity     cn i mq
+                                          , checkPropNamesDict cn   mq
+                                          , checkWordsDict     cn   mq ] $ do
+                                            prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <>
+                                                                   " is that OK? [yes/no]"
+                                            modifyState helper
+{-
       isProfane <- checkProfanity cn i mq
       unless isProfane $ do
           isPropName <- checkPropNamesDict cn mq
@@ -64,13 +71,15 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
               isWord <- checkWordsDict cn mq
               unless isWord $ do
                   prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
-                  ask >>= liftIO . atomically . helperSTM
+                  modifyState helper
+-}
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-    helperSTM md = do
-        pt <- readTVar $ md^.plaTblTVar
-        let p = pt ! i & interp .~ (Just . interpConfirmName $ cn')
-        writeTVar (md^.plaTblTVar) $ pt & at i ?~ p
+    f :: [MudStack Bool] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
+    f []     b = b
+    f [a]    b = a >>= flip unless b
+    f (a:as) _ = a >>= flip unless (f as)
+    helper ms  = let p = getPla i ms in (ms & plaTbl.at i .~ (p & interp .~ (Just . interpConfirmName $ cn')), ())
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
 
@@ -81,22 +90,21 @@ promptRetryName mq msg = do
 
 
 checkProfanity :: CmdName -> Id -> MsgQueue -> MudStack Bool
-checkProfanity cn i mq =
-      (liftIO . T.readFile $ profanitiesFile) |$| try >=> either
-          (\e -> fileIOExHandler "checkProfanity" e >> return False)
-          helper
+checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) |$| try >=> either
+    (\e -> fileIOExHandler "checkProfanity" e >> return False) -- TODO: Use "emptied". "Any"?
+    helper
   where
-    helper profanities = if cn `notElem` T.lines profanities
-      then return False
-      else ask >>= liftIO . atomically . helperSTM >>= \(parensQuote . view sing . (! i) -> s, view hostName . (! i) -> hn) -> do
-          logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
-          logProfanity cn hn
-          send mq . nlPrefix . nl $ bootMsgColor                                                                     <>
-                                    "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
-                                    dfltColor
-          sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
-          return True
-    helperSTM md = (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.plaTblTVar)
+    helper (S.fromList . T.lines -> profanities) = let isProfane = cn `S.member` profanities in
+        when isProfane boot >> return isProfane
+    boot = getState >>= \ms -> do
+        let s  = parensQuote . getSing i $ ms
+            hn = getHostName i ms
+        send mq . nlPrefix . nl $ bootMsgColor                                                                     <>
+                                  "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
+                                  dfltColor
+        sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
+        logProfanity cn hn
+        logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()

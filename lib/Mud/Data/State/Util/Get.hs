@@ -9,6 +9,7 @@ import Mud.Data.State.MudData
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
+import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
 
@@ -55,6 +56,10 @@ getEqMap i = views eqTbl (! i)
 
 getHand :: Id -> MudState -> Hand
 getHand i ms = getMob i ms ^.hand
+
+
+getHostName :: Id -> MudState -> HostName
+getHostName i ms = getPla i ms ^.hostName
 
 
 getIntroduced :: Id -> MudState -> [Sing]
