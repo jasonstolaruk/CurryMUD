@@ -1620,32 +1620,45 @@ mkUnreadyDescs :: Id
                -> ([Broadcast], [T.Text])
 mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
   where
-    helper (targetId, count, both@(s, _)) = if count == 1
-      then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", s, "." ]
-               toOthersMsg = T.concat [ serialize d, " ", mkVerb targetId ThrPer, " ", aOrAn s, "." ]
+    helper (targetId, count, both@(targetSing, _)) = if count == 1
+      then let toSelfMsg   = T.concat [ "You ",           mkVerb targetId SndPer, " the ",   targetSing, "." ]
+               toOthersMsg = T.concat [ serialize d, " ", mkVerb targetId ThrPer, " ", aOrAn targetSing, "." ]
            in ((toOthersMsg, otherPCIds) : mkBroadcast i toSelfMsg, toSelfMsg)
-      else let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " ", showText count, " ", mkPlurFromBoth both, "." ]
-               toOthersMsg = T.concat [ serialize d, " ", mkVerb ei ThrPer, " ", showText c, " ", mkPlurFromBoth b, "." ]
+      else let toSelfMsg   = T.concat [ "You "
+                                      , mkVerb targetId SndPer
+                                      , " "
+                                      , showText count
+                                      , " "
+                                      , mkPlurFromBoth both
+                                      , "." ]
+               toOthersMsg = T.concat [ serialize d
+                                      , " "
+                                      , mkVerb targetId ThrPer
+                                      , " "
+                                      , showText count
+                                      , " "
+                                      , mkPlurFromBoth both
+                                      , "." ]
            in ((toOthersMsg, otherPCIds) : mkBroadcast i toSelfMsg, toSelfMsg)
-    mkVerb ei p =  case tt ! ei of
-      ClothType -> case ct ! ei of
-        Earring  -> mkVerbRemove  p
-        NoseRing -> mkVerbRemove  p
-        Necklace -> mkVerbTakeOff p
-        Bracelet -> mkVerbTakeOff p
-        Ring     -> mkVerbTakeOff p
-        Backpack -> mkVerbTakeOff p
-        _        -> mkVerbDoff    p
-      ConType -> mkVerbTakeOff p
-      WpnType | p == SndPer -> "stop wielding"
-              | otherwise   -> "stops wielding"
-      ArmType -> case view armSub $ armTbl ! ei of
-        Head   -> mkVerbTakeOff p
-        Hands  -> mkVerbTakeOff p
-        Feet   -> mkVerbTakeOff p
-        Shield -> mkVerbUnready p
-        _      -> mkVerbDoff    p
-      t       -> patternMatchFail "mkUnreadyDescs mkVerb" [ showText t ]
+    mkVerb targetId person = case getType targetId ms of
+      ClothType -> case getCloth targetId ms of
+        Earring  -> mkVerbRemove  person
+        NoseRing -> mkVerbRemove  person
+        Necklace -> mkVerbTakeOff person
+        Bracelet -> mkVerbTakeOff person
+        Ring     -> mkVerbTakeOff person
+        Backpack -> mkVerbTakeOff person
+        _        -> mkVerbDoff    person
+      ConType -> mkVerbTakeOff person
+      WpnType | person == SndPer -> "stop wielding"
+              | otherwise        -> "stops wielding"
+      ArmType -> case getArmSub targetId ms of
+        Head   -> mkVerbTakeOff person
+        Hands  -> mkVerbTakeOff person
+        Feet   -> mkVerbTakeOff person
+        Shield -> mkVerbUnready person
+        _      -> mkVerbDoff    person
+      t -> patternMatchFail "mkUnreadyDescs mkVerb" [ showText t ]
     mkVerbRemove  = \case SndPer -> "remove"
                           ThrPer -> "removes"
     mkVerbTakeOff = \case SndPer -> "take off"
