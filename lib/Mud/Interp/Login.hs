@@ -90,7 +90,7 @@ promptRetryName mq msg = do
 
 
 checkProfanitiesDict :: CmdName -> Id -> MsgQueue -> MudStack Bool
-checkProfanitiesDict cn i mq = checkNameHelper profanitiesFile "checkProfanitiesDict" sorry cn mq
+checkProfanitiesDict cn i mq = checkNameHelper profanitiesFile "checkProfanitiesDict" sorry mq cn
   where
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
@@ -118,13 +118,13 @@ logProfanity cn (T.pack -> hn) =
     helper ts = T.appendFile profanityLogFile . T.concat $ [ ts, " ", hn, " ", cn ]
 
 
-checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
+checkPropNamesDict :: MsgQueue -> CmdName -> MudStack Bool
 checkPropNamesDict mq = checkNameHelper propNamesFile "checkPropNamesDict" sorry mq
   where
     sorry = promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
 
 
-checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
+checkWordsDict :: MsgQueue -> CmdName -> MudStack Bool
 checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry mq
   where
     sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
