@@ -295,21 +295,21 @@ emote p@(ActionParams { plaId, args })
   | any (`elem` args) [ enc, enc <> "'s" ] = getState >>= \ms ->
       let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
           toSelfMsg                  = bracketQuote . T.replace enc s . formatMsgArgs $ args
-          toSelfBrdcst               = over _1 nlnl . mkBroadcast plaId $ toSelfMsg
+          toSelfBroadcast            = mkBroadcast plaId . nlnl $ toSelfMsg
           toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
                       | otherwise          = capitalizeMsg . T.unwords $ args
-          toOthersMsg'   = T.replace enc (serialize d { shouldCap = Don'tCap }) . punctuateMsg $ toOthersMsg
-          toOthersBrdcst = (nlnl . bracketQuote $ toOthersMsg', plaId `delete` pcIds d)
-      in bcast [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut "emote" plaId [toSelfMsg]
+          toOthersMsg'      = T.replace enc (serialize d { shouldCap = Don'tCap }) . punctuateMsg $ toOthersMsg
+          toOthersBroadcast = (nlnl . bracketQuote $ toOthersMsg', plaId `delete` pcIds d)
+      in bcast ( toOthersBroadcast : toSelfBroadcast ) >> logPlaOut "emote" plaId [toSelfMsg]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
   | otherwise = getState >>= \ms ->
     let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
         msg                        = punctuateMsg . T.unwords $ args
         toSelfMsg                  = bracketQuote $ s <> " " <> msg
-        toSelfBrdcst               = over _1 nlnl . mkBroadcast plaId $ toSelfMsg
+        toSelfBroadcast            = mkBroadcast plaId . nlnl $ toSelfMsg
         toOthersMsg                = bracketQuote $ serialize d <> " " <> msg
-        toOthersBrdcst             = (nlnl toOthersMsg, plaId `delete` pcIds d)
-    in bcast [ toSelfBrdcst, toOthersBrdcst ] >> logPlaOut "emote" plaId [toSelfMsg]
+        toOthersBroadcast          = (nlnl toOthersMsg, plaId `delete` pcIds d)
+    in bcast ( toOthersBroadcast : toSelfBroadcast ) >> logPlaOut "emote" plaId [toSelfMsg]
   where
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
@@ -334,7 +334,7 @@ emote p@(ActionParams { plaId, args })
 equip :: Action
 equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
-    let em@(M.elems -> is) = getEqMap ms i in send mq $ if not . M.null $ em
+    let em@(M.elems -> is) = getEqMap i ms in send mq $ if not . M.null $ em
       then let (gecrs, miss, rcs)                    = resolveEntCoinNames i ms as is mempty
                eiss                                  = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                               = foldl' helperEitherInv "" eiss
@@ -453,7 +453,7 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
       logPla "tryMove" i logMsg
   where
     helper ms =
-        let p        = getPC ms i
+        let p        = getPC i ms
             originId = p^.rmId
             originRm = getRm originId ms
         in case findExit originRm dir of
