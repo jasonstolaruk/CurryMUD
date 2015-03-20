@@ -57,9 +57,9 @@ interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                         = f [ checkProfanities   cn i mq
-                                          , checkPropNamesDict cn   mq
-                                          , checkWordsDict     cn   mq ] $ do
+  | otherwise                         = f [ checkProfanitiesDict cn i mq
+                                          , checkPropNamesDict   cn   mq
+                                          , checkWordsDict       cn   mq ] $ do
                                             prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <>
                                                                    " is that OK? [yes/no]"
                                             modifyState helper
@@ -89,8 +89,8 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-checkProfanities :: CmdName -> Id -> MsgQueue -> MudStack Bool
-checkProfanities cn i mq = checkNameHelper profanitiesFile "checkProfanities" sorry
+checkProfanitiesDict :: CmdName -> Id -> MsgQueue -> MudStack Bool
+checkProfanitiesDict cn i mq = checkNameHelper profanitiesFile "checkProfanitiesDict" sorry
   where
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
@@ -100,7 +100,7 @@ checkProfanities cn i mq = checkNameHelper profanitiesFile "checkProfanities" so
                                   dfltColor
         sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
         logProfanity cn hn
-        logNotice "checkProfanities" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
+        logNotice "checkProfanitiesDict" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()
