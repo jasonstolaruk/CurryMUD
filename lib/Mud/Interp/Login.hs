@@ -11,6 +11,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Set
 import Mud.Misc.ANSI
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
@@ -62,7 +63,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                                           , checkWordsDict       cn   mq ] $ do
                                             prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <>
                                                                    " is that OK? [yes/no]"
-                                            modifyState helper
+                                            setInterp i . Just . interpConfirmName $ cn'
 {-
       isProfane <- checkProfanity cn i mq
       unless isProfane $ do
@@ -79,7 +80,6 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
     f []     b = b
     f [a]    b = a >>= flip unless b
     f (a:as) _ = a >>= flip unless (f as)
-    helper ms  = let p = getPla i ms in (ms & plaTbl.at i .~ (p & interp .~ (Just . interpConfirmName $ cn')), ())
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
 
@@ -132,24 +132,18 @@ checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry mq
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
-  Just True -> ask >>= liftIO . atomically . helperSTM >>= \(et, it, mt, mqt, oldSing, pcTbl, p, plaTbl, tt) -> do
-      logNotice "interpConfirmName" $ dblQuote oldSing <> " has logged on as " <> s <> "."
-      initPlaLog i s
-      logPla "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
-      when (getPlaFlag IsAdmin p) . stopInacTimer i $ mq
-      notifyArrival i et it mt mqt pcTbl plaTbl tt
+  Just True -> helper |$| modifyState >=> \(ms@(getPla i -> p), oldSing) -> do
       send mq . nl $ ""
       showMotd mq cols
-      look ActionParams { plaId       = i
-                        , plaMsgQueue = mq
-                        , plaCols     = cols
-                        , args        = [] }
+      look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       prompt mq dfltPrompt
-  Just False -> promptRetryName mq "" >> ask >>= \md -> liftIO . atomically $ do
-      pt <- readTVar $ md^.plaTblTVar
-      let p = pt ! i & interp .~ Just interpName
-      writeTVar (md^.plaTblTVar) $ pt & at i ?~ p
-  Nothing -> promptRetryYesNo mq
+      notifyArrival i
+      when (getPlaFlag IsAdmin p) . stopInacTimer i $ mq
+      initPlaLog i s
+      logPla    "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
+      logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged on as " <> s <> "."
+  Just False -> promptRetryName  mq "" >> setInterp i . Just $ interpName
+  Nothing    -> promptRetryYesNo mq
   where
     helper ms = let et   = ms^.entTbl
                     it   = ms^.invTbl
@@ -169,7 +163,9 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
 
                     pla      = setPlaFlag IsAdmin (T.head s == 'Z') (plaTbl ! i) & interp .~ Nothing
                     plat'    = plaTbl & at i ?~ pla
-        in (ms & entTbl .~ et' & invTbl .~ it' & pcTbl .~ pct' & plaTbl .~ plat', ())
+
+                    ms'      = ms & entTbl .~ et' & invTbl .~ it' & pcTbl .~ pct' & plaTbl .~ plat'
+        in (ms', (ms', oldSing))
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
 
