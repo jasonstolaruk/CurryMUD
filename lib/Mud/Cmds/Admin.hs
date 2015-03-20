@@ -26,16 +26,15 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***))
-import Control.Concurrent.STM (STM, atomically)
+import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, at, both, over)
-import Control.Lens.Getter (view, views)
+import Control.Lens.Getter (views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
 import Data.Maybe (fromMaybe)
@@ -283,7 +282,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
         rest = maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote) maybeMsg
     in do
-        massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg <> dfltColor
+        massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg maybeMsg <> dfltColor
         logPla     "adminShutdown" i $ "initiating shutdown" <> rest
         massLogPla "adminShutdown"   $ "closing connection due to server shutdown initiated by " <> s <> rest
         logNotice  "adminShutdown"   $ "server shutdown initiated by "                           <> s <> rest
@@ -308,8 +307,8 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dblQuote $ prefixAdminCmd "tell " <> a <> " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
-adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms -> let logMsgs = helper ms in
-    unless (null logMsgs) $ forM_ logMsgs (uncurry logPla (prefixAdminCmd "tell"))
+adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
+    unless (null logMsgs) . forM_ logMsgs . uncurry $ logPla (prefixAdminCmd "tell")
   where
     helper ms =
         let s          = getSing i ms
@@ -327,14 +326,14 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms -> let logMsgs
                   if getPlaFlag IsNotFirstAdminTell tellPla
                     then wrapSend tellMq tellCols targetMsg
                     else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs
-                                                           | msgs <- firstAdminTell tellId ms tellPla s ]
+                                                           | msgs <- firstAdminTell tellId tellPla s ]
                   return [ sentLogMsg, receivedLogMsg ]
         in maybe notFound found . findFullNameForAbbrevSnd target $ plaIdSings
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
-firstAdminTell :: Id -> MudState -> Pla -> Sing -> MudStack [T.Text]
-firstAdminTell tellId ms (setPlaFlag IsNotFirstAdminTell True -> tellPla) adminSing =
+firstAdminTell :: Id -> Pla -> Sing -> MudStack [T.Text]
+firstAdminTell tellId (setPlaFlag IsNotFirstAdminTell True -> tellPla) adminSing =
     modifyState $ \ms -> let pt = ms^.plaTbl & at tellId ?~ tellPla in (ms & plaTbl .~ pt, msg)
   where
     msg = [ T.concat [ hintANSI
