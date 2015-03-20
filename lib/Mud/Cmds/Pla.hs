@@ -39,7 +39,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Arrow ((***), first)
-import Control.Concurrent.STM (STM, atomically)
+import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to)
@@ -53,7 +53,7 @@ import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
-import Data.Monoid ((<>), mempty)
+import Data.Monoid ((<>), Sum(..), mempty)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
@@ -61,7 +61,6 @@ import System.Console.ANSI (clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, lookup, null)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -263,7 +262,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dblQuote "drop sword"
                       , dfltColor
                       , "." ]
-dropAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs)
   where
     helper ms =
@@ -415,7 +414,7 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dblQuote "remove ring sack"
                                   , dfltColor
                                   , "." ]
-getAction (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
   where
     helper ms =
@@ -620,7 +619,7 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
       wrapSend mq cols introsTxt >> logPlaOut "intro" i [introsTxt]
   else let introsTxt = T.intercalate ", " intros in
       multiWrapSend mq cols [ "You know the following names:", introsTxt ] >> logPlaOut "intro" i [introsTxt]
-intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
+intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs)
   where
     helper ms =
@@ -631,7 +630,7 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedB
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is', c)
           then (ms & pcTbl .~ pt, (cbs', logMsgs'))
           else (ms, (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []))
-    helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? a & _2 <>~ (mkNTBroadcast i . nlnl $ msg)
+    helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? (a & _2 <>~ (mkNTBroadcast i . nlnl $ msg))
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
         tryIntro a'@(pt, _, _) targetId = case getType targetId ms of
@@ -668,11 +667,11 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedB
                                       , TargetBroadcast    (targetMsg, [targetId]            )
                                       , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
                     in if s `elem` intros
-                      then let msg = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                           in a' & _2 <>~ mkNTBroadcast i msg
+                      then let sorry = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
+                           in a' & _2 <>~ mkNTBroadcast i sorry
                       else a' & _1 .~ pt' & _2 <>~ cbs & _3 <>~ [logMsg]
           _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower (getSing targetId ms) <> "."
-                        b   = mkNTBroadcast i . nlnl $ msg
+                        b   = head . mkNTBroadcast i . nlnl $ msg
                     in over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ]) -- TODO: OK? Was "concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]"...
     helperIntroEitherCoins a (Right {}  ) =
@@ -1685,7 +1684,10 @@ getUptime = let start = view startTime <$> ask
 
 
 uptimeHelper :: Int -> MudStack T.Text
-uptimeHelper up = helper <$> getRecordUptime
+uptimeHelper up = helper <$> ((fmap . fmap) getSum) getRecordUptime -- TODO: Ok?
+    -- maybeRecUpSum <- getRecordUptime
+    -- let maybeRecUpSum' = getSum <$> maybeRecUpSum
+    -- return . helper $ maybeRecUpSum'
   where
     helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
     mkUptimeTxt    = mkTxtHelper "."
@@ -1698,12 +1700,12 @@ uptimeHelper up = helper <$> getRecordUptime
     renderIt       = T.pack . renderSecs . toInteger
 
 
-getRecordUptime :: MudStack (Maybe Int)
+getRecordUptime :: MudStack (Maybe (Sum Int))
 getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
                       (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime")) -- TODO: We didn't need "\e ->" here... what about in other places?
                       (return Nothing)
   where
-    readUptime = Just . read <$> readFile uptimeFile
+    readUptime = Just . Sum . read <$> readFile uptimeFile
 
 
 -----

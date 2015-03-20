@@ -399,7 +399,7 @@ type HelpName = T.Text
 data Help = Help { helpName     :: HelpName
                  , helpFilePath :: FilePath
                  , isCmdHelp    :: Bool
-                 , isAdminHelp  :: Bool }
+                 , isAdminHelp  :: Bool } deriving (Eq, Ord)
 
 
 -----
