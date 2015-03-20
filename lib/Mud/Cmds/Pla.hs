@@ -1700,14 +1700,16 @@ uptimeHelper ut = helper <$> getRecordUptime
 
 getRecordUptime :: MudStack (Maybe Int)
 getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
-                      (liftIO readUptime `catch` (\e -> fileIOExHandler "getRecordUptime" e >> return Nothing))
+                      (liftIO readUptime `catch` emptied . fileIOExHandler "getRecordUptime") -- TODO: We didn't need "\e ->" here... what about in other places?
                       (return Nothing)
   where
     readUptime = Just . read <$> readFile uptimeFile
 
 
 getUptime :: MudStack Int
-getUptime = (-) <$> sec `fmap` (liftIO . getTime $ Monotonic) <*> sec `fmap` (view startTime <$> ask)
+getUptime = let start = view startTime <$> ask
+                now   = liftIO . getTime $ Monotonic
+            in (-) <$> sec `fmap` now <*> sec `fmap` start
 
 
 -----
