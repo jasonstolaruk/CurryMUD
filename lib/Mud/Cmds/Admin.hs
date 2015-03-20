@@ -30,7 +30,7 @@ import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, at, over)
+import Control.Lens (_1, _2, _3, at, both, over)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_, unless)
@@ -155,7 +155,7 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
       [bootId] -> let selfSing = getSing i ms in if selfSing == target
                     then wrapSend mq cols "You can't boot yourself."
                     else let bootMq = getMsgQueue bootId ms
-                             f      = T.null msg ? dlfMsg :? customMsg
+                             f      = T.null msg ? dfltMsg :? customMsg
                          in ok mq >> (sendMsgBoot bootMq =<< f bootId selfSing)
       xs       -> patternMatchFail "adminBoot" [ showText xs ]
   where
@@ -252,7 +252,7 @@ adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
                       , dblQuote $ prefixAdminCmd "print" <> " Is anybody home?"
                       , dfltColor
                       , "." ]
-adminPrint (Msg i mq msg) = getState >>= \ms -> let s = getEnt ms i in do
+adminPrint (Msg i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
     ok mq
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
@@ -280,7 +280,7 @@ adminShutdown p              = patternMatchFail "adminShutdown" [ showText p ]
 
 shutdownHelper :: Id -> MsgQueue -> Maybe T.Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
-    let s    = getSing ms i
+    let s    = getSing i ms
         rest = maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote) maybeMsg
     in do
         massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg <> dfltColor
@@ -312,17 +312,17 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= \ms -> let logMsgs
     unless (null logMsgs) $ forM_ logMsgs (uncurry logPla (prefixAdminCmd "tell"))
   where
     helper ms =
-        let s          = getSing ms i
+        let s          = getSing i ms
             plaIdSings = mkPlaIdSingList ms
-            notFound   = emptied . wrapSendSTM mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
-                                                         \currently logged in."
+            notFound   = emptied . wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
+                                                      \currently logged in."
             found (tellId, tellSing)
               | tellMq         <- getMsgQueue tellId ms
               , tellPla        <- getPla      tellId ms
               , tellCols       <- tellPla^.columns
               , sentLogMsg     <- (i,      T.concat [ "sent message to ", tellSing, ": ", dblQuote msg ])
               , receivedLogMsg <- (tellId, T.concat [ "received message from ", s, ": ",  dblQuote msg ]) = do
-                  wrapSendSTM mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
+                  wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
                   let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
                   if getPlaFlag IsNotFirstAdminTell tellPla
                     then wrapSend tellMq tellCols targetMsg
@@ -335,7 +335,7 @@ adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 firstAdminTell :: Id -> MudState -> Pla -> Sing -> MudStack [T.Text]
 firstAdminTell tellId ms (setPlaFlag IsNotFirstAdminTell True -> tellPla) adminSing =
-    modifyState $ \ms -> let pt = ms^.plaTbl & at i ?~ tellPla in (ms & plaTbl .~ pt, msg)
+    modifyState $ \ms -> let pt = ms^.plaTbl & at tellId ?~ tellPla in (ms & plaTbl .~ pt, msg)
   where
     msg = [ T.concat [ hintANSI
                      , "Hint:"
