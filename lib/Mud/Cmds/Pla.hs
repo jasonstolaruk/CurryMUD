@@ -1572,23 +1572,18 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dfltColor
                       , "." ]
 unready (LowerNub i mq cols as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs
+    bcast bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs -- TODO: Was "bcastNl"... ok?
   where
-    helperSTM ms =
-        let d  = mkStdDesig i ms DoCap
-            em = getEqMap   i ms
-            is = M.elems em
-        in if not . null $ is
-          then let (gecrs, miss, rcs)          = resolveEntCoinNames i entTbl mt pcTbl as is mempty
-                   eiss                        = zipWith (curry procGecrMisPCEq) gecrs miss
-                   bs                          = rcs |!| mkBroadcast i "You can't unready coins."
-                   (eqTbl', it', bs', logMsgs) = foldl' (helperUnready i armTbl ct entTbl mt pcTbl tt d em) (eqTbl, it, bs, []) eiss
-               in do
-                   writeTVar (md^.eqTblTVar) eqTbl'
-                   writeTVar (md^.invTblTVar) it'
-                   bcastNlSTM mt mqt pcTbl plaTbl bs'
-                   return logMsgs
-          else wrapSendSTM mq cols dudeYou'reNaked >> return []
+    helper ms = let d                      = mkStdDesig i ms DoCap
+                    em                     = getEqMap   i ms
+                    is                     = M.elems em
+                    (gecrs, miss, rcs)     = resolveEntCoinNames i ms as is mempty
+                    eiss                   = zipWith (curry procGecrMisPCEq) gecrs miss
+                    bs                     = rcs |!| mkBroadcast i "You can't unready coins."
+                    (et, it, bs', logMsgs) = foldl' (helperUnready i ms d em) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
+                in if not . null $ is
+                  then (ms & eqTbl .~ et & invTbl .~ it, (bs', logMsgs))
+                  else (ms, (mkBroadcast i dudeYou'reNaked, []))
 unready p = patternMatchFail "unready" [ showText p ]
 
 
