@@ -1718,14 +1718,14 @@ whoAdmin :: Action
 whoAdmin (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoadmin" i
   where
     helper ms =
-        let adminIds                                = getAdminIds ms
-            (adminIds', self) | i `elem` adminIds   = (i `delete` adminIds, selfColor <> getSing i ms <> dfltColor)
-                              | otherwise           = (           adminIds, ""                                    )
-            adminSings                              = [ s | adminId <- adminIds', let s = getSing adminId ms
-                                                                                , then sortWith by s ]
-            (dropBlanks . (self :) -> adminAbbrevs) = styleAbbrevs Don'tBracket
-            footer                                  = [ numOfAdmins adminIds <> " logged in." ]
-        in return $ null adminAbbrevs ? footer :? T.intercalate ", " adminAbbrevs : footer
+        let adminIds                              = getAdminIds ms
+            (adminIds', self) | i `elem` adminIds = (i `delete` adminIds, selfColor <> getSing i ms <> dfltColor)
+                              | otherwise         = (           adminIds, ""                                    )
+            adminSings                            = [ s | adminId <- adminIds', let s = getSing adminId ms
+                                                                              , then sortWith by s ]
+            adminAbbrevs                          = dropBlanks $ self : styleAbbrevs Don'tBracket
+            footer                                = [ numOfAdmins adminIds <> " logged in." ]
+        in return (null adminAbbrevs ? footer :? T.intercalate ", " adminAbbrevs : footer)
       where
         numOfAdmins (length -> num) | num == 1  = "1 administrator"
                                     | otherwise = showText num <> " administrators"
