@@ -1588,24 +1588,19 @@ unready p = patternMatchFail "unready" [ showText p ]
 
 
 helperUnready :: Id
-              -> ArmTbl
-              -> ClothTbl
-              -> EntTbl
-              -> MobTbl
-              -> PCTbl
-              -> TypeTbl
+              -> MudState
               -> PCDesig
               -> EqMap
               -> (EqTbl, InvTbl, [Broadcast], [T.Text])
               -> Either T.Text Inv
               -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-helperUnready i armTbl ct entTbl mt pt tt d em a@(eqTbl, it, _, _) = \case
+helperUnready i ms d em a@(et, it, _, _) = \case
   Left  (mkBroadcast i -> b) -> a & _3 <>~ b
-  Right is | pis        <- it ! i
-           , eqTbl'     <- eqTbl & at i ?~ M.filter (`notElem` is) em
-           , it'        <- it    & at i ?~ sortInv entTbl tt (pis ++ is)
-           , (bs, msgs) <- mkUnreadyDescs i armTbl ct entTbl mt pt tt d is
-           -> a & _1 .~ eqTbl' & _2 .~ it' & _3 <>~ bs & _4 <>~ msgs
+  Right targetIds            -> let pcInv = getInv i ms
+                                    et'   = et & at i ?~ M.filter (`notElem` targetIds) em
+                                    it'   = it & at i ?~ sortInv ms (pcInv ++ targetIds)
+                                    (bs, msgs) = mkUnreadyDescs i ms d targetIds
+                                in a & _1 .~ et' & _2 .~ it' & _3 <>~ bs & _4 <>~ msgs
 
 
 mkUnreadyDescs :: Id
