@@ -39,7 +39,7 @@ import Network (HostName)
 import System.Directory (doesFileExist)
 import qualified Data.Set as S (fromList, member, notMember)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile, writeFile)
+import qualified Data.Text.IO as T (appendFile, readFile, writeFile)
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
@@ -109,13 +109,9 @@ checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) |$| try >=> eit
 
 logProfanity :: CmdName -> HostName -> MudStack ()
 logProfanity cn (T.pack -> hn) =
-    liftIO (mkTimestamp >>= try . helper) >>= eitherRet (fileIOExHandler "logProfanity")
+    liftIO (helper =<< mkTimestamp |$| try) >>= eitherRet (fileIOExHandler "logProfanity")
   where
-    helper ts = T.writeFile profanityLogFile =<< [ T.unlines . sort $ newEntry : cont
-                                                 | cont <- mIf (doesFileExist profanityLogFile)
-                                                               (T.lines <$> T.readFile profanityLogFile)
-                                                               (return [])
-                                                 , let newEntry = T.concat [ ts, " ", hn, " ", cn ] ]
+    helper ts = T.appendFile profanityLogFile . T.concat $ [ ts, " ", hn, " ", cn ]
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
