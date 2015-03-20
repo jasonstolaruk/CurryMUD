@@ -149,31 +149,27 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
       pt <- readTVar $ md^.plaTblTVar
       let p = pt ! i & interp .~ Just interpName
       writeTVar (md^.plaTblTVar) $ pt & at i ?~ p
-  Nothing    -> promptRetryYesNo mq
+  Nothing -> promptRetryYesNo mq
   where
-    helperSTM md = (,,,,,,) <$> readTVar (md^.entTblTVar)
-                            <*> readTVar (md^.invTblTVar)
-                            <*> readTVar (md^.mobTblTVar)
-                            <*> readTVar (md^.msgQueueTblTVar)
-                            <*> readTVar (md^.pcTblTVar)
-                            <*> readTVar (md^.plaTblTVar)
-                            <*> readTVar (md^.typeTblTVar) >>= \(et, it, mt, mqt, pcTbl, plaTbl, tt) ->
-        let e        = et ! i
-            oldSing  = e^.sing
-            et'      = et & at i ?~ (e & sing .~ s)
-            originIs = i `delete` (it ! iWelcome)
-            destIs   = sortInv et' tt $ it ! iCentral ++ [i]
-            it'      = it & at iWelcome ?~ originIs & at iCentral ?~ destIs
-            pc        = pcTbl ! i & rmId .~ iCentral
-            pcTbl'    = pcTbl & at i ?~ pc
-            pla       = setPlaFlag IsAdmin (T.head s == 'Z') (plaTbl ! i) & interp .~ Nothing
-            plaTbl'   = plaTbl & at i ?~ pla
-        in do
-            writeTVar (md^.entTblTVar) et'
-            writeTVar (md^.invTblTVar) it'
-            writeTVar (md^.pcTblTVar)  pcTbl'
-            writeTVar (md^.plaTblTVar) plaTbl'
-            return (et', it', mt, mqt, oldSing, pcTbl', pla, plaTbl', tt)
+    helper ms = let et   = ms^.entTbl
+                    it   = ms^.invTbl
+                    pct  = ms^.pcTbl
+                    plat = ms^.plaTbl
+
+                    e        = et ! i
+                    oldSing  = e^.sing
+                    et'      = et & at i ?~ (e & sing .~ s)
+
+                    originIs = i `delete` (it ! iWelcome)
+                    destIs   = sortInv ms $ it ! iCentral ++ [i]
+                    it'      = it & at iWelcome ?~ originIs & at iCentral ?~ destIs
+
+                    pc       = pct ! i & rmId .~ iCentral
+                    pct'     = pcTbl & at i ?~ pc
+
+                    pla      = setPlaFlag IsAdmin (T.head s == 'Z') (plaTbl ! i) & interp .~ Nothing
+                    plat'    = plaTbl & at i ?~ pla
+        in (ms & entTbl .~ et' & invTbl .~ it' & pcTbl .~ pct' & plaTbl .~ plat', ())
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
 
