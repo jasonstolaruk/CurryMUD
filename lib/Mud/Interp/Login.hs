@@ -94,7 +94,7 @@ checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) |$| try >=> eit
     (\e -> fileIOExHandler "checkProfanity" e >> return False) -- TODO: Use "emptied". "Any"?
     helper
   where
-    helper (S.fromList . T.lines -> profanities) = let isProfane = cn `S.member` profanities in
+    helper (S.fromList . T.lines -> profanitiesSet) = let isProfane = cn `S.member` profanitiesSet in
         when isProfane boot >> return isProfane
     boot = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
@@ -115,23 +115,23 @@ logProfanity cn (T.pack -> hn) =
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
-checkPropNamesDict cn mq = ask >>= maybe (return False) helper . view propNamesSet
+checkPropNamesDict cn mq = (liftIO . T.readFile $ propNamesFile) |$| try >=> either
+    (\e -> fileIOExHandler "checkPropNamesDict" e >> return False) -- TODO: Use "emptied". "Any"?
+    helper
   where
-    helper pns = if cn `S.member` pns
-      then do
-          promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
-          return True
-      else return False
+    helper (S.fromList . T.lines -> propNamesSet) = let isPropName = cn `S.member` propNamesSet in
+        when isPropName sorry >> return isPropName
+    sorry = promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
 
 
 checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
-checkWordsDict cn mq = ask >>= maybe (return False) helper . view wordsSet
+checkWordsDict cn mq = (liftIO . T.readFile $ wordsFile) |$| try >=> either
+    (\e -> fileIOExHandler "checkWordsDict" e >> return False) -- TODO: Use "emptied". "Any"?
+    helper
   where
-    helper ws = if cn `S.member` ws
-      then do
-          promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
-          return True
-      else return False
+    helper (S.fromList . T.lines -> wordsSet) = let isWord = cn `S.member` wordsSet in
+        when isWord sorry >> return isWord
+    sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
 
 
 interpConfirmName :: Sing -> Interp
