@@ -57,7 +57,7 @@ interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                         = f [ checkProfanity     cn i mq
+  | otherwise                         = f [ checkProfanities   cn i mq
                                           , checkPropNamesDict cn   mq
                                           , checkWordsDict     cn   mq ] $ do
                                             prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <>
@@ -89,14 +89,10 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-checkProfanity :: CmdName -> Id -> MsgQueue -> MudStack Bool
-checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) |$| try >=> either
-    (\e -> fileIOExHandler "checkProfanity" e >> return False) -- TODO: Use "emptied". "Any"?
-    helper
+checkProfanities :: CmdName -> Id -> MsgQueue -> MudStack Bool
+checkProfanities cn i mq = checkNameHelper profanitiesFile "checkProfanities" sorry
   where
-    helper (S.fromList . T.lines -> profanitiesSet) = let isProfane = cn `S.member` profanitiesSet in
-        when isProfane boot >> return isProfane
-    boot = getState >>= \ms -> do
+    sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
             hn = getHostName i ms
         send mq . nlPrefix . nl $ bootMsgColor                                                                     <>
@@ -104,7 +100,7 @@ checkProfanity cn i mq = (liftIO . T.readFile $ profanitiesFile) |$| try >=> eit
                                   dfltColor
         sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
         logProfanity cn hn
-        logNotice "checkProfanity" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
+        logNotice "checkProfanities" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()
@@ -115,23 +111,25 @@ logProfanity cn (T.pack -> hn) =
 
 
 checkPropNamesDict :: CmdName -> MsgQueue -> MudStack Bool
-checkPropNamesDict cn mq = (liftIO . T.readFile $ propNamesFile) |$| try >=> either
-    (\e -> fileIOExHandler "checkPropNamesDict" e >> return False) -- TODO: Use "emptied". "Any"?
-    helper
+checkPropNamesDict = checkNameHelper propNamesFile "checkPropNamesDict" sorry
   where
-    helper (S.fromList . T.lines -> propNamesSet) = let isPropName = cn `S.member` propNamesSet in
-        when isPropName sorry >> return isPropName
     sorry = promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
 
 
 checkWordsDict :: CmdName -> MsgQueue -> MudStack Bool
-checkWordsDict cn mq = (liftIO . T.readFile $ wordsFile) |$| try >=> either
-    (\e -> fileIOExHandler "checkWordsDict" e >> return False) -- TODO: Use "emptied". "Any"?
+checkWordsDict = checkNameHelper wordsFile "checkWordsDict" sorry
+  where
+    sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
+
+
+-- TODO: Move?
+checkNameHelper :: FilePath -> T.Text -> T.Text -> CmdName -> MsgQueue -> MudStack Bool
+checkNameHelper file funName sorryMsg cn mq = (liftIO . T.readFile $ file) |$| try >=> either
+    (\e -> fileIOExHandler funName e >> return False) -- TODO: Use "emptied". "Any"?
     helper
   where
-    helper (S.fromList . T.lines -> wordsSet) = let isWord = cn `S.member` wordsSet in
-        when isWord sorry >> return isWord
-    sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
+    helper (S.fromList . T.lines -> set) = let isNG = cn `S.member` set in when isNG sorry >> return isNG
+    sorry                                = promptRetryName mq sorryMsg
 
 
 interpConfirmName :: Sing -> Interp
