@@ -1456,7 +1456,7 @@ say p@(WithArgs i mq cols args@(a:_))
                                              , msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
                 (pt', fms)        = firstMobSay i $ ms^.plaTbl
-            in (ms & plaTbl .~ pt', ((toOthersBroadcast :) . mkBroadcast . nlnl $ toSelfMsg <> fms, [toSelfMsg]))
+            in (ms & plaTbl .~ pt', ((toOthersBroadcast :) . mkBroadcast i . nlnl $ toSelfMsg <> fms, [toSelfMsg]))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
     bcastAndLog (bs, logMsgs) = bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
