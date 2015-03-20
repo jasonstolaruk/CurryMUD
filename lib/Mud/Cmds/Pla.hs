@@ -615,7 +615,7 @@ getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrevSnd name $
 
 
 intro :: Action
-intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced ms i in if null intros
+intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if null intros
   then let introsTxt = "No one has introduced themselves to you yet." in
       wrapSend mq cols introsTxt >> logPlaOut "intro" i [introsTxt]
   else let introsTxt = T.intercalate ", " intros in
@@ -630,7 +630,7 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedB
             (    cbs', logMsgs')          = foldl' helperIntroEitherCoins       (           cbs, logMsgs) ecs
         in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is', c)
           then (ms & pcTbl .~ pt, (cbs', logMsgs'))
-          else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []))
+          else (ms, (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []))
     helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? a & _2 <>~ (mkNTBroadcast i . nlnl $ msg)
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
@@ -639,7 +639,7 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedB
                         s           = getSing i ms
                         intros      = targetPC^.introduced
                         pt'         = pt & at targetId ?~ (targetPC & introduced .~ sort (s : intros))
-                        targetDesig = serialize . mkStdDesig targetId ms Don'tCap $ ris
+                        targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                         msg         = "You introduce yourself to " <> targetDesig <> "."
                         logMsg      = parsePCDesig i ms msg
                         srcMsg      = nlnl msg
@@ -676,7 +676,8 @@ intro (LowerNub i mq cols as) = helper |$| modifyState >=> \(map fromClassifiedB
                     in over _2 (`appendIfUnique` b) a'
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ]) -- TODO: OK? Was "concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]"...
     helperIntroEitherCoins a (Right {}  ) =
-        first (`appendIfUnique` mkNTBroadcast i (nlnl "You can't introduce yourself to a coin.")) a
+        let cb = head . mkNTBroadcast i . nlnl $ "You can't introduce yourself to a coin."
+        in first (`appendIfUnique` cb) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
 intro p = patternMatchFail "intro" [ showText p ]
@@ -960,7 +961,7 @@ handleEgress i = helper |$| modifyState >=> \(s, bs, logMsgs) -> do
                                       & entTbl     .at i  .~ Nothing
                                       & eqTbl      .at i  .~ Nothing
                                       & invTbl     .at i  .~ Nothing
-                                      & invTbl     .at ri .~ ris
+                                      & invTbl     .at ri .~ Just ris -- TODO: Ok?
                                       & mobTbl     .at i  .~ Nothing
                                       & msgQueueTbl.at i  .~ Nothing
                                       & pcTbl      .at i  .~ Nothing
