@@ -1466,7 +1466,7 @@ say p@(WithArgs i mq cols args@(a:_))
             toSelfBroadcast   = mkBroadcast i . nlnl $ toSelfMsg
             toOthersMsg       = T.concat [ serialize d, " says", adverb, ", ", msg ]
             toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
-        in (toOthersBroadcast : toSelfBroadcast, [toSelfMsg])
+        in return (toOthersBroadcast : toSelfBroadcast, [toSelfMsg])
 say p = patternMatchFail "say" [ showText p ]
 
 
