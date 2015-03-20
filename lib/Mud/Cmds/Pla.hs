@@ -1508,7 +1508,7 @@ settingNames = [ "columns", "lines" ]
 
 helperSettings :: (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
 helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
-  | or (noOfEqs /= 1, T.head arg == '=', T.last arg == '=') =
+  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
       let msg    = dblQuote arg <> " is not a valid argument."
           advice = T.concat [ " Please specify the setting you want to change, followed immediately by "
                             , dblQuote "="
