@@ -319,20 +319,18 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) =
 
 
 forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> T.Text -> MudStack ()
-forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< ask
+forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< getState
   where
-    helperSTM md = do
-        (view sing . (! i) -> s, mqt) <- (,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.msgQueueTblTVar)
-        forM_ [ mqt ! pi | pi <- peeperIds ] $ flip writeTQueue (mkPeepedMsg s)
+    helperSTM ms = forM_ [ getMsgQueue peeperId ms | peeperId <- peeperIds ]
+                         (flip writeTQueue (mkPeepedMsg . getSing i $ ms))
     mkPeepedMsg s = Peeped $ case toOrFrom of
       ToThePeeped   ->      T.concat   [ toPeepedColor,   " ", bracketQuote s, " ", dfltColor, " ", msg ]
       FromThePeeped -> nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
 
 
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
-handleFromServer i h msg = ask >>= liftIO . readTVarIO . view plaTblTVar >>= \((! i) -> p) -> do
-    forwardToPeepers i (p^.peepers) ToThePeeped msg
-    liftIO . T.hPutStr h $ msg
+handleFromServer i h msg = getState >>= \ms -> let peeps = getPeepers i ms in
+    forwardToPeepers i peeps ToThePeeped msg >> (liftIO . T.hPutStr h $ msg)
 
 
 sendInacBootMsg :: Handle -> MudStack ()
