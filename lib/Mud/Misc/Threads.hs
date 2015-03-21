@@ -93,14 +93,14 @@ listenWrapper =
 
 
 saveUptime :: Int -> MudStack ()
-saveUptime ut@(T.pack . renderSecs . toInteger -> utTxt) = getRecordUptime >>= maybe (saveIt >> logIt) checkRecord
+saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) = maybe (saveIt >> logIt) checkRecord =<< getRecordUptime
   where
-    saveIt          = (liftIO . writeFile uptimeFile . show $ ut) `catch` logIOEx "saveUptime saveIt"
-    logIt           = logHelper "."
-    checkRecord rut = case ut `compare` rut of GT -> saveIt >> logRec
-                                               _  -> logIt
-    logRec          = logHelper " - it's a new record!"
-    logHelper       = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (utTxt <>)
+    saveIt            = (liftIO . writeFile uptimeFile . show $ up) `catch` logIOEx "saveUptime saveIt"
+    logIt             = logHelper "."
+    checkRecord recUp = case up `compare` recUp of GT -> saveIt >> logRec
+                                                   _  -> logIt
+    logRec            = logHelper " - it's a new record!"
+    logHelper         = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (upTxt <>)
 
 
 listen :: MudStack ()
