@@ -5,7 +5,9 @@ module Mud.Data.State.Util.Get where
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Util.Misc
 
+import Control.Concurrent (ThreadId)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((^.))
 import Data.IntMap.Lazy ((!))
@@ -80,6 +82,10 @@ getInvCoins i ms = (getInv i ms, getCoins i ms)
 
 getIsCloth :: Id -> MudState -> Bool
 getIsCloth i ms = getCon i ms ^.isCloth
+
+
+getListenThreadId :: MudState -> ThreadId
+getListenThreadId = views threadTbl (reverseLookup Listen)
 
 
 getLogQueue :: Id -> MudState -> LogQueue

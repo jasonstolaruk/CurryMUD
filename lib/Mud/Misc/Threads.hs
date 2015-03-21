@@ -155,10 +155,6 @@ threadTblPurgerExHandler e = do
     liftIO . flip throwTo e =<< getListenThreadId
 
 
-getListenThreadId :: MudStack ThreadId
-getListenThreadId = ask >>= \md -> reverseLookup Listen <$> (liftIO . readTVarIO $ md^.threadTblTVar)
-
-
 -- ==================================================
 -- "Talk" threads:
 
