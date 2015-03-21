@@ -170,12 +170,11 @@ talk h host = helper `finally` cleanUp
             liftIO configBuffer
             dumpTitle mq
             prompt    mq "By what name are you known?"
+            bcastAdmins $ "A new player has connected: " <> s <> "."
+            logNotice "talk helper" $ "new PC name for incoming player: " <> s <> "."
             liftIO . void . forkIO . runReaderT (inacTimer i mq itq) $ md
             liftIO $ race_ (runReaderT (server  h i mq itq) md)
                            (runReaderT (receive h i mq)     md)
-            logNotice "talk helper" $ "new PC name for incoming player: "    <> s <> "."
-            bcastAdmins $ "A new player has connected: " <> s <> "."
-
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
