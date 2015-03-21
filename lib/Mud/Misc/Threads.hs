@@ -106,7 +106,7 @@ saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) = maybe (saveIt >> logI
 
 listen :: MudStack ()
 listen = handle listenExHandler $ do
-    registerThread Listen
+    setThreadType Listen
     liftIO . void . forkIO . runReaderT threadTblPurger =<< ask
     initWorld
     logInterfaces
@@ -137,18 +137,13 @@ listenExHandler e = case fromException e of
   _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
 
 
-registerThread :: ThreadType -> MudStack ()
-registerThread threadType = liftIO myThreadId >>= \ti ->
-    ask >>= \md -> liftIO . atomically . modifyTVar (md^.threadTblTVar) $ at ti ?~ threadType
-
-
 -- ==================================================
 -- The "thread table purger" thread:
 
 
 threadTblPurger :: MudStack ()
 threadTblPurger = do
-    registerThread ThreadTblPurger
+    setThreadType ThreadTblPurger
     logNotice "threadTblPurger" "thread table purger thread started."
     let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
     forever loop `catch` threadTblPurgerExHandler
@@ -174,7 +169,7 @@ talk h host = helper `finally` cleanUp
     helper = ask >>= \md -> do
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
-        registerThread . Talk $ i
+        setThreadType . Talk $ i
         handle (plaThreadExHandler "talk" i) $ ask >>= liftIO . atomically . helperSTM >>= \(mt, mqt, pcTbl, plaTbl ) -> do
             logNotice "talk helper" $ "new PC name for incoming player: "    <> s <> "."
             bcastAdmins mt mqt pcTbl plaTbl $ "A new player has connected: " <> s <> "."
@@ -279,7 +274,7 @@ data InacTimerMsg = ResetTimer
 
 
 inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThreadExHandler "inactivity timer" i
+inacTimer i mq itq = (setThreadType . InacTimer $ i) >> loop 0 `catch` plaThreadExHandler "inactivity timer" i
   where
     loop secs = do
         liftIO . threadDelay $ 1 * 10 ^ 6
@@ -300,7 +295,7 @@ inacTimer i mq itq = (registerThread . InacTimer $ i) >> loop 0 `catch` plaThrea
 
 
 server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-server h i mq itq = sequence_ [ registerThread . Server $ i, loop `catch` plaThreadExHandler "server" i ]
+server h i mq itq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThreadExHandler "server" i ]
   where
     loop = mq |$| liftIO . atomically . readTQueue >=> \case
       Dropped        ->                                  sayonara
@@ -385,7 +380,7 @@ shutDown = massMsg SilentBoot >> ask >>= liftIO . void . forkIO . runReaderT com
 
 
 receive :: Handle -> Id -> MsgQueue -> MudStack ()
-receive h i mq = sequence_ [ registerThread . Receive $ i, loop `catch` plaThreadExHandler "receive" i ]
+receive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler "receive" i ]
   where
     loop = mIf (liftIO . hIsEOF $ h)
                (sequence_ [ logPla "receive" i "connection dropped."
