@@ -12,6 +12,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
@@ -152,7 +153,7 @@ threadTblPurger = do
 threadTblPurgerExHandler :: SomeException -> MudStack ()
 threadTblPurgerExHandler e = do
     logExMsg "threadTblPurgerExHandler" "exception caught on thread table purger thread; rethrowing to listen thread" e
-    liftIO . flip throwTo e =<< getListenThreadId
+    liftIO . flip throwTo e =<< getListenThreadId =<< getState
 
 
 -- ==================================================
@@ -162,7 +163,7 @@ threadTblPurgerExHandler e = do
 talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
-    helper = ask >>= \md -> do
+    helper = getState >>= \ms ->
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         setThreadType . Talk $ i
@@ -175,10 +176,6 @@ talk h host = helper `finally` cleanUp
             liftIO . void . forkIO . runReaderT (inacTimer i mq itq) $ md
             liftIO $ race_ (runReaderT (server  h i mq itq) md)
                            (runReaderT (receive h i mq)     md)
-    helperSTM md = (,,,) <$> readTVar (md^.mobTblTVar)
-                         <*> readTVar (md^.msgQueueTblTVar)
-                         <*> readTVar (md^.pcTblTVar)
-                         <*> readTVar (md^.plaTblTVar)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
@@ -299,7 +296,7 @@ server h i mq itq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThre
       FromServer msg -> handleFromServer i h msg      >> loop
       InacBoot       -> sendInacBootMsg h             >> sayonara
       InacStop       -> stopInacThread itq            >> loop
-      MsgBoot msg    -> boot h msg                    >> sayonara
+      MsgBoot msg    -> sendBootMsg h msg             >> sayonara
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)  >> loop
       Prompt  p      -> sendPrompt i h p              >> loop
       Quit           -> cowbye h                      >> sayonara
@@ -339,17 +336,17 @@ handleFromServer i h msg = ask >>= liftIO . readTVarIO . view plaTblTVar >>= \((
 
 
 sendInacBootMsg :: Handle -> MudStack ()
-sendInacBootMsg h = liftIO . T.hPutStrLn h . nl $ bootMsgColor                                                  <>
-                                                  "You are being disconnected from CurryMUD due to inactivity." <>
-                                                  dfltColor
+sendInacBootMsg h = liftIO . T.hPutStrLn h . nl $ bootMsg
+  where
+    bootMsg = bootMsgColor <> "You are being disconnected from CurryMUD due to inactivity." <> dfltColor
 
 
 stopInacThread :: InacTimerQueue -> MudStack ()
 stopInacThread = liftIO . atomically . closeTMQueue
 
 
-boot :: Handle -> T.Text -> MudStack ()
-boot h = liftIO . T.hPutStrLn h . nl . (<> dfltColor) . (bootMsgColor <>)
+sendBootMsg :: Handle -> T.Text -> MudStack ()
+sendBootMsg h = liftIO . T.hPutStrLn h . nl . (<> dfltColor) . (bootMsgColor <>)
 
 
 sendPrompt :: Id -> Handle -> T.Text -> MudStack ()
@@ -363,10 +360,10 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = massMsg SilentBoot >> ask >>= liftIO . void . forkIO . runReaderT commitSuicide
+shutDown = massMsg SilentBoot >> liftIO . void . forkIO . runReaderT commitSuicide =<< ask
   where
-    commitSuicide = ask >>= liftIO . readTVarIO . view talkAsyncTblTVar >>= \tat -> do
-        liftIO . mapM_ wait . M.elems $ tat
+    commitSuicide =
+        liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
         logNotice "shutDown commitSuicide" "all players have been disconnected; killing the listen thread."
         liftIO . killThread =<< getListenThreadId
 
@@ -386,4 +383,4 @@ receive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThread
     remDelimiters = T.foldr helper ""
     helper c acc | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
                  | otherwise                             = acc
-    delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
+    delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ] -- TODO: Should we be checking for anything else?
