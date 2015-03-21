@@ -182,11 +182,10 @@ talk h host = helper `finally` cleanUp
 
 
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
-adHoc mq host = ask >>= \md -> do
+adHoc mq host = do
     (sexy, r) <- liftIO $ (,) <$> randomSex <*> randomRace
-    liftIO . atomically $ do
-        (et, it, tt) <- (,,) <$> readTVar (md^.entTblTVar) <*> readTVar (md^.invTblTVar) <*> readTVar (md^.typeTblTVar)
-        let i    = getUnusedId tt
+    modifyState $ \ms ->
+        let i    = getUnusedId ms
             s    = showText r <> showText i
             e    = Ent { _entId    = i
                        , _entName  = Nothing
@@ -214,19 +213,18 @@ adHoc mq host = ask >>= \md -> do
                        , _interp    = Just interpName
                        , _peepers   = []
                        , _peeping   = [] }
-            tt'  = tt & at i ?~ PCType
-            et'  = et & at i ?~ e
-            ris  = sortInv et' tt' $ it ! iWelcome ++ [i]
-        writeTVar  (md^.typeTblTVar) tt'
-        writeTVar  (md^.entTblTVar)  et'
-        writeTVar  (md^.invTblTVar)      $ it & at i ?~ [] & at iWelcome ?~ ris
-        modifyTVar (md^.coinsTblTVar)    $ at i ?~ mempty
-        modifyTVar (md^.eqTblTVar)       $ at i ?~ M.empty
-        modifyTVar (md^.mobTblTVar)      $ at i ?~ m
-        modifyTVar (md^.msgQueueTblTVar) $ at i ?~ mq
-        modifyTVar (md^.pcTblTVar)       $ at i ?~ pc
-        modifyTVar (md^.plaTblTVar)      $ at i ?~ pla
-        return (i, s)
+            ms'  = ms & entTbl .at i ?~ e
+                      & typeTbl.at i ?~ PCType
+            ris  = sortInv ms' $ getInv iWelcome ms' ++ [i]
+            ms'' = ms' & coinsTbl   .at i        ?~ mempty
+                       & eqTbl      .at i        ?~ M.empty
+                       & invTbl     .at i        ?~ []
+                       & invTbl     .at iWelcome ?~ ris
+                       & mobTbl     .at i        ?~ m
+                       & msgQueueTbl.at i        ?~ mq
+                       & pcTbl      .at i        ?~ pc
+                       & plaTbl     .at i        ?~ pla
+        in (ms'', (i, s))
 
 
 randomSex :: IO Sex
@@ -237,15 +235,15 @@ randomRace :: IO Race
 randomRace = randomIO
 
 
-getUnusedId :: TypeTbl -> Id
-getUnusedId = head . ([0..] \\) . IM.keys
+getUnusedId :: MudState -> Id
+getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
 
 
 plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
-plaThreadExHandler n i e
+plaThreadExHandler threadName i e
   | Just ThreadKilled <- fromException e = closePlaLog i
   | otherwise                            = do
-      logExMsg "plaThreadExHandler" ("exception caught on " <> n <> " thread; rethrowing to listen thread") e
+      logExMsg "plaThreadExHandler" ("exception caught on " <> threadName <> " thread; rethrowing to listen thread") e
       liftIO . flip throwTo e =<< getListenThreadId
 
 
