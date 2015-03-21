@@ -27,16 +27,11 @@ import Data.List (sort)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
 
+
 centralDispatch :: Interp
-centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = ask >>= liftIO . atomically . helperSTM >>= \(pcTbl, plaTbl, rt) -> do
-    cn |$| findAction plaId pcTbl plaTbl rt >=> maybe sorry (\act -> act p)
-    when (plaIsDfltPrompt plaTbl) $ prompt plaMsgQueue dfltPrompt
-  where
-    helperSTM md = (,,) <$> readTVar (md^.pcTblTVar)
-                        <*> readTVar (md^.plaTblTVar)
-                        <*> readTVar (md^.rmTblTVar)
-    sorry              = send plaMsgQueue . nlnl $ "What?"
-    plaIsDfltPrompt pt = isNothing $ (pt ! plaId)^.interp
+centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = getState >>= \ms -> do
+    maybe (send plaMsgQueue . nlnl $ "What?") (\act -> act p) =<< findAction ms cn
+    when (isNothin . getInterp i $ ms) . prompt plaMsgQueue $ dfltPrompt
 
 
 findAction :: Id -> PCTbl -> PlaTbl -> RmTbl -> CmdName -> MudStack (Maybe Action)

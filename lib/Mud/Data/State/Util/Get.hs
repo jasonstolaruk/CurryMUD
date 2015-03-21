@@ -62,6 +62,10 @@ getHostName :: Id -> MudState -> HostName
 getHostName i ms = getPla i ms ^.hostName
 
 
+getInterp :: Id -> MudState -> Maybe Interp
+getInterp i ms = getPla i ms ^.interp
+
+
 getIntroduced :: Id -> MudState -> [Sing]
 getIntroduced i ms = getPC i ms ^.introduced
 
