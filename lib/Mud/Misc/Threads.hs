@@ -32,24 +32,22 @@ import Mud.Util.Text hiding (headTail)
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Concurrent (ThreadId, forkIO, killThread, myThreadId, threadDelay)
-import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
+import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryReadTMQueue, writeTMQueue)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Concurrent.STM.TVar (modifyTVar, readTVar, readTVarIO, writeTVar)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (at)
-import Control.Lens.Getter (view)
+import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (?~), (^.))
 import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask, runReaderT)
 import Data.Bits (zeroBits)
-import Data.IntMap.Lazy ((!))
 import Data.List ((\\))
-import Data.Monoid ((<>), mempty)
+import Data.Monoid ((<>), getSum, mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
 import System.FilePath ((</>))
@@ -95,7 +93,8 @@ listenWrapper =
 
 
 saveUptime :: Int -> MudStack ()
-saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) = maybe (saveIt >> logIt) checkRecord =<< getRecordUptime
+saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) =
+    maybe (saveIt >> logIt) checkRecord =<< (fmap . fmap) getSum getRecordUptime -- TODO: Ok?
   where
     saveIt            = (liftIO . writeFile uptimeFile . show $ up) `catch` logIOEx "saveUptime saveIt"
     logIt             = logHelper "."
@@ -127,7 +126,7 @@ listen = handle listenExHandler $ do
                                              , " on local port "
                                              , showText localPort
                                              , "." ]
-        setTalkAsync =<< liftIO . async . runReaderT (talk h host) =<< getState
+        setTalkAsync =<< liftIO . async . runReaderT (talk h host) =<< ask
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
 
@@ -153,7 +152,7 @@ threadTblPurger = do
 threadTblPurgerExHandler :: SomeException -> MudStack ()
 threadTblPurgerExHandler e = do
     logExMsg "threadTblPurgerExHandler" "exception caught on thread table purger thread; rethrowing to listen thread" e
-    liftIO . flip throwTo e =<< getListenThreadId =<< getState
+    liftIO . flip throwTo e . getListenThreadId =<< getState
 
 
 -- ==================================================
@@ -163,19 +162,20 @@ threadTblPurgerExHandler e = do
 talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
-    helper = getState >>= \ms ->
+    helper = do
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         setThreadType . Talk $ i
-        handle (plaThreadExHandler "talk" i) $ ask >>= liftIO . atomically . helperSTM >>= \(mt, mqt, pcTbl, plaTbl ) -> do
-            logNotice "talk helper" $ "new PC name for incoming player: "    <> s <> "."
-            bcastAdmins mt mqt pcTbl plaTbl $ "A new player has connected: " <> s <> "."
+        handle (plaThreadExHandler "talk" i) $ ask >>= \md -> do
             liftIO configBuffer
             dumpTitle mq
             prompt    mq "By what name are you known?"
             liftIO . void . forkIO . runReaderT (inacTimer i mq itq) $ md
             liftIO $ race_ (runReaderT (server  h i mq itq) md)
                            (runReaderT (receive h i mq)     md)
+            logNotice "talk helper" $ "new PC name for incoming player: "    <> s <> "."
+            bcastAdmins $ "A new player has connected: " <> s <> "."
+
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
@@ -244,7 +244,7 @@ plaThreadExHandler threadName i e
   | Just ThreadKilled <- fromException e = closePlaLog i
   | otherwise                            = do
       logExMsg "plaThreadExHandler" ("exception caught on " <> threadName <> " thread; rethrowing to listen thread") e
-      liftIO . flip throwTo e =<< getListenThreadId
+      liftIO . flip throwTo e . getListenThreadId =<< getState
 
 
 dumpTitle :: MsgQueue -> MudStack ()
@@ -355,12 +355,12 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = massMsg SilentBoot >> liftIO . void . forkIO . runReaderT commitSuicide =<< ask
+shutDown = massMsg SilentBoot >> (liftIO . void . forkIO . runReaderT commitSuicide =<< ask)
   where
-    commitSuicide =
+    commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
         logNotice "shutDown commitSuicide" "all players have been disconnected; killing the listen thread."
-        liftIO . killThread =<< getListenThreadId
+        liftIO . killThread . getListenThreadId =<< getState
 
 
 -- ==================================================
