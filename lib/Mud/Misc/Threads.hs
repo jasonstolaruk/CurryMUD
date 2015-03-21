@@ -14,6 +14,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Set
 import Mud.Interp.CentralDispatch
 import Mud.Interp.Login
 import Mud.Misc.ANSI
@@ -106,7 +107,7 @@ saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) = maybe (saveIt >> logI
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     registerThread Listen
-    ask >>= liftIO . void . forkIO . runReaderT threadTblPurger
+    liftIO . void . forkIO . runReaderT threadTblPurger =<< ask
     initWorld
     logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
@@ -118,15 +119,14 @@ listen = handle listenExHandler $ do
                                                                     , ": "
                                                                     , showText . NI.ipv4 $ n ] | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
-    loop sock = ask >>= \md -> do
+    loop sock = do
         (h, host, localPort) <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to "
                                              , showText host
                                              , " on local port "
                                              , showText localPort
                                              , "." ]
-        a@(asyncThreadId -> ti) <- liftIO . async . runReaderT (talk h host) $ md
-        liftIO . atomically . modifyTVar (md^.talkAsyncTblTVar) $ at ti ?~ a
+        setTalkAsync =<< liftIO . async . runReaderT (talk h host) =<< getState
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
 
