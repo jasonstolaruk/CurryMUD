@@ -144,7 +144,7 @@ listenExHandler e = case fromException e of
 threadTblPurger :: MudStack ()
 threadTblPurger = do
     setThreadType ThreadTblPurger
-    logNotice "threadTblPurger" "thread table purger thread started."
+    logNotice "threadTblPurger" "thread table purger started."
     let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
     forever loop `catch` threadTblPurgerExHandler
 

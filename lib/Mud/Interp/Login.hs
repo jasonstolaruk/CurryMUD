@@ -73,7 +73,6 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     f :: [MudStack Bool] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
     f []     b = b
-    f [a]    b = a >>= flip unless b
     f (a:as) b = a >>= flip unless (f as b)
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
@@ -104,7 +103,7 @@ checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |$| 
     (\e -> fileIOExHandler funName e >> return False) -- TODO: Use "emptied". "Any"?
     helper
   where
-    helper (S.fromList . T.lines -> set) = let isNG = cn `S.member` set in when isNG sorry >> return isNG
+    helper (S.fromList . T.lines . T.toLower -> set) = let isNG = cn `S.member` set in when isNG sorry >> return isNG
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()
