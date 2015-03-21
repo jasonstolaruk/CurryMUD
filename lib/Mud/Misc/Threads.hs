@@ -306,11 +306,11 @@ server h i mq itq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThre
 
 
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) =
-    ask >>= liftIO . readTVarIO . view plaTblTVar >>= \((! i) -> p) ->
-        let thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
-            thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
-        in maybe thruCentral thruOther $ p^.interp
+handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
+    let p           = getPla i ms
+        thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
+        thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
+    in maybe thruCentral thruOther $ p^.interp
   where
     interpret p f cn as = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
@@ -381,4 +381,4 @@ receive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThread
     remDelimiters = T.foldr helper ""
     helper c acc | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
                  | otherwise                             = acc
-    delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ] -- TODO: Should we be checking for anything else?
+    delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
