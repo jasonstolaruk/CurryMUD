@@ -253,7 +253,7 @@ dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
     mkFilename   = ("title" ++) . show <$> randomRIO (1, noOfTitles)
-    takeADump fn = send mq . nlPrefix =<< nl `fmap` (liftIO . T.readFile $ titleDir </> fn)
+    takeADump fn = send mq . nlPrefix . nl =<< (liftIO . T.readFile $ titleDir </> fn)
 
 
 -- ==================================================
@@ -267,7 +267,7 @@ data InacTimerMsg = ResetTimer
 
 
 inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-inacTimer i mq itq = (setThreadType . InacTimer $ i) >> loop 0 `catch` plaThreadExHandler "inactivity timer" i
+inacTimer i mq itq = sequence_ [ setThreadType . InacTimer $ i, loop 0 `catch` plaThreadExHandler "inactivity timer" i ]
   where
     loop secs = do
         liftIO . threadDelay $ 1 * 10 ^ 6
@@ -276,10 +276,9 @@ inacTimer i mq itq = (setThreadType . InacTimer $ i) >> loop 0 `catch` plaThread
                        | otherwise           -> loop . succ $ secs
           Just (Just ResetTimer)             -> loop 0
           Nothing                            -> return ()
-    inacBoot (parensQuote . T.pack . renderSecs -> secs) = do
-        s <- ask >>= \md -> parensQuote . view sing . (! i) <$> (liftIO . readTVarIO $ (md^.entTblTVar))
-        logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", s, " due to inactivity." ]
+    inacBoot (parensQuote . T.pack . renderSecs -> secs) = getState >>= \ms -> let s = getSing i ms in do
         logPla "inacTimer" i $ "booted due to inactivity " <> secs <>  "."
+        logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]
         liftIO . atomically . writeTQueue mq $ InacBoot
 
 
