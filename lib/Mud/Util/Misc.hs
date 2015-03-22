@@ -54,7 +54,7 @@ infixl 1 |!|
 a |!| b = (a == mempty) ? mempty :? b
 
 
-infixr 0 |$|
+infixr 0 |$| -- TODO: GHC 7.10 will have a similar function named "(&)"...
 (|$|) :: a -> (a -> b) -> b
 (|$|) = flip ($)
 

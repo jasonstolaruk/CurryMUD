@@ -53,17 +53,17 @@ interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | l <- T.length cn, l < 3 || l > 12 = promptRetryName mq "Your name must be between three and twelve characters long."
   | T.any (`elem` illegalChars) cn    = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                         = f [ checkProfanitiesDict cn i mq
-                                          , checkPropNamesDict   mq cn
-                                          , checkWordsDict       mq cn ] $ do
-                                            prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <>
-                                                                   " is that OK? [yes/no]"
-                                            setInterp i . Just . interpConfirmName $ cn'
+  | otherwise                         = doWhileFalse [ checkProfanitiesDict i mq cn
+                                                     , checkPropNamesDict     mq cn
+                                                     , checkWordsDict         mq cn ] nextPrompt
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-    f :: [MudStack Any] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
-    f []     b = b
-    f (a:as) b = a >>= (`unless` f as b) . getAny
+    doWhileFalse :: [MudStack Any] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
+    doWhileFalse []     final = final
+    doWhileFalse (a:as) final = a >>= (`unless` doWhileFalse as final) . getAny
+    nextPrompt = do
+        prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
+        setInterp i . Just . interpConfirmName $ cn'
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
 
@@ -73,8 +73,8 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-checkProfanitiesDict :: CmdName -> Id -> MsgQueue -> MudStack Any
-checkProfanitiesDict cn i mq = checkNameHelper (Just profanitiesFile) "checkProfanitiesDict" sorry cn
+checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
+checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProfanitiesDict" sorry cn
   where
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
