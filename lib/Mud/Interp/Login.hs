@@ -90,11 +90,11 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
 checkNameHelper :: Maybe FilePath -> T.Text -> MudStack () -> CmdName -> MudStack Any
 checkNameHelper Nothing     _       _     _  = return mempty
 checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |$| try >=> either
-    (emptied . fileIOExHandler funName)
-    helper
+                                                   (emptied . fileIOExHandler funName)
+                                                   helper
   where
-    helper (S.fromList . T.lines . T.toLower -> set) =
-        let isNG = cn `S.member` set in when isNG sorry >> (return . Any $ isNG)
+    helper (S.fromList . T.lines . T.toLower -> set) = let isNG = cn `S.member` set
+                                                       in when isNG sorry >> (return . Any $ isNG)
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()
