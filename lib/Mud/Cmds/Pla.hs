@@ -110,7 +110,7 @@ plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
 
 regularCmds :: [Cmd]
 regularCmds = map (uncurry3 mkRegularCmd)
-    [ ("?", plaDispCmdList,           "Display or search this command list.")
+    [ ("?",          plaDispCmdList,  "Display or search this command list.")
     , ("about",      about,           "About CurryMUD.")
     , ("admin",      admin,           "Send a message to an administrator.")
     , ("d",          go "d",          "Go down.")
@@ -360,8 +360,10 @@ exits p = withoutArgs exits p
 
 
 expCmdList :: Action
-expCmdList (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkExpCmdListTxt
-expCmdList p                  = dispMatches p (succ maxCmdLen) mkExpCmdListTxt
+expCmdList (NoArgs i mq cols) =
+    (pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkExpCmdListTxt) >> logPlaExecArgs "expressive" [] i
+expCmdList p@(ActionParams { plaId, args }) =
+    dispMatches p (succ maxCmdLen) mkExpCmdListTxt >> logPlaExecArgs "expressive" args plaId
 
 
 mkExpCmdListTxt :: [T.Text]
