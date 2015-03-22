@@ -437,14 +437,14 @@ getAction p = patternMatchFail "getAction" [ showText p ]
 
 
 go :: T.Text -> Action
-go dir p@(ActionParams { args = [], .. }) = goDispatcher p { args = [dir]      } -- TODO: Is ".." needed?
-go dir p@(ActionParams { args,      .. }) = goDispatcher p { args = dir : args } -- TODO: Is ".." needed?
+go dir p@(ActionParams { args = [] }) = goDispatcher p { args = [dir]      }
+go dir p@(ActionParams { args      }) = goDispatcher p { args = dir : args }
 
 
 goDispatcher :: Action
-goDispatcher (ActionParams { args = [], .. }) = return () -- TODO: Is ".." needed?
-goDispatcher (Lower i mq cols as)             = mapM_ (tryMove i mq cols) as
-goDispatcher p                                = patternMatchFail "goDispatcher" [ showText p ]
+goDispatcher (ActionParams { args = [] }) = return ()
+goDispatcher (Lower i mq cols as)         = mapM_ (tryMove i mq cols) as
+goDispatcher p                            = patternMatchFail "goDispatcher" [ showText p ]
 
 
 tryMove :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
