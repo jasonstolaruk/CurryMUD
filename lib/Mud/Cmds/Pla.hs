@@ -963,7 +963,7 @@ handleEgress i = do
                                      & entTbl     .at i  .~ Nothing
                                      & eqTbl      .at i  .~ Nothing
                                      & invTbl     .at i  .~ Nothing
-                                     & invTbl     .at ri .~ Just ris -- TODO: Ok?
+                                     & invTbl     .at ri .~ Just ris
                                      & mobTbl     .at i  .~ Nothing
                                      & msgQueueTbl.at i  .~ Nothing
                                      & pcTbl      .at i  .~ Nothing

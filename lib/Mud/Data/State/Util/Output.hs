@@ -72,7 +72,7 @@ bcastAdmins msg = getState >>= bcastAdminsHelper msg . getAdminIds
 
 
 bcastAdminsHelper :: T.Text -> Inv -> MudStack ()
-bcastAdminsHelper msg targetIds = bcast [( adminBroadcastColor <> msg <> dfltColor, targetIds )]
+bcastAdminsHelper msg targetIds = bcastNl [( adminBroadcastColor <> msg <> dfltColor, targetIds )]
 
 
 -----
