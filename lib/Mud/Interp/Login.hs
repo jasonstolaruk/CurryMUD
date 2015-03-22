@@ -31,7 +31,7 @@ import Control.Monad ((>=>), guard, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), Any(..), mempty)
 import Network (HostName)
 import qualified Data.Set as S (fromList, member)
 import qualified Data.Text as T
@@ -61,9 +61,9 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                                             setInterp i . Just . interpConfirmName $ cn'
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-    f :: [MudStack Bool] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
+    f :: [MudStack Any] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
     f []     b = b
-    f (a:as) b = a >>= flip unless (f as b)
+    f (a:as) b = a >>= (`unless` f as b) . getAny
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
 
@@ -73,7 +73,7 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-checkProfanitiesDict :: CmdName -> Id -> MsgQueue -> MudStack Bool
+checkProfanitiesDict :: CmdName -> Id -> MsgQueue -> MudStack Any
 checkProfanitiesDict cn i mq = checkNameHelper (Just profanitiesFile) "checkProfanitiesDict" sorry cn
   where
     sorry = getState >>= \ms -> do
@@ -87,13 +87,14 @@ checkProfanitiesDict cn i mq = checkNameHelper (Just profanitiesFile) "checkProf
         logNotice "checkProfanitiesDict" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
 
 
-checkNameHelper :: Maybe FilePath -> T.Text -> MudStack () -> CmdName -> MudStack Bool
-checkNameHelper Nothing     _       _     _  = return False
+checkNameHelper :: Maybe FilePath -> T.Text -> MudStack () -> CmdName -> MudStack Any
+checkNameHelper Nothing     _       _     _  = return mempty
 checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |$| try >=> either
-    (\e -> fileIOExHandler funName e >> return False) -- TODO: Use "emptied". "Any"?
+    (emptied . fileIOExHandler funName)
     helper
   where
-    helper (S.fromList . T.lines . T.toLower -> set) = let isNG = cn `S.member` set in when isNG sorry >> return isNG
+    helper (S.fromList . T.lines . T.toLower -> set) =
+        let isNG = cn `S.member` set in when isNG sorry >> (return . Any $ isNG)
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()
@@ -103,13 +104,13 @@ logProfanity cn (T.pack -> hn) =
     helper ts = T.appendFile profanityLogFile . T.concat $ [ ts, " ", hn, " ", cn ]
 
 
-checkPropNamesDict :: MsgQueue -> CmdName -> MudStack Bool
+checkPropNamesDict :: MsgQueue -> CmdName -> MudStack Any
 checkPropNamesDict mq = checkNameHelper propNamesFile "checkPropNamesDict" sorry
   where
     sorry = promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
 
 
-checkWordsDict :: MsgQueue -> CmdName -> MudStack Bool
+checkWordsDict :: MsgQueue -> CmdName -> MudStack Any
 checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
   where
     sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
