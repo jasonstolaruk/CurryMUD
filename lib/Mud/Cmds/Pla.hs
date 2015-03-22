@@ -415,11 +415,11 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dfltColor
                                   , "." ]
 getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
+    bcastNl bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
   where
     helper ms =
         let ri                  = getRmId     i  ms
-            invCoins            = getInvCoins ri ms
+            invCoins            = first (i `delete`) . getInvCoins ri $ ms
             d                   = mkStdDesig  i  ms DoCap
             (eiss, ecs)         = uncurry (resolveRmInvCoins i ms as) invCoins
             (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Get ri i) (ms^.invTbl,   [], []     ) eiss
