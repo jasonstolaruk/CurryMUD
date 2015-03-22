@@ -59,16 +59,6 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                                             prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <>
                                                                    " is that OK? [yes/no]"
                                             setInterp i . Just . interpConfirmName $ cn'
-{-
-      isProfane <- checkProfanity cn i mq
-      unless isProfane $ do
-          isPropName <- checkPropNamesDict cn mq
-          unless isPropName $ do
-              isWord <- checkWordsDict cn mq
-              unless isWord $ do
-                  prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
-                  modifyState helper
--}
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     f :: [MudStack Bool] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
@@ -180,7 +170,7 @@ stopInacTimer i mq = do
 
 notifyArrival :: Id -> MudState -> MudStack ()
 notifyArrival i ms = let s = getSing i ms in do
-    bcastAdmins $ s <> " has logged on."
+    bcastOtherAdmins i $ s <> " has logged on."
     bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ms s A <> " has arrived in the game."
 
 

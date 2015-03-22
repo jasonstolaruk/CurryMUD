@@ -3,6 +3,7 @@
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
                                   , bcastNl
+                                  , bcastOtherAdmins
                                   , bcastOthersInRm
                                   , frame
                                   , massMsg
@@ -66,7 +67,11 @@ bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ b
 
 
 bcastAdmins :: T.Text -> MudStack ()
-bcastAdmins msg = getState >>= \ms -> bcast [( adminBroadcastColor <> msg <> dfltColor, getAdminIds ms )]
+bcastAdmins msg = getState >>= bcastAdminsHelper msg . getAdminIds
+
+
+bcastAdminsHelper :: T.Text -> Inv -> MudStack ()
+bcastAdminsHelper msg targetIds = bcast [( adminBroadcastColor <> msg <> dfltColor, targetIds )]
 
 
 -----
@@ -74,6 +79,13 @@ bcastAdmins msg = getState >>= \ms -> bcast [( adminBroadcastColor <> msg <> dfl
 
 bcastNl :: [Broadcast] -> MudStack ()
 bcastNl bs = bcast . concat $ bs : [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
+
+
+-----
+
+
+bcastOtherAdmins :: Id -> T.Text -> MudStack ()
+bcastOtherAdmins i msg = getState >>= bcastAdminsHelper msg . (i `delete`) . getAdminIds
 
 
 -----
