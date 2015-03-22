@@ -943,31 +943,33 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 
 
 handleEgress :: Id -> MudStack ()
-handleEgress i = helper |$| modifyState >=> \(s, bs, logMsgs) -> do
-    closePlaLog i
-    bcastNl bs -- TODO: Newlines ok?
-    bcastAdmins $ s <> " has left the game."
-    forM_ logMsgs $ uncurry (logPla "handleEgress")
-    logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
+handleEgress i = do
+    informEgress
+    helper |$| modifyState >=> \(s, bs, logMsgs) -> do
+        closePlaLog i
+        bcastNl bs -- TODO: Newlines ok?
+        bcastAdmins $ s <> " has left the game."
+        forM_ logMsgs $ uncurry (logPla "handleEgress")
+        logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
   where
+    informEgress = getState >>= \ms -> let d = mkStdDesig i ms DoCap in
+        bcast [ (nlnl $ serialize d <> " has left the game.", i `delete` pcIds d) | getRmId i ms /= iWelcome ]
     helper ms =
-        let ri                  = getRmId i ms
-            ris                 = i `delete` getInv ri ms
-            d                   = mkStdDesig i ms DoCap
-            bs                  = [ (nlnl $ serialize d <> " has left the game.", i `delete` pcIds d) | ri /= iWelcome ]
-            s                   = fromJust . stdPCEntSing $ d
-            (ms', bs', logMsgs) = peepHelper ms s
-            ms''                = ms' & coinsTbl   .at i  .~ Nothing
-                                      & entTbl     .at i  .~ Nothing
-                                      & eqTbl      .at i  .~ Nothing
-                                      & invTbl     .at i  .~ Nothing
-                                      & invTbl     .at ri .~ Just ris -- TODO: Ok?
-                                      & mobTbl     .at i  .~ Nothing
-                                      & msgQueueTbl.at i  .~ Nothing
-                                      & pcTbl      .at i  .~ Nothing
-                                      & plaTbl     .at i  .~ Nothing
-                                      & typeTbl    .at i  .~ Nothing
-        in (ms'', (s, bs ++ bs', logMsgs))
+        let ri                 = getRmId i ms
+            ris                = i `delete` getInv ri ms
+            s                  = getSing i ms
+            (ms', bs, logMsgs) = peepHelper ms s
+            ms''               = ms' & coinsTbl   .at i  .~ Nothing
+                                     & entTbl     .at i  .~ Nothing
+                                     & eqTbl      .at i  .~ Nothing
+                                     & invTbl     .at i  .~ Nothing
+                                     & invTbl     .at ri .~ Just ris -- TODO: Ok?
+                                     & mobTbl     .at i  .~ Nothing
+                                     & msgQueueTbl.at i  .~ Nothing
+                                     & pcTbl      .at i  .~ Nothing
+                                     & plaTbl     .at i  .~ Nothing
+                                     & typeTbl    .at i  .~ Nothing
+        in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
             pt      = stopPeeping     (ms^.plaTbl) peepingIds

@@ -55,6 +55,7 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 
 
 bcast :: [Broadcast] -> MudStack ()
+bcast [] = return ()
 bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ bs
   where
     sendBcastSTM ms (msg, is) = forM_ is $ \i ->
@@ -78,7 +79,11 @@ bcastAdminsHelper msg targetIds = bcast [( adminBroadcastColor <> msg <> dfltCol
 
 
 bcastNl :: [Broadcast] -> MudStack ()
-bcastNl bs = bcast . concat $ bs : [ mkBroadcast i "\n" | i <- nubSort . concatMap snd $ bs ]
+bcastNl bs = bcast $ bs ++ [("\n", nubSort . concatMap snd $ bs)]
+
+
+mkBroadcast :: Id -> T.Text -> [Broadcast]
+mkBroadcast i msg = [(msg, [i])]
 
 
 -----
@@ -121,13 +126,6 @@ massSend msg = liftIO . atomically . helperSTM =<< getState
     helperSTM ms@(views plaTbl IM.keys -> is) = forM_ is $ \i ->
         let (mq, cols) = getMsgQueueColumns i ms
         in writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
-
-
------
-
-
-mkBroadcast :: Id -> T.Text -> [Broadcast]
-mkBroadcast i msg = [(msg, [i])]
 
 
 -----
