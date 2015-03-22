@@ -18,6 +18,7 @@ import Mud.Util.Text
 
 import Control.Lens.Getter (view)
 import Control.Monad (when)
+import Data.Functor ((<$>))
 import Data.List (sort)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
@@ -32,9 +33,7 @@ centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = getState >>= \ms ->
 findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)
 findAction i ms (T.toLower -> cn) = helper mkCmdList
   where
-    helper cmds = return $ maybe Nothing
-                                 (Just . action . fst)
-                                 (findFullNameForAbbrevSnd cn [ (cmd, cmdName cmd) | cmd <- cmds ])
+    helper cmds = return $ action . fst <$> findFullNameForAbbrevSnd cn [ (cmd, cmdName cmd) | cmd <- cmds ]
     mkCmdList = let ia = getPlaFlag IsAdmin . getPla i $ ms
                 in mkCmdListWithNonStdRmLinks (getPCRm i ms) ++ (ia |?| adminCmds) ++ (ia && isDebug |?| debugCmds)
 
