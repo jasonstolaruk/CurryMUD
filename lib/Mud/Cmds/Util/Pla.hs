@@ -197,7 +197,7 @@ helperGetDropEitherCoins :: Id
                          -> Either [T.Text] Coins
                          -> (CoinsTbl, [Broadcast], [T.Text])
 helperGetDropEitherCoins i d god fi ti a@(ct, _, _) = \case
-  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs) -- TODO: OK? Was "[ (msg, [i]) | msg <- msgs ]".
+  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
   Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
                     ct'           = ct & at fi ?~ fc <> negateCoins c
                                        & at ti ?~ tc <> c
@@ -297,7 +297,7 @@ helperPutRemEitherCoins :: Id
                         -> Either [T.Text] Coins
                         -> (CoinsTbl, [Broadcast], [T.Text])
 helperPutRemEitherCoins i d por mnom fi ti ts a@(ct, _, _) = \case
-  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs) -- TODO: OK? Was "[ (msg, [i]) | msg <- msgs ]".
+  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
   Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
                     ct'           = ct & at fi ?~ fc <> negateCoins c
                                        & at ti ?~ tc <> c
@@ -627,29 +627,6 @@ mkPossPro :: Sex -> T.Text
 mkPossPro Male   = "his"
 mkPossPro Female = "her"
 mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
-
-
------
-
-
--- TODO: Delete.
--- mkPutRemBindings :: Id
---                  -> CoinsTbl
---                  -> EntTbl
---                  -> InvTbl
---                  -> MobTbl
---                  -> PCTbl
---                  -> TypeTbl
---                  -> Args
---                  -> (PCDesig, Inv, Coins, Inv, Coins, ConName, Args)
--- mkPutRemBindings i ct et it mt pt tt as = let (d, _, _, ri, (i `delete`) -> ris) = mkCapStdDesig i et it mt pt tt
---                                               pis                      = it ! i
---                                               (pc, rc)                 = over both (ct !) (i, ri)
---                                               cn                       = last as
---                                               (init -> argsWithoutCon) = case as of
---                                                                            [_, _] -> as
---                                                                            _      -> (++ [cn]) . nub . init $ as
---                                           in (d, ris, rc, pis, pc, cn, argsWithoutCon)
 
 
 -----
