@@ -948,7 +948,7 @@ handleEgress i = do
     informEgress
     helper |$| modifyState >=> \(s, bs, logMsgs) -> do
         closePlaLog i
-        bcastNl bs -- TODO: Newlines ok?
+        bcast bs
         bcastAdmins $ s <> " has left the game."
         forM_ logMsgs $ uncurry (logPla "handleEgress")
         logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
@@ -975,11 +975,11 @@ handleEgress i = do
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
             pt      = stopPeeping     (ms^.plaTbl) peepingIds
             pt'     = stopBeingPeeped pt           peeperIds
-            bs      = [ (T.concat [ "You are no longer peeping "
-                                  , s
-                                  , " "
-                                  , parensQuote $ s <> " has disconnected"
-                                  , "." ], [peeperId]) | peeperId <- peeperIds ]
+            bs      = [ (nlnl . T.concat $ [ "You are no longer peeping "
+                                           , s
+                                           , " "
+                                           , parensQuote $ s <> " has disconnected"
+                                           , "." ], [peeperId]) | peeperId <- peeperIds ]
             logMsgs = [ (peeperId, T.concat [ "no longer peeping "
                                             , s
                                             , " "
