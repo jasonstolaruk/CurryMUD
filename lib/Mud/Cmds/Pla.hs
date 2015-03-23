@@ -265,7 +265,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dfltColor
                       , "." ]
 dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs)
+    bcastNl bs >> (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs)
   where
     helper ms =
         let invCoins            = getInvCoins i ms

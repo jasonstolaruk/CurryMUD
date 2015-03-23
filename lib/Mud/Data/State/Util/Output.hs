@@ -82,10 +82,6 @@ bcastNl :: [Broadcast] -> MudStack ()
 bcastNl bs = bcast $ bs ++ [("\n", nubSort . concatMap snd $ bs)]
 
 
-mkBroadcast :: Id -> T.Text -> [Broadcast]
-mkBroadcast i msg = [(msg, [i])]
-
-
 -----
 
 
@@ -133,6 +129,13 @@ massSend msg = liftIO . atomically . helperSTM =<< getState
 
 mkDividerTxt :: Cols -> T.Text
 mkDividerTxt = flip T.replicate "="
+
+
+-----
+
+
+mkBroadcast :: Id -> T.Text -> [Broadcast]
+mkBroadcast i msg = [(msg, [i])]
 
 
 -----
