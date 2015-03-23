@@ -28,6 +28,7 @@ import Mud.Util.Misc
 import Control.Arrow ((***))
 import Control.Monad (guard)
 import Data.Char (isUpper, toLower, toUpper)
+import Data.Ix (inRange)
 import Data.List (sort)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -140,7 +141,7 @@ showText = T.pack . show
 
 
 stripControl :: T.Text -> T.Text
-stripControl = T.filter (\c -> c > '\31' && c < '\127')
+stripControl = T.filter (inRange ('\32', '\126'))
 
 
 -----

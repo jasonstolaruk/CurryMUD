@@ -50,6 +50,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
+import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
@@ -188,7 +189,7 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 
 about :: Action
 about (NoArgs i mq cols) = do
-    helper |$| try >=> eitherRet (\e -> fileIOExHandler "about" e >> sendGenericErrorMsg mq cols)
+    helper |$| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . fileIOExHandler "about")
     logPlaExec "about" i
   where
     helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
@@ -1541,12 +1542,12 @@ helperSettings a@(p, _, _) (T.breakOn "=" -> (name, T.tail -> value)) =
                                          , dblQuote name
                                          , " setting." ]
     changeSetting minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x
-      | x < minVal || x > maxVal = appendMsg . T.concat $ [ capitalize settingName
-                                                          , " must be between "
-                                                          , minValTxt
-                                                          , " and "
-                                                          , maxValTxt
-                                                          , "." ]
+      | not . inRange (minVal, maxVal) $ x = appendMsg . T.concat $ [ capitalize settingName
+                                                                    , " must be between "
+                                                                    , minValTxt
+                                                                    , " and "
+                                                                    , maxValTxt
+                                                                    , "." ]
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ] in
           appendMsg msg & _1 .~ (p & lens .~ x) & _3 <>~ [msg]
 
@@ -1708,7 +1709,7 @@ uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime -- TODO: Ok?
 
 getRecordUptime :: MudStack (Maybe (Sum Int))
 getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
-                      (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime")) -- TODO: We didn't need "\e ->" here... what about in other places?
+                      (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime"))
                       (return Nothing)
   where
     readUptime = Just . Sum . read <$> readFile uptimeFile

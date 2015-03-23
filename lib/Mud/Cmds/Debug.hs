@@ -40,6 +40,7 @@ import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask, runReaderT)
+import Data.Ix (inRange)
 import Data.List (delete, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>))
@@ -426,9 +427,9 @@ debugWrap (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)
   _               -> sorryParse
   where
     sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-    helper lineLen | lineLen < 0                            = wrapSorryWtf     mq cols
-                   | lineLen < minCols || lineLen > maxCols = wrapSorryLineLen mq cols
-                   | otherwise                              = do
+    helper lineLen | lineLen < 0                                = wrapSorryWtf     mq cols
+                   | not . inRange (minCols, maxCols) $ lineLen = wrapSorryLineLen mq cols
+                   | otherwise                                  = do
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
                        logPlaExecArgs (prefixDebugCmd "wrap") [a] i
 debugWrap p = advise p [] advice
@@ -491,10 +492,10 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
       _         -> sorry >> return Nothing
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
-    helper lineLen indent | lineLen < 0 || indent < 0              = wrapSorryWtf     mq cols
-                          | lineLen < minCols || lineLen > maxCols = wrapSorryLineLen mq cols
-                          | indent >= lineLen                      = sorryIndent
-                          | otherwise                              = do
+    helper lineLen indent | any (< 0) [ lineLen, indent ]              = wrapSorryWtf     mq cols
+                          | not . inRange (minCols, maxCols) $ lineLen = wrapSorryLineLen mq cols
+                          | indent >= lineLen                          = sorryIndent
+                          | otherwise                                  = do
                               send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
                               logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
     sorryIndent = wrapSend mq cols "The indent amount must be less than the line length."

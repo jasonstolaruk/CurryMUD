@@ -381,7 +381,7 @@ adminTypo p                  = withoutArgs adminTypo p
 
 adminUptime :: Action
 adminUptime (NoArgs i mq cols) = do
-    send mq . nl =<< liftIO uptime |$| try >=> eitherRet (\e -> logIOEx "adminUptime" e >> sendGenericErrorMsg mq cols)
+    send mq . nl =<< liftIO uptime |$| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . logIOEx "adminUptime")
     logPlaExec (prefixAdminCmd "uptime") i
   where
     uptime = T.pack <$> readProcess "uptime" [] ""
