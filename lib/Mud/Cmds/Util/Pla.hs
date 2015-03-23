@@ -76,7 +76,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, find, intercalate, nub)
 import Data.Maybe (catMaybes, fromJust, isNothing)
-import Data.Monoid ((<>), Sum(..), mempty)
+import Data.Monoid ((<>), Sum(..))
 import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile)
@@ -509,7 +509,7 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
 
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> T.Text
 mkInvCoinsDesc i cols ms descId descSing | descInv <- getInv descId ms, descCoins <- getCoins descId ms =
-    case (not . null $ descInv, descCoins /= mempty) of
+    case (notEmpty *** notEmpty) (descInv, descCoins) of
       (False, False) -> wrapUnlines cols (descId == i ? dudeYourHandsAreEmpty :? "The " <> descSing <> " is empty.")
       (True,  False) -> header <> mkEntsInInvDesc i cols ms descInv
       (False, True ) -> header                                      <> mkCoinsSummary cols descCoins

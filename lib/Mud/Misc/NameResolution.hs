@@ -188,7 +188,7 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
                                                         , entsRes         = Nothing
                                                         , coinsRes        = Just helper }
   where
-    helper | c == mempty                 = Empty
+    helper | isEmpty c                   = Empty
            | n `elem` aggregateCoinNames = SomeOf $ if a == (maxBound :: Int)
              then c
              else coinsFromList . distributeAmt a . coinsToList $ c

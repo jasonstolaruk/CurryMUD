@@ -16,10 +16,10 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***), first)
+import Control.Arrow (first)
 import Control.Lens (each, over)
 import Data.List ((\\), delete)
-import Data.Monoid ((<>), mempty)
+import Data.Monoid ((<>))
 import qualified Data.Set as S (Set, fromList, foldr)
 import qualified Data.Text as T
 
@@ -696,7 +696,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
     helper toSelf toTarget toOthers = getState >>= \ms ->
         let d                                = mkStdDesig i ms DoCap
             (first (i `delete`) -> invCoins) = getPCRmInvCoins i ms
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+        in if notEmpty invCoins
           then case uncurry (resolveRmInvCoins i ms [target]) invCoins of
             (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
             (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot \

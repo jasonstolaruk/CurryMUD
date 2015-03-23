@@ -10,6 +10,7 @@ module Mud.Util.Misc ( (?)
                      , eitherRet
                      , emptied
                      , ifThenElse
+                     , isEmpty
                      , isVowel
                      , mIf
                      , maybeRet
@@ -52,7 +53,7 @@ a |?| b = a ? b :? mempty
 -- mempty on mempty.
 infixl 1 |!|
 (|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
-a |!| b = (a == mempty) ? mempty :? b
+a |!| b = isEmpty a ? mempty :? b
 
 
 infixr 0 |$| -- TODO: GHC 7.10 will have a similar function named "(&)"...
@@ -83,6 +84,10 @@ ifThenElse True  x _ = x
 ifThenElse False _ y = y
 
 
+isEmpty :: (Eq m, Monoid m) => m -> Bool
+isEmpty = (== mempty)
+
+
 isVowel :: Char -> Bool
 isVowel = (`elem` "aeiou")
 
@@ -111,7 +116,7 @@ mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeT
 
 
 notEmpty :: (Eq m, Monoid m) => m -> Bool
-notEmpty = (/= mempty)
+notEmpty = not . isEmpty
 
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a
