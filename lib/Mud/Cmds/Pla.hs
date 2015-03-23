@@ -917,7 +917,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
     in if null conMiss && (not . null $ conRcs)
       then sorry "You can't put something inside a coin."
       else case f . head . zip conGecrs $ conMiss of
-        Left  msg     -> sorry . nl $ msg -- TODO: Newlines ok?
+        Left  msg     -> sorry msg
         Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
           then sorry $ theOnLowerCap conSing <> " isn't a container."
           else let (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) pcInvCoins
@@ -933,7 +933,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                in (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
         Right {} -> sorry "You can only put things into one container at a time."
   where
-    sorry msg = (ms, (mkBroadcast i msg, []))
+    sorry msg = (ms, (mkBroadcast i . nlnl $ msg, []))
 
 
 -----
@@ -1344,7 +1344,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     in if null conMiss && (not . null $ conRcs)
       then sorry "You can't remove something from a coin."
       else case f . head . zip conGecrs $ conMiss of
-        Left  msg     -> sorry . nl $ msg -- TODO: Newlines ok?
+        Left  msg     -> sorry msg
         Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
           then sorry $ theOnLowerCap conSing <> " isn't a container."
           else let invCoinsInCon       = getInvCoins conId ms
@@ -1363,7 +1363,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                  else sorry $ "The " <> conSing <> " is empty."
         Right {} -> sorry "You can only remove things from one container at a time."
   where
-    sorry msg = (ms, (mkBroadcast i msg, []))
+    sorry msg = (ms, (mkBroadcast i . nlnl $ msg, []))
 
 
 -----
