@@ -43,7 +43,7 @@ import Control.Monad.Reader (ask, runReaderT)
 import Data.Ix (inRange)
 import Data.List (delete, sort)
 import Data.Maybe (fromJust, isNothing)
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), Sum(..))
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
@@ -484,12 +484,12 @@ debugWrapIndent p@(AdviseOneArg _) = advise p [] advice
                       , "." ]
 debugWrapIndent (WithArgs i mq cols [a, b]) = do
     parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
-    unless (uncurry (||) . over both isNothing $ parsed) . uncurry helper . over both fromJust $ parsed
+    unless (uncurry (||) . over both isNothing $ parsed) . uncurry helper . over both (getSum . fromJust) $ parsed
   where
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
-      []        -> sorry >> return Nothing
-      [(x, "")] -> return . Just $ x
-      _         -> sorry >> return Nothing
+      []        -> emptied sorry
+      [(x, "")] -> return . Just . Sum $ x
+      _         -> emptied sorry
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
     helper lineLen indent | any (< 0) [ lineLen, indent ]              = wrapSorryWtf     mq cols

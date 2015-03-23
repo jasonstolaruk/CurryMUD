@@ -74,7 +74,6 @@ eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
 eitherRet = flip either return
 
 
--- TODO: Use this.
 emptied :: (Monad m, Monoid b) => m a -> m b
 emptied m = m >> return mempty
 
