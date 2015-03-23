@@ -283,7 +283,6 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
--- TODO: Added bracket quotes - ok?
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where

@@ -126,13 +126,13 @@ bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getState >>= \ms ->
         logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
   where
     logIt s (showText -> ri) (dblQuote -> rn) = mkTimestamp >>= \ts ->
-        T.appendFile logFile . T.concat $ [ ts
-                                          , " "
-                                          , s
-                                          , " "
-                                          , parensQuote $ ri <> " " <> rn
-                                          , ": "
-                                          , msg ]
+        T.appendFile logFile . nl . T.concat $ [ ts
+                                               , " "
+                                               , s
+                                               , " "
+                                               , parensQuote $ ri <> " " <> rn
+                                               , ": "
+                                               , msg ]
     logFile = case wl of BugLog  -> bugLogFile
                          TypoLog -> typoLogFile
 bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
