@@ -677,7 +677,7 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
           _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower (getSing targetId ms) <> "."
                         b   = head . mkNTBroadcast i . nlnl $ msg
                     in over _2 (`appendIfUnique` b) a'
-    helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ]) -- TODO: OK? Was "concat [ mkNTBroadcast i . nlnl $ msg | msg <- msgs ]"...
+    helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperIntroEitherCoins a (Right {}  ) =
         let cb = head . mkNTBroadcast i . nlnl $ "You can't introduce yourself to a coin."
         in first (`appendIfUnique` cb) a
@@ -710,7 +710,6 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
--- TODO: Test extensively.
 look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri     = getRmId i  ms
@@ -859,7 +858,6 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 -----
 
 
--- TODO: Test extensively.
 putAction :: Action
 putAction p@AdviseNoArgs = advise p ["put"] advice
   where
@@ -877,7 +875,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dfltColor
                       , "." ]
 putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
+    bcastNl bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
     helper ms = let d                        = mkStdDesig  i ms DoCap
                     pcInvCoins               = getInvCoins i ms
@@ -889,7 +887,7 @@ putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
                 in if notEmpty pcInvCoins
                   then case T.uncons conName of
                     Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
-                      then shufflePut i ms d conName True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
+                      then shufflePut i ms d (T.tail conName) True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
                       else (ms, (mkBroadcast i "You don't see any containers here.", []))
                     _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
                   else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
@@ -932,7 +930,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                in (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
         Right {} -> sorry "You can only put things into one container at a time."
   where
-    sorry msg = (ms, (mkBroadcast i . nlnl $ msg, []))
+    sorry msg = (ms, (mkBroadcast i msg, []))
 
 
 -----
@@ -1312,7 +1310,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dfltColor
                       , "." ]
 remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
+    bcastNl bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
   where
     helper ms = let d                        = mkStdDesig  i ms DoCap
                     pcInvCoins               = getInvCoins i ms
@@ -1362,7 +1360,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                  else sorry $ "The " <> conSing <> " is empty."
         Right {} -> sorry "You can only remove things from one container at a time."
   where
-    sorry msg = (ms, (mkBroadcast i . nlnl $ msg, []))
+    sorry msg = (ms, (mkBroadcast i msg, []))
 
 
 -----
