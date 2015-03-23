@@ -13,6 +13,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , mkSerializedNonStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
+                                , onEnv
                                 , sortInv ) where
 
 import Mud.Data.Misc
@@ -79,7 +80,7 @@ mkUnknownPCEntName i ms = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms i
 
 
 getState :: MudStack MudState
-getState = liftIO . readIORef . view mudStateIORef =<< ask
+getState = onEnv $ liftIO . readIORef . view mudStateIORef
 
 
 -----
@@ -127,6 +128,13 @@ mkSerializedNonStdDesig i ms s (capitalize . pp -> aot) = let (pp *** pp -> (sex
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
+
+
+-----
+
+
+onEnv :: (MudData -> MudStack a) -> MudStack a
+onEnv = (ask >>=)
 
 
 -----

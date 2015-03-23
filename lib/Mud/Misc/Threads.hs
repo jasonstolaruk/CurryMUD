@@ -107,7 +107,7 @@ saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) =
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     setThreadType Listen
-    liftIO . void . forkIO . runReaderT threadTblPurger =<< ask
+    onEnv $ liftIO . void . forkIO . runReaderT threadTblPurger
     initWorld
     logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
@@ -126,7 +126,7 @@ listen = handle listenExHandler $ do
                                              , " on local port "
                                              , showText localPort
                                              , "." ]
-        setTalkAsync =<< liftIO . async . runReaderT (talk h host) =<< ask
+        setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
     cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
 
 
@@ -354,7 +354,7 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = massMsg SilentBoot >> (liftIO . void . forkIO . runReaderT commitSuicide =<< ask)
+shutDown = massMsg SilentBoot >> (onEnv $ liftIO . void . forkIO . runReaderT commitSuicide)
   where
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState

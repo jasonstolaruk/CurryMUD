@@ -172,13 +172,13 @@ registerMsg msg = liftIO . atomically . flip writeTQueue (LogMsg msg)
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
-logNotice modName (dblQuote -> funName) msg = helper . snd . view noticeLog =<< ask
+logNotice modName (dblQuote -> funName) msg = onEnv $ helper . snd . view noticeLog
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
 
 logError :: T.Text -> MudStack ()
-logError msg = registerMsg msg . snd . view errorLog =<< ask
+logError msg = onEnv $ registerMsg msg . snd . view errorLog
 
 
 logExMsg :: T.Text -> T.Text -> T.Text -> SomeException -> MudStack ()

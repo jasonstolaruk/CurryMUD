@@ -39,7 +39,7 @@ import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask, runReaderT)
+import Control.Monad.Reader (asks, runReaderT)
 import Data.Ix (inRange)
 import Data.List (delete, sort)
 import Data.Maybe (fromJust, isNothing)
@@ -221,7 +221,7 @@ mkEnvListTxt = map (mkAssocTxt . over both T.pack)
 debugLog :: Action
 debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
-    helper       = replicateM_ 100 $ liftIO . void . forkIO . runReaderT heavyLogging =<< ask
+    helper       = onEnv $ replicateM_ 100 . liftIO . void . forkIO . runReaderT heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
@@ -323,7 +323,7 @@ debugTalk p = withoutArgs debugTalk p
 
 debugThread :: Action
 debugThread (NoArgs i mq cols) = do
-    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- over both asyncThreadId . getLogAsyncs <$> ask -- TODO: Does reader have a more idiomatic way rather than just fmapping onto ask?
+    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ over both asyncThreadId . getLogAsyncs
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)

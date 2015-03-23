@@ -47,7 +47,7 @@ import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
+import Control.Monad.Reader (asks)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
@@ -1682,7 +1682,7 @@ uptime p = withoutArgs uptime p
 
 
 getUptime :: MudStack Int
-getUptime = let start = view startTime <$> ask
+getUptime = let start = asks $ view startTime
                 now   = liftIO . getTime $ Monotonic
             in (-) <$> sec `fmap` now <*> sec `fmap` start
 
