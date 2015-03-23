@@ -421,9 +421,9 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
   where
     helper ms =
-        let ri                  = getRmId     i  ms
+        let ri                  = getRmId    i ms
             invCoins            = first (i `delete`) . getInvCoins ri $ ms
-            d                   = mkStdDesig  i  ms DoCap
+            d                   = mkStdDesig i ms DoCap
             (eiss, ecs)         = uncurry (resolveRmInvCoins i ms as) invCoins
             (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Get ri i) (ms^.invTbl,   [], []     ) eiss
             (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Get ri i) (ms^.coinsTbl, bs, logMsgs) ecs
@@ -627,11 +627,11 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
     bcast bs >> (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs)
   where
     helper ms =
-        let (is@((i `delete`) -> is'), c) = getPCRmInvCoins i ms
-            (eiss, ecs)                   = resolveRmInvCoins i ms as is' c
-            (pt, cbs,  logMsgs )          = foldl' (helperIntroEitherInv ms is) (ms^.pcTbl, [],  []     ) eiss
-            (    cbs', logMsgs')          = foldl' helperIntroEitherCoins       (           cbs, logMsgs) ecs
-        in if notEmpty (is', c)
+        let invCoins@(first (i `delete`) -> invCoins') = getPCRmInvCoins i ms
+            (eiss, ecs)          = uncurry (resolveRmInvCoins i ms as) invCoins'
+            (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms (fst invCoins)) (ms^.pcTbl, [],  []     ) eiss
+            (    cbs', logMsgs') = foldl' helperIntroEitherCoins                   (           cbs, logMsgs) ecs
+        in if notEmpty invCoins'
           then (ms & pcTbl .~ pt, (cbs', logMsgs'))
           else (ms, (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []))
     helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? (a & _2 <>~ (mkNTBroadcast i . nlnl $ msg))
@@ -726,7 +726,7 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTarget
     maybeVoid logHelper maybeTargetDesigs
   where
     helper ms
-      | invCoins@(first (i `delete`) -> invCoins') <- getPCRmInvCoins i ms -- TODO: Use "first" like this elsewhere?
+      | invCoins@(first (i `delete`) -> invCoins') <- getPCRmInvCoins i ms
       = if notEmpty invCoins
           then let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms as) invCoins'
                    invDesc      = foldl' (helperLookEitherInv ms) "" eiss
@@ -755,10 +755,10 @@ look p = patternMatchFail "look" [ showText p ]
 
 mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ms ri =
-    let ((i `delete`) -> ris, c) = getInvCoins ri ms
-        (pcNcbs, otherNcbs)      = splitPCsOthers . mkIsPC_StyledName_Count_BothList i ms $ ris
-        pcDescs                  = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
-        otherDescs               = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
+    let (ris, c)            = first (i `delete`) . getInvCoins ri $ ms
+        (pcNcbs, otherNcbs) = splitPCsOthers . mkIsPC_StyledName_Count_BothList i ms $ ris
+        pcDescs             = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
+        otherDescs          = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
     in (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
   where
     splitPCsOthers                       = over both (map snd) . span fst
@@ -879,16 +879,16 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
 putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
-    helper ms = let d                                           = mkStdDesig      i ms DoCap
-                    pcInvCoins                                  = getInvCoins     i ms
-                    (first (i `delete`) -> rmInvCoins@(ris, _)) = getPCRmInvCoins i ms
-                    conName                                     = last as
-                    (init -> argsWithoutCon)                    = case as of
-                                                                    [_, _] -> as
-                                                                    _      -> (++ [conName]) . nub . init $ as
+    helper ms = let d                        = mkStdDesig  i ms DoCap
+                    pcInvCoins               = getInvCoins i ms
+                    rmInvCoins               = first (i `delete`) . getPCRmInvCoins i $ ms
+                    conName                  = last as
+                    (init -> argsWithoutCon) = case as of
+                                                 [_, _] -> as
+                                                 _      -> (++ [conName]) . nub . init $ as
                 in if notEmpty pcInvCoins
                   then case T.uncons conName of
-                    Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null $ ris
+                    Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
                       then shufflePut i ms d conName True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
                       else (ms, (mkBroadcast i "You don't see any containers here.", []))
                     _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
@@ -1314,15 +1314,15 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
 remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcast bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
   where
-    helper ms = let d                                           = mkStdDesig      i ms DoCap
-                    pcInvCoins                                  = getInvCoins     i ms
-                    (first (i `delete`) -> rmInvCoins@(ris, _)) = getPCRmInvCoins i ms
-                    conName                                     = last as
-                    (init -> argsWithoutCon)                    = case as of
-                                                                    [_, _] -> as
-                                                                    _      -> (++ [conName]) . nub . init $ as
+    helper ms = let d                        = mkStdDesig  i ms DoCap
+                    pcInvCoins               = getInvCoins i ms
+                    rmInvCoins               = first (i `delete`) . getPCRmInvCoins i $ ms
+                    conName                  = last as
+                    (init -> argsWithoutCon) = case as of
+                                                 [_, _] -> as
+                                                 _      -> (++ [conName]) . nub . init $ as
                 in case T.uncons conName of
-                  Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null $ ris
+                  Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
                     then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
                     else (ms, (mkBroadcast i "You don't see any containers here.", []))
                   _ -> shuffleRem i ms d conName False argsWithoutCon pcInvCoins procGecrMisPCInv
