@@ -1024,7 +1024,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dfltColor
                       , "." ]
 ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "ready" i $ logMsgs)
+    bcastNl bs >> (unless (null logMsgs) . logPlaOut "ready" i $ logMsgs)
   where
     helper ms =
         let invCoins@(is, _)          = getInvCoins i ms
@@ -1577,7 +1577,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dfltColor
                       , "." ]
 unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs) -- TODO: Was "bcastNl"... ok?
+    bcastNl bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs)
   where
     helper ms = let d                      = mkStdDesig i ms DoCap
                     em                     = getEqMap   i ms
