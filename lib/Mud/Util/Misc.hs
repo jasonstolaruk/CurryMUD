@@ -16,6 +16,7 @@ module Mud.Util.Misc ( (?)
                      , maybeVoid
                      , mkDateTimeTxt
                      , mkTimestamp
+                     , notEmpty
                      , patternMatchFail
                      , reverseLookup
                      , toMaybe
@@ -107,6 +108,10 @@ mkDateTimeTxt = helper <$> (T.words . T.pack . show) `fmap` getZonedTime
 
 mkTimestamp :: IO T.Text
 mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeTxt ]
+
+
+notEmpty :: (Eq m, Monoid m) => m -> Bool
+notEmpty = (/= mempty)
 
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a

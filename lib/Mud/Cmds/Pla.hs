@@ -273,7 +273,7 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             (eiss, ecs)         = uncurry (resolvePCInvCoins i ms as) invCoins
             (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Drop i ri) (ms^.invTbl,   [], []     ) eiss
             (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Drop i ri) (ms^.coinsTbl, bs, logMsgs) ecs
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins -- TODO: Can't we use "over both" here? Use "|$|"?
+        in if notEmpty invCoins
           then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
           else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
@@ -427,7 +427,7 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             (eiss, ecs)         = uncurry (resolveRmInvCoins i ms as) invCoins
             (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Get ri i) (ms^.invTbl,   [], []     ) eiss
             (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Get ri i) (ms^.coinsTbl, bs, logMsgs) ecs
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+        in if notEmpty invCoins
           then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
           else (ms, (mkBroadcast i "You don't see anything here to pick up.", []))
 getAction p = patternMatchFail "getAction" [ showText p ]
@@ -631,7 +631,7 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
             (eiss, ecs)                   = resolveRmInvCoins i ms as is' c
             (pt, cbs,  logMsgs )          = foldl' (helperIntroEitherInv ms is) (ms^.pcTbl, [],  []     ) eiss
             (    cbs', logMsgs')          = foldl' helperIntroEitherCoins       (           cbs, logMsgs) ecs
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is', c)
+        in if notEmpty (is', c)
           then (ms & pcTbl .~ pt, (cbs', logMsgs'))
           else (ms, (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []))
     helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? (a & _2 <>~ (mkNTBroadcast i . nlnl $ msg))
@@ -696,7 +696,7 @@ inv (LowerNub i mq cols as) = getState >>= \ms ->
         (eiss, ecs) = uncurry (resolvePCInvCoins i ms as) invCoins
         invDesc     = foldl' (helperEitherInv ms) "" eiss
         coinsDesc   = foldl' helperEitherCoins    "" ecs
-    in send mq $ if uncurry (||) (((/= mempty) *** (/= mempty)) invCoins)
+    in send mq $ if notEmpty invCoins
       then invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
@@ -727,7 +727,7 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTarget
   where
     helper ms
       | invCoins@(first (i `delete`) -> invCoins') <- getPCRmInvCoins i ms -- TODO: Use "first" like this elsewhere?
-      = if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+      = if notEmpty invCoins
           then let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms as) invCoins'
                    invDesc      = foldl' (helperLookEitherInv ms) "" eiss
                    coinsDesc    = foldl' helperLookEitherCoins    "" ecs
@@ -886,7 +886,7 @@ putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
                     (init -> argsWithoutCon)                    = case as of
                                                                     [_, _] -> as
                                                                     _      -> (++ [conName]) . nub . init $ as
-                in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ pcInvCoins
+                in if notEmpty pcInvCoins
                   then case T.uncons conName of
                     Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null $ ris
                       then shufflePut i ms d conName True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
@@ -1033,7 +1033,7 @@ ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             eiss                      = zipWith (curry procGecrMisReady) gecrs miss
             bs                        = rcs |!| mkBroadcast i "You can't ready coins."
             (et, it, bs', logMsgs)    = foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) . zip eiss $ mrols
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ invCoins
+        in if notEmpty invCoins
           then (ms & eqTbl .~ et & invTbl .~ it, (bs', logMsgs))
           else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 ready p = patternMatchFail "ready" [ showText p ]
@@ -1357,7 +1357,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                    (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i    d Rem mnom conId i conSing)
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
-               in if uncurry (||) . ((not . null) *** (/= mempty)) $ invCoinsInCon
+               in if notEmpty invCoinsInCon
                  then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
                  else sorry $ "The " <> conSing <> " is empty."
         Right {} -> sorry "You can only remove things from one container at a time."
@@ -1417,10 +1417,10 @@ say p@(WithArgs i _ _ args@(a:_))
                                  , "." ]
     adviseHelper      = advise p ["say"]
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
-        let d                             = mkStdDesig      i ms DoCap
-            ((i `delete`) -> is, c) = getPCRmInvCoins i ms
-        in if uncurry (||) . ((/= mempty) *** (/= mempty)) $ (is, c)
-          then case resolveRmInvCoins i ms [target] is c of
+        let d        = mkStdDesig i ms DoCap
+            invCoins = first (i `delete`) . getPCRmInvCoins i $ ms
+        in if notEmpty invCoins
+          then case uncurry (resolveRmInvCoins i ms [target]) invCoins of
             (_,                    [ Left [msg] ]) -> sorry msg
             (_,                    Right  _:_    ) -> sorry "You're talking to coins now?"
             ([ Left  msg        ], _             ) -> sorry msg
