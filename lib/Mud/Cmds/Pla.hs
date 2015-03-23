@@ -1688,10 +1688,7 @@ getUptime = let start = view startTime <$> ask
 
 
 uptimeHelper :: Int -> MudStack T.Text
-uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime -- TODO: Ok?
-    -- maybeRecUpSum <- getRecordUptime
-    -- let maybeRecUpSum' = getSum <$> maybeRecUpSum
-    -- return . helper $ maybeRecUpSum'
+uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime
   where
     helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
     mkUptimeTxt    = mkTxtHelper "."
