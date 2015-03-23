@@ -1500,10 +1500,10 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
 setAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "set" i $ logMsgs)
+    bcastNl bs >> (unless (null logMsgs) . logPlaOut "set" i $ logMsgs)
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
-                in (ms & plaTbl.at i ?~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs)) -- TODO: Newlines ok?
+                in (ms & plaTbl.at i ?~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
