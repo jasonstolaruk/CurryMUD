@@ -30,7 +30,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, over, views)
+import Control.Lens (_1, _2, _3, to)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -146,7 +146,7 @@ adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
+    case [ pi | pi <- ms^.pcTbl.to IM.keys {- views pcTbl IM.keys ms -}, getSing pi ms == target ] of
       []       -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note \
                                      \that you must specify the full PC name of the player you wish to boot.)"
       [bootId] -> let selfSing = getSing i ms in if selfSing == target
@@ -220,7 +220,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     helper ms = let (pt, msgs, logMsgs) = foldr (peep (getSing i ms) (mkPlaIdSingList ms)) (ms^.plaTbl, [], []) as
                 in (ms & plaTbl .~ pt, (msgs, logMsgs))
     peep s plaIdSings target a@(pt, _, _) =
-        let notFound = over _2 (sorry :) a
+        let notFound = a & _2 %~ (sorry :)
             sorry    = "No player by the name of " <> dblQuote target <> " is currently connected."
             found (peepId, peepSing) = if peepId `notElem` pt^.ind i.peeping
               then let pt'     = pt & ind i     .peeping %~ (peepId :)
