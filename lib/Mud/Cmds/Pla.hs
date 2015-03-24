@@ -43,7 +43,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to, view, views)
-import Control.Lens.Operators ((&), (.~), (<>~), (?~), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -455,22 +455,18 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
       logPla "tryMove" i logMsg
   where
     helper ms =
-        let p        = getPC i ms
-            originId = p^.rmId
+        let originId = getRmId i ms
             originRm = getRm originId ms
         in case findExit originRm dir of
           Nothing -> (ms, Left sorry)
           Just (linkTxt, destId, maybeOriginMsgFun, maybeDestMsgFun) ->
             let originDesig = mkStdDesig i ms DoCap
                 s           = fromJust . stdPCEntSing $ originDesig
-                originInv   = i `delete` getInv originId ms
                 originPCIds = i `delete` pcIds originDesig
-                destInv     = getInv destId ms
-                destInv'    = sortInv ms $ destInv ++ [i]
-                destPCIds   = findPCIds ms destInv
-                ms'         = ms & pcTbl .ind i.rmId   .~ destId -- & at i ?~ (p & rmId .~ destId)
-                                 & invTbl.ind originId .~ originInv -- & at originId ?~ originInv & at destId ?~ destInv'
-                                 & invTbl.ind destId   .~ destInv'
+                destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
+                ms'         = ms & pcTbl .ind i.rmId   .~ destId
+                                 & invTbl.ind originId %~ (i `delete`)
+                                 & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
                 msgAtOrigin = nlnl $ case maybeOriginMsgFun of
                                 Nothing -> T.concat [ serialize originDesig, " ", verb, " ", expandLinkName dir, "." ]
                                 Just f  -> f . serialize $ originDesig
