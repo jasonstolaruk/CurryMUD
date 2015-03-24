@@ -60,7 +60,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                                                          , checkWordsDict         mq cn ] nextPrompt
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-    doWhileFalse :: [MudStack Any] -> MudStack () -> MudStack () -- TODO: Ok? Rename? Refactor?
+    doWhileFalse :: [MudStack Any] -> MudStack () -> MudStack () -- TODO: Refactor?
     doWhileFalse []     final = final
     doWhileFalse (a:as) final = a >>= (`unless` doWhileFalse as final) . getAny
     nextPrompt = do
@@ -133,26 +133,21 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
-    helper ms = let et   = ms^.entTbl -- TODO: Can we make this prettier?
-                    it   = ms^.invTbl
-                    pct  = ms^.pcTbl
-                    plat = ms^.plaTbl
+    helper ms = let e         = (ms^.entTbl) ! i -- TODO: How can we make this prettier?
+                    oldSing   = e^.sing
 
-                    e        = et ! i
-                    oldSing  = e^.sing
-                    et'      = et & at i ?~ (e & sing .~ s)
+                    originInv = i `delete`   ((ms^.invTbl) ! iWelcome)
+                    destInv   = sortInv ms $ ((ms^.invTbl) ! iCentral) ++ [i]
 
-                    originIs = i `delete` (it ! iWelcome)
-                    destIs   = sortInv ms $ it ! iCentral ++ [i]
-                    it'      = it & at iWelcome ?~ originIs & at iCentral ?~ destIs
+                    pc        = ((ms^.pcTbl) ! i) & rmId .~ iCentral
 
-                    pc       = pct ! i & rmId .~ iCentral
-                    pct'     = pct & at i ?~ pc
+                    pla       = setPlaFlag IsAdmin (T.head s == 'Z') ((ms^.plaTbl) ! i) & interp .~ Nothing
 
-                    pla      = setPlaFlag IsAdmin (T.head s == 'Z') (plat ! i) & interp .~ Nothing
-                    plat'    = plat & at i ?~ pla
-
-                    ms'      = ms & entTbl .~ et' & invTbl .~ it' & pcTbl .~ pct' & plaTbl .~ plat'
+                    ms'       = ms & entTbl.at i        ?~ (e & sing .~ s)
+                                   & invTbl.at iWelcome ?~ originInv
+                                   & invTbl.at iCentral ?~ destInv
+                                   & pcTbl .at i        ?~ pc
+                                   & plaTbl.at i        ?~ pla
         in (ms', (ms', oldSing))
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
