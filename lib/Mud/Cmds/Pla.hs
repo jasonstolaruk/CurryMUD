@@ -468,8 +468,9 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
                 destInv     = getInv destId ms
                 destInv'    = sortInv ms $ destInv ++ [i]
                 destPCIds   = findPCIds ms destInv
-                pt          = ms^.pcTbl  & at i ?~ (p & rmId .~ destId)
-                it          = ms^.invTbl & at originId ?~ originInv & at destId ?~ destInv'
+                ms'         = ms & pcTbl .ind i.rmId   .~ destId -- & at i ?~ (p & rmId .~ destId)
+                                 & invTbl.ind originId .~ originInv -- & at originId ?~ originInv & at destId ?~ destInv'
+                                 & invTbl.ind destId   .~ destInv'
                 msgAtOrigin = nlnl $ case maybeOriginMsgFun of
                                 Nothing -> T.concat [ serialize originDesig, " ", verb, " ", expandLinkName dir, "." ]
                                 Just f  -> f . serialize $ originDesig
@@ -483,7 +484,7 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
                                        , " to room "
                                        , showRm destId . getRm destId $ ms
                                        , "." ]
-            in (ms & pcTbl .~ pt & invTbl .~ it, Right ([ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ], logMsg))
+            in (ms', Right ([ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ], logMsg))
     sorry = dir `elem` stdLinkNames ? "You can't go that way." :? dblQuote dir <> " is not a valid exit."
     verb
       | dir == "u"              = "goes"
