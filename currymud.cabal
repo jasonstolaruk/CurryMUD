@@ -116,6 +116,7 @@ library
                        lens >=4.6 && <5.0,
                        lifted-base >=0.2 && <0.3,
                        monad-control >=0.3 && <0.4,
+                       monad-loops >=0.4 && <0.5,
                        mtl >=2.2 && <3.0,
                        network >=2.6 && <3.0,
                        network-info >=0.2 && <0.3,

@@ -27,8 +27,10 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
 import Control.Lens (at)
 import Control.Lens.Operators ((&), (?~), (.~), (^.))
-import Control.Monad ((>=>), guard, unless, when)
+import Control.Monad ((>=>), guard, when)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Loops (orM)
+import Data.Functor ((<$>))
 import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
 import Data.List (delete)
@@ -55,14 +57,13 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | not . inRange (3, 12) . T.length $ cn = promptRetryName mq "Your name must be between three and twelve characters \
                                                                \long."
   | T.any (`elem` illegalChars) cn        = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                             = doWhileFalse [ checkProfanitiesDict i mq cn
-                                                         , checkPropNamesDict     mq cn
-                                                         , checkWordsDict         mq cn ] nextPrompt
+  | otherwise = mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
+                                              , checkPropNamesDict     mq cn
+                                              , checkWordsDict         mq cn ])
+                  (return ())
+                  nextPrompt
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-    doWhileFalse :: [MudStack Any] -> MudStack () -> MudStack () -- TODO: Refactor?
-    doWhileFalse []     final = final
-    doWhileFalse (a:as) final = a >>= (`unless` doWhileFalse as final) . getAny
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
