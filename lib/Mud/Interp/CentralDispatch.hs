@@ -33,7 +33,7 @@ centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = do
 findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)
 findAction i ms (T.toLower -> cn) = helper mkCmdList
   where
-    helper cmds = return $ action . fst <$> findFullNameForAbbrevSnd cn [ (cmd, cmdName cmd) | cmd <- cmds ]
+    helper cmds = return $ action . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds ]
     mkCmdList = let ia = getPlaFlag IsAdmin . getPla i $ ms
                 in mkCmdListWithNonStdRmLinks (getPCRm i ms) ++ (ia |?| adminCmds) ++ (ia && isDebug |?| debugCmds)
 

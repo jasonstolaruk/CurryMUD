@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE FlexibleInstances, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Text ( aOrAn
                      , aOrAnOnLower
                      , capitalize
                      , dropBlanks
                      , findFullNameForAbbrev
-                     , findFullNameForAbbrevSnd
                      , headTail
                      , isCapital
                      , mkDateTimeTxt
@@ -28,8 +27,9 @@ import Mud.Util.Misc
 import Control.Arrow ((***))
 import Control.Monad (guard)
 import Data.Char (isUpper, toLower, toUpper)
+import Data.Function (on)
 import Data.Ix (inRange)
-import Data.List (sort)
+import Data.List (sortBy)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
@@ -77,15 +77,22 @@ dropBlanks ( x:xs) = x : dropBlanks xs
 -----
 
 
--- TODO: Is it possible/practical to write a single function that can handle both types?
-findFullNameForAbbrev :: T.Text -> [T.Text] -> Maybe T.Text
-findFullNameForAbbrev needle hay = let res = sort . filter (needle `T.isPrefixOf`) $ hay in
-    (guard . not . null $ res) >> (return . head $ res)
+class HasText a where
+  extractText :: a -> T.Text
 
 
-findFullNameForAbbrevSnd :: (Ord a) => T.Text -> [(a, T.Text)] -> Maybe (a, T.Text)
-findFullNameForAbbrevSnd needle hay = let res = sort . filter ((needle `T.isPrefixOf`) . snd) $ hay in
-    (guard . not . null $ res) >> (return . head $ res)
+instance HasText T.Text where
+  extractText = id
+
+
+instance HasText (a, T.Text) where
+  extractText = snd
+
+
+findFullNameForAbbrev :: (HasText a) => T.Text -> [a] -> Maybe a
+findFullNameForAbbrev needle hay =
+    let res = sortBy (compare `on` extractText) . filter ((needle `T.isPrefixOf`) . extractText) $ hay
+    in (guard . not . null $ res) >> (return . head $ res)
 
 
 ----

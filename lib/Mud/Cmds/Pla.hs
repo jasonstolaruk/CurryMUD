@@ -227,7 +227,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
             logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
             logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
             logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
-    in maybe notFound found . findFullNameForAbbrevSnd target $ adminIdSings
+    in maybe notFound found . findFullNameForAbbrev target $ adminIdSings
 admin p = patternMatchFail "admin" [ showText p ]
 
 
@@ -603,7 +603,7 @@ parseHelpTxt cols = concat . wrapLines cols . T.lines . parseTokens
 
 
 getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (T.Text, T.Text)
-getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrevSnd name $ [ (h, helpName h) | h <- hs ]
+getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrev name $ [ (h, helpName h) | h <- hs ]
   where
     sorry                                      = return ("No help is available on " <> dblQuote name <> ".", "")
     found (helpFilePath -> hf, dblQuote -> hn) = (,) <$> readHelpFile hf hn <*> return hn

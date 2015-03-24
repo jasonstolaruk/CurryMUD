@@ -236,7 +236,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
                            msg     = "You are no longer peeping " <> peepSing <> "."
                            logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                        in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
-        in maybe notFound found . findFullNameForAbbrevSnd target $ plaIdSings
+        in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 
@@ -328,7 +328,7 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
                     else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs
                                                            | msgs <- firstAdminTell tellId tellPla s ]
                   return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrevSnd target $ plaIdSings
+        in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
