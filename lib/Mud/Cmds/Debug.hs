@@ -34,8 +34,8 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (both, over, view, views)
-import Control.Lens.Operators ((&), (.~), (^.))
+import Control.Lens (both, view, views)
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks, runReaderT)
@@ -209,7 +209,7 @@ debugDispEnv p@(ActionParams { plaId, args }) = do
 
 
 mkEnvListTxt :: [(String, String)] -> [T.Text]
-mkEnvListTxt = map (mkAssocTxt . over both T.pack)
+mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
   where
     mkAssocTxt (a, b) = T.concat [ envVarColor, a, ": ", dfltColor, b ]
 
@@ -322,7 +322,7 @@ debugTalk p = withoutArgs debugTalk p
 
 debugThread :: Action
 debugThread (NoArgs i mq cols) = do
-    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ over both asyncThreadId . getLogAsyncs
+    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
@@ -483,7 +483,7 @@ debugWrapIndent p@(AdviseOneArg _) = advise p [] advice
                       , "." ]
 debugWrapIndent (WithArgs i mq cols [a, b]) = do
     parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
-    unless (uncurry (||) . over both isNothing $ parsed) . uncurry helper . over both (getSum . fromJust) $ parsed
+    unless (uncurry (||) $ parsed & both %~ isNothing) . uncurry helper $ parsed & both %~ (getSum . fromJust)
   where
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
       []        -> emptied sorry
