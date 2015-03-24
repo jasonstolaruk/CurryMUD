@@ -5,7 +5,7 @@ import Mud.Misc.Threads
 import MudTests.TestUtil
 
 import Control.Concurrent.STM.TVar (readTVarIO)
-import Control.Lens.Getter (view)
+import Control.Lens (view)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Test.QuickCheck.Monadic (assert, monadicIO)

@@ -10,7 +10,7 @@ import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Lens.Getter (views)
+import Control.Lens (views)
 import Control.Lens.Operators ((&), (.~))
 import Data.Bits (zeroBits)
 import Data.IORef (newIORef)

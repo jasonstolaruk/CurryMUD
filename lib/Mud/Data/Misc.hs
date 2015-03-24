@@ -49,10 +49,8 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Lens (both, over)
-import Control.Lens.Getter (Getting)
+import Control.Lens (Getting, Setting, both, over)
 import Control.Lens.Operators ((^.))
-import Control.Lens.Setter (Setting)
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))

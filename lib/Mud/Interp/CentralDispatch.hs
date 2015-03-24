@@ -16,7 +16,7 @@ import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Text
 
-import Control.Lens.Getter (view)
+import Control.Lens (view)
 import Control.Monad (when)
 import Data.Functor ((<$>))
 import Data.List (sort)

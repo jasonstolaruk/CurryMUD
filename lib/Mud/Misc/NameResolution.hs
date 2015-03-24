@@ -28,7 +28,7 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow (first)
-import Control.Lens.Getter (view)
+import Control.Lens (view)
 import Control.Monad (guard)
 import Data.Char (isDigit)
 import Data.List ((\\), foldl')

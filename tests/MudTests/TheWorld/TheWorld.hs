@@ -4,7 +4,7 @@ import Mud.Data.State.MudData
 import MudTests.TestUtil
 
 import Control.Concurrent.STM.TVar (readTVarIO)
-import Control.Lens.Getter (view)
+import Control.Lens (view)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.List (group)

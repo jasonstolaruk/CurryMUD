@@ -9,7 +9,7 @@ import Mud.Util.Misc
 
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
-import Control.Lens (to, view) -- TODO: Lens imports in other modules.
+import Control.Lens (to, view)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Text as T

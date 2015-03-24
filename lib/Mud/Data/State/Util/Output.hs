@@ -36,7 +36,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens.Getter (views)
+import Control.Lens (views)
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, elemIndex)
