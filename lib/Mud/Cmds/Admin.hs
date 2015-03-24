@@ -30,11 +30,10 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, at, both, over, views)
-import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
+import Control.Lens (_1, _2, _3, at, over, views)
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.IntMap.Lazy ((!))
 import Data.List (delete)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -223,18 +222,17 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     peep s plaIdSings target a@(pt, _, _) =
         let notFound = over _2 (sorry :) a
             sorry    = "No player by the name of " <> dblQuote target <> " is currently connected."
-            found (peepId, peepSing) = let (thePeeper, thePeeped) = over both (pt !) (i, peepId) in
-                if peepId `notElem` thePeeper^.peeping
-                  then let pt'     = pt & at i      ?~ over peeping (peepId :) thePeeper
-                                        & at peepId ?~ over peepers (i      :) thePeeped
-                           msg     = "You are now peeping " <> peepSing <> "."
-                           logMsgs = [("started peeping " <> peepSing, (peepId, s <> " started peeping."))]
-                       in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
-                  else let pt'     = pt & at i      ?~ over peeping (peepId `delete`) thePeeper
-                                        & at peepId ?~ over peepers (i      `delete`) thePeeped
-                           msg     = "You are no longer peeping " <> peepSing <> "."
-                           logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
-                       in a & _1 .~ pt' & over _2 (msg :) & _3 <>~ logMsgs
+            found (peepId, peepSing) = if peepId `notElem` pt^.ind i.peeping
+              then let pt'     = pt & ind i     .peeping %~ (peepId :)
+                                    & ind peepId.peepers %~ (i      :)
+                       msg     = "You are now peeping " <> peepSing <> "."
+                       logMsgs = [("started peeping " <> peepSing, (peepId, s <> " started peeping."))]
+                   in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
+              else let pt'     = pt & ind i     .peeping %~ (peepId `delete`)
+                                    & ind peepId.peepers %~ (i      `delete`)
+                       msg     = "You are no longer peeping " <> peepSing <> "."
+                       logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
+                   in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
         in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
