@@ -10,6 +10,7 @@ module Mud.Util.Misc ( (?)
                      , eitherRet
                      , emptied
                      , ifThenElse
+                     , ind
                      , isEmpty
                      , isVowel
                      , mIf
@@ -27,6 +28,9 @@ module Mud.Util.Misc ( (?)
 import Mud.Util.Quoting
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Lens.At (Index, IxValue, Ixed, ix)
+import Control.Lens.Traversal (singular)
+import Control.Lens.Type (Over)
 import Control.Monad (guard)
 import Data.Monoid ((<>), Monoid, mempty)
 import Data.Time (getZonedTime)
@@ -81,6 +85,10 @@ emptied m = m >> return mempty
 ifThenElse :: Bool -> a -> a -> a
 ifThenElse True  x _ = x
 ifThenElse False _ y = y
+
+
+ind :: (Ixed t, Functor f) => Index t -> Over (->) f t t (IxValue t) (IxValue t)
+ind i = singular (ix i)
 
 
 isEmpty :: (Eq m, Monoid m) => m -> Bool

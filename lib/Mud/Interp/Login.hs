@@ -25,13 +25,11 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
-import Control.Lens (at)
-import Control.Lens.Operators ((&), (?~), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), guard, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Data.Functor ((<$>))
-import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
 import Data.List (delete)
 import Data.Monoid ((<>), Any(..), mempty)
@@ -134,22 +132,13 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
-    helper ms = let e         = (ms^.entTbl) ! i -- TODO: How can we make this prettier?
-                    oldSing   = e^.sing
-
-                    originInv = i `delete`   ((ms^.invTbl) ! iWelcome)
-                    destInv   = sortInv ms $ ((ms^.invTbl) ! iCentral) ++ [i]
-
-                    pc        = ((ms^.pcTbl) ! i) & rmId .~ iCentral
-
-                    pla       = setPlaFlag IsAdmin (T.head s == 'Z') ((ms^.plaTbl) ! i) & interp .~ Nothing
-
-                    ms'       = ms & entTbl.at i        ?~ (e & sing .~ s)
-                                   & invTbl.at iWelcome ?~ originInv
-                                   & invTbl.at iCentral ?~ destInv
-                                   & pcTbl .at i        ?~ pc
-                                   & plaTbl.at i        ?~ pla
-        in (ms', (ms', oldSing))
+    helper ms = let ms'  = ms  & entTbl.ind i.sing   .~ s
+                               & invTbl.ind iWelcome %~ (i `delete`)
+                               & pcTbl .ind i.rmId   .~ iCentral
+                               & plaTbl.ind i        %~ setPlaFlag IsAdmin (T.head s == 'Z')
+                               & plaTbl.ind i.interp .~ Nothing
+                    ms'' = ms' & invTbl.ind iCentral %~ (sortInv ms' . (++ [i]))
+        in (ms'', (ms'', ms^.entTbl.ind i.sing))
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
 

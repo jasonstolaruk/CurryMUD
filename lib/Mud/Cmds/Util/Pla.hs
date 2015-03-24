@@ -524,11 +524,11 @@ dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> T.Text
 mkEntsInInvDesc i cols ms =
-    T.unlines . concatMap (wrapIndent ind cols . helper) . mkStyledName_Count_BothList i ms
+    T.unlines . concatMap (wrapIndent indent cols . helper) . mkStyledName_Count_BothList i ms
   where
-    helper (pad ind -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
-    helper (pad ind -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
-    ind = 11
+    helper (pad indent -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
+    helper (pad indent -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
+    indent = 11
 
 
 mkStyledName_Count_BothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
