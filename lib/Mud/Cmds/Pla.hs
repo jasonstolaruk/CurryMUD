@@ -634,10 +634,8 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
         tryIntro a'@(pt, _, _) targetId = case getType targetId ms of
-          PCType -> let targetPC    = pt ! targetId
-                        s           = getSing i ms
-                        intros      = targetPC^.introduced
-                        pt'         = pt & at targetId ?~ (targetPC & introduced .~ sort (s : intros))
+          PCType -> let s           = getSing i ms
+                        pt'         = pt & ind targetId.introduced %~ (sort . (s :))
                         targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                         msg         = "You introduce yourself to " <> targetDesig <> "."
                         logMsg      = parsePCDesig i ms msg
@@ -666,7 +664,7 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
                         cbs         = [ NonTargetBroadcast (srcMsg,    [i]                   )
                                       , TargetBroadcast    (targetMsg, [targetId]            )
                                       , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
-                    in if s `elem` intros
+                    in if s `elem` pt^.ind targetId.introduced
                       then let sorry = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
                            in a' & _2 <>~ mkNTBroadcast i sorry
                       else a' & _1 .~ pt' & _2 <>~ cbs & _3 <>~ [logMsg]
