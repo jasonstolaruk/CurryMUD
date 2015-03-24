@@ -506,9 +506,9 @@ findExit (view rmLinks -> rls) ln =
     showLink     NonStdLink { .. } = _linkName
     getDestId    StdLink    { .. } = _stdDestId
     getDestId    NonStdLink { .. } = _nonStdDestId
-    getOriginMsg NonStdLink { .. } = Just _originMsg
+    getOriginMsg NonStdLink { .. } = Just _originMsgFun
     getOriginMsg _                 = Nothing
-    getDestMsg   NonStdLink { .. } = Just _destMsg
+    getDestMsg   NonStdLink { .. } = Just _destMsgFun
     getDestMsg   _                 = Nothing
 
 

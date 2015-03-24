@@ -330,8 +330,8 @@ data RmLink = StdLink    { _linkDir      :: LinkDir
                          , _stdDestId    :: Id }
             | NonStdLink { _linkName     :: LinkName
                          , _nonStdDestId :: Id
-                         , _originMsg    :: T.Text -> T.Text   -- TODO: Consider changing name to "~Fun".
-                         , _destMsg      :: T.Text -> T.Text } -- TODO: Consider changing name to "~Fun".
+                         , _originMsgFun :: T.Text -> T.Text
+                         , _destMsgFun   :: T.Text -> T.Text }
 
 
 data LinkDir = North
