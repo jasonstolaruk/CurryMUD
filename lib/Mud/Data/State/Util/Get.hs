@@ -7,105 +7,104 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Util.Misc
 
+import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
-import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((^.))
-import Data.IntMap.Lazy ((!))
+import Control.Lens (to, view) -- TODO: Lens imports in other modules.
 import Network (HostName)
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Text as T
 
 
 getAdminIds :: MudState -> Inv
-getAdminIds (view plaTbl -> pt) = [ i | i <- IM.keys pt, getPlaFlag IsAdmin $ pt ! i ]
+getAdminIds = IM.keys . IM.filter (getPlaFlag IsAdmin) . view plaTbl
 
 
 getArm :: Id -> MudState -> Arm
-getArm i = views armTbl (! i)
+getArm i = view (armTbl.ind i)
 
 
 getArmSub :: Id -> MudState -> ArmSub
-getArmSub i ms = getArm i ms ^.armSub
+getArmSub i = view armSub . getArm i
 
 
 getCloth :: Id -> MudState -> Cloth
-getCloth i = views clothTbl (! i)
+getCloth i = view (clothTbl.ind i)
 
 
 getCoins :: Id -> MudState -> Coins
-getCoins i = views coinsTbl (! i)
+getCoins i = view (coinsTbl.ind i)
 
 
 getColumns :: Id -> MudState -> Cols
-getColumns i ms = getPla i ms ^.columns
+getColumns i = view columns . getPla i
 
 
 getCon :: Id -> MudState -> Con
-getCon i = views conTbl (! i)
+getCon i = view (conTbl.ind i)
 
 
 getEnt :: Id -> MudState -> Ent
-getEnt i = views entTbl (! i)
+getEnt i = view (entTbl.ind i)
 
 
 getEntDesc :: Id -> MudState -> T.Text
-getEntDesc i ms = getEnt i ms ^.entDesc
+getEntDesc i = view entDesc . getEnt i
 
 
 getEqMap :: Id -> MudState -> EqMap
-getEqMap i = views eqTbl (! i)
+getEqMap i = view (eqTbl.ind i)
 
 
 getHand :: Id -> MudState -> Hand
-getHand i ms = getMob i ms ^.hand
+getHand i = view hand . getMob i
 
 
 getHostName :: Id -> MudState -> HostName
-getHostName i ms = getPla i ms ^.hostName
+getHostName i = view hostName . getPla i
 
 
 getInterp :: Id -> MudState -> Maybe Interp
-getInterp i ms = getPla i ms ^.interp
+getInterp i = view interp . getPla i
 
 
 getIntroduced :: Id -> MudState -> [Sing]
-getIntroduced i ms = getPC i ms ^.introduced
+getIntroduced i = view introduced . getPC i
 
 
 getInv :: Id -> MudState -> Inv
-getInv i = views invTbl (! i)
+getInv i = view (invTbl.ind i)
 
 
 getInvCoins :: Id -> MudState -> (Inv, Coins)
-getInvCoins i ms = (getInv i ms, getCoins i ms)
+getInvCoins i = (getInv i *** getCoins i) . dup
 
 
 getIsCloth :: Id -> MudState -> Bool
-getIsCloth i ms = getCon i ms ^.isCloth
+getIsCloth i = view isCloth . getCon i
 
 
 getListenThreadId :: MudState -> ThreadId
-getListenThreadId = views threadTbl (reverseLookup Listen)
+getListenThreadId = reverseLookup Listen . view threadTbl
 
 
 getLogQueue :: Id -> MudState -> LogQueue
-getLogQueue i = views plaLogTbl (snd . (! i))
+getLogQueue i = view (plaLogTbl.ind i.to snd)
 
 
 getMob :: Id -> MudState -> Mob
-getMob i = views mobTbl (! i)
+getMob i = view (mobTbl.ind i)
 
 
 getMsgQueue :: Id -> MudState -> MsgQueue
-getMsgQueue i = views msgQueueTbl (! i)
+getMsgQueue i = view (msgQueueTbl.ind i)
 
 
 getMsgQueueColumns :: Id -> MudState -> (MsgQueue, Cols)
-getMsgQueueColumns i ms = (getMsgQueue i ms, getColumns i ms)
+getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
 
 
 getPC :: Id -> MudState -> PC
-getPC i = views pcTbl (! i)
+getPC i = view (pcTbl.ind i)
 
 
 getPCRm :: Id -> MudState -> Rm
@@ -125,56 +124,56 @@ getPCRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
 
 
 getPageLines :: Id -> MudState -> Int
-getPageLines i ms = getPla i ms ^.pageLines
+getPageLines i = view pageLines . getPla i
 
 
 getPeepers :: Id -> MudState -> Inv
-getPeepers i ms = getPla i ms ^.peepers
+getPeepers i = view peepers . getPla i
 
 
 getPeepersPeeping :: Id -> MudState -> (Inv, Inv)
-getPeepersPeeping i ms = let p = getPla i ms in (p^.peepers, p^.peeping)
+getPeepersPeeping i = (getPeepers i *** getPeeping i) . dup
 
 
 getPeeping :: Id -> MudState -> Inv
-getPeeping i ms = getPla i ms ^.peeping
+getPeeping i = view peeping . getPla i
 
 
 getPla :: Id -> MudState -> Pla
-getPla i = views plaTbl (! i)
+getPla i = view (plaTbl.ind i)
 
 
 getRace :: Id -> MudState -> Race
-getRace i ms = getPC i ms ^.race
+getRace i = view race . getPC i
 
 
 getRm :: Id -> MudState -> Rm
-getRm i = views rmTbl (! i)
+getRm i = view (rmTbl.ind i)
 
 
 getRmId :: Id -> MudState -> Id
-getRmId i ms = getPC i ms ^.rmId
+getRmId i = view rmId . getPC i
 
 
 getSex :: Id -> MudState -> Sex
-getSex i ms = getMob i ms ^.sex
+getSex i = view sex . getMob i
 
 
 getSexRace :: Id -> MudState -> (Sex, Race)
-getSexRace i ms = (getSex i ms, getRace i ms)
+getSexRace i = (getSex i *** getRace i) . dup
 
 
 getSing :: Id -> MudState -> Sing
-getSing i ms = getEnt i ms ^.sing
+getSing i = view sing . getEnt i
 
 
 getType :: Id -> MudState -> Type
-getType i = views typeTbl (! i)
+getType i = view (typeTbl.ind i)
 
 
 getWpn :: Id -> MudState -> Wpn
-getWpn i = views wpnTbl (! i)
+getWpn i = view (wpnTbl.ind i)
 
 
 getWpnSub :: Id -> MudState -> WpnSub
-getWpnSub i ms = getWpn i ms ^.wpnSub
+getWpnSub i = view wpnSub . getWpn i
