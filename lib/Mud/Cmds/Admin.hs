@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TransformListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 
@@ -30,8 +30,8 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, at, over, views)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
+import Control.Lens (_1, _2, _3, over, views)
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
@@ -322,16 +322,14 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
                   let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
                   if getPlaFlag IsNotFirstAdminTell tellPla
                     then wrapSend tellMq tellCols targetMsg
-                    else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs
-                                                           | msgs <- firstAdminTell tellId tellPla s ]
+                    else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs | msgs <- firstAdminTell tellId s ]
                   return [ sentLogMsg, receivedLogMsg ]
         in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
-firstAdminTell :: Id -> Pla -> Sing -> MudStack [T.Text]
-firstAdminTell tellId (setPlaFlag IsNotFirstAdminTell True -> tellPla) adminSing =
-    modifyState $ \ms -> let pt = ms^.plaTbl & at tellId ?~ tellPla in (ms & plaTbl .~ pt, msg)
+firstAdminTell :: Id -> Sing -> MudStack [T.Text]
+firstAdminTell tellId adminSing = modifyState $ (, msg) . (plaTbl.ind tellId %~ setPlaFlag IsNotFirstAdminTell True)
   where
     msg = [ T.concat [ hintANSI
                      , "Hint:"
