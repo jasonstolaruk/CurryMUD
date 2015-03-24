@@ -221,7 +221,7 @@ mkEnvListTxt = map (mkAssocTxt . over both T.pack)
 debugLog :: Action
 debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
-    helper       = onEnv $ replicateM_ 100 . liftIO . void . forkIO . runReaderT heavyLogging
+    helper       = replicateM_ 100 . onEnv $ liftIO . void . forkIO . runReaderT heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
