@@ -247,10 +247,10 @@ helperGetDropEitherInv :: Id
 helperGetDropEitherInv i ms d god fi ti a = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is                   -> let (bs, logMsgs) = mkGetDropInvDesc i ms d god is
-                                in a & _1.ind fi %~ (\\ is)
-                                     & _1.ind ti %~ (sortInv ms . (++ is))
-                                     & _2 <>~ bs
-                                     & _3 <>~ logMsgs
+                                in a & _1.ind fi %~  (\\ is)
+                                     & _1.ind ti %~  (sortInv ms . (++ is))
+                                     & _2        <>~ bs
+                                     & _3        <>~ logMsgs
 
 
 mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
@@ -386,10 +386,10 @@ helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is -> let (is', bs')      = ti `elem` is ? (filter (/= ti) is, bs ++ sorryInsideSelf) :? (is, bs)
                   (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' ts
-              in null (a^._1.ind fi) ? sorryEmpty :? (a & _1.ind fi %~ (\\ is')
-                                                        & _1.ind ti %~ (sortInv ms . (++ is'))
-                                                        & _2 .~ (bs' ++ bs'')
-                                                        & _3 <>~ logMsgs)
+              in null (a^._1.ind fi) ? sorryEmpty :? (a & _1.ind fi %~  (\\ is')
+                                                        & _1.ind ti %~  (sortInv ms . (++ is'))
+                                                        & _2        .~  (bs' ++ bs'')
+                                                        & _3        <>~ logMsgs)
   where
     sorryInsideSelf = mkBroadcast i $ "You can't put the " <> ts <> " inside itself."
     sorryEmpty      = a & _2 <>~ mkBroadcast i ("The " <> getSing fi ms <> " is empty.")
