@@ -643,6 +643,7 @@ mkThrPerPro s      = patternMatchFail "mkThrPerPro" [ showText s ]
 -----
 
 
+-- TODO: Ready is broken.
 moveReadiedItem :: Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
                 -> EqMap
