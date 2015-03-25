@@ -43,7 +43,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, over, to, view, views)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -1486,7 +1486,7 @@ setAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> (unless (null logMsgs) . logPlaOut "set" i $ logMsgs)
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
-                in (ms & plaTbl.at i ?~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
+                in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
@@ -1507,7 +1507,7 @@ helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
                             , "." ]
           f      = any (advice `T.isInfixOf`) msgs ? (++ [msg]) :? (++ [ msg <> advice ])
       in over _2 f a
-helperSettings a@(p, _, _) (T.breakOn "=" -> (name, T.tail -> value)) =
+helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
     maybe notFound found . findFullNameForAbbrev name $ settingNames
   where
     notFound    = appendMsg $ dblQuote name <> " is not a valid setting name."
@@ -1531,7 +1531,7 @@ helperSettings a@(p, _, _) (T.breakOn "=" -> (name, T.tail -> value)) =
                                                                     , maxValTxt
                                                                     , "." ]
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ] in
-          appendMsg msg & _1 .~ (p & lens .~ x) & _3 <>~ [msg]
+          appendMsg msg & _1.lens .~ x & _3 <>~ [msg]
 
 
 -----
@@ -1582,13 +1582,13 @@ helperUnready :: Id
               -> (EqTbl, InvTbl, [Broadcast], [T.Text])
               -> Either T.Text Inv
               -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-helperUnready i ms d em a@(et, it, _, _) = \case
+helperUnready i ms d em a = \case
   Left  (mkBroadcast i -> b) -> a & _3 <>~ b
-  Right targetIds            -> let pcInv = getInv i ms
-                                    et'   = et & at i ?~ M.filter (`notElem` targetIds) em
-                                    it'   = it & at i ?~ sortInv ms (pcInv ++ targetIds)
-                                    (bs, msgs) = mkUnreadyDescs i ms d targetIds
-                                in a & _1 .~ et' & _2 .~ it' & _3 <>~ bs & _4 <>~ msgs
+  Right targetIds            -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
+                                in a & _1.ind i .~ M.filter (`notElem` targetIds) em
+                                     & _2.ind i .~ sortInv ms (getInv i ms ++ targetIds)
+                                     & _3 <>~ bs
+                                     & _4 <>~ msgs
 
 
 mkUnreadyDescs :: Id
