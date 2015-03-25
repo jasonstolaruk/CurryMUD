@@ -382,14 +382,14 @@ helperPutRemEitherInv :: Id
                       -> (InvTbl, [Broadcast], [T.Text])
                       -> Either T.Text Inv
                       -> (InvTbl, [Broadcast], [T.Text])
-helperPutRemEitherInv i ms d por mnom fi ti ts a@(it, bs, _) = \case
+helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is -> let (is', bs')      = ti `elem` is ? (filter (/= ti) is, bs ++ sorryInsideSelf) :? (is, bs)
-                  (fis, tis)      = over both (it !) (fi, ti)
-                  it'             = it & at fi ?~ fis \\ is'
-                                       & at ti ?~ sortInv ms (tis ++ is')
                   (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' ts
-              in null fis ? sorryEmpty :? (a & _1 .~ it' & _2 .~ (bs' ++ bs'') & _3 <>~ logMsgs)
+              in null (a^._1.ind fi) ? sorryEmpty :? (a & _1.ind fi %~ (\\ is')
+                                                        & _1.ind ti %~ (sortInv ms . (++ is'))
+                                                        & _2 .~ (bs' ++ bs'')
+                                                        & _3 <>~ logMsgs)
   where
     sorryInsideSelf = mkBroadcast i $ "You can't put the " <> ts <> " inside itself."
     sorryEmpty      = a & _2 <>~ mkBroadcast i ("The " <> getSing fi ms <> " is empty.")
