@@ -49,8 +49,8 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Lens (Getting, Setting, both, over)
-import Control.Lens.Operators ((^.))
+import Control.Lens (Getting, Setting, both)
+import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -101,7 +101,7 @@ class HasFlags a where
   getFlag (fromEnum -> flagBitNum) a = (a^.flagGetter) `testBit` flagBitNum
 
   setFlag :: (Enum e) => e -> Bool -> a -> a
-  setFlag (fromEnum -> flagBitNum) b = over flagSetter (`f` flagBitNum)
+  setFlag (fromEnum -> flagBitNum) b = flagSetter %~ (`f` flagBitNum)
     where
       f = b ? setBit :? clearBit
 
@@ -264,14 +264,14 @@ instance Serializable PCDesig where
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
-      (sdd, dd)               = over both T.singleton (stdDesigDelimiter, desigDelimiter)
+      (sdd, dd)               = (stdDesigDelimiter, desigDelimiter) & both %~ T.singleton
   serialize NonStdDesig { .. } = quoteWith nsdd $ do
       nonStdPCEntSing
       dd
       nonStdDesc
     where
       (>>)       = (<>)
-      (nsdd, dd) = over both T.singleton (nonStdDesigDelimiter, desigDelimiter)
+      (nsdd, dd) = (nonStdDesigDelimiter, desigDelimiter) & both %~ T.singleton
   deserialize a@(headTail -> (c, T.init -> t))
     | c == stdDesigDelimiter, [ pes, sc, pen, pi, pis ] <- T.splitOn dd t =
         StdDesig { stdPCEntSing = deserMaybeText pes

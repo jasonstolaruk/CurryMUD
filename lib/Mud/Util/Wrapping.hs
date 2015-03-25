@@ -18,7 +18,8 @@ import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Lens (both, over)
+import Control.Lens (both)
+import Control.Lens.Operators ((%~), (&))
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -45,7 +46,7 @@ wrap cols t | extracted <- extractANSI t
 
 
 breakEnd :: T.Text -> (T.Text, T.Text)
-breakEnd (T.break isSpace . T.reverse -> (after, before)) = over both T.reverse (before, after)
+breakEnd (T.break isSpace . T.reverse -> (after, before)) = (before, after) & both %~ T.reverse
 
 
 -----
@@ -122,7 +123,7 @@ wrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
       | nolsb > 0    = wrapIndent nolsb cols
       | otherwise    = wrap cols
     hasIndentTag     = T.last a == indentTagChar
-    (nolsa, nolsb)   = over both numOfLeadingSpcs (a, b)
+    (nolsa, nolsb)   = (a, b) & both %~ numOfLeadingSpcs
 
 
 numOfLeadingSpcs :: T.Text -> Int
@@ -132,7 +133,7 @@ numOfLeadingSpcs = T.length . T.takeWhile isSpace
 wrapLineWithIndentTag :: Int -> T.Text -> [T.Text]
 wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wrapIndent n cols t
   where
-    (numTxt, t) = over both T.reverse broken
+    (numTxt, t) = broken & both %~ T.reverse
     readsRes    = reads . T.unpack $ numTxt :: [(Int, String)]
     extractInt []               = 0
     extractInt [(x, _)] | x > 0 = x

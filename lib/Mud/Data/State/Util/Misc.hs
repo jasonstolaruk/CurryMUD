@@ -23,9 +23,9 @@ import Mud.Util.Misc
 import Mud.Util.Text
 
 import Control.Arrow ((***))
-import Control.Lens (_1, _2, both, over)
+import Control.Lens (_1, _2, both)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((^.))
+import Control.Lens.Operators ((%~), (&), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IORef (atomicModifyIORef, readIORef)
@@ -53,7 +53,7 @@ getEffBothGramNos i ms targetId =
       Nothing -> let (pp *** pp -> (targetSexy, targetRace)) = getSexRace targetId ms
                  in if targetSing `elem` getIntroduced i ms
                    then (targetSing, "")
-                   else over both ((targetSexy <>) . (" " <>)) (targetRace, pluralize targetRace)
+                   else (targetRace, pluralize targetRace) & both %~ ((targetSexy <>) . (" " <>))
       Just {} -> (targetSing, targetEnt^.plur)
   where
     pluralize "dwarf" = "dwarves"
@@ -144,7 +144,7 @@ sortInv :: MudState -> Inv -> Inv
 sortInv ms is = let (foldr helper ([], []) -> (pcIs, nonPCIs)) = [ (i, getType i ms) | i <- is ]
                 in (pcIs ++) . sortNonPCs $ nonPCIs
   where
-    helper (i, t) acc                  = let consTo lens = over lens (i :) acc
+    helper (i, t) acc                  = let consTo lens = acc & lens %~ (i :)
                                          in t == PCType ? consTo _1 :? consTo _2
     sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')

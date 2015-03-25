@@ -15,7 +15,8 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 
-import Control.Lens (both, over)
+import Control.Lens (both)
+import Control.Lens.Operators ((%~), (&))
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
@@ -44,7 +45,7 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
           setInterp i . Just $ interpPager pageLen txtLen (left ++ page, right')
     prev | length left == pageLen - 2 = (send mq . T.unlines $ left) >> sendPagerPrompt mq (pageLen - 2) txtLen
          | (reverse -> currPage, left') <- splitAt (pageLen - 2) . reverse $ left
-         , (prevPage, left'')           <- over both reverse . splitAt (pageLen - 2) $ left' = do
+         , (prevPage, left'')           <- splitAt (pageLen - 2) left' & both %~ reverse = do
              send mq . T.unlines $ prevPage
              sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
              setInterp i . Just $ interpPager pageLen txtLen (left'' ++ prevPage, currPage ++ right)

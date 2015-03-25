@@ -472,7 +472,7 @@ mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
 
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
-mkCoinsDesc cols (Coins (over each Sum -> (cop, sil, gol))) =
+mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
     T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ cop |!| copDesc
                                                                              , sil |!| silDesc
                                                                              , gol |!| golDesc ]
