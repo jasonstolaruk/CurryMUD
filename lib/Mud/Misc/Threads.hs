@@ -39,8 +39,8 @@ import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryR
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
-import Control.Lens (at, view, views)
-import Control.Lens.Operators ((&), (?~), (^.))
+import Control.Lens (view, views)
+import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask, runReaderT)
@@ -211,17 +211,17 @@ adHoc mq host = do
                        , _interp    = Just interpName
                        , _peepers   = []
                        , _peeping   = [] }
-            ms'  = ms & entTbl .at i ?~ e
-                      & typeTbl.at i ?~ PCType
+            ms'  = ms  & entTbl .ind i .~ e
+                       & typeTbl.ind i .~ PCType
             ris  = sortInv ms' $ getInv iWelcome ms' ++ [i]
-            ms'' = ms' & coinsTbl   .at i        ?~ mempty
-                       & eqTbl      .at i        ?~ M.empty
-                       & invTbl     .at i        ?~ []
-                       & invTbl     .at iWelcome ?~ ris
-                       & mobTbl     .at i        ?~ m
-                       & msgQueueTbl.at i        ?~ mq
-                       & pcTbl      .at i        ?~ pc
-                       & plaTbl     .at i        ?~ pla
+            ms'' = ms' & coinsTbl   .ind i        .~ mempty
+                       & eqTbl      .ind i        .~ M.empty
+                       & invTbl     .ind i        .~ []
+                       & invTbl     .ind iWelcome .~ ris
+                       & mobTbl     .ind i        .~ m
+                       & msgQueueTbl.ind i        .~ mq
+                       & pcTbl      .ind i        .~ pc
+                       & plaTbl     .ind i        .~ pla
         in (ms'', (i, s))
 
 
