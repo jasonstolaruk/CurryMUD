@@ -353,7 +353,7 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = massMsg SilentBoot >> (onEnv $ liftIO . void . forkIO . runReaderT commitSuicide)
+shutDown = massMsg SilentBoot >> onEnv (liftIO . void . forkIO . runReaderT commitSuicide)
   where
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState

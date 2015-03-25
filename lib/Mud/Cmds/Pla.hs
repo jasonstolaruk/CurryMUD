@@ -803,7 +803,7 @@ firstLook i cols a@(pt, _) = if pt^.ind i.to (getPlaFlag IsNotFirstLook)
                           , dblQuote "equip"
                           , dfltColor
                           , " alone will list the items in your inventory and readied equipment, respectively." ]
-       in a & _1.ind i %~ (setPlaFlag IsNotFirstLook True) & _2 <>~ wrapUnlinesNl cols msg
+       in a & _1.ind i %~ setPlaFlag IsNotFirstLook True & _2 <>~ wrapUnlinesNl cols msg
 
 
 isKnownPCSing :: Sing -> Bool
@@ -963,7 +963,7 @@ handleEgress i = do
         in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
-            bs                      = [ (nlnl .    T.concat $ [ "You are no longer peeping "
+            bs                      = [ (nlnl    . T.concat $ [ "You are no longer peeping "
                                                               , s
                                                               , " "
                                                               , parensQuote $ s <> " has disconnected"
