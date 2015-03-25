@@ -546,7 +546,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
     helper rootHelpTxt = (getPlaFlag IsAdmin . getPla i <$> getState) >>= \isAdmin -> do
         (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ isAdmin
         let zipped                 = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
-            (cmdNames, topicNames) = over both (formatHelpNames . mkHelpNames) . partition (isCmdHelp . snd) $ zipped
+            (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ (formatHelpNames . mkHelpNames)
             helpTxt                = T.concat [ nl rootHelpTxt
                                               , nl "Help is available on the following commands:"
                                               , nl cmdNames
@@ -669,7 +669,7 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
                       else a' & _1.ind targetId.introduced %~ (sort . (s :)) & _2 <>~ cbs & _3 <>~ [logMsg]
           _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower (getSing targetId ms) <> "."
                         b   = head . mkNTBroadcast i . nlnl $ msg
-                    in over _2 (`appendIfUnique` b) a'
+                    in a' & _2 %~ (`appendIfUnique` b)
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperIntroEitherCoins a (Right {}  ) =
         let cb = head . mkNTBroadcast i . nlnl $ "You can't introduce yourself to a coin."
@@ -1272,7 +1272,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybe (Left sorryFullArmSlot) Right . maybeSingleSlot em $ slot
   where
-    sorryFullArmSlot | i <- em^.at slot.to fromJust, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
+    sorryFullArmSlot | i <- em^.ind slot, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
 
 
 -----
@@ -1506,7 +1506,7 @@ helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
                             , dfltColor
                             , "." ]
           f      = any (advice `T.isInfixOf`) msgs ? (++ [msg]) :? (++ [ msg <> advice ])
-      in over _2 f a
+      in a & _2 %~ f
 helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
     maybe notFound found . findFullNameForAbbrev name $ settingNames
   where
