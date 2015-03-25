@@ -1443,8 +1443,8 @@ say p@(WithArgs i _ _ args@(a:_))
                                              , ", "
                                              , msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
-                (pt', fms)        = firstMobSay i $ ms^.plaTbl
-            in (ms & plaTbl .~ pt', ((toOthersBroadcast :) . mkBroadcast i . nlnl $ toSelfMsg <> fms, [toSelfMsg]))
+                (pt, fms)        = firstMobSay i $ ms^.plaTbl
+            in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i . nlnl $ toSelfMsg <> fms, [toSelfMsg]))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
     bcastAndLog (bs, logMsgs) = bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
@@ -1459,7 +1459,7 @@ say p = patternMatchFail "say" [ showText p ]
 
 
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, T.Text)
-firstMobSay i pt = let p = pt ! i in if getPlaFlag IsNotFirstMobSay p
+firstMobSay i pt = if pt^.ind i.to (getPlaFlag IsNotFirstMobSay)
   then (pt, "")
   else let msg = nlnl . T.concat $ [ hintANSI
                                    , "Hint:"
@@ -1471,7 +1471,7 @@ firstMobSay i pt = let p = pt ! i in if getPlaFlag IsNotFirstMobSay p
                                    , dblQuote "ask guard crime"
                                    , dfltColor
                                    , "." ]
-       in (pt & at i ?~ setPlaFlag IsNotFirstMobSay True p, msg)
+       in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, msg)
 
 
 -----
