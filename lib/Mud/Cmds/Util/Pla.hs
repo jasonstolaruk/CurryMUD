@@ -292,13 +292,10 @@ helperPutRemEitherCoins :: Id
                         -> (CoinsTbl, [Broadcast], [T.Text])
                         -> Either [T.Text] Coins
                         -> (CoinsTbl, [Broadcast], [T.Text])
-helperPutRemEitherCoins i d por mnom fi ti ts a@(ct, _, _) = \case
+helperPutRemEitherCoins i d por mnom fi ti ts a = \case
   Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
-  Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
-                    ct'           = ct & at fi ?~ fc <> negateCoins c
-                                       & at ti ?~ tc <> c
-                    (bs, logMsgs) = mkPutRemCoinsDescs i d por mnom c ts
-                in a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
+  Right c    -> let (bs, logMsgs) = mkPutRemCoinsDescs i d por mnom c ts
+                in a & _1.ind fi %~ (<> negateCoins c) & _1.ind ti %~ (<> c) & _2 <>~ bs & _3 <>~ logMsgs
 
 
 mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> ([Broadcast], [T.Text])
