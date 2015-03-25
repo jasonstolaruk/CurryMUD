@@ -963,16 +963,16 @@ handleEgress i = do
         in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
-            bs      = [ (nlnl . T.concat $ [ "You are no longer peeping "
-                                           , s
-                                           , " "
-                                           , parensQuote $ s <> " has disconnected"
-                                           , "." ], [peeperId]) | peeperId <- peeperIds ]
-            logMsgs = [ (peeperId, T.concat [ "no longer peeping "
-                                            , s
-                                            , " "
-                                            , parensQuote $ s <> " has disconnected"
-                                            , "." ]) | peeperId <- peeperIds ]
+            bs                      = [ (nlnl .    T.concat $ [ "You are no longer peeping "
+                                                              , s
+                                                              , " "
+                                                              , parensQuote $ s <> " has disconnected"
+                                                              , "." ], [peeperId]) | peeperId <- peeperIds ]
+            logMsgs                 = [ (peeperId, T.concat   [ "no longer peeping "
+                                                              , s
+                                                              , " "
+                                                              , parensQuote $ s <> " has disconnected"
+                                                              , "." ]) | peeperId <- peeperIds ]
         in (ms & plaTbl %~ stopPeeping     peepingIds
                & plaTbl %~ stopBeingPeeped peeperIds, bs, logMsgs)
       where
