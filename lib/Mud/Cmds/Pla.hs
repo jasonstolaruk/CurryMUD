@@ -948,24 +948,21 @@ handleEgress i = do
         bcast [ (nlnl $ serialize d <> " has left the game.", i `delete` pcIds d) | getRmId i ms /= iWelcome ]
     helper ms =
         let ri                 = getRmId i ms
-            ris                = i `delete` getInv ri ms
             s                  = getSing i ms
             (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = ms' & coinsTbl   .at i  .~ Nothing
-                                     & entTbl     .at i  .~ Nothing
-                                     & eqTbl      .at i  .~ Nothing
-                                     & invTbl     .at i  .~ Nothing
-                                     & invTbl     .at ri .~ Just ris
-                                     & mobTbl     .at i  .~ Nothing
-                                     & msgQueueTbl.at i  .~ Nothing
-                                     & pcTbl      .at i  .~ Nothing
-                                     & plaTbl     .at i  .~ Nothing
-                                     & typeTbl    .at i  .~ Nothing
+            ms''               = ms' & coinsTbl   .at  i  .~ Nothing
+                                     & entTbl     .at  i  .~ Nothing
+                                     & eqTbl      .at  i  .~ Nothing
+                                     & invTbl     .at  i  .~ Nothing
+                                     & invTbl     .ind ri %~ (i `delete`)
+                                     & mobTbl     .at  i  .~ Nothing
+                                     & msgQueueTbl.at  i  .~ Nothing
+                                     & pcTbl      .at  i  .~ Nothing
+                                     & plaTbl     .at  i  .~ Nothing
+                                     & typeTbl    .at  i  .~ Nothing
         in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
-            pt      = stopPeeping     (ms^.plaTbl) peepingIds
-            pt'     = stopBeingPeeped pt           peeperIds
             bs      = [ (nlnl . T.concat $ [ "You are no longer peeping "
                                            , s
                                            , " "
@@ -976,16 +973,13 @@ handleEgress i = do
                                             , " "
                                             , parensQuote $ s <> " has disconnected"
                                             , "." ]) | peeperId <- peeperIds ]
-        in (ms & plaTbl .~ pt', bs, logMsgs)
+        in (ms & plaTbl %~ stopPeeping     peepingIds
+               & plaTbl %~ stopBeingPeeped peeperIds, bs, logMsgs)
       where
-        stopPeeping pt peepingIds =
-            let f peepedId ptAcc = let thePeeped = ptAcc ! peepedId
-                                   in ptAcc & at peepedId ?~ over peepers (i `delete`) thePeeped
-            in foldr f pt peepingIds
-        stopBeingPeeped pt peeperIds =
-            let f peeperId ptAcc = let thePeeper = ptAcc ! peeperId
-                                   in ptAcc & at peeperId ?~ over peeping (i `delete`) thePeeper
-            in foldr f pt peeperIds
+        stopPeeping     peepingIds pt = let f peepedId ptAcc = ptAcc & ind peepedId.peepers %~ (i `delete`)
+                                        in foldr f pt peepingIds
+        stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
+                                        in foldr f pt peeperIds
 
 
 -----
