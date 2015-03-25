@@ -244,13 +244,13 @@ helperGetDropEitherInv :: Id
                        -> (InvTbl, [Broadcast], [T.Text])
                        -> Either T.Text Inv
                        -> (InvTbl, [Broadcast], [T.Text])
-helperGetDropEitherInv i ms d god fi ti a@(it, _, _) = \case
+helperGetDropEitherInv i ms d god fi ti a = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is                   -> let (fis, tis)    = over both (it !) (fi, ti)
-                                    it'           = it & at fi ?~ fis \\ is
-                                                       & at ti ?~ sortInv ms (tis ++ is)
-                                    (bs, logMsgs) = mkGetDropInvDesc i ms d god is
-                                in a & _1 .~ it' & _2 <>~ bs & _3 <>~ logMsgs
+  Right is                   -> let (bs, logMsgs) = mkGetDropInvDesc i ms d god is
+                                in a & _1.ind fi %~ (\\ is)
+                                     & _1.ind ti %~ (sortInv ms . (++ is))
+                                     & _2 <>~ bs
+                                     & _3 <>~ logMsgs
 
 
 mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
