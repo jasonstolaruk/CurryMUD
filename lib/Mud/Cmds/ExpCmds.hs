@@ -17,7 +17,8 @@ import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow (first)
-import Control.Lens (each, over)
+import Control.Lens (each)
+import Control.Lens.Operators ((%~), (&))
 import Data.List ((\\), delete)
 import Data.Monoid ((<>))
 import qualified Data.Set as S (Set, fromList, foldr)
@@ -742,7 +743,7 @@ mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { shou
 
 
 mkPros :: Sex -> (T.Text, T.Text, T.Text)
-mkPros sexy = over each (sexy |$|) (mkThrPerPro, mkPossPro, mkReflexPro)
+mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |$|)
 
 
 replace :: [(T.Text, T.Text)] -> T.Text -> T.Text
