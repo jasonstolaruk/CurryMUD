@@ -69,7 +69,7 @@ import Control.Applicative ((<$>))
 import Control.Arrow ((***))
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, over, to, view, views)
-import Control.Lens.Operators ((&), (.~), (<>~), (?~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
@@ -195,13 +195,10 @@ helperGetDropEitherCoins :: Id
                          -> (CoinsTbl, [Broadcast], [T.Text])
                          -> Either [T.Text] Coins
                          -> (CoinsTbl, [Broadcast], [T.Text])
-helperGetDropEitherCoins i d god fi ti a@(ct, _, _) = \case
+helperGetDropEitherCoins i d god fi ti a = \case
   Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
-  Right c    -> let (fc, tc)      = over both (ct !) (fi, ti)
-                    ct'           = ct & at fi ?~ fc <> negateCoins c
-                                       & at ti ?~ tc <> c
-                    (bs, logMsgs) = mkGetDropCoinsDesc i d god c
-                in a & _1 .~ ct' & _2 <>~ bs & _3 <>~ logMsgs
+  Right c    -> let (bs, logMsgs) = mkGetDropCoinsDesc i d god c
+                in a & _1.ind fi %~ (<> negateCoins c) & _1.ind ti %~ (<> c) & _2 <>~ bs & _3 <>~ logMsgs
 
 
 mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
