@@ -779,7 +779,7 @@ mkIsPC_StyledName_Count_BothList i ms targetIds =
 
 
 firstLook :: Id -> Cols -> (PlaTbl, T.Text) -> (PlaTbl, T.Text)
-firstLook i cols a@(pt, _) = let p = pt ! i in if getPlaFlag IsNotFirstLook p
+firstLook i cols a@(pt, _) = if pt^.ind i.to (getPlaFlag IsNotFirstLook)
   then a
   else let msg = T.concat [ hintANSI
                           , "Hint:"
@@ -804,9 +804,7 @@ firstLook i cols a@(pt, _) = let p = pt ! i in if getPlaFlag IsNotFirstLook p
                           , dblQuote "equip"
                           , dfltColor
                           , " alone will list the items in your inventory and readied equipment, respectively." ]
-           p'  = setPlaFlag IsNotFirstLook True p
-           pt' = pt & at i ?~ p'
-       in a & _1 .~ pt' & _2 <>~ wrapUnlinesNl cols msg
+       in a & _1.ind i %~ (setPlaFlag IsNotFirstLook True) & _2 <>~ wrapUnlinesNl cols msg
 
 
 isKnownPCSing :: Sing -> Bool
