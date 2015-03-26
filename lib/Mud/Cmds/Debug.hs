@@ -341,7 +341,7 @@ debugThread p = withoutArgs debugThread p
 getLogAsyncs :: MudData -> (LogAsync, LogAsync)
 getLogAsyncs = (getAsync noticeLog *** getAsync errorLog) . dup
   where
-    getAsync l = views l fst
+    getAsync = flip views (fst . fromJust)
 
 
 -----

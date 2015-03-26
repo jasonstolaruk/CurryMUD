@@ -36,11 +36,12 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
-import Control.Lens (view, views)
+import Control.Lens (to, view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.Directory (doesFileExist, renameFile)
 import System.FilePath ((<.>), (</>), replaceExtension)
@@ -64,13 +65,13 @@ default (Int)
 -- Starting logs:
 
 
-initLogging :: IO (LogService, LogService)
-initLogging = do
+initLogging :: ShouldLog -> IO (Maybe LogService, Maybe LogService)
+initLogging _ = do
     updateGlobalLogger rootLoggerName removeHandler
     (nq, eq) <- (,) <$> newTQueueIO <*> newTQueueIO
     (na, ea) <- (,) <$> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq
                     <*> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq
-    return ((na, nq), (ea, eq))
+    return (Just (na, nq), Just (ea, eq))
 
 
 type LogName    = T.Text
@@ -154,8 +155,8 @@ doIfLogging i f = getState >>= \(view plaLogTbl -> plt) -> maybeVoid (f . snd) .
 closeLogs :: MudStack ()
 closeLogs = ask >>= \md -> do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    let (na, nq) = md^.noticeLog
-        (ea, eq) = md^.errorLog
+    let (na, nq) = md^.noticeLog.to fromJust
+        (ea, eq) = md^.errorLog .to fromJust
     (as, qs) <- unzip . views plaLogTbl IM.elems <$> getState
     liftIO $ do
         atomically . mapM_ (`writeTQueue` StopLog) $ nq : eq : qs
@@ -172,13 +173,13 @@ registerMsg msg = liftIO . atomically . flip writeTQueue (LogMsg msg)
 
 
 logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
-logNotice modName (dblQuote -> funName) msg = onEnv $ helper . snd . view noticeLog
+logNotice modName (dblQuote -> funName) msg = onEnv $ maybeVoid (helper . snd) . view noticeLog
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
 
 logError :: T.Text -> MudStack ()
-logError msg = onEnv $ registerMsg msg . snd . view errorLog
+logError msg = onEnv $ maybeVoid (registerMsg msg . snd) . view errorLog
 
 
 logExMsg :: T.Text -> T.Text -> T.Text -> SomeException -> MudStack ()

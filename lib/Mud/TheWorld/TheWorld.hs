@@ -3,6 +3,7 @@
 module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
 
+import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
@@ -35,8 +36,8 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 -- ==================================================
 
 
-initMudData :: IO MudData
-initMudData = do
+initMudData :: ShouldLog -> IO MudData
+initMudData shouldLog = do
     msIORef <- newIORef MudState { _armTbl       = IM.empty
                                  , _clothTbl     = IM.empty
                                  , _coinsTbl     = IM.empty
@@ -51,11 +52,11 @@ initMudData = do
                                  , _plaLogTbl    = IM.empty
                                  , _plaTbl       = IM.empty
                                  , _rmTbl        = IM.empty
-                                 , _talkAsyncTbl = M.empty
-                                 , _threadTbl    = M.empty
+                                 , _talkAsyncTbl =  M.empty
+                                 , _threadTbl    =  M.empty
                                  , _typeTbl      = IM.empty
                                  , _wpnTbl       = IM.empty }
-    (noticeLogService, errorLogService) <- initLogging
+    (noticeLogService, errorLogService) <- initLogging shouldLog
     start                               <- getTime Monotonic
     return MudData { _mudStateIORef = msIORef
                    , _noticeLog     = noticeLogService

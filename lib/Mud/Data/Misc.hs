@@ -26,6 +26,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Serializable
                      , ShouldBracketQuote(..)
                      , ShouldCap(..)
+                     , ShouldLog(..)
                      , ToOrFromThePeeped(..)
                      , Verb(..)
                      , WhichLog(..)
@@ -434,6 +435,12 @@ data RightOrLeft = R
 
 
 data ShouldBracketQuote = DoBracket | Don'tBracket
+
+
+-----
+
+
+data ShouldLog = DoLog | Don'tLog
 
 
 -----

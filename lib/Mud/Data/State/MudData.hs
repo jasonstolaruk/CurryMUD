@@ -28,8 +28,8 @@ type MudStack = ReaderT MudData IO
 
 
 data MudData = MudData { _mudStateIORef :: IORef MudState
-                       , _noticeLog     :: LogService
-                       , _errorLog      :: LogService
+                       , _noticeLog     :: Maybe LogService
+                       , _errorLog      :: Maybe LogService
                        , _startTime     :: TimeSpec }
 
 
