@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, RankNTypes, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Misc ( (?)
                      , (|!|)
@@ -28,12 +28,12 @@ module Mud.Util.Misc ( (?)
 import Mud.Util.Quoting
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Lens.At (Index, IxValue, Ixed, ix)
-import Control.Lens.Traversal (singular)
-import Control.Lens.Type (Over)
+import Control.Lens (Lens', lens)
 import Control.Monad (guard)
+import Data.IntMap.Lazy ((!))
 import Data.Monoid ((<>), Monoid, mempty)
 import Data.Time (getZonedTime)
+import qualified Data.IntMap.Lazy as IM (IntMap, insert)
 import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
@@ -87,8 +87,8 @@ ifThenElse True  x _ = x
 ifThenElse False _ y = y
 
 
-ind :: (Ixed t, Functor f) => Index t -> Over (->) f t t (IxValue t) (IxValue t)
-ind i = singular (ix i)
+ind :: Int -> Lens' (IM.IntMap a) a
+ind k = lens (! k) (flip (IM.insert k))
 
 
 isEmpty :: (Eq m, Monoid m) => m -> Bool

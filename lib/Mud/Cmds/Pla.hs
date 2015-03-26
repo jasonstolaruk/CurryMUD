@@ -1272,7 +1272,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybe (Left sorryFullArmSlot) Right . maybeSingleSlot em $ slot
   where
-    sorryFullArmSlot | i <- em^.ind slot, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
+    sorryFullArmSlot | i <- em^.at slot.to fromJust, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
 
 
 -----

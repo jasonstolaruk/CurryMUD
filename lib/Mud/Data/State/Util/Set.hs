@@ -8,7 +8,8 @@ import Mud.Util.Misc
 
 import Control.Concurrent (myThreadId)
 import Control.Concurrent.Async (Async, asyncThreadId)
-import Control.Lens.Operators ((.~))
+import Control.Lens (at)
+import Control.Lens.Operators ((.~), (?~))
 import Control.Monad.IO.Class (liftIO)
 
 
@@ -21,10 +22,10 @@ setLogService i ls = modifyState $ (, ()) . (plaLogTbl.ind i .~ ls)
 
 
 setTalkAsync :: Async () -> MudStack ()
-setTalkAsync a@(asyncThreadId -> ti) = modifyState $ (, ()) . (talkAsyncTbl.ind ti .~ a)
+setTalkAsync a@(asyncThreadId -> ti) = modifyState $ (, ()) . (talkAsyncTbl.at ti ?~ a)
 
 
 setThreadType :: ThreadType -> MudStack ()
 setThreadType threadType = liftIO myThreadId >>= \ti -> modifyState (helper ti)
   where
-    helper ti = (, ()) . (threadTbl.ind ti .~ threadType)
+    helper ti = (, ()) . (threadTbl.at ti ?~ threadType)
