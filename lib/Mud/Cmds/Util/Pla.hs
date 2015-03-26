@@ -72,11 +72,10 @@ import Control.Lens (_1, _2, _3, _4, at, both, each, over, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
-import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, find, intercalate, nub)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
-import qualified Data.Map.Lazy as M (member, toList)
+import qualified Data.Map.Lazy as M (notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile)
 
@@ -173,7 +172,7 @@ mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
 
 
 isSlotAvail :: EqMap -> Slot -> Bool
-isSlotAvail em s = s `M.member` em
+isSlotAvail em s = s `M.notMember` em
 
 
 findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
@@ -643,7 +642,6 @@ mkThrPerPro s      = patternMatchFail "mkThrPerPro" [ showText s ]
 -----
 
 
--- TODO: Ready is broken.
 moveReadiedItem :: Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
                 -> EqMap
@@ -651,10 +649,8 @@ moveReadiedItem :: Id
                 -> Id
                 -> (T.Text, Broadcast)
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-moveReadiedItem i a@(et, it, _, _) em s targetId (msg, b) = let et' = et & at i ?~ (em & at s ?~ targetId)
-                                                                it' = it & at i ?~ (targetId `delete` (it ! i))
-                                                                bs  = mkBroadcast i msg ++ [b]
-                                                            in a & _1 .~ et' & _2 .~ it' & _3 <>~ bs & _4 <>~ [msg]
+moveReadiedItem i a _ s targetId (msg, b) =
+    a & _1.ind i.at s ?~ targetId & _2.ind i %~ (targetId `delete`) & _3 <>~ (mkBroadcast i msg ++ [b]) & _4 <>~ [msg]
 
 
 -----

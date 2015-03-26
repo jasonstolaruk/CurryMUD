@@ -1190,7 +1190,7 @@ readyWpn :: Id
          -> Id
          -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyWpn i ms d mrol a wpnId wpnSing | em <- getEqMap i ms, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
+readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
       then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _3 <>~ b
       else case maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) mrol of
