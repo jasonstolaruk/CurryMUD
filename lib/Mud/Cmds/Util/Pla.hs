@@ -644,12 +644,11 @@ mkThrPerPro s      = patternMatchFail "mkThrPerPro" [ showText s ]
 
 moveReadiedItem :: Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-                -> EqMap
                 -> Slot
                 -> Id
                 -> (T.Text, Broadcast)
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-moveReadiedItem i a _ s targetId (msg, b) =
+moveReadiedItem i a s targetId (msg, b) =
     a & _1.ind i.at s ?~ targetId & _2.ind i %~ (targetId `delete`) & _3 <>~ (mkBroadcast i msg ++ [b]) & _4 <>~ [msg]
 
 

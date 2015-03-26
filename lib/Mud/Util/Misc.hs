@@ -87,6 +87,7 @@ ifThenElse True  x _ = x
 ifThenElse False _ y = y
 
 
+-- TODO: Make a typeclass so that this function may also be used with "Map".
 ind :: Int -> Lens' (IM.IntMap a) a
 ind k = lens (! k) (flip (IM.insert k))
 

@@ -1063,10 +1063,10 @@ readyCloth :: Id
            -> Id
            -> Sing
            -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-readyCloth i ms d mrol a clothId clothSing | em <- getEqMap i ms, cloth <- getCloth clothId ms =
+readyCloth i ms d mrol a@(et, _, _, _) clothId clothSing | em <- et ! i, cloth <- getCloth clothId ms =
     case maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) mrol of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
-      Right slot                 -> moveReadiedItem i a em slot clothId . mkReadyClothMsgs slot $ cloth
+      Right slot                 -> moveReadiedItem i a slot clothId . mkReadyClothMsgs slot $ cloth
   where
     mkReadyClothMsgs (pp -> slot) = \case
       Earring  -> wearMsgs
@@ -1124,10 +1124,10 @@ otherSex NoSex  = NoSex
 
 
 rEarringSlots, lEarringSlots, noseRingSlots, necklaceSlots, rBraceletSlots, lBraceletSlots :: [Slot]
-rEarringSlots  = [ EarringR1S, EarringR2S ]
-lEarringSlots  = [ EarringL1S, EarringL2S ]
-noseRingSlots  = [ NoseRing1S, NoseRing2S ]
-necklaceSlots  = [ Necklace1S .. Necklace2S ]
+rEarringSlots  = [ EarringR1S,    EarringR2S  ]
+lEarringSlots  = [ EarringL1S,    EarringL2S  ]
+noseRingSlots  = [ NoseRing1S,    NoseRing2S  ]
+necklaceSlots  = [ Necklace1S  .. Necklace2S  ]
 rBraceletSlots = [ BraceletR1S .. BraceletR3S ]
 lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
 
@@ -1161,13 +1161,13 @@ getDesigClothSlot ms clothSing cloth em rol
       R -> rs
       L -> ls
       _ -> patternMatchFail "getDesigClothSlot getSlotFromList"  [ showText rol ]
-    sorryEarring  = sorryFullClothSlotsOneSide cloth . getSlotFromList rEarringSlots  $ lEarringSlots
-    sorryBracelet = sorryFullClothSlotsOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
-    slotFromRol   = fromRol rol :: Slot
-    sorryRing (pp -> slot) i = T.concat [ "You're already wearing "
+    sorryEarring     = sorryFullClothSlotsOneSide cloth . getSlotFromList rEarringSlots  $ lEarringSlots
+    sorryBracelet    = sorryFullClothSlotsOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
+    slotFromRol      = fromRol rol :: Slot
+    sorryRing slot i = T.concat [ "You're already wearing "
                                         , aOrAn . getSing i $ ms
                                         , " on your "
-                                        , slot
+                                        , pp slot
                                         , "." ]
 
 
@@ -1206,13 +1206,13 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
                                                     , pp slot
                                                     , "." ]
                                          , otherPCIds ) )
-                       in moveReadiedItem i a em slot wpnId readyMsgs
+                       in moveReadiedItem i a slot wpnId readyMsgs
           TwoHanded
             | all (isSlotAvail em) [ RHandS, LHandS ] ->
                 let readyMsgs = ( "You wield the " <> wpnSing <> " with both hands."
                                 , ( T.concat [ serialize d, " wields ", aOrAn wpnSing, " with both hands." ]
                                   , otherPCIds ) )
-                in moveReadiedItem i a em BothHandsS wpnId readyMsgs
+                in moveReadiedItem i a BothHandsS wpnId readyMsgs
             | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> wpnSing <> "."
                            in a & _3 <>~ b
   where
@@ -1258,7 +1258,7 @@ readyArm :: Id
 readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
     case maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere mrol of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
-      Right slot                 -> moveReadiedItem i a em slot armId . mkReadyArmMsgs $ sub
+      Right slot                 -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
   where
     sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear ", aOrAn armSing, " on your ", pp rol, "." ]
     mkReadyArmMsgs = \case
