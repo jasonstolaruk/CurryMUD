@@ -12,7 +12,7 @@ import Test.Tasty.QuickCheck (Property)
 import qualified Data.IntMap.Lazy as IM (keys)
 
 
-prop_getUnusedId :: Property -- TODO: This could be a HUnit test.
+prop_getUnusedId :: Property
 prop_getUnusedId = monadicIO $ do
     ms <- inWorld getState
     assert $ getUnusedId ms `notElem` ms^.typeTbl.to IM.keys

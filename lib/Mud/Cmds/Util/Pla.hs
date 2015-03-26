@@ -74,9 +74,9 @@ import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.IntMap.Lazy ((!))
 import Data.List ((\\), delete, elemIndex, find, intercalate, nub)
-import Data.Maybe (catMaybes, fromJust, isNothing)
+import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
-import qualified Data.Map.Lazy as M (toList)
+import qualified Data.Map.Lazy as M (member, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile)
 
@@ -173,7 +173,7 @@ mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
 
 
 isSlotAvail :: EqMap -> Slot -> Bool
-isSlotAvail em s = em^.at s.to isNothing
+isSlotAvail em s = s `M.member` em
 
 
 findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
