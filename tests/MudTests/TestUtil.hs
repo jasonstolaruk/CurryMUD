@@ -1,14 +1,15 @@
 module MudTests.TestUtil where
 
+import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Misc
 
 import Control.Monad (replicateM)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Char (chr)
 import Data.Functor ((<$>))
-import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck (Gen, choose)
 import Test.QuickCheck.Monadic (PropertyM, run)
 import qualified Data.Text as T
@@ -17,7 +18,7 @@ import qualified Data.Text as T
 inWorld :: MudStack a -> PropertyM IO a
 inWorld f = run helper
   where
-    helper = runReaderT (initWorld >> f) (unsafePerformIO initMudData)
+    helper = runReaderT (initWorld >> f) =<< (liftIO . initMudData $ Don'tLog)
 
 
 genAsciiAlphaNum :: Gen Char

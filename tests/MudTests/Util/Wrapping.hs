@@ -28,14 +28,14 @@ patternMatchFail = U.patternMatchFail "MudTests.Util.Wrapping"
 prop_wrap :: Property
 prop_wrap = forAll genCols               $ \c ->
             forAll (genTextLongerThan c) $ \t ->
-    all (\(T.length -> l) -> l <= c) . wrap c $ t
+    all ((<= c) . T.length) . wrap c $ t
 
 
 prop_wrapIndent_wraps :: Property
 prop_wrapIndent_wraps = forAll (choose (0, maxCols + 10)) $ \n ->
                         forAll genCols                    $ \c ->
                         forAll (genTextLongerThan c)      $ \t ->
-    all (\(T.length -> l) -> l <= c) . wrapIndent n c $ t
+    all ((<= c) . T.length) . wrapIndent n c $ t
 
 
 prop_wrapIndent_indents :: Property
@@ -62,7 +62,7 @@ prop_xformLeading a b = forAll (choose (0, 10))           $ \numOfLeading ->
         res        = xformLeading a b t
         resLeading = T.take numOfLeading res
     in T.length res == T.length t &&
-       T.all (== b) resLeading &&
+       T.all (== b) resLeading    &&
        T.drop numOfLeading res == rest
 
 

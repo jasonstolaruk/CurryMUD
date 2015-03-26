@@ -1,20 +1,21 @@
 module MudTests.TheWorld.TheWorld where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Misc
 import MudTests.TestUtil
 
-import Control.Concurrent.STM.TVar (readTVarIO)
-import Control.Lens (view)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
+import Control.Lens (to)
+import Control.Lens.Operators ((^.))
 import Data.List (group)
 import Test.QuickCheck.Monadic (assert, monadicIO)
 import Test.Tasty.QuickCheck (Property)
 import qualified Data.IntMap.Lazy as IM (elems)
 
 
+-- TODO: We will probably have to change the name of this module after introducing the database...
+
+
 prop_noDupIds :: Property
 prop_noDupIds = monadicIO $ do
-    getInvTbl >>= assert . not . any ((> 1) . length) . group . concat . IM.elems
-  where
-    getInvTbl = inWorld $ liftIO . readTVarIO . view invTblTVar =<< ask
+    ms <- inWorld getState
+    assert . not . any ((> 1) . length) . group . concat $ ms^.invTbl.to IM.elems

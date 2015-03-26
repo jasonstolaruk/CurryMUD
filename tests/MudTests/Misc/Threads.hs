@@ -1,19 +1,18 @@
 module MudTests.Misc.Threads where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Misc
 import Mud.Misc.Threads
 import MudTests.TestUtil
 
-import Control.Concurrent.STM.TVar (readTVarIO)
-import Control.Lens (view)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
+import Control.Lens (to)
+import Control.Lens.Operators ((^.))
 import Test.QuickCheck.Monadic (assert, monadicIO)
 import Test.Tasty.QuickCheck (Property)
 import qualified Data.IntMap.Lazy as IM (keys)
 
 
-prop_getUnusedId :: Property
+prop_getUnusedId :: Property -- TODO: This could be a HUnit test.
 prop_getUnusedId = monadicIO $ do
-    tt <- inWorld $ ask >>= liftIO . readTVarIO . view typeTblTVar
-    assert $ getUnusedId tt `notElem` IM.keys tt
+    ms <- inWorld getState
+    assert $ getUnusedId ms `notElem` ms^.typeTbl.to IM.keys

@@ -66,7 +66,8 @@ default (Int)
 
 
 initLogging :: ShouldLog -> IO (Maybe LogService, Maybe LogService)
-initLogging _ = do
+initLogging Don'tLog = return (Nothing, Nothing)
+initLogging DoLog    = do
     updateGlobalLogger rootLoggerName removeHandler
     (nq, eq) <- (,) <$> newTQueueIO <*> newTQueueIO
     (na, ea) <- (,) <$> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq

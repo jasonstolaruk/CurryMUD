@@ -117,11 +117,11 @@ unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
 unitTests_Mud_Data_Misc :: TestTree
 unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
     [ testCase "serializeStdDesig"      $ test_serializeStdDesig      @?=
-        quoteWith std (T.intercalate d [ "Taro", "False", "mhuman", "50", "[50,51,52,53,54,55]" ])
+        quoteWith std (T.intercalate d [ "Taro", "Don'tCap", "mhuman", "50", "[50,51,52,53,54,55]" ])
     , testCase "serializeNonStdDesig"   $ test_serializeNonStdDesig   @?=
         quoteWith non ("Taro" <> d <> "A male human")
     , testCase "deserializeStdDesig"    $ test_deserializeStdDesig    @?=
-        StdDesig Nothing True "fhuman" 55 [ 55, 54..50 ]
+        StdDesig Nothing DoCap "fhuman" 55 [ 55, 54..50 ]
     , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=
         NonStdDesig "Hanako" "A female human" ]
   where

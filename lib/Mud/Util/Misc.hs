@@ -29,7 +29,7 @@ import Mud.Util.Quoting
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Lens.At (Index, IxValue, Ixed, ix)
-import Control.Lens.Traversal (unsafeSingular)
+import Control.Lens.Traversal (singular)
 import Control.Lens.Type (Over)
 import Control.Monad (guard)
 import Data.Monoid ((<>), Monoid, mempty)
@@ -88,7 +88,7 @@ ifThenElse False _ y = y
 
 
 ind :: (Ixed t, Functor f) => Index t -> Over (->) f t t (IxValue t) (IxValue t)
-ind i = unsafeSingular (ix i)
+ind i = singular (ix i)
 
 
 isEmpty :: (Eq m, Monoid m) => m -> Bool

@@ -18,7 +18,7 @@ import qualified Data.Text as T
 
 test_serializeStdDesig :: T.Text
 test_serializeStdDesig = serialize StdDesig { stdPCEntSing = Just "Taro"
-                                            , isCap        = False
+                                            , shouldCap    = Don'tCap
                                             , pcEntName    = "mhuman"
                                             , pcId         = 50
                                             , pcIds        = [50..55] }
@@ -31,7 +31,7 @@ test_serializeNonStdDesig = serialize NonStdDesig { nonStdPCEntSing = "Taro"
 
 test_deserializeStdDesig :: PCDesig
 test_deserializeStdDesig =
-    deserialize . quoteWith std . T.intercalate d $ [ "", "True", "fhuman", "55", "[55,54,53,52,51,50]" ]
+    deserialize . quoteWith std . T.intercalate d $ [ "", "DoCap", "fhuman", "55", "[55,54,53,52,51,50]" ]
   where
     std = T.singleton stdDesigDelimiter
     d   = T.singleton desigDelimiter
