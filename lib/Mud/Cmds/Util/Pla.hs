@@ -33,6 +33,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkPossPro
                          , mkPutRemCoinsDescs
                          , mkPutRemInvDesc
+                         , mkPutRemoveBindings
                          , mkReadyMsgs
                          , mkReflexPro
                          , mkStdDesig
@@ -65,7 +66,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), first)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
@@ -453,6 +454,20 @@ isRingRol = \case R -> False
 
 maybeSingleSlot :: EqMap -> Slot -> Maybe Slot
 maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
+
+
+-----
+
+
+mkPutRemoveBindings :: Id -> MudState -> Args -> (PCDesig, (Inv, Coins), (Inv, Coins), ConName, Args)
+mkPutRemoveBindings i ms as = let d                        = mkStdDesig  i ms DoCap
+                                  pcInvCoins               = getInvCoins i ms
+                                  rmInvCoins               = first (i `delete`) . getPCRmInvCoins i $ ms
+                                  conName                  = last as
+                                  (init -> argsWithoutCon) = case as of
+                                                               [_, _] -> as
+                                                               _      -> (++ [conName]) . nub . init $ as
+                              in (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon)
 
 
 -----

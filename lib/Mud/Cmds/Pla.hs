@@ -869,13 +869,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
 putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
-    helper ms = let d                        = mkStdDesig  i ms DoCap
-                    pcInvCoins               = getInvCoins i ms
-                    rmInvCoins               = first (i `delete`) . getPCRmInvCoins i $ ms
-                    conName                  = last as
-                    (init -> argsWithoutCon) = case as of
-                                                 [_, _] -> as
-                                                 _      -> (++ [conName]) . nub . init $ as
+    helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in if notEmpty pcInvCoins
                   then case T.uncons conName of
                     Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
@@ -1298,13 +1292,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
 remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
   where
-    helper ms = let d                        = mkStdDesig  i ms DoCap
-                    pcInvCoins               = getInvCoins i ms
-                    rmInvCoins               = first (i `delete`) . getPCRmInvCoins i $ ms
-                    conName                  = last as
-                    (init -> argsWithoutCon) = case as of
-                                                 [_, _] -> as
-                                                 _      -> (++ [conName]) . nub . init $ as
+    helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in case T.uncons conName of
                   Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
                     then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
