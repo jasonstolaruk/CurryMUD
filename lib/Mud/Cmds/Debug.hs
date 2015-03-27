@@ -39,11 +39,13 @@ import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks, runReaderT)
+import Data.Char (ord, digitToInt, isDigit, toLower)
 import Data.Ix (inRange)
 import Data.List (delete, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), Sum(..))
 import GHC.Conc (ThreadStatus(..), threadStatus)
+import Numeric (readInt)
 import Prelude hiding (pi)
 import System.CPUTime (getCPUTime)
 import System.Console.ANSI (Color(..), ColorIntensity(..))
@@ -91,6 +93,7 @@ debugCmds =
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
+    , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
@@ -224,6 +227,67 @@ debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
+
+
+-----
+
+
+type Base = Int
+
+
+debugNumber :: Action
+debugNumber p@AdviseNoArgs = advise p [] advice
+  where
+    advice = T.concat [ "Please specify a number followed by its base, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "number" <> " a 12"
+                      , dfltColor
+                      , "." ]
+debugNumber p@(AdviseOneArg _) = advise p [] advice
+  where
+    advice = T.concat [ "Please also specify base, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "number" <> " a 12"
+                      , dfltColor
+                      , "." ]
+debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
+    case reads . T.unpack $ baseTxt :: [(Base, String)] of
+      [(base, "")] | not . inRange (2, 36) $ base -> sorryParseBase
+                   | otherwise -> case numTxt `inBase` base of
+                     [(res, "")] -> do
+                         send mq . nlnl . showText $ res
+                         logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
+                     _ -> sorryParseNum base
+      _ -> sorryParseBase
+  where
+    sorryParseBase     = wrapSend mq cols $ dblQuote baseTxt <> " is not a valid base."
+    sorryParseNum base = wrapSend mq cols . T.concat $ [ dblQuote numTxt
+                                                       , " is not a valid number in base "
+                                                       , showText base
+                                                       , "." ]
+debugNumber p = advise p [] advice
+  where
+    advice = T.concat [ "Please provide two arguments: a number and its base, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "number" <> " a 12"
+                      , dfltColor
+                      , "." ]
+
+
+inBase :: T.Text -> Base -> [(Int, String)]
+numTxt `inBase` base = readInt base (isValidDigit base) letterToNum . T.unpack $ numTxt
+
+
+isValidDigit :: Base -> Char -> Bool
+isValidDigit base (toLower -> c) | isDigit c                    = digitToInt c < base
+                                 | not . inRange ('a', 'z') $ c = False
+                                 | otherwise                    = let val = fromJust . lookup c . zip ['a'..] $ [11..]
+                                                                  in val <= base
+
+
+letterToNum :: Char -> Int
+letterToNum c | isDigit c = digitToInt c
+              | otherwise = ord c - ord 'a' + 10
 
 
 -----
@@ -421,7 +485,6 @@ debugWrap p@AdviseNoArgs = advise p [] advice
                       , dfltColor
                       , "." ]
 debugWrap (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)] of
-  []              -> sorryParse
   [(lineLen, "")] -> helper lineLen
   _               -> sorryParse
   where
@@ -486,7 +549,6 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
     unless (uncurry (||) $ parsed & both %~ isNothing) . uncurry helper $ parsed & both %~ (getSum . fromJust)
   where
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
-      []        -> emptied sorry
       [(x, "")] -> return . Just . Sum $ x
       _         -> emptied sorry
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
