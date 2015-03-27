@@ -48,16 +48,16 @@ True  ? (x :? _) = x
 False ? (_ :? y) = y
 
 
--- mempty on False.
-infixl 1 |?|
-(|?|) :: (Monoid a) => Bool -> a -> a
-a |?| b = a ? b :? mempty
-
-
 -- mempty on mempty.
 infixl 1 |!|
 (|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
 a |!| b = isEmpty a ? mempty :? b
+
+
+-- mempty on False.
+infixl 1 |?|
+(|?|) :: (Monoid a) => Bool -> a -> a
+a |?| b = a ? b :? mempty
 
 
 infixr 0 |$| -- TODO: GHC 7.10 will have a similar function named "(&)"...
