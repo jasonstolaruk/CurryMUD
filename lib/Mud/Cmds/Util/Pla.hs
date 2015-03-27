@@ -363,7 +363,7 @@ descNthOfM n _ = mkOrdinal n <> " "
 
 
 onTheGround :: Maybe NthOfM -> T.Text
-onTheGround = (|!| " on the ground") . (fmap $ both %~ Sum)
+onTheGround = (|!| " on the ground") . fmap (both %~ Sum)
 
 
 -----

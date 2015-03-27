@@ -1584,7 +1584,7 @@ helperUnready :: Id
 helperUnready i ms d a = \case
   Left  (mkBroadcast i -> b) -> a & _3 <>~ b
   Right targetIds            -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
-                                in a & _1.ind i %~ (M.filter (`notElem` targetIds))
+                                in a & _1.ind i %~ M.filter (`notElem` targetIds)
                                      & _2.ind i %~ (sortInv ms . (++ targetIds))
                                      & _3 <>~ bs
                                      & _4 <>~ msgs
