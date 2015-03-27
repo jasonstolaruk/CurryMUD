@@ -42,7 +42,7 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, _4, at, both, over, to, view, views)
+import Control.Lens (_1, _2, _3, _4, at, both, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -148,6 +148,7 @@ mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
                               , cmdDesc           = cd }
 
 
+-- TODO: "wh" should be "who".
 priorityAbbrevCmds :: [Cmd]
 priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     [ ("bug",     "b",  bug,        "Report a bug.")
@@ -753,7 +754,7 @@ mkRmInvCoinsDesc i cols ms ri =
         otherDescs          = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
     in (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
   where
-    splitPCsOthers                       = over both (map snd) . span fst
+    splitPCsOthers                       = (both %~ map snd) . span fst
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s
                                              then knownNameColor   <> s       <> dfltColor
                                              else unknownNameColor <> aOrAn s <> dfltColor
@@ -1149,7 +1150,7 @@ getDesigClothSlot ms clothSing cloth em rol
     Bracelet -> maybe (Left sorryBracelet) Right (findSlotFromList rBraceletSlots lBraceletSlots)
     Ring     -> maybe (Right slotFromRol)
                       (Left . sorryRing slotFromRol)
-                      (em^.at slotFromRol)
+                      (M.lookup slotFromRol em)
     _        -> patternMatchFail "getDesigClothSlot" [ showText cloth ]
   where
     sorryCan'tWearThere    = T.concat [ "You can't wear ", aOrAn clothSing, " on your ", pp rol, "." ]
@@ -1272,7 +1273,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybe (Left sorryFullArmSlot) Right . maybeSingleSlot em $ slot
   where
-    sorryFullArmSlot | i <- em^.at slot.to fromJust, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
+    sorryFullArmSlot | i <- em M.! slot, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
 
 
 -----

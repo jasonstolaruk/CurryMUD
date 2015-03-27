@@ -34,7 +34,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (both, view, views)
+import Control.Lens (at, both, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -50,8 +50,8 @@ import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import qualified Data.IntMap.Lazy as IM (assocs, delete)
-import qualified Data.Map.Lazy as M (assocs, delete, elems, keys)
+import qualified Data.IntMap.Lazy as IM (assocs)
+import qualified Data.Map.Lazy as M (assocs, elems, keys)
 import qualified Data.Text as T
 
 
@@ -254,7 +254,7 @@ purgePlaLogTbl = getState >>= \(views plaLogTbl (unzip . IM.assocs) -> (is, map 
     modifyState $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped in (ms & plaLogTbl .~ plt, ())
   where
     purger (_poo, Nothing) tbl = tbl
-    purger (i,    _poo   ) tbl = IM.delete i tbl
+    purger (i,    _poo   ) tbl = tbl & at i .~ Nothing
 
 
 purgeTalkAsyncTbl :: MudStack ()
@@ -263,7 +263,7 @@ purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
     modifyState $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) zipped in (ms & talkAsyncTbl .~ tat, ())
   where
     purger (_poo,                Nothing) tbl = tbl
-    purger (asyncThreadId -> ti, _poo   ) tbl = M.delete ti tbl
+    purger (asyncThreadId -> ti, _poo   ) tbl = tbl & at ti .~ Nothing
 
 
 purgeThreadTbl :: MudStack ()
@@ -271,7 +271,7 @@ purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
     zipped <- [ zip threadIds statuses | statuses <- liftIO . mapM threadStatus $ threadIds ]
     modifyState $ \ms -> let tt = foldr purger (ms^.threadTbl) zipped in (ms & threadTbl .~ tt, ())
   where
-    purger (ti, status) tbl = status == ThreadFinished ? M.delete ti tbl :? tbl
+    purger (ti, status) tbl = status == ThreadFinished ? tbl & at ti .~ Nothing :? tbl
 
 
 -----
