@@ -1563,12 +1563,11 @@ unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs)
   where
     helper ms = let d                      = mkStdDesig i ms DoCap
-                    em                     = getEqMap   i ms
-                    is                     = M.elems em
+                    is                     = M.elems . getEqMap i $ ms
                     (gecrs, miss, rcs)     = resolveEntCoinNames i ms as is mempty
                     eiss                   = zipWith (curry procGecrMisPCEq) gecrs miss
                     bs                     = rcs |!| mkBroadcast i "You can't unready coins."
-                    (et, it, bs', logMsgs) = foldl' (helperUnready i ms d em) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
+                    (et, it, bs', logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
                 in if not . null $ is
                   then (ms & eqTbl .~ et & invTbl .~ it, (bs', logMsgs))
                   else (ms, (mkBroadcast i dudeYou'reNaked, []))
@@ -1578,15 +1577,14 @@ unready p = patternMatchFail "unready" [ showText p ]
 helperUnready :: Id
               -> MudState
               -> PCDesig
-              -> EqMap
               -> (EqTbl, InvTbl, [Broadcast], [T.Text])
               -> Either T.Text Inv
               -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-helperUnready i ms d em a = \case
+helperUnready i ms d a = \case
   Left  (mkBroadcast i -> b) -> a & _3 <>~ b
   Right targetIds            -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
-                                in a & _1.ind i .~ M.filter (`notElem` targetIds) em
-                                     & _2.ind i .~ sortInv ms (getInv i ms ++ targetIds)
+                                in a & _1.ind i %~ (M.filter (`notElem` targetIds))
+                                     & _2.ind i %~ (sortInv ms . (++ targetIds))
                                      & _3 <>~ bs
                                      & _4 <>~ msgs
 
