@@ -1,7 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, GADTs, OverloadedStrings, QuasiQuotes, TemplateHaskell, TypeFamilies #-}
+-- TODO: Specify extensions in the .cabal file.
 
 module Mud.TheWorld.TheWorld ( initMudData
-                             , initWorld ) where
+                             , initWorld
+                             , persistWorld ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -9,12 +11,19 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
+import Mud.TopLvlDefs.FilePaths
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Lens.Operators ((%~), (&))
+import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
+import Data.Conduit (($$))
+import Data.Conduit.List as CL (mapM_)
 import Data.IORef (newIORef)
 import Data.Monoid (mempty)
+import Database.Persist.Sql (insert, rawQuery)
+import Database.Persist.Sqlite (runMigrationSilent, runSqlite)
+import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
 import Formatting ((%), sformat)
 import Formatting.Formatters (stext)
 import System.Clock (Clock(..), getTime)
@@ -161,3 +170,18 @@ sortAllInvs :: MudStack ()
 sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState helper
   where
     helper ms = (ms & invTbl %~ IM.map (sortInv ms), ())
+
+
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+Test
+  testBool Bool
+  testInt  Int
+  deriving Show
+|]
+
+
+persistWorld :: IO ()
+persistWorld = runSqlite dbFile $ do
+    runMigrationSilent migrateAll
+    insert . Test True $ 10
+    rawQuery "select * from Test" [] $$ CL.mapM_ (liftIO . print)

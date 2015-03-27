@@ -240,14 +240,14 @@ debugNumber p@AdviseNoArgs = advise p [] advice
   where
     advice = T.concat [ "Please specify a number followed by its base, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "number" <> " a 12"
+                      , dblQuote $ prefixDebugCmd "number" <> " a 16"
                       , dfltColor
                       , "." ]
 debugNumber p@(AdviseOneArg _) = advise p [] advice
   where
     advice = T.concat [ "Please also specify base, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "number" <> " a 12"
+                      , dblQuote $ prefixDebugCmd "number" <> " a 16"
                       , dfltColor
                       , "." ]
 debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
@@ -269,7 +269,7 @@ debugNumber p = advise p [] advice
   where
     advice = T.concat [ "Please provide two arguments: a number and its base, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "number" <> " a 12"
+                      , dblQuote $ prefixDebugCmd "number" <> " a 16"
                       , dfltColor
                       , "." ]
 
