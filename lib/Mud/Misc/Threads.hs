@@ -20,6 +20,7 @@ import Mud.Interp.CentralDispatch
 import Mud.Interp.Login
 import Mud.Misc.ANSI
 import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
+import Mud.Misc.Persist
 import Mud.TheWorld.Ids
 import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars
@@ -108,6 +109,7 @@ listen = handle listenExHandler $ do
     setThreadType Listen
     onEnv $ liftIO . void . forkIO . runReaderT threadTblPurger
     initWorld
+    liftIO . persist =<< getState
     logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port

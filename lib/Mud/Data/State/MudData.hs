@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell, ViewPatterns #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings, TemplateHaskell, ViewPatterns #-}
 
 module Mud.Data.State.MudData where
 
@@ -11,8 +11,10 @@ import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
 import Control.Monad.Reader (ReaderT)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.IORef (IORef)
 import Data.Monoid (Monoid, mappend, mempty)
+import GHC.Generics (Generic)
 import Network (HostName)
 import System.Clock (TimeSpec)
 import System.Random (Random, random, randomR)
@@ -78,7 +80,7 @@ type WpnTbl       = IM.IntMap Wpn
 
 -- Has an object (and an entity).
 data Arm = Arm { _armSub   :: ArmSub
-               , _armClass :: AC } deriving (Eq, Show)
+               , _armClass :: AC } deriving (Eq, Generic, Show)
 
 
 data ArmSub = Head
@@ -87,8 +89,7 @@ data ArmSub = Head
             | Hands
             | LowerBody
             | Feet
-            | Shield
-            deriving (Eq, Show)
+            | Shield deriving (Eq, Generic, Show)
 
 
 type AC = Int
@@ -111,13 +112,13 @@ data Cloth = Earring
            | Dress
            | FullBody
            | Backpack
-           | Cloak deriving (Enum, Eq, Show)
+           | Cloak deriving (Enum, Eq, Generic, Show)
 
 
 -- ==================================================
 
 
-newtype Coins = Coins (Cop, Sil, Gol) deriving (Eq, Show)
+newtype Coins = Coins (Cop, Sil, Gol) deriving (Eq, Generic, Show)
 
 
 type Cop = Int
@@ -143,7 +144,7 @@ instance Monoid Coins where
 
 -- Has an object (and an entity) and an inventory and coins.
 data Con = Con { _isCloth :: Bool
-               , _cap     :: Cap } deriving (Eq, Show)
+               , _cap     :: Cap } deriving (Eq, Generic, Show)
 
 
 type Cap = Int
@@ -160,7 +161,7 @@ data Ent = Ent { _entId    :: Id
                , _sing     :: Sing
                , _plur     :: Plur
                , _entDesc  :: T.Text
-               , _entFlags :: Int } deriving (Eq, Show)
+               , _entFlags :: Int } deriving (Eq, Generic, Show)
 
 
 type Id = Int
@@ -208,7 +209,7 @@ data Slot =
           | FullBodyS                               -- clothing
           | FeetS                                   -- armor
           | BackpackS                               -- container/clothing
-          deriving (Enum, Eq, Ord)
+          deriving (Enum, Eq, Generic, Ord)
 
 
 -- ==================================================
@@ -397,6 +398,25 @@ data Wpn = Wpn { _wpnSub :: WpnSub
 
 data WpnSub = OneHanded
             | TwoHanded deriving (Eq, Show)
+
+
+-- ==================================================
+
+
+instance FromJSON Arm
+instance FromJSON ArmSub
+instance FromJSON Cloth
+instance FromJSON Coins
+instance FromJSON Con
+instance FromJSON Ent
+instance FromJSON Slot
+instance ToJSON   Arm
+instance ToJSON   ArmSub
+instance ToJSON   Cloth
+instance ToJSON   Coins
+instance ToJSON   Con
+instance ToJSON   Ent
+instance ToJSON   Slot
 
 
 -- ==================================================

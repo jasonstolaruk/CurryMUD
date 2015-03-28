@@ -22,10 +22,11 @@ logDir = mudDir </> "logs"
 resDir = mudDir </> "res"
 
 
-helpDir, miscDir, titleDir :: FilePath
-helpDir  = resDir </> "help"
-miscDir  = resDir </> "misc"
-titleDir = resDir </> "titles"
+helpDir, miscDir, persistDir, titleDir :: FilePath
+helpDir    = resDir </> "help"
+miscDir    = resDir </> "misc"
+persistDir = resDir </> "persist"
+titleDir   = resDir </> "titles"
 
 
 adminHelpDir, plaHelpDir :: FilePath
@@ -57,14 +58,27 @@ typoLogFile      = logDir </> "typo"                     <.> "log"
 
 
 -- ==================================================
+-- Persistence files:
+
+
+armTblFile, clothTblFile, coinsTblFile, conTblFile, entTblFile, eqTblFile :: FilePath
+armTblFile   = persistDir </> "armTbl.json"
+clothTblFile = persistDir </> "clothTbl.json"
+coinsTblFile = persistDir </> "coinsTbl.json"
+conTblFile   = persistDir </> "conTbl.json"
+entTblFile   = persistDir </> "entTbl.json"
+eqTblFile    = persistDir </> "eqTbl.json"
+
+
+-- ==================================================
 -- Misc. files:
 
 
 aboutFile, cowbyeFile, motdFile, uptimeFile :: FilePath
-aboutFile  = miscDir </> "about"
-cowbyeFile = miscDir </> "cowbye"
-motdFile   = miscDir </> "motd"
-uptimeFile = mudDir  </> "uptime"
+aboutFile   = miscDir    </> "about"
+cowbyeFile  = miscDir    </> "cowbye"
+motdFile    = miscDir    </> "motd"
+uptimeFile  = mudDir     </> "uptime"
 
 
 -- ==================================================
