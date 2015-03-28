@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Misc.Threads ( getUnusedId
-                        , listenWrapper) where
+                        , listenWrapper ) where
 
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla

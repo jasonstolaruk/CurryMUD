@@ -3,7 +3,6 @@ module Mud.TopLvlDefs.FilePaths where
 import System.Environment (getEnv)
 import System.FilePath ((<.>), (</>), pathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
-import qualified Data.Text as T
 
 
 drive :: Char
@@ -23,8 +22,7 @@ logDir = mudDir </> "logs"
 resDir = mudDir </> "res"
 
 
-dbDir, helpDir, miscDir, titleDir :: FilePath
-dbDir    = resDir </> "db"
+helpDir, miscDir, titleDir :: FilePath
 helpDir  = resDir </> "help"
 miscDir  = resDir </> "misc"
 titleDir = resDir </> "titles"
@@ -67,10 +65,6 @@ aboutFile  = miscDir </> "about"
 cowbyeFile = miscDir </> "cowbye"
 motdFile   = miscDir </> "motd"
 uptimeFile = mudDir  </> "uptime"
-
-
-dbFile :: T.Text
-dbFile = T.pack $ dbDir </> "CurryMUD.db"
 
 
 -- ==================================================
