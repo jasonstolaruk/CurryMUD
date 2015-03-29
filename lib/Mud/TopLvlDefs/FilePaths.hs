@@ -61,13 +61,21 @@ typoLogFile      = logDir </> "typo"                     <.> "log"
 -- Persistence files:
 
 
-armTblFile, clothTblFile, coinsTblFile, conTblFile, entTblFile, eqTblFile :: FilePath
+armTblFile, clothTblFile, coinsTblFile, conTblFile, entTblFile, eqTblFile, invTblFile, mobTblFile, objTblFile, pcTblFile, plaTblFile, rmTblFile, typeTblFile, wpnTblFile :: FilePath
 armTblFile   = persistDir </> "armTbl.json"
 clothTblFile = persistDir </> "clothTbl.json"
 coinsTblFile = persistDir </> "coinsTbl.json"
 conTblFile   = persistDir </> "conTbl.json"
 entTblFile   = persistDir </> "entTbl.json"
 eqTblFile    = persistDir </> "eqTbl.json"
+invTblFile   = persistDir </> "invTbl.json"
+mobTblFile   = persistDir </> "mobTbl.json"
+objTblFile   = persistDir </> "objTbl.json"
+pcTblFile    = persistDir </> "pcTbl.json"
+plaTblFile   = persistDir </> "plaTbl.json"
+rmTblFile    = persistDir </> "rmTbl.json"
+typeTblFile  = persistDir </> "typeTbl.json"
+wpnTblFile   = persistDir </> "wpnTbl.json"
 
 
 -- ==================================================
@@ -75,10 +83,10 @@ eqTblFile    = persistDir </> "eqTbl.json"
 
 
 aboutFile, cowbyeFile, motdFile, uptimeFile :: FilePath
-aboutFile   = miscDir    </> "about"
-cowbyeFile  = miscDir    </> "cowbye"
-motdFile    = miscDir    </> "motd"
-uptimeFile  = mudDir     </> "uptime"
+aboutFile   = miscDir </> "about"
+cowbyeFile  = miscDir </> "cowbye"
+motdFile    = miscDir </> "motd"
+uptimeFile  = mudDir  </> "uptime"
 
 
 -- ==================================================

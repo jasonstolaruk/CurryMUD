@@ -40,7 +40,7 @@ data MudState = MudState { _armTbl       :: ArmTbl
                          , _coinsTbl     :: CoinsTbl
                          , _conTbl       :: ConTbl
                          , _entTbl       :: EntTbl
-                         , _eqTbl        :: EqTbl
+                         , _eqTbl       :: EqTbl
                          , _invTbl       :: InvTbl
                          , _mobTbl       :: MobTbl
                          , _msgQueueTbl  :: MsgQueueTbl
@@ -244,17 +244,17 @@ data Mob = Mob { _sex               :: Sex
                , _st, _dx, _iq, _ht :: Int
                , _hp, _fp           :: Int
                , _xp                :: Int
-               , _hand              :: Hand } deriving (Eq, Show)
+               , _hand              :: Hand } deriving (Eq, Generic, Show)
 
 
 data Sex = Male
          | Female
-         | NoSex deriving (Eq, Show)
+         | NoSex deriving (Eq, Generic, Show)
 
 
 data Hand = RHand
           | LHand
-          | NoHand deriving (Eq, Show)
+          | NoHand deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -262,7 +262,7 @@ data Hand = RHand
 
 -- Has an entity.
 data Obj = Obj { _weight :: Int
-               , _vol    :: Int } deriving (Eq, Show)
+               , _vol    :: Int } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -272,7 +272,7 @@ data Obj = Obj { _weight :: Int
 data PC = PC { _rmId       :: Id
              , _race       :: Race
              , _introduced :: [Sing]
-             , _linked     :: [Sing] } deriving (Eq, Show)
+             , _linked     :: [Sing] } deriving (Eq, Generic, Show)
 
 
 data Race = Dwarf
@@ -282,7 +282,7 @@ data Race = Dwarf
           | Human
           | Lagomorph
           | Nymph
-          | Vulpenoid deriving (Bounded, Enum, Eq, Show)
+          | Vulpenoid deriving (Bounded, Enum, Eq, Generic, Show)
 
 
 instance Random Race where
@@ -384,7 +384,7 @@ data Type = ObjType
           | ArmType
           | MobType
           | PCType
-          | RmType deriving (Eq, Show)
+          | RmType deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -393,11 +393,11 @@ data Type = ObjType
 -- Has an object (and an entity).
 data Wpn = Wpn { _wpnSub :: WpnSub
                , _minDmg :: Int
-               , _maxDmg :: Int } deriving (Eq, Show)
+               , _maxDmg :: Int } deriving (Eq, Generic, Show)
 
 
 data WpnSub = OneHanded
-            | TwoHanded deriving (Eq, Show)
+            | TwoHanded deriving (Eq, Generic, Show)
 
 
 -- ==================================================

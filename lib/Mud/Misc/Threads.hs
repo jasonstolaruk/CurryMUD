@@ -109,7 +109,7 @@ listen = handle listenExHandler $ do
     setThreadType Listen
     onEnv $ liftIO . void . forkIO . runReaderT threadTblPurger
     initWorld
-    liftIO . persist =<< getState
+    liftIO . persist =<< getState -- TODO
     logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
