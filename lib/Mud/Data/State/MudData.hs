@@ -433,6 +433,9 @@ instance FromJSON Rm
 instance FromJSON RmLink
 instance FromJSON Sex
 instance FromJSON Slot
+instance FromJSON Type
+instance FromJSON Wpn
+instance FromJSON WpnSub
 instance ToJSON   Arm
 instance ToJSON   ArmSub
 instance ToJSON   Cloth
@@ -449,6 +452,9 @@ instance ToJSON   Rm
 instance ToJSON   RmLink
 instance ToJSON   Sex
 instance ToJSON   Slot
+instance ToJSON   Type
+instance ToJSON   Wpn
+instance ToJSON   WpnSub
 
 
 -- ==================================================
