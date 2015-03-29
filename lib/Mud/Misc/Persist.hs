@@ -18,20 +18,20 @@ import qualified Data.Map.Lazy as M (toList)
 
 
 persist :: MudState -> IO ()
-persist ms = sequence_ . map (forkIO . runResourceT) $ [ helper (ms^.armTbl   ) armTblFile
-                                                       , helper (ms^.clothTbl ) clothTblFile
-                                                       , helper (ms^.coinsTbl ) coinsTblFile
-                                                       , helper (ms^.conTbl   ) conTblFile
-                                                       , helper (ms^.entTbl   ) entTblFile
-                                                       , helper (ms^.to eqTbl') eqTblFile
-                                                       , helper (ms^.invTbl   ) invTblFile
-                                                       , helper (ms^.mobTbl   ) mobTblFile
-                                                       , helper (ms^.objTbl   ) objTblFile
-                                                       , helper (ms^.pcTbl    ) pcTblFile
-                                                       , helper (ms^.plaTbl   ) plaTblFile
-                                                       , helper (ms^.rmTbl    ) rmTblFile
-                                                       , helper (ms^.typeTbl  ) typeTblFile
-                                                       , helper (ms^.wpnTbl   ) wpnTblFile ]
+persist ms = mapM_ (forkIO . runResourceT) [ helper (ms^.armTbl   ) armTblFile
+                                           , helper (ms^.clothTbl ) clothTblFile
+                                           , helper (ms^.coinsTbl ) coinsTblFile
+                                           , helper (ms^.conTbl   ) conTblFile
+                                           , helper (ms^.entTbl   ) entTblFile
+                                           , helper (ms^.to eqTbl') eqTblFile
+                                           , helper (ms^.invTbl   ) invTblFile
+                                           , helper (ms^.mobTbl   ) mobTblFile
+                                           , helper (ms^.objTbl   ) objTblFile
+                                           , helper (ms^.pcTbl    ) pcTblFile
+                                           , helper (ms^.plaTbl   ) plaTblFile
+                                           , helper (ms^.rmTbl    ) rmTblFile
+                                           , helper (ms^.typeTbl  ) typeTblFile
+                                           , helper (ms^.wpnTbl   ) wpnTblFile ]
   where
     helper tbl file = yield (toJSON tbl) $$ CL.map (BL.toStrict . encode) =$ CB.sinkFile file
     eqTbl'          = views eqTbl convertEqMaps
