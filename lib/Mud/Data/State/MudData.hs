@@ -355,8 +355,8 @@ data RmLink = StdLink    { _linkDir      :: LinkDir
                          , _stdDestId    :: Id }
             | NonStdLink { _linkName     :: LinkName
                          , _nonStdDestId :: Id
-                         , _originMsgFun :: T.Text -> T.Text
-                         , _destMsgFun   :: T.Text -> T.Text }
+                         , _originMsg    :: T.Text
+                         , _destMsg      :: T.Text } deriving Eq
 
 
 data LinkDir = North
@@ -372,16 +372,6 @@ data LinkDir = North
 
 
 type LinkName = T.Text
-
-
-instance Eq RmLink where
-  (StdLink    dir i      ) == (StdLink    dir' i'        ) | dir   == dir'
-                                                           , i     == i'     = True
-  (NonStdLink ln  i om dm) == (NonStdLink ln'  i' om' dm') | ln    == ln'
-                                                           , i     == i'
-                                                           , om "" == om' ""
-                                                           , dm "" == dm' "" = True
-  _                        == _                                              = False
 
 
 -- ==================================================

@@ -460,7 +460,7 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
             originRm = getRm originId ms
         in case findExit originRm dir of
           Nothing -> (ms, Left sorry)
-          Just (linkTxt, destId, maybeOriginMsgFun, maybeDestMsgFun) ->
+          Just (linkTxt, destId, maybeOriginMsg, maybeDestMsg) ->
             let originDesig = mkStdDesig i ms DoCap
                 s           = fromJust . stdPCEntSing $ originDesig
                 originPCIds = i `delete` pcIds originDesig
@@ -468,12 +468,12 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
                 ms'         = ms & pcTbl .ind i.rmId   .~ destId
                                  & invTbl.ind originId %~ (i `delete`)
                                  & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
-                msgAtOrigin = nlnl $ case maybeOriginMsgFun of
-                                Nothing -> T.concat [ serialize originDesig, " ", verb, " ", expandLinkName dir, "." ]
-                                Just f  -> f . serialize $ originDesig
-                msgAtDest   = let destDesig = mkSerializedNonStdDesig i ms s A in nlnl $ case maybeDestMsgFun of
-                                Nothing -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
-                                Just f  -> f destDesig
+                msgAtOrigin = nlnl $ case maybeOriginMsg of
+                                Nothing  -> T.concat [ serialize originDesig, " ", verb, " ", expandLinkName dir, "." ]
+                                Just msg -> T.replace "%" (serialize originDesig) msg
+                msgAtDest   = let destDesig = mkSerializedNonStdDesig i ms s A in nlnl $ case maybeDestMsg of
+                                Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
+                                Just msg -> T.replace "%" destDesig msg
                 logMsg      = T.concat [ "moved "
                                        , linkTxt
                                        , " from room "
@@ -491,7 +491,7 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
     showRm (showText -> ri) (views rmName parensQuote -> rn) = ri <> " " <> rn
 
 
-findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe (T.Text -> T.Text), Maybe (T.Text -> T.Text))
+findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe T.Text, Maybe T.Text)
 findExit (view rmLinks -> rls) ln =
     case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- rls, isValid rl ] of
       [] -> Nothing
@@ -503,9 +503,9 @@ findExit (view rmLinks -> rls) ln =
     showLink     NonStdLink { .. } = _linkName
     getDestId    StdLink    { .. } = _stdDestId
     getDestId    NonStdLink { .. } = _nonStdDestId
-    getOriginMsg NonStdLink { .. } = Just _originMsgFun
+    getOriginMsg NonStdLink { .. } = Just _originMsg
     getOriginMsg _                 = Nothing
-    getDestMsg   NonStdLink { .. } = Just _destMsgFun
+    getDestMsg   NonStdLink { .. } = Just _destMsg
     getDestMsg   _                 = Nothing
 
 
