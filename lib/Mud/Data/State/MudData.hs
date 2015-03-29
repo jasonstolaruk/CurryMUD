@@ -409,6 +409,12 @@ instance FromJSON Cloth
 instance FromJSON Coins
 instance FromJSON Con
 instance FromJSON Ent
+instance FromJSON Hand
+instance FromJSON Mob
+instance FromJSON Obj
+instance FromJSON PC
+instance FromJSON Race
+instance FromJSON Sex
 instance FromJSON Slot
 instance ToJSON   Arm
 instance ToJSON   ArmSub
@@ -416,6 +422,12 @@ instance ToJSON   Cloth
 instance ToJSON   Coins
 instance ToJSON   Con
 instance ToJSON   Ent
+instance ToJSON   Hand
+instance ToJSON   Mob
+instance ToJSON   Obj
+instance ToJSON   PC
+instance ToJSON   Race
+instance ToJSON   Sex
 instance ToJSON   Slot
 
 

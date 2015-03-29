@@ -24,6 +24,10 @@ persist ms = runResourceT $ do
     helper (ms^.conTbl  ) conTblFile
     helper (ms^.entTbl  ) entTblFile
     helper (views eqTbl convertEqMaps ms) eqTblFile
+    helper (ms^.invTbl  ) invTblFile
+    helper (ms^.mobTbl  ) mobTblFile
+    helper (ms^.objTbl  ) objTblFile
+    helper (ms^.pcTbl   ) pcTblFile
   where
     helper tbl file = yield (toJSON tbl) $$ CL.map (BL.toStrict . encode) =$ CB.sinkFile file
     convertEqMaps   = IM.map (IM.fromList . map swap . M.toList)
