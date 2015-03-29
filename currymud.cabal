@@ -83,7 +83,8 @@ library
                        Mud.Util.Text,
                        Mud.Util.Token,
                        Mud.Util.Wrapping
-  other-extensions:    DeriveGeneric,
+  other-extensions:    DeriveDataTypeable,
+                       DeriveGeneric,
                        FlexibleContexts,
                        FlexibleInstances,
                        GeneralizedNewtypeDeriving,
