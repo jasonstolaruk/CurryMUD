@@ -29,7 +29,9 @@ persist ms = runResourceT $ do
     helper (ms^.objTbl   ) objTblFile
     helper (ms^.pcTbl    ) pcTblFile
     helper (ms^.plaTbl   ) plaTblFile
+    helper (ms^.rmTbl    ) rmTblFile
   where
+    -- TODO: Run "helper" on a separate thread?
     helper tbl file = yield (toJSON tbl) $$ CL.map (BL.toStrict . encode) =$ CB.sinkFile file
     eqTbl'          = views eqTbl convertEqMaps
     convertEqMaps   = IM.map (IM.fromList . map swap . M.toList)

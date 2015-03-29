@@ -12,8 +12,8 @@ import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
 import Control.Monad.Reader (ReaderT)
-import Data.Aeson -- TODO
-import Data.Aeson.Types -- TODO
+import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), object)
+import Data.Aeson.Types (Parser)
 import Data.IORef (IORef)
 import Data.Monoid (Monoid, mappend, mempty)
 import GHC.Generics (Generic)
@@ -345,7 +345,7 @@ jsonToPla _          = empty
 data Rm = Rm { _rmName  :: T.Text
              , _rmDesc  :: T.Text
              , _rmFlags :: Int
-             , _rmLinks :: [RmLink] } deriving Eq
+             , _rmLinks :: [RmLink] } deriving (Eq, Generic)
 
 
 data RmFlags = RmFlagsTODO deriving Enum
@@ -356,7 +356,7 @@ data RmLink = StdLink    { _linkDir      :: LinkDir
             | NonStdLink { _linkName     :: LinkName
                          , _nonStdDestId :: Id
                          , _originMsg    :: T.Text
-                         , _destMsg      :: T.Text } deriving Eq
+                         , _destMsg      :: T.Text } deriving (Eq, Generic)
 
 
 data LinkDir = North
@@ -368,7 +368,7 @@ data LinkDir = North
              | West
              | Northwest
              | Up
-             | Down deriving (Eq, Show)
+             | Down deriving (Eq, Generic, Show)
 
 
 type LinkName = T.Text
@@ -424,10 +424,13 @@ instance FromJSON Coins
 instance FromJSON Con
 instance FromJSON Ent
 instance FromJSON Hand
+instance FromJSON LinkDir
 instance FromJSON Mob
 instance FromJSON Obj
 instance FromJSON PC
 instance FromJSON Race
+instance FromJSON Rm
+instance FromJSON RmLink
 instance FromJSON Sex
 instance FromJSON Slot
 instance ToJSON   Arm
@@ -437,10 +440,13 @@ instance ToJSON   Coins
 instance ToJSON   Con
 instance ToJSON   Ent
 instance ToJSON   Hand
+instance ToJSON   LinkDir
 instance ToJSON   Mob
 instance ToJSON   Obj
 instance ToJSON   PC
 instance ToJSON   Race
+instance ToJSON   Rm
+instance ToJSON   RmLink
 instance ToJSON   Sex
 instance ToJSON   Slot
 
