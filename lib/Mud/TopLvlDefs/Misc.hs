@@ -77,3 +77,7 @@ threadTblPurgerDelay = 60 * 60
 
 ver :: T.Text
 ver = "0.1.0.0 (in development since 2013-10)"
+
+
+worldPersisterDelay :: Int
+worldPersisterDelay = 1 * 60

@@ -385,7 +385,8 @@ data ThreadType = Error
                 | Receive   Id
                 | Server    Id
                 | Talk      Id
-                | ThreadTblPurger deriving (Eq, Ord, Show)
+                | ThreadTblPurger
+                | WorldPersister deriving (Eq, Ord, Show)
 
 
 -- ==================================================

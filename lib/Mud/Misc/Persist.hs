@@ -17,6 +17,7 @@ import qualified Data.IntMap.Lazy as IM (fromList, map)
 import qualified Data.Map.Lazy as M (toList)
 
 
+-- TODO: Handle exceptions?
 persist :: MudState -> IO ()
 persist ms = mapM_ (forkIO . runResourceT) [ helper (ms^.armTbl   ) armTblFile
                                            , helper (ms^.clothTbl ) clothTblFile

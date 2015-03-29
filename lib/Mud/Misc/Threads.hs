@@ -107,9 +107,9 @@ saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) =
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     setThreadType Listen
-    onEnv $ liftIO . void . forkIO . runReaderT threadTblPurger
     initWorld
-    liftIO . persist =<< getState -- TODO
+    onEnv $ liftIO . void . forkIO . runReaderT worldPersister
+    onEnv $ liftIO . void . forkIO . runReaderT threadTblPurger
     logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
@@ -139,6 +139,28 @@ listenExHandler e = case fromException e of
 
 
 -- ==================================================
+-- The "world persister" thread:
+
+
+worldPersister :: MudStack ()
+worldPersister = do
+    setThreadType WorldPersister
+    logNotice "worldPersister" "world persister started."
+    forever loop `catch` threadExHandler "world persister"
+  where
+    loop = do
+        liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6
+        liftIO . persist =<< getState
+        logNotice "worldPersister" "world persisted."
+
+
+threadExHandler :: T.Text -> SomeException -> MudStack ()
+threadExHandler threadName e = do
+    logExMsg "threadExHandler" ("exception caught on " <> threadName <> " thread; rethrowing to listen thread") e
+    liftIO . flip throwTo e . getListenThreadId =<< getState
+
+
+-- ==================================================
 -- The "thread table purger" thread:
 
 
@@ -147,13 +169,7 @@ threadTblPurger = do
     setThreadType ThreadTblPurger
     logNotice "threadTblPurger" "thread table purger started."
     let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
-    forever loop `catch` threadTblPurgerExHandler
-
-
-threadTblPurgerExHandler :: SomeException -> MudStack ()
-threadTblPurgerExHandler e = do
-    logExMsg "threadTblPurgerExHandler" "exception caught on thread table purger thread; rethrowing to listen thread" e
-    liftIO . flip throwTo e . getListenThreadId =<< getState
+    forever loop `catch` threadExHandler "thread table purger"
 
 
 -- ==================================================
@@ -242,9 +258,7 @@ getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
 plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
 plaThreadExHandler threadName i e
   | Just ThreadKilled <- fromException e = closePlaLog i
-  | otherwise                            = do
-      logExMsg "plaThreadExHandler" ("exception caught on " <> threadName <> " thread; rethrowing to listen thread") e
-      liftIO . flip throwTo e . getListenThreadId =<< getState
+  | otherwise                            = threadExHandler threadName e
 
 
 dumpTitle :: MsgQueue -> MudStack ()
