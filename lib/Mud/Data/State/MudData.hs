@@ -1,17 +1,19 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings, TemplateHaskell, ViewPatterns #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings, RecordWildCards, TemplateHaskell, ViewPatterns #-}
 
 module Mud.Data.State.MudData where
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 
+import Control.Applicative ((<$>), (<*>), empty, pure)
 import Control.Arrow ((***), first)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
 import Control.Monad.Reader (ReaderT)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson -- TODO
+import Data.Aeson.Types -- TODO
 import Data.IORef (IORef)
 import Data.Monoid (Monoid, mappend, mempty)
 import GHC.Generics (Generic)
@@ -40,7 +42,7 @@ data MudState = MudState { _armTbl       :: ArmTbl
                          , _coinsTbl     :: CoinsTbl
                          , _conTbl       :: ConTbl
                          , _entTbl       :: EntTbl
-                         , _eqTbl       :: EqTbl
+                         , _eqTbl        :: EqTbl
                          , _invTbl       :: InvTbl
                          , _mobTbl       :: MobTbl
                          , _msgQueueTbl  :: MsgQueueTbl
@@ -312,6 +314,28 @@ type Interp  = CmdName -> ActionParams -> MudStack ()
 
 
 type CmdName = T.Text
+
+
+instance FromJSON Pla where parseJSON = jsonToPla
+instance ToJSON   Pla where toJSON    = plaToJSON
+
+
+plaToJSON :: Pla -> Value
+plaToJSON Pla { .. } = object [ "_hostName"  .= _hostName
+                              , "_plaFlags"  .= _plaFlags
+                              , "_columns"   .= _columns
+                              , "_pageLines" .= _pageLines ]
+
+
+jsonToPla :: Value -> Parser Pla
+jsonToPla (Object o) = Pla <$> o .: "_hostName"
+                           <*> o .: "_plaFlags"
+                           <*> o .: "_columns"
+                           <*> o .: "_pageLines"
+                           <*> pure Nothing
+                           <*> pure []
+                           <*> pure []
+jsonToPla _          = empty
 
 
 -- ======================================================================
