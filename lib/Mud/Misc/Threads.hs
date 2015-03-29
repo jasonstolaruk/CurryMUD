@@ -34,7 +34,7 @@ import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Concurrent.Async (async, race_, wait)
+import Control.Concurrent.Async (async, asyncThreadId, race_, wait, withAsync)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryReadTMQueue, writeTMQueue)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
@@ -108,13 +108,13 @@ listen :: MudStack ()
 listen = handle listenExHandler $ do
     setThreadType Listen
     initWorld
-    onEnv $ liftIO . void . forkIO . runReaderT worldPersister
-    onEnv $ liftIO . void . forkIO . runReaderT threadTblPurger
+    auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
     logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-    (forever . loop $ sock) `finally` cleanUp sock
+    (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
   where
+    runAsync f    = onEnv $ liftIO . async . runReaderT f
     logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
         let ifList = T.intercalate ", " [ bracketQuote . T.concat $ [ showText . NI.name $ n
                                                                     , ": "
@@ -128,7 +128,11 @@ listen = handle listenExHandler $ do
                                              , showText localPort
                                              , "." ]
         setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
-    cleanUp sock = logNotice "listen cleanUp" "closing the socket." >> (liftIO . sClose $ sock)
+    cleanUp auxAsyncs sock = do
+        mapM_ (liftIO . throwWait) auxAsyncs
+        logNotice "listen cleanUp" "closing the socket."
+        liftIO . sClose $ sock
+    throwWait a = throwTo (asyncThreadId a) PlsDie >> (void . wait $ a)
 
 
 listenExHandler :: SomeException -> MudStack ()
@@ -143,15 +147,19 @@ listenExHandler e = case fromException e of
 
 
 worldPersister :: MudStack ()
-worldPersister = do
+worldPersister = handle (threadExHandler "world persister") $ do
     setThreadType WorldPersister
     logNotice "worldPersister" "world persister started."
-    forever loop `catch` threadExHandler "world persister"
+    forever loop `catch` die "world persister"
   where
     loop = do
         liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6
         liftIO . persist =<< getState
         logNotice "worldPersister" "world persisted."
+
+
+die :: T.Text -> PlsDie -> MudStack ()
+die threadName _ = logNotice "die" $ "the " <> threadName <> " thread is dying."
 
 
 threadExHandler :: T.Text -> SomeException -> MudStack ()
@@ -165,11 +173,11 @@ threadExHandler threadName e = do
 
 
 threadTblPurger :: MudStack ()
-threadTblPurger = do
+threadTblPurger = handle (threadExHandler "thread table purger") $ do
     setThreadType ThreadTblPurger
     logNotice "threadTblPurger" "thread table purger started."
     let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
-    forever loop `catch` threadExHandler "thread table purger"
+    forever loop `catch` die "thread table purger"
 
 
 -- ==================================================
@@ -371,9 +379,9 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 shutDown :: MudStack ()
 shutDown = do
     logNotice "shutDown" "persisting the world."
-    liftIO . persist =<< getState
+    getState >>= \ms -> liftIO . withAsync (persist ms) $ wait
     massMsg SilentBoot
-    onEnv (liftIO . void . forkIO . runReaderT commitSuicide)
+    onEnv $ liftIO . void . forkIO . runReaderT commitSuicide
   where
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.Misc ( AOrThe(..)
                      , Action
@@ -21,6 +21,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , HelpName
                      , Index
                      , PCDesig(..)
+                     , PlsDie(..)
                      , PutOrRem(..)
                      , RightOrLeft(..)
                      , Serializable
@@ -50,12 +51,14 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Exception (Exception)
 import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
+import Data.Typeable (Typeable)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
 
@@ -414,6 +417,15 @@ data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
 
 
 data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)
+
+
+-----
+
+
+data PlsDie = PlsDie deriving (Show, Typeable)
+
+
+instance Exception PlsDie
 
 
 -----
