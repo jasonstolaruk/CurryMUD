@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Misc.Threads ( getUnusedId
                         , listenWrapper ) where
@@ -47,7 +47,6 @@ import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
-import Data.IORef (readIORef)
 import Data.List ((\\))
 import Data.Monoid ((<>), getSum, mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
@@ -153,13 +152,8 @@ worldPersister :: MudStack ()
 worldPersister = handle (threadExHandler "world persister") $ do
     setThreadType WorldPersister
     logNotice "worldPersister" "world persister started."
+    let loop = (liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6) >> persist
     forever loop `catch` die "world persister"
-  where
-    loop = do
-        liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6
-        liftIO . uncurry persist =<< onEnv mkBindings
-        logNotice "worldPersister" "world persisted."
-    mkBindings md = return . (md^.persisterTMVar, ) =<< (liftIO . readIORef $ md^.mudStateIORef)
 
 
 die :: T.Text -> PlsDie -> MudStack ()
@@ -382,6 +376,7 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 shutDown :: MudStack ()
 shutDown = do
+    persist
     massMsg SilentBoot
     onEnv $ liftIO . void . forkIO . runReaderT commitSuicide
   where
