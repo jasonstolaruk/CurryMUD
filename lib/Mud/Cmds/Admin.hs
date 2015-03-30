@@ -12,6 +12,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
+import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs
@@ -97,6 +98,7 @@ adminCmds =
     , mkAdminCmd "bug"       adminBug         "Dump the bug log."
     , mkAdminCmd "date"      adminDate        "Display the current system date."
     , mkAdminCmd "peep"      adminPeep        "Start or stop peeping one or more players."
+    , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state)."
     , mkAdminCmd "print"     adminPrint       "Print a message to the server console."
     , mkAdminCmd "profanity" adminProfanity   "Dump the profanity log."
     , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
@@ -235,6 +237,14 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
                    in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
         in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
+
+
+-----
+
+
+adminPersist :: Action
+adminPersist (NoArgs' i mq) = persist >> ok mq >> logPlaExec (prefixAdminCmd "persist") i
+adminPersist p              = withoutArgs adminPersist p
 
 
 -----
