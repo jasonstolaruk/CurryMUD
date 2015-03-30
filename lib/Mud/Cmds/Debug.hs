@@ -14,6 +14,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
+import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
@@ -95,6 +96,7 @@ debugCmds =
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
+    , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
@@ -296,6 +298,16 @@ letterToNum c | isDigit c = digitToInt c
 debugParams :: Action
 debugParams p@(WithArgs i mq cols _) = (wrapSend mq cols . showText $ p) >> logPlaExec (prefixDebugCmd "params") i
 debugParams p = patternMatchFail "debugParams" [ showText p ]
+
+
+-----
+
+
+debugPersist :: Action
+debugPersist (NoArgs' i mq) = do
+    replicateM_ 50 $ persist >> ok mq
+    logPlaExec (prefixDebugCmd "persist") i
+debugPersist p = withoutArgs debugPersist p
 
 
 -----
