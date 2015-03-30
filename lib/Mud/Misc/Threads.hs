@@ -34,9 +34,10 @@ import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Concurrent.Async (async, asyncThreadId, race_, wait, withAsync)
+import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryReadTMQueue, writeTMQueue)
+import Control.Concurrent.STM.TMVar (takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
@@ -108,10 +109,10 @@ listen :: MudStack ()
 listen = handle listenExHandler $ do
     setThreadType Listen
     initWorld
-    auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
     logInterfaces
     logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
     sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
+    auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
     (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
   where
     runAsync f    = onEnv $ liftIO . async . runReaderT f
@@ -129,9 +130,10 @@ listen = handle listenExHandler $ do
                                              , "." ]
         setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
     cleanUp auxAsyncs sock = do
-        mapM_ (liftIO . throwWait) auxAsyncs
         logNotice "listen cleanUp" "closing the socket."
         liftIO . sClose $ sock
+        mapM_ (liftIO . throwWait) auxAsyncs
+        liftIO . atomically . void . takeTMVar . view persisterTMVar =<< ask
     throwWait a = throwTo (asyncThreadId a) PlsDie >> (void . wait $ a)
 
 
@@ -154,7 +156,8 @@ worldPersister = handle (threadExHandler "world persister") $ do
   where
     loop = do
         liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6
-        liftIO . persist =<< getState
+        persistTMVar <- view persisterTMVar <$> ask
+        liftIO . persist persistTMVar =<< getState
         logNotice "worldPersister" "world persisted."
 
 
@@ -378,8 +381,6 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 shutDown :: MudStack ()
 shutDown = do
-    logNotice "shutDown" "persisting the world."
-    getState >>= \ms -> liftIO . withAsync (persist ms) $ wait
     massMsg SilentBoot
     onEnv $ liftIO . void . forkIO . runReaderT commitSuicide
   where

@@ -9,6 +9,7 @@ import Control.Applicative ((<$>), (<*>), empty, pure)
 import Control.Arrow ((***), first)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
+import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
 import Control.Monad.Reader (ReaderT)
@@ -31,10 +32,11 @@ type MudStack = ReaderT MudData IO
 -- ==================================================
 
 
-data MudData = MudData { _mudStateIORef :: IORef MudState
-                       , _noticeLog     :: Maybe LogService
-                       , _errorLog      :: Maybe LogService
-                       , _startTime     :: TimeSpec }
+data MudData = MudData { _mudStateIORef  :: IORef MudState
+                       , _noticeLog      :: Maybe LogService
+                       , _errorLog       :: Maybe LogService
+                       , _startTime      :: TimeSpec
+                       , _persisterTMVar :: TMVar PersisterDone }
 
 
 data MudState = MudState { _armTbl       :: ArmTbl
@@ -257,6 +259,12 @@ data Sex = Male
 data Hand = RHand
           | LHand
           | NoHand deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
+data PersisterDone = PersisterDone
 
 
 -- ==================================================

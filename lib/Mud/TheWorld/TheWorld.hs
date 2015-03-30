@@ -11,6 +11,7 @@ import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
 import qualified Mud.Misc.Logging as L (logNotice)
 
+import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((%~), (&))
 import Data.Bits (zeroBits)
 import Data.IORef (newIORef)
@@ -56,10 +57,12 @@ initMudData shouldLog = do
                                  , _wpnTbl       = IM.empty }
     (noticeLogService, errorLogService) <- initLogging shouldLog
     start                               <- getTime Monotonic
-    return MudData { _mudStateIORef = msIORef
-                   , _noticeLog     = noticeLogService
-                   , _errorLog      = errorLogService
-                   , _startTime     = start }
+    persistTMVar                        <- newTMVarIO PersisterDone
+    return MudData { _mudStateIORef  = msIORef
+                   , _noticeLog      = noticeLogService
+                   , _errorLog       = errorLogService
+                   , _startTime      = start
+                   , _persisterTMVar = persistTMVar }
 
 
 initWorld :: MudStack ()
