@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.Threads ( getUnusedId
                         , listenWrapper ) where
@@ -159,7 +159,7 @@ worldPersister = handle (threadExHandler "world persister") $ do
         liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6
         liftIO . uncurry persist =<< onEnv mkBindings
         logNotice "worldPersister" "world persisted."
-    mkBindings md = (liftIO . readIORef $ md^.mudStateIORef) >>= \ms -> return (md^.persisterTMVar, ms)
+    mkBindings md = return . (md^.persisterTMVar, ) =<< (liftIO . readIORef $ md^.mudStateIORef)
 
 
 die :: T.Text -> PlsDie -> MudStack ()
