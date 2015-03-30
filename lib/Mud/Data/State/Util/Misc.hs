@@ -83,6 +83,10 @@ getState :: MudStack MudState
 getState = onEnv $ liftIO . readIORef . view mudStateIORef
 
 
+onEnv :: (MudData -> MudStack a) -> MudStack a
+onEnv = (ask >>=)
+
+
 -----
 
 
@@ -128,13 +132,6 @@ mkSerializedNonStdDesig i ms s (capitalize . pp -> aot) = let (pp *** pp -> (sex
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
-
-
------
-
-
-onEnv :: (MudData -> MudStack a) -> MudStack a
-onEnv = (ask >>=)
 
 
 -----

@@ -30,17 +30,17 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Control.Applicative ((<$>), (<*>))
+import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
-import Control.Lens (to, view, views)
-import Control.Lens.Operators ((^.))
+import Control.Lens (both, over, view, views)
 import Control.Monad ((>=>), forM_, forever, guard)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
+import Control.Monad.Reader (asks)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.Directory (doesFileExist, renameFile)
@@ -154,15 +154,15 @@ doIfLogging i f = maybeVoid (f . snd) . IM.lookup i . view plaLogTbl =<< getStat
 
 
 closeLogs :: MudStack ()
-closeLogs = ask >>= \md -> do
+closeLogs = asks mkBindings >>= \((ea, eq), (na, nq)) -> do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    let (ea, eq) = md^.errorLog .to fromJust
-        (na, nq) = md^.noticeLog.to fromJust
     (as, qs) <- unzip . views plaLogTbl IM.elems <$> getState
     liftIO $ do
         atomically . mapM_ (`writeTQueue` StopLog) $ eq : nq : qs
         mapM_ wait $ ea : na : as
         removeAllHandlers
+  where
+    mkBindings = over both fromJust . (view errorLog *** view noticeLog) . dup
 
 
 -- ==================================================

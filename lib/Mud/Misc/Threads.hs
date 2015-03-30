@@ -45,7 +45,7 @@ import Control.Lens (view, views)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask, runReaderT)
+import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
 import Data.IORef (readIORef)
 import Data.List ((\\))
@@ -195,7 +195,7 @@ talk h host = helper `finally` cleanUp
         (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         setThreadType . Talk $ i
-        handle (plaThreadExHandler "talk" i) $ ask >>= \md -> do
+        handle (plaThreadExHandler "talk" i) $ onEnv $ \md -> do
             liftIO configBuffer
             dumpTitle mq
             prompt    mq "By what name are you known?"
