@@ -98,7 +98,7 @@ adminCmds =
     , mkAdminCmd "bug"       adminBug         "Dump the bug log."
     , mkAdminCmd "date"      adminDate        "Display the current system date."
     , mkAdminCmd "peep"      adminPeep        "Start or stop peeping one or more players."
-    , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state)."
+    , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state to disk)."
     , mkAdminCmd "print"     adminPrint       "Print a message to the server console."
     , mkAdminCmd "profanity" adminProfanity   "Dump the profanity log."
     , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
