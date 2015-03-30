@@ -69,10 +69,10 @@ initLogging :: ShouldLog -> IO (Maybe LogService, Maybe LogService)
 initLogging Don'tLog = return (Nothing, Nothing)
 initLogging DoLog    = do
     updateGlobalLogger rootLoggerName removeHandler
-    (nq, eq) <- (,) <$> newTQueueIO <*> newTQueueIO
-    (na, ea) <- (,) <$> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq
-                    <*> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq
-    return (Just (na, nq), Just (ea, eq))
+    (eq, nq) <- (,) <$> newTQueueIO <*> newTQueueIO
+    (ea, na) <- (,) <$> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq
+                    <*> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq
+    return (Just (ea, eq), Just (na, nq))
 
 
 type LogName    = T.Text
@@ -150,18 +150,18 @@ closePlaLog = flip doIfLogging stopLog
 
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = getState >>= \(view plaLogTbl -> plt) -> maybeVoid (f . snd) . IM.lookup i $ plt
+doIfLogging i f = maybeVoid (f . snd) . IM.lookup i . view plaLogTbl =<< getState
 
 
 closeLogs :: MudStack ()
 closeLogs = ask >>= \md -> do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    let (na, nq) = md^.noticeLog.to fromJust
-        (ea, eq) = md^.errorLog .to fromJust
+    let (ea, eq) = md^.errorLog .to fromJust
+        (na, nq) = md^.noticeLog.to fromJust
     (as, qs) <- unzip . views plaLogTbl IM.elems <$> getState
     liftIO $ do
-        atomically . mapM_ (`writeTQueue` StopLog) $ nq : eq : qs
-        mapM_ wait $ na : ea : as
+        atomically . mapM_ (`writeTQueue` StopLog) $ eq : nq : qs
+        mapM_ wait $ ea : na : as
         removeAllHandlers
 
 

@@ -32,11 +32,11 @@ type MudStack = ReaderT MudData IO
 -- ==================================================
 
 
-data MudData = MudData { _mudStateIORef  :: IORef MudState
+data MudData = MudData { _errorLog       :: Maybe LogService
+                       , _mudStateIORef  :: IORef MudState
                        , _noticeLog      :: Maybe LogService
-                       , _errorLog       :: Maybe LogService
-                       , _startTime      :: TimeSpec
-                       , _persisterTMVar :: TMVar PersisterDone }
+                       , _persisterTMVar :: TMVar PersisterDone
+                       , _startTime      :: TimeSpec }
 
 
 data MudState = MudState { _armTbl       :: ArmTbl

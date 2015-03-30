@@ -37,6 +37,7 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 initMudData :: ShouldLog -> IO MudData
 initMudData shouldLog = do
+    (errorLogService, noticeLogService) <- initLogging shouldLog
     msIORef <- newIORef MudState { _armTbl       = IM.empty
                                  , _clothTbl     = IM.empty
                                  , _coinsTbl     = IM.empty
@@ -55,14 +56,13 @@ initMudData shouldLog = do
                                  , _threadTbl    =  M.empty
                                  , _typeTbl      = IM.empty
                                  , _wpnTbl       = IM.empty }
-    (noticeLogService, errorLogService) <- initLogging shouldLog
-    start                               <- getTime Monotonic
     persistTMVar                        <- newTMVarIO PersisterDone
-    return MudData { _mudStateIORef  = msIORef
+    start                               <- getTime Monotonic
+    return MudData { _errorLog       = errorLogService
+                   , _mudStateIORef  = msIORef
                    , _noticeLog      = noticeLogService
-                   , _errorLog       = errorLogService
-                   , _startTime      = start
-                   , _persisterTMVar = persistTMVar }
+                   , _persisterTMVar = persistTMVar
+                   , _startTime      = start }
 
 
 initWorld :: MudStack ()
