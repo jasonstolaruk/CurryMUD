@@ -47,6 +47,7 @@ import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask, runReaderT)
 import Data.Bits (zeroBits)
+import Data.IORef (readIORef)
 import Data.List ((\\))
 import Data.Monoid ((<>), getSum, mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
@@ -133,7 +134,7 @@ listen = handle listenExHandler $ do
         logNotice "listen cleanUp" "closing the socket."
         liftIO . sClose $ sock
         mapM_ (liftIO . throwWait) auxAsyncs
-        liftIO . atomically . void . takeTMVar . view persisterTMVar =<< ask
+        onEnv $ liftIO . atomically . void . takeTMVar . view persisterTMVar
     throwWait a = throwTo (asyncThreadId a) PlsDie >> (void . wait $ a)
 
 
@@ -156,9 +157,9 @@ worldPersister = handle (threadExHandler "world persister") $ do
   where
     loop = do
         liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6
-        persistTMVar <- view persisterTMVar <$> ask
-        liftIO . persist persistTMVar =<< getState
+        liftIO . uncurry persist =<< onEnv mkBindings
         logNotice "worldPersister" "world persisted."
+    mkBindings md = (liftIO . readIORef $ md^.mudStateIORef) >>= \ms -> return (md^.persisterTMVar, ms)
 
 
 die :: T.Text -> PlsDie -> MudStack ()
