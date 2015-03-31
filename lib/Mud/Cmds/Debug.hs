@@ -305,7 +305,7 @@ debugParams p = patternMatchFail "debugParams" [ showText p ]
 
 debugPersist :: Action
 debugPersist (NoArgs' i mq) = do
-    replicateM_ 50 $ persist >> ok mq
+    replicateM_ 10 $ persist >> ok mq
     logPlaExec (prefixDebugCmd "persist") i
 debugPersist p = withoutArgs debugPersist p
 

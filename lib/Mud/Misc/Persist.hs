@@ -23,7 +23,7 @@ import Data.Conduit (($$), (=$), yield)
 import Data.IORef (readIORef)
 import Data.List (sort)
 import Data.Tuple (swap)
-import System.Directory (createDirectory, getDirectoryContents, removeDirectoryRecursive)
+import System.Directory (createDirectory, doesDirectoryExist, getDirectoryContents, removeDirectoryRecursive)
 import System.FilePath ((</>))
 import qualified Data.ByteString.Lazy as BL (toStrict)
 import qualified Data.Conduit.Binary as CB (sinkFile)
@@ -51,7 +51,7 @@ persist = do
 persistHelper :: TMVar PersisterDone -> MudState -> IO ()
 persistHelper persistTMVar ms = do
     atomically . void . takeTMVar $ persistTMVar
-    path <- (persistDir </>) . T.unpack . T.replace ":" "-" <$> mkTimestamp
+    path <- getNonExistingPath =<< (persistDir </>) . T.unpack . T.replace ":" "-" <$> mkTimestamp
     createDirectory path
     cont <- dropIrrelevantFilenames . sort <$> getDirectoryContents persistDir
     when (length cont > noOfPersistedWorlds) . removeDirectoryRecursive . (persistDir </>) . head $ cont
@@ -71,6 +71,9 @@ persistHelper persistTMVar ms = do
                                              , helper (ms^.wpnTbl    ) $ path </> wpnTblFile ]
     atomically . putTMVar persistTMVar $ PersisterDone
   where
+    getNonExistingPath path = mIf (doesDirectoryExist path)
+                                (getNonExistingPath $ path ++ "_")
+                                (return path)
     helper tbl file = yield (toJSON tbl) $$ CL.map (BL.toStrict . encode) =$ CB.sinkFile file
     eqTblHelper     = views eqTbl convertEqMaps
     convertEqMaps   = IM.map (IM.fromList . map swap . M.toList)

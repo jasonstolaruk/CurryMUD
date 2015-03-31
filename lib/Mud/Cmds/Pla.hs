@@ -592,7 +592,7 @@ mkHelpData isAdmin = helpDirs |$| mapM getHelpDirectoryContents >=> \[ plaHelpCm
     return $ phcs ++ phts ++ (guard isAdmin >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
-    getHelpDirectoryContents dir = delete ".DS_Store" . drop 2 . sort <$> getDirectoryContents dir
+    getHelpDirectoryContents dir = dropIrrelevantFilenames . sort <$> getDirectoryContents dir
 
 
 parseHelpTxt :: Cols -> T.Text -> [T.Text]

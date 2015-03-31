@@ -22,7 +22,7 @@ import Mud.Util.Text
 
 import Control.Monad.Reader (runReaderT)
 import Network (withSocketsDo)
-import System.Directory (setCurrentDirectory)
+import System.Directory (createDirectoryIfMissing, setCurrentDirectory)
 import System.Environment (getEnv, getProgName)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
@@ -31,6 +31,7 @@ import qualified Data.Text.IO as T (putStrLn)
 main :: IO ()
 main = withSocketsDo $ do
     setCurrentDirectory mudDir
+    mapM_ (createDirectoryIfMissing False) [ logDir, persistDir ]
     welcome
     runReaderT listenWrapper =<< initMudData DoLog
 

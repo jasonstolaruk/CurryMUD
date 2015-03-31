@@ -13,3 +13,5 @@ codex.tags
 dist
 hscope.out
 uptime
+logs/
+res/persist/

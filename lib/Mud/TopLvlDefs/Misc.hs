@@ -59,6 +59,10 @@ maxLogSize :: FileOffset
 maxLogSize = 100000
 
 
+noOfPersistedWorlds :: Int
+noOfPersistedWorlds = 25
+
+
 noOfTitles :: Int
 noOfTitles = 33
 
