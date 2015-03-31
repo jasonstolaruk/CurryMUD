@@ -15,7 +15,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
 import Control.Lens (views)
 import Control.Lens.Operators ((^.))
-import Control.Monad (void, when)
+import Control.Monad ((>=>), void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (encode, toJSON)
@@ -41,11 +41,9 @@ logNotice = L.logNotice "Mud.Misc.Persist"
 
 
 persist :: MudStack ()
-persist = do
-    logNotice "persist" "persisting the world."
-    liftIO . uncurry persistHelper =<< onEnv mkBindings
+persist = logNotice "persist" "persisting the world." >> (mkBindings |$| onEnv >=> liftIO . uncurry persistHelper)
   where
-    mkBindings md = return . (md^.persisterTMVar, ) =<< (liftIO . readIORef $ md^.mudStateIORef)
+    mkBindings md = md^.mudStateIORef |$| liftIO . readIORef >=> return . (md^.persisterTMVar, )
 
 
 persistHelper :: TMVar PersisterDone -> MudState -> IO ()
@@ -72,8 +70,8 @@ persistHelper persistTMVar ms = do
     atomically . putTMVar persistTMVar $ PersisterDone
   where
     getNonExistingPath path = mIf (doesDirectoryExist path)
-                                (getNonExistingPath $ path ++ "_")
-                                (return path)
+                                  (getNonExistingPath $ path ++ "_")
+                                  (return path)
     helper tbl file = yield (toJSON tbl) $$ CL.map (BL.toStrict . encode) =$ CB.sinkFile file
     eqTblHelper     = views eqTbl convertEqMaps
     convertEqMaps   = IM.map (IM.fromList . map swap . M.toList)

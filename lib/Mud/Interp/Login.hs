@@ -58,8 +58,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | otherwise = mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
                                               , checkPropNamesDict     mq cn
                                               , checkWordsDict         mq cn ])
-                  (return ())
-                  nextPrompt
+                    (return ())
+                    nextPrompt
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     nextPrompt = do

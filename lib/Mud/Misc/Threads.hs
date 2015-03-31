@@ -26,7 +26,7 @@ import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.List (headTail)
+import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text hiding (headTail)
