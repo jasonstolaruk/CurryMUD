@@ -6,6 +6,7 @@ module Mud.Util.Misc ( (?)
                      , (|?|)
                      , Cond(..)
                      , blowUp
+                     , dropIrrelevantFilenames
                      , dup
                      , eitherRet
                      , emptied
@@ -31,6 +32,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Lens (Lens', lens)
 import Control.Monad (guard)
 import Data.IntMap.Lazy ((!))
+import Data.List (delete)
 import Data.Monoid ((<>), Monoid, mempty)
 import Data.Time (getZonedTime)
 import qualified Data.IntMap.Lazy as IM (IntMap, insert)
@@ -68,6 +70,10 @@ infixr 0 |$| -- TODO: GHC 7.10 will have a similar function named "(&)"...
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
 blowUp modName funName msg (bracketQuote . T.intercalate ", " . map singleQuote -> vals) =
     error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, ". ", vals ]
+
+
+dropIrrelevantFilenames :: [FilePath] -> [FilePath]
+dropIrrelevantFilenames = foldr ((.) . delete) id [ ".", "..", ".DS_Store" ]
 
 
 dup :: a -> (a, a)
