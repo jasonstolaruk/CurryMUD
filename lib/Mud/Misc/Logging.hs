@@ -38,13 +38,15 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, throwIO)
 import Control.Lens (both, over, view, views)
-import Control.Monad ((>=>), forM_, forever, guard)
+import Control.Monad ((>=>), forM_, forever, guard, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
+import Data.List (sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import System.Directory (doesFileExist, renameFile)
-import System.FilePath ((<.>), (</>), replaceExtension)
+import System.Directory (getDirectoryContents, removeFile)
+import System.FilePath ((<.>), (</>), replaceExtension, takeBaseName)
 import System.IO (stderr)
 import System.IO.Error (isAlreadyInUseError, isPermissionError)
 import System.Log (Priority(..))
@@ -102,6 +104,9 @@ spawnLogger fn p (T.unpack -> ln) f q =
             atomically . writeTQueue q . LogMsg $ "Mud.Logging spawnLogger rotateLog rotateIt: log rotated."
             close gh
             renameFile fn . replaceExtension fn . concat $ [ date, "_", time, ".log" ]
+            cont <- dropIrrelevantFilenames . sort <$> getDirectoryContents logDir
+            let matches = filter ((== takeBaseName fn) . takeWhile (/= '.')) cont
+            when (length matches >= noOfLogFiles) . removeFile . (logDir </>) . head $ matches
             loop =<< initLog
 
 
