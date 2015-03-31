@@ -163,7 +163,7 @@ die threadName _ = logNotice "die" $ "the " <> threadName <> " thread is dying."
 threadExHandler :: T.Text -> SomeException -> MudStack ()
 threadExHandler threadName e = do
     logExMsg "threadExHandler" ("exception caught on " <> threadName <> " thread; rethrowing to listen thread") e
-    liftIO . flip throwTo e . getListenThreadId =<< getState
+    throwToListenThread e
 
 
 -- ==================================================

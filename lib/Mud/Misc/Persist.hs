@@ -2,17 +2,20 @@
 
 module Mud.Misc.Persist (persist) where
 
+import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
-import qualified Mud.Misc.Logging as L (logNotice)
+import qualified Mud.Misc.Logging as L (logExMsg, logNotice)
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.Async (wait, withAsync)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
+import Control.Exception (SomeException)
+import Control.Exception.Lifted (catch)
 import Control.Lens (views)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), void, when)
@@ -33,6 +36,10 @@ import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
 
 
+logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
+logExMsg = L.logExMsg "Mud.Misc.Persist"
+
+
 logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.Misc.Persist"
 
@@ -41,7 +48,9 @@ logNotice = L.logNotice "Mud.Misc.Persist"
 
 
 persist :: MudStack ()
-persist = logNotice "persist" "persisting the world." >> (mkBindings |$| onEnv >=> liftIO . uncurry persistHelper)
+persist = do
+    logNotice "persist" "persisting the world."
+    (mkBindings |$| onEnv >=> liftIO . uncurry persistHelper) `catch` persistExHandler
   where
     mkBindings md = md^.mudStateIORef |$| liftIO . readIORef >=> return . (md^.persisterTMVar, )
 
@@ -75,3 +84,9 @@ persistHelper persistTMVar ms = do
     helper tbl file = yield (toJSON tbl) $$ CL.map (BL.toStrict . encode) =$ CB.sinkFile file
     eqTblHelper     = views eqTbl convertEqMaps
     convertEqMaps   = IM.map (IM.fromList . map swap . M.toList)
+
+
+persistExHandler :: SomeException -> MudStack ()
+persistExHandler e = do
+    logExMsg "persistExHandler" ("exception caught while persisting the world; rethrowing to listen thread") e
+    throwToListenThread e

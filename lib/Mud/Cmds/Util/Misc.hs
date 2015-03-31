@@ -6,6 +6,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , fileIOExHandler
                           , pager
                           , prefixCmd
+                          , throwToListenThread
                           , sendGenericErrorMsg
                           , withoutArgs ) where
 
@@ -30,8 +31,9 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Exception (IOException)
-import Control.Exception.Lifted (throwIO)
+import Control.Exception (IOException, SomeException, toException)
+import Control.Exception.Lifted (throwTo)
+import Control.Monad (unless)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
@@ -112,9 +114,14 @@ dispMatches p indent haystack = patternMatchFail "dispMatches" [ showText p, sho
 
 
 fileIOExHandler :: T.Text -> IOException -> MudStack ()
-fileIOExHandler fn e = if any (e |$|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]
-                         then logIOEx fn e
-                         else throwIO e
+fileIOExHandler fn e = do
+    logIOEx fn e
+    let rethrow = throwToListenThread . toException $ e
+    unless (any (e |$|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
+
+
+throwToListenThread :: SomeException -> MudStack ()
+throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 
 
 -----
