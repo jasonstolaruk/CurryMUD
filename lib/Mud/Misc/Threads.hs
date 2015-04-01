@@ -243,7 +243,7 @@ adHoc mq host = do
                        , _interp     = Just interpName
                        , _peepers    = []
                        , _peeping    = []
-                       , _logoutRmId = Nothing }
+                       , _lastRmId   = Nothing }
             ms'  = ms  & entTbl .ind i .~ e
                        & typeTbl.ind i .~ PCType
             ris  = sortInv ms' $ getInv iWelcome ms' ++ [i]

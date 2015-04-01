@@ -303,14 +303,14 @@ instance Random Race where
 -- ==================================================
 
 
-data Pla = Pla { _hostName   :: HostName
-               , _plaFlags   :: Int
-               , _columns    :: Int
-               , _pageLines  :: Int
-               , _interp     :: Maybe Interp
-               , _peepers    :: Inv
-               , _peeping    :: Inv
-               , _logoutRmId :: Maybe Id }
+data Pla = Pla { _hostName  :: HostName
+               , _plaFlags  :: Int
+               , _columns   :: Int
+               , _pageLines :: Int
+               , _interp    :: Maybe Interp
+               , _peepers   :: Inv
+               , _peeping   :: Inv
+               , _lastRmId  :: Maybe Id }
 
 
 data PlaFlags = IsAdmin

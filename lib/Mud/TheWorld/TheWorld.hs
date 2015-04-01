@@ -219,6 +219,6 @@ movePlas :: MudStack ()
 movePlas = modifyState $ \ms ->
     let idsWithRmIds = let pairs = IM.foldrWithKey (\i pc acc -> (i, pc^.rmId) : acc) [] $ ms^.pcTbl
                        in filter ((/= iLoggedOff) . snd) pairs
-        pct          = foldr (\(i, _ ) tbl -> tbl & ind i.rmId       .~ iLoggedOff) (ms^.pcTbl ) idsWithRmIds
-        plat         = foldr (\(i, ri) tbl -> tbl & ind i.logoutRmId .~ Just ri   ) (ms^.plaTbl) idsWithRmIds
+        pct          = foldr (\(i, _ ) tbl -> tbl & ind i.rmId     .~ iLoggedOff) (ms^.pcTbl ) idsWithRmIds
+        plat         = foldr (\(i, ri) tbl -> tbl & ind i.lastRmId .~ Just ri   ) (ms^.plaTbl) idsWithRmIds
     in (ms & pcTbl .~ pct & plaTbl .~ plat, ())
