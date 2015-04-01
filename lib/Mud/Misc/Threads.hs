@@ -58,7 +58,7 @@ import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys, map)
 import qualified Data.Map.Lazy as M (elems, empty)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, readFile)
+import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, putStrLn, readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
@@ -106,17 +106,15 @@ saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) =
 
 
 listen :: MudStack ()
-listen = handle listenExHandler $ do
-    setThreadType Listen
-    successful <- initWorld
-    unless (not successful) $ do
+listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt
+  where
+    proceed = do
         sortAllInvs
         logInterfaces
         logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
         auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
-  where
     runAsync f    = onEnv $ liftIO . async . runReaderT f
     logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
         let ifList = T.intercalate ", " [ bracketQuote . T.concat $ [ showText . NI.name $ n
@@ -137,6 +135,7 @@ listen = handle listenExHandler $ do
         mapM_ (liftIO . throwWait) auxAsyncs
         onEnv $ liftIO . atomically . void . takeTMVar . view persisterTMVar
     throwWait a = throwTo (asyncThreadId a) PlsDie >> (void . wait $ a)
+    halt        = liftIO . T.putStrLn $ "Oops! There was an error loading the world. Check the error log for details."
 
 
 listenExHandler :: SomeException -> MudStack ()
