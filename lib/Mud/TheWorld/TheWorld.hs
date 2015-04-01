@@ -24,11 +24,12 @@ import Data.Bits (zeroBits)
 import Data.IORef (newIORef)
 import Data.List (sort)
 import Data.Monoid ((<>), mempty)
+import Data.Tuple (swap)
 import System.Clock (Clock(..), getTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 import qualified Data.ByteString.Lazy as B (readFile)
-import qualified Data.IntMap.Lazy as IM (empty)
+import qualified Data.IntMap.Lazy as IM (IntMap, empty, toList, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
 
@@ -176,20 +177,20 @@ createWorld = do
 loadWorld :: FilePath -> MudStack Bool
 loadWorld dir@((persistDir </>) -> path) = do
     logNotice "loadWorld" $ "loading the world from the " <> (dblQuote . T.pack $ dir) <> " directory."
-    and <$> mapM (path |$|) [ loadTbl armTblFile   armTbl
-                            , loadTbl clothTblFile clothTbl
-                            , loadTbl coinsTblFile coinsTbl
-                            , loadTbl conTblFile   conTbl
-                            , loadTbl entTblFile   entTbl
-                            -- TODO: Load the eq tbl.
-                            , loadTbl invTblFile   invTbl
-                            , loadTbl mobTblFile   mobTbl
-                            , loadTbl objTblFile   objTbl
-                            , loadTbl pcTblFile    pcTbl
-                            , loadTbl plaTblFile   plaTbl
-                            , loadTbl rmTblFile    rmTbl
-                            , loadTbl typeTblFile  typeTbl
-                            , loadTbl wpnTblFile   wpnTbl ]
+    loadEqTblRes <- loadEqTbl path
+    and . (loadEqTblRes :) <$> mapM (path |$|) [ loadTbl armTblFile   armTbl
+                                               , loadTbl clothTblFile clothTbl
+                                               , loadTbl coinsTblFile coinsTbl
+                                               , loadTbl conTblFile   conTbl
+                                               , loadTbl entTblFile   entTbl
+                                               , loadTbl invTblFile   invTbl
+                                               , loadTbl mobTblFile   mobTbl
+                                               , loadTbl objTblFile   objTbl
+                                               , loadTbl pcTblFile    pcTbl
+                                               , loadTbl plaTblFile   plaTbl
+                                               , loadTbl rmTblFile    rmTbl
+                                               , loadTbl typeTblFile  typeTbl
+                                               , loadTbl wpnTblFile   wpnTbl ]
 
 
 loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
@@ -198,3 +199,13 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in
       Left (T.pack -> err) ->
         (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ]) >> return False
       Right tbl -> modifyState ((, ()) . (lens .~ tbl)) >> return True
+
+
+loadEqTbl :: FilePath -> MudStack Bool
+loadEqTbl ((</> eqTblFile) -> absolute) = do
+    json <- liftIO . B.readFile $ absolute
+    case (eitherDecode json :: Either String (IM.IntMap (IM.IntMap Slot))) of
+      Left (T.pack -> err) -> do
+          logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ]
+          return False
+      Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> modifyState ((, ()) . (eqTbl .~ tbl)) >> return True
