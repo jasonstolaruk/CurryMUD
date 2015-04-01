@@ -193,11 +193,12 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                , loadTbl wpnTblFile   wpnTbl ]
 
 
-loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
-loadTbl tblFile lens path = let absolute = path </> tblFile in
-    eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
-      Left err  -> sorry absolute err
-      Right tbl -> modifyState ((, ()) . (lens .~ tbl)) >> return True
+loadEqTbl :: FilePath -> MudStack Bool
+loadEqTbl ((</> eqTblFile) -> absolute) = do
+    json <- liftIO . B.readFile $ absolute
+    case (eitherDecode json :: Either String (IM.IntMap (IM.IntMap Slot))) of
+      Left err -> sorry absolute err
+      Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> modifyState ((, ()) . (eqTbl .~ tbl)) >> return True
 
 
 sorry :: FilePath -> String -> MudStack Bool
@@ -205,9 +206,8 @@ sorry absolute (T.pack -> err) =
     (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ]) >> return False
 
 
-loadEqTbl :: FilePath -> MudStack Bool
-loadEqTbl ((</> eqTblFile) -> absolute) = do
-    json <- liftIO . B.readFile $ absolute
-    case (eitherDecode json :: Either String (IM.IntMap (IM.IntMap Slot))) of
-      Left err -> sorry absolute err
-      Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> modifyState ((, ()) . (eqTbl .~ tbl)) >> return True
+loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
+loadTbl tblFile lens path = let absolute = path </> tblFile in
+    eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
+      Left err  -> sorry absolute err
+      Right tbl -> modifyState ((, ()) . (lens .~ tbl)) >> return True

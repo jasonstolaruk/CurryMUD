@@ -303,13 +303,14 @@ instance Random Race where
 -- ==================================================
 
 
-data Pla = Pla { _hostName  :: HostName
-               , _plaFlags  :: Int
-               , _columns   :: Int
-               , _pageLines :: Int
-               , _interp    :: Maybe Interp
-               , _peepers   :: Inv
-               , _peeping   :: Inv }
+data Pla = Pla { _hostName   :: HostName
+               , _plaFlags   :: Int
+               , _columns    :: Int
+               , _pageLines  :: Int
+               , _interp     :: Maybe Interp
+               , _peepers    :: Inv
+               , _peeping    :: Inv
+               , _logoutRmId :: Maybe Id }
 
 
 data PlaFlags = IsAdmin
@@ -343,6 +344,7 @@ jsonToPla (Object o) = Pla <$> o .: "_hostName"
                            <*> pure Nothing
                            <*> pure []
                            <*> pure []
+                           <*> pure Nothing
 jsonToPla _          = empty
 
 

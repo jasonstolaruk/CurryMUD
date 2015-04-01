@@ -236,13 +236,14 @@ adHoc mq host = do
                        , _race       = r
                        , _introduced = []
                        , _linked     = [] }
-            pla  = Pla { _hostName  = host
-                       , _plaFlags  = zeroBits
-                       , _columns   = 80
-                       , _pageLines = 24
-                       , _interp    = Just interpName
-                       , _peepers   = []
-                       , _peeping   = [] }
+            pla  = Pla { _hostName   = host
+                       , _plaFlags   = zeroBits
+                       , _columns    = 80
+                       , _pageLines  = 24
+                       , _interp     = Just interpName
+                       , _peepers    = []
+                       , _peeping    = []
+                       , _logoutRmId = Nothing }
             ms'  = ms  & entTbl .ind i .~ e
                        & typeTbl.ind i .~ PCType
             ris  = sortInv ms' $ getInv iWelcome ms' ++ [i]
