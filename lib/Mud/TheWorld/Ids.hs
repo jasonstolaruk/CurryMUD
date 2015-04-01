@@ -9,156 +9,158 @@ module Mud.TheWorld.Ids where
 -- ==================================================
 
 
-iWelcome = 0 :: Int
+iLoggedOff = 0 :: Int
 
-iCentral = 1 :: Int
+iWelcome = 1 :: Int
 
-iObjCloset = 2 :: Int
+iCentral = 2 :: Int
 
-iClothCloset = 3 :: Int
+iObjCloset = 3 :: Int
 
-iCoinsCloset = 4 :: Int
+iClothCloset = 4 :: Int
 
-iConCloset = 5 :: Int
+iCoinsCloset = 5 :: Int
 
-iWpnCloset = 6 :: Int
+iConCloset = 6 :: Int
 
-iArmCloset = 7 :: Int
+iWpnCloset = 7 :: Int
 
-iMobCloset = 8 :: Int
+iArmCloset = 8 :: Int
 
-iKewpie1 = 9 :: Int
+iMobCloset = 9 :: Int
 
-iKewpie2 = 10 :: Int
+iKewpie1 = 10 :: Int
 
-iEar1 = 11 :: Int
+iKewpie2 = 11 :: Int
 
-iEar2 = 12 :: Int
+iEar1 = 12 :: Int
 
-iEar3 = 13 :: Int
+iEar2 = 13 :: Int
 
-iEar4 = 14 :: Int
+iEar3 = 14 :: Int
 
-iNoseRing1 = 15 :: Int
+iEar4 = 15 :: Int
 
-iNoseRing2 = 16 :: Int
+iNoseRing1 = 16 :: Int
 
-iNoseRing3 = 17 :: Int
+iNoseRing2 = 17 :: Int
 
-iNeck1 = 18 :: Int
+iNoseRing3 = 18 :: Int
 
-iNeck2 = 19 :: Int
+iNeck1 = 19 :: Int
 
-iNeck3 = 20 :: Int
+iNeck2 = 20 :: Int
 
-iNeck4 = 21 :: Int
+iNeck3 = 21 :: Int
 
-iBracelet1 = 22 :: Int
+iNeck4 = 22 :: Int
 
-iBracelet2 = 23 :: Int
+iBracelet1 = 23 :: Int
 
-iBracelet3 = 24 :: Int
+iBracelet2 = 24 :: Int
 
-iBracelet4 = 25 :: Int
+iBracelet3 = 25 :: Int
 
-iRing1 = 26 :: Int
+iBracelet4 = 26 :: Int
 
-iRing2 = 27 :: Int
+iRing1 = 27 :: Int
 
-iRing3 = 28:: Int
+iRing2 = 28 :: Int
 
-iRing4 = 29 :: Int
+iRing3 = 29:: Int
 
-iBag1 = 30 :: Int
+iRing4 = 30 :: Int
 
-iBag2 = 31 :: Int
+iBag1 = 31 :: Int
 
-iBackpack1 = 32 :: Int
+iBag2 = 32 :: Int
 
-iBackpack2 = 33 :: Int
+iBackpack1 = 33 :: Int
 
-iSword1 = 34 :: Int
+iBackpack2 = 34 :: Int
 
-iSword2 = 35 :: Int
+iSword1 = 35 :: Int
 
-iClub = 36 :: Int
+iSword2 = 36 :: Int
 
-iLongSword = 37 :: Int
+iClub = 37 :: Int
 
-iKnife1 = 38 :: Int
+iLongSword = 38 :: Int
 
-iKnife2 = 39 :: Int
+iKnife1 = 39 :: Int
 
-iCap = 40 :: Int
+iKnife2 = 40 :: Int
 
-iHelm = 41 :: Int
+iCap = 41 :: Int
 
-iSandals1 = 42 :: Int
+iHelm = 42 :: Int
 
-iSandals2 = 43 :: Int
+iSandals1 = 43 :: Int
 
-iBoots = 44 :: Int
+iSandals2 = 44 :: Int
 
-iRockCavy = 45 :: Int
+iBoots = 45 :: Int
 
-iVoid = 46 :: Int
+iRockCavy = 46 :: Int
 
-iLounge = 47 :: Int
+iVoid = 47 :: Int
 
-iEar5 = 48 :: Int
+iLounge = 48 :: Int
 
-iEar6 = 49 :: Int
+iEar5 = 49 :: Int
 
-iEar7 = 50 :: Int
+iEar6 = 50 :: Int
 
-iEar8 = 51 :: Int
+iEar7 = 51 :: Int
 
-iBracelet5 = 52 :: Int
+iEar8 = 52 :: Int
 
-iBracelet6 = 53 :: Int
+iBracelet5 = 53 :: Int
 
-iBracelet7 = 54 :: Int
+iBracelet6 = 54 :: Int
 
-iBracelet8 = 55 :: Int
+iBracelet7 = 55 :: Int
 
-iRing5 = 56 :: Int
+iBracelet8 = 56 :: Int
 
-iRing6 = 57 :: Int
+iRing5 = 57 :: Int
 
-iRing7 = 58 :: Int
+iRing6 = 58 :: Int
 
-iRing8 = 59 :: Int
+iRing7 = 59 :: Int
 
-iRing9 = 60 :: Int
+iRing8 = 60 :: Int
 
-iAccessoriesCloset = 61 :: Int
+iRing9 = 61 :: Int
 
-iChemise = 62 :: Int
+iAccessoriesCloset = 62 :: Int
 
-iTunic = 63 :: Int
+iChemise = 63 :: Int
 
-iApron = 64 :: Int
+iTunic = 64 :: Int
 
-iTabard = 65 :: Int
+iApron = 65 :: Int
 
-iGreyCoat = 66 :: Int
+iTabard = 66 :: Int
 
-iFrockCoat = 67 :: Int
+iGreyCoat = 67 :: Int
 
-iBreeches1 = 68 :: Int
+iFrockCoat = 68 :: Int
 
-iBreeches2 = 69 :: Int
+iBreeches1 = 69 :: Int
 
-iTrousers1 = 70 :: Int
+iBreeches2 = 70 :: Int
 
-iTrousers2 = 71 :: Int
+iTrousers1 = 71 :: Int
 
-iPidge = 72 :: Int
+iTrousers2 = 72 :: Int
 
-iPeasant'sShirt = 73 :: Int
+iPidge = 73 :: Int
 
-iOveralls = 74 :: Int
+iPeasant'sShirt = 74 :: Int
 
-iLeatherApron = 75 :: Int
+iOveralls = 75 :: Int
 
-iTraveler'sBoots = 76 :: Int
+iLeatherApron = 76 :: Int
+
+iTraveler'sBoots = 77 :: Int

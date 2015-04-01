@@ -73,6 +73,7 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world."
 
+    putRm iLoggedOff [] mempty (Rm "Logged off room" "PCs are placed here when their players log off." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [ StdLink Down iCentral ])
     putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Up iWelcome, StdLink Down iVoid ])
     putRm iObjCloset [ iKewpie1, iKewpie2 ] mempty (Rm "Object closet" "This closet holds objects." zeroBits [ StdLink Southwest iCentral ])
