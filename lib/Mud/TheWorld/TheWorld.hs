@@ -16,13 +16,13 @@ import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (newTMVarIO)
-import Control.Lens.Operators ((&), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Lens.Setter (ASetter)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.Bits (zeroBits)
 import Data.IORef (newIORef)
-import Data.List (sort)
+import Data.List (delete, sort)
 import Data.Monoid ((<>), mempty)
 import Data.Tuple (swap)
 import System.Clock (Clock(..), getTime)
@@ -221,4 +221,5 @@ movePlas = modifyState $ \ms ->
                        in filter ((/= iLoggedOff) . snd) pairs
         pct          = foldr (\(i, _ ) tbl -> tbl & ind i.rmId     .~ iLoggedOff) (ms^.pcTbl ) idsWithRmIds
         plat         = foldr (\(i, ri) tbl -> tbl & ind i.lastRmId .~ Just ri   ) (ms^.plaTbl) idsWithRmIds
-    in (ms & pcTbl .~ pct & plaTbl .~ plat, ())
+        it           = foldr (\(i, ri) tbl -> tbl & ind ri %~ (i `delete`)      ) (ms^.invTbl) idsWithRmIds
+    in (ms & pcTbl .~ pct & plaTbl .~ plat & invTbl .~ it, ())
