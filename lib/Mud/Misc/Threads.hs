@@ -90,7 +90,8 @@ logPla = L.logPla "Mud.Misc.Threads"
 
 listenWrapper :: MudStack ()
 listenWrapper =
-    (logNotice "listenWrapper" "server started." >> listen) `finally` (getUptime >>= saveUptime >> closeLogs)
+    let bye = liftIO . T.putStrLn $ "Goodbye!\n"
+    in (logNotice "listenWrapper" "server started." >> listen) `finally` (getUptime >>= saveUptime >> closeLogs >> bye)
 
 
 saveUptime :: Int -> MudStack ()
