@@ -42,7 +42,7 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (view, views)
-import Control.Lens.Operators ((&), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), forM_, forever, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
@@ -55,7 +55,7 @@ import System.FilePath ((</>))
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (randomIO, randomRIO) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (keys, map)
 import qualified Data.Map.Lazy as M (elems, empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, readFile)
@@ -110,6 +110,7 @@ listen = handle listenExHandler $ do
     setThreadType Listen
     successful <- initWorld
     unless (not successful) $ do
+        sortAllInvs
         logInterfaces
         logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
@@ -143,6 +144,12 @@ listenExHandler e = case fromException e of
   Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
   Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
   _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
+
+
+sortAllInvs :: MudStack ()
+sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState helper
+  where
+    helper ms = (ms & invTbl %~ IM.map (sortInv ms), ())
 
 
 -- ==================================================

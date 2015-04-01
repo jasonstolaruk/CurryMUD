@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
@@ -16,19 +16,19 @@ import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (newTMVarIO)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((.~))
+import Control.Lens.Setter (ASetter)
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson (decode)
+import Data.Aeson (FromJSON, eitherDecode)
 import Data.Bits (zeroBits)
 import Data.IORef (newIORef)
 import Data.List (sort)
-import Data.Maybe (isNothing)
 import Data.Monoid ((<>), mempty)
 import System.Clock (Clock(..), getTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 import qualified Data.ByteString.Lazy as B (readFile)
-import qualified Data.IntMap.Lazy as IM (empty, map)
+import qualified Data.IntMap.Lazy as IM (empty)
 import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
 
@@ -79,7 +79,7 @@ initMudData shouldLog = do
 initWorld :: MudStack Bool
 initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont ->
     if null cont
-      then createWorld >> sortAllInvs >> return True
+      then createWorld >> return True
       else loadWorld . last $ cont
 
 
@@ -173,17 +173,28 @@ createWorld = do
     putArm iTraveler'sBoots (Ent iTraveler'sBoots (Just "boots") "pair of jet-black traveler's boots" "pair of jet-black traveler's boots" "These well-crafted, thigh-high boots are rugged and durable." zeroBits) (Obj 1 1) (Arm Feet 1)
 
 
-sortAllInvs :: MudStack ()
-sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState helper
-  where
-    helper ms = (ms & invTbl %~ IM.map (sortInv ms), ())
-
-
 loadWorld :: FilePath -> MudStack Bool
 loadWorld dir@((persistDir </>) -> path) = do
     logNotice "loadWorld" $ "loading the world from the " <> (dblQuote . T.pack $ dir) <> " directory."
+    and <$> mapM (path |$|) [ loadTbl armTblFile   armTbl
+                            , loadTbl clothTblFile clothTbl
+                            , loadTbl coinsTblFile coinsTbl
+                            , loadTbl conTblFile   conTbl
+                            , loadTbl entTblFile   entTbl
+                            -- TODO: Load the eq tbl.
+                            , loadTbl invTblFile   invTbl
+                            , loadTbl mobTblFile   mobTbl
+                            , loadTbl objTblFile   objTbl
+                            , loadTbl pcTblFile    pcTbl
+                            , loadTbl plaTblFile   plaTbl
+                            , loadTbl rmTblFile    rmTbl
+                            , loadTbl typeTblFile  typeTbl
+                            , loadTbl wpnTblFile   wpnTbl ]
 
-    maybeArmTbl <- decode <$> (liftIO . B.readFile $ path </> armTblFile) :: MudStack (Maybe ArmTbl)
-    if isNothing maybeArmTbl
-      then return False
-      else return True
+
+loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
+loadTbl tblFile lens path = let absolute = path </> tblFile in
+    eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
+      Left (T.pack -> err) ->
+        (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ]) >> return False
+      Right tbl -> modifyState ((, ()) . (lens .~ tbl)) >> return True

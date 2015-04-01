@@ -12,9 +12,6 @@ import Test.Tasty.QuickCheck (Property)
 import qualified Data.IntMap.Lazy as IM (elems)
 
 
--- TODO: We will probably have to change the name of this module after introducing the database...
-
-
 prop_noDupIds :: Property
 prop_noDupIds = monadicIO $ do
     ms <- inWorld getState
