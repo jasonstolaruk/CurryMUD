@@ -16,7 +16,7 @@ import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (newTMVarIO)
-import Control.Lens.Operators ((.~))
+import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Lens.Setter (ASetter)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
@@ -29,7 +29,7 @@ import System.Clock (Clock(..), getTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 import qualified Data.ByteString.Lazy as B (readFile)
-import qualified Data.IntMap.Lazy as IM (IntMap, empty, toList, map)
+import qualified Data.IntMap.Lazy as IM (IntMap, empty, foldrWithKey, toList, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
 
@@ -178,19 +178,21 @@ loadWorld :: FilePath -> MudStack Bool
 loadWorld dir@((persistDir </>) -> path) = do
     logNotice "loadWorld" $ "loading the world from the " <> (dblQuote . T.pack $ dir) <> " directory."
     loadEqTblRes <- loadEqTbl path
-    and . (loadEqTblRes :) <$> mapM (path |$|) [ loadTbl armTblFile   armTbl
-                                               , loadTbl clothTblFile clothTbl
-                                               , loadTbl coinsTblFile coinsTbl
-                                               , loadTbl conTblFile   conTbl
-                                               , loadTbl entTblFile   entTbl
-                                               , loadTbl invTblFile   invTbl
-                                               , loadTbl mobTblFile   mobTbl
-                                               , loadTbl objTblFile   objTbl
-                                               , loadTbl pcTblFile    pcTbl
-                                               , loadTbl plaTblFile   plaTbl
-                                               , loadTbl rmTblFile    rmTbl
-                                               , loadTbl typeTblFile  typeTbl
-                                               , loadTbl wpnTblFile   wpnTbl ]
+    ((loadEqTblRes :) -> res) <- mapM (path |$|) [ loadTbl armTblFile   armTbl
+                                                 , loadTbl clothTblFile clothTbl
+                                                 , loadTbl coinsTblFile coinsTbl
+                                                 , loadTbl conTblFile   conTbl
+                                                 , loadTbl entTblFile   entTbl
+                                                 , loadTbl invTblFile   invTbl
+                                                 , loadTbl mobTblFile   mobTbl
+                                                 , loadTbl objTblFile   objTbl
+                                                 , loadTbl pcTblFile    pcTbl
+                                                 , loadTbl plaTblFile   plaTbl
+                                                 , loadTbl rmTblFile    rmTbl
+                                                 , loadTbl typeTblFile  typeTbl
+                                                 , loadTbl wpnTblFile   wpnTbl ]
+    movePlas
+    return . and $ res
 
 
 loadEqTbl :: FilePath -> MudStack Bool
@@ -211,3 +213,12 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in
     eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
       Left err  -> sorry absolute err
       Right tbl -> modifyState ((, ()) . (lens .~ tbl)) >> return True
+
+
+movePlas :: MudStack ()
+movePlas = modifyState $ \ms ->
+    let idsWithRmIds = let pairs = IM.foldrWithKey (\i pc acc -> (i, pc^.rmId) : acc) [] $ ms^.pcTbl
+                       in filter ((/= iLoggedOff) . snd) pairs
+        pct          = foldr (\(i, _ ) tbl -> tbl & ind i.rmId       .~ iLoggedOff) (ms^.pcTbl ) idsWithRmIds
+        plat         = foldr (\(i, ri) tbl -> tbl & ind i.logoutRmId .~ Just ri   ) (ms^.plaTbl) idsWithRmIds
+    in (ms & pcTbl .~ pct & plaTbl .~ plat, ())
