@@ -28,7 +28,7 @@ import Data.List (sort)
 import Data.Tuple (swap)
 import System.Directory (createDirectory, doesDirectoryExist, getDirectoryContents, removeDirectoryRecursive)
 import System.FilePath ((</>))
-import qualified Data.ByteString.Lazy as BL (toStrict)
+import qualified Data.ByteString.Lazy as B (toStrict)
 import qualified Data.Conduit.Binary as CB (sinkFile)
 import qualified Data.Conduit.List as CL (map)
 import qualified Data.IntMap.Lazy as IM (fromList, map)
@@ -81,12 +81,12 @@ persistHelper persistTMVar ms = do
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")
                                   (return path)
-    helper tbl file = yield (toJSON tbl) $$ CL.map (BL.toStrict . encode) =$ CB.sinkFile file
+    helper tbl file = yield (toJSON tbl) $$ CL.map (B.toStrict . encode) =$ CB.sinkFile file
     eqTblHelper     = views eqTbl convertEqMaps
     convertEqMaps   = IM.map (IM.fromList . map swap . M.toList)
 
 
 persistExHandler :: SomeException -> MudStack ()
 persistExHandler e = do
-    logExMsg "persistExHandler" ("exception caught while persisting the world; rethrowing to listen thread") e
+    logExMsg "persistExHandler" "exception caught while persisting the world; rethrowing to listen thread" e
     throwToListenThread e

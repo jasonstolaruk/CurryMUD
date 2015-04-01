@@ -108,12 +108,13 @@ saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) =
 listen :: MudStack ()
 listen = handle listenExHandler $ do
     setThreadType Listen
-    initWorld
-    logInterfaces
-    logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
-    sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-    auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
-    (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
+    successful <- initWorld
+    unless (not successful) $ do
+        logInterfaces
+        logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
+        sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
+        auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
+        (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
   where
     runAsync f    = onEnv $ liftIO . async . runReaderT f
     logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->

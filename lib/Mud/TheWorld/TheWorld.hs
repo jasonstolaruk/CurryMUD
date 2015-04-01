@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
@@ -9,14 +9,25 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
+import Mud.TopLvlDefs.FilePaths
+import Mud.Util.Misc
+import Mud.Util.Quoting
 import qualified Mud.Misc.Logging as L (logNotice)
 
+import Control.Applicative ((<$>))
 import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((%~), (&))
+import Control.Monad.IO.Class (liftIO)
+import Data.Aeson (decode)
 import Data.Bits (zeroBits)
 import Data.IORef (newIORef)
-import Data.Monoid (mempty)
+import Data.List (sort)
+import Data.Maybe (isNothing)
+import Data.Monoid ((<>), mempty)
 import System.Clock (Clock(..), getTime)
+import System.Directory (getDirectoryContents)
+import System.FilePath ((</>))
+import qualified Data.ByteString.Lazy as B (readFile)
 import qualified Data.IntMap.Lazy as IM (empty, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
@@ -65,8 +76,11 @@ initMudData shouldLog = do
                    , _startTime      = start }
 
 
-initWorld :: MudStack ()
-initWorld = createWorld >> sortAllInvs
+initWorld :: MudStack Bool
+initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont ->
+    if null cont
+      then createWorld >> sortAllInvs >> return True
+      else loadWorld . last $ cont
 
 
 createWorld :: MudStack ()
@@ -163,3 +177,13 @@ sortAllInvs :: MudStack ()
 sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState helper
   where
     helper ms = (ms & invTbl %~ IM.map (sortInv ms), ())
+
+
+loadWorld :: FilePath -> MudStack Bool
+loadWorld dir@((persistDir </>) -> path) = do
+    logNotice "loadWorld" $ "loading the world from the " <> (dblQuote . T.pack $ dir) <> " directory."
+
+    maybeArmTbl <- decode <$> (liftIO . B.readFile $ path </> armTblFile) :: MudStack (Maybe ArmTbl)
+    if isNothing maybeArmTbl
+      then return False
+      else return True
