@@ -159,7 +159,7 @@ stopInacTimer i mq = do
 notifyArrival :: Id -> MudState -> MudStack ()
 notifyArrival i ms = let s = getSing i ms in do
     bcastOtherAdmins i $ s <> " has logged on."
-    bcastOthersInRm i . nlnl $ mkSerializedNonStdDesig i ms s A <> " has arrived in the game."
+    bcastOthersInRm  i . nlnl $ mkSerializedNonStdDesig i ms s A <> " has arrived in the game."
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()

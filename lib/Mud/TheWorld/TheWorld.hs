@@ -29,7 +29,7 @@ import System.Clock (Clock(..), getTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 import qualified Data.ByteString.Lazy as B (readFile)
-import qualified Data.IntMap.Lazy as IM (IntMap, empty, foldrWithKey, toList, map)
+import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, toList, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
 
@@ -198,7 +198,7 @@ loadWorld dir@((persistDir </>) -> path) = do
 loadEqTbl :: FilePath -> MudStack Bool
 loadEqTbl ((</> eqTblFile) -> absolute) = do
     json <- liftIO . B.readFile $ absolute
-    case (eitherDecode json :: Either String (IM.IntMap (IM.IntMap Slot))) of
+    case eitherDecode json of
       Left err -> sorry absolute err
       Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> modifyState ((, ()) . (eqTbl .~ tbl)) >> return True
 
@@ -217,9 +217,9 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in
 
 movePlas :: MudStack ()
 movePlas = modifyState $ \ms ->
-    let idsWithRmIds = let pairs = IM.foldrWithKey (\i pc acc -> (i, pc^.rmId) : acc) [] $ ms^.pcTbl
-                       in filter ((/= iLoggedOff) . snd) pairs
-        pct          = foldr (\(i, _ ) tbl -> tbl & ind i.rmId     .~ iLoggedOff) (ms^.pcTbl ) idsWithRmIds
-        plat         = foldr (\(i, ri) tbl -> tbl & ind i.lastRmId .~ Just ri   ) (ms^.plaTbl) idsWithRmIds
-        it           = foldr (\(i, ri) tbl -> tbl & ind ri %~ (i `delete`)      ) (ms^.invTbl) idsWithRmIds
-    in (ms & pcTbl .~ pct & plaTbl .~ plat & invTbl .~ it, ())
+    let idsWithRmIds       = let pairs = IM.foldrWithKey (\i pc -> ((i, pc^.rmId) :)) [] $ ms^.pcTbl
+                             in filter ((/= iLoggedOff) . snd) pairs
+        helper (i, ri) ms' = ms' & pcTbl.ind i.rmId      .~ iLoggedOff
+                                 & plaTbl.ind i.lastRmId .~ Just ri
+                                 & invTbl.ind ri         %~ (i `delete`)
+    in (foldr helper ms idsWithRmIds, ())
