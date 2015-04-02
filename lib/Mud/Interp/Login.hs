@@ -25,6 +25,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
+import Control.Lens (_1, _2)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), guard, when)
 import Control.Monad.IO.Class (liftIO)
@@ -35,7 +36,7 @@ import Data.List (delete)
 import Data.Monoid ((<>), Any(..), mempty)
 import Network (HostName)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (filter, keys)
+import qualified Data.IntMap.Lazy as IM (foldrWithKey)
 import qualified Data.Set as S (fromList, member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, readFile)
@@ -57,21 +58,27 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | not . inRange (3, 12) . T.length $ cn = promptRetryName mq "Your name must be between three and twelve characters \
                                                                \long."
   | T.any (`elem` illegalChars) cn        = promptRetryName mq "Your name cannot include any numbers or symbols."
-  -- TODO: Consider using "modifyState" instead.
-  | otherwise                             = getState >>= \ms -> if cn' `elem` loggedInSings ms
-    then promptRetryName mq $ cn' <> " is already logged in."
-    else case loggedOutMatches ms of
-      [(pi, s)] -> logIn pi s
-      _         -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
-                                                 , checkPropNamesDict     mq cn
-                                                 , checkWordsDict         mq cn ])
-                       (return ())
-                       nextPrompt
+  | otherwise                             = helper |$| modifyState >=> \case
+    Left (Just msg) -> promptRetryName mq msg
+    Left Nothing    -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
+                                                     , checkPropNamesDict     mq cn
+                                                     , checkWordsDict         mq cn ])
+                           (return ())
+                           nextPrompt
+    Right _         -> undefined
   where
-    illegalChars        = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-    loggedInSings    ms = [ getSing pi ms | pi <- IM.keys . IM.filter isLoggedIn $ ms^.plaTbl ]
-    loggedOutMatches ms =
-        filter ((== cn') . snd) [ (pi, getSing pi ms) | pi <- IM.keys . IM.filter (not . isLoggedIn) $ ms^.plaTbl ]
+    illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
+    helper ms    =
+        let sorted  = IM.foldrWithKey (\pi pla acc -> acc & if isLoggedIn pla
+                                        then _1 %~ (getSing pi ms      :)
+                                        else _2 %~ ((i, getSing pi ms) :))
+                                      ([], [])
+                                      (ms^.plaTbl)
+            matches = filter ((== cn') . snd) . snd $ sorted
+        in if cn' `elem` fst sorted
+          then (ms, Left . Just $ cn' <> " is already logged in.")
+          else case matches of [(pi, s)] -> logIn ms pi s
+                               _         -> (ms, Left Nothing)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
@@ -84,8 +91,8 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: Id -> Sing -> MudStack ()
-logIn _ _ = undefined -- TODO
+logIn :: MudState -> Id -> Sing -> (MudState, Either (Maybe T.Text) T.Text)
+logIn _ _ _ = undefined -- TODO
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
