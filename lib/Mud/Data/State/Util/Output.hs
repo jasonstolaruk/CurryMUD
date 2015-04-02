@@ -43,7 +43,7 @@ import Data.List (delete, elemIndex)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (elems, filter, keys)
+import qualified Data.IntMap.Lazy as IM (elems, toList)
 import qualified Data.Text as T
 
 
@@ -119,8 +119,8 @@ massMsg msg = liftIO . atomically . helperSTM =<< getState
 massSend :: T.Text -> MudStack ()
 massSend msg = liftIO . atomically . helperSTM =<< getState
   where
-    helperSTM ms@(views plaTbl (IM.keys . IM.filter isLoggedIn) -> is) = forM_ is $ \i ->
-        let (mq, cols) = getMsgQueueColumns i ms
+    helperSTM ms@(views msgQueueTbl IM.toList -> kvs) = forM_ kvs $ \(i, mq) ->
+        let cols = getColumns i ms
         in writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
 
 

@@ -328,7 +328,7 @@ server h i mq itq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThre
       Quit           -> cowbye h                      >> sayonara
       Shutdown       -> shutDown                      >> loop
       SilentBoot     ->                                  sayonara
-    sayonara = sequence_ [ liftIO . atomically . closeTMQueue $ itq, handleEgress i ]
+    sayonara = sequence_ [ stopInacThread itq, handleEgress i ]
 
 
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()

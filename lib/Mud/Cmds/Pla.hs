@@ -926,7 +926,7 @@ quit :: Action
 quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . atomically . writeTQueue mq $ Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
   where
-    msg = "Type " <> dblQuote "quit" <> " with no arguments to quit the game."
+    msg = "Type " <> dblQuote "quit" <> " with no arguments to quit CurryMUD."
 
 
 handleEgress :: Id -> MudStack ()
@@ -935,26 +935,22 @@ handleEgress i = do
     helper |$| modifyState >=> \(s, bs, logMsgs) -> do
         closePlaLog i
         bcast bs
-        bcastAdmins $ s <> " has left the game."
+        bcastAdmins $ s <> " has left CurryMUD."
         forM_ logMsgs $ uncurry (logPla "handleEgress")
-        logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left the game." ]
+        logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left CurryMUD." ]
   where
     informEgress = getState >>= \ms -> let d = mkStdDesig i ms DoCap in
-        bcast [ (nlnl $ serialize d <> " has left the game.", i `delete` pcIds d) | getRmId i ms /= iWelcome ]
+        bcast [ (nlnl $ serialize d <> " slowly dissolves into nothingness.", i `delete` pcIds d)
+              | getRmId i ms /= iWelcome ]
     helper ms =
         let ri                 = getRmId i ms
             s                  = getSing i ms
             (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = ms' & coinsTbl   .at  i  .~ Nothing
-                                     & entTbl     .at  i  .~ Nothing
-                                     & eqTbl      .at  i  .~ Nothing
-                                     & invTbl     .at  i  .~ Nothing
-                                     & invTbl     .ind ri %~ (i `delete`)
-                                     & mobTbl     .at  i  .~ Nothing
-                                     & msgQueueTbl.at  i  .~ Nothing
-                                     & pcTbl      .at  i  .~ Nothing
-                                     & plaTbl     .at  i  .~ Nothing
-                                     & typeTbl    .at  i  .~ Nothing
+            ms''               = ms' & pcTbl      .ind i.rmId     .~ iLoggedOff
+                                     & plaTbl     .ind i.lastRmId .~ Just ri
+                                     & invTbl     .ind ri         %~ (i `delete`)
+                                     & invTbl     .ind iLoggedOff %~ (i :)
+                                     & msgQueueTbl.at  i          .~ Nothing
         in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
