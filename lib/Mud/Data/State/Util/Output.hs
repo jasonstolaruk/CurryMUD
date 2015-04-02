@@ -36,11 +36,11 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (view, views)
+import Control.Lens (views)
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, elemIndex)
-import Data.Maybe (isNothing, fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys)
@@ -119,7 +119,7 @@ massMsg msg = liftIO . atomically . helperSTM =<< getState
 massSend :: T.Text -> MudStack ()
 massSend msg = liftIO . atomically . helperSTM =<< getState
   where
-    helperSTM ms@(views plaTbl (IM.keys . IM.filter (isNothing . view lastRmId)) -> is) = forM_ is $ \i ->
+    helperSTM ms@(views plaTbl (IM.keys . IM.filter isLoggedIn) -> is) = forM_ is $ \i ->
         let (mq, cols) = getMsgQueueColumns i ms
         in writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
 
