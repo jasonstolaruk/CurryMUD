@@ -34,6 +34,8 @@ import Data.Ix (inRange)
 import Data.List (delete)
 import Data.Monoid ((<>), Any(..), mempty)
 import Network (HostName)
+import Prelude hiding (pi)
+import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Set as S (fromList, member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, readFile)
@@ -55,13 +57,21 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
   | not . inRange (3, 12) . T.length $ cn = promptRetryName mq "Your name must be between three and twelve characters \
                                                                \long."
   | T.any (`elem` illegalChars) cn        = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise = mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
-                                              , checkPropNamesDict     mq cn
-                                              , checkWordsDict         mq cn ])
-                    (return ())
-                    nextPrompt
+  -- TODO: Consider using "modifyState" instead.
+  | otherwise                             = getState >>= \ms -> if cn' `elem` loggedInSings ms
+    then promptRetryName mq $ cn' <> " is already logged in."
+    else case loggedOutMatches ms of
+      [(pi, s)] -> logIn pi s
+      _         -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
+                                                 , checkPropNamesDict     mq cn
+                                                 , checkWordsDict         mq cn ])
+                       (return ())
+                       nextPrompt
   where
-    illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
+    illegalChars        = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
+    loggedInSings    ms = [ getSing pi ms | pi <- IM.keys . IM.filter isLoggedIn $ ms^.plaTbl ]
+    loggedOutMatches ms =
+        filter ((== cn') . snd) [ (pi, getSing pi ms) | pi <- IM.keys . IM.filter (not . isLoggedIn) $ ms^.plaTbl ]
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
@@ -72,6 +82,10 @@ promptRetryName :: MsgQueue -> T.Text -> MudStack ()
 promptRetryName mq msg = do
     send mq . nlPrefix $ msg |!| nl msg
     prompt mq "Let's try this again. By what name are you known?"
+
+
+logIn :: Id -> Sing -> MudStack ()
+logIn _ _ = undefined -- TODO
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
