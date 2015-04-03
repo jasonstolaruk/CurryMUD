@@ -83,8 +83,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
         let sorted  = IM.foldrWithKey (\pi pla acc -> acc & if isLoggedIn pla
-                                        then _1 %~ (getSing pi ms      :)
-                                        else _2 %~ ((i, getSing pi ms) :))
+                                        then _1 %~ (getSing pi ms       :)
+                                        else _2 %~ ((pi, getSing pi ms) :))
                                       ([], [])
                                       (ms^.plaTbl)
             matches = filter ((== cn') . snd) . snd $ sorted
