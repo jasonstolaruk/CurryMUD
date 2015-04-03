@@ -68,7 +68,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                             nextPrompt
     Right (originId, oldSing) -> getState >>= \ms -> do
       let cols = getColumns i ms
-      wrapSend mq cols . nlnl $ "Welcome back, " <> cn' <> "!"
+      wrapSend mq cols . nlPrefix $ "Welcome back, " <> cn' <> "!"
       handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       logPla    "interpName" i $ "logged on from " <> T.pack (getHostName i ms) <> "." -- TODO: Set hostname.
       logNotice "interpName" . T.concat $ [ dblQuote oldSing
@@ -105,7 +105,7 @@ promptRetryName mq msg = do
 
 
 logIn :: Id -> MudState -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
-logIn newId ms originId = (movePla adoptNewId, Right (originId, getSing newId $ ms))
+logIn newId ms originId = (movePla adoptNewId, Right (originId, getSing newId ms))
   where
     movePla ms' = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & pcTbl   .ind newId.rmId     .~ newRmId
@@ -174,7 +174,7 @@ checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
-  Just True -> helper |$| modifyState >=> \((getPla i -> p), oldSing) -> do
+  Just True -> helper |$| modifyState >=> \(getPla i -> p, oldSing) -> do
       send mq . nl $ ""
       handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       logPla    "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
