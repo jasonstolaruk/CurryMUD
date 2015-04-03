@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ViewPatterns #-}
 
 module Mud.Interp.Login (interpName) where
 
@@ -66,7 +66,19 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                                                       , checkWordsDict         mq cn ])
                             (return ())
                             nextPrompt
-    Right _          -> undefined
+    Right (originId, oldSing) -> getState >>= \ms -> do
+      let cols = getColumns i ms
+      wrapSend mq cols . nlnl $ "Welcome back, " <> cn' <> "!"
+      handleLogin ms ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
+      logPla    "interpName" i $ "logged on from " <> T.pack (getHostName i ms) <> "." -- TODO: Set hostname.
+      logNotice "interpName" . T.concat $ [ dblQuote oldSing
+                                          , " has logged on as "
+                                          , cn'
+                                          , ". Id "
+                                          , showText originId
+                                          , " has been changed to "
+                                          , showText i
+                                          , "." ]
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
@@ -78,7 +90,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
             matches = filter ((== cn') . snd) . snd $ sorted
         in if cn' `elem` fst sorted
           then (ms, Left . Just $ cn' <> " is already logged in.")
-          else case matches of [(pi, s)] -> logIn i ms pi s
+          else case matches of [(pi, _)] -> logIn i ms pi
                                _         -> (ms, Left Nothing)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
@@ -92,29 +104,29 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: Id -> MudState -> Id -> Sing -> (MudState, Either (Maybe T.Text) T.Text)
-logIn newId ms originId s = (movePla changeId, Right $ "Welcome back, " <> s <> "!")
+logIn :: Id -> MudState -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
+logIn newId ms originId = (movePla adoptNewId, Right (originId, getSing newId $ ms))
   where
     movePla ms' = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & pcTbl .ind newId.rmId     .~ newRmId
                          & plaTbl.ind newId.lastRmId .~ Nothing
                          & invTbl.ind newRmId %~ (sortInv ms' . (++ [newId]))
-    changeId = ms & coinsTbl.ind newId      .~ getCoins originId ms
-                  & coinsTbl.at  originId   .~ Nothing
-                  & entTbl  .ind newId      .~ getEnt   originId ms
-                  & entTbl  .at  originId   .~ Nothing
-                  & eqTbl   .ind newId      .~ getEqMap originId ms
-                  & eqTbl   .at  originId   .~ Nothing
-                  & invTbl  .ind newId      .~ getInv   originId ms
-                  & invTbl  .at  originId   .~ Nothing
-                  & invTbl  .ind iLoggedOff %~ (originId `delete`)
-                  & mobTbl  .ind newId      .~ getMob   originId ms
-                  & mobTbl  .at  originId   .~ Nothing
-                  & pcTbl   .ind newId      .~ getPC    originId ms
-                  & pcTbl   .at  originId   .~ Nothing
-                  & plaTbl  .ind newId      .~ getPla   originId ms
-                  & plaTbl  .at  originId   .~ Nothing
-                  & typeTbl .at  originId   .~ Nothing
+    adoptNewId  =    ms  & coinsTbl.ind newId      .~ getCoins originId ms
+                         & coinsTbl.at  originId   .~ Nothing
+                         & entTbl  .ind newId      .~ getEnt   originId ms
+                         & entTbl  .at  originId   .~ Nothing
+                         & eqTbl   .ind newId      .~ getEqMap originId ms
+                         & eqTbl   .at  originId   .~ Nothing
+                         & invTbl  .ind newId      .~ getInv   originId ms
+                         & invTbl  .at  originId   .~ Nothing
+                         & invTbl  .ind iLoggedOff %~ (originId `delete`)
+                         & mobTbl  .ind newId      .~ getMob   originId ms
+                         & mobTbl  .at  originId   .~ Nothing
+                         & pcTbl   .ind newId      .~ getPC    originId ms
+                         & pcTbl   .at  originId   .~ Nothing
+                         & plaTbl  .ind newId      .~ getPla   originId ms
+                         & plaTbl  .at  originId   .~ Nothing
+                         & typeTbl .at  originId   .~ Nothing
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
@@ -165,11 +177,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True -> helper |$| modifyState >=> \(ms@(getPla i -> p), oldSing) -> do
       send mq . nl $ ""
       showMotd mq cols
-      look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-      prompt mq dfltPrompt
-      notifyArrival i ms
-      when (getPlaFlag IsAdmin p) . stopInacTimer i $ mq
-      initPlaLog i s
+      handleLogin ms ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       logPla    "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
       logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged on as " <> s <> "."
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
@@ -181,7 +189,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
                                & plaTbl.ind i        %~ setPlaFlag IsAdmin (T.head s == 'Z')
                                & plaTbl.ind i.interp .~ Nothing
                     ms'' = ms' & invTbl.ind iCentral %~ (sortInv ms' . (++ [i]))
-        in (ms'', (ms'', ms^.entTbl.ind i.sing))
+        in (ms'', (ms'', getSing i ms))
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
 
@@ -191,6 +199,16 @@ yesNo (T.toLower -> a) = guard (not . T.null $ a) >> helper
     helper | a `T.isPrefixOf` "yes" = return True
            | a `T.isPrefixOf` "no"  = return False
            | otherwise              = Nothing
+
+
+handleLogin :: MudState -> ActionParams -> MudStack ()
+handleLogin ms params@(ActionParams { .. }) = do
+    showMotd plaMsgQueue plaCols
+    look params
+    prompt plaMsgQueue dfltPrompt
+    notifyArrival plaId ms
+    when (getPlaFlag IsAdmin . getPla plaId $ ms) . stopInacTimer plaId $ plaMsgQueue
+    initPlaLog plaId . getSing plaId $ ms
 
 
 stopInacTimer :: Id -> MsgQueue -> MudStack ()
