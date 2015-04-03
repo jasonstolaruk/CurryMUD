@@ -128,6 +128,13 @@ getIsCloth i = view isCloth . getCon i
 -----
 
 
+getLastRmId :: Id -> MudState -> Maybe Id
+getLastRmId i = view lastRmId . getPla i
+
+
+-----
+
+
 getListenThreadId :: MudState -> ThreadId
 getListenThreadId = reverseLookup Listen . view threadTbl
 
@@ -155,6 +162,13 @@ getMsgQueue i = view (msgQueueTbl.ind i)
 
 getMsgQueueColumns :: Id -> MudState -> (MsgQueue, Cols)
 getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
+
+
+-----
+
+
+getObj :: Id -> MudState -> Obj
+getObj i = view (objTbl.ind i)
 
 
 -----

@@ -25,7 +25,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2)
+import Control.Lens (_1, _2, at)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), guard, when)
 import Control.Monad.IO.Class (liftIO)
@@ -33,6 +33,7 @@ import Control.Monad.Loops (orM)
 import Data.Functor ((<$>))
 import Data.Ix (inRange)
 import Data.List (delete)
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..), mempty)
 import Network (HostName)
 import Prelude hiding (pi)
@@ -59,13 +60,13 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                                                                \long."
   | T.any (`elem` illegalChars) cn        = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise                             = helper |$| modifyState >=> \case
-    Left (Just msg) -> promptRetryName mq msg
-    Left Nothing    -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
-                                                     , checkPropNamesDict     mq cn
-                                                     , checkWordsDict         mq cn ])
-                           (return ())
-                           nextPrompt
-    Right _         -> undefined
+    Left  (Just msg) -> promptRetryName mq msg
+    Left  Nothing    -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
+                                                      , checkPropNamesDict     mq cn
+                                                      , checkWordsDict         mq cn ])
+                            (return ())
+                            nextPrompt
+    Right _          -> undefined
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
@@ -77,7 +78,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
             matches = filter ((== cn') . snd) . snd $ sorted
         in if cn' `elem` fst sorted
           then (ms, Left . Just $ cn' <> " is already logged in.")
-          else case matches of [(pi, s)] -> logIn ms pi s
+          else case matches of [(pi, s)] -> logIn i ms pi s
                                _         -> (ms, Left Nothing)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
@@ -91,8 +92,29 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: MudState -> Id -> Sing -> (MudState, Either (Maybe T.Text) T.Text)
-logIn _ _ _ = undefined -- TODO
+logIn :: Id -> MudState -> Id -> Sing -> (MudState, Either (Maybe T.Text) T.Text)
+logIn newId ms originId s = (movePla changeId, Right $ "Welcome back, " <> s <> "!")
+  where
+    movePla ms' = let newRmId = fromJust . getLastRmId newId $ ms'
+                  in ms' & pcTbl .ind newId.rmId     .~ newRmId
+                         & plaTbl.ind newId.lastRmId .~ Nothing
+                         & invTbl.ind newRmId %~ (sortInv ms' . (++ [newId]))
+    changeId = ms & coinsTbl.ind newId      .~ getCoins originId ms
+                  & coinsTbl.at  originId   .~ Nothing
+                  & entTbl  .ind newId      .~ getEnt   originId ms
+                  & entTbl  .at  originId   .~ Nothing
+                  & eqTbl   .ind newId      .~ getEqMap originId ms
+                  & eqTbl   .at  originId   .~ Nothing
+                  & invTbl  .ind newId      .~ getInv   originId ms
+                  & invTbl  .at  originId   .~ Nothing
+                  & invTbl  .ind iLoggedOff %~ (originId `delete`)
+                  & mobTbl  .ind newId      .~ getMob   originId ms
+                  & mobTbl  .at  originId   .~ Nothing
+                  & pcTbl   .ind newId      .~ getPC    originId ms
+                  & pcTbl   .at  originId   .~ Nothing
+                  & plaTbl  .ind newId      .~ getPla   originId ms
+                  & plaTbl  .at  originId   .~ Nothing
+                  & typeTbl .at  originId   .~ Nothing
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
