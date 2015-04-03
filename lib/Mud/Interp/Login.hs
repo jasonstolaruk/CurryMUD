@@ -69,7 +69,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
     Right (originId, oldSing) -> getState >>= \ms -> do
       let cols = getColumns i ms
       wrapSend mq cols . nlnl $ "Welcome back, " <> cn' <> "!"
-      handleLogin ms ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
+      handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       logPla    "interpName" i $ "logged on from " <> T.pack (getHostName i ms) <> "." -- TODO: Set hostname.
       logNotice "interpName" . T.concat $ [ dblQuote oldSing
                                           , " has logged on as "
@@ -108,9 +108,9 @@ logIn :: Id -> MudState -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
 logIn newId ms originId = (movePla adoptNewId, Right (originId, getSing newId $ ms))
   where
     movePla ms' = let newRmId = fromJust . getLastRmId newId $ ms'
-                  in ms' & pcTbl .ind newId.rmId     .~ newRmId
-                         & plaTbl.ind newId.lastRmId .~ Nothing
-                         & invTbl.ind newRmId %~ (sortInv ms' . (++ [newId]))
+                  in ms' & pcTbl   .ind newId.rmId     .~ newRmId
+                         & plaTbl  .ind newId.lastRmId .~ Nothing
+                         & invTbl  .ind newRmId        %~ (sortInv ms' . (++ [newId]))
     adoptNewId  =    ms  & coinsTbl.ind newId      .~ getCoins originId ms
                          & coinsTbl.at  originId   .~ Nothing
                          & entTbl  .ind newId      .~ getEnt   originId ms
@@ -174,12 +174,11 @@ checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
-  Just True -> helper |$| modifyState >=> \(ms@(getPla i -> p), oldSing) -> do
+  Just True -> helper |$| modifyState >=> \((getPla i -> p), oldSing) -> do
       send mq . nl $ ""
-      showMotd mq cols
-      handleLogin ms ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
+      handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       logPla    "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
-      logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged on as " <> s <> "."
+      logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged on as " <> s <> " (new character)."
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
@@ -201,8 +200,8 @@ yesNo (T.toLower -> a) = guard (not . T.null $ a) >> helper
            | otherwise              = Nothing
 
 
-handleLogin :: MudState -> ActionParams -> MudStack ()
-handleLogin ms params@(ActionParams { .. }) = do
+handleLogin :: ActionParams -> MudStack ()
+handleLogin params@(ActionParams { .. }) = getState >>= \ms -> do
     showMotd plaMsgQueue plaCols
     look params
     prompt plaMsgQueue dfltPrompt
