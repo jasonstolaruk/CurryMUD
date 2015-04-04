@@ -70,8 +70,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
       let cols = getColumns i ms
       wrapSend mq cols . nlPrefix $ "Welcome back, " <> cn' <> "!"
       handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-      logPla    "interpName" i $ "logged on from " <> T.pack (getHostName i ms) <> "." -- TODO: Set hostname.
-      logNotice "interpName" . T.concat $ [ dblQuote oldSing -- TODO: Make sure the logs look good.
+      logPla    "interpName" i $ "logged on from " <> T.pack (getHostName i ms) <> "."
+      logNotice "interpName" . T.concat $ [ dblQuote oldSing
                                           , " has logged on as "
                                           , cn'
                                           , ". Id "
@@ -90,7 +90,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
             matches = filter ((== cn') . snd) . snd $ sorted
         in if cn' `elem` fst sorted
           then (ms, Left . Just $ cn' <> " is already logged in.")
-          else case matches of [(pi, _)] -> logIn i ms pi
+          else case matches of [(pi, _)] -> logIn i ms (getHostName i ms) pi
                                _         -> (ms, Left Nothing)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
@@ -104,8 +104,8 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: Id -> MudState -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
-logIn newId ms originId = (movePla adoptNewId, Right (originId, getSing newId ms))
+logIn :: Id -> MudState -> HostName -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
+logIn newId ms host originId = (movePla adoptNewId, Right (originId, getSing newId ms))
   where
     movePla ms' = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & pcTbl   .ind newId.rmId     .~ newRmId
@@ -124,7 +124,7 @@ logIn newId ms originId = (movePla adoptNewId, Right (originId, getSing newId ms
                          & mobTbl  .at  originId   .~ Nothing
                          & pcTbl   .ind newId      .~ getPC    originId ms
                          & pcTbl   .at  originId   .~ Nothing
-                         & plaTbl  .ind newId      .~ getPla   originId ms
+                         & plaTbl  .ind newId      .~ (getPla  originId ms & hostName .~ host)
                          & plaTbl  .at  originId   .~ Nothing
                          & typeTbl .at  originId   .~ Nothing
 
