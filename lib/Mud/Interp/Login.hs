@@ -71,7 +71,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
       wrapSend mq cols . nlPrefix $ "Welcome back, " <> cn' <> "!"
       handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       logPla    "interpName" i $ "logged on from " <> T.pack (getHostName i ms) <> "." -- TODO: Set hostname.
-      logNotice "interpName" . T.concat $ [ dblQuote oldSing
+      logNotice "interpName" . T.concat $ [ dblQuote oldSing -- TODO: Make sure the logs look good.
                                           , " has logged on as "
                                           , cn'
                                           , ". Id "
