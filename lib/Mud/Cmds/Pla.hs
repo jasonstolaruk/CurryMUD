@@ -636,11 +636,11 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
     helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? (a & _2 <>~ (mkNTBroadcast i . nlnl $ msg))
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
-        tryIntro a'@(pt, _, _) targetId = case getType targetId ms of
+        tryIntro a'@(pt, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
           PCType -> let s           = getSing i ms
                         targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                         msg         = "You introduce yourself to " <> targetDesig <> "."
-                        logMsg      = parsePCDesig i ms msg
+                        logMsg      = "Introduced to " <> targetSing <> "."
                         srcMsg      = nlnl msg
                         pis         = findPCIds ms ris
                         srcDesig    = StdDesig { stdPCEntSing = Nothing
@@ -670,7 +670,7 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
                       then let sorry = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
                            in a' & _2 <>~ mkNTBroadcast i sorry
                       else a' & _1.ind targetId.introduced %~ (sort . (s :)) & _2 <>~ cbs & _3 <>~ [logMsg]
-          _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower (getSing targetId ms) <> "."
+          _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower targetSing <> "."
                         b   = head . mkNTBroadcast i . nlnl $ msg
                     in a' & _2 %~ (`appendIfUnique` b)
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
