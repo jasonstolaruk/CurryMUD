@@ -177,7 +177,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True -> helper |$| modifyState >=> \(getPla i -> p, oldSing) -> do
       send mq . nl $ ""
       handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-      logPla    "interpConfirmName" i $ "new player logged on from " <> T.pack (p^.hostName) <> "."
+      logPla    "interpConfirmName" i $ "new character logged on from " <> T.pack (p^.hostName) <> "."
       logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged on as " <> s <> " (new character)."
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq

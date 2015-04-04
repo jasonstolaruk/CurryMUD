@@ -223,7 +223,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
                 in (ms & plaTbl .~ pt, (msgs, logMsgs))
     peep s plaIdSings target a@(pt, _, _) =
         let notFound = a & _2 %~ (sorry :)
-            sorry    = "No player by the name of " <> dblQuote target <> " is currently connected."
+            sorry    = "No PC by the name of " <> dblQuote target <> " is currently connected."
             found (peepId, peepSing) = if peepId `notElem` pt^.ind i.peeping
               then let pt'     = pt & ind i     .peeping %~ (peepId :)
                                     & ind peepId.peepers %~ (i      :)
