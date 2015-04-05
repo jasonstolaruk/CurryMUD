@@ -1707,7 +1707,7 @@ whoAdmin p = withoutArgs whoAdmin p
 whoAmI :: Action
 whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoami" i
   where
-    helper ms = let s         = getSing    i ms
+    helper ms = let s         = getSing i ms
                     (sexy, r) = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
                 in return . T.concat $ [ "You are ", knownNameColor, s, dfltColor, " (a ", sexy, " ", r, ")." ]
 whoAmI p = withoutArgs whoAmI p
