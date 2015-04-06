@@ -717,7 +717,7 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTarget
     send mq msg
     bcast bs
     let logHelper targetDesigs | targetSings <- [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- targetDesigs ]
-                               = logPla "look" i $ "looked at " <> T.intercalate ", " targetSings <> "."
+                               = logPla "look" i $ "looked at: " <> T.intercalate ", " targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
   where
     helper ms

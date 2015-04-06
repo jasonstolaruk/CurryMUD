@@ -399,34 +399,34 @@ adminUptime p = withoutArgs adminUptime p
 
 
 adminWhoIn :: Action
-adminWhoIn (NoArgs i mq cols) = do
-    pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt LoggedIn <$> getState ]
-    logPlaExecArgs (prefixAdminCmd "whoin") [] i
+adminWhoIn = whoHelper LoggedIn "whoin"
+
+
+whoHelper :: LoggedInOrOut -> T.Text -> Action
+whoHelper inOrOut cn (NoArgs i mq cols) = do
+    pager i mq =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
+    logPlaExecArgs (prefixAdminCmd cn) [] i
   where
-adminWhoIn p@(ActionParams { plaId, args }) =
-    (dispMatches p 20 =<< mkPlaListTxt LoggedIn <$> getState) >> logPlaExecArgs (prefixAdminCmd "whoin") args plaId
+whoHelper inOrOut cn p@(ActionParams { plaId, args }) =
+    (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState) >> logPlaExecArgs (prefixAdminCmd cn) args plaId
 
 
-mkPlaListTxt :: LoggedInOrOut -> MudState -> [T.Text]
-mkPlaListTxt inOrOut ms = let is              = IM.keys . IM.filter predicate $ ms^.plaTbl
-                              (is', ss)       = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
-                              ias             = zip is' . styleAbbrevs Don'tBracket $ ss
-                              mkPlaTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
-                                                in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
-                          in map mkPlaTxt ias ++ [ T.concat [ mkNumOfPlayersTxt is, " ", showText inOrOut, "." ] ]
+mkCharListTxt :: LoggedInOrOut -> MudState -> [T.Text]
+mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate $ ms^.plaTbl
+                               (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
+                               ias              = zip is' . styleAbbrevs Don'tBracket $ ss
+                               mkCharTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
+                                                  in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
+                           in map mkCharTxt ias ++ [ T.concat [ mkNumOfCharsTxt is, " ", showText inOrOut, "." ] ]
   where
     predicate = case inOrOut of LoggedIn  -> isLoggedIn
                                 LoggedOut -> not . isLoggedIn
-    mkNumOfPlayersTxt (length -> nop) | nop == 1  = "1 player"
-                                      | otherwise = showText nop <> " players"
+    mkNumOfCharsTxt (length -> nop) | nop == 1  = "1 character"
+                                    | otherwise = showText nop <> " characters"
 
 
 -----
 
 
 adminWhoOut :: Action
-adminWhoOut (NoArgs i mq cols) = do
-    pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt LoggedOut <$> getState ]
-    logPlaExecArgs (prefixAdminCmd "whoout") [] i
-adminWhoOut p@(ActionParams { plaId, args }) =
-    (dispMatches p 20 =<< mkPlaListTxt LoggedOut <$> getState) >> logPlaExecArgs (prefixAdminCmd "whoout") args plaId
+adminWhoOut = whoHelper LoggedOut "whoout"
