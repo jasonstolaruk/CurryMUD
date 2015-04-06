@@ -211,7 +211,7 @@ sorry absolute (T.pack -> err) =
 loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
 loadTbl tblFile lens path = let absolute = path </> tblFile in
     eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
-      Left err  -> sorry absolute err
+      Left  err -> sorry absolute err
       Right tbl -> modifyState ((, ()) . (lens .~ tbl)) >> return True
 
 

@@ -88,4 +88,4 @@ ver = "0.1.0.0 (in development since 2013-10)"
 
 
 worldPersisterDelay :: Int
-worldPersisterDelay = 5 * 60
+worldPersisterDelay = 10 * 60

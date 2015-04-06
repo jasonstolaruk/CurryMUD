@@ -106,7 +106,9 @@ adminCmds =
     , mkAdminCmd "time"      adminTime        "Display the current system time."
     , mkAdminCmd "typo"      adminTypo        "Dump the typo log."
     , mkAdminCmd "uptime"    adminUptime      "Display the system uptime."
-    , mkAdminCmd "who"       adminWho         "Display or search a list of the players who are currently connected." ]
+    , mkAdminCmd "who"       adminWho         "Display or search a list of the characters who are currently logged in."
+    , mkAdminCmd "whoout"    adminWhoOut      "Display or search a list of the characters who are currently logged \
+                                              \out." ]
 
 
 mkAdminCmd :: T.Text -> Action -> CmdDesc -> Cmd
@@ -398,19 +400,33 @@ adminUptime p = withoutArgs adminUptime p
 
 adminWho :: Action
 adminWho (NoArgs i mq cols) = do
-    pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt <$> getState ]
+    pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt LoggedIn <$> getState ]
     logPlaExecArgs (prefixAdminCmd "who") [] i
-adminWho p@(ActionParams { plaId, args }) =
-    (dispMatches p 20 =<< mkPlaListTxt <$> getState) >> logPlaExecArgs (prefixAdminCmd "who") args plaId
-
-
-mkPlaListTxt :: MudState -> [T.Text]
-mkPlaListTxt ms = let is              = IM.keys . IM.filter (not . getPlaFlag IsAdmin) $ ms^.plaTbl
-                      (is', ss)       = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
-                      ias             = zip is' . styleAbbrevs Don'tBracket $ ss
-                      mkPlaTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
-                                        in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
-                  in map mkPlaTxt ias ++ [ mkNumOfPlayersTxt is <> " connected." ]
   where
+adminWho p@(ActionParams { plaId, args }) =
+    (dispMatches p 20 =<< mkPlaListTxt LoggedIn <$> getState) >> logPlaExecArgs (prefixAdminCmd "who") args plaId
+
+
+mkPlaListTxt :: LoggedInOrOut -> MudState -> [T.Text]
+mkPlaListTxt inOrOut ms = let is              = IM.keys . IM.filter predicate $ ms^.plaTbl
+                              (is', ss)       = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
+                              ias             = zip is' . styleAbbrevs Don'tBracket $ ss
+                              mkPlaTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
+                                                in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
+                          in map mkPlaTxt ias ++ [ T.concat [ mkNumOfPlayersTxt is, " ", showText inOrOut, "." ] ]
+  where
+    predicate = case inOrOut of LoggedIn  -> isLoggedIn
+                                LoggedOut -> not . isLoggedIn
     mkNumOfPlayersTxt (length -> nop) | nop == 1  = "1 player"
                                       | otherwise = showText nop <> " players"
+
+
+-----
+
+
+adminWhoOut :: Action
+adminWhoOut (NoArgs i mq cols) = do
+    pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt LoggedOut <$> getState ]
+    logPlaExecArgs (prefixAdminCmd "whoout") [] i
+adminWhoOut p@(ActionParams { plaId, args }) =
+    (dispMatches p 20 =<< mkPlaListTxt LoggedOut <$> getState) >> logPlaExecArgs (prefixAdminCmd "whoout") args plaId

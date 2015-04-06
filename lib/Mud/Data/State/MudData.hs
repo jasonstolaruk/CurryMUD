@@ -333,7 +333,8 @@ plaToJSON :: Pla -> Value
 plaToJSON Pla { .. } = object [ "_hostName"  .= _hostName
                               , "_plaFlags"  .= _plaFlags
                               , "_columns"   .= _columns
-                              , "_pageLines" .= _pageLines ]
+                              , "_pageLines" .= _pageLines
+                              , "_lastRmId"  .= _lastRmId ]
 
 
 jsonToPla :: Value -> Parser Pla
@@ -344,7 +345,7 @@ jsonToPla (Object o) = Pla <$> o .: "_hostName"
                            <*> pure Nothing
                            <*> pure []
                            <*> pure []
-                           <*> pure Nothing
+                           <*> o .: "_lastRmId"
 jsonToPla _          = empty
 
 

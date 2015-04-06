@@ -20,6 +20,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Help(..)
                      , HelpName
                      , Index
+                     , LoggedInOrOut(..)
                      , PCDesig(..)
                      , PlsDie(..)
                      , PutOrRem(..)
@@ -402,6 +403,17 @@ data Help = Help { helpName     :: HelpName
                  , helpFilePath :: FilePath
                  , isCmdHelp    :: Bool
                  , isAdminHelp  :: Bool } deriving (Eq, Ord)
+
+
+-----
+
+
+data LoggedInOrOut = LoggedIn | LoggedOut deriving Eq
+
+
+instance Show LoggedInOrOut where
+  show LoggedIn  = "logged in"
+  show LoggedOut = "logged out"
 
 
 -----
