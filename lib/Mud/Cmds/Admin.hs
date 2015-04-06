@@ -106,7 +106,7 @@ adminCmds =
     , mkAdminCmd "time"      adminTime        "Display the current system time."
     , mkAdminCmd "typo"      adminTypo        "Dump the typo log."
     , mkAdminCmd "uptime"    adminUptime      "Display the system uptime."
-    , mkAdminCmd "who"       adminWho         "Display or search a list of the characters who are currently logged in."
+    , mkAdminCmd "whoin"     adminWhoIn       "Display or search a list of the characters who are currently logged in."
     , mkAdminCmd "whoout"    adminWhoOut      "Display or search a list of the characters who are currently logged \
                                               \out." ]
 
@@ -398,13 +398,13 @@ adminUptime p = withoutArgs adminUptime p
 -----
 
 
-adminWho :: Action
-adminWho (NoArgs i mq cols) = do
+adminWhoIn :: Action
+adminWhoIn (NoArgs i mq cols) = do
     pager i mq =<< [ concatMap (wrapIndent 20 cols) plaListTxt | plaListTxt <- mkPlaListTxt LoggedIn <$> getState ]
-    logPlaExecArgs (prefixAdminCmd "who") [] i
+    logPlaExecArgs (prefixAdminCmd "whoin") [] i
   where
-adminWho p@(ActionParams { plaId, args }) =
-    (dispMatches p 20 =<< mkPlaListTxt LoggedIn <$> getState) >> logPlaExecArgs (prefixAdminCmd "who") args plaId
+adminWhoIn p@(ActionParams { plaId, args }) =
+    (dispMatches p 20 =<< mkPlaListTxt LoggedIn <$> getState) >> logPlaExecArgs (prefixAdminCmd "whoin") args plaId
 
 
 mkPlaListTxt :: LoggedInOrOut -> MudState -> [T.Text]
