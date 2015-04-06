@@ -7,7 +7,7 @@
 Display a list of the characters who are currently logged in. Optionally, search the list for one or more terms.
 
 \uEXAMPLES\n
-\q"#dwho"\d to display the full player list.4`
-\q"#dwho male"\d to display a list of all the male characters logged in.4`
+\q"#dwho"\d to display the full character list.4`
+\q"#dwho male"\d to display a list of all the male characters who are logged in.4`
 
 \uSEE ALSO\n
