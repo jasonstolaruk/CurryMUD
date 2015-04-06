@@ -706,7 +706,6 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
--- TODO: "l b" (backpack) looged: "look": looked at: .
 look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri     = getRmId i  ms
@@ -718,7 +717,7 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTarget
     send mq msg
     bcast bs
     let logHelper targetDesigs | targetSings <- [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- targetDesigs ]
-                               = logPla "look" i $ "looked at: " <> T.intercalate ", " targetSings <> "."
+                               = logPla "look" i $ "looked at " <> T.intercalate ", " targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
   where
     helper ms
@@ -738,7 +737,9 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTarget
                            toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
                                       , targetId `delete` pis)
                        in toTarget : toOthers : acc
-               in (ms & plaTbl .~ pt, (msg, foldr mkBroadcastsForTarget [] targetDesigs, Just targetDesigs))
+               in (ms & plaTbl .~ pt, ( msg
+                                      , foldr mkBroadcastsForTarget [] targetDesigs
+                                      , targetDesigs |!| Just targetDesigs ))
           else let msg        = wrapUnlinesNl cols "You don't see anything here to look at."
                    (pt, msg') = firstLook i cols (ms^.plaTbl, msg)
                in (ms & plaTbl .~ pt, (msg', [], Nothing))
