@@ -37,7 +37,7 @@ import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..), mempty)
 import Network (HostName)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (foldrWithKey)
+import qualified Data.IntMap.Lazy as IM (foldrWithKey, map)
 import qualified Data.Set as S (fromList, member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, readFile)
@@ -127,7 +127,11 @@ logIn newId ms host originId = (movePC adoptNewId, Right (originId, getSing newI
                          & pcTbl   .at  originId   .~ Nothing
                          & plaTbl  .ind newId      .~ (getPla  originId ms & hostName .~ host)
                          & plaTbl  .at  originId   .~ Nothing
+                         & plaTbl                  %~ IM.map peepNewId
                          & typeTbl .at  originId   .~ Nothing
+    peepNewId pla = if originId `elem` pla^.peeping
+      then pla & peeping %~ ((newId :) . (originId `delete`))
+      else pla
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
