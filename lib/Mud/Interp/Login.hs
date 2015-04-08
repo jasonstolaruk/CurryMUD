@@ -113,7 +113,7 @@ logIn newId ms host originId = (movePla adoptNewId, Right (originId, getSing new
                          & invTbl  .ind newRmId        %~ (sortInv ms' . (++ [newId]))
     adoptNewId  =    ms  & coinsTbl.ind newId      .~ getCoins originId ms
                          & coinsTbl.at  originId   .~ Nothing
-                         & entTbl  .ind newId      .~ getEnt   originId ms
+                         & entTbl  .ind newId      .~ (getEnt  originId ms & entId .~ newId)
                          & entTbl  .at  originId   .~ Nothing
                          & eqTbl   .ind newId      .~ getEqMap originId ms
                          & eqTbl   .at  originId   .~ Nothing

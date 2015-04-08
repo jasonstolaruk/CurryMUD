@@ -933,6 +933,7 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
     msg = "Type " <> dblQuote "quit" <> " with no arguments to quit CurryMUD."
 
 
+-- TODO: Move to "Threads"?
 handleEgress :: Id -> MudStack ()
 handleEgress i = do
     informEgress
