@@ -932,7 +932,6 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
     msg = "Type " <> dblQuote "quit" <> " with no arguments to quit CurryMUD."
 
 
--- TODO: When an admin logs out, they should stop peeping. This doesn't seem to be working...
 handleEgress :: Id -> MudStack ()
 handleEgress i = do
     informEgress
@@ -954,7 +953,7 @@ handleEgress i = do
                                    then removeAdHoc ms' ri
                                    else movePC      ms' ri
         in (ms'', (s, bs, logMsgs))
-    peepHelper ms s =
+    peepHelper ms s = -- TODO: This is broken...
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
             bs                      = [ (nlnl    . T.concat $ [ "You are no longer peeping "
                                                               , s

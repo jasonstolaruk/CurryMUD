@@ -104,7 +104,6 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
--- TODO: Peeped IDs should be changed from originId to newId.
 logIn :: Id -> MudState -> HostName -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
 logIn newId ms host originId = (movePC adoptNewId, Right (originId, getSing newId ms))
   where
