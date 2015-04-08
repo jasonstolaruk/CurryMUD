@@ -614,8 +614,6 @@ getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrev name $ [ 
 -----
 
 
--- TODO: Log the name of who you introduce yourself to.
--- "intro" (output): You introduce yourself to the male dwarf.
 intro :: Action
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if null intros
   then let introsTxt = "No one has introduced themselves to you yet." in
@@ -933,7 +931,6 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
     msg = "Type " <> dblQuote "quit" <> " with no arguments to quit CurryMUD."
 
 
--- TODO: Move to "Threads"?
 handleEgress :: Id -> MudStack ()
 handleEgress i = do
     informEgress
