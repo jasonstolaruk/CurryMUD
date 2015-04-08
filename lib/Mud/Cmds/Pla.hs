@@ -47,6 +47,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (<>~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
+import Data.Char (isDigit)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
@@ -931,6 +932,7 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
     msg = "Type " <> dblQuote "quit" <> " with no arguments to quit CurryMUD."
 
 
+-- TODO: When an admin logs out, they should stop peeping. This doesn't seem to be working...
 handleEgress :: Id -> MudStack ()
 handleEgress i = do
     informEgress
@@ -948,11 +950,9 @@ handleEgress i = do
         let ri                 = getRmId i ms
             s                  = getSing i ms
             (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = ms' & pcTbl      .ind i.rmId     .~ iLoggedOff
-                                     & plaTbl     .ind i.lastRmId .~ Just ri
-                                     & invTbl     .ind ri         %~ (i `delete`)
-                                     & invTbl     .ind iLoggedOff %~ (i :)
-                                     & msgQueueTbl.at  i          .~ Nothing
+            ms''               = if T.takeWhile (not . isDigit) s `elem` map showText [ Dwarf .. Vulpenoid ]
+                                   then removeAdHoc ms' ri
+                                   else movePC      ms' ri
         in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
@@ -973,6 +973,21 @@ handleEgress i = do
                                         in foldr f pt peepingIds
         stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
                                         in foldr f pt peeperIds
+    removeAdHoc ms ri = ms & coinsTbl   .at  i          .~ Nothing
+                           & entTbl     .at  i          .~ Nothing
+                           & eqTbl      .at  i          .~ Nothing
+                           & invTbl     .at  i          .~ Nothing
+                           & invTbl     .ind ri         %~ (i `delete`)
+                           & mobTbl     .at  i          .~ Nothing
+                           & msgQueueTbl.at  i          .~ Nothing
+                           & pcTbl      .at  i          .~ Nothing
+                           & plaTbl     .at  i          .~ Nothing
+                           & typeTbl    .at  i          .~ Nothing
+    movePC      ms ri = ms & invTbl     .ind ri         %~ (i `delete`)
+                           & invTbl     .ind iLoggedOff %~ (i :)
+                           & msgQueueTbl.at  i          .~ Nothing
+                           & pcTbl      .ind i.rmId     .~ iLoggedOff
+                           & plaTbl     .ind i.lastRmId .~ Just ri
 
 
 -----

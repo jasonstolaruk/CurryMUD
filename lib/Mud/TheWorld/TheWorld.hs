@@ -191,7 +191,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl rmTblFile    rmTbl
                                                  , loadTbl typeTblFile  typeTbl
                                                  , loadTbl wpnTblFile   wpnTbl ]
-    movePlas
+    movePCs
     return . and $ res
 
 
@@ -215,12 +215,12 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in
       Right tbl -> modifyState ((, ()) . (lens .~ tbl)) >> return True
 
 
-movePlas :: MudStack ()
-movePlas = modifyState $ \ms ->
+movePCs :: MudStack ()
+movePCs = modifyState $ \ms ->
     let idsWithRmIds       = let pairs = IM.foldrWithKey (\i pc -> ((i, pc^.rmId) :)) [] $ ms^.pcTbl
                              in filter ((/= iLoggedOff) . snd) pairs
-        helper (i, ri) ms' = ms' & pcTbl .ind i.rmId     .~ iLoggedOff
-                                 & plaTbl.ind i.lastRmId .~ Just ri
-                                 & invTbl.ind ri         %~ (i `delete`)
+        helper (i, ri) ms' = ms' & invTbl.ind ri         %~ (i `delete`)
                                  & invTbl.ind iLoggedOff %~ (i :)
+                                 & pcTbl .ind i.rmId     .~ iLoggedOff
+                                 & plaTbl.ind i.lastRmId .~ Just ri
     in (foldr helper ms idsWithRmIds, ())
