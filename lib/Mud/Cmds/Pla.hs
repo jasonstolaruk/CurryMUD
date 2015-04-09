@@ -27,7 +27,7 @@ import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.List (appendIfUnique, mkCountList) -- TODO: Why the explicit import?
+import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -953,7 +953,7 @@ handleEgress i = do
                                    then removeAdHoc ms' ri
                                    else movePC      ms' ri
         in (ms'', (s, bs, logMsgs))
-    peepHelper ms s = -- TODO: This is broken...
+    peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
             bs                      = [ (nlnl    . T.concat $ [ "You are no longer peeping "
                                                               , s
@@ -966,7 +966,9 @@ handleEgress i = do
                                                               , parensQuote $ s <> " has disconnected"
                                                               , "." ]) | peeperId <- peeperIds ]
         in (ms & plaTbl %~ stopPeeping     peepingIds
-               & plaTbl %~ stopBeingPeeped peeperIds, bs, logMsgs)
+               & plaTbl %~ stopBeingPeeped peeperIds
+               & plaTbl.ind i.peeping .~ []
+               & plaTbl.ind i.peepers .~ [], bs, logMsgs)
       where
         stopPeeping     peepingIds pt = let f peepedId ptAcc = ptAcc & ind peepedId.peepers %~ (i `delete`)
                                         in foldr f pt peepingIds

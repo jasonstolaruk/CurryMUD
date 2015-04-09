@@ -111,20 +111,21 @@ logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId
                   in ms' & invTbl  .ind newRmId        %~ (sortInv ms' . (++ [newId]))
                          & pcTbl   .ind newId.rmId     .~ newRmId
                          & plaTbl  .ind newId.lastRmId .~ Nothing
-    adoptNewId  =    ms  & coinsTbl.ind newId          .~ getCoins originId ms
+    adoptNewId  =    ms  & coinsTbl.ind newId          .~ getCoins   originId ms
                          & coinsTbl.at  originId       .~ Nothing
-                         & entTbl  .ind newId          .~ (getEnt  originId ms & entId .~ newId)
+                         & entTbl  .ind newId          .~ (getEnt    originId ms & entId .~ newId)
                          & entTbl  .at  originId       .~ Nothing
-                         & eqTbl   .ind newId          .~ getEqMap originId ms
+                         & eqTbl   .ind newId          .~ getEqMap   originId ms
                          & eqTbl   .at  originId       .~ Nothing
-                         & invTbl  .ind newId          .~ getInv   originId ms
+                         & invTbl  .ind newId          .~ getInv     originId ms
                          & invTbl  .at  originId       .~ Nothing
                          & invTbl  .ind iLoggedOff     %~ (originId `delete`)
-                         & mobTbl  .ind newId          .~ getMob   originId ms
+                         & mobTbl  .ind newId          .~ getMob     originId ms
                          & mobTbl  .at  originId       .~ Nothing
-                         & pcTbl   .ind newId          .~ getPC    originId ms
+                         & pcTbl   .ind newId          .~ getPC      originId ms
                          & pcTbl   .at  originId       .~ Nothing
-                         & plaTbl  .ind newId          .~ (getPla  originId ms & hostName .~ host)
+                         & plaTbl  .ind newId          .~ (getPla    originId ms & hostName .~ host)
+                         & plaTbl  .ind newId.peepers  .~ getPeepers originId ms
                          & plaTbl  .at  originId       .~ Nothing
                          & typeTbl .at  originId       .~ Nothing
     peepNewId ms'@(getPeepers newId -> peeperIds) =

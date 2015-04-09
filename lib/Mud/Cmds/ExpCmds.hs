@@ -550,6 +550,11 @@ expCmdSet = S.fromList
                                       "With a mocking lack of enthusiasm, you clap slowly for @."
                                       "With a mocking lack of enthusiasm, % claps slowly for you."
                                       "With a mocking lack of enthusiasm, % claps slowly for @.")
+    , ExpCmd "smile"       (Versatile "You smile."
+                                      "% smiles."
+                                      "You smile at @."
+                                      "% smiles at you."
+                                      "% smiles at @.")
     , ExpCmd "smirk"       (Versatile "You smirk."
                                       "% smirks."
                                       "You smirk at @."
