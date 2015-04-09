@@ -37,7 +37,7 @@ import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..), mempty)
 import Network (HostName)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (foldrWithKey, map)
+import qualified Data.IntMap.Lazy as IM (foldrWithKey)
 import qualified Data.Set as S (fromList, member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, readFile)
@@ -105,32 +105,31 @@ promptRetryName mq msg = do
 
 
 logIn :: Id -> MudState -> HostName -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
-logIn newId ms host originId = (movePC adoptNewId, Right (originId, getSing newId ms))
+logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId, getSing newId ms))
   where
     movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & invTbl  .ind newRmId        %~ (sortInv ms' . (++ [newId]))
                          & pcTbl   .ind newId.rmId     .~ newRmId
                          & plaTbl  .ind newId.lastRmId .~ Nothing
-    adoptNewId  =    ms  & coinsTbl.ind newId      .~ getCoins originId ms
-                         & coinsTbl.at  originId   .~ Nothing
-                         & entTbl  .ind newId      .~ (getEnt  originId ms & entId .~ newId)
-                         & entTbl  .at  originId   .~ Nothing
-                         & eqTbl   .ind newId      .~ getEqMap originId ms
-                         & eqTbl   .at  originId   .~ Nothing
-                         & invTbl  .ind newId      .~ getInv   originId ms
-                         & invTbl  .at  originId   .~ Nothing
-                         & invTbl  .ind iLoggedOff %~ (originId `delete`)
-                         & mobTbl  .ind newId      .~ getMob   originId ms
-                         & mobTbl  .at  originId   .~ Nothing
-                         & pcTbl   .ind newId      .~ getPC    originId ms
-                         & pcTbl   .at  originId   .~ Nothing
-                         & plaTbl  .ind newId      .~ (getPla  originId ms & hostName .~ host)
-                         & plaTbl  .at  originId   .~ Nothing
-                         & plaTbl                  %~ IM.map peepNewId
-                         & typeTbl .at  originId   .~ Nothing
-    peepNewId pla = if originId `elem` pla^.peeping
-      then pla & peeping %~ ((newId :) . (originId `delete`))
-      else pla
+    adoptNewId  =    ms  & coinsTbl.ind newId          .~ getCoins originId ms
+                         & coinsTbl.at  originId       .~ Nothing
+                         & entTbl  .ind newId          .~ (getEnt  originId ms & entId .~ newId)
+                         & entTbl  .at  originId       .~ Nothing
+                         & eqTbl   .ind newId          .~ getEqMap originId ms
+                         & eqTbl   .at  originId       .~ Nothing
+                         & invTbl  .ind newId          .~ getInv   originId ms
+                         & invTbl  .at  originId       .~ Nothing
+                         & invTbl  .ind iLoggedOff     %~ (originId `delete`)
+                         & mobTbl  .ind newId          .~ getMob   originId ms
+                         & mobTbl  .at  originId       .~ Nothing
+                         & pcTbl   .ind newId          .~ getPC    originId ms
+                         & pcTbl   .at  originId       .~ Nothing
+                         & plaTbl  .ind newId          .~ (getPla  originId ms & hostName .~ host)
+                         & plaTbl  .at  originId       .~ Nothing
+                         & typeTbl .at  originId       .~ Nothing
+    peepNewId ms'@(getPeepers newId -> peeperIds) =
+        let replaceId = (newId :) . (originId `delete`)
+        in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
