@@ -172,19 +172,76 @@ mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
 -----
 
 
-isSlotAvail :: EqMap -> Slot -> Bool
-isSlotAvail em s = s `M.notMember` em
+type FromId = Id
+type ToId   = Id
 
 
-findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
-findAvailSlot em = find (isSlotAvail em)
+helperDropEitherInv :: Id
+                    -> MudState
+                    -> PCDesig
+                    -> FromId
+                    -> ToId
+                    -> (InvTbl, [Broadcast], [T.Text])
+                    -> Either T.Text Inv
+                    -> (InvTbl, [Broadcast], [T.Text])
+helperDropEitherInv i ms d fi ti a = \case
+  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
+  Right is                   -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Drop is
+                                in a & _1.ind fi %~  (\\ is)
+                                     & _1.ind ti %~  (sortInv ms . (++ is))
+                                     & _2        <>~ bs
+                                     & _3        <>~ logMsgs
+
+
+mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
+mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
+    let bs = concatMap helper ncbs in (bs, extractLogMsgs i bs)
+  where
+    helper (_, c, (s, _)) | c == 1 =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
+    helper (_, c, b) =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
+      where
+        rest = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
+    otherPCIds = i `delete` pcIds d
+
+
+mkNameCountBothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms targetId | targetId <- targetIds ]
+                                         cs    = mkCountList ebgns
+                                         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+                                     in nub . zip3 ens cs $ ebgns
+
+
+helperGetEitherInv :: Id
+                   -> MudState
+                   -> PCDesig
+                   -> FromId
+                   -> ToId
+                   -> (InvTbl, [Broadcast], [T.Text])
+                   -> Either T.Text Inv
+                   -> (InvTbl, [Broadcast], [T.Text])
+helperGetEitherInv i ms d fi ti a = \case
+  Left  (mkBroadcast i -> b                  ) -> a & _2 <>~ b
+  Right (sortByType    -> (pcs, mobs, others)) -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Get others
+                                                  in a & _1.ind fi %~  (\\ others)
+                                                       & _1.ind ti %~  (sortInv ms . (++ others))
+                                                       & _2        <>~ map sorryPC pcs ++ map sorryMob mobs ++ bs
+                                                       & _3        <>~ logMsgs
+  where
+    sortByType             = foldr helper ([], [], [])
+    helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
+                                                                    MobType -> _2
+                                                                    _       -> _3
+                             in sorted & lens %~ (targetId :)
+    sorryPC     targetId   = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
+    sorryMob    targetId   = sorryHelper . theOnLower . getSing targetId $ ms
+    sorryHelper targetName = ("You can't pick up " <> targetName <> ".", [i])
 
 
 -----
-
-
-type FromId = Id
-type ToId   = Id
 
 
 helperGetDropEitherCoins :: Id
@@ -230,77 +287,6 @@ mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
 mkGodVerb Drop SndPer = "drop"
 mkGodVerb Drop ThrPer = "drops"
-
-
------
-
-
--- TODO: Sort functions alphabetically.
-
-
-helperDropEitherInv :: Id
-                    -> MudState
-                    -> PCDesig
-                    -> FromId
-                    -> ToId
-                    -> (InvTbl, [Broadcast], [T.Text])
-                    -> Either T.Text Inv
-                    -> (InvTbl, [Broadcast], [T.Text])
-helperDropEitherInv i ms d fi ti a = \case
-  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is                   -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Drop is
-                                in a & _1.ind fi %~  (\\ is)
-                                     & _1.ind ti %~  (sortInv ms . (++ is))
-                                     & _2        <>~ bs
-                                     & _3        <>~ logMsgs
-
-
-helperGetEitherInv :: Id
-                   -> MudState
-                   -> PCDesig
-                   -> FromId
-                   -> ToId
-                   -> (InvTbl, [Broadcast], [T.Text])
-                   -> Either T.Text Inv
-                   -> (InvTbl, [Broadcast], [T.Text])
-helperGetEitherInv i ms d fi ti a = \case
-  Left  (mkBroadcast i -> b                  ) -> a & _2 <>~ b
-  Right (sortByType    -> (pcs, mobs, others)) -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Get others
-                                                  in a & _1.ind fi %~  (\\ others)
-                                                       & _1.ind ti %~  (sortInv ms . (++ others))
-                                                       & _2        <>~ map sorryPC pcs ++ map sorryMob mobs ++ bs
-                                                       & _3        <>~ logMsgs
-  where
-    sortByType             = foldr helper ([], [], [])
-    helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
-                                                                    MobType -> _2
-                                                                    _       -> _3
-                             in sorted & lens %~ (targetId :)
-    sorryPC     targetId   = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
-    sorryMob    targetId   = sorryHelper . theOnLower . getSing targetId $ ms
-    sorryHelper targetName = ("You can't pick up " <> targetName <> ".", [i])
-
-
-mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
-mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
-    let bs = concatMap helper ncbs in (bs, extractLogMsgs i bs)
-  where
-    helper (_, c, (s, _)) | c == 1 =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
-    helper (_, c, b) =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
-      where
-        rest = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
-    otherPCIds = i `delete` pcIds d
-
-
-mkNameCountBothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
-mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms targetId | targetId <- targetIds ]
-                                         cs    = mkCountList ebgns
-                                         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-                                     in nub . zip3 ens cs $ ebgns
 
 
 -----
@@ -476,6 +462,17 @@ isRingRol :: RightOrLeft -> Bool
 isRingRol = \case R -> False
                   L -> False
                   _ -> True
+
+
+-----
+
+
+isSlotAvail :: EqMap -> Slot -> Bool
+isSlotAvail em s = s `M.notMember` em
+
+
+findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
+findAvailSlot em = find (isSlotAvail em)
 
 
 -----
