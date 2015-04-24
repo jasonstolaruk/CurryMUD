@@ -273,7 +273,7 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             d                   = mkStdDesig  i ms DoCap
             ri                  = getRmId     i ms
             (eiss, ecs)         = uncurry (resolvePCInvCoins i ms as) invCoins
-            (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Drop i ri) (ms^.invTbl,   [], []     ) eiss
+            (it, bs,  logMsgs ) = foldl' (helperDropEitherInv      i ms d      i ri) (ms^.invTbl,   [], []     ) eiss
             (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Drop i ri) (ms^.coinsTbl, bs, logMsgs) ecs
         in if notEmpty invCoins
           then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
@@ -422,11 +422,11 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
   where
     helper ms =
-        let ri                  = getRmId    i ms
+        let ri                  = getRmId i ms
             invCoins            = first (i `delete`) . getInvCoins ri $ ms
             d                   = mkStdDesig i ms DoCap
             (eiss, ecs)         = uncurry (resolveRmInvCoins i ms as) invCoins
-            (it, bs,  logMsgs ) = foldl' (helperGetDropEitherInv   i ms d Get ri i) (ms^.invTbl,   [], []     ) eiss
+            (it, bs,  logMsgs ) = foldl' (helperGetEitherInv       i ms d     ri i) (ms^.invTbl,   [], []     ) eiss
             (ct, bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Get ri i) (ms^.coinsTbl, bs, logMsgs) ecs
         in if notEmpty invCoins
           then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))

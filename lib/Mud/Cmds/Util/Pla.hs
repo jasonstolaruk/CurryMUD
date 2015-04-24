@@ -12,8 +12,9 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , dudeYou'reNaked
                          , dudeYourHandsAreEmpty
                          , findAvailSlot
+                         , helperDropEitherInv
                          , helperGetDropEitherCoins
-                         , helperGetDropEitherInv
+                         , helperGetEitherInv
                          , helperPutRemEitherCoins
                          , helperPutRemEitherInv
                          , isNonStdLink
@@ -234,22 +235,50 @@ mkGodVerb Drop ThrPer = "drops"
 -----
 
 
-helperGetDropEitherInv :: Id
-                       -> MudState
-                       -> PCDesig
-                       -> GetOrDrop
-                       -> FromId
-                       -> ToId
-                       -> (InvTbl, [Broadcast], [T.Text])
-                       -> Either T.Text Inv
-                       -> (InvTbl, [Broadcast], [T.Text])
-helperGetDropEitherInv i ms d god fi ti a = \case
+-- TODO: Sort functions alphabetically.
+
+
+helperDropEitherInv :: Id
+                    -> MudState
+                    -> PCDesig
+                    -> FromId
+                    -> ToId
+                    -> (InvTbl, [Broadcast], [T.Text])
+                    -> Either T.Text Inv
+                    -> (InvTbl, [Broadcast], [T.Text])
+helperDropEitherInv i ms d fi ti a = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is                   -> let (bs, logMsgs) = mkGetDropInvDesc i ms d god is
+  Right is                   -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Drop is
                                 in a & _1.ind fi %~  (\\ is)
                                      & _1.ind ti %~  (sortInv ms . (++ is))
                                      & _2        <>~ bs
                                      & _3        <>~ logMsgs
+
+
+helperGetEitherInv :: Id
+                   -> MudState
+                   -> PCDesig
+                   -> FromId
+                   -> ToId
+                   -> (InvTbl, [Broadcast], [T.Text])
+                   -> Either T.Text Inv
+                   -> (InvTbl, [Broadcast], [T.Text])
+helperGetEitherInv i ms d fi ti a = \case
+  Left  (mkBroadcast i -> b                  ) -> a & _2 <>~ b
+  Right (sortByType    -> (mobs, pcs, others)) -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Get others
+                                                  in a & _1.ind fi %~  (\\ others)
+                                                       & _1.ind ti %~  (sortInv ms . (++ others))
+                                                       & _2        <>~ map sorryMob mobs ++ map sorryPC pcs ++ bs
+                                                       & _3        <>~ logMsgs
+  where
+    sortByType             = foldr helper ([], [], [])
+    helper targetId sorted = let lens = case getType targetId ms of MobType -> _1
+                                                                    PCType  -> _2
+                                                                    _       -> _3
+                             in sorted & lens %~ (targetId :)
+    sorryMob targetId      = sorryHelper . getSing targetId $ ms
+    sorryPC  targetId      = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
+    sorryHelper targetName = ("You can't pick up " <> targetName <> ".", [i])
 
 
 mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
