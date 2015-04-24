@@ -265,19 +265,19 @@ helperGetEitherInv :: Id
                    -> (InvTbl, [Broadcast], [T.Text])
 helperGetEitherInv i ms d fi ti a = \case
   Left  (mkBroadcast i -> b                  ) -> a & _2 <>~ b
-  Right (sortByType    -> (mobs, pcs, others)) -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Get others
+  Right (sortByType    -> (pcs, mobs, others)) -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Get others
                                                   in a & _1.ind fi %~  (\\ others)
                                                        & _1.ind ti %~  (sortInv ms . (++ others))
-                                                       & _2        <>~ map sorryMob mobs ++ map sorryPC pcs ++ bs
+                                                       & _2        <>~ map sorryPC pcs ++ map sorryMob mobs ++ bs
                                                        & _3        <>~ logMsgs
   where
     sortByType             = foldr helper ([], [], [])
-    helper targetId sorted = let lens = case getType targetId ms of MobType -> _1
-                                                                    PCType  -> _2
+    helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
+                                                                    MobType -> _2
                                                                     _       -> _3
                              in sorted & lens %~ (targetId :)
-    sorryMob targetId      = sorryHelper . getSing targetId $ ms
-    sorryPC  targetId      = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
+    sorryPC     targetId   = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
+    sorryMob    targetId   = sorryHelper . theOnLower . getSing targetId $ ms
     sorryHelper targetName = ("You can't pick up " <> targetName <> ".", [i])
 
 

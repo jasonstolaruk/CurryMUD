@@ -669,7 +669,7 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
                       then let sorry = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
                            in a' & _2 <>~ mkNTBroadcast i sorry
                       else a' & _1.ind targetId.introduced %~ (sort . (s :)) & _2 <>~ cbs & _3 <>~ [logMsg]
-          _      -> let msg = "You can't introduce yourself to " <> aOrAnOnLower targetSing <> "."
+          _      -> let msg = "You can't introduce yourself to " <> theOnLower targetSing <> "."
                         b   = head . mkNTBroadcast i . nlnl $ msg
                     in a' & _2 %~ (`appendIfUnique` b)
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
