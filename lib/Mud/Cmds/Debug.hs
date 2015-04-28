@@ -42,7 +42,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks, runReaderT)
 import Data.Char (ord, digitToInt, isDigit, toLower)
 import Data.Ix (inRange)
-import Data.List (delete, sort)
+import Data.List (delete, intercalate, sort)
 import Data.Maybe (fromJust, isNothing)
 import Data.Monoid ((<>), Sum(..))
 import GHC.Conc (ThreadStatus(..), threadStatus)
@@ -53,7 +53,7 @@ import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import qualified Data.IntMap.Lazy as IM (assocs)
+import qualified Data.IntMap.Lazy as IM (assocs, keys)
 import qualified Data.Map.Lazy as M (assocs, elems, keys)
 import qualified Data.Text as T
 
@@ -93,6 +93,7 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
+    , mkDebugCmd "keys"       debugKeys        "Dump a list of table keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
@@ -217,6 +218,35 @@ mkEnvListTxt :: [(String, String)] -> [T.Text]
 mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
   where
     mkAssocTxt (a, b) = T.concat [ envVarColor, a, ": ", dfltColor, b ]
+
+
+-----
+
+
+debugKeys :: Action
+debugKeys (NoArgs i mq cols) = getState >>= \ms -> do
+    multiWrapSend mq cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
+    logPlaExec (prefixDebugCmd "keys") i
+  where
+    mkKeysTxt (tblName, ks) = [ tblName <> ": ", ks ]
+    mkTblNameKeysList ms    = let helper = showText . IM.keys . flip view ms
+                              in [ ("Arm",       helper armTbl     )
+                                 , ("Cloth",     helper clothTbl   )
+                                 , ("Coins",     helper coinsTbl   )
+                                 , ("Con",       helper conTbl     )
+                                 , ("Ent",       helper entTbl     )
+                                 , ("EqMap",     helper eqTbl      )
+                                 , ("Inv",       helper invTbl     )
+                                 , ("Mob",       helper mobTbl     )
+                                 , ("MsgQueue",  helper msgQueueTbl)
+                                 , ("Obj",       helper objTbl     )
+                                 , ("PC",        helper pcTbl      )
+                                 , ("PlaLogTbl", helper plaLogTbl  )
+                                 , ("Pla",       helper plaTbl     )
+                                 , ("Rm",        helper rmTbl      )
+                                 , ("Type",      helper typeTbl    )
+                                 , ("Wpn",       helper wpnTbl     ) ]
+debugKeys p = withoutArgs debugKeys p
 
 
 -----

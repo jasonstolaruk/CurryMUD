@@ -108,7 +108,8 @@ logIn :: Id -> MudState -> HostName -> Id -> (MudState, Either (Maybe T.Text) (I
 logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId, getSing newId ms))
   where
     movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
-                  in ms' & invTbl  .ind newRmId        %~ (sortInv ms' . (++ [newId]))
+                  in ms' & invTbl  .ind iLoggedOff     %~ (originId `delete`)
+                         & invTbl  .ind newRmId        %~ (sortInv ms' . (++ [newId]))
                          & pcTbl   .ind newId.rmId     .~ newRmId
                          & plaTbl  .ind newId.lastRmId .~ Nothing
     adoptNewId  =    ms  & coinsTbl.ind newId          .~ getCoins   originId ms
@@ -119,7 +120,6 @@ logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId
                          & eqTbl   .at  originId       .~ Nothing
                          & invTbl  .ind newId          .~ getInv     originId ms
                          & invTbl  .at  originId       .~ Nothing
-                         & invTbl  .ind iLoggedOff     %~ (originId `delete`)
                          & mobTbl  .ind newId          .~ getMob     originId ms
                          & mobTbl  .at  originId       .~ Nothing
                          & pcTbl   .ind newId          .~ getPC      originId ms
