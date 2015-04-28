@@ -15,6 +15,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
+import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
@@ -53,7 +54,7 @@ import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import qualified Data.IntMap.Lazy as IM (assocs, keys)
+import qualified Data.IntMap.Lazy as IM (assocs, keys, toList)
 import qualified Data.Map.Lazy as M (assocs, elems, keys)
 import qualified Data.Text as T
 
@@ -93,9 +94,11 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
-    , mkDebugCmd "keys"       debugKeys        "Dump a list of table keys."
+    , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
+    , mkDebugCmd "keys"       debugKeys        "Dump a list of \"IntMap\" keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
+    , mkDebugCmd "off"        debugOff         "Dump the inventory of the logged off room."
     , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
@@ -223,29 +226,85 @@ mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
 -----
 
 
+debugId :: Action
+debugId p@AdviseNoArgs = advise p [] advice
+  where
+    advice = T.concat [ "Please specify an ID to search for, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "id" <> " 100"
+                      , dfltColor
+                      , "." ]
+debugId (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)] of
+  [(searchId, "")] -> helper searchId
+  _                -> sorryParse
+  where
+    sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid ID."
+    helper searchId@(showText -> searchIdTxt)
+      | searchId < 0 = wrapSorryWtf mq cols
+      | otherwise    = getState >>= \ms -> do
+          let f     = T.intercalate ", " . map (showText . fst)
+              g     = IM.toList . flip view ms
+              mkTxt =
+                  [ [ "The following tables contain key " <> searchIdTxt <> ":"
+                    , T.intercalate ", " . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
+                  , [ T.concat [ "The following entities have an ", dblQuote "entId", " of ", searchIdTxt, ": " ]
+                    , f . filter ((== searchId) . view entId . snd) . g $ entTbl ]
+                  , [ T.concat [ "The following eq maps contain ID ", searchIdTxt, ": " ]
+                    , f . filter ((searchId `elem`) . M.elems . snd) . g $ eqTbl ]
+                  , [ T.concat [ "The following inventories contain ID ", searchIdTxt, ": " ]
+                    , f . filter ((searchId `elem`) . snd) . g $ invTbl ]
+                  , [ T.concat [ "The following PCs have a ", dblQuote "rmId", " of ", searchIdTxt, ": " ]
+                    , f . filter ((== searchId) . view rmId . snd) . g $ pcTbl ]
+                  , [ T.concat [ "The following players are being peeped by ID ", searchIdTxt, ": " ]
+                    , f . filter ((searchId `elem`) . view peepers . snd) . g $ plaTbl ]
+                  , [ T.concat [ "The following players are peeping ID ", searchIdTxt, ": " ]
+                    , f . filter ((searchId `elem`) . view peeping . snd) . g $ plaTbl ]
+                  , [ T.concat [ "The following players have a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
+                    , f . filter ((== Just searchId) . view lastRmId . snd) . g $ plaTbl ] ]
+          mapM_ (multiWrapSend mq cols) mkTxt
+          logPlaExecArgs (prefixDebugCmd "id") [a] i
+debugId p = advise p [] advice
+  where
+    advice = T.concat [ "Please provide one argument: the ID to search for, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "id" <> " 100"
+                      , dfltColor
+                      , "." ]
+
+
+wrapSorryWtf :: MsgQueue -> Cols -> MudStack ()
+wrapSorryWtf mq cols = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
+
+
+mkTblNameKeysList :: MudState -> [(T.Text, Inv)]
+mkTblNameKeysList ms = let helper = IM.keys . flip view ms
+                       in [ ("Arm",       helper armTbl     )
+                          , ("Cloth",     helper clothTbl   )
+                          , ("Coins",     helper coinsTbl   )
+                          , ("Con",       helper conTbl     )
+                          , ("Ent",       helper entTbl     )
+                          , ("EqMap",     helper eqTbl      )
+                          , ("Inv",       helper invTbl     )
+                          , ("Mob",       helper mobTbl     )
+                          , ("MsgQueue",  helper msgQueueTbl)
+                          , ("Obj",       helper objTbl     )
+                          , ("PC",        helper pcTbl      )
+                          , ("PlaLogTbl", helper plaLogTbl  )
+                          , ("Pla",       helper plaTbl     )
+                          , ("Rm",        helper rmTbl      )
+                          , ("Type",      helper typeTbl    )
+                          , ("Wpn",       helper wpnTbl     ) ]
+
+
+-----
+
+
 debugKeys :: Action
 debugKeys (NoArgs i mq cols) = getState >>= \ms -> do
     multiWrapSend mq cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
     logPlaExec (prefixDebugCmd "keys") i
   where
-    mkKeysTxt (tblName, ks) = [ tblName <> ": ", ks ]
-    mkTblNameKeysList ms    = let helper = showText . IM.keys . flip view ms
-                              in [ ("Arm",       helper armTbl     )
-                                 , ("Cloth",     helper clothTbl   )
-                                 , ("Coins",     helper coinsTbl   )
-                                 , ("Con",       helper conTbl     )
-                                 , ("Ent",       helper entTbl     )
-                                 , ("EqMap",     helper eqTbl      )
-                                 , ("Inv",       helper invTbl     )
-                                 , ("Mob",       helper mobTbl     )
-                                 , ("MsgQueue",  helper msgQueueTbl)
-                                 , ("Obj",       helper objTbl     )
-                                 , ("PC",        helper pcTbl      )
-                                 , ("PlaLogTbl", helper plaLogTbl  )
-                                 , ("Pla",       helper plaTbl     )
-                                 , ("Rm",        helper rmTbl      )
-                                 , ("Type",      helper typeTbl    )
-                                 , ("Wpn",       helper wpnTbl     ) ]
+    mkKeysTxt (tblName, ks) = [ tblName <> ": ", showText ks ]
 debugKeys p = withoutArgs debugKeys p
 
 
@@ -320,6 +379,16 @@ isValidDigit base (toLower -> c) | isDigit c                    = digitToInt c <
 letterToNum :: Char -> Int
 letterToNum c | isDigit c = digitToInt c
               | otherwise = ord c - ord 'a' + 10
+
+
+-----
+
+
+debugOff :: Action
+debugOff (NoArgs i mq cols) = getState >>= \ms -> do
+    wrapSend mq cols . showText . getInv iLoggedOff $ ms
+    logPlaExec (prefixDebugCmd "off") i
+debugOff p = withoutArgs debugOff p
 
 
 -----
@@ -543,10 +612,6 @@ debugWrap p = advise p [] advice
                       , dblQuote $ prefixDebugCmd "wrap" <> " 40"
                       , dfltColor
                       , "." ]
-
-
-wrapSorryWtf :: MsgQueue -> Cols -> MudStack ()
-wrapSorryWtf mq cols = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
 
 
 wrapSorryLineLen :: MsgQueue -> Cols -> MudStack ()
