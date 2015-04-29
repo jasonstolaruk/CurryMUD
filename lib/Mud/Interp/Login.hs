@@ -193,7 +193,7 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
                                & plaTbl.ind i        %~ setPlaFlag IsAdmin (T.head s == 'Z')
                                & plaTbl.ind i.interp .~ Nothing
                     ms'' = ms' & invTbl.ind iCentral %~ (sortInv ms' . (++ [i]))
-        in (ms'', (ms'', getSing i ms))
+                in (ms'', (ms'', getSing i ms))
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 
 

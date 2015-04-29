@@ -974,6 +974,7 @@ handleEgress i = do
                                         in foldr f pt peepingIds
         stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
                                         in foldr f pt peeperIds
+    -- TODO: Ad hoc PCs are being persisted on shutdown.
     removeAdHoc ms ri = ms & coinsTbl   .at  i          .~ Nothing
                            & entTbl     .at  i          .~ Nothing
                            & eqTbl      .at  i          .~ Nothing
