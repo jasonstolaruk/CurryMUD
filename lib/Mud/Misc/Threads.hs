@@ -385,12 +385,12 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 shutDown :: MudStack ()
 shutDown = do
-    persist
     massMsg SilentBoot
     onEnv $ liftIO . void . forkIO . runReaderT commitSuicide
   where
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
+        persist
         logNotice "shutDown commitSuicide" "all players have been disconnected; killing the listen thread."
         liftIO . killThread . getListenThreadId =<< getState
 
