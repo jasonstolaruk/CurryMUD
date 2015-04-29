@@ -245,21 +245,21 @@ debugId (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)] 
           let f     = T.intercalate ", " . map (showText . fst)
               g     = IM.toList . flip view ms
               mkTxt =
-                  [ [ "The following tables contain key " <> searchIdTxt <> ":"
+                  [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , T.intercalate ", " . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
-                  , [ T.concat [ "The following entities have an ", dblQuote "entId", " of ", searchIdTxt, ": " ]
+                  , [ T.concat [ "Entities with an ", dblQuote "entId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view entId . snd) . g $ entTbl ]
-                  , [ T.concat [ "The following eq maps contain ID ", searchIdTxt, ": " ]
+                  , [ T.concat [ "Equipment maps containing ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . M.elems . snd) . g $ eqTbl ]
-                  , [ T.concat [ "The following inventories contain ID ", searchIdTxt, ": " ]
+                  , [ T.concat [ "Inventories containing ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . snd) . g $ invTbl ]
-                  , [ T.concat [ "The following PCs have a ", dblQuote "rmId", " of ", searchIdTxt, ": " ]
+                  , [ T.concat [ "PCs with a ", dblQuote "rmId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view rmId . snd) . g $ pcTbl ]
-                  , [ T.concat [ "The following players are being peeped by ID ", searchIdTxt, ": " ]
+                  , [ T.concat [ "Players being peeped by ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . view peepers . snd) . g $ plaTbl ]
-                  , [ T.concat [ "The following players are peeping ID ", searchIdTxt, ": " ]
+                  , [ T.concat [ "Players peeping ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . view peeping . snd) . g $ plaTbl ]
-                  , [ T.concat [ "The following players have a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
+                  , [ T.concat [ "Players with a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== Just searchId) . view lastRmId . snd) . g $ plaTbl ] ]
           mapM_ (multiWrapSend mq cols) mkTxt
           logPlaExecArgs (prefixDebugCmd "id") [a] i
