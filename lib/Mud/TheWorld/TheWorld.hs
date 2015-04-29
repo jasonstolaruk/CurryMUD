@@ -5,6 +5,7 @@ module Mud.TheWorld.TheWorld ( initMudData
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Misc.Logging hiding (logNotice)
@@ -191,6 +192,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl rmTblFile    rmTbl
                                                  , loadTbl typeTblFile  typeTbl
                                                  , loadTbl wpnTblFile   wpnTbl ]
+    modifyState $ \ms -> (foldr removeAdHoc ms . getInv iWelcome $ ms, ())
     movePCs
     return . and $ res
 

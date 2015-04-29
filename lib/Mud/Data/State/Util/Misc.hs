@@ -14,23 +14,25 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , mkUnknownPCEntName
                                 , modifyState
                                 , onEnv
+                                , removeAdHoc
                                 , sortInv ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.TheWorld.Ids
 import Mud.Util.Misc
 import Mud.Util.Text
 
 import Control.Arrow ((***))
-import Control.Lens (_1, _2, both)
+import Control.Lens (_1, _2, at, both)
 import Control.Lens.Getter (view, views)
-import Control.Lens.Operators ((%~), (&), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IORef (atomicModifyIORef, readIORef)
 import Data.IntMap.Lazy ((!))
-import Data.List (sortBy)
+import Data.List (delete, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import GHC.Exts (sortWith)
@@ -132,6 +134,22 @@ mkSerializedNonStdDesig i ms s (capitalize . pp -> aot) = let (pp *** pp -> (sex
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
+
+
+-----
+
+
+removeAdHoc :: Id -> MudState -> MudState
+removeAdHoc i ms = ms & coinsTbl   .at  i        .~ Nothing
+                      & entTbl     .at  i        .~ Nothing
+                      & eqTbl      .at  i        .~ Nothing
+                      & invTbl     .at  i        .~ Nothing
+                      & invTbl     .ind iWelcome %~ (i `delete`)
+                      & mobTbl     .at  i        .~ Nothing
+                      & msgQueueTbl.at  i        .~ Nothing
+                      & pcTbl      .at  i        .~ Nothing
+                      & plaTbl     .at  i        .~ Nothing
+                      & typeTbl    .at  i        .~ Nothing
 
 
 -----

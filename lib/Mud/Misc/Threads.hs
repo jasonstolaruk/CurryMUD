@@ -390,8 +390,9 @@ shutDown = do
   where
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
+        logNotice "shutDown commitSuicide" "all players have been disconnected."
         persist
-        logNotice "shutDown commitSuicide" "all players have been disconnected; killing the listen thread."
+        logNotice "shutDown commitSuicide" "killing the listen thread."
         liftIO . killThread . getListenThreadId =<< getState
 
 

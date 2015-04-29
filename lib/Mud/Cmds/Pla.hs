@@ -950,8 +950,8 @@ handleEgress i = do
             s                  = getSing i ms
             (ms', bs, logMsgs) = peepHelper ms s
             ms''               = if T.takeWhile (not . isDigit) s `elem` map showText [ Dwarf .. Vulpenoid ]
-                                   then removeAdHoc ms' ri
-                                   else movePC      ms' ri
+                                   then removeAdHoc i ms'
+                                   else movePC ms' ri
         in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
@@ -974,22 +974,11 @@ handleEgress i = do
                                         in foldr f pt peepingIds
         stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
                                         in foldr f pt peeperIds
-    -- TODO: Ad hoc PCs are being persisted on shutdown.
-    removeAdHoc ms ri = ms & coinsTbl   .at  i          .~ Nothing
-                           & entTbl     .at  i          .~ Nothing
-                           & eqTbl      .at  i          .~ Nothing
-                           & invTbl     .at  i          .~ Nothing
-                           & invTbl     .ind ri         %~ (i `delete`)
-                           & mobTbl     .at  i          .~ Nothing
-                           & msgQueueTbl.at  i          .~ Nothing
-                           & pcTbl      .at  i          .~ Nothing
-                           & plaTbl     .at  i          .~ Nothing
-                           & typeTbl    .at  i          .~ Nothing
-    movePC      ms ri = ms & invTbl     .ind ri         %~ (i `delete`)
-                           & invTbl     .ind iLoggedOff %~ (i :)
-                           & msgQueueTbl.at  i          .~ Nothing
-                           & pcTbl      .ind i.rmId     .~ iLoggedOff
-                           & plaTbl     .ind i.lastRmId .~ Just ri
+    movePC ms ri = ms & invTbl     .ind ri         %~ (i `delete`)
+                      & invTbl     .ind iLoggedOff %~ (i :)
+                      & msgQueueTbl.at  i          .~ Nothing
+                      & pcTbl      .ind i.rmId     .~ iLoggedOff
+                      & plaTbl     .ind i.lastRmId .~ Just ri
 
 
 -----
