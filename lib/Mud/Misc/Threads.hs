@@ -236,26 +236,26 @@ adHoc mq host = do
                        , _race       = r
                        , _introduced = []
                        , _linked     = [] }
-            pla  = Pla { _hostName   = host
-                       , _plaFlags   = zeroBits
-                       , _columns    = 80
-                       , _pageLines  = 24
-                       , _interp     = Just interpName
-                       , _peepers    = []
-                       , _peeping    = []
-                       , _lastRmId   = Nothing }
-            ms'  = ms  & entTbl .ind i .~ e
-                       & typeTbl.ind i .~ PCType
-            ris  = sortInv ms' $ getInv iWelcome ms' ++ [i]
-            ms'' = ms' & coinsTbl   .ind i        .~ mempty
+            pla  = Pla { _hostName     = host
+                       , _plaFlags     = zeroBits
+                       , _columns      = 80
+                       , _pageLines    = 24
+                       , _interp       = Just interpName
+                       , _peepers      = []
+                       , _peeping      = []
+                       , _retainedMsgs = []
+                       , _lastRmId     = Nothing }
+            ms'  = ms  & coinsTbl   .ind i        .~ mempty
+                       & entTbl     .ind i        .~ e
                        & eqTbl      .ind i        .~ M.empty
                        & invTbl     .ind i        .~ []
-                       & invTbl     .ind iWelcome .~ ris
+                       & invTbl     .ind iWelcome .~ getInv iWelcome ms ++ [i]
                        & mobTbl     .ind i        .~ m
                        & msgQueueTbl.ind i        .~ mq
                        & pcTbl      .ind i        .~ pc
                        & plaTbl     .ind i        .~ pla
-        in (ms'', (i, s))
+                       & typeTbl    .ind i        .~ PCType
+        in (ms', (i, s))
 
 
 randomSex :: IO Sex

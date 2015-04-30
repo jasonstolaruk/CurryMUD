@@ -75,6 +75,20 @@ putPC i e is c em m p = modifyState $ \ms -> (ms & coinsTbl.ind i .~ c
 -----
 
 
+putPla :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> Pla -> MudStack ()
+putPla i e is c em m pc pla = modifyState $ \ms -> (ms & coinsTbl.ind i .~ c
+                                                       & entTbl  .ind i .~ e
+                                                       & eqTbl   .ind i .~ em
+                                                       & invTbl  .ind i .~ is
+                                                       & mobTbl  .ind i .~ m
+                                                       & pcTbl   .ind i .~ pc
+                                                       & plaTbl  .ind i .~ pla
+                                                       & typeTbl .ind i .~ PCType, ())
+
+
+-----
+
+
 putRm :: Id -> Inv -> Coins -> Rm -> MudStack ()
 putRm i is c r = modifyState $ \ms -> (ms & coinsTbl.ind i .~ c
                                           & invTbl  .ind i .~ is

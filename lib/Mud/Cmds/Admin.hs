@@ -171,7 +171,6 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 -----
 
 
--- TODO: Can boot a player that is not logged in?
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."

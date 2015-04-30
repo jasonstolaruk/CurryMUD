@@ -303,14 +303,15 @@ instance Random Race where
 -- ==================================================
 
 
-data Pla = Pla { _hostName  :: HostName
-               , _plaFlags  :: Int
-               , _columns   :: Int
-               , _pageLines :: Int
-               , _interp    :: Maybe Interp
-               , _peepers   :: Inv
-               , _peeping   :: Inv
-               , _lastRmId  :: Maybe Id }
+data Pla = Pla { _hostName     :: HostName
+               , _plaFlags     :: Int
+               , _columns      :: Int
+               , _pageLines    :: Int
+               , _interp       :: Maybe Interp
+               , _peepers      :: Inv
+               , _peeping      :: Inv
+               , _retainedMsgs :: [T.Text]
+               , _lastRmId     :: Maybe Id }
 
 
 data PlaFlags = IsAdmin
@@ -330,11 +331,12 @@ instance ToJSON   Pla where toJSON    = plaToJSON
 
 
 plaToJSON :: Pla -> Value
-plaToJSON Pla { .. } = object [ "_hostName"  .= _hostName
-                              , "_plaFlags"  .= _plaFlags
-                              , "_columns"   .= _columns
-                              , "_pageLines" .= _pageLines
-                              , "_lastRmId"  .= _lastRmId ]
+plaToJSON Pla { .. } = object [ "_hostName"     .= _hostName
+                              , "_plaFlags"     .= _plaFlags
+                              , "_columns"      .= _columns
+                              , "_pageLines"    .= _pageLines
+                              , "_retainedMsgs" .= _retainedMsgs
+                              , "_lastRmId"     .= _lastRmId ]
 
 
 jsonToPla :: Value -> Parser Pla
@@ -345,6 +347,7 @@ jsonToPla (Object o) = Pla <$> o .: "_hostName"
                            <*> pure Nothing
                            <*> pure []
                            <*> pure []
+                           <*> o .: "_retainedMsgs"
                            <*> o .: "_lastRmId"
 jsonToPla _          = empty
 
