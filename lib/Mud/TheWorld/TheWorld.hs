@@ -21,7 +21,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Lens.Setter (ASetter)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
-import Data.Bits (zeroBits)
+import Data.Bits (setBit, zeroBits)
 import Data.IORef (newIORef)
 import Data.List (delete, sort)
 import Data.Monoid ((<>), mempty)
@@ -89,7 +89,9 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world."
 
-    putRm iLoggedOff [] mempty (Rm "Logged off room" "PCs are placed here when their players log off." zeroBits [])
+    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 RHand) (PC iLoggedOff Human [] []) (Pla "" (zeroBits `setBit` fromEnum IsAdmin) 80 24 Nothing [] [] [] (Just iLounge))
+
+    putRm iLoggedOff [iRoot] mempty (Rm "Logged off room" "PCs are placed here when their players log off." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])
     putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Down iVoid ])
     putRm iObjCloset [ iKewpie1, iKewpie2 ] mempty (Rm "Object closet" "This closet holds objects." zeroBits [ StdLink Southwest iCentral ])

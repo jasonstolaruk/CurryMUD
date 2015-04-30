@@ -102,6 +102,7 @@ adminCmds =
     , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state to disk)."
     , mkAdminCmd "print"     adminPrint       "Print a message to the server console."
     , mkAdminCmd "profanity" adminProfanity   "Dump the profanity log."
+    , mkAdminCmd "retained"  adminRetained    "Send a retained message to a player."
     , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
     , mkAdminCmd "tell"      adminTell        "Send a message to a player."
     , mkAdminCmd "time"      adminTime        "Display the current system time."
@@ -144,6 +145,7 @@ adminAdmin (OneArgNubbed _ _ _ _) = undefined
                       else
       xs         -> patternMatchFail "adminAdmin" [ showText xs ]
 -}
+-- plaTbl.ind i %~ setPlaFlag IsAdmin (T.head s == 'Z')
 adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
 
@@ -305,6 +307,50 @@ adminProfanity p = withoutArgs adminProfanity p
 -----
 
 
+-- TODO: Help.
+adminRetained :: Action
+adminRetained p@AdviseNoArgs = advise p [ prefixAdminCmd "retained" ] advice
+  where
+    advice = T.concat [ "Please specify the PC name of a player followed by a message, as in "
+                      , quoteColor
+                      , dblQuote $ prefixAdminCmd "retained" <> " taro thank you for reporting the bug you found"
+                      , dfltColor
+                      , "." ]
+adminRetained p@(AdviseOneArg a) = advise p [ prefixAdminCmd "retained" ] advice
+  where
+    advice = T.concat [ "Please also provide a message to send, as in "
+                      , quoteColor
+                      , dblQuote $ prefixAdminCmd "retained " <> a <> " thank you for reporting the bug you found"
+                      , dfltColor
+                      , "." ]
+adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
+    unless (null logMsgs) . forM_ logMsgs . uncurry $ logPla (prefixAdminCmd "retained")
+  where
+    helper ms =
+        let s          = getSing i ms
+            plaIdSings = mkPlaIdSingList ms
+            notFound   = emptied . wrapSend mq cols $ "There is no player with the PC name of " <> dblQuote target <>
+                                                      "."
+            found (targetId, targetSing) = let targetPla = getPla targetId ms in if isLoggedIn targetPla
+              then let targetMq       = getMsgQueue targetId ms
+                       targetCols     = targetPla^.columns
+                       sentLogMsg     = (i,        T.concat [ "sent retained message to ", targetSing, ": ", dblQuote msg ])
+                       receivedLogMsg = (targetId, T.concat [ "received retained message from ", s, ": ", dblQuote msg ])
+                    in do
+                        wrapSend mq cols . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
+                        let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+                        if getPlaFlag IsNotFirstAdminTell targetPla
+                          then wrapSend targetMq targetCols targetMsg
+                          else multiWrapSend targetMq targetCols =<< [ targetMsg : msgs | msgs <- firstAdminTell targetId s ]
+                        return [ sentLogMsg, receivedLogMsg ]
+              else undefined
+        in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
+adminRetained p = patternMatchFail "adminRetained" [ showText p ]
+
+
+-----
+
+
 adminShutdown :: Action
 adminShutdown (NoArgs' i mq) = shutdownHelper i mq Nothing
 adminShutdown (Msg i mq msg) = shutdownHelper i mq . Just $ msg
@@ -346,7 +392,7 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
   where
     helper ms =
         let s          = getSing i ms
-            plaIdSings = mkPlaIdSingList ms
+            plaIdSings = [ pis | pis@(pi, _) <- mkPlaIdSingList ms, isLoggedIn . getPla pi $ ms ]
             notFound   = emptied . wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
                                                       \currently logged in."
             found (tellId, tellSing)
@@ -354,7 +400,7 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
               , tellPla        <- getPla      tellId ms
               , tellCols       <- tellPla^.columns
               , sentLogMsg     <- (i,      T.concat [ "sent message to ", tellSing, ": ", dblQuote msg ])
-              , receivedLogMsg <- (tellId, T.concat [ "received message from ", s, ": ",  dblQuote msg ]) = do
+              , receivedLogMsg <- (tellId, T.concat [ "received message from ", s,  ": ", dblQuote msg ]) = do
                   wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
                   let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
                   if getPlaFlag IsNotFirstAdminTell tellPla

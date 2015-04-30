@@ -190,7 +190,6 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
     helper ms = let ms'  = ms  & entTbl.ind i.sing   .~ s
                                & invTbl.ind iWelcome %~ (i `delete`)
                                & pcTbl .ind i.rmId   .~ iCentral
-                               & plaTbl.ind i        %~ setPlaFlag IsAdmin (T.head s == 'Z')
                                & plaTbl.ind i.interp .~ Nothing
                     ms'' = ms' & invTbl.ind iCentral %~ (sortInv ms' . (++ [i]))
                 in (ms'', (ms'', getSing i ms))
