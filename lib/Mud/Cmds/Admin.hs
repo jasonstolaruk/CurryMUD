@@ -146,6 +146,7 @@ adminAdmin (OneArgNubbed _ _ _ _) = undefined
       xs         -> patternMatchFail "adminAdmin" [ showText xs ]
 -}
 -- plaTbl.ind i %~ setPlaFlag IsAdmin (T.head s == 'Z')
+-- Inac timer?
 adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
 
@@ -343,15 +344,14 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                           else multiWrapSend targetMq targetCols =<< [ targetMsg : msgs
                                                                      | msgs <- firstAdminTell targetId s ]
                         return [ sentLogMsg, receivedLogMsg ]
-              else do
-                  targetMsg <- [ T.concat [ ts, " ", bracketQuote s, " ", msg ] | ts <- liftIO mkTimestamp ]
+              else let targetMsg = bracketQuote s <> " " <> msg in do
                   modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ [targetMsg])
+                  multiWrapSend mq cols [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ]
+                                        , parensQuote "Message retained." ]
                   let sentLogMsg     = ( i
                                        , T.concat [ "sent retained message to ", targetSing, ": ", dblQuote msg ] )
                       receivedLogMsg = ( targetId
                                        , T.concat [ "received retained message from ", s,    ": ", dblQuote msg ] )
-                  multiWrapSend mq cols [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ]
-                                        , parensQuote "Message retained." ]
                   return [ sentLogMsg, receivedLogMsg ]
         in maybe notFound found . findFullNameForAbbrev target . mkPlaIdSingList $ ms
 adminRetained p = patternMatchFail "adminRetained" [ showText p ]

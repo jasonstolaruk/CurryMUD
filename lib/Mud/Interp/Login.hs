@@ -32,7 +32,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Data.Functor ((<$>))
 import Data.Ix (inRange)
-import Data.List (delete)
+import Data.List (delete, intersperse)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..), mempty)
 import Network (HostName)
@@ -204,26 +204,31 @@ yesNo (T.toLower -> a) = guard (not . T.null $ a) >> helper
            | otherwise              = Nothing
 
 
+-- TODO: Refactor. Colorize retained msgs.
 handleLogin :: ActionParams -> MudStack ()
-handleLogin params@(ActionParams { .. }) = getState >>= \ms -> do
+handleLogin params@(ActionParams { .. }) = do
     showMotd plaMsgQueue plaCols
+    ms@(getSing plaId -> s) <- showRetainedMsgs
     look params
     prompt plaMsgQueue dfltPrompt
-    notifyArrival plaId ms
+    notifyArrival ms s
     when (getPlaFlag IsAdmin . getPla plaId $ ms) . stopInacTimer plaId $ plaMsgQueue
-    initPlaLog plaId . getSing plaId $ ms
+    initPlaLog plaId s
+  where
+    showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs) ->
+        (when (not . null $ msgs) . multiWrapSend plaMsgQueue plaCols . intersperse "" $ msgs) >> return ms
+    helper ms = let msgs = ms^.plaTbl.ind plaId.retainedMsgs
+                    ms'  = ms & plaTbl.ind plaId.retainedMsgs .~ []
+                in (ms', (ms', msgs))
+    notifyArrival ms s = do
+        bcastOtherAdmins plaId $ s <> " has logged on."
+        bcastOthersInRm  plaId . nlnl $ mkSerializedNonStdDesig plaId ms s A <> " slowly materializes out of thin air."
 
 
 stopInacTimer :: Id -> MsgQueue -> MudStack ()
 stopInacTimer i mq = do
     liftIO . atomically . writeTQueue mq $ InacStop
     logPla "stopInacTimer" i "stopping the inactivity timer."
-
-
-notifyArrival :: Id -> MudState -> MudStack ()
-notifyArrival i ms = let s = getSing i ms in do
-    bcastOtherAdmins i $ s <> " has logged on."
-    bcastOthersInRm  i . nlnl $ mkSerializedNonStdDesig i ms s A <> " slowly materializes out of thin air."
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()
