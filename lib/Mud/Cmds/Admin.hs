@@ -334,8 +334,8 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
             found (targetId, targetSing) = let targetPla = getPla targetId ms in if isLoggedIn targetPla
               then let targetMq       = getMsgQueue targetId ms
                        targetCols     = targetPla^.columns
-                       sentLogMsg     = (i,        T.concat [ "sent retained message to ", targetSing, ": ", dblQuote msg ])
-                       receivedLogMsg = (targetId, T.concat [ "received retained message from ", s, ": ", dblQuote msg ])
+                       sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", dblQuote msg ])
+                       receivedLogMsg = (targetId, T.concat [ "received message from ", s, ": ", dblQuote msg ])
                     in do
                         wrapSend mq cols . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
                         let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
@@ -343,7 +343,13 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                           then wrapSend targetMq targetCols targetMsg
                           else multiWrapSend targetMq targetCols =<< [ targetMsg : msgs | msgs <- firstAdminTell targetId s ]
                         return [ sentLogMsg, receivedLogMsg ]
-              else undefined
+              else do
+                  targetMsg <- [ T.concat [ ts, " ", bracketQuote s, " ", msg ] | ts <- liftIO mkTimestamp ]
+                  modifyState $ \ms' -> (ms' & plaTbl.ind targetId.retainedMsgs %~ (++ [targetMsg]), ())
+                  let sentLogMsg     = (i,        T.concat [ "sent retained message to ", targetSing, ": ", dblQuote msg ])
+                      receivedLogMsg = (targetId, T.concat [ "received retained message from ", s, ": ", dblQuote msg ])
+                  multiWrapSend mq cols $ [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ], parensQuote "Message retained." ]
+                  return [ sentLogMsg, receivedLogMsg ]
         in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
 adminRetained p = patternMatchFail "adminRetained" [ showText p ]
 
