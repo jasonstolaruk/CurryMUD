@@ -95,7 +95,7 @@ debugCmds =
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
-    , mkDebugCmd "keys"       debugKeys        "Dump a list of \"IntMap\" keys."
+    , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "off"        debugOff         "Dump the inventory of the logged off room."

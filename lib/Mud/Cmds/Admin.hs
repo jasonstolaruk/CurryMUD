@@ -31,7 +31,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, to)
+import Control.Lens (_1, _2, _3, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -93,6 +93,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
+    , mkAdminCmd "admin"     adminAdmin       "Toggle a player's admin status."
     , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"       adminBug         "Dump the bug log."
@@ -126,6 +127,30 @@ prefixAdminCmd = prefixCmd adminCmdChar
 -----
 
 
+-- TODO: Help file.
+adminAdmin :: Action
+adminAdmin p@AdviseNoArgs = advise p [ prefixAdminCmd "admin" ] "Please specify the full PC name of the player you \
+                                                                \wish to promote/demote."
+adminAdmin (OneArgNubbed _ _ _ _) = undefined
+{-
+(OneArgNubbed i mq cols target) = helper |$| modifyState >=> \(bs, logMsgs) ->
+    bcastNl bs >> (unless (null logMsgs) . logXXX)
+  where
+    helper ms = case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
+      []         -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " exists. (Note that you must \
+                                       \specify the full PC name of the player you wish to promote/demote.)"
+      [targetId] -> let selfSing = getSing i ms in if selfSing == target
+                      then wrapSend mq cols "You can't demote yourself."
+                      else
+      xs         -> patternMatchFail "adminAdmin" [ showText xs ]
+-}
+adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
+    wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
+
+
+-----
+
+
 adminAnnounce :: Action
 adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
   where
@@ -146,11 +171,12 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 -----
 
 
+-- TODO: Can boot a player that is not logged in?
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, followed optionally by a custom message."
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    case [ pi | pi <- ms^.pcTbl.to IM.keys {- views pcTbl IM.keys ms -}, getSing pi ms == target ] of
+    case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target, isLoggedIn . getPla pi $ ms ] of
       []       -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently connected. (Note \
                                      \that you must specify the full PC name of the player you wish to boot.)"
       [bootId] -> let selfSing = getSing i ms in if selfSing == target
