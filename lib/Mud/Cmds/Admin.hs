@@ -307,7 +307,7 @@ adminProfanity p = withoutArgs adminProfanity p
 -----
 
 
--- TODO: Help.
+-- TODO: Help file.
 adminRetained :: Action
 adminRetained p@AdviseNoArgs = advise p [ prefixAdminCmd "retained" ] advice
   where
@@ -328,29 +328,32 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
   where
     helper ms =
         let s          = getSing i ms
-            plaIdSings = mkPlaIdSingList ms
             notFound   = emptied . wrapSend mq cols $ "There is no player with the PC name of " <> dblQuote target <>
                                                       "."
             found (targetId, targetSing) = let targetPla = getPla targetId ms in if isLoggedIn targetPla
               then let targetMq       = getMsgQueue targetId ms
                        targetCols     = targetPla^.columns
                        sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", dblQuote msg ])
-                       receivedLogMsg = (targetId, T.concat [ "received message from ", s, ": ", dblQuote msg ])
+                       receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", dblQuote msg ])
                     in do
                         wrapSend mq cols . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
                         let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
                         if getPlaFlag IsNotFirstAdminTell targetPla
-                          then wrapSend targetMq targetCols targetMsg
-                          else multiWrapSend targetMq targetCols =<< [ targetMsg : msgs | msgs <- firstAdminTell targetId s ]
+                          then wrapSend      targetMq targetCols targetMsg
+                          else multiWrapSend targetMq targetCols =<< [ targetMsg : msgs
+                                                                     | msgs <- firstAdminTell targetId s ]
                         return [ sentLogMsg, receivedLogMsg ]
               else do
                   targetMsg <- [ T.concat [ ts, " ", bracketQuote s, " ", msg ] | ts <- liftIO mkTimestamp ]
-                  modifyState $ \ms' -> (ms' & plaTbl.ind targetId.retainedMsgs %~ (++ [targetMsg]), ())
-                  let sentLogMsg     = (i,        T.concat [ "sent retained message to ", targetSing, ": ", dblQuote msg ])
-                      receivedLogMsg = (targetId, T.concat [ "received retained message from ", s, ": ", dblQuote msg ])
-                  multiWrapSend mq cols $ [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ], parensQuote "Message retained." ]
+                  modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ [targetMsg])
+                  let sentLogMsg     = ( i
+                                       , T.concat [ "sent retained message to ", targetSing, ": ", dblQuote msg ] )
+                      receivedLogMsg = ( targetId
+                                       , T.concat [ "received retained message from ", s,    ": ", dblQuote msg ] )
+                  multiWrapSend mq cols [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ]
+                                        , parensQuote "Message retained." ]
                   return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
+        in maybe notFound found . findFullNameForAbbrev target . mkPlaIdSingList $ ms
 adminRetained p = patternMatchFail "adminRetained" [ showText p ]
 
 
@@ -398,7 +401,6 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
   where
     helper ms =
         let s          = getSing i ms
-            plaIdSings = [ pis | pis@(pi, _) <- mkPlaIdSingList ms, isLoggedIn . getPla pi $ ms ]
             notFound   = emptied . wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
                                                       \currently logged in."
             found (tellId, tellSing)
@@ -410,10 +412,11 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
                   wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
                   let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
                   if getPlaFlag IsNotFirstAdminTell tellPla
-                    then wrapSend tellMq tellCols targetMsg
+                    then wrapSend      tellMq tellCols targetMsg
                     else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs | msgs <- firstAdminTell tellId s ]
                   return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
+        in maybe notFound found . findFullNameForAbbrev target $ [ pis | pis@(pi, _) <- mkPlaIdSingList ms
+                                                                       , isLoggedIn . getPla pi $ ms ]
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
