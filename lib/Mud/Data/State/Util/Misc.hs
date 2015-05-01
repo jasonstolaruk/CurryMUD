@@ -8,6 +8,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , getEffName
                                 , getState
                                 , mkAdminIdSingList
+                                , mkAdminPlaIdSingList
                                 , mkPlaIdSingList
                                 , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
@@ -101,6 +102,13 @@ mkIdSingListHelper f ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
                                                        , f . getPlaFlag IsAdmin $ pt ! i
                                                        , let s = getSing i ms
                                                        , then sortWith by s ]
+
+
+-----
+
+
+mkAdminPlaIdSingList :: MudState -> [(Id, Sing)]
+mkAdminPlaIdSingList = mkIdSingListHelper (const True)
 
 
 -----

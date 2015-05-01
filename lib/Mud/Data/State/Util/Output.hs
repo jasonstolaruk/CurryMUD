@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
@@ -15,6 +15,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , ok
                                   , parsePCDesig
                                   , prompt
+                                  , retainedMsg
                                   , send
                                   , sendMsgBoot
                                   , wrapSend ) where
@@ -37,6 +38,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (views)
+import Control.Lens.Operators ((<>~), (^.))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, elemIndex)
@@ -203,6 +205,17 @@ expandPCEntName i ms sc pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> p
 
 prompt :: MsgQueue -> T.Text -> MudStack ()
 prompt mq = liftIO . atomically . writeTQueue mq . Prompt
+
+
+-----
+
+
+retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
+retainedMsg targetId ms targetMsg = let targetPla = getPla targetId ms in if isLoggedIn targetPla
+  then let targetMq   = getMsgQueue targetId ms
+           targetCols = targetPla^.columns
+       in wrapSend targetMq targetCols targetMsg
+  else modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ [targetMsg])
 
 
 -----
