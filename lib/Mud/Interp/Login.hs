@@ -27,7 +27,7 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, at)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
-import Control.Monad ((>=>), guard, when)
+import Control.Monad ((>=>), guard, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Data.Functor ((<$>))
@@ -66,9 +66,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                                                       , checkWordsDict         mq cn ])
                             (return ())
                             nextPrompt
-    Right (originId, oldSing) -> getState >>= \ms -> do
-      let cols = getColumns i ms
-      wrapSend mq cols . nlPrefix $ "Welcome back, " <> cn' <> "!"
+    Right (originId, oldSing) -> getState >>= \ms -> let cols = getColumns i ms in do
+      greet cols
       handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
       logPla    "interpName" i $ "logged on from " <> T.pack (getHostName i ms) <> "."
       logNotice "interpName" . T.concat $ [ dblQuote oldSing
@@ -95,6 +94,11 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
+    greet cols = wrapSend mq cols . nlPrefix $ if cn' == "Root"
+      then let sudoLecture = "HELLO, ROOT! We trust you have received the usual lecture from the local System \
+                             \Administrator..."
+           in zingColor <> sudoLecture <> dfltColor
+      else "Welcome back, " <> cn' <> "!"
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
 
 
@@ -204,7 +208,7 @@ yesNo (T.toLower -> a) = guard (not . T.null $ a) >> helper
            | otherwise              = Nothing
 
 
--- TODO: Refactor. Colorize retained msgs.
+-- TODO: Refactor.
 handleLogin :: ActionParams -> MudStack ()
 handleLogin params@(ActionParams { .. }) = do
     showMotd plaMsgQueue plaCols
@@ -215,8 +219,12 @@ handleLogin params@(ActionParams { .. }) = do
     when (getPlaFlag IsAdmin . getPla plaId $ ms) . stopInacTimer plaId $ plaMsgQueue
     initPlaLog plaId s
   where
-    showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs) ->
-        (when (not . null $ msgs) . multiWrapSend plaMsgQueue plaCols . intersperse "" $ msgs) >> return ms
+    showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs) -> do
+        unless (null msgs) $ do
+            send plaMsgQueue adminTellColor
+            multiWrapSend plaMsgQueue plaCols . intersperse "" $ msgs
+            send plaMsgQueue dfltColor
+        return ms
     helper ms = let msgs = ms^.plaTbl.ind plaId.retainedMsgs
                     ms'  = ms & plaTbl.ind plaId.retainedMsgs .~ []
                 in (ms', (ms', msgs))
