@@ -128,7 +128,6 @@ prefixAdminCmd = prefixCmd adminCmdChar
 -----
 
 
--- TODO: Help file.
 adminAdmin :: Action
 adminAdmin p@AdviseNoArgs = advise p [ prefixAdminCmd "admin" ] "Please specify the full PC name of the player you \
                                                                 \wish to promote/demote."
@@ -141,19 +140,17 @@ adminAdmin (OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper 
       [targetId] -> let selfSing   = getSing i ms
                         targetSing = getSing targetId ms
                         isAdmin    = getPlaFlag IsAdmin . getPla targetId $ ms
+                        mkRetained msg = retainedMsg targetId ms $ T.concat [ promoteDemoteColor
+                                                                            , selfSing
+                                                                            , msg
+                                                                            , dfltColor ]
                         fs         = if isAdmin
-                          then [ retainedMsg targetId ms $ T.concat [ adminToggleColor
-                                                                    , selfSing
-                                                                    , " has demoted you from admin status."
-                                                                    , dfltColor ]
-                               , wrapSend  mq cols     $ "You have demoted "     <> targetSing <> "."
-                               , logPla    fn i        $ "demoted "              <> targetSing <> "."
-                               , logPla    fn targetId $ "demoted by "           <> selfSing   <> "."
-                               , logNotice fn          $ selfSing <> " demoted " <> targetSing <> "." ]
-                          else [ retainedMsg targetId ms $ T.concat [ adminToggleColor
-                                                                    , selfSing
-                                                                    , " has promoted you to admin status."
-                                                                    , dfltColor ]
+                          then [ mkRetained " has demoted you from admin status."
+                               , wrapSend  mq cols     $ "You have demoted "      <> targetSing <> "."
+                               , logPla    fn i        $ "demoted "               <> targetSing <> "."
+                               , logPla    fn targetId $ "demoted by "            <> selfSing   <> "."
+                               , logNotice fn          $ selfSing <> " demoted "  <> targetSing <> "." ]
+                          else [ mkRetained " has promoted you to admin status."
                                , wrapSend  mq cols     $ "You have promoted "     <> targetSing <> "."
                                , logPla    fn i        $ "promoted "              <> targetSing <> "."
                                , logPla    fn targetId $ "promoted by "           <> selfSing   <> "."

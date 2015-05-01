@@ -10,7 +10,6 @@ module Mud.Misc.ANSI ( abbrevColor
                      , blinkANSI
                      , bootMsgColor
                      , colorizeFileTxt
-                     , adminToggleColor
                      , colors
                      , dfltColor
                      , dfltColor'
@@ -34,6 +33,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , noUnderlineANSI
                      , pagerPromptColor
                      , printConsoleColor
+                     , promoteDemoteColor
                      , promptColor
                      , quoteColor
                      , resetANSI
@@ -125,10 +125,6 @@ adminTellColor :: T.Text
 adminTellColor = magenta
 
 
-adminToggleColor :: T.Text
-adminToggleColor = mkColorANSI (Dull, White) (Dull, Red)
-
-
 announceColor :: T.Text
 announceColor = magenta
 
@@ -207,6 +203,10 @@ pagerPromptColor = mkColorANSI (Dull, Black) (Dull, White)
 
 printConsoleColor :: T.Text
 printConsoleColor = magenta
+
+
+promoteDemoteColor :: T.Text
+promoteDemoteColor = mkColorANSI (Dull, White) (Dull, Red)
 
 
 promptColor :: T.Text
