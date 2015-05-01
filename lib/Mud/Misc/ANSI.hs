@@ -10,6 +10,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , blinkANSI
                      , bootMsgColor
                      , colorizeFileTxt
+                     , adminToggleColor
                      , colors
                      , dfltColor
                      , dfltColor'
@@ -122,6 +123,10 @@ adminMsgColor = magenta
 
 adminTellColor :: T.Text
 adminTellColor = magenta
+
+
+adminToggleColor :: T.Text
+adminToggleColor = mkColorANSI (Dull, White) (Dull, Red)
 
 
 announceColor :: T.Text

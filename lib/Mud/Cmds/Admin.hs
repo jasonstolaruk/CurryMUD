@@ -142,16 +142,22 @@ adminAdmin (OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper 
                         targetSing = getSing targetId ms
                         isAdmin    = getPlaFlag IsAdmin . getPla targetId $ ms
                         fs         = if isAdmin
-                          then [ bcastNl [ (selfSing <> " has demoted you from admin status.", [targetId])
-                                         , ("You have demoted " <> targetSing <> ".",          [i]       ) ]
-                               , logPla    fn i        $ "demoted "     <> targetSing <> "."
-                               , logPla    fn targetId $ "demoted by "  <> selfSing   <> "."
-                               , logNotice fn $ selfSing <> " demoted " <> targetSing <> "." ]
-                          else [ bcastNl [ (selfSing <> " has promoted you to admin status.", [targetId])
-                                         , ("You have promoted " <> targetSing <> ".",        [i]       ) ]
-                               , logPla    fn i        $ "promoted "     <> targetSing <> "."
-                               , logPla    fn targetId $ "promoted by "  <> selfSing   <> "."
-                               , logNotice fn $ selfSing <> " promoted " <> targetSing <> "." ]
+                          then [ retainedMsg targetId ms $ T.concat [ adminToggleColor
+                                                                    , selfSing
+                                                                    , " has demoted you from admin status."
+                                                                    , dfltColor ]
+                               , wrapSend  mq cols     $ "You have demoted "     <> targetSing <> "."
+                               , logPla    fn i        $ "demoted "              <> targetSing <> "."
+                               , logPla    fn targetId $ "demoted by "           <> selfSing   <> "."
+                               , logNotice fn          $ selfSing <> " demoted " <> targetSing <> "." ]
+                          else [ retainedMsg targetId ms $ T.concat [ adminToggleColor
+                                                                    , selfSing
+                                                                    , " has promoted you to admin status."
+                                                                    , dfltColor ]
+                               , wrapSend  mq cols     $ "You have promoted "     <> targetSing <> "."
+                               , logPla    fn i        $ "promoted "              <> targetSing <> "."
+                               , logPla    fn targetId $ "promoted by "           <> selfSing   <> "."
+                               , logNotice fn          $ selfSing <> " promoted " <> targetSing <> "." ]
                     in if selfSing == target
                       then (ms, [ wrapSend mq cols "You can't demote yourself." ])
                       else (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
