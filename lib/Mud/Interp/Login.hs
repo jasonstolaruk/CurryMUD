@@ -220,9 +220,7 @@ handleLogin params@(ActionParams { .. }) = do
   where
     showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs, p) -> do
         unless (null msgs) $ do
-            send plaMsgQueue adminTellColor
             multiWrapSend plaMsgQueue plaCols . intersperse "" $ msgs
-            send plaMsgQueue dfltColor
             logPla "handleLogin showRetainedMsgs" plaId "Showed retained messages."
         return (ms, p)
     helper ms = let p   = getPla plaId ms

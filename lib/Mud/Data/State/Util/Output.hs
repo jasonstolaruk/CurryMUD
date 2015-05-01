@@ -38,7 +38,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (views)
-import Control.Lens.Operators ((<>~), (^.))
+import Control.Lens.Operators ((<>~))
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, elemIndex)
@@ -211,11 +211,10 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
-retainedMsg targetId ms targetMsg = let targetPla = getPla targetId ms in if isLoggedIn targetPla
-  then let targetMq   = getMsgQueue targetId ms
-           targetCols = targetPla^.columns
-       in wrapSend targetMq targetCols targetMsg
-  else modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ [targetMsg])
+retainedMsg targetId ms targetMsg
+  | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
+                                        in wrapSend targetMq targetCols targetMsg
+  | otherwise = modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ [targetMsg])
 
 
 -----

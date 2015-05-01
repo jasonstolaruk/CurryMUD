@@ -336,8 +336,9 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
     unless (null logMsgs) . forM_ logMsgs . uncurry $ logPla (prefixAdminCmd "retained")
   where
     helper ms =
-        let s        = getSing i ms
-            notFound = emptied . wrapSend mq cols $ "There is no player with the PC name of " <> dblQuote target <> "."
+        let s         = getSing i ms
+            targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+            notFound  = emptied . wrapSend mq cols $ "There is no player with the PC name of " <> dblQuote target <> "."
             found (targetId, targetSing) = let targetPla = getPla targetId ms in if
               | s == targetSing      -> emptied . wrapSend mq cols $ "You talk to yourself."
               | isLoggedIn targetPla ->
@@ -345,7 +346,6 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                     receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", dblQuote msg ])
                 in do
                     wrapSend mq cols . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
-                    let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
                     (retainedMsg targetId ms =<<) $ if getPlaFlag IsNotFirstAdminTell targetPla
                       then return targetMsg
                       else [ T.intercalate "\n" $ targetMsg : msgs | msgs <- firstAdminTell targetId s ]
@@ -353,7 +353,7 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
               | otherwise -> do
                   multiWrapSend mq cols [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ]
                                         , parensQuote "Message retained." ]
-                  retainedMsg targetId ms $ bracketQuote s <> " " <> msg
+                  retainedMsg targetId ms targetMsg
                   let sentLogMsg     = ( i
                                        , T.concat [ "sent retained message to ", targetSing, ": ", dblQuote msg ] )
                       receivedLogMsg = ( targetId
