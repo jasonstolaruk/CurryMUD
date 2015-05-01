@@ -232,12 +232,9 @@ handleLogin params@(ActionParams { .. }) = do
     notifyArrival ms s = do
         bcastOtherAdmins plaId $ s <> " has logged on."
         bcastOthersInRm  plaId . nlnl $ mkSerializedNonStdDesig plaId ms s A <> " slowly materializes out of thin air."
-
-
-stopInacTimer :: Id -> MsgQueue -> MudStack ()
-stopInacTimer i mq = do
-    liftIO . atomically . writeTQueue mq $ InacStop
-    logPla "stopInacTimer" i "stopping the inactivity timer."
+    stopInacTimer i mq = do
+        liftIO . atomically . writeTQueue mq $ InacStop
+        logPla "handleLogin stopInacTimer" i "stopping the inactivity timer."
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()

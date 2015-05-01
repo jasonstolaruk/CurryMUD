@@ -132,20 +132,26 @@ prefixAdminCmd = prefixCmd adminCmdChar
 adminAdmin :: Action
 adminAdmin p@AdviseNoArgs = advise p [ prefixAdminCmd "admin" ] "Please specify the full PC name of the player you \
                                                                 \wish to promote/demote."
-adminAdmin (OneArgNubbed _ _ _ _) = undefined
-{-
-(OneArgNubbed i mq cols target) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> (unless (null logMsgs) . logXXX)
+adminAdmin (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
-    helper ms = case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
-      []         -> wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " exists. (Note that you must \
-                                       \specify the full PC name of the player you wish to promote/demote.)"
-      [targetId] -> let selfSing = getSing i ms in if selfSing == target
-                      then wrapSend mq cols "You can't demote yourself."
-                      else
+    helper ms = let fn = "adminAdmin helper" in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
+      []         -> (ms, [ wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " exists. (Note that you \
+                                              \must specify the full PC name of the player you wish to \
+                                              \promote/demote.)" ])
+      [targetId] -> let selfSing   = getSing i ms
+                        targetSing = getSing targetId ms
+                        isAdmin    = getPlaFlag IsAdmin . getPla targetId $ ms
+                        fs         = case isAdmin of
+                          True  -> []
+                          False -> [ bcastNl [ (selfSing <> " has promoted you to admin status.",          [targetId])
+                                             , ("You have promoted " <> targetSing <> " to admin status.", [i]       ) ]
+                                   , logPla    fn i        $ "promoted "     <> targetSing <> "."
+                                   , logPla    fn targetId $ "promoted by "  <> selfSing   <> "."
+                                   , logNotice fn $ selfSing <> " promoted " <> targetSing <> "." ]
+                    in if selfSing == target
+                      then (ms, [ wrapSend mq cols "You can't demote yourself." ])
+                      else (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
       xs         -> patternMatchFail "adminAdmin" [ showText xs ]
--}
--- plaTbl.ind i %~ setPlaFlag IsAdmin (T.head s == 'Z')
 -- Inac timer?
 adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
