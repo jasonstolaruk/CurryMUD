@@ -15,6 +15,7 @@ import Mud.Data.State.Util.Set
 import Mud.Misc.ANSI
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
+import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -22,6 +23,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
+import Control.Arrow (first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
@@ -32,7 +34,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Data.Functor ((<$>))
 import Data.Ix (inRange)
-import Data.List (delete, intersperse)
+import Data.List (delete, intersperse, partition)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..), mempty)
 import Network (HostName)
@@ -220,7 +222,12 @@ handleLogin params@(ActionParams { .. }) = do
   where
     showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs, p) -> do
         unless (null msgs) $ do
-            multiWrapSend plaMsgQueue plaCols . intersperse "" $ msgs
+            let (fromAdmins, others) = first (map T.tail) . partition ((== retainedFromAdminMarker) . T.head) $ msgs
+            unless (null others) . multiWrapSend plaMsgQueue plaCols . intersperse "" $ others
+            unless (null fromAdmins) $ let m   = "message" <> case fromAdmins of [_] -> ""
+                                                                                 _   -> "s"
+                                           msg = "You missed the following " <> m <> " while you were away:"
+                                       in multiWrapSend plaMsgQueue plaCols $ msg : fromAdmins
             logPla "handleLogin showRetainedMsgs" plaId "Showed retained messages."
         return (ms, p)
     helper ms = let p   = getPla plaId ms

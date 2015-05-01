@@ -75,3 +75,10 @@ charTokenDelimiter  = '#'
 indentTagChar       = '`'
 msgTokenDelimiter   = '@'
 styleTokenDelimiter = '\\'
+
+
+-- ==================================================
+-- Other:
+
+retainedFromAdminMarker :: Char
+retainedFromAdminMarker = '\133'

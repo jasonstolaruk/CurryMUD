@@ -340,7 +340,12 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
   where
     helper ms =
         let s         = getSing i ms
-            targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+            targetMsg = T.concat [ T.singleton retainedFromAdminMarker
+                                 , bracketQuote s
+                                 , " "
+                                 , adminTellColor
+                                 , msg
+                                 , dfltColor ]
             notFound  = emptied . wrapSend mq cols $ "There is no player with the PC name of " <> dblQuote target <> "."
             found (targetId, targetSing) = let targetPla = getPla targetId ms in if
               | s == targetSing      -> emptied . wrapSend mq cols $ "You talk to yourself."
