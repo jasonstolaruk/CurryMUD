@@ -208,26 +208,27 @@ yesNo (T.toLower -> a) = guard (not . T.null $ a) >> helper
            | otherwise              = Nothing
 
 
--- TODO: Refactor.
 handleLogin :: ActionParams -> MudStack ()
 handleLogin params@(ActionParams { .. }) = do
     showMotd plaMsgQueue plaCols
-    ms@(getSing plaId -> s) <- showRetainedMsgs
+    (ms@(getSing plaId -> s), p) <- showRetainedMsgs
     look params
     prompt plaMsgQueue dfltPrompt
     notifyArrival ms s
-    when (getPlaFlag IsAdmin . getPla plaId $ ms) . stopInacTimer plaId $ plaMsgQueue
+    when (getPlaFlag IsAdmin p) . stopInacTimer plaId $ plaMsgQueue
     initPlaLog plaId s
   where
-    showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs) -> do
+    showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs, p) -> do
         unless (null msgs) $ do
             send plaMsgQueue adminTellColor
             multiWrapSend plaMsgQueue plaCols . intersperse "" $ msgs
             send plaMsgQueue dfltColor
-        return ms
-    helper ms = let msgs = ms^.plaTbl.ind plaId.retainedMsgs
-                    ms'  = ms & plaTbl.ind plaId.retainedMsgs .~ []
-                in (ms', (ms', msgs))
+            logPla "handleLogin showRetainedMsgs" plaId "Showed retained messages."
+        return (ms, p)
+    helper ms = let p   = getPla plaId ms
+                    p'  = p & retainedMsgs .~ []
+                    ms' = ms & plaTbl.ind plaId .~ p'
+                in (ms', (ms', p^.retainedMsgs, p'))
     notifyArrival ms s = do
         bcastOtherAdmins plaId $ s <> " has logged on."
         bcastOthersInRm  plaId . nlnl $ mkSerializedNonStdDesig plaId ms s A <> " slowly materializes out of thin air."
