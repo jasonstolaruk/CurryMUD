@@ -137,14 +137,14 @@ adminAdmin (OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper 
       []         -> (ms, [ wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " exists. (Note that you \
                                               \must specify the full PC name of the player you wish to \
                                               \promote/demote.)" ])
-      [targetId] -> let selfSing   = getSing i ms
-                        targetSing = getSing targetId ms
-                        isAdmin    = getPlaFlag IsAdmin . getPla targetId $ ms
+      [targetId] -> let selfSing       = getSing i ms
+                        targetSing     = getSing targetId ms
+                        isAdmin        = getPlaFlag IsAdmin . getPla targetId $ ms
                         mkRetained msg = retainedMsg targetId ms $ T.concat [ promoteDemoteColor
                                                                             , selfSing
                                                                             , msg
                                                                             , dfltColor ]
-                        fs         = if isAdmin
+                        fs = if isAdmin
                           then [ mkRetained " has demoted you from admin status."
                                , wrapSend  mq cols     $ "You have demoted "      <> targetSing <> "."
                                , logPla    fn i        $ "demoted "               <> targetSing <> "."

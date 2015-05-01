@@ -4,8 +4,7 @@
 #dretained name message
 
 \uDESCRIPTION\n
-This command allows you to send a message to a player who is currently not logged in. The player will see your message the next time he/she logs in (your message is "retained").
-In the case that the recipient of your message is logged in when you execute this command, your message will be sent immediately.
+Send a message to a player. If the recipient is currently logged in, the message will be delivered immediately. If the recipient is currently logged off, the message will be retained such that the recipient will see the message the next time he/she logs in.
 
 \uEXAMPLES\n
 \q"#dretained taro thank you for reporting the bug you found"\d4`
