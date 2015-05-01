@@ -1,0 +1,13 @@
+\h #dRETAINED \d
+
+\uUSAGE\n
+#dretained name message
+
+\uDESCRIPTION\n
+This command allows you to send a message to a player who is currently not logged in. The player will see your message the next time he/she logs in (your message is "retained").
+In the case that the recipient of your message is logged in when you execute this command, your message will be sent immediately.
+
+\uEXAMPLES\n
+\q"#dretained taro thank you for reporting the bug you found"\d4`
+
+\uSEE ALSO\n

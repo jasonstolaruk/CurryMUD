@@ -308,7 +308,6 @@ adminProfanity p = withoutArgs adminProfanity p
 -----
 
 
--- TODO: Help file.
 adminRetained :: Action
 adminRetained p@AdviseNoArgs = advise p [ prefixAdminCmd "retained" ] advice
   where

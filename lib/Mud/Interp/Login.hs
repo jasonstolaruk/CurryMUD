@@ -226,7 +226,7 @@ handleLogin params@(ActionParams { .. }) = do
             logPla "handleLogin showRetainedMsgs" plaId "Showed retained messages."
         return (ms, p)
     helper ms = let p   = getPla plaId ms
-                    p'  = p & retainedMsgs .~ []
+                    p'  = p  & retainedMsgs     .~ []
                     ms' = ms & plaTbl.ind plaId .~ p'
                 in (ms', (ms', p^.retainedMsgs, p'))
     notifyArrival ms s = do
