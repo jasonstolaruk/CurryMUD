@@ -71,9 +71,9 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
     Right (originId, oldSing) -> getState >>= \ms -> let cols = getColumns i ms in do
       greet cols
       handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-      logPla    "interpName" i $ "logged on from " <> T.pack (getHostName i ms) <> "."
+      logPla    "interpName" i $ "logged in from " <> T.pack (getHostName i ms) <> "."
       logNotice "interpName" . T.concat $ [ dblQuote oldSing
-                                          , " has logged on as "
+                                          , " has logged in as "
                                           , cn'
                                           , ". Id "
                                           , showText originId
@@ -188,8 +188,8 @@ interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
   Just True -> helper |$| modifyState >=> \(getPla i -> p, oldSing) -> do
       send mq . nl $ ""
       handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-      logPla    "interpConfirmName" i $ "new character logged on from " <> T.pack (p^.hostName) <> "."
-      logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged on as " <> s <> " (new character)."
+      logPla    "interpConfirmName" i $ "new character logged in from " <> T.pack (p^.hostName) <> "."
+      logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged in as " <> s <> " (new character)."
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
@@ -235,7 +235,7 @@ handleLogin params@(ActionParams { .. }) = do
                     ms' = ms & plaTbl.ind plaId .~ p'
                 in (ms', (ms', p^.retainedMsgs, p'))
     notifyArrival ms s = do
-        bcastOtherAdmins plaId $ s <> " has logged on."
+        bcastOtherAdmins plaId $ s <> " has logged in."
         bcastOthersInRm  plaId . nlnl $ mkSerializedNonStdDesig plaId ms s A <> " slowly materializes out of thin air."
     stopInacTimer i mq = do
         liftIO . atomically . writeTQueue mq $ InacStop

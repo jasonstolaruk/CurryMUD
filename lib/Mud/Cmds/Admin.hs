@@ -134,7 +134,7 @@ adminAdmin p@AdviseNoArgs = advise p [ prefixAdminCmd "admin" ] "Please specify 
 adminAdmin (OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper >>= sequence_
   where
     helper ms = let fn = "adminAdmin helper" in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
-      []         -> (ms, [ wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " exists. (Note that you \
+      []         -> (ms, [ wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> ". (Note that you \
                                               \must specify the full PC name of the player you wish to \
                                               \promote/demote.)" ])
       [targetId] -> let selfSing       = getSing i ms
@@ -262,23 +262,30 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
     forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
   where
-    helper ms = let (pt, msgs, logMsgs) = foldr (peep (getSing i ms) (mkPlaIdSingList ms)) (ms^.plaTbl, [], []) as
-                in (ms & plaTbl .~ pt, (msgs, logMsgs))
-    peep s plaIdSings target a@(pt, _, _) =
-        let notFound = a & _2 %~ (sorry :)
-            sorry    = "No PC by the name of " <> dblQuote target <> " is currently connected."
-            found (peepId, peepSing) = if peepId `notElem` pt^.ind i.peeping
-              then let pt'     = pt & ind i     .peeping %~ (peepId :)
-                                    & ind peepId.peepers %~ (i      :)
-                       msg     = "You are now peeping " <> peepSing <> "."
-                       logMsgs = [("started peeping " <> peepSing, (peepId, s <> " started peeping."))]
-                   in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
-              else let pt'     = pt & ind i     .peeping %~ (peepId `delete`)
-                                    & ind peepId.peepers %~ (i      `delete`)
-                       msg     = "You are no longer peeping " <> peepSing <> "."
-                       logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
-                   in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
-        in maybe notFound found . findFullNameForAbbrev target $ plaIdSings
+    helper ms =
+        let s       = getSing i ms
+            idSings = mkAdminPlaIdSingList ms
+            peep target a@(pt, _, _) =
+                let notFound = a & _2 %~ ("There is no PC by the name of " <> dblQuote target <> "." :)
+                    found (peepId@(flip getPla ms -> peepPla), peepSing) = if peepId `notElem` pt^.ind i.peeping
+                      then if
+                        | not . isLoggedIn $ peepPla -> a & _2 %~ (peepSing <> " is not logged in." :)
+                        | peepSing == s              -> a & _2 %~ ("You can't peep yourself."       :)
+                        | getPlaFlag IsAdmin peepPla -> a & _2 %~ ("You can't peep an admin."       :)
+                        | otherwise                  ->
+                          let pt'     = pt & ind i     .peeping %~ (peepId :)
+                                           & ind peepId.peepers %~ (i      :)
+                              msg     = "You are now peeping " <> peepSing <> "."
+                              logMsgs = [("started peeping " <> peepSing, (peepId, s <> " started peeping."))]
+                          in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
+                      else let pt'     = pt & ind i     .peeping %~ (peepId `delete`)
+                                            & ind peepId.peepers %~ (i      `delete`)
+                               msg     = "You are no longer peeping " <> peepSing <> "."
+                               logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
+                           in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
+                in maybe notFound found . findFullNameForAbbrev target $ idSings
+            res = foldr peep (ms^.plaTbl, [], []) as
+        in (ms & plaTbl .~ res^._1, (res^._2, res^._3))
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 
