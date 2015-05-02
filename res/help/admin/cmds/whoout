@@ -5,6 +5,8 @@
 
 \uDESCRIPTION\n
 Display a list of the characters who are currently logged out. Optionally, search the list for one or more terms.
+* denotes an administrator.
+@ denotes an incognito.
 
 \uEXAMPLES\n
 \q"#dwhoout"\d to display the full character list.4`

@@ -5,6 +5,8 @@
 
 \uDESCRIPTION\n
 Display a list of the characters who are currently logged in. Optionally, search the list for one or more terms.
+* denotes an administrator.
+@ denotes an incognito.
 
 \uEXAMPLES\n
 \q"#dwhoin"\d to display the full character list.4`

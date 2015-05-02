@@ -98,6 +98,7 @@ adminCmds =
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"       adminBug         "Dump the bug log."
     , mkAdminCmd "date"      adminDate        "Display the current system date."
+    , mkAdminCmd "incognito" adminIncognito   "Toggle your incognito status."
     , mkAdminCmd "peep"      adminPeep        "Start or stop peeping one or more players."
     , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state to disk)."
     , mkAdminCmd "print"     adminPrint       "Print a message to the server console."
@@ -248,6 +249,22 @@ adminDate p = withoutArgs adminDate p
 adminDispCmdList :: Action
 adminDispCmdList p@(LowerNub' i as) = dispCmdList adminCmds p >> logPlaExecArgs (prefixAdminCmd "?") as i
 adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ showText p ]
+
+
+-----
+
+
+adminIncognito :: Action
+adminIncognito (NoArgs i mq cols) = modifyState helper >>= sequence_
+  where
+    helper ms = let isIncognito = getPlaFlag IsIncognito . getPla i $ ms
+                    fs          = if isIncognito
+                      then [ wrapSend mq cols "You are no longer incognito."
+                           , logPla "adminIncognito helper" i "no longer incognito." ]
+                      else [ wrapSend mq cols "You have gone incognito."
+                           , logPla "adminIncognito helper" i "went incognito." ]
+                in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncognito), fs)
+adminIncognito p = withoutArgs adminIncognito p
 
 
 -----
@@ -517,11 +534,18 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
                                (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
                                ias              = zip is' . styleAbbrevs Don'tBracket $ ss
                                mkCharTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
-                                                  in T.concat [ pad 13 a, padOrTrunc 7 s, padOrTrunc 10 r ]
+                                                      name                  = mkAnnotatedName i a
+                                                  in T.concat [ pad 15 name, padOrTrunc 7 s, padOrTrunc 10 r ]
                            in map mkCharTxt ias ++ [ T.concat [ mkNumOfCharsTxt is, " ", showText inOrOut, "." ] ]
   where
-    predicate = case inOrOut of LoggedIn  -> isLoggedIn
-                                LoggedOut -> not . isLoggedIn
+    predicate           = case inOrOut of LoggedIn  -> isLoggedIn
+                                          LoggedOut -> not . isLoggedIn
+    mkAnnotatedName i a = let p = getPla i ms
+                              admin | getPlaFlag IsAdmin p     = asteriskColor <> "*" <> dfltColor
+                                    | otherwise                = ""
+                              incog | getPlaFlag IsIncognito p = asteriskColor <> "@" <> dfltColor
+                                    | otherwise                = ""
+                          in a <> admin <> incog
     mkNumOfCharsTxt (length -> nop) | nop == 1  = "1 character"
                                     | otherwise = showText nop <> " characters"
 
