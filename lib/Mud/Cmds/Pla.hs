@@ -975,9 +975,9 @@ handleEgress i = do
         stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
                                         in foldr f pt peeperIds
     movePC ms ri = ms & invTbl     .ind ri         %~ (i `delete`)
-                      & invTbl     .ind iLoggedOff %~ (i :)
+                      & invTbl     .ind iLoggedOut %~ (i :)
                       & msgQueueTbl.at  i          .~ Nothing
-                      & pcTbl      .ind i.rmId     .~ iLoggedOff
+                      & pcTbl      .ind i.rmId     .~ iLoggedOut
                       & plaTbl     .ind i.lastRmId .~ Just ri
 
 

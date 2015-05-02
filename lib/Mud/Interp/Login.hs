@@ -115,7 +115,7 @@ logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId
   where
     movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
-                         & invTbl  .ind iLoggedOff     %~ (originId `delete`)
+                         & invTbl  .ind iLoggedOut     %~ (originId `delete`)
                          & invTbl  .ind newRmId        %~ (sortInv ms' . (++ [newId]))
                          & pcTbl   .ind newId.rmId     .~ newRmId
                          & plaTbl  .ind newId.lastRmId .~ Nothing

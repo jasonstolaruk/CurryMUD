@@ -98,7 +98,7 @@ debugCmds =
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
-    , mkDebugCmd "off"        debugOff         "Dump the inventory of the logged off room."
+    , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
     , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
@@ -384,11 +384,11 @@ letterToNum c | isDigit c = digitToInt c
 -----
 
 
-debugOff :: Action
-debugOff (NoArgs i mq cols) = getState >>= \ms -> do
-    wrapSend mq cols . showText . getInv iLoggedOff $ ms
-    logPlaExec (prefixDebugCmd "off") i
-debugOff p = withoutArgs debugOff p
+debugOut :: Action
+debugOut (NoArgs i mq cols) = getState >>= \ms -> do
+    wrapSend mq cols . showText . getInv iLoggedOut $ ms
+    logPlaExec (prefixDebugCmd "out") i
+debugOut p = withoutArgs debugOut p
 
 
 -----

@@ -89,9 +89,9 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world."
 
-    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 RHand) (PC iLoggedOff Human [] []) (Pla "" (zeroBits `setBit` fromEnum IsAdmin) 80 24 Nothing [] [] [] (Just iLounge))
+    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 RHand) (PC iLoggedOut Human [] []) (Pla "" (zeroBits `setBit` fromEnum IsAdmin) 80 24 Nothing [] [] [] (Just iLounge))
 
-    putRm iLoggedOff [iRoot] mempty (Rm "Logged off room" "PCs are placed here when their players log off." zeroBits [])
+    putRm iLoggedOut [iRoot] mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])
     putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Down iVoid ])
     putRm iObjCloset [ iKewpie1, iKewpie2 ] mempty (Rm "Object closet" "This closet holds objects." zeroBits [ StdLink Southwest iCentral ])
@@ -222,9 +222,9 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in
 movePCs :: MudStack ()
 movePCs = modifyState $ \ms ->
     let idsWithRmIds       = let pairs = IM.foldrWithKey (\i pc -> ((i, pc^.rmId) :)) [] $ ms^.pcTbl
-                             in filter ((/= iLoggedOff) . snd) pairs
+                             in filter ((/= iLoggedOut) . snd) pairs
         helper (i, ri) ms' = ms' & invTbl.ind ri         %~ (i `delete`)
-                                 & invTbl.ind iLoggedOff %~ (i :)
-                                 & pcTbl .ind i.rmId     .~ iLoggedOff
+                                 & invTbl.ind iLoggedOut %~ (i :)
+                                 & pcTbl .ind i.rmId     .~ iLoggedOut
                                  & plaTbl.ind i.lastRmId .~ Just ri
     in (foldr helper ms idsWithRmIds, ())

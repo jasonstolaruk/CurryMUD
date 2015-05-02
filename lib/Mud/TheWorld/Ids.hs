@@ -9,7 +9,7 @@ module Mud.TheWorld.Ids where
 -- ==================================================
 
 
-iLoggedOff = 0 :: Int
+iLoggedOut = 0 :: Int
 
 iWelcome = 1 :: Int
 
