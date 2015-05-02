@@ -422,24 +422,24 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
     unless (null logMsgs) . forM_ logMsgs . uncurry $ logPla (prefixAdminCmd "tell")
   where
     helper ms =
-        let s          = getSing i ms
-            notFound   = emptied . wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
-                                                      \currently logged in." -- TODO: There is no PC by the name of...
-            found (tellId, tellSing)
-              | tellMq         <- getMsgQueue tellId ms
-              , tellPla        <- getPla      tellId ms
-              , tellCols       <- tellPla^.columns
-              , sentLogMsg     <- (i,      T.concat [ "sent message to ", tellSing, ": ", dblQuote msg ])
-              , receivedLogMsg <- (tellId, T.concat [ "received message from ", s,  ": ", dblQuote msg ]) =
-                  if s == tellSing then emptied . wrapSend mq cols $ "You talk to yourself." else do
-                      wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
-                      let targetMsg = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
-                      if getPlaFlag IsNotFirstAdminTell tellPla
-                        then wrapSend      tellMq tellCols targetMsg
-                        else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs | msgs <- firstAdminTell tellId s ]
-                      return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target $ [ pis | pis@(pi, _) <- mkAdminPlaIdSingList ms
-                                                                       , isLoggedIn . getPla pi $ ms ]
+        let s        = getSing i ms
+            notFound = emptied . wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> "."
+            found (tellId@(flip getPla ms -> tellPla), tellSing) = if
+              | not . isLoggedIn $ tellPla -> emptied . wrapSend mq cols $ tellSing <> " is not logged in."
+              | tellSing == s              -> emptied . wrapSend mq cols $ "You talk to yourself."
+              | otherwise                  ->
+                let tellMq         = getMsgQueue tellId ms
+                    tellCols       = tellPla^.columns
+                    targetMsg      = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+                    sentLogMsg     = (i,      T.concat [ "sent message to ", tellSing, ": ", dblQuote msg ])
+                    receivedLogMsg = (tellId, T.concat [ "received message from ", s,  ": ", dblQuote msg ])
+                in do
+                    wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
+                    if getPlaFlag IsNotFirstAdminTell tellPla
+                      then wrapSend      tellMq tellCols targetMsg
+                      else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs | msgs <- firstAdminTell tellId s ]
+                    return [ sentLogMsg, receivedLogMsg ]
+        in maybe notFound found . findFullNameForAbbrev target . mkAdminPlaIdSingList $ ms
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
