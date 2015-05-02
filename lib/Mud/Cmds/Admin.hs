@@ -354,7 +354,7 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                                  , adminTellColor
                                  , msg
                                  , dfltColor ]
-            notFound  = emptied . wrapSend mq cols $ "There is no player with the PC name of " <> dblQuote target <> "."
+            notFound  = emptied . wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> "."
             found (targetId, targetSing) = let targetPla = getPla targetId ms in if
               | s == targetSing      -> emptied . wrapSend mq cols $ "You talk to yourself."
               | isLoggedIn targetPla ->
@@ -424,7 +424,7 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
     helper ms =
         let s          = getSing i ms
             notFound   = emptied . wrapSend mq cols $ "No player with the PC name of " <> dblQuote target <> " is \
-                                                      \currently logged in."
+                                                      \currently logged in." -- TODO: There is no PC by the name of...
             found (tellId, tellSing)
               | tellMq         <- getMsgQueue tellId ms
               , tellPla        <- getPla      tellId ms
