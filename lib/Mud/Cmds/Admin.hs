@@ -263,15 +263,14 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
   where
     helper ms =
-        let s       = getSing i ms
-            idSings = mkAdminPlaIdSingList ms
+        let s     = getSing i ms
+            apiss = [ apis | apis@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
             peep target a@(pt, _, _) =
-                let notFound = a & _2 %~ ("There is no PC by the name of " <> dblQuote target <> "." :)
+                let notFound = a & _2 %~ ("There is no logged in PC by the name of " <> dblQuote target <> "." :)
                     found (peepId@(flip getPla ms -> peepPla), peepSing) = if peepId `notElem` pt^.ind i.peeping
                       then if
-                        | not . isLoggedIn $ peepPla -> a & _2 %~ (peepSing <> " is not logged in." :)
-                        | peepSing == s              -> a & _2 %~ ("You can't peep yourself."       :)
-                        | getPlaFlag IsAdmin peepPla -> a & _2 %~ ("You can't peep an admin."       :)
+                        | peepSing == s              -> a & _2 %~ ("You can't peep yourself." :)
+                        | getPlaFlag IsAdmin peepPla -> a & _2 %~ ("You can't peep an admin." :)
                         | otherwise                  ->
                           let pt'     = pt & ind i     .peeping %~ (peepId :)
                                            & ind peepId.peepers %~ (i      :)
@@ -283,7 +282,7 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
                                msg     = "You are no longer peeping " <> peepSing <> "."
                                logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
-                in maybe notFound found . findFullNameForAbbrev target $ idSings
+                in maybe notFound found . findFullNameForAbbrev target $ apiss
             res = foldr peep (ms^.plaTbl, [], []) as
         in (ms & plaTbl .~ res^._1, (res^._2, res^._3))
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
@@ -423,23 +422,22 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
   where
     helper ms =
         let s        = getSing i ms
-            notFound = emptied . wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> "."
-            found (tellId@(flip getPla ms -> tellPla), tellSing) = if
-              | not . isLoggedIn $ tellPla -> emptied . wrapSend mq cols $ tellSing <> " is not logged in."
-              | tellSing == s              -> emptied . wrapSend mq cols $ "You talk to yourself."
-              | otherwise                  ->
-                let tellMq         = getMsgQueue tellId ms
-                    tellCols       = tellPla^.columns
-                    targetMsg      = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
-                    sentLogMsg     = (i,      T.concat [ "sent message to ", tellSing, ": ", dblQuote msg ])
-                    receivedLogMsg = (tellId, T.concat [ "received message from ", s,  ": ", dblQuote msg ])
-                in do
-                    wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
-                    if getPlaFlag IsNotFirstAdminTell tellPla
-                      then wrapSend      tellMq tellCols targetMsg
-                      else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs | msgs <- firstAdminTell tellId s ]
-                    return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target . mkAdminPlaIdSingList $ ms
+            apiss    = [ apis | apis@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+            notFound = emptied . wrapSend mq cols $ "There is no logged in PC by the name of " <> dblQuote target <> "."
+            found (tellId@(flip getPla ms -> tellPla), tellSing) = if tellSing == s
+              then emptied . wrapSend mq cols $ "You talk to yourself."
+              else let tellMq         = getMsgQueue tellId ms
+                       tellCols       = tellPla^.columns
+                       targetMsg      = T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
+                       sentLogMsg     = (i,      T.concat [ "sent message to ", tellSing, ": ", dblQuote msg ])
+                       receivedLogMsg = (tellId, T.concat [ "received message from ", s,  ": ", dblQuote msg ])
+                   in do
+                       wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
+                       if getPlaFlag IsNotFirstAdminTell tellPla
+                         then wrapSend      tellMq tellCols targetMsg
+                         else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs | msgs <- firstAdminTell tellId s ]
+                       return [ sentLogMsg, receivedLogMsg ]
+        in maybe notFound found . findFullNameForAbbrev target $ apiss
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
