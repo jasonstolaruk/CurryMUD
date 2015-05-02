@@ -216,12 +216,11 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dfltColor
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let adminIdSings = filter ((/= i) . fst) . mkAdminIdSingList $ ms
+    let adminIdSings = [ ais | ais@(ai, _) <- mkAdminIdSingList ms, isLoggedIn . getPla ai $ ms ]
         s            = getSing i ms
-        notFound | target `T.isInfixOf` s = wrapSend mq cols   "You can't send a message to yourself."
-                 | otherwise              = wrapSend mq cols $ "No administrator by the name of " <>
-                                                               dblQuote target                    <>
-                                                               " is currently logged in."
+        notFound     = wrapSend mq cols $ "No administrator by the name of " <> dblQuote target <> " is currently \
+                                          \logged in."
+        found (adminId, _        ) | adminId == i = wrapSend mq cols "You talk to yourself."
         found (adminId, adminSing) | adminMq <- getMsgQueue adminId ms, adminCols <- getColumns adminId ms = do
             wrapSend mq      cols      . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
             wrapSend adminMq adminCols . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor      ]
