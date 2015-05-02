@@ -72,9 +72,6 @@ import qualified Data.Text.IO as T (readFile)
 {-# ANN module         ("HLint: ignore Use camelCase" :: String) #-}
 
 
--- TODO: Are all commands are confirming that targets are signed in?
-
-
 -----
 
 
