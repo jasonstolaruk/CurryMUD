@@ -37,7 +37,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -301,7 +301,7 @@ emote p@(ActionParams { plaId, args })
                       | otherwise          = capitalizeMsg . T.unwords $ args
           toOthersMsg'      = T.replace enc (serialize d { shouldCap = Don'tCap }) . punctuateMsg $ toOthersMsg
           toOthersBroadcast = (nlnl . bracketQuote $ toOthersMsg', plaId `delete` pcIds d)
-      in bcast ( toOthersBroadcast : toSelfBroadcast ) >> logPlaOut "emote" plaId [toSelfMsg]
+      in bcastHelper ms toSelfBroadcast toOthersBroadcast >> logPlaOut "emote" plaId [toSelfMsg]
   | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
   | otherwise = getState >>= \ms ->
     let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
@@ -310,7 +310,7 @@ emote p@(ActionParams { plaId, args })
         toSelfBroadcast            = mkBroadcast plaId . nlnl $ toSelfMsg
         toOthersMsg                = bracketQuote $ serialize d <> " " <> msg
         toOthersBroadcast          = (nlnl toOthersMsg, plaId `delete` pcIds d)
-    in bcast ( toOthersBroadcast : toSelfBroadcast ) >> logPlaOut "emote" plaId [toSelfMsg]
+    in bcastHelper ms toSelfBroadcast toOthersBroadcast >> logPlaOut "emote" plaId [toSelfMsg]
   where
     h@(T.head -> c) = head args
     enc             = T.singleton emoteNameChar
@@ -327,6 +327,9 @@ emote p@(ActionParams { plaId, args })
                                , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
                                , dfltColor
                                , "." ]
+    bcastHelper ms toSelf (pure -> toOthers) = do
+        bcast toSelf
+        unless (getPlaFlag IsIncognito . getPla plaId $ ms) . bcast $ toOthers
 
 
 -----
