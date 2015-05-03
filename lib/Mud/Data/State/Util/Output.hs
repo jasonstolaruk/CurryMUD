@@ -2,6 +2,8 @@
 
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
+                                  , bcastIfNotIncog
+                                  , bcastIfNotIncogNl
                                   , bcastNl
                                   , bcastOtherAdmins
                                   , bcastOthersInRm
@@ -35,6 +37,7 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Arrow (second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (views)
@@ -80,8 +83,28 @@ bcastAdminsHelper msg targetIds = bcastNl [( adminBroadcastColor <> msg <> dfltC
 -----
 
 
+bcastIfNotIncog :: Id -> [Broadcast] -> MudStack ()
+bcastIfNotIncog i bs = getState >>= \ms -> bcast $ if getPlaFlag IsIncognito . getPla i $ ms
+                                             then map (second (filter (== i))) bs
+                                             else bs
+
+
+-----
+
+
+bcastIfNotIncogNl :: Id -> [Broadcast] -> MudStack ()
+bcastIfNotIncogNl i = bcastIfNotIncog i . mkNlBs
+
+
+mkNlBs :: [Broadcast] -> [Broadcast]
+mkNlBs bs = bs ++ [("\n", nubSort . concatMap snd $ bs)]
+
+
+-----
+
+
 bcastNl :: [Broadcast] -> MudStack ()
-bcastNl bs = bcast $ bs ++ [("\n", nubSort . concatMap snd $ bs)]
+bcastNl = bcast . mkNlBs
 
 
 -----

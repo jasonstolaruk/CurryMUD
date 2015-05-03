@@ -177,7 +177,7 @@ type Sing = T.Text
 type Plur = T.Text
 
 
-data EntFlags = EntFlagsTODO deriving Enum
+data EntFlags = IsInvis deriving Enum
 
 
 -- ==================================================
@@ -318,7 +318,8 @@ data PlaFlags = IsAdmin
               | IsIncognito
               | IsNotFirstAdminTell
               | IsNotFirstLook
-              | IsNotFirstMobSay deriving Enum
+              | IsNotFirstMobSay
+              | IsSeeingInvis deriving Enum
 
 
 type Interp  = CmdName -> ActionParams -> MudStack ()
