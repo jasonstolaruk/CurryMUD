@@ -216,7 +216,8 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dfltColor
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let adminIdSings = [ ais | ais@(ai, _) <- mkAdminIdSingList ms, isLoggedIn . getPla ai $ ms ]
+    let adminIdSings = [ ais | ais@(ai, _) <- mkAdminIdSingList ms
+                             , let p = getPla ai ms in isLoggedIn p && (not . getPlaFlag IsIncognito $ p) ]
         s            = getSing i ms
         notFound     = wrapSend mq cols $ "No administrator by the name of " <> dblQuote target <> " is currently \
                                           \logged in."
