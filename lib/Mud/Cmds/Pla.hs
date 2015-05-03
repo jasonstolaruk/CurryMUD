@@ -422,7 +422,7 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dfltColor
                                   , "." ]
 getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
   where
     helper ms =
         let ri                  = getRmId i ms
@@ -456,7 +456,7 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
   Right (bs, logMsg) -> do
       look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-      bcast bs
+      bcastIfNotIncog i bs
       logPla "tryMove" i logMsg
   where
     helper ms =
@@ -625,7 +625,7 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
   else let introsTxt = T.intercalate ", " intros in
       multiWrapSend mq cols [ "You know the following names:", introsTxt ] >> logPlaOut "intro" i [introsTxt]
 intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
-    bcast bs >> (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs)
+    bcastIfNotIncog i bs >> (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs)
   where
     helper ms =
         let invCoins@(first (i `delete`) -> invCoins') = getPCRmInvCoins i ms
@@ -715,9 +715,9 @@ look (NoArgs i mq cols) = getState >>= \ms ->
         top    = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
         bottom = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
     in send mq . nl . T.concat $ top : bottom
-look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTargetDesigs) -> do
+look (LowerNub i mq cols as) = helper |$| modifyState >=> \(ms, msg, bs, maybeTargetDesigs) -> do
     send mq msg
-    bcast bs
+    unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ bs
     let logHelper targetDesigs | targetSings <- [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- targetDesigs ]
                                = logPla "look" i $ "looked at: " <> T.intercalate ", " targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
@@ -739,12 +739,12 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTarget
                            toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
                                       , targetId `delete` pis)
                        in toTarget : toOthers : acc
-               in (ms & plaTbl .~ pt, ( msg
-                                      , foldr mkBroadcastsForTarget [] targetDesigs
-                                      , targetDesigs |!| Just targetDesigs ))
+                   ms' = ms & plaTbl .~ pt
+               in (ms', (ms', msg, foldr mkBroadcastsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
           else let msg        = wrapUnlinesNl cols "You don't see anything here to look at."
                    (pt, msg') = firstLook i cols (ms^.plaTbl, msg)
-               in (ms & plaTbl .~ pt, (msg', [], Nothing))
+                   ms'        = ms & plaTbl .~ pt
+               in (ms', (ms', msg', [], Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
