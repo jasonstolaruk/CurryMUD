@@ -156,9 +156,10 @@ adminAdmin (OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper 
                                , logPla    fn i        $ "promoted "              <> targetSing <> "."
                                , logPla    fn targetId $ "promoted by "           <> selfSing   <> "."
                                , logNotice fn          $ selfSing <> " promoted " <> targetSing <> "." ]
-                    in if targetId == i
-                      then (ms, [ wrapSend mq cols "You can't demote yourself." ])
-                      else (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
+                    in if
+                      | targetId == i        -> (ms, [ wrapSend mq cols "You can't demote yourself." ])
+                      | targetSing == "Root" -> (ms, [ wrapSend mq cols "You can't demote Root." ])
+                      | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
       xs         -> patternMatchFail "adminAdmin" [ showText xs ]
 adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
