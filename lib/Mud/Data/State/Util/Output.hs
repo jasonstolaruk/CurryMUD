@@ -93,18 +93,18 @@ bcastIfNotIncog i bs = getState >>= \ms -> bcast $ if getPlaFlag IsIncognito . g
 
 
 bcastIfNotIncogNl :: Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncogNl i = bcastIfNotIncog i . mkNlBs
+bcastIfNotIncogNl i = bcastIfNotIncog i . appendNlBs
 
 
-mkNlBs :: [Broadcast] -> [Broadcast]
-mkNlBs bs = bs ++ [("\n", nubSort . concatMap snd $ bs)]
+appendNlBs :: [Broadcast] -> [Broadcast]
+appendNlBs bs = bs ++ [("\n", nubSort . concatMap snd $ bs)]
 
 
 -----
 
 
 bcastNl :: [Broadcast] -> MudStack ()
-bcastNl = bcast . mkNlBs
+bcastNl = bcast . appendNlBs
 
 
 -----

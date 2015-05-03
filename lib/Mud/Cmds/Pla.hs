@@ -873,7 +873,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dfltColor
                       , "." ]
 putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
   where
     helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in if notEmpty pcInvCoins
@@ -946,8 +946,7 @@ handleEgress i = do
         logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left CurryMUD." ]
   where
     informEgress = getState >>= \ms -> let d = mkStdDesig i ms DoCap in
-        bcast [ (nlnl $ serialize d <> " slowly dissolves into nothingness.", i `delete` pcIds d)
-              | getRmId i ms /= iWelcome ]
+        unless (getRmId i ms == iWelcome) . bcastOthersInRm i $ nlnl (serialize d <> " slowly dissolves into nothingness.")
     helper ms =
         let ri                 = getRmId i ms
             s                  = getSing i ms
