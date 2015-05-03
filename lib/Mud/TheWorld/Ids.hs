@@ -166,3 +166,5 @@ iLeatherApron = 76 :: Int
 iTraveler'sBoots = 77 :: Int
 
 iRoot = 78 :: Int
+
+iJason = 79 :: Int
