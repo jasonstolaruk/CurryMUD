@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -946,7 +946,8 @@ handleEgress i = do
         logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left CurryMUD." ]
   where
     informEgress = getState >>= \ms -> let d = mkStdDesig i ms DoCap in
-        unless (getRmId i ms == iWelcome) . bcastOthersInRm i $ nlnl (serialize d <> " slowly dissolves into nothingness.")
+        unless (getRmId i ms == iWelcome) . bcastOthersInRm i $ nlnl (serialize d <> " slowly dissolves into \
+                                                                                     \nothingness.")
     helper ms =
         let ri                 = getRmId i ms
             s                  = getSing i ms
@@ -1008,7 +1009,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dfltColor
                       , "." ]
 ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> (unless (null logMsgs) . logPlaOut "ready" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "ready" i $ logMsgs)
   where
     helper ms =
         let invCoins@(is, _)          = getInvCoins i ms
@@ -1296,7 +1297,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dfltColor
                       , "." ]
 remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
   where
     helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in case T.uncons conName of
@@ -1354,18 +1355,20 @@ say p@AdviseNoArgs = advise p ["say"] advice
                       , dblQuote "say nice to meet you, too"
                       , dfltColor
                       , "." ]
-say p@(WithArgs i _ _ args@(a:_))
-  | T.head a == adverbOpenChar = case parseAdverb . T.unwords $ args of
+say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
+  | getPlaFlag IsIncognito . getPla i $ ms -> wrapSend mq cols $ "You can't use the " <> dblQuote "say" <> " command \
+                                                                 \while incognito."
+  | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
     Left  msg -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
         then sayTo (Just adverb) (T.tail rest) |$| modifyState >=> bcastAndLog
         else adviseHelper adviceEmptySayTo
-      | otherwise -> getState >>= simpleSayHelper (Just adverb) rest >>= bcastAndLog
-  | T.head a == sayToChar, T.length a > 1 = if length args > 1
+      | otherwise -> simpleSayHelper ms (Just adverb) rest >>= bcastAndLog
+  | T.head a == sayToChar, T.length a > 1 -> if length args > 1
     then sayTo Nothing (T.tail . T.unwords $ args) |$| modifyState >=> bcastAndLog
     else adviseHelper adviceEmptySayTo
-  | otherwise = getState >>= simpleSayHelper Nothing (T.unwords args) >>= bcastAndLog
+  | otherwise -> simpleSayHelper ms Nothing (T.unwords args) >>= bcastAndLog
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
       (_,   "")            -> Left adviceCloseChar
@@ -1439,11 +1442,11 @@ say p@(WithArgs i _ _ args@(a:_))
                                              , msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
                 (pt, fms)        = firstMobSay i $ ms^.plaTbl
-            in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i . nlnl $ toSelfMsg <> fms, [toSelfMsg]))
+            in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i $ toSelfMsg <> fms, [toSelfMsg]))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
     bcastAndLog (bs, logMsgs) = bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
-    simpleSayHelper (maybe "" (" " <>) -> adverb) (formatMsg -> msg) ms =
+    simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         let d                 = mkStdDesig i ms DoCap
             toSelfMsg         = T.concat [ "You say", adverb, ", ", msg ]
             toSelfBroadcast   = mkBroadcast i . nlnl $ toSelfMsg
