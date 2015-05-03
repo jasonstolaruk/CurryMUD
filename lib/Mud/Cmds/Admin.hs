@@ -158,7 +158,7 @@ adminAdmin (OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper 
                                , logNotice fn          $ selfSing <> " promoted " <> targetSing <> "." ]
                     in if
                       | targetId == i        -> (ms, [ wrapSend mq cols "You can't demote yourself." ])
-                      | targetSing == "Root" -> (ms, [ wrapSend mq cols "You can't demote Root." ])
+                      | targetSing == "Root" -> (ms, [ wrapSend mq cols "You can't demote Root."     ])
                       | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
       xs         -> patternMatchFail "adminAdmin" [ showText xs ]
 adminAdmin (ActionParams { plaMsgQueue, plaCols }) =

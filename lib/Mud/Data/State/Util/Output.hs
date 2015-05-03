@@ -39,7 +39,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (views)
 import Control.Lens.Operators ((<>~))
-import Control.Monad (forM_)
+import Control.Monad (forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, elemIndex)
 import Data.Maybe (fromJust, fromMaybe)
@@ -96,7 +96,8 @@ bcastOtherAdmins i msg = getState >>= bcastAdminsHelper msg . (i `delete`) . get
 
 bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
-    let ((i `delete`) -> ris) = getPCRmInv i ms in bcast [(msg, findPCIds ms ris)]
+    unless (getPlaFlag IsIncognito . getPla i $ ms) $ let ((i `delete`) -> ris) = getPCRmInv i ms
+                                                      in bcast [(msg, findPCIds ms ris)]
 
 
 -----
