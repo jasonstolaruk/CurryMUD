@@ -258,7 +258,7 @@ clear p              = withoutArgs clear p
 -----
 
 
--- TODO: Help.
+-- TODO: Make this a priority command?
 color :: Action
 color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
   where
