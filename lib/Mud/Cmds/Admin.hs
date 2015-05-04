@@ -536,7 +536,7 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
                                ias              = zip is' . styleAbbrevs Don'tBracket $ ss
                                mkCharTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
                                                       name                  = mkAnnotatedName i a
-                                                  in T.concat [ pad 15 name, padOrTrunc 7 s, padOrTrunc 10 r ]
+                                                  in T.concat [ pad 15 name, pad 7 s, pad 10 r ]
                            in map mkCharTxt ias ++ [ T.concat [ mkNumOfCharsTxt is, " ", showText inOrOut, "." ] ]
   where
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn

@@ -177,11 +177,11 @@ debugColor :: Action
 debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefixDebugCmd "color") i
   where
     msg :: [] T.Text
-    msg = [ nl . T.concat $ [ padOrTrunc 15 . showText $ ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColor ]
+    msg = [ nl . T.concat $ [ pad 15 . showText $ ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColor ]
           | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
-    mkColorName = uncurry (<>) . (padOrTrunc 6 . showText *** padOrTrunc 8 . showText)
+    mkColorName = uncurry (<>) . (pad 6 . showText *** pad 8 . showText)
 debugColor p = withoutArgs debugColor p
 
 
