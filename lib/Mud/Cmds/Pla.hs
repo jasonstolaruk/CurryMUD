@@ -218,7 +218,7 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let adminIdSings = [ ais | ais@(ai, _) <- mkAdminIdSingList ms
-                             , let p = getPla ai ms in isLoggedIn p && (not . getPlaFlag IsIncognito $ p) ]
+                             , let p = getPla ai ms, isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
         s            = getSing i ms
         notFound     = wrapSend mq cols $ "No administrator by the name of " <> dblQuote target <> " is currently \
                                           \logged in."
@@ -892,7 +892,7 @@ putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in if notEmpty pcInvCoins
                   then case T.uncons conName of
-                    Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
+                    Just (c, not . T.null -> isn'tNull) | c == rmChar, isn'tNull -> if not . null . fst $ rmInvCoins
                       then shufflePut i ms d (T.tail conName) True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
                       else (ms, (mkBroadcast i "You don't see any containers here.", []))
                     _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
@@ -1315,7 +1315,7 @@ remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in case T.uncons conName of
-                  Just (c, not . T.null -> isn'tNull) | c == rmChar && isn'tNull -> if not . null . fst $ rmInvCoins
+                  Just (c, not . T.null -> isn'tNull) | c == rmChar, isn'tNull -> if not . null . fst $ rmInvCoins
                     then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
                     else (ms, (mkBroadcast i "You don't see any containers here.", []))
                   _ -> shuffleRem i ms d conName False argsWithoutCon pcInvCoins procGecrMisPCInv

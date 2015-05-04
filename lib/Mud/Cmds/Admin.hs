@@ -373,7 +373,10 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                                  , dfltColor ]
             notFound  = emptied . wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> "."
             found (targetId, targetSing) = let targetPla = getPla targetId ms in if
-              | targetId == i        -> emptied . wrapSend mq cols $ "You talk to yourself."
+              | targetId == i -> emptied . wrapSend mq cols $ "You talk to yourself."
+              | isLoggedIn targetPla, getPlaFlag IsIncognito . getPla i $ ms, not . getPlaFlag IsAdmin $ targetPla ->
+                emptied . wrapSend mq cols $ "When the recipient of your message is logged in and you are incognito, \
+                                             \the recipient must be and administrator."
               | isLoggedIn targetPla ->
                 let sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", dblQuote msg ])
                     receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", dblQuote msg ])
@@ -440,11 +443,14 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
   where
     helper ms =
         let s        = getSing i ms
-            apiss    = [ apis | apis@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+            idSings  = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
             notFound = emptied . wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently \
                                                     \logged in."
-            found (tellId, _) | tellId == i = emptied . wrapSend mq cols $ "You talk to yourself."
             found (tellId@(flip getPla ms -> tellPla), tellSing)
+              | tellId == i = emptied . wrapSend mq cols $ "You talk to yourself."
+              | getPlaFlag IsIncognito . getPla i $ ms
+              , not . getPlaFlag IsAdmin $ tellPla =
+                  emptied . wrapSend mq cols $ "You can only send messages to other administrators while incognito."
               | tellMq         <- getMsgQueue tellId ms
               , tellCols       <- tellPla^.columns
               , targetMsg      <- T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
@@ -455,7 +461,7 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
                     then wrapSend      tellMq tellCols targetMsg
                     else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs | msgs <- firstAdminTell tellId s ]
                   return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target $ apiss
+        in maybe notFound found . findFullNameForAbbrev target $ idSings
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 
