@@ -114,7 +114,6 @@ regularCmds = map (uncurry3 mkRegularCmd)
     [ ("?",          plaDispCmdList,  "Display or search this command list.")
     , ("about",      about,           "About CurryMUD.")
     , ("admin",      admin,           "Send a message to an administrator.")
-    , ("color",      color,           "Perform a color test.")
     , ("d",          go "d",          "Go down.")
     , ("e",          go "e",          "Go east.")
     , ("equip",      equip,           "Display your readied equipment, or examine one or more items in your readied \
@@ -155,6 +154,7 @@ priorityAbbrevCmds :: [Cmd]
 priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     [ ("bug",     "b",  bug,        "Report a bug.")
     , ("clear",   "c",  clear,      "Clear the screen.")
+    , ("color",   "co", color,      "Perform a color test.")
     , ("drop",    "dr", dropAction, "Drop one or more items.")
     , ("emote",   "em", emote,      "Freely describe an action.")
     , ("exits",   "ex", exits,      "Display obvious exits.")
@@ -258,7 +258,6 @@ clear p              = withoutArgs clear p
 -----
 
 
--- TODO: Make this a priority command?
 color :: Action
 color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
   where
