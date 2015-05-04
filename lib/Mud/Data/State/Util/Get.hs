@@ -206,6 +206,10 @@ getPCRmInvCoins :: Id -> MudState -> (Inv, Coins)
 getPCRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
 
 
+getPCRmNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
+getPCRmNonIncogInvCoins i ms = let ri = getRmId i ms in getNonIncogInvCoins ri ms
+
+
 -----
 
 
@@ -220,12 +224,12 @@ getPeepers :: Id -> MudState -> Inv
 getPeepers i = view peepers . getPla i
 
 
-getPeepersPeeping :: Id -> MudState -> (Inv, Inv)
-getPeepersPeeping i = (getPeepers i *** getPeeping i) . dup
-
-
 getPeeping :: Id -> MudState -> Inv
 getPeeping i = view peeping . getPla i
+
+
+getPeepersPeeping :: Id -> MudState -> (Inv, Inv)
+getPeepersPeeping i = (getPeepers i *** getPeeping i) . dup
 
 
 -----

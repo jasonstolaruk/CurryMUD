@@ -642,7 +642,7 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
     bcastIfNotIncog i bs >> (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs)
   where
     helper ms =
-        let invCoins@(first (i `delete`) -> invCoins') = getPCRmInvCoins i ms
+        let invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
             (eiss, ecs)          = uncurry (resolveRmInvCoins i ms as) invCoins'
             (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms (fst invCoins)) (ms^.pcTbl, [],  []     ) eiss
             (    cbs', logMsgs') = foldl' helperIntroEitherCoins                   (           cbs, logMsgs) ecs
