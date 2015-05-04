@@ -722,6 +722,7 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
+-- TODO: "l '" doesn't display anything when there is nothing in the room.
 look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri     = getRmId i  ms
@@ -737,7 +738,7 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(ms, msg, bs, maybeTa
     maybeVoid logHelper maybeTargetDesigs
   where
     helper ms
-      | invCoins@(first (i `delete`) -> invCoins') <- getPCRmInvCoins i ms
+      | invCoins@(first (i `delete`) -> invCoins') <- getPCRmNonIncogInvCoins i ms
       = if notEmpty invCoins
           then let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms as) invCoins'
                    invDesc      = foldl' (helperLookEitherInv ms) "" eiss
@@ -768,7 +769,7 @@ look p = patternMatchFail "look" [ showText p ]
 
 mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> T.Text
 mkRmInvCoinsDesc i cols ms ri =
-    let (ris, c)            = first (i `delete`) . getInvCoins ri $ ms
+    let (ris, c)            = first (i `delete`) . getNonIncogInvCoins ri $ ms
         (pcNcbs, otherNcbs) = splitPCsOthers . mkIsPC_StyledName_Count_BothList i ms $ ris
         pcDescs             = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
         otherDescs          = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
@@ -1413,7 +1414,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     adviseHelper      = advise p ["say"]
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d        = mkStdDesig i ms DoCap
-            invCoins = first (i `delete`) . getPCRmInvCoins i $ ms
+            invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
         in if notEmpty invCoins
           then case uncurry (resolveRmInvCoins i ms [target]) invCoins of
             (_,                    [ Left [msg] ]) -> sorry msg
@@ -1429,7 +1430,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             x -> patternMatchFail "say sayTo" [ showText x ]
           else sorry "You don't see anyone here to talk to."
       where
-        sorry msg       = (ms, (mkBroadcast i msg, []))
+        sorry msg       = (ms, (mkBroadcast i . nlnl $ msg, []))
         parseRearAdverb = case maybeAdverb of
           Just adverb                          -> Right (adverb <> " ", "", formatMsg . T.unwords $ rest)
           Nothing | T.head r == adverbOpenChar -> case parseAdverb . T.unwords $ rest of

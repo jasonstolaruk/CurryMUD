@@ -38,6 +38,7 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Applicative (pure)
 import Control.Arrow (second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -171,7 +172,7 @@ mkDividerTxt = flip T.replicate "="
 
 
 mkBroadcast :: Id -> T.Text -> [Broadcast]
-mkBroadcast i msg = [(msg, [i])]
+mkBroadcast i = pure . (, [i])
 
 
 -----

@@ -488,7 +488,7 @@ maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
 mkPutRemoveBindings :: Id -> MudState -> Args -> (PCDesig, (Inv, Coins), (Inv, Coins), ConName, Args)
 mkPutRemoveBindings i ms as = let d                        = mkStdDesig  i ms DoCap
                                   pcInvCoins               = getInvCoins i ms
-                                  rmInvCoins               = first (i `delete`) . getPCRmInvCoins i $ ms
+                                  rmInvCoins               = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
                                   conName                  = last as
                                   (init -> argsWithoutCon) = case as of
                                                                [_, _] -> as
