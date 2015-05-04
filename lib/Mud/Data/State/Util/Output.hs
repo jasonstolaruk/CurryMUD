@@ -7,6 +7,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , bcastNl
                                   , bcastOtherAdmins
                                   , bcastOthersInRm
+                                  , bcastSelfOthers
                                   , frame
                                   , massMsg
                                   , massSend
@@ -121,6 +122,15 @@ bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
     unless (getPlaFlag IsIncognito . getPla i $ ms) $ let ((i `delete`) -> ris) = getPCRmInv i ms
                                                       in bcast [(msg, findPCIds ms ris)]
+
+
+-----
+
+
+bcastSelfOthers :: Id -> MudState -> [Broadcast] -> [Broadcast] -> MudStack ()
+bcastSelfOthers i ms toSelf toOthers = do
+    bcast toSelf
+    unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ toOthers
 
 
 -----
