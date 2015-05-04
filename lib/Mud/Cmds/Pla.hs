@@ -58,7 +58,7 @@ import Data.Monoid ((<>), Sum(..), mempty)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
-import System.Console.ANSI (clearScreenCode)
+import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
@@ -70,9 +70,6 @@ import qualified Data.Text.IO as T (readFile)
 
 {-# ANN helperSettings ("HLint: ignore Use ||"        :: String) #-}
 {-# ANN module         ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- TODO: Make a color test command.
 
 
 -----
@@ -117,6 +114,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     [ ("?",          plaDispCmdList,  "Display or search this command list.")
     , ("about",      about,           "About CurryMUD.")
     , ("admin",      admin,           "Send a message to an administrator.")
+    , ("color",      color,           "Perform a color test.")
     , ("d",          go "d",          "Go down.")
     , ("e",          go "e",          "Go east.")
     , ("equip",      equip,           "Display your readied equipment, or examine one or more items in your readied \
@@ -255,6 +253,23 @@ bug p = bugTypoLogger p BugLog
 clear :: Action
 clear (NoArgs' i mq) = (send mq . T.pack $ clearScreenCode) >> logPlaExec "clear" i
 clear p              = withoutArgs clear p
+
+
+-----
+
+
+-- TODO: Help.
+color :: Action
+color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
+  where
+    msg = [ nl . T.concat $ [ mkColorDesc fg bg, ansi, " CurryMUD ", dfltColor ]
+          | fgc <- colors, bgc <- colors, fgc /= bgc
+          , let fg = (Dull, fgc), let bg = (Dull, bgc), let ansi = mkColorANSI fg bg ] ++ other
+    mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
+    mkColorName                                         = pad 8 . showText . snd
+    other = [ nl . T.concat $ [ pad 19 "Blinking",   blinkANSI,     " CurryMUD ", noBlinkANSI     ]
+            , nl . T.concat $ [ pad 19 "Underlined", underlineANSI, " CurryMUD ", noUnderlineANSI ] ]
+color p = withoutArgs color p
 
 
 -----
