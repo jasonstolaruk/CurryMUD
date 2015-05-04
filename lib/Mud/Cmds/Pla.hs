@@ -72,6 +72,9 @@ import qualified Data.Text.IO as T (readFile)
 {-# ANN module         ("HLint: ignore Use camelCase" :: String) #-}
 
 
+-- TODO: Make a color test command.
+
+
 -----
 
 

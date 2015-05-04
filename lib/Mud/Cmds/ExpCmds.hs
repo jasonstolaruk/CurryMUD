@@ -19,6 +19,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow (first)
 import Control.Lens (each)
 import Control.Lens.Operators ((%~), (&))
+import Control.Monad (unless)
 import Data.List ((\\), delete)
 import Data.Monoid ((<>))
 import qualified Data.Set as S (Set, fromList, foldr)
@@ -199,7 +200,7 @@ expCmdSet = S.fromList
                                       "% is clearly disappointed in @.")
     , ExpCmd "dizzy"       (NoTarget  "Dizzy and reeling, you look as though you might pass out."
                                       "Dizzy and reeling, % looks as though ^ might pass out.")
-    , ExpCmd "doublelaguh" (Versatile "You double over with laughter."
+    , ExpCmd "doublelaugh" (Versatile "You double over with laughter."
                                       "% doubles over with laughter."
                                       "You double over with laughter in reaction to @."
                                       "% doubles over with laughter in reaction to you."
@@ -691,7 +692,7 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBroadcast           = (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
-        in bcast (toOthersBroadcast : toSelfBroadcast) >> logPlaOut ecn i [toSelf]
+        in bcastHelper i ms toSelfBroadcast [toOthersBroadcast] >> logPlaOut ecn i [toSelf]
 expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_) ) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
                                                                               \command cannot be used with a target."
 expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
@@ -714,17 +715,17 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
             ([ Right [targetId] ], _                   ) ->
               let onPC targetDesigTxt =
                       let (toSelf', toSelfBroadcast, serialized, hisHer, toOthers') = mkBindings targetDesigTxt
-                          toOthersBroadcast = [(nlnl toOthers', pcIds d \\ [ i, targetId ])]
+                          toOthersBroadcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
                           toTarget'         = replace [ ("%", serialized), ("&", hisHer) ] toTarget
-                          toTargetBroadcast = mkBroadcast targetId . nlnl $ toTarget'
+                          toTargetBroadcast = (nlnl toTarget', [targetId])
                       in do
-                          bcast . concat $ [ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ]
+                          bcastHelper i ms toSelfBroadcast  [ toTargetBroadcast, toOthersBroadcast ]
                           logPlaOut ecn i [ parsePCDesig i ms toSelf' ]
                   onMob targetNoun =
                       let (toSelf', toSelfBroadcast, _, _, toOthers') = mkBindings targetNoun
                           toOthersBroadcast                           = (nlnl toOthers', i `delete` pcIds d)
                       in do
-                          bcast $ toOthersBroadcast : toSelfBroadcast
+                          bcastHelper i ms toSelfBroadcast [toOthersBroadcast]
                           logPlaOut ecn i [toSelf']
                   mkBindings targetTxt =
                       let toSelf'         = replace [("@", targetTxt)] toSelf
@@ -753,3 +754,7 @@ mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |$|)
 
 replace :: [(T.Text, T.Text)] -> T.Text -> T.Text
 replace = foldr ((.) . uncurry T.replace) id
+
+
+bcastHelper :: Id -> MudState -> [Broadcast] -> [Broadcast] -> MudStack ()
+bcastHelper i ms toSelf toOthers = bcast toSelf >> (unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ toOthers)
