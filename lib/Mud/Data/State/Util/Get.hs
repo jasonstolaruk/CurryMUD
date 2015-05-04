@@ -107,6 +107,18 @@ getInvCoins :: Id -> MudState -> (Inv, Coins)
 getInvCoins i = (getInv i *** getCoins i) . dup
 
 
+getNonIncogInv :: Id -> MudState -> Inv
+getNonIncogInv i ms = filter notIncog . getInv i $ ms
+  where
+    notIncog targetId | getType targetId ms /= PCType                       = True
+                      | not . getPlaFlag IsIncognito . getPla targetId $ ms = True
+                      | otherwise                                           = False
+
+
+getNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
+getNonIncogInvCoins i = (getNonIncogInv i *** getCoins i) . dup
+
+
 -----
 
 

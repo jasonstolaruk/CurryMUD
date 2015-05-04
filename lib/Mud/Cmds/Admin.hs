@@ -376,7 +376,7 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
               | targetId == i -> emptied . wrapSend mq cols $ "You talk to yourself."
               | isLoggedIn targetPla, getPlaFlag IsIncognito . getPla i $ ms, not . getPlaFlag IsAdmin $ targetPla ->
                 emptied . wrapSend mq cols $ "When the recipient of your message is logged in and you are incognito, \
-                                             \the recipient must be and administrator."
+                                             \the recipient must be an administrator."
               | isLoggedIn targetPla ->
                 let sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", dblQuote msg ])
                     receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", dblQuote msg ])

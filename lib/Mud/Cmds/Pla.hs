@@ -440,7 +440,7 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms =
         let ri                  = getRmId i ms
-            invCoins            = first (i `delete`) . getInvCoins ri $ ms
+            invCoins            = first (i `delete`) . getNonIncogInvCoins ri $ ms
             d                   = mkStdDesig i ms DoCap
             (eiss, ecs)         = uncurry (resolveRmInvCoins i ms as) invCoins
             (it, bs,  logMsgs ) = foldl' (helperGetEitherInv       i ms d     ri i) (ms^.invTbl,   [], []     ) eiss

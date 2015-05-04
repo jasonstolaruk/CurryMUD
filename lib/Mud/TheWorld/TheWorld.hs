@@ -90,7 +90,7 @@ createWorld = do
     logNotice "createWorld" "creating the world."
 
     putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 RHand) (PC iLoggedOut Human [] []) (Pla "" (zeroBits `setBit` fromEnum IsAdmin) 80 24 Nothing [] [] [] (Just iLounge))
-    putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 LHand) (PC iLoggedOut Lagomorph [] []) (Pla "" (zeroBits `setBit` fromEnum IsAdmin) 80 24 Nothing [] [] [] (Just iLounge))
+    putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 LHand) (PC iLoggedOut Human [] []) (Pla "" (zeroBits `setBit` fromEnum IsAdmin) 80 24 Nothing [] [] [] (Just iLounge))
 
     putRm iLoggedOut [iRoot] mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])
