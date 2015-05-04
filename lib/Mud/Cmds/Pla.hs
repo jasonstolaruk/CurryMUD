@@ -1558,7 +1558,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dfltColor
                       , "." ]
 unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs)
   where
     helper ms = let d                      = mkStdDesig i ms DoCap
                     is                     = M.elems . getEqMap i $ ms
@@ -1697,7 +1697,8 @@ whoAdmin :: Action
 whoAdmin (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoadmin" i
   where
     helper ms =
-        let adminIds                              = getAdminIds ms
+        let adminIds                              = [ ai | ai <-  getLoggedInAdminIds ms
+                                                    , not . getPlaFlag IsIncognito . getPla ai $ ms ]
             (adminIds', self) | i `elem` adminIds = (i `delete` adminIds, selfColor <> getSing i ms <> dfltColor)
                               | otherwise         = (           adminIds, ""                                    )
             adminSings                            = [ s | adminId <- adminIds', let s = getSing adminId ms

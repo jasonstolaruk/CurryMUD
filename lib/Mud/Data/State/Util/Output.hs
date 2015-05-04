@@ -73,7 +73,7 @@ bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ b
 
 
 bcastAdmins :: T.Text -> MudStack ()
-bcastAdmins msg = getState >>= bcastAdminsHelper msg . getAdminIds
+bcastAdmins msg = getState >>= bcastAdminsHelper msg . getLoggedInAdminIds
 
 
 bcastAdminsHelper :: T.Text -> Inv -> MudStack ()
@@ -111,7 +111,7 @@ bcastNl = bcast . appendNlBs
 
 
 bcastOtherAdmins :: Id -> T.Text -> MudStack ()
-bcastOtherAdmins i msg = getState >>= bcastAdminsHelper msg . (i `delete`) . getAdminIds
+bcastOtherAdmins i msg = getState >>= bcastAdminsHelper msg . (i `delete`) . getLoggedInAdminIds
 
 
 -----

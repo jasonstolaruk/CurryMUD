@@ -14,17 +14,6 @@ import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Text as T
 
 
-getAdminIds :: MudState -> Inv
-getAdminIds = IM.keys . IM.filter (\p -> getPlaFlag IsAdmin p && isLoggedIn p) . view plaTbl
-
-
-isLoggedIn :: Pla -> Bool
-isLoggedIn = views lastRmId isNothing
-
-
------
-
-
 getArm :: Id -> MudState -> Arm
 getArm i = view (armTbl.ind i)
 
@@ -144,6 +133,17 @@ getListenThreadId = reverseLookup Listen . view threadTbl
 
 getLogQueue :: Id -> MudState -> LogQueue
 getLogQueue i = view (plaLogTbl.ind i.to snd)
+
+
+-----
+
+
+getLoggedInAdminIds :: MudState -> Inv
+getLoggedInAdminIds = IM.keys . IM.filter (\p -> getPlaFlag IsAdmin p && isLoggedIn p) . view plaTbl
+
+
+isLoggedIn :: Pla -> Bool
+isLoggedIn = views lastRmId isNothing
 
 
 -----
