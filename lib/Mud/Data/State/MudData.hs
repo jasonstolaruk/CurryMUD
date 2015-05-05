@@ -358,10 +358,11 @@ jsonToPla _          = empty
 
 
 -- Has an inventory and coins.
-data Rm = Rm { _rmName  :: T.Text
-             , _rmDesc  :: T.Text
-             , _rmFlags :: Int
-             , _rmLinks :: [RmLink] } deriving (Eq, Generic)
+data Rm = Rm { _rmName   :: T.Text
+             , _rmDesc   :: T.Text
+             , _rmFlags  :: Int
+             , _rmLinks  :: [RmLink]
+             , _teleName :: Maybe T.Text } deriving (Eq, Generic)
 
 
 data RmFlags = RmFlagsTODO deriving Enum

@@ -31,11 +31,11 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, views)
+import Control.Lens (_1, _2, _3, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (delete)
+import Data.List (delete, sort)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
@@ -45,7 +45,7 @@ import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
-import qualified Data.IntMap.Lazy as IM (filter, keys)
+import qualified Data.IntMap.Lazy as IM (filter, foldrWithKey, keys)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
@@ -105,6 +105,7 @@ adminCmds =
     , mkAdminCmd "profanity" adminProfanity   "Dump the profanity log."
     , mkAdminCmd "retained"  adminRetained    "Send a retained message to a player."
     , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
+    , mkAdminCmd "telerm"    adminTeleRm      "Teleport to a given room."
     , mkAdminCmd "tell"      adminTell        "Send a message to a player."
     , mkAdminCmd "time"      adminTime        "Display the current system time."
     , mkAdminCmd "typo"      adminTypo        "Dump the typo log."
@@ -418,6 +419,20 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
         massLogPla "adminShutdown"   $ "closing connection due to server shutdown initiated by " <> s <> rest
         logNotice  "adminShutdown"   $ "server shutdown initiated by "                           <> s <> rest
         liftIO . atomically . writeTQueue mq $ Shutdown
+
+
+-----
+
+
+-- TODO: Help.
+adminTeleRm :: Action
+adminTeleRm (NoArgs _ mq cols) = multiWrapSend mq cols =<< mkTxt
+  where
+    mkTxt                 = (header :) . sort . map mkTeleNameTxt . IM.foldrWithKey helper [] . view rmTbl <$> getState
+    header                = "Room names and IDs:"
+    mkTeleNameTxt (tn, k) = pad 10 tn <> " " <> showText k
+    helper k v acc        = maybe acc ((: acc) . (, k)) . view teleName $ v
+adminTeleRm p = patternMatchFail "adminTeleRm" [ showText p ]
 
 
 -----
