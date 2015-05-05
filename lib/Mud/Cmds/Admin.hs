@@ -4,6 +4,7 @@ module Mud.Cmds.Admin (adminCmds) where
 
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -16,7 +17,7 @@ import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs
-import Mud.Util.List (headLast)
+import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -31,12 +32,12 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, views)
+import Control.Lens (_1, _2, _3, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, sort)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
@@ -432,7 +433,39 @@ adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExec
     mkTxt         = views rmTeleNameTbl ((header :) . sort . map mkTeleNameTxt . IM.toList) <$> getState
     header        = "Room names and IDs:"
     mkTeleNameTxt = uncurry (<>) . (pad 11 *** showText) . swap
-adminTeleRm p = patternMatchFail "adminTeleRm" [ showText p ]
+adminTeleRm (WithArgs i mq cols [target]) = modifyState helper >>= sequence_
+  where
+    helper ms =
+        let originId = view rmId . getPC i $ ms
+            found (destId, _)
+              | destId == originId = (ms, [ sorryAlreadyThere ])
+              | otherwise          =
+                  let originDesig = mkStdDesig i ms DoCap
+                      originPCIds = i `delete` pcIds originDesig
+                      s           = fromJust . stdPCEntSing $ originDesig
+                      destDesig   = mkSerializedNonStdDesig i ms s A
+                      destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
+                      ms'         = ms & pcTbl .ind i.rmId   .~ destId
+                                       & invTbl.ind originId %~ (i `delete`)
+                                       & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
+                      msgAtOrigin = nlnl $ serialize originDesig <> " suddenly vanishes in a jarring flash of white \
+                                                                    \light."
+                      msgAtDest   = nlnl $ destDesig <> " suddenly appears in a jarring flash of white light."
+                  in (ms', [ bcastIfNotIncog i [ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ] ])
+            notFound = (ms, [sorryInvalid])
+        in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
+    sorryAlreadyThere = wrapSend mq cols "You're already there!"
+    sorryInvalid      = wrapSend mq cols . T.concat $ [ dblQuote target
+                                                      , " is not a valid room name. Type "
+                                                      , dblQuote . prefixAdminCmd $ "telerm" -- TODO: Green?
+                                                      , " with no arguments to get a list of valid room names." ]
+adminTeleRm p = advise p [] advice
+  where
+    advice = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
+                      , quoteColor
+                      , dblQuote $ prefixAdminCmd "telerm" <> " lounge"
+                      , dfltColor
+                      , "." ]
 
 
 -----

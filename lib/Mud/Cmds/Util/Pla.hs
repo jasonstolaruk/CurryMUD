@@ -58,7 +58,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.NameResolution
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.List (mkCountList)
+import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -499,6 +499,7 @@ mkPutRemoveBindings i ms as = let d                        = mkStdDesig  i ms Do
 -----
 
 
+-- TODO: Move? (Used by Admin.)
 mkStdDesig :: Id -> MudState -> ShouldCap -> PCDesig
 mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
                               , shouldCap    = sc

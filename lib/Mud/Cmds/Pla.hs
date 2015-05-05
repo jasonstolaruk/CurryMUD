@@ -944,7 +944,7 @@ quit :: Action
 quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . atomically . writeTQueue mq $ Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
   where
-    msg = "Type " <> dblQuote "quit" <> " with no arguments to quit CurryMUD."
+    msg = "Type " <> dblQuote "quit" <> " with no arguments to quit CurryMUD." -- TODO: Green?
 
 
 handleEgress :: Id -> MudStack ()
