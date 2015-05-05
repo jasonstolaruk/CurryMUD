@@ -428,10 +428,10 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 adminTeleRm :: Action
 adminTeleRm (NoArgs _ mq cols) = multiWrapSend mq cols =<< mkTxt
   where
-    mkTxt                 = (header :) . sort . map mkTeleNameTxt . IM.foldrWithKey helper [] . view rmTbl <$> getState
-    header                = "Room names and IDs:"
-    mkTeleNameTxt (tn, k) = pad 10 tn <> " " <> showText k
-    helper k v acc        = maybe acc ((: acc) . (, k)) . view teleName $ v
+    mkTxt          = (header :) . sort . map mkTeleNameTxt . IM.foldrWithKey helper [] . view rmTbl <$> getState
+    header         = "Room names and IDs:"
+    mkTeleNameTxt  = uncurry (<>) . (pad 8 *** showText)
+    helper k v acc = maybe acc ((: acc) . (, k)) . view teleName $ v
 adminTeleRm p = patternMatchFail "adminTeleRm" [ showText p ]
 
 
