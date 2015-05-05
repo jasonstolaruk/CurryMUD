@@ -51,24 +51,25 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 initMudData :: ShouldLog -> IO MudData
 initMudData shouldLog = do
     (errorLogService, noticeLogService) <- initLogging shouldLog
-    msIORef <- newIORef MudState { _armTbl       = IM.empty
-                                 , _clothTbl     = IM.empty
-                                 , _coinsTbl     = IM.empty
-                                 , _conTbl       = IM.empty
-                                 , _entTbl       = IM.empty
-                                 , _eqTbl        = IM.empty
-                                 , _invTbl       = IM.empty
-                                 , _mobTbl       = IM.empty
-                                 , _msgQueueTbl  = IM.empty
-                                 , _objTbl       = IM.empty
-                                 , _pcTbl        = IM.empty
-                                 , _plaLogTbl    = IM.empty
-                                 , _plaTbl       = IM.empty
-                                 , _rmTbl        = IM.empty
-                                 , _talkAsyncTbl =  M.empty
-                                 , _threadTbl    =  M.empty
-                                 , _typeTbl      = IM.empty
-                                 , _wpnTbl       = IM.empty }
+    msIORef <- newIORef MudState { _armTbl        = IM.empty
+                                 , _clothTbl      = IM.empty
+                                 , _coinsTbl      = IM.empty
+                                 , _conTbl        = IM.empty
+                                 , _entTbl        = IM.empty
+                                 , _eqTbl         = IM.empty
+                                 , _invTbl        = IM.empty
+                                 , _mobTbl        = IM.empty
+                                 , _msgQueueTbl   = IM.empty
+                                 , _objTbl        = IM.empty
+                                 , _pcTbl         = IM.empty
+                                 , _plaLogTbl     = IM.empty
+                                 , _plaTbl        = IM.empty
+                                 , _rmTbl         = IM.empty
+                                 , _rmTeleNameTbl = IM.empty
+                                 , _talkAsyncTbl  =  M.empty
+                                 , _threadTbl     =  M.empty
+                                 , _typeTbl       = IM.empty
+                                 , _wpnTbl        = IM.empty }
     persistTMVar <- newTMVarIO PersisterDone
     start        <- getTime Monotonic
     return MudData { _errorLog       = errorLogService
@@ -92,19 +93,22 @@ createWorld = do
     putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 RHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
     putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 LHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
 
-    putRm iLoggedOut [iRoot] mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [] Nothing)
-    putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [] Nothing)
-    putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Down iVoid ] (Just "control"))
-    putRm iObjCloset [ iKewpie1, iKewpie2 ] mempty (Rm "Object closet" "This closet holds objects." zeroBits [ StdLink Southwest iCentral ] Nothing)
-    putRm iClothCloset [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ] mempty (Rm "Clothing closet" "This closet holds clothing." zeroBits [ StdLink West iCentral, StdLink Down iAccessoriesCloset ] Nothing)
-    putRm iAccessoriesCloset [ iEar1, iEar2, iEar3, iEar4, iEar5, iEar6, iEar7, iEar8, iNoseRing1, iNoseRing2, iNoseRing3, iNeck1, iNeck2, iNeck3, iNeck4, iBracelet1, iBracelet2, iBracelet3, iBracelet4, iBracelet5, iBracelet6, iBracelet7, iBracelet8, iRing1, iRing2, iRing3, iRing4, iRing5, iRing6, iRing7, iRing8, iRing9 ] mempty (Rm "Accessories closet" "This closet holds accessories." zeroBits [ StdLink Up iClothCloset ] Nothing)
-    putRm iCoinsCloset [] (Coins (100, 100, 100)) (Rm "Coin closet" "This closet holds coins." zeroBits [ StdLink Northwest iCentral ] Nothing)
-    putRm iConCloset [ iBag1, iBag2, iBackpack1, iBackpack2 ] mempty (Rm "Container closet" "This closet holds containers." zeroBits [ StdLink North iCentral ] Nothing)
-    putRm iWpnCloset [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ] mempty (Rm "Weapon closet" "This closet holds weapons." zeroBits [ StdLink Northeast iCentral ] Nothing)
-    putRm iArmCloset [ iCap, iHelm, iSandals1, iSandals2, iBoots ] mempty (Rm "Armor closet" "This closet holds armor." zeroBits [ StdLink East iCentral ] Nothing)
-    putRm iMobCloset [ iRockCavy, iPidge ] mempty (Rm "Mob closet" "This closet holds mobs." zeroBits [ StdLink Southeast iCentral ] Nothing)
-    putRm iVoid [] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." zeroBits [ StdLink Up iCentral, NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ] Nothing)
-    putRm iLounge [] mempty (Rm "The admin lounge" "Welcome, admin! Have a seat by the fire and relax for awhile." zeroBits [ NonStdLink "out" iVoid "% exits the lounge." "% exits the lounge." ] (Just "lounge"))
+    putRm iLoggedOut [iRoot] mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [])
+    putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])
+    putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Down iVoid ])
+    putRm iObjCloset [ iKewpie1, iKewpie2 ] mempty (Rm "Object closet" "This closet holds objects." zeroBits [ StdLink Southwest iCentral ])
+    putRm iClothCloset [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ] mempty (Rm "Clothing closet" "This closet holds clothing." zeroBits [ StdLink West iCentral, StdLink Down iAccessoriesCloset ])
+    putRm iAccessoriesCloset [ iEar1, iEar2, iEar3, iEar4, iEar5, iEar6, iEar7, iEar8, iNoseRing1, iNoseRing2, iNoseRing3, iNeck1, iNeck2, iNeck3, iNeck4, iBracelet1, iBracelet2, iBracelet3, iBracelet4, iBracelet5, iBracelet6, iBracelet7, iBracelet8, iRing1, iRing2, iRing3, iRing4, iRing5, iRing6, iRing7, iRing8, iRing9 ] mempty (Rm "Accessories closet" "This closet holds accessories." zeroBits [ StdLink Up iClothCloset ])
+    putRm iCoinsCloset [] (Coins (100, 100, 100)) (Rm "Coin closet" "This closet holds coins." zeroBits [ StdLink Northwest iCentral ])
+    putRm iConCloset [ iBag1, iBag2, iBackpack1, iBackpack2 ] mempty (Rm "Container closet" "This closet holds containers." zeroBits [ StdLink North iCentral ])
+    putRm iWpnCloset [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ] mempty (Rm "Weapon closet" "This closet holds weapons." zeroBits [ StdLink Northeast iCentral ])
+    putRm iArmCloset [ iCap, iHelm, iSandals1, iSandals2, iBoots ] mempty (Rm "Armor closet" "This closet holds armor." zeroBits [ StdLink East iCentral ])
+    putRm iMobCloset [ iRockCavy, iPidge ] mempty (Rm "Mob closet" "This closet holds mobs." zeroBits [ StdLink Southeast iCentral ])
+    putRm iVoid [] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." zeroBits [ StdLink Up iCentral, NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ])
+    putRm iLounge [] mempty (Rm "The admin lounge" "Welcome, admin! Have a seat by the fire and relax for awhile." zeroBits [ NonStdLink "out" iVoid "% exits the lounge." "% exits the lounge." ])
+
+    putRmTeleName iCentral "central"
+    putRmTeleName iLounge "lounge"
 
     putObj iKewpie1 (Ent iKewpie1 (Just "doll") "kewpie doll" "" "The kewpie doll is disgustingly cute." zeroBits) (Obj 1 1)
     putObj iKewpie2 (Ent iKewpie2 (Just "doll") "kewpie doll" "" "The kewpie doll is disgustingly cute." zeroBits) (Obj 1 1)
@@ -186,19 +190,20 @@ loadWorld :: FilePath -> MudStack Bool
 loadWorld dir@((persistDir </>) -> path) = do
     logNotice "loadWorld" $ "loading the world from the " <> (dblQuote . T.pack $ dir) <> " directory."
     loadEqTblRes <- loadEqTbl path
-    ((loadEqTblRes :) -> res) <- mapM (path |$|) [ loadTbl armTblFile   armTbl
-                                                 , loadTbl clothTblFile clothTbl
-                                                 , loadTbl coinsTblFile coinsTbl
-                                                 , loadTbl conTblFile   conTbl
-                                                 , loadTbl entTblFile   entTbl
-                                                 , loadTbl invTblFile   invTbl
-                                                 , loadTbl mobTblFile   mobTbl
-                                                 , loadTbl objTblFile   objTbl
-                                                 , loadTbl pcTblFile    pcTbl
-                                                 , loadTbl plaTblFile   plaTbl
-                                                 , loadTbl rmTblFile    rmTbl
-                                                 , loadTbl typeTblFile  typeTbl
-                                                 , loadTbl wpnTblFile   wpnTbl ]
+    ((loadEqTblRes :) -> res) <- mapM (path |$|) [ loadTbl armTblFile        armTbl
+                                                 , loadTbl clothTblFile      clothTbl
+                                                 , loadTbl coinsTblFile      coinsTbl
+                                                 , loadTbl conTblFile        conTbl
+                                                 , loadTbl entTblFile        entTbl
+                                                 , loadTbl invTblFile        invTbl
+                                                 , loadTbl mobTblFile        mobTbl
+                                                 , loadTbl objTblFile        objTbl
+                                                 , loadTbl pcTblFile         pcTbl
+                                                 , loadTbl plaTblFile        plaTbl
+                                                 , loadTbl rmTblFile         rmTbl
+                                                 , loadTbl rmTeleNameTblFile rmTeleNameTbl
+                                                 , loadTbl typeTblFile       typeTbl
+                                                 , loadTbl wpnTblFile        wpnTbl ]
     modifyState $ \ms -> (foldr removeAdHoc ms . getInv iWelcome $ ms, ())
     movePCs
     return . and $ res

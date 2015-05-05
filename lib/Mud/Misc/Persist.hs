@@ -62,20 +62,21 @@ persistHelper persistTMVar ms = do
     createDirectory path
     cont <- dropIrrelevantFilenames . sort <$> getDirectoryContents persistDir
     when (length cont > noOfPersistedWorlds) . removeDirectoryRecursive . (persistDir </>) . head $ cont
-    flip withAsync wait $ mapM_ runResourceT [ helper (ms^.armTbl    ) $ path </> armTblFile
-                                             , helper (ms^.clothTbl  ) $ path </> clothTblFile
-                                             , helper (ms^.coinsTbl  ) $ path </> coinsTblFile
-                                             , helper (ms^.conTbl    ) $ path </> conTblFile
-                                             , helper (ms^.entTbl    ) $ path </> entTblFile
-                                             , helper (eqTblHelper ms) $ path </> eqTblFile
-                                             , helper (ms^.invTbl    ) $ path </> invTblFile
-                                             , helper (ms^.mobTbl    ) $ path </> mobTblFile
-                                             , helper (ms^.objTbl    ) $ path </> objTblFile
-                                             , helper (ms^.pcTbl     ) $ path </> pcTblFile
-                                             , helper (ms^.plaTbl    ) $ path </> plaTblFile
-                                             , helper (ms^.rmTbl     ) $ path </> rmTblFile
-                                             , helper (ms^.typeTbl   ) $ path </> typeTblFile
-                                             , helper (ms^.wpnTbl    ) $ path </> wpnTblFile ]
+    flip withAsync wait $ mapM_ runResourceT [ helper (ms^.armTbl       ) $ path </> armTblFile
+                                             , helper (ms^.clothTbl     ) $ path </> clothTblFile
+                                             , helper (ms^.coinsTbl     ) $ path </> coinsTblFile
+                                             , helper (ms^.conTbl       ) $ path </> conTblFile
+                                             , helper (ms^.entTbl       ) $ path </> entTblFile
+                                             , helper (eqTblHelper ms   ) $ path </> eqTblFile
+                                             , helper (ms^.invTbl       ) $ path </> invTblFile
+                                             , helper (ms^.mobTbl       ) $ path </> mobTblFile
+                                             , helper (ms^.objTbl       ) $ path </> objTblFile
+                                             , helper (ms^.pcTbl        ) $ path </> pcTblFile
+                                             , helper (ms^.plaTbl       ) $ path </> plaTblFile
+                                             , helper (ms^.rmTbl        ) $ path </> rmTblFile
+                                             , helper (ms^.rmTeleNameTbl) $ path </> rmTeleNameTblFile
+                                             , helper (ms^.typeTbl      ) $ path </> typeTblFile
+                                             , helper (ms^.wpnTbl       ) $ path </> wpnTblFile ]
     atomically . putTMVar persistTMVar $ PersisterDone
   where
     getNonExistingPath path = mIf (doesDirectoryExist path)

@@ -31,7 +31,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, view, views)
+import Control.Lens (_1, _2, _3, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -40,12 +40,13 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
+import Data.Tuple (swap)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
-import qualified Data.IntMap.Lazy as IM (filter, foldrWithKey, keys)
+import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
@@ -426,12 +427,11 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 
 -- TODO: Help.
 adminTeleRm :: Action
-adminTeleRm (NoArgs _ mq cols) = multiWrapSend mq cols =<< mkTxt
+adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExec (prefixAdminCmd "telerm") i
   where
-    mkTxt          = (header :) . sort . map mkTeleNameTxt . IM.foldrWithKey helper [] . view rmTbl <$> getState
-    header         = "Room names and IDs:"
-    mkTeleNameTxt  = uncurry (<>) . (pad 8 *** showText)
-    helper k v acc = maybe acc ((: acc) . (, k)) . view teleName $ v
+    mkTxt         = views rmTeleNameTbl ((header :) . sort . map mkTeleNameTxt . IM.toList) <$> getState
+    header        = "Room names and IDs:"
+    mkTeleNameTxt = uncurry (<>) . (pad 11 *** showText) . swap
 adminTeleRm p = patternMatchFail "adminTeleRm" [ showText p ]
 
 

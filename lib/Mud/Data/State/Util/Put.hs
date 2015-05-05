@@ -6,6 +6,7 @@ import Mud.Util.Misc
 
 import Control.Lens (at)
 import Control.Lens.Operators ((&), (.~))
+import qualified Data.Text as T
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
@@ -94,6 +95,13 @@ putRm i is c r = modifyState $ \ms -> (ms & coinsTbl.ind i .~ c
                                           & invTbl  .ind i .~ is
                                           & rmTbl   .ind i .~ r
                                           & typeTbl .ind i .~ RmType, ())
+
+
+-----
+
+
+putRmTeleName :: Id -> T.Text -> MudStack ()
+putRmTeleName i tn = modifyState $ \ms -> (ms & rmTeleNameTbl.ind i .~ tn, ())
 
 
 -----
