@@ -722,7 +722,6 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
--- TODO: "l '" doesn't display anything when there is nothing in the room.
 look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri     = getRmId i  ms
@@ -737,29 +736,27 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(ms, msg, bs, maybeTa
                                = logPla "look" i $ "looked at: " <> T.intercalate ", " targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
   where
-    helper ms
-      | invCoins@(first (i `delete`) -> invCoins') <- getPCRmNonIncogInvCoins i ms
-      = if notEmpty invCoins
-          then let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms as) invCoins'
-                   invDesc      = foldl' (helperLookEitherInv ms) "" eiss
-                   coinsDesc    = foldl' helperLookEitherCoins    "" ecs
-                   (pt, msg)    = firstLook i cols (ms^.plaTbl, invDesc <> coinsDesc)
-                   selfDesig    = mkStdDesig i ms DoCap
-                   selfDesig'   = serialize selfDesig
-                   pis          = i `delete` pcIds selfDesig
-                   targetDesigs = [ mkStdDesig targetId ms Don'tCap | targetId <- extractPCIdsFromEiss ms eiss ]
-                   mkBroadcastsForTarget targetDesig acc =
-                       let targetId = pcId targetDesig
-                           toTarget = (nlnl $ selfDesig' <> " looks at you.", [targetId])
-                           toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
-                                      , targetId `delete` pis)
-                       in toTarget : toOthers : acc
-                   ms' = ms & plaTbl .~ pt
-               in (ms', (ms', msg, foldr mkBroadcastsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
-          else let msg        = wrapUnlinesNl cols "You don't see anything here to look at."
-                   (pt, msg') = firstLook i cols (ms^.plaTbl, msg)
-                   ms'        = ms & plaTbl .~ pt
-               in (ms', (ms', msg', [], Nothing))
+    helper ms = let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms in if notEmpty invCoins
+        then let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms as) invCoins
+                 invDesc      = foldl' (helperLookEitherInv ms) "" eiss
+                 coinsDesc    = foldl' helperLookEitherCoins    "" ecs
+                 (pt, msg)    = firstLook i cols (ms^.plaTbl, invDesc <> coinsDesc)
+                 selfDesig    = mkStdDesig i ms DoCap
+                 selfDesig'   = serialize selfDesig
+                 pis          = i `delete` pcIds selfDesig
+                 targetDesigs = [ mkStdDesig targetId ms Don'tCap | targetId <- extractPCIdsFromEiss ms eiss ]
+                 mkBroadcastsForTarget targetDesig acc =
+                     let targetId = pcId targetDesig
+                         toTarget = (nlnl $ selfDesig' <> " looks at you.", [targetId])
+                         toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
+                                    , targetId `delete` pis)
+                     in toTarget : toOthers : acc
+                 ms' = ms & plaTbl .~ pt
+             in (ms', (ms', msg, foldr mkBroadcastsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
+        else let msg        = wrapUnlinesNl cols "You don't see anything here to look at."
+                 (pt, msg') = firstLook i cols (ms^.plaTbl, msg)
+                 ms'        = ms & plaTbl .~ pt
+             in (ms', (ms', msg', [], Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
@@ -1456,8 +1453,8 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                              , ", "
                                              , msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
-                (pt, fms)        = firstMobSay i $ ms^.plaTbl
-            in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i $ toSelfMsg <> fms, [toSelfMsg]))
+                (pt, hint)        = firstMobSay i $ ms^.plaTbl
+            in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i $ toSelfMsg <> hint, [toSelfMsg]))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
     bcastAndLog (bs, logMsgs) = bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
@@ -1474,17 +1471,17 @@ say p = patternMatchFail "say" [ showText p ]
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, T.Text)
 firstMobSay i pt = if pt^.ind i.to (getPlaFlag IsNotFirstMobSay)
   then (pt, "")
-  else let msg = nlnl . T.concat $ [ hintANSI
-                                   , "Hint:"
-                                   , noHintANSI
-                                   , " to communicate with non-player characters, use the "
-                                   , dblQuote "ask"
-                                   , " command. For example, to ask a city guard about crime, type "
-                                   , quoteColor
-                                   , dblQuote "ask guard crime"
-                                   , dfltColor
-                                   , "." ]
-       in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, msg)
+  else let msg = T.concat $ [ hintANSI
+                            , "Hint:"
+                            , noHintANSI
+                            , " to communicate with non-player characters, use the "
+                            , dblQuote "ask"
+                            , " command. For example, to ask a city guard about crime, type "
+                            , quoteColor
+                            , dblQuote "ask guard crime"
+                            , dfltColor
+                            , "." ]
+       in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlPrefix . nlPrefix . nlnl $ msg)
 
 
 -----

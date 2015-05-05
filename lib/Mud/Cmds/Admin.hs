@@ -384,7 +384,7 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                     wrapSend mq cols . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
                     (retainedMsg targetId ms =<<) $ if getPlaFlag IsNotFirstAdminTell targetPla
                       then return targetMsg
-                      else [ T.intercalate "\n" $ targetMsg : msgs | msgs <- firstAdminTell targetId s ]
+                      else [ T.intercalate "\n" $ targetMsg : hints | hints <- firstAdminTell targetId s ]
                     return [ sentLogMsg, receivedLogMsg ]
               | otherwise -> do
                   multiWrapSend mq cols [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ]
@@ -459,7 +459,7 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
                   wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
                   if getPlaFlag IsNotFirstAdminTell tellPla
                     then wrapSend      tellMq tellCols targetMsg
-                    else multiWrapSend tellMq tellCols =<< [ targetMsg : msgs | msgs <- firstAdminTell tellId s ]
+                    else multiWrapSend tellMq tellCols =<< [ targetMsg : hints | hints <- firstAdminTell tellId s ]
                   return [ sentLogMsg, receivedLogMsg ]
         in maybe notFound found . findFullNameForAbbrev target $ idSings
 adminTell p = patternMatchFail "adminTell" [ showText p ]
@@ -468,22 +468,22 @@ adminTell p = patternMatchFail "adminTell" [ showText p ]
 firstAdminTell :: Id -> Sing -> MudStack [T.Text]
 firstAdminTell tellId adminSing = modifyState $ (, msg) . (plaTbl.ind tellId %~ setPlaFlag IsNotFirstAdminTell True)
   where
-    msg = [ T.concat [ hintANSI
-                     , "Hint:"
-                     , noHintANSI
-                     , " the above is a message from "
-                     , adminSing
-                     , ", a CurryMUD administrator. To reply, type "
-                     , quoteColor
-                     , dblQuote $ "admin " <> adminSing <> " msg"
-                     , dfltColor
-                     , ", where "
-                     , quoteColor
-                     , dblQuote "msg"
-                     , dfltColor
-                     , " is the message you want to send to "
-                     , adminSing
-                     , "." ] ]
+    msg = [ "", T.concat [ hintANSI
+                         , "Hint:"
+                         , noHintANSI
+                         , " the above is a message from "
+                         , adminSing
+                         , ", a CurryMUD administrator. To reply, type "
+                         , quoteColor
+                         , dblQuote $ "admin " <> adminSing <> " msg"
+                         , dfltColor
+                         , ", where "
+                         , quoteColor
+                         , dblQuote "msg"
+                         , dfltColor
+                         , " is the message you want to send to "
+                         , adminSing
+                         , "." ] ]
 
 
 -----

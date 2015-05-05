@@ -23,7 +23,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.Bits (setBit, zeroBits)
 import Data.IORef (newIORef)
-import Data.List (delete, sort)
+import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>), mempty)
 import Data.Tuple (swap)
 import System.Clock (Clock(..), getTime)
@@ -89,8 +89,8 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world."
 
-    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 RHand) (PC iLoggedOut Human [] []) (Pla "" (zeroBits `setBit` fromEnum IsAdmin) 80 24 Nothing [] [] [] (Just iLounge))
-    putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 LHand) (PC iLoggedOut Human [] []) (Pla "" (zeroBits `setBit` fromEnum IsAdmin) 80 24 Nothing [] [] [] (Just iLounge))
+    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 RHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
+    putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 LHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
 
     putRm iLoggedOut [iRoot] mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])
@@ -176,6 +176,10 @@ createWorld = do
     putCloth iOveralls (Ent iOveralls (Just "overalls") "pair of many-pocketed brown overalls" "pairs of many-pocketed brown overalls" "These durable overalls are adorned with a multitude of little pockets." zeroBits) (Obj 1 1) Trousers
     putCloth iLeatherApron (Ent iLeatherApron (Just "apron") "leather apron" "" "This heavy apron, though bulky, is a must for those who undertake in dirty and dangerous chores." zeroBits) (Obj 1 1) Smock
     putArm iTraveler'sBoots (Ent iTraveler'sBoots (Just "boots") "pair of jet-black traveler's boots" "pair of jet-black traveler's boots" "These well-crafted, thigh-high boots are rugged and durable." zeroBits) (Obj 1 1) (Arm Feet 1)
+
+
+adminFlags :: Int
+adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin, IsNotFirstAdminTell, IsNotFirstLook, IsNotFirstMobSay ]
 
 
 loadWorld :: FilePath -> MudStack Bool
