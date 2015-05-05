@@ -1471,17 +1471,17 @@ say p = patternMatchFail "say" [ showText p ]
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, T.Text)
 firstMobSay i pt = if pt^.ind i.to (getPlaFlag IsNotFirstMobSay)
   then (pt, "")
-  else let msg = T.concat $ [ hintANSI
-                            , "Hint:"
-                            , noHintANSI
-                            , " to communicate with non-player characters, use the "
-                            , dblQuote "ask"
-                            , " command. For example, to ask a city guard about crime, type "
-                            , quoteColor
-                            , dblQuote "ask guard crime"
-                            , dfltColor
-                            , "." ]
-       in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlPrefix . nlPrefix . nlnl $ msg)
+  else let msg = T.concat [ hintANSI
+                          , "Hint:"
+                          , noHintANSI
+                          , " to communicate with non-player characters, use the "
+                          , dblQuote "ask"
+                          , " command. For example, to ask a city guard about crime, type "
+                          , quoteColor
+                          , dblQuote "ask guard crime"
+                          , dfltColor
+                          , "." ]
+       in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlnlPrefix . nlnl $ msg)
 
 
 -----

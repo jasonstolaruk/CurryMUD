@@ -13,6 +13,7 @@ module Mud.Util.Text ( aOrAn
                      , nl
                      , nlPrefix
                      , nlnl
+                     , nlnlPrefix
                      , notInfixOf
                      , showText
                      , stripControl
@@ -128,6 +129,10 @@ nlnl = nl . nl
 
 nlPrefix :: T.Text -> T.Text
 nlPrefix = ("\n" <>)
+
+
+nlnlPrefix :: T.Text -> T.Text
+nlnlPrefix = nlPrefix . nlPrefix
 
 
 -----
