@@ -38,7 +38,7 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (at, both, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
-import Control.Monad ((>=>), replicateM_, unless, void)
+import Control.Monad ((>=>), replicateM, replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks, runReaderT)
 import Data.Char (ord, digitToInt, isDigit, toLower)
@@ -54,6 +54,7 @@ import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
+import System.Random.MWC (createSystemRandom, uniformR)
 import qualified Data.IntMap.Lazy as IM (assocs, keys, toList)
 import qualified Data.Map.Lazy as M (assocs, elems, keys)
 import qualified Data.Text as T
@@ -102,6 +103,7 @@ debugCmds =
     , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
+    , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "talk"       debugTalk        "Dump the talk async table."
@@ -447,6 +449,18 @@ purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
     modifyState $ \ms -> let tt = foldr purger (ms^.threadTbl) zipped in (ms & threadTbl .~ tt, ())
   where
     purger (ti, status) tbl = status == ThreadFinished ? tbl & at ti .~ Nothing :? tbl
+
+
+-----
+
+
+debugRandom :: Action
+debugRandom (NoArgs i mq cols) = do
+    gen <- liftIO createSystemRandom
+    res <- liftIO . replicateM 10 . uniformR (0, 99) $ gen
+    wrapSend mq cols . showText $ (res :: [Int])
+    logPlaExec (prefixDebugCmd "random") i
+debugRandom p = withoutArgs debugRandom p
 
 
 -----

@@ -53,7 +53,7 @@ import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
 import System.FilePath ((</>))
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
-import System.Random (randomIO, randomRIO) -- TODO: Use mwc-random or tf-random. QC uses tf-random.
+import System.Random (randomIO, randomRIO)
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys, map)
 import qualified Data.Map.Lazy as M (elems, empty)
