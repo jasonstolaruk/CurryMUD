@@ -2,6 +2,8 @@
 
 module Mud.Cmds.Admin (adminCmds) where
 
+import Mud.Cmds.ExpCmds
+import Mud.Cmds.Pla
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
@@ -451,7 +453,14 @@ adminTeleRm (WithArgs i mq cols [target]) = modifyState helper >>= sequence_
                                            \vanishes in a jarring flash of white light."
                       msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly \
                                            \appears in a jarring flash of white light."
-                  in (ms', [ bcastIfNotIncog i [ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ] ])
+                      desc        = nlnl $ "You are instantly transported in a blinding flash of white light. For a \
+                                           \brief moment you are stricken with vertigo and overwhelmed by a confusing \
+                                           \sensation of nostalgia."
+                  in (ms', [ bcastIfNotIncog i [ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ]
+                           , bcast . mkBroadcast i $ desc
+                           , look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
+                           , let vomit = mkExpAction "vomit"
+                             in vomit ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] } ])
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
     sorryAlreadyThere = wrapSend mq cols "You're already there!"

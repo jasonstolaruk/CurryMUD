@@ -1,7 +1,8 @@
 {-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.ExpCmds ( expCmdSet
-                        , expCmds ) where
+                        , expCmds
+                        , mkExpAction ) where
 
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
@@ -21,7 +22,7 @@ import Control.Lens (each)
 import Control.Lens.Operators ((%~), (&))
 import Data.List ((\\), delete)
 import Data.Monoid ((<>))
-import qualified Data.Set as S (Set, fromList, foldr)
+import qualified Data.Set as S (Set, filter, foldr, fromList, toList)
 import qualified Data.Text as T
 
 
@@ -753,3 +754,13 @@ mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |$|)
 
 replace :: [(T.Text, T.Text)] -> T.Text -> T.Text
 replace = foldr ((.) . uncurry T.replace) id
+
+
+-----
+
+
+mkExpAction :: T.Text -> Action
+mkExpAction name = let [ExpCmd ecn ect] = S.toList . S.filter helper $ expCmdSet
+                   in expCmd ecn ect
+  where
+    helper (ExpCmd ecn _) = ecn == name
