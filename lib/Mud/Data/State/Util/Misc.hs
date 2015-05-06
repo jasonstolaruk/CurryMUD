@@ -139,7 +139,7 @@ mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = let (pp *** pp -> (sexy, r
     serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = T.concat [ f . pp $ aot, " ", sexy, " ", r ] }
 
 
-mkCapsFun :: ShouldCap -> (T.Text -> T.Text)
+mkCapsFun :: ShouldCap -> T.Text -> T.Text
 mkCapsFun = \case DoCap    -> capitalize
                   Don'tCap -> id
 

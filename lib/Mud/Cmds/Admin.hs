@@ -447,8 +447,10 @@ adminTeleRm (WithArgs i mq cols [target]) = modifyState helper >>= sequence_
                       ms'         = ms & pcTbl .ind i.rmId   .~ destId
                                        & invTbl.ind originId %~ (i `delete`)
                                        & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
-                      msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly vanishes in a jarring flash of white light."
-                      msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig <> " suddenly appears in a jarring flash of white light."
+                      msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly \
+                                           \vanishes in a jarring flash of white light."
+                      msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly \
+                                           \appears in a jarring flash of white light."
                   in (ms', [ bcastIfNotIncog i [ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ] ])
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
