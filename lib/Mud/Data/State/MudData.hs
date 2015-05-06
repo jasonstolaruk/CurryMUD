@@ -21,6 +21,7 @@ import GHC.Generics (Generic)
 import Network (HostName)
 import System.Clock (TimeSpec)
 import System.Random (Random, random, randomR)
+import System.Random.MWC (GenIO)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
@@ -33,6 +34,7 @@ type MudStack = ReaderT MudData IO
 
 
 data MudData = MudData { _errorLog       :: Maybe LogService
+                       , _gen            :: GenIO
                        , _mudStateIORef  :: IORef MudState
                        , _noticeLog      :: Maybe LogService
                        , _persisterTMVar :: TMVar PersisterDone

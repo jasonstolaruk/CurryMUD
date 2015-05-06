@@ -29,6 +29,7 @@ import Data.Tuple (swap)
 import System.Clock (Clock(..), getTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
+import System.Random.MWC (createSystemRandom)
 import qualified Data.ByteString.Lazy as B (readFile)
 import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, toList, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
@@ -51,6 +52,7 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 initMudData :: ShouldLog -> IO MudData
 initMudData shouldLog = do
     (errorLogService, noticeLogService) <- initLogging shouldLog
+    genIO   <- createSystemRandom
     msIORef <- newIORef MudState { _armTbl        = IM.empty
                                  , _clothTbl      = IM.empty
                                  , _coinsTbl      = IM.empty
@@ -73,6 +75,7 @@ initMudData shouldLog = do
     persistTMVar <- newTMVarIO PersisterDone
     start        <- getTime Monotonic
     return MudData { _errorLog       = errorLogService
+                   , _gen            = genIO
                    , _mudStateIORef  = msIORef
                    , _noticeLog      = noticeLogService
                    , _persisterTMVar = persistTMVar

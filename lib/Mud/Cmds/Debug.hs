@@ -54,7 +54,7 @@ import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import System.Random.MWC (createSystemRandom, uniformR)
+import System.Random.MWC (uniformR)
 import qualified Data.IntMap.Lazy as IM (assocs, keys, toList)
 import qualified Data.Map.Lazy as M (assocs, elems, keys)
 import qualified Data.Text as T
@@ -456,8 +456,7 @@ purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
 
 debugRandom :: Action
 debugRandom (NoArgs i mq cols) = do
-    gen <- liftIO createSystemRandom
-    res <- liftIO . replicateM 10 . uniformR (0, 99) $ gen
+    res <- liftIO . replicateM 10 . uniformR (0, 99) =<< getGen
     wrapSend mq cols . showText $ (res :: [Int])
     logPlaExec (prefixDebugCmd "random") i
 debugRandom p = withoutArgs debugRandom p
