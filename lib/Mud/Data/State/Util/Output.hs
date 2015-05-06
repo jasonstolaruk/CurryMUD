@@ -223,11 +223,9 @@ parsePCDesig i ms = loop (getIntroduced i ms)
 
 
 expandPCEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ms sc pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm) =
-    T.concat [ leading sc, "he ", xth, expandSex h, " ", t ]
+expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm) =
+    T.concat [ f "the ", xth, expandSex h, " ", t ]
   where
-    leading = \case DoCap    -> "T"
-                    Don'tCap -> "t"
     xth     = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] pcIdsInRm
               in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
     expandSex 'm'                = "male"

@@ -4,7 +4,6 @@ module Mud.Cmds.Admin (adminCmds) where
 
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -440,24 +439,25 @@ adminTeleRm (WithArgs i mq cols [target]) = modifyState helper >>= sequence_
             found (destId, _)
               | destId == originId = (ms, [ sorryAlreadyThere ])
               | otherwise          =
-                  let originDesig = mkStdDesig i ms DoCap
+                  let originDesig = mkStdDesig i ms Don'tCap
                       originPCIds = i `delete` pcIds originDesig
                       s           = fromJust . stdPCEntSing $ originDesig
-                      destDesig   = mkSerializedNonStdDesig i ms s A
+                      destDesig   = mkSerializedNonStdDesig i ms s A Don'tCap
                       destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
                       ms'         = ms & pcTbl .ind i.rmId   .~ destId
                                        & invTbl.ind originId %~ (i `delete`)
                                        & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
-                      msgAtOrigin = nlnl $ serialize originDesig <> " suddenly vanishes in a jarring flash of white \
-                                                                    \light."
-                      msgAtDest   = nlnl $ destDesig <> " suddenly appears in a jarring flash of white light."
+                      msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly vanishes in a jarring flash of white light."
+                      msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig <> " suddenly appears in a jarring flash of white light."
                   in (ms', [ bcastIfNotIncog i [ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ] ])
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
     sorryAlreadyThere = wrapSend mq cols "You're already there!"
     sorryInvalid      = wrapSend mq cols . T.concat $ [ dblQuote target
                                                       , " is not a valid room name. Type "
-                                                      , dblQuote . prefixAdminCmd $ "telerm" -- TODO: Green?
+                                                      , quoteColor
+                                                      , dblQuote . prefixAdminCmd $ "telerm"
+                                                      , dfltColor
                                                       , " with no arguments to get a list of valid room names." ]
 adminTeleRm p = advise p [] advice
   where

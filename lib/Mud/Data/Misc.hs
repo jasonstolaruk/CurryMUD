@@ -284,8 +284,8 @@ instance Serializable PCDesig where
                  , pcEntName    = pen
                  , pcId         = read . T.unpack $ pi
                  , pcIds        = read . T.unpack $ pis }
-    | [ pes, nsd ] <- T.splitOn dd t = NonStdDesig { nonStdPCEntSing = pes
-                                                   , nonStdDesc      = nsd }
+    | c == nonStdDesigDelimiter, [ pes, nsd ] <- T.splitOn dd t =
+        NonStdDesig { nonStdPCEntSing = pes, nonStdDesc = nsd }
     | otherwise = patternMatchFail "deserialize" [ showText a ]
     where
       deserMaybeText ""  = Nothing

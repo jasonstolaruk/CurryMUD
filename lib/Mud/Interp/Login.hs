@@ -236,7 +236,8 @@ handleLogin params@(ActionParams { .. }) = do
                 in (ms', (ms', p^.retainedMsgs, p'))
     notifyArrival ms s = do
         bcastOtherAdmins plaId $ s <> " has logged in."
-        bcastOthersInRm  plaId . nlnl $ mkSerializedNonStdDesig plaId ms s A <> " slowly materializes out of thin air."
+        bcastOthersInRm  plaId . nlnl $ mkSerializedNonStdDesig plaId ms s A DoCap <> " slowly materializes out of \
+                                                                                      \thin air."
     stopInacTimer i mq = do
         liftIO . atomically . writeTQueue mq $ InacStop
         logPla "handleLogin stopInacTimer" i "stopping the inactivity timer."

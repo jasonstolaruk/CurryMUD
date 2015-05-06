@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, TransformListComp, ViewPatterns #-}
 
 -- This module contains state-related functions used by multiple modules.
 
@@ -9,9 +9,11 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , getState
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
+                                , mkCapsFun
                                 , mkPlaIdSingList
                                 , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
+                                , mkStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
                                 , onEnv
@@ -132,9 +134,25 @@ mkPlurFromBoth (_, p ) = p
 -----
 
 
-mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> T.Text
-mkSerializedNonStdDesig i ms s (capitalize . pp -> aot) = let (pp *** pp -> (sexy, r)) = getSexRace i ms in
-    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = T.concat [ aot, " ", sexy, " ", r ] }
+mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> T.Text
+mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = let (pp *** pp -> (sexy, r)) = getSexRace i ms in
+    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = T.concat [ f . pp $ aot, " ", sexy, " ", r ] }
+
+
+mkCapsFun :: ShouldCap -> (T.Text -> T.Text)
+mkCapsFun = \case DoCap    -> capitalize
+                  Don'tCap -> id
+
+
+-----
+
+
+mkStdDesig :: Id -> MudState -> ShouldCap -> PCDesig
+mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
+                              , shouldCap    = sc
+                              , pcEntName    = mkUnknownPCEntName i ms
+                              , pcId         = i
+                              , pcIds        = findPCIds ms . getPCRmInv i $ ms }
 
 
 -----

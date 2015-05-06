@@ -489,7 +489,7 @@ tryMove i mq cols dir = helper |$| modifyState >=> \case
                 msgAtOrigin = nlnl $ case maybeOriginMsg of
                                 Nothing  -> T.concat [ serialize originDesig, " ", verb, " ", expandLinkName dir, "." ]
                                 Just msg -> T.replace "%" (serialize originDesig) msg
-                msgAtDest   = let destDesig = mkSerializedNonStdDesig i ms s A in nlnl $ case maybeDestMsg of
+                msgAtDest   = let destDesig = mkSerializedNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
                                 Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
                                 Just msg -> T.replace "%" destDesig msg
                 logMsg      = T.concat [ "moved "
@@ -944,7 +944,11 @@ quit :: Action
 quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . atomically . writeTQueue mq $ Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
   where
-    msg = "Type " <> dblQuote "quit" <> " with no arguments to quit CurryMUD." -- TODO: Green?
+    msg = T.concat [ "Type "
+                   , quoteColor
+                   , dblQuote "quit"
+                   , dfltColor
+                   , " with no arguments to quit CurryMUD." ]
 
 
 handleEgress :: Id -> MudStack ()

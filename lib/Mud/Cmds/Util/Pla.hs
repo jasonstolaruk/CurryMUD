@@ -37,7 +37,6 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkPutRemoveBindings
                          , mkReadyMsgs
                          , mkReflexPro
-                         , mkStdDesig
                          , mkThrPerPro
                          , moveReadiedItem
                          , otherHand
@@ -499,18 +498,6 @@ mkPutRemoveBindings i ms as = let d                        = mkStdDesig  i ms Do
 -----
 
 
--- TODO: Move? (Used by Admin.)
-mkStdDesig :: Id -> MudState -> ShouldCap -> PCDesig
-mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
-                              , shouldCap    = sc
-                              , pcEntName    = mkUnknownPCEntName i ms
-                              , pcId         = i
-                              , pcIds        = findPCIds ms . getPCRmInv i $ ms }
-
-
------
-
-
 mkCoinsDesc :: Cols -> Coins -> T.Text
 mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
     T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ cop |!| copDesc
@@ -599,7 +586,7 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
       | descId   == i      -> "You have readied the following equipment:"
       | descType == PCType -> parsePCDesig i ms $ d  <> " has readied the following equipment:"
       | otherwise          -> theOnLowerCap descSing <> " has readied the following equipment:"
-    d = mkSerializedNonStdDesig descId ms descSing The
+    d = mkSerializedNonStdDesig descId ms descSing The DoCap
 
 
 dudeYou'reNaked :: T.Text
