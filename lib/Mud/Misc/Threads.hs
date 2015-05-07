@@ -227,10 +227,10 @@ adHoc mq host = do
                        , _entDesc  = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
                        , _entFlags = zeroBits }
             m    = Mob { _sex  = sexy
-                       , _st   = 10
-                       , _dx   = 10
-                       , _iq   = 10
-                       , _ht   = 10
+                       , _st   = 50
+                       , _dx   = 50
+                       , _iq   = 50
+                       , _ht   = 50
                        , _hp   = 10
                        , _fp   = 10
                        , _xp   = 0

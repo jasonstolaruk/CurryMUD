@@ -40,6 +40,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 -- ==================================================
 
 
+-- TODO: tremble, shiver
 expCmdSet :: S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"      (HasTarget "You admire @."
@@ -578,6 +579,8 @@ expCmdSet = S.fromList
                                       "You scowl with contempt at @."
                                       "% scowls with contempt at you."
                                       "% scowls with contempt at @.")
+    , ExpCmd "shudder"     (NoTarget  "You shudder."
+                                      "% shudders.")
     , ExpCmd "snore"       (NoTarget  "You snore loudly."
                                       "% snores loudly.")
     , ExpCmd "sob"         (NoTarget  "You sob."

@@ -15,6 +15,8 @@ module Mud.Util.Misc ( (?)
                      , isEmpty
                      , isVowel
                      , mIf
+                     , mUnless
+                     , mWhen
                      , maybeRet
                      , maybeVoid
                      , mkDateTimeTxt
@@ -116,6 +118,14 @@ maybeVoid = maybe (return ())
 mIf :: (Monad m) => m Bool -> m a -> m a -> m a
 mIf p x y = p >>= \case True  -> x
                         False -> y
+
+
+mUnless :: (Monad m) => m Bool -> m () -> m ()
+mUnless p = mIf p (return ())
+
+
+mWhen :: (Monad m) => m Bool -> m () -> m ()
+mWhen p x = mIf p x . return $ ()
 
 
 mkDateTimeTxt :: IO (T.Text, T.Text)

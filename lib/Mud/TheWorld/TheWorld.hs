@@ -93,8 +93,8 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world."
 
-    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 RHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
-    putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 LHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
+    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 50 50 50 50 10 10 0 RHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
+    putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 50 50 50 50 10 10 0 LHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
 
     putRm iLoggedOut [iRoot] mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])
@@ -177,8 +177,8 @@ createWorld = do
     putArm iSandals2 (Ent iSandals2 (Just "sandals") "pair of leather sandals" "pairs of leather sandals" "These humble leather sandals offer little in the way of fashion; they will, however, adequately protect the soles of your feet." zeroBits) (Obj 1 1) (Arm Feet 1)
     putArm iBoots (Ent iBoots (Just "boots") "pair of leather boots" "pairs of leather boots" "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain." zeroBits) (Obj 1 1) (Arm Feet 1)
 
-    putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." zeroBits) [] mempty M.empty (Mob Male 10 10 10 10 10 10 10 NoHand)
-    putMob iPidge (Ent iPidge (Just "pidge") "Pidge" "" "Pidge is a female dwarf with walnut-colored skin and large, brown eyes. She wears her silver-white hair in shoulder-length pigtails. Her small, round face is positively adorable." zeroBits) [] mempty (M.fromList [ (ShirtS, iPeasant'sShirt), (SmockS, iLeatherApron), (TrousersS, iOveralls), (FeetS, iTraveler'sBoots) ]) (Mob Female 10 10 10 10 10 10 10 RHand)
+    putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." zeroBits) [] mempty M.empty (Mob Male 25 75 10 25 10 10 10 NoHand)
+    putMob iPidge (Ent iPidge (Just "pidge") "Pidge" "" "Pidge is a female dwarf with walnut-colored skin and large, brown eyes. She wears her silver-white hair in shoulder-length pigtails. Her small, round face is positively adorable." zeroBits) [] mempty (M.fromList [ (ShirtS, iPeasant'sShirt), (SmockS, iLeatherApron), (TrousersS, iOveralls), (FeetS, iTraveler'sBoots) ]) (Mob Female 50 50 50 50 10 10 10 RHand)
     putCloth iPeasant'sShirt (Ent iPeasant'sShirt (Just "shirt") "white peasant's shirt" "" "This shirt, favored by skilled laborers and lowly bumpkins alike, represents the epitome of function over fashion." zeroBits) (Obj 1 1) Shirt
     putCloth iOveralls (Ent iOveralls (Just "overalls") "pair of many-pocketed brown overalls" "pairs of many-pocketed brown overalls" "These durable overalls are adorned with a multitude of little pockets." zeroBits) (Obj 1 1) Trousers
     putCloth iLeatherApron (Ent iLeatherApron (Just "apron") "leather apron" "" "This heavy apron, though bulky, is a must for those who undertake in dirty and dangerous chores." zeroBits) (Obj 1 1) Smock

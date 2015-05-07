@@ -38,18 +38,17 @@ import Control.Lens (_1, _2, _3, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (delete, sort)
+import Data.List (delete)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Data.Time (getCurrentTime, getZonedTime)
 import Data.Time.Format (formatTime)
-import Data.Tuple (swap)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
-import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
+import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
@@ -430,11 +429,10 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 
 -- TODO: Help.
 adminTeleRm :: Action
-adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExec (prefixAdminCmd "telerm") i
+adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExecArgs (prefixAdminCmd "telerm") [] i
   where
-    mkTxt         = views rmTeleNameTbl ((header :) . sort . map mkTeleNameTxt . IM.toList) <$> getState
-    header        = "Room names and IDs:"
-    mkTeleNameTxt = uncurry (<>) . (pad 11 *** showText) . swap
+    mkTxt         = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tBracket . IM.elems) <$> getState
+    header        = "You may teleport to the following locations:"
 adminTeleRm (OneArg i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
@@ -462,7 +460,8 @@ adminTeleRm (OneArg i mq cols target) = modifyState helper >>= sequence_
                            , bcast . mkBroadcast i $ desc
                            , look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
                            , let params = ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-                             in rndmDo 10 . mkExpAction "vomit" $ params
+                             in rndmDos [ ( (getHt i ms - 100) ^ 2 `quot` 250,      mkExpAction "vomit"   params)
+                                        , (((getHt i ms - 100) ^ 2 `quot` 250) * 2, mkExpAction "shudder" params) ]
                            , logPla "adminTeleRm helper found" i $ "teleported to " <> dblQuote rmTeleName <> "." ])
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms

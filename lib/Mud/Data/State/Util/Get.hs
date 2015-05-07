@@ -85,6 +85,14 @@ getHostName i = view hostName . getPla i
 -----
 
 
+-- TODO: Make other attribute getters.
+getHt :: Id -> MudState -> Int
+getHt i = view ht . getMob i
+
+
+-----
+
+
 getInterp :: Id -> MudState -> Maybe Interp
 getInterp i = view interp . getPla i
 
