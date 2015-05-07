@@ -112,7 +112,8 @@ adminCmds =
     , mkAdminCmd "profanity" adminProfanity   "Dump the profanity log."
     , mkAdminCmd "retained"  adminRetained    "Send a retained message to a player."
     , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
-    , mkAdminCmd "telerm"    adminTeleRm      "Teleport to a given room."
+    , mkAdminCmd "telerm"    adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
+                                              \given room."
     , mkAdminCmd "tell"      adminTell        "Send a message to a player."
     , mkAdminCmd "time"      adminTime        "Display the current system time."
     , mkAdminCmd "typo"      adminTypo        "Dump the typo log."
@@ -464,8 +465,8 @@ adminTeleRm (OneArg i mq cols target) = modifyState helper >>= sequence_
                            , bcast . mkBroadcast i $ desc
                            , look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
                            , let params = ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-                             in rndmDos [ ( (getHt i ms - 100) ^ 2 `quot` 250,      mkExpAction "vomit"   params)
-                                        , (((getHt i ms - 100) ^ 2 `quot` 250) * 2, mkExpAction "shudder" params) ]
+                             in rndmDos [ ((getHt i ms - 100) ^ 2 `quot` 250, mkExpAction "vomit"   params)
+                                        , ((getHt i ms - 100) ^ 2 `quot` 125, mkExpAction "shudder" params) ]
                            , logPla "adminTeleRm helper found" i $ "teleported to " <> dblQuote rmTeleName <> "." ])
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
