@@ -460,18 +460,15 @@ go dir p@(ActionParams { args      }) = goDispatcher p { args = dir : args }
 
 
 goDispatcher :: Action
-goDispatcher (ActionParams { args = [] }) = return ()
-goDispatcher (Lower i mq cols as)         = mapM_ (tryMove i mq cols) as
-goDispatcher p                            = patternMatchFail "goDispatcher" [ showText p ]
+goDispatcher   (ActionParams { args = [] }) = return ()
+goDispatcher p@(Lower i mq cols as)         = mapM_ (tryMove i mq cols p { args = [] }) as
+goDispatcher p                              = patternMatchFail "goDispatcher" [ showText p ]
 
 
-tryMove :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
-tryMove i mq cols dir = helper |$| modifyState >=> \case
+tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> T.Text -> MudStack ()
+tryMove i mq cols p dir = helper |$| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
-  Right (bs, logMsg) -> do
-      look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-      bcastIfNotIncog i bs
-      logPla "tryMove" i logMsg
+  Right (bs, logMsg) -> look p >> bcastIfNotIncog i bs >> logPla "tryMove" i logMsg
   where
     helper ms =
         let originId = getRmId i ms

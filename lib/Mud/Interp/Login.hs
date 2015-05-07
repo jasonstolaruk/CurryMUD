@@ -57,7 +57,7 @@ logPla = L.logPla "Mud.Interp.Login"
 
 
 interpName :: Interp
-interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
+interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
   | not . inRange (3, 12) . T.length $ cn = promptRetryName mq "Your name must be between three and twelve characters \
                                                                \long."
   | T.any (`elem` illegalChars) cn        = promptRetryName mq "Your name cannot include any numbers or symbols."
@@ -70,7 +70,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
                             nextPrompt
     Right (originId, oldSing) -> getState >>= \ms -> let cols = getColumns i ms in do
       greet cols
-      handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
+      handleLogin p { args = [] }
       logPla    "interpName" i $ "logged in from " <> T.pack (getHostName i ms) <> "."
       logNotice "interpName" . T.concat $ [ dblQuote oldSing
                                           , " has logged in as "
@@ -184,10 +184,10 @@ checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
 
 
 interpConfirmName :: Sing -> Interp
-interpConfirmName s cn (NoArgs i mq cols) = case yesNo cn of
+interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
   Just True -> helper |$| modifyState >=> \(getPla i -> p, oldSing) -> do
       send mq . nl $ ""
-      handleLogin ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
+      handleLogin params { args = [] }
       logPla    "interpConfirmName" i $ "new character logged in from " <> T.pack (p^.hostName) <> "."
       logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged in as " <> s <> " (new character)."
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)

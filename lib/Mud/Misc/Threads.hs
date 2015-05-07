@@ -62,9 +62,6 @@ import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, putStrLn, read
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
--- TODO: ^C causes hanging?
-
-
 default (Int)
 
 

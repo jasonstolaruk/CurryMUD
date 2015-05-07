@@ -528,6 +528,8 @@ expCmdSet = S.fromList
                                       "You shriek with laughter at @."
                                       "% shrieks with laughter at you."
                                       "% shrieks with laughter at @.")
+    , ExpCmd "shrug"       (NoTarget  "You shrug your shoulders."
+                                      "% shrugs & shoulders.")
     , ExpCmd "shush"       (HasTarget "You shush @."
                                       "% shushes you."
                                       "% shushed @.")

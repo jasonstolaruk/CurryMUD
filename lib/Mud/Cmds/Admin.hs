@@ -35,7 +35,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, view, views)
+import Control.Lens (_1, _2, _3, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -112,6 +112,7 @@ adminCmds =
     , mkAdminCmd "profanity" adminProfanity   "Dump the profanity log."
     , mkAdminCmd "retained"  adminRetained    "Send a retained message to a player."
     , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
+    , mkAdminCmd "telepla"   adminTelePla     "Teleport to a given player."
     , mkAdminCmd "telerm"    adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
                                               \given room."
     , mkAdminCmd "tell"      adminTell        "Send a message to a player."
@@ -169,7 +170,7 @@ adminAdmin (OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper 
                       | targetId == i        -> (ms, [ wrapSend mq cols "You can't demote yourself." ])
                       | targetSing == "Root" -> (ms, [ wrapSend mq cols "You can't demote Root."     ])
                       | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
-      xs         -> patternMatchFail "adminAdmin" [ showText xs ]
+      xs         -> patternMatchFail "adminAdmin helper" [ showText xs ]
 adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
 
@@ -432,17 +433,62 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 -----
 
 
+-- TODO: Help.
+adminTelePla :: Action
+adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] "Please specify the PC name of the player to which \
+                                                                    \you want to teleport."
+adminTelePla p@(OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper >>= sequence_
+  where
+    helper ms =
+        let s        = getSing i ms
+            idSings  = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+            originId = getRmId i ms
+            found (flip getRmId ms -> destId, targetSing)
+              | targetSing == s        = (ms, [ wrapSend mq cols "You can't teleport to yourself." ])
+              | destId     == originId = (ms, [ wrapSend mq cols "You're already there!"           ])
+              | otherwise              =
+                  let params      = p { args = [] }
+                      originDesig = mkStdDesig i ms Don'tCap
+                      originPCIds = i `delete` pcIds originDesig
+                      destDesig   = mkSerializedNonStdDesig i ms s A Don'tCap
+                      destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
+                      ms'         = ms & pcTbl .ind i.rmId   .~ destId
+                                       & invTbl.ind originId %~ (i `delete`)
+                                       & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
+                      msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly \
+                                           \vanishes in a jarring flash of white light."
+                      msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly \
+                                           \appears in a jarring flash of white light."
+                      desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a \
+                                           \brief moment you are overwhelmed with vertigo accompanied by a confusing \
+                                           \sensation of nostalgia."
+                  in (ms', [ unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ [ (msgAtOrigin, originPCIds)
+                                                                                       , (msgAtDest,   destPCIds  ) ]
+                           , bcast . mkBroadcast i $ desc
+                           , look params
+                           , rndmDos [ ((getHt i ms - 100) ^ 2 `quot` 250, mkExpAction "vomit"   params)
+                                     , ((getHt i ms - 100) ^ 2 `quot` 125, mkExpAction "shudder" params) ]
+                           , logPla "adminTeleRm helper found" i $ "teleported to " <> dblQuote targetSing <> "." ])
+            notFound = (ms, [sorryInvalid])
+        in maybe notFound found . findFullNameForAbbrev target $ idSings
+    sorryInvalid = wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently logged in."
+adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
+
+
+-----
+
+
 adminTeleRm :: Action
 adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExecArgs (prefixAdminCmd "telerm") [] i
   where
-    mkTxt         = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tBracket . IM.elems) <$> getState
-    header        = "You may teleport to the following locations:"
-adminTeleRm (OneArg i mq cols target) = modifyState helper >>= sequence_
+    mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tBracket . IM.elems) <$> getState
+    header = "You may teleport to the following locations:"
+adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
-        let originId = view rmId . getPC i $ ms
+        let originId = getRmId i ms
             found (destId, rmTeleName)
-              | destId == originId = (ms, [ sorryAlreadyThere ])
+              | destId == originId = (ms, [ wrapSend mq cols "You're already there!" ])
               | otherwise          =
                   let originDesig = mkStdDesig i ms Don'tCap
                       originPCIds = i `delete` pcIds originDesig
@@ -459,23 +505,22 @@ adminTeleRm (OneArg i mq cols target) = modifyState helper >>= sequence_
                       desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a \
                                            \brief moment you are overwhelmed with vertigo accompanied by a confusing \
                                            \sensation of nostalgia."
+                      params      = p { args = [] }
                   in (ms', [ unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ [ (msgAtOrigin, originPCIds)
-                                                                                       , (msgAtDest, destPCIds) ]
+                                                                                       , (msgAtDest,   destPCIds  ) ]
                            , bcast . mkBroadcast i $ desc
-                           , look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-                           , let params = ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-                             in rndmDos [ ((getHt i ms - 100) ^ 2 `quot` 250, mkExpAction "vomit"   params)
-                                        , ((getHt i ms - 100) ^ 2 `quot` 125, mkExpAction "shudder" params) ]
+                           , look params
+                           , rndmDos [ ((getHt i ms - 100) ^ 2 `quot` 250, mkExpAction "vomit"   params)
+                                     , ((getHt i ms - 100) ^ 2 `quot` 125, mkExpAction "shudder" params) ]
                            , logPla "adminTeleRm helper found" i $ "teleported to " <> dblQuote rmTeleName <> "." ])
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
-    sorryAlreadyThere = wrapSend mq cols "You're already there!"
-    sorryInvalid      = wrapSend mq cols . T.concat $ [ dblQuote target
-                                                      , " is not a valid room name. Type "
-                                                      , quoteColor
-                                                      , dblQuote . prefixAdminCmd $ "telerm"
-                                                      , dfltColor
-                                                      , " with no arguments to get a list of valid room names." ]
+    sorryInvalid = wrapSend mq cols . T.concat $ [ dblQuote target
+                                                 , " is not a valid room name. Type "
+                                                 , quoteColor
+                                                 , dblQuote . prefixAdminCmd $ "telerm"
+                                                 , dfltColor
+                                                 , " with no arguments to get a list of valid room names." ]
 adminTeleRm p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
