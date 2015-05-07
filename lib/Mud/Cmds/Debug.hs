@@ -13,6 +13,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.TheWorld.Ids
@@ -38,7 +39,7 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (at, both, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
-import Control.Monad ((>=>), replicateM, replicateM_, unless, void)
+import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks, runReaderT)
 import Data.Char (ord, digitToInt, isDigit, toLower)
@@ -54,7 +55,6 @@ import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import System.Random.MWC (uniformR)
 import qualified Data.IntMap.Lazy as IM (assocs, keys, toList)
 import qualified Data.Map.Lazy as M (assocs, elems, keys)
 import qualified Data.Text as T
@@ -236,7 +236,7 @@ debugId p@AdviseNoArgs = advise p [] advice
                       , dblQuote $ prefixDebugCmd "id" <> " 100"
                       , dfltColor
                       , "." ]
-debugId (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)] of
+debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
   _                -> sorryParse
   where
@@ -456,8 +456,7 @@ purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
 
 debugRandom :: Action
 debugRandom (NoArgs i mq cols) = do
-    res <- liftIO . replicateM 10 . uniformR (0, 99) =<< getGen
-    wrapSend mq cols . showText $ (res :: [Int])
+    wrapSend mq cols . showText =<< rndmRs 10 (0, 99)
     logPlaExec (prefixDebugCmd "random") i
 debugRandom p = withoutArgs debugRandom p
 
@@ -608,7 +607,7 @@ debugWrap p@AdviseNoArgs = advise p [] advice
                       , dblQuote $ prefixDebugCmd "wrap" <> " 40"
                       , dfltColor
                       , "." ]
-debugWrap (WithArgs i mq cols [a]) = case reads . T.unpack $ a :: [(Int, String)] of
+debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(lineLen, "")] -> helper lineLen
   _               -> sorryParse
   where

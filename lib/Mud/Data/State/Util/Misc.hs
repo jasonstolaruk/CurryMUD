@@ -6,7 +6,6 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , findPCIds
                                 , getEffBothGramNos
                                 , getEffName
-                                , getGen
                                 , getState
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
@@ -28,7 +27,6 @@ import Mud.TheWorld.Ids
 import Mud.Util.Misc
 import Mud.Util.Text
 
-import Control.Applicative ((<$>))
 import Control.Arrow ((***))
 import Control.Lens (_1, _2, at, both)
 import Control.Lens.Getter (view, views)
@@ -41,7 +39,6 @@ import Data.List (delete, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import GHC.Exts (sortWith)
-import System.Random.MWC (GenIO)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
 
@@ -82,13 +79,6 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
 
 mkUnknownPCEntName :: Id -> MudState -> T.Text
 mkUnknownPCEntName i ms = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
-
-
------
-
-
-getGen :: MudStack GenIO -- TODO: Move to a Random module?
-getGen = view gen <$> ask
 
 
 -----

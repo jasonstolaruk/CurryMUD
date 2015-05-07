@@ -13,6 +13,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
@@ -434,11 +435,11 @@ adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExec
     mkTxt         = views rmTeleNameTbl ((header :) . sort . map mkTeleNameTxt . IM.toList) <$> getState
     header        = "Room names and IDs:"
     mkTeleNameTxt = uncurry (<>) . (pad 11 *** showText) . swap
-adminTeleRm (WithArgs i mq cols [target]) = modifyState helper >>= sequence_
+adminTeleRm (OneArg i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
         let originId = view rmId . getPC i $ ms
-            found (destId, _)
+            found (destId, rmTeleName)
               | destId == originId = (ms, [ sorryAlreadyThere ])
               | otherwise          =
                   let originDesig = mkStdDesig i ms Don'tCap
@@ -453,14 +454,16 @@ adminTeleRm (WithArgs i mq cols [target]) = modifyState helper >>= sequence_
                                            \vanishes in a jarring flash of white light."
                       msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly \
                                            \appears in a jarring flash of white light."
-                      desc        = nlnl $ "You are instantly transported in a blinding flash of white light. For a \
-                                           \brief moment you are stricken with vertigo and overwhelmed by a confusing \
+                      desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a \
+                                           \brief moment you are overwhelmed with vertigo accompanied by a confusing \
                                            \sensation of nostalgia."
-                  in (ms', [ bcastIfNotIncog i [ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ]
+                  in (ms', [ unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ [ (msgAtOrigin, originPCIds)
+                                                                                       , (msgAtDest, destPCIds) ]
                            , bcast . mkBroadcast i $ desc
                            , look ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
-                           , let vomit = mkExpAction "vomit"
-                             in vomit ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] } ])
+                           , let params = ActionParams { plaId = i, plaMsgQueue = mq, plaCols = cols, args = [] }
+                             in rndmDo 10 . mkExpAction "vomit" $ params
+                           , logPla "adminTeleRm helper found" i $ "teleported to " <> dblQuote rmTeleName <> "." ])
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
     sorryAlreadyThere = wrapSend mq cols "You're already there!"

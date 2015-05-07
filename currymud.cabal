@@ -61,6 +61,7 @@ library
                        Mud.Data.State.Util.Misc,
                        Mud.Data.State.Util.Output,
                        Mud.Data.State.Util.Put,
+                       Mud.Data.State.Util.Random,
                        Mud.Data.State.Util.Set,
                        Mud.Interp.CentralDispatch
                        Mud.Interp.Login,
