@@ -24,7 +24,9 @@ getGen = view gen <$> ask
 
 
 isSuccess :: Int -> MudStack Bool
-isSuccess prob = inRange (1, prob) <$> rndmPer
+isSuccess prob = inRange (1, adjust prob) <$> rndmPer
+  where
+    adjust p = p < 1 ? 1 :? p
 
 
 percent :: Range

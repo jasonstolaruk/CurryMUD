@@ -432,7 +432,6 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 -----
 
 
--- TODO: Help.
 adminTeleRm :: Action
 adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExecArgs (prefixAdminCmd "telerm") [] i
   where
