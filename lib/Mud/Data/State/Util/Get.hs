@@ -53,6 +53,13 @@ getCon i = view (conTbl.ind i)
 -----
 
 
+getDx :: Id -> MudState -> Int
+getDx i = view dx . getMob i
+
+
+-----
+
+
 getEnt :: Id -> MudState -> Ent
 getEnt i = view (entTbl.ind i)
 
@@ -85,7 +92,6 @@ getHostName i = view hostName . getPla i
 -----
 
 
--- TODO: Make other attribute getters.
 getHt :: Id -> MudState -> Int
 getHt i = view ht . getMob i
 
@@ -132,6 +138,13 @@ getNonIncogInvCoins i = (getNonIncogInv i *** getCoins i) . dup
 
 getIsCloth :: Id -> MudState -> Bool
 getIsCloth i = view isCloth . getCon i
+
+
+-----
+
+
+getIq :: Id -> MudState -> Int
+getIq i = view iq . getMob i
 
 
 -----
@@ -284,6 +297,13 @@ getSexRace i = (getSex i *** getRace i) . dup
 
 getSing :: Id -> MudState -> Sing
 getSing i = view sing . getEnt i
+
+
+-----
+
+
+getSt :: Id -> MudState -> Int
+getSt i = view st . getMob i
 
 
 -----

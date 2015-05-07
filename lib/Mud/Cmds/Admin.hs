@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TransformListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
@@ -54,6 +55,9 @@ import qualified Data.Text.IO as T (putStrLn, readFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+default (Int)
 
 
 -----
