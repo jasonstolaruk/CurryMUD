@@ -42,6 +42,9 @@ prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (n
   in findFullNameForAbbrev needle hay' == Just match
 
 
+-- ==================================================
+
+
 test_stripControl :: T.Text
 test_stripControl = stripControl . quoteWith controlCodes $ "test"
   where

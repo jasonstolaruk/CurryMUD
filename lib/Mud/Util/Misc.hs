@@ -120,12 +120,10 @@ mIf p x y = p >>= \case True  -> x
                         False -> y
 
 
--- TODO: Test.
 mUnless :: (Monad m) => m Bool -> m () -> m ()
 mUnless p = mIf p (return ())
 
 
--- TODO: Test.
 mWhen :: (Monad m) => m Bool -> m () -> m ()
 mWhen p x = mIf p x . return $ ()
 

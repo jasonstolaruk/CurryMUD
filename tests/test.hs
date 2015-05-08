@@ -8,17 +8,19 @@ import MudTests.Data.State.Util.Random
 import MudTests.Misc.Threads
 import MudTests.TheWorld.TheWorld
 import MudTests.Util.List
+import MudTests.Util.Misc
 import MudTests.Util.Padding
 import MudTests.Util.Text
 import MudTests.Util.Wrapping
 
 import Data.Monoid ((<>))
 import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit ((@?=), testCase)
+import Test.Tasty.HUnit ((@?=), assertBool, testCase)
 import Test.Tasty.QuickCheck as QC (testProperty)
 import qualified Data.Text as T
 
 
+-- TODO: Needed everywhere?
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
@@ -120,6 +122,7 @@ propTests_Mud_Util_Wrapping = testGroup "property tests Mud.Util.Wrapping"
 
 unitTests :: TestTree
 unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
+                                   , unitTests_Mud_Util_Misc
                                    , unitTests_Mud_Util_Text ]
 
 
@@ -140,6 +143,17 @@ unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
     std = T.singleton stdDesigDelimiter
     non = T.singleton nonStdDesigDelimiter
     d   = T.singleton desigDelimiter
+
+
+-- --------------------------------------------------
+
+
+unitTests_Mud_Util_Misc :: TestTree
+unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
+    [ testCase "test_mWhen_IO_True"    $ test_mWhen_IO_True    >>= assertBool "failed"
+    , testCase "test_mWhen_IO_False"   $ test_mWhen_IO_False   >>= assertBool "failed"
+    , testCase "test_mUnless_IO_True"  $ test_mUnless_IO_True  >>= assertBool "failed"
+    , testCase "test_mUnless_IO_False" $ test_mUnless_IO_False >>= assertBool "failed" ]
 
 
 -- --------------------------------------------------
