@@ -51,7 +51,9 @@ propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Rando
 
 propTests_Mud_Data_State_Util_Random :: TestTree
 propTests_Mud_Data_State_Util_Random = testGroup "property tests Mud.Data.State.Util.Random"
-    [ QC.testProperty "prop_rndmRs" prop_rndmRs ]
+    [ QC.testProperty "prop_rndmRs_within_range" prop_rndmRs_within_range
+    , QC.testProperty "prop_rndmRs_no_range" prop_rndmRs_no_range
+    , QC.testProperty "prop_rndmRs_minimal_range" prop_rndmRs_minimal_range ]
 
 
 -- --------------------------------------------------
