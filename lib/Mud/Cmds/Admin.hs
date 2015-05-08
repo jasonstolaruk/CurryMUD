@@ -431,7 +431,6 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 
 
 
--- TODO: Pull out code common to both tele functions.
 adminTelePla :: Action
 adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] "Please specify the PC name of the player to which \
                                                                     \you want to teleport."
@@ -444,33 +443,36 @@ adminTelePla p@(OneArgNubbed i mq cols (capitalize -> target)) = modifyState hel
             found (flip getRmId ms -> destId, targetSing)
               | targetSing == s        = (ms, [ wrapSend mq cols "You can't teleport to yourself." ])
               | destId     == originId = (ms, [ wrapSend mq cols "You're already there!"           ])
-              | otherwise              =
-                  let params      = p { args = [] }
-                      originDesig = mkStdDesig i ms Don'tCap
-                      originPCIds = i `delete` pcIds originDesig
-                      destDesig   = mkSerializedNonStdDesig i ms s A Don'tCap
-                      destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
-                      ms'         = ms & pcTbl .ind i.rmId   .~ destId
-                                       & invTbl.ind originId %~ (i `delete`)
-                                       & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
-                      msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly \
-                                           \vanishes in a jarring flash of white light."
-                      msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly \
-                                           \appears in a jarring flash of white light."
-                      desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a \
-                                           \brief moment you are overwhelmed with vertigo accompanied by a confusing \
-                                           \sensation of nostalgia."
-                  in (ms', [ unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ [ (msgAtOrigin, originPCIds)
-                                                                                       , (msgAtDest,   destPCIds  ) ]
-                           , bcast . mkBroadcast i $ desc
-                           , look params
-                           , rndmDos [ ((getHt i ms - 100) ^ 2 `quot` 250, mkExpAction "vomit"   params)
-                                     , ((getHt i ms - 100) ^ 2 `quot` 125, mkExpAction "shudder" params) ]
-                           , logPla "adminTeleRm helper found" i $ "teleported to " <> dblQuote targetSing <> "." ])
+              | otherwise              = teleHelper i ms p { args = [] } originId destId targetSing
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target $ idSings
     sorryInvalid = wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently logged in."
 adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
+
+
+teleHelper :: Id -> MudState -> ActionParams -> Id -> Id -> T.Text -> (MudState, [MudStack ()])
+teleHelper i ms p originId destId name =
+    let originDesig = mkStdDesig i ms Don'tCap
+        originPCIds = i `delete` pcIds originDesig
+        s           = fromJust . stdPCEntSing $ originDesig
+        destDesig   = mkSerializedNonStdDesig i ms s A Don'tCap
+        destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
+        ms'         = ms & pcTbl .ind i.rmId   .~ destId
+                         & invTbl.ind originId %~ (i `delete`)
+                         & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
+        msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly vanishes in a \
+                             \jarring flash of white light."
+        msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly appears in a \
+                             \jarring flash of white light."
+        desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a brief moment you \
+                             \are overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
+        in (ms', [ unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ [ (msgAtOrigin, originPCIds)
+                                                                             , (msgAtDest,   destPCIds  ) ]
+                 , bcast . mkBroadcast i $ desc
+                 , look p
+                 , rndmDos [ ((getHt i ms - 100) ^ 2 `quot` 250, mkExpAction "vomit"   p)
+                           , ((getHt i ms - 100) ^ 2 `quot` 125, mkExpAction "shudder" p) ]
+                 , logPla "telehelper" i $ "teleported to " <> dblQuote name <> "." ])
 
 
 -----
@@ -487,30 +489,7 @@ adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
         let originId = getRmId i ms
             found (destId, rmTeleName)
               | destId == originId = (ms, [ wrapSend mq cols "You're already there!" ])
-              | otherwise          =
-                  let originDesig = mkStdDesig i ms Don'tCap
-                      originPCIds = i `delete` pcIds originDesig
-                      s           = fromJust . stdPCEntSing $ originDesig
-                      destDesig   = mkSerializedNonStdDesig i ms s A Don'tCap
-                      destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
-                      ms'         = ms & pcTbl .ind i.rmId   .~ destId
-                                       & invTbl.ind originId %~ (i `delete`)
-                                       & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
-                      msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly \
-                                           \vanishes in a jarring flash of white light."
-                      msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly \
-                                           \appears in a jarring flash of white light."
-                      desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a \
-                                           \brief moment you are overwhelmed with vertigo accompanied by a confusing \
-                                           \sensation of nostalgia."
-                      params      = p { args = [] }
-                  in (ms', [ unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ [ (msgAtOrigin, originPCIds)
-                                                                                       , (msgAtDest,   destPCIds  ) ]
-                           , bcast . mkBroadcast i $ desc
-                           , look params
-                           , rndmDos [ ((getHt i ms - 100) ^ 2 `quot` 250, mkExpAction "vomit"   params)
-                                     , ((getHt i ms - 100) ^ 2 `quot` 125, mkExpAction "shudder" params) ]
-                           , logPla "adminTeleRm helper found" i $ "teleported to " <> dblQuote rmTeleName <> "." ])
+              | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
     sorryInvalid = wrapSend mq cols . T.concat $ [ dblQuote target
