@@ -1,8 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-} -- TODO: Needed?
 
-import Mud.Data.Misc
-import Mud.TopLvlDefs.Chars
-import Mud.Util.Quoting
 import MudTests.Data.Misc
 import MudTests.Data.State.Util.Random
 import MudTests.Misc.Threads
@@ -13,11 +10,9 @@ import MudTests.Util.Padding
 import MudTests.Util.Text
 import MudTests.Util.Wrapping
 
-import Data.Monoid ((<>))
 import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit ((@?=), assertBool, testCase)
+import Test.Tasty.HUnit ((@?=), testCase)
 import Test.Tasty.QuickCheck as QC (testProperty)
-import qualified Data.Text as T
 
 
 -- TODO: Needed everywhere?
@@ -53,8 +48,8 @@ propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Rando
 
 propTests_Mud_Data_State_Util_Random :: TestTree
 propTests_Mud_Data_State_Util_Random = testGroup "property tests Mud.Data.State.Util.Random"
-    [ QC.testProperty "prop_rndmRs_within_range" prop_rndmRs_within_range
-    , QC.testProperty "prop_rndmRs_no_range" prop_rndmRs_no_range
+    [ QC.testProperty "prop_rndmRs_within_range"  prop_rndmRs_within_range
+    , QC.testProperty "prop_rndmRs_no_range"      prop_rndmRs_no_range
     , QC.testProperty "prop_rndmRs_minimal_range" prop_rndmRs_minimal_range ]
 
 
@@ -79,7 +74,7 @@ propTests_Mud_TheWorld_TheWorld = testGroup "property tests Mud.TheWorld.TheWorl
 
 propTests_Mud_Util_List :: TestTree
 propTests_Mud_Util_List = testGroup "property tests Mud.Util.List"
-    [ QC.testProperty "prop_countOcc" prop_countOcc
+    [ QC.testProperty "prop_countOcc"    prop_countOcc
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 
 
@@ -90,8 +85,8 @@ propTests_Mud_Util_Padding :: TestTree
 propTests_Mud_Util_Padding = testGroup "property tests Mud.Util.Padding"
     [ QC.testProperty "prop_quoteWithAndPad_length" prop_quoteWithAndPad_length
     , QC.testProperty "prop_quoteWithAndPad_quotes" prop_quoteWithAndPad_quotes
-    , QC.testProperty "prop_padOrTrunc_pads" prop_padOrTrunc_pads
-    , QC.testProperty "prop_padOrTrunc_truncates" prop_padOrTrunc_truncates ]
+    , QC.testProperty "prop_padOrTrunc_pads"        prop_padOrTrunc_pads
+    , QC.testProperty "prop_padOrTrunc_truncates"   prop_padOrTrunc_truncates ]
 
 
 -- --------------------------------------------------
@@ -99,9 +94,9 @@ propTests_Mud_Util_Padding = testGroup "property tests Mud.Util.Padding"
 
 propTests_Mud_Util_Text :: TestTree
 propTests_Mud_Util_Text = testGroup "property tests Mud.Util.Text"
-    [ QC.testProperty "prop_aOrAn" prop_aOrAn
+    [ QC.testProperty "prop_aOrAn"                              prop_aOrAn
     , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
-    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch" prop_findFullNameForAbbrev_findsMatch ]
+    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch"   prop_findFullNameForAbbrev_findsMatch ]
 
 
 -- --------------------------------------------------
@@ -109,12 +104,12 @@ propTests_Mud_Util_Text = testGroup "property tests Mud.Util.Text"
 
 propTests_Mud_Util_Wrapping :: TestTree
 propTests_Mud_Util_Wrapping = testGroup "property tests Mud.Util.Wrapping"
-    [ QC.testProperty "prop_wrap" prop_wrap
-    , QC.testProperty "prop_wrapIndent_wraps" prop_wrapIndent_wraps
-    , QC.testProperty "prop_wrapIndent_indents" prop_wrapIndent_indents
-    , QC.testProperty "prop_xformLeading" prop_xformLeading
+    [ QC.testProperty "prop_wrap"                  prop_wrap
+    , QC.testProperty "prop_wrapIndent_wraps"      prop_wrapIndent_wraps
+    , QC.testProperty "prop_wrapIndent_indents"    prop_wrapIndent_indents
+    , QC.testProperty "prop_xformLeading"          prop_xformLeading
     , QC.testProperty "prop_wrapLineWithIndentTag" prop_wrapLineWithIndentTag
-    , QC.testProperty "prop_calcIndent" prop_calcIndent ]
+    , QC.testProperty "prop_calcIndent"            prop_calcIndent ]
 
 
 -- ==================================================
@@ -131,18 +126,10 @@ unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
 
 unitTests_Mud_Data_Misc :: TestTree
 unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
-    [ testCase "serializeStdDesig"      $ test_serializeStdDesig      @?=
-        quoteWith std (T.intercalate d [ "Taro", "Don'tCap", "mhuman", "50", "[50,51,52,53,54,55]" ])
-    , testCase "serializeNonStdDesig"   $ test_serializeNonStdDesig   @?=
-        quoteWith non ("Taro" <> d <> "A male human")
-    , testCase "deserializeStdDesig"    $ test_deserializeStdDesig    @?=
-        StdDesig Nothing DoCap "fhuman" 55 [ 55, 54..50 ]
-    , testCase "deserializeNonStdDesig" $ test_deserializeNonStdDesig @?=
-        NonStdDesig "Hanako" "A female human" ]
-  where
-    std = T.singleton stdDesigDelimiter
-    non = T.singleton nonStdDesigDelimiter
-    d   = T.singleton desigDelimiter
+    [ testCase "serializeStdDesig"      test_serializeStdDesig
+    , testCase "serializeNonStdDesig"   test_serializeNonStdDesig
+    , testCase "deserializeStdDesig"    test_deserializeStdDesig
+    , testCase "deserializeNonStdDesig" test_deserializeNonStdDesig ]
 
 
 -- --------------------------------------------------
@@ -150,10 +137,10 @@ unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
 
 unitTests_Mud_Util_Misc :: TestTree
 unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
-    [ testCase "test_mWhen_IO_True"    $ test_mWhen_IO_True    >>= assertBool "failed"
-    , testCase "test_mWhen_IO_False"   $ test_mWhen_IO_False   >>= assertBool "failed"
-    , testCase "test_mUnless_IO_True"  $ test_mUnless_IO_True  >>= assertBool "failed"
-    , testCase "test_mUnless_IO_False" $ test_mUnless_IO_False >>= assertBool "failed" ]
+    [ testCase "test_mWhen_IO_True"    test_mWhen_IO_True
+    , testCase "test_mWhen_IO_False"   test_mWhen_IO_False
+    , testCase "test_mUnless_IO_True"  test_mUnless_IO_True
+    , testCase "test_mUnless_IO_False" test_mUnless_IO_False ]
 
 
 -- --------------------------------------------------

@@ -42,29 +42,30 @@ import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
 
-infixl 1 :?
+infixr 0 |$|
+infixl 0 ?
+infixl 1 :?, |!|, |?|
+
+
 data Cond a = a :? a
 
 
-infixl 0 ?
 (?) :: Bool -> Cond a -> a
 True  ? (x :? _) = x
 False ? (_ :? y) = y
 
 
 -- mempty on mempty.
-infixl 1 |!|
 (|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
 a |!| b = isEmpty a ? mempty :? b
 
 
 -- mempty on False.
-infixl 1 |?|
 (|?|) :: (Monoid a) => Bool -> a -> a
 a |?| b = a ? b :? mempty
 
 
-infixr 0 |$| -- TODO: GHC 7.10 will have a similar function named "(&)"...
+-- TODO: GHC 7.10 will have a similar function named "(&)"...
 (|$|) :: a -> (a -> b) -> b
 (|$|) = flip ($)
 
