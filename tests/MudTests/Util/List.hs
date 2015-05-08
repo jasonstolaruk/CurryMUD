@@ -8,12 +8,6 @@ import Control.Applicative ((<$>), (<*>))
 import Data.List (elemIndices, group, sort)
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
-
-
 prop_countOcc :: Int -> [Int] -> Bool
 prop_countOcc needle hay = countOcc needle hay == matches
   where

@@ -15,9 +15,6 @@ import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "MudTests.Util.Wrapping"
 

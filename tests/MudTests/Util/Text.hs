@@ -11,6 +11,7 @@ import Data.Char (chr, isSpace)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
 import Test.QuickCheck.Modifiers (NonEmptyList(..))
+import Test.Tasty.HUnit ((@?=), Assertion)
 import Test.Tasty.QuickCheck ((==>), Property)
 import qualified Data.Text as T
 
@@ -45,59 +46,97 @@ prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (n
 -- ==================================================
 
 
-test_stripControl :: T.Text
-test_stripControl = stripControl . quoteWith controlCodes $ "test"
-  where
-    controlCodes = T.pack $ [ '\0' .. '\31' ] ++ [ '\127' .. (maxBound :: Char) ]
-
-
-test_stripTelnet_null :: T.Text
-test_stripTelnet_null = stripTelnet ""
-
-
-test_stripTelnet_telnetCodes :: T.Text
-test_stripTelnet_telnetCodes = stripTelnet telnetCodes
-
-
 telnetCodes :: T.Text
 telnetCodes = T.pack . map chr $ [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
 
 
-test_stripTelnet_leading :: T.Text
-test_stripTelnet_leading = stripTelnet $ telnetCodes <> "test"
+test_stripControl :: Assertion
+test_stripControl = actual @?= expected
+  where
+    actual       = stripControl . quoteWith controlCodes $ "test"
+    expected     = "test"
+    controlCodes = T.pack $ [ '\0' .. '\31' ] ++ [ '\127' .. (maxBound :: Char) ]
 
 
-test_stripTelnet_trailing :: T.Text
-test_stripTelnet_trailing = stripTelnet $ "test" <> telnetCodes
+test_stripTelnet_null :: Assertion
+test_stripTelnet_null = actual @?= expected
+  where
+    actual   = stripTelnet ""
+    expected = ""
 
 
-test_stripTelnet_leadingAndTrailing :: T.Text
-test_stripTelnet_leadingAndTrailing = stripTelnet $ quoteWith telnetCodes "test"
+test_stripTelnet_telnetCodes :: Assertion
+test_stripTelnet_telnetCodes = actual @?= expected
+  where
+    actual   = stripTelnet telnetCodes
+    expected = ""
 
 
-test_stripTelnet_intercalated :: T.Text
-test_stripTelnet_intercalated = stripTelnet $ T.intercalate telnetCodes [ "test1", "test2", "test3", "test4", "test5" ]
+test_stripTelnet_leading :: Assertion
+test_stripTelnet_leading = actual @?= expected
+  where
+    actual   = stripTelnet $ telnetCodes <> "test"
+    expected = "test"
 
 
-test_stripTelnet_malformed1 :: T.Text
-test_stripTelnet_malformed1 = stripTelnet . T.singleton $ telnetIAC
+test_stripTelnet_trailing :: Assertion
+test_stripTelnet_trailing = actual @?= expected
+  where
+    actual   = stripTelnet $ "test" <> telnetCodes
+    expected = "test"
 
 
-test_stripTelnet_malformed2 :: T.Text
-test_stripTelnet_malformed2 = stripTelnet . T.pack $ [ telnetIAC, telnetSB, 'a' ]
+test_stripTelnet_leadingAndTrailing :: Assertion
+test_stripTelnet_leadingAndTrailing = actual @?= expected
+  where
+    actual   = stripTelnet $ quoteWith telnetCodes "test"
+    expected = "test"
 
 
-test_stripTelnet_malformed3 :: T.Text
-test_stripTelnet_malformed3 = stripTelnet . T.pack $ telnetIAC : telnetSB : "test"
+test_stripTelnet_intercalated :: Assertion
+test_stripTelnet_intercalated = actual @?= expected
+  where
+    actual   = stripTelnet $ T.intercalate telnetCodes [ "test1", "test2", "test3", "test4", "test5" ]
+    expected = "test1test2test3test4test5"
 
 
-test_stripTelnet_malformed4 :: T.Text
-test_stripTelnet_malformed4 = stripTelnet $ "test" `T.snoc` telnetIAC
+test_stripTelnet_malformed1 :: Assertion
+test_stripTelnet_malformed1 = actual @?= expected
+  where
+    actual   = stripTelnet . T.singleton $ telnetIAC
+    expected = ""
 
 
-test_stripTelnet_malformed5 :: T.Text
-test_stripTelnet_malformed5 = stripTelnet $ "test" <> T.pack [ telnetIAC, telnetSB, 'a' ]
+test_stripTelnet_malformed2 :: Assertion
+test_stripTelnet_malformed2 = actual @?= expected
+  where
+    actual   = stripTelnet . T.pack $ [ telnetIAC, telnetSB, 'a' ]
+    expected = ""
 
 
-test_stripTelnet_malformed6 :: T.Text
-test_stripTelnet_malformed6 = stripTelnet $ "test" <> T.pack (telnetIAC : telnetSB : "TEST")
+test_stripTelnet_malformed3 :: Assertion
+test_stripTelnet_malformed3 = actual @?= expected
+  where
+    actual   = stripTelnet . T.pack $ telnetIAC : telnetSB : "test"
+    expected = ""
+
+
+test_stripTelnet_malformed4 :: Assertion
+test_stripTelnet_malformed4 = actual @?= expected
+  where
+    actual   = stripTelnet $ "test" `T.snoc` telnetIAC
+    expected = "test"
+
+
+test_stripTelnet_malformed5 :: Assertion
+test_stripTelnet_malformed5 = actual @?= expected
+  where
+    actual   = stripTelnet $ "test" <> T.pack [ telnetIAC, telnetSB, 'a' ]
+    expected = "test"
+
+
+test_stripTelnet_malformed6 :: Assertion
+test_stripTelnet_malformed6 = actual @?= expected
+  where
+    actual   = stripTelnet $ "test" <> T.pack (telnetIAC : telnetSB : "TEST")
+    expected = "test"

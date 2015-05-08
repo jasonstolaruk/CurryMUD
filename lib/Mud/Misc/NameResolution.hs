@@ -44,12 +44,6 @@ import qualified Data.Text as T
 import qualified Prelude ((>>))
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 (>>) :: Holey Builder (T.Text -> a) b -> Holey Builder c a -> Holey Builder c b
 a >> b = a % stext % b
 

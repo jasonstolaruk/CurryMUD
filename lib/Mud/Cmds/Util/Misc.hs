@@ -41,12 +41,6 @@ import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionEr
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Misc"
 

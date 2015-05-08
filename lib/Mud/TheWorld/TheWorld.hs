@@ -36,12 +36,6 @@ import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 

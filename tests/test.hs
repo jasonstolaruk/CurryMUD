@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-} -- TODO: Needed?
-
 import MudTests.Data.Misc
 import MudTests.Data.State.Util.Random
 import MudTests.Misc.Threads
@@ -11,11 +9,10 @@ import MudTests.Util.Text
 import MudTests.Util.Wrapping
 
 import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit ((@?=), testCase)
+import Test.Tasty.HUnit (testCase)
 import Test.Tasty.QuickCheck as QC (testProperty)
 
 
--- TODO: Needed everywhere?
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
@@ -148,16 +145,16 @@ unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
 
 unitTests_Mud_Util_Text :: TestTree
 unitTests_Mud_Util_Text = testGroup "unit tests Mud.Util.Text"
-    [ testCase "stripControl"                   $ test_stripControl                   @?= "test"
-    , testCase "stripTelnet_null"               $ test_stripTelnet_null               @?= ""
-    , testCase "stripTelnet_telnetCodes"        $ test_stripTelnet_telnetCodes        @?= ""
-    , testCase "stripTelnet_leading"            $ test_stripTelnet_leading            @?= "test"
-    , testCase "stripTelnet_trailing"           $ test_stripTelnet_trailing           @?= "test"
-    , testCase "stripTelnet_leadingAndTrailing" $ test_stripTelnet_leadingAndTrailing @?= "test"
-    , testCase "stripTelnet_intercalated"       $ test_stripTelnet_intercalated       @?= "test1test2test3test4test5"
-    , testCase "stripTelnet_malformed1"         $ test_stripTelnet_malformed1         @?= ""
-    , testCase "stripTelnet_malformed2"         $ test_stripTelnet_malformed2         @?= ""
-    , testCase "stripTelnet_malformed3"         $ test_stripTelnet_malformed3         @?= ""
-    , testCase "stripTelnet_malformed4"         $ test_stripTelnet_malformed4         @?= "test"
-    , testCase "stripTelnet_malformed5"         $ test_stripTelnet_malformed5         @?= "test"
-    , testCase "stripTelnet_malformed6"         $ test_stripTelnet_malformed6         @?= "test" ]
+    [ testCase "stripControl"                   test_stripControl
+    , testCase "stripTelnet_null"               test_stripTelnet_null
+    , testCase "stripTelnet_telnetCodes"        test_stripTelnet_telnetCodes
+    , testCase "stripTelnet_leading"            test_stripTelnet_leading
+    , testCase "stripTelnet_trailing"           test_stripTelnet_trailing
+    , testCase "stripTelnet_leadingAndTrailing" test_stripTelnet_leadingAndTrailing
+    , testCase "stripTelnet_intercalated"       test_stripTelnet_intercalated
+    , testCase "stripTelnet_malformed1"         test_stripTelnet_malformed1
+    , testCase "stripTelnet_malformed2"         test_stripTelnet_malformed2
+    , testCase "stripTelnet_malformed3"         test_stripTelnet_malformed3
+    , testCase "stripTelnet_malformed4"         test_stripTelnet_malformed4
+    , testCase "stripTelnet_malformed5"         test_stripTelnet_malformed5
+    , testCase "stripTelnet_malformed6"         test_stripTelnet_malformed6 ]

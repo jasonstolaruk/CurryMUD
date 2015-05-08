@@ -13,12 +13,6 @@ import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
-
-
 prop_quoteWithAndPad_length :: T.Text -> Property
 prop_quoteWithAndPad_length t = forAll (choose (3, 50)) $ \len ->
     let res = quoteWithAndPad ("[", "]") len t
