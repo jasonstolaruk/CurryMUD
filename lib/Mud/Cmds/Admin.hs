@@ -433,7 +433,8 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 -----
 
 
--- TODO: Help.
+
+-- TODO: Pull out code common to both tele functions.
 adminTelePla :: Action
 adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] "Please specify the PC name of the player to which \
                                                                     \you want to teleport."

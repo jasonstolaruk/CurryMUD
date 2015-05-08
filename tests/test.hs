@@ -4,6 +4,7 @@ import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Quoting
 import MudTests.Data.Misc
+import MudTests.Data.State.Util.Random
 import MudTests.Misc.Threads
 import MudTests.TheWorld.TheWorld
 import MudTests.Util.List
@@ -36,12 +37,21 @@ tests = testGroup "tests" [ propertyTests, unitTests ]
 
 
 propertyTests :: TestTree
-propertyTests = testGroup "property tests" [ propTests_Mud_Misc_Threads
+propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Random
+                                           , propTests_Mud_Misc_Threads
                                            , propTests_Mud_TheWorld_TheWorld
                                            , propTests_Mud_Util_List
                                            , propTests_Mud_Util_Padding
                                            , propTests_Mud_Util_Text
                                            , propTests_Mud_Util_Wrapping ]
+
+
+-- --------------------------------------------------
+
+
+propTests_Mud_Data_State_Util_Random :: TestTree
+propTests_Mud_Data_State_Util_Random = testGroup "property tests Mud.Data.State.Util.Random"
+    [ QC.testProperty "prop_rndmRs" prop_rndmRs ]
 
 
 -- --------------------------------------------------

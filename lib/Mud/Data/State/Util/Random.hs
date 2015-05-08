@@ -1,4 +1,5 @@
-module Mud.Data.State.Util.Random ( rndmDo
+module Mud.Data.State.Util.Random ( percent
+                                  , rndmDo
                                   , rndmDos
                                   , rndmR
                                   , rndmRs ) where
