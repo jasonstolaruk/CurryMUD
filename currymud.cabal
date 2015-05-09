@@ -56,6 +56,7 @@ library
                        Mud.Data.State.ActionParams.Util,
                        Mud.Data.State.MsgQueue,
                        Mud.Data.State.MudData,
+                       Mud.Data.State.Util.Calc,
                        Mud.Data.State.Util.Coins,
                        Mud.Data.State.Util.Get,
                        Mud.Data.State.Util.Misc,

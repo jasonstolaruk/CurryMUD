@@ -10,6 +10,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -112,6 +113,7 @@ debugCmds =
     , mkDebugCmd "throwlog"   debugThrowLog    "Throw an exception on your player log thread."
     , mkDebugCmd "token"      debugToken       "Test token parsing."
     , mkDebugCmd "underline"  debugUnderline   "Test underlining."
+    , mkDebugCmd "weight"     debugWeight      "Calculate weight for a given ID."
     , mkDebugCmd "wrap"       debugWrap        "Test the wrapping of a line containing ANSI escape sequences."
     , mkDebugCmd "wrapindent" debugWrapIndent  "Test the indented wrapping of a line containing ANSI escape \
                                                \sequences." ]
@@ -242,7 +244,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   where
     sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid ID."
     helper searchId@(showText -> searchIdTxt)
-      | searchId < 0 = wrapSorryWtf mq cols
+      | searchId < 0 = sorryWtf mq cols
       | otherwise    = getState >>= \ms -> do
           let f     = T.intercalate ", " . map (showText . fst)
               g     = IM.toList . flip view ms
@@ -274,8 +276,8 @@ debugId p = advise p [] advice
                       , "." ]
 
 
-wrapSorryWtf :: MsgQueue -> Cols -> MudStack ()
-wrapSorryWtf mq cols = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
+sorryWtf :: MsgQueue -> Cols -> MudStack ()
+sorryWtf mq cols = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
 
 
 mkTblNameKeysList :: MudState -> [(T.Text, Inv)]
@@ -599,6 +601,35 @@ debugUnderline p = withoutArgs debugUnderline p
 -----
 
 
+debugWeight :: Action
+debugWeight p@AdviseNoArgs = advise p [] advice
+  where
+    advice = T.concat [ "Please specify an ID for which you would like to calculate weight, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "weight" <> " 100"
+                      , dfltColor
+                      , "." ]
+debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+  [(searchId, "")] -> helper searchId
+  _                -> wrapSend mq cols $ dblQuote a <> " is not a valid ID."
+  where
+    helper searchId
+      | searchId < 0 = sorryWtf mq cols
+      | otherwise    = do
+          send mq . nlnl . showText . calcWeight searchId =<< getState
+          logPlaExecArgs (prefixDebugCmd "weight") [a] i
+debugWeight p = advise p [] advice
+  where
+    advice = T.concat [ "Please provide one argument: the ID for which you would like to calculate weight, as in "
+                      , quoteColor
+                      , dblQuote $ prefixDebugCmd "weight" <> " 100"
+                      , dfltColor
+                      , "." ]
+
+
+-----
+
+
 debugWrap :: Action
 debugWrap p@AdviseNoArgs = advise p [] advice
   where
@@ -612,7 +643,7 @@ debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   _               -> sorryParse
   where
     sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-    helper lineLen | lineLen < 0                                = wrapSorryWtf     mq cols
+    helper lineLen | lineLen < 0                                = sorryWtf         mq cols
                    | not . inRange (minCols, maxCols) $ lineLen = wrapSorryLineLen mq cols
                    | otherwise                                  = do
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
@@ -672,7 +703,7 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
       _         -> emptied sorry
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
-    helper lineLen indent | any (< 0) [ lineLen, indent ]              = wrapSorryWtf     mq cols
+    helper lineLen indent | any (< 0) [ lineLen, indent ]              = sorryWtf         mq cols
                           | not . inRange (minCols, maxCols) $ lineLen = wrapSorryLineLen mq cols
                           | indent >= lineLen                          = sorryIndent
                           | otherwise                                  = do

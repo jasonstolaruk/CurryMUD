@@ -313,6 +313,13 @@ getType :: Id -> MudState -> Type
 getType i = view (typeTbl.ind i)
 
 
+----
+
+
+getWeight :: Id -> MudState -> Int
+getWeight i = view weight . getObj i
+
+
 -----
 
 

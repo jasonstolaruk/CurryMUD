@@ -97,7 +97,7 @@ createWorld = do
     putRm iClothCloset [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ] mempty (Rm "Clothing closet" "This closet holds clothing." zeroBits [ StdLink West iCentral, StdLink Down iAccessoriesCloset ])
     putRm iAccessoriesCloset [ iEar1, iEar2, iEar3, iEar4, iEar5, iEar6, iEar7, iEar8, iNoseRing1, iNoseRing2, iNoseRing3, iNeck1, iNeck2, iNeck3, iNeck4, iBracelet1, iBracelet2, iBracelet3, iBracelet4, iBracelet5, iBracelet6, iBracelet7, iBracelet8, iRing1, iRing2, iRing3, iRing4, iRing5, iRing6, iRing7, iRing8, iRing9 ] mempty (Rm "Accessories closet" "This closet holds accessories." zeroBits [ StdLink Up iClothCloset ])
     putRm iCoinsCloset [] (Coins (100, 100, 100)) (Rm "Coin closet" "This closet holds coins." zeroBits [ StdLink Northwest iCentral ])
-    putRm iConCloset [ iBag1, iBag2, iBackpack1, iBackpack2 ] mempty (Rm "Container closet" "This closet holds containers." zeroBits [ StdLink North iCentral ])
+    putRm iConCloset [ iSack1, iSack2, iBackpack1, iBackpack2 ] mempty (Rm "Container closet" "This closet holds containers." zeroBits [ StdLink North iCentral ])
     putRm iWpnCloset [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ] mempty (Rm "Weapon closet" "This closet holds weapons." zeroBits [ StdLink Northeast iCentral ])
     putRm iArmCloset [ iCap, iHelm, iSandals1, iSandals2, iBoots ] mempty (Rm "Armor closet" "This closet holds armor." zeroBits [ StdLink East iCentral ])
     putRm iMobCloset [ iRockCavy, iPidge ] mempty (Rm "Mob closet" "This closet holds mobs." zeroBits [ StdLink Southeast iCentral ])
@@ -153,8 +153,8 @@ createWorld = do
     putCloth iTrousers1 (Ent iTrousers1 (Just "trousers") "pair of baggy beige trousers" "pairs of baggy beige trousers" "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows them to be snugly tightened at the waist." zeroBits) (Obj 125 1) Trousers
     putCloth iTrousers2 (Ent iTrousers2 (Just "trousers") "pair of baggy beige trousers" "pairs of baggy beige trousers" "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows them to be snugly tightened at the waist." zeroBits) (Obj 125 1) Trousers
 
-    putCon iBag1 (Ent iBag1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's red." zeroBits) (Obj 100 1) [] mempty Nothing (Con False 10)
-    putCon iBag2 (Ent iBag2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's blue." zeroBits) (Obj 100 1) [] mempty Nothing (Con False 10)
+    putCon iSack1 (Ent iSack1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's red." zeroBits) (Obj 100 1) [] mempty Nothing (Con False 10)
+    putCon iSack2 (Ent iSack2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's blue." zeroBits) (Obj 100 1) [] mempty Nothing (Con False 10)
     putCon iBackpack1 (Ent iBackpack1 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 500 1) [] mempty (Just Backpack) (Con True 10)
     putCon iBackpack2 (Ent iBackpack2 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 500 1) [] mempty (Just Backpack) (Con True 10)
 

@@ -71,9 +71,9 @@ iRing3 = 29:: Int
 
 iRing4 = 30 :: Int
 
-iBag1 = 31 :: Int
+iSack1 = 31 :: Int
 
-iBag2 = 32 :: Int
+iSack2 = 32 :: Int
 
 iBackpack1 = 33 :: Int
 
