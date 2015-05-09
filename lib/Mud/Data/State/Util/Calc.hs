@@ -17,14 +17,26 @@ blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 -- ==================================================
 
 
+calcProbTeleShudder :: Id -> MudState -> Int
+calcProbTeleShudder i ms = (getHt i ms - 100) ^ 2 `quot` 125
+
+
+calcProbTeleVomit :: Id -> MudState -> Int
+calcProbTeleVomit i ms = (getHt i ms - 100) ^ 2 `quot` 250
+
+
+-----
+
+
 calcWeight :: Id -> MudState -> Int
 calcWeight i ms = case getType i ms of
   ConType -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
-  MobType -> sum [                 calcInvWeight, calcCoinsWeight, calcEqWeight ]
-  PCType  -> sum [                 calcInvWeight, calcCoinsWeight, calcEqWeight ]
+  MobType -> mobPC
+  PCType  -> mobPC
   RmType  -> blowUp "calcWeight" "cannot calculate the weight of a room" [ showText i ]
   _       -> getWeight i ms
   where
+    mobPC           = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
     calcInvWeight   = helper .           getInv   i $ ms
     calcEqWeight    = helper . M.elems . getEqMap i $ ms
     helper          = sum . map (flip calcWeight ms)

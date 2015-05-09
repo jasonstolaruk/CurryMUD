@@ -11,6 +11,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -469,8 +470,8 @@ teleHelper i ms p originId destId name =
                                                                              , (msgAtDest,   destPCIds  ) ]
                  , bcast . mkBroadcast i $ desc
                  , look p
-                 , rndmDos [ ((getHt i ms - 100) ^ 2 `quot` 250, mkExpAction "vomit"   p)
-                           , ((getHt i ms - 100) ^ 2 `quot` 125, mkExpAction "shudder" p) ]
+                 , rndmDos [ (calcProbTeleVomit   i ms, mkExpAction "vomit"   p)
+                           , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ]
                  , logPla "telehelper" i $ "teleported to " <> dblQuote name <> "." ])
 
 
