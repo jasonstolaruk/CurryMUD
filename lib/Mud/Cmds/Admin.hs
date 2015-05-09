@@ -437,13 +437,12 @@ adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] "Please spec
 adminTelePla p@(OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper >>= sequence_
   where
     helper ms =
-        let s        = getSing i ms
-            idSings  = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+        let idSings  = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
             originId = getRmId i ms
             found (flip getRmId ms -> destId, targetSing)
-              | targetSing == s        = (ms, [ wrapSend mq cols "You can't teleport to yourself." ])
-              | destId     == originId = (ms, [ wrapSend mq cols "You're already there!"           ])
-              | otherwise              = teleHelper i ms p { args = [] } originId destId targetSing
+              | targetSing == getSing i ms = (ms, [ wrapSend mq cols "You can't teleport to yourself." ])
+              | destId     == originId     = (ms, [ wrapSend mq cols "You're already there!"           ])
+              | otherwise                  = teleHelper i ms p { args = [] } originId destId targetSing
             notFound = (ms, [sorryInvalid])
         in maybe notFound found . findFullNameForAbbrev target $ idSings
     sorryInvalid = wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently logged in."

@@ -107,76 +107,76 @@ createWorld = do
     putRmTeleName iCentral "central"
     putRmTeleName iLounge "lounge"
 
-    putObj iKewpie1 (Ent iKewpie1 (Just "doll") "kewpie doll" "" "The kewpie doll is disgustingly cute." zeroBits) (Obj 1 1)
-    putObj iKewpie2 (Ent iKewpie2 (Just "doll") "kewpie doll" "" "The kewpie doll is disgustingly cute." zeroBits) (Obj 1 1)
+    putObj iKewpie1 (Ent iKewpie1 (Just "doll") "kewpie doll" "" "The kewpie doll is disgustingly cute." zeroBits) (Obj 25 1)
+    putObj iKewpie2 (Ent iKewpie2 (Just "doll") "kewpie doll" "" "The kewpie doll is disgustingly cute." zeroBits) (Obj 25 1)
 
-    putCloth iEar1 (Ent iEar1 (Just "earring") "azure earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) Earring
-    putCloth iEar2 (Ent iEar2 (Just "earring") "crimson earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) Earring
-    putCloth iEar3 (Ent iEar3 (Just "earring") "sea green earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) Earring
-    putCloth iEar4 (Ent iEar4 (Just "earring") "onyx earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) Earring
-    putCloth iEar5 (Ent iEar5 (Just "earring") "azure earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) Earring
-    putCloth iEar6 (Ent iEar6 (Just "earring") "crimson earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) Earring
-    putCloth iEar7 (Ent iEar7 (Just "earring") "sea green earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) Earring
-    putCloth iEar8 (Ent iEar8 (Just "earring") "onyx earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 1 1) Earring
-    putCloth iNoseRing1 (Ent iNoseRing1 (Just "nose") "nose ring" "" "It's a plain copper stud, intended to be worn on the nose." zeroBits) (Obj 1 1) NoseRing
-    putCloth iNoseRing2 (Ent iNoseRing2 (Just "nose") "nose ring" "" "It's a plain copper stud, intended to be worn on the nose." zeroBits) (Obj 1 1) NoseRing
-    putCloth iNoseRing3 (Ent iNoseRing3 (Just "nose") "nose ring" "" "It's a plain copper stud, intended to be worn on the nose." zeroBits) (Obj 1 1) NoseRing
-    putCloth iNeck1 (Ent iNeck1 (Just "necklace") "bronze necklace" "" "It's a simple bronze chain." zeroBits) (Obj 1 1) Necklace
-    putCloth iNeck2 (Ent iNeck2 (Just "necklace") "silver necklace" "" "It's a simple silver chain." zeroBits) (Obj 1 1) Necklace
-    putCloth iNeck3 (Ent iNeck3 (Just "necklace") "gold necklace" "" "It's a simple gold chain." zeroBits) (Obj 1 1) Necklace
-    putCloth iNeck4 (Ent iNeck4 (Just "necklace") "platinum necklace" "" "It's a simple platinum chain." zeroBits) (Obj 1 1) Necklace
-    putCloth iBracelet1 (Ent iBracelet1 (Just "bracelet") "charm bracelet" "" "The bracelet is adorned with a variety of quaint charms in the shape of musical instruments, fashioned out of pewter." zeroBits) (Obj 1 1) Bracelet
+    putCloth iEar1 (Ent iEar1 (Just "earring") "azure earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
+    putCloth iEar2 (Ent iEar2 (Just "earring") "crimson earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
+    putCloth iEar3 (Ent iEar3 (Just "earring") "sea green earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
+    putCloth iEar4 (Ent iEar4 (Just "earring") "onyx earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
+    putCloth iEar5 (Ent iEar5 (Just "earring") "azure earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
+    putCloth iEar6 (Ent iEar6 (Just "earring") "crimson earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
+    putCloth iEar7 (Ent iEar7 (Just "earring") "sea green earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
+    putCloth iEar8 (Ent iEar8 (Just "earring") "onyx earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
+    putCloth iNoseRing1 (Ent iNoseRing1 (Just "nose") "nose ring" "" "It's a plain copper stud, intended to be worn on the nose." zeroBits) (Obj 2 1) NoseRing
+    putCloth iNoseRing2 (Ent iNoseRing2 (Just "nose") "nose ring" "" "It's a plain copper stud, intended to be worn on the nose." zeroBits) (Obj 2 1) NoseRing
+    putCloth iNoseRing3 (Ent iNoseRing3 (Just "nose") "nose ring" "" "It's a plain copper stud, intended to be worn on the nose." zeroBits) (Obj 2 1) NoseRing
+    putCloth iNeck1 (Ent iNeck1 (Just "necklace") "bronze necklace" "" "It's a simple bronze chain." zeroBits) (Obj 4 1) Necklace
+    putCloth iNeck2 (Ent iNeck2 (Just "necklace") "silver necklace" "" "It's a simple silver chain." zeroBits) (Obj 4 1) Necklace
+    putCloth iNeck3 (Ent iNeck3 (Just "necklace") "gold necklace" "" "It's a simple gold chain." zeroBits) (Obj 4 1) Necklace
+    putCloth iNeck4 (Ent iNeck4 (Just "necklace") "platinum necklace" "" "It's a simple platinum chain." zeroBits) (Obj 4 1) Necklace
+    putCloth iBracelet1 (Ent iBracelet1 (Just "bracelet") "charm bracelet" "" "The bracelet is adorned with a variety of quaint charms in the shape of musical instruments, fashioned out of pewter." zeroBits) (Obj 10 1) Bracelet
     putCloth iBracelet2 (Ent iBracelet2 (Just "bracelet") "wooden bangle bracelet" "" "The bangle bracelet is made of smooth polished wood, stained an earthy shade of brown, and about half an inch wide." zeroBits) (Obj 1 1) Bracelet
-    putCloth iBracelet3 (Ent iBracelet3 (Just "bracelet") "beaded bracelet" "" "This classic bracelet consist of small, spherical wooden beads, alternating black and white in color." zeroBits) (Obj 1 1) Bracelet
-    putCloth iBracelet4 (Ent iBracelet4 (Just "bracelet") "pearl bracelet" "" "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory." zeroBits) (Obj 1 1) Bracelet
-    putCloth iBracelet5 (Ent iBracelet5 (Just "bracelet") "charm bracelet" "" "The bracelet is adorned with a variety of quaint charms in the shape of musical instruments, fashioned out of pewter." zeroBits) (Obj 1 1) Bracelet
+    putCloth iBracelet3 (Ent iBracelet3 (Just "bracelet") "beaded bracelet" "" "This classic bracelet consist of small, spherical wooden beads, alternating black and white in color." zeroBits) (Obj 2 1) Bracelet
+    putCloth iBracelet4 (Ent iBracelet4 (Just "bracelet") "pearl bracelet" "" "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory." zeroBits) (Obj 4 1) Bracelet
+    putCloth iBracelet5 (Ent iBracelet5 (Just "bracelet") "charm bracelet" "" "The bracelet is adorned with a variety of quaint charms in the shape of musical instruments, fashioned out of pewter." zeroBits) (Obj 10 1) Bracelet
     putCloth iBracelet6 (Ent iBracelet6 (Just "bracelet") "wooden bangle bracelet" "" "The bangle bracelet is made of smooth polished wood, stained an earthy shade of brown, and about half an inch wide." zeroBits) (Obj 1 1) Bracelet
-    putCloth iBracelet7 (Ent iBracelet7 (Just "bracelet") "beaded bracelet" "" "This classic bracelet consist of small, spherical wooden beads, alternating black and white in color." zeroBits) (Obj 1 1) Bracelet
-    putCloth iBracelet8 (Ent iBracelet8 (Just "bracelet") "pearl bracelet" "" "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory." zeroBits) (Obj 1 1) Bracelet
-    putCloth iRing1 (Ent iRing1 (Just "ring") "garnet ring" "" "It's a simple copper band prominently featuring a beautiful garnet stone." zeroBits) (Obj 1 1) Ring
-    putCloth iRing2 (Ent iRing2 (Just "ring") "amethyst ring" "" "It's a simple copper band prominently featuring a beautiful amethyst stone." zeroBits) (Obj 1 1) Ring
-    putCloth iRing3 (Ent iRing3 (Just "ring") "aquamarine ring" "" "It's a simple copper band prominently featuring a beautiful aquamarine stone." zeroBits) (Obj 1 1) Ring
-    putCloth iRing4 (Ent iRing4 (Just "ring") "diamond ring" "" "It's a simple copper band prominently featuring a beautiful diamond stone." zeroBits) (Obj 1 1) Ring
-    putCloth iRing5 (Ent iRing5 (Just "ring") "garnet ring" "" "It's a simple copper band prominently featuring a beautiful garnet stone." zeroBits) (Obj 1 1) Ring
-    putCloth iRing6 (Ent iRing6 (Just "ring") "amethyst ring" "" "It's a simple copper band prominently featuring a beautiful amethyst stone." zeroBits) (Obj 1 1) Ring
-    putCloth iRing7 (Ent iRing7 (Just "ring") "aquamarine ring" "" "It's a simple copper band prominently featuring a beautiful aquamarine stone." zeroBits) (Obj 1 1) Ring
-    putCloth iRing8 (Ent iRing8 (Just "ring") "diamond ring" "" "It's a simple copper band prominently featuring a beautiful diamond stone." zeroBits) (Obj 1 1) Ring
-    putCloth iRing9 (Ent iRing9 (Just "ring") "emerald ring" "" "It's a simple copper band prominently featuring a beautiful emerald stone." zeroBits) (Obj 1 1) Ring
-    putCloth iChemise (Ent iChemise (Just "chemise") "fine white chemise" "" "This voluminous frock, worn on the upper body, is fashioned out of thin, smooth linen. It hangs just below the waist, while its loose-cut, wide sleeves are elbow length." zeroBits) (Obj 1 1) Shirt
-    putCloth iTunic (Ent iTunic (Just "tunic") "cobalt blue wool tunic" "" "This heavy wool tunic is waist length and short-sleeved. Decorative white embroidery along the neck, sleeves, and waist adds an eye-catching touch." zeroBits) (Obj 1 1) Shirt
-    putCloth iApron (Ent iApron (Just "apron") "heavy brown apron" "" "This sturdy padded utility apron provides adequate protection to clothing while its wearer labors and toils." zeroBits) (Obj 1 1) Smock
-    putCloth iTabard (Ent iTabard (Just "tabard") "sleeveless blue tabard" "" "This sleeveless overgarment is open at both sides and extends down to the thigh. Dyed a deep shade of blue, a contrasting bright orange trim adds a distinct accent along the hems. There is a short collar around the neck, complete with a small decorative yellow bowtie." zeroBits) (Obj 1 1) Smock
-    putCloth iGreyCoat (Ent iGreyCoat (Just "coat") "mouse-grey coat" "" "Sure to keep its wearer warm in all but the coldest of weather, this heavy, long-sleeved coat reaches the knees, and features a tall collar followed by ten large silver buttons along its length." zeroBits) (Obj 1 1) Coat
-    putCloth iFrockCoat (Ent iFrockCoat (Just "coat") "woman's red frock coat" "" "This fashionable long-sleeved coat is made of soft, bright-red fabric decorated with a fine, rich floral brochade. Six black buttons from the collar down the chest, when fastened, make this a particularly figure-flattering garment." zeroBits) (Obj 1 1) Coat
-    putCloth iBreeches1 (Ent iBreeches1 (Just "breeches") "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches" "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow them to be neatly secured." zeroBits) (Obj 1 1) Trousers
-    putCloth iBreeches2 (Ent iBreeches2 (Just "breeches") "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches" "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow them to be neatly secured." zeroBits) (Obj 1 1) Trousers
-    putCloth iTrousers1 (Ent iTrousers1 (Just "trousers") "pair of baggy beige trousers" "pairs of baggy beige trousers" "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows them to be snugly tightened at the waist." zeroBits) (Obj 1 1) Trousers
-    putCloth iTrousers2 (Ent iTrousers2 (Just "trousers") "pair of baggy beige trousers" "pairs of baggy beige trousers" "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows them to be snugly tightened at the waist." zeroBits) (Obj 1 1) Trousers
+    putCloth iBracelet7 (Ent iBracelet7 (Just "bracelet") "beaded bracelet" "" "This classic bracelet consist of small, spherical wooden beads, alternating black and white in color." zeroBits) (Obj 2 1) Bracelet
+    putCloth iBracelet8 (Ent iBracelet8 (Just "bracelet") "pearl bracelet" "" "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory." zeroBits) (Obj 4 1) Bracelet
+    putCloth iRing1 (Ent iRing1 (Just "ring") "garnet ring" "" "It's a simple copper band prominently featuring a beautiful garnet stone." zeroBits) (Obj 5 1) Ring
+    putCloth iRing2 (Ent iRing2 (Just "ring") "amethyst ring" "" "It's a simple copper band prominently featuring a beautiful amethyst stone." zeroBits) (Obj 5 1) Ring
+    putCloth iRing3 (Ent iRing3 (Just "ring") "aquamarine ring" "" "It's a simple copper band prominently featuring a beautiful aquamarine stone." zeroBits) (Obj 5 1) Ring
+    putCloth iRing4 (Ent iRing4 (Just "ring") "diamond ring" "" "It's a simple copper band prominently featuring a beautiful diamond stone." zeroBits) (Obj 5 1) Ring
+    putCloth iRing5 (Ent iRing5 (Just "ring") "garnet ring" "" "It's a simple copper band prominently featuring a beautiful garnet stone." zeroBits) (Obj 5 1) Ring
+    putCloth iRing6 (Ent iRing6 (Just "ring") "amethyst ring" "" "It's a simple copper band prominently featuring a beautiful amethyst stone." zeroBits) (Obj 5 1) Ring
+    putCloth iRing7 (Ent iRing7 (Just "ring") "aquamarine ring" "" "It's a simple copper band prominently featuring a beautiful aquamarine stone." zeroBits) (Obj 5 1) Ring
+    putCloth iRing8 (Ent iRing8 (Just "ring") "diamond ring" "" "It's a simple copper band prominently featuring a beautiful diamond stone." zeroBits) (Obj 5 1) Ring
+    putCloth iRing9 (Ent iRing9 (Just "ring") "emerald ring" "" "It's a simple copper band prominently featuring a beautiful emerald stone." zeroBits) (Obj 5 1) Ring
+    putCloth iChemise (Ent iChemise (Just "chemise") "fine white chemise" "" "This voluminous frock, worn on the upper body, is fashioned out of thin, smooth linen. It hangs just below the waist, while its loose-cut, wide sleeves are elbow length." zeroBits) (Obj 100 1) Shirt
+    putCloth iTunic (Ent iTunic (Just "tunic") "cobalt blue wool tunic" "" "This heavy wool tunic is waist length and short-sleeved. Decorative white embroidery along the neck, sleeves, and waist adds an eye-catching touch." zeroBits) (Obj 225 1) Shirt
+    putCloth iApron (Ent iApron (Just "apron") "heavy brown apron" "" "This sturdy padded utility apron provides adequate protection while its wearer labors and toils." zeroBits) (Obj 225 1) Smock
+    putCloth iTabard (Ent iTabard (Just "tabard") "sleeveless blue tabard" "" "This sleeveless overgarment is open at both sides and extends down to the thigh. Dyed a deep shade of blue, a contrasting bright orange trim adds a distinct accent along the hems. There is a short collar around the neck, complete with a small decorative yellow bowtie." zeroBits) (Obj 150 1) Smock
+    putCloth iGreyCoat (Ent iGreyCoat (Just "coat") "mouse-grey coat" "" "Sure to keep its wearer warm in all but the coldest of weather, this heavy, long-sleeved coat reaches the knees, and features a tall collar followed by ten large silver buttons along its length." zeroBits) (Obj 1000 1) Coat
+    putCloth iFrockCoat (Ent iFrockCoat (Just "coat") "woman's red frock coat" "" "This fashionable long-sleeved coat is made of soft, bright-red fabric decorated with a fine, rich floral brochade. Six black buttons from the collar down the chest, when fastened, make this a particularly figure-flattering garment." zeroBits) (Obj 150 1) Coat
+    putCloth iBreeches1 (Ent iBreeches1 (Just "breeches") "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches" "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow them to be neatly secured." zeroBits) (Obj 100 1) Trousers
+    putCloth iBreeches2 (Ent iBreeches2 (Just "breeches") "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches" "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow them to be neatly secured." zeroBits) (Obj 100 1) Trousers
+    putCloth iTrousers1 (Ent iTrousers1 (Just "trousers") "pair of baggy beige trousers" "pairs of baggy beige trousers" "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows them to be snugly tightened at the waist." zeroBits) (Obj 125 1) Trousers
+    putCloth iTrousers2 (Ent iTrousers2 (Just "trousers") "pair of baggy beige trousers" "pairs of baggy beige trousers" "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows them to be snugly tightened at the waist." zeroBits) (Obj 125 1) Trousers
 
-    putCon iBag1 (Ent iBag1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's red." zeroBits) (Obj 1 1) [] mempty Nothing (Con False 10)
-    putCon iBag2 (Ent iBag2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's blue." zeroBits) (Obj 1 1) [] mempty Nothing (Con False 10)
-    putCon iBackpack1 (Ent iBackpack1 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 1 1) [] mempty (Just Backpack) (Con True 10)
-    putCon iBackpack2 (Ent iBackpack2 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 1 1) [] mempty (Just Backpack) (Con True 10)
+    putCon iBag1 (Ent iBag1 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's red." zeroBits) (Obj 100 1) [] mempty Nothing (Con False 10)
+    putCon iBag2 (Ent iBag2 (Just "sack") "cloth sack" "" "It's a typical cloth sack, perfect for holding your treasure. It's blue." zeroBits) (Obj 100 1) [] mempty Nothing (Con False 10)
+    putCon iBackpack1 (Ent iBackpack1 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 500 1) [] mempty (Just Backpack) (Con True 10)
+    putCon iBackpack2 (Ent iBackpack2 (Just "back") "backpack" "" "The sturdy backpack is made of leather." zeroBits) (Obj 500 1) [] mempty (Just Backpack) (Con True 10)
 
-    putWpn iSword1 (Ent iSword1 (Just "sword") "short sword" "" "It's a sword; short but still sharp!" zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
-    putWpn iSword2 (Ent iSword2 (Just "sword") "short sword" "" "It's a sword; short but still sharp!" zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
-    putWpn iLongSword (Ent iLongSword (Just "sword") "two-handed long sword" "" "With the right technique, this bulky sword could do a great deal of damage." zeroBits) (Obj 1 1) (Wpn TwoHanded 1 10)
-    putWpn iClub (Ent iClub (Just "club") "wooden club" "" "It's a crude wooden club, the type a neanderthal might use to great effect." zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
-    putWpn iKnife1 (Ent iKnife1 (Just "knife") "pocket knife" "pocket knives" "This small utility knife could be useful in a pinch." zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
-    putWpn iKnife2 (Ent iKnife2 (Just "knife") "pocket knife" "pocket knives" "This small utility knife could be useful in a pinch." zeroBits) (Obj 1 1) (Wpn OneHanded 1 10)
+    putWpn iSword1 (Ent iSword1 (Just "sword") "short sword" "" "It's a sword; short but still sharp!" zeroBits) (Obj 200 1) (Wpn OneHanded 1 10)
+    putWpn iSword2 (Ent iSword2 (Just "sword") "short sword" "" "It's a sword; short but still sharp!" zeroBits) (Obj 200 1) (Wpn OneHanded 1 10)
+    putWpn iLongSword (Ent iLongSword (Just "sword") "two-handed long sword" "" "With the right technique, this bulky sword could do a great deal of damage." zeroBits) (Obj 400 1) (Wpn TwoHanded 1 10)
+    putWpn iClub (Ent iClub (Just "club") "wooden club" "" "It's a crude wooden club, the type a neanderthal might use to great effect." zeroBits) (Obj 300 1) (Wpn OneHanded 1 10)
+    putWpn iKnife1 (Ent iKnife1 (Just "knife") "utility knife" "utility knives" "This small knife could be useful in a pinch." zeroBits) (Obj 50 1) (Wpn OneHanded 1 10)
+    putWpn iKnife2 (Ent iKnife2 (Just "knife") "utility knife" "utility knives" "This small knife could be useful in a pinch." zeroBits) (Obj 50 1) (Wpn OneHanded 1 10)
 
-    putArm iCap (Ent iCap (Just "cap") "knit cap" "" "It's a simple knit cap, designed to keep your head warm in cold weather." zeroBits) (Obj 1 1) (Arm Head 1)
-    putArm iHelm (Ent iHelm (Just "helmet") "leather helmet" "" "The functional leather helmet provides a comfortable fit." zeroBits) (Obj 1 1) (Arm Head 1)
-    putArm iSandals1 (Ent iSandals1 (Just "sandals") "pair of leather sandals" "pairs of leather sandals" "These humble leather sandals offer little in the way of fashion; they will, however, adequately protect the soles of your feet." zeroBits) (Obj 1 1) (Arm Feet 1)
-    putArm iSandals2 (Ent iSandals2 (Just "sandals") "pair of leather sandals" "pairs of leather sandals" "These humble leather sandals offer little in the way of fashion; they will, however, adequately protect the soles of your feet." zeroBits) (Obj 1 1) (Arm Feet 1)
-    putArm iBoots (Ent iBoots (Just "boots") "pair of leather boots" "pairs of leather boots" "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain." zeroBits) (Obj 1 1) (Arm Feet 1)
+    putArm iCap (Ent iCap (Just "cap") "knit cap" "" "It's a simple knit cap, designed to keep your head warm in cold weather." zeroBits) (Obj 10 1) (Arm Head 1)
+    putArm iHelm (Ent iHelm (Just "helmet") "leather helmet" "" "The functional leather helmet provides a comfortable fit." zeroBits) (Obj 300 1) (Arm Head 1)
+    putArm iSandals1 (Ent iSandals1 (Just "sandals") "pair of leather sandals" "pairs of leather sandals" "These humble leather sandals offer little in the way of fashion; they will, however, adequately protect the soles of your feet." zeroBits) (Obj 50 1) (Arm Feet 1)
+    putArm iSandals2 (Ent iSandals2 (Just "sandals") "pair of leather sandals" "pairs of leather sandals" "These humble leather sandals offer little in the way of fashion; they will, however, adequately protect the soles of your feet." zeroBits) (Obj 50 1) (Arm Feet 1)
+    putArm iBoots (Ent iBoots (Just "boots") "pair of leather boots" "pairs of leather boots" "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain." zeroBits) (Obj 300 1) (Arm Feet 1)
 
     putMob iRockCavy (Ent iRockCavy (Just "rock") "rock cavy" "rock cavies" "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills." zeroBits) [] mempty M.empty (Mob Male 25 75 10 25 10 10 10 NoHand)
     putMob iPidge (Ent iPidge (Just "pidge") "Pidge" "" "Pidge is a female dwarf with walnut-colored skin and large, brown eyes. She wears her silver-white hair in shoulder-length pigtails. Her small, round face is positively adorable." zeroBits) [] mempty (M.fromList [ (ShirtS, iPeasant'sShirt), (SmockS, iLeatherApron), (TrousersS, iOveralls), (FeetS, iTraveler'sBoots) ]) (Mob Female 50 50 50 50 10 10 10 RHand)
-    putCloth iPeasant'sShirt (Ent iPeasant'sShirt (Just "shirt") "white peasant's shirt" "" "This shirt, favored by skilled laborers and lowly bumpkins alike, represents the epitome of function over fashion." zeroBits) (Obj 1 1) Shirt
-    putCloth iOveralls (Ent iOveralls (Just "overalls") "pair of many-pocketed brown overalls" "pairs of many-pocketed brown overalls" "These durable overalls are adorned with a multitude of little pockets." zeroBits) (Obj 1 1) Trousers
-    putCloth iLeatherApron (Ent iLeatherApron (Just "apron") "leather apron" "" "This heavy apron, though bulky, is a must for those who undertake in dirty and dangerous chores." zeroBits) (Obj 1 1) Smock
-    putArm iTraveler'sBoots (Ent iTraveler'sBoots (Just "boots") "pair of jet-black traveler's boots" "pair of jet-black traveler's boots" "These well-crafted, thigh-high boots are rugged and durable." zeroBits) (Obj 1 1) (Arm Feet 1)
+    putCloth iPeasant'sShirt (Ent iPeasant'sShirt (Just "shirt") "white peasant's shirt" "" "This shirt, favored by skilled laborers and lowly bumpkins alike, represents the epitome of function over fashion." zeroBits) (Obj 100 1) Shirt
+    putCloth iOveralls (Ent iOveralls (Just "overalls") "pair of many-pocketed brown overalls" "pairs of many-pocketed brown overalls" "These durable overalls are adorned with a multitude of little pockets." zeroBits) (Obj 225 1) Trousers
+    putCloth iLeatherApron (Ent iLeatherApron (Just "apron") "leather apron" "" "This heavy apron, though bulky, is a must for those who undertake in dirty and dangerous chores." zeroBits) (Obj 325 1) Smock
+    putArm iTraveler'sBoots (Ent iTraveler'sBoots (Just "boots") "pair of jet-black traveler's boots" "pair of jet-black traveler's boots" "These well-crafted, thigh-high boots are rugged and durable." zeroBits) (Obj 300 1) (Arm Feet 1)
 
 
 adminFlags :: Int

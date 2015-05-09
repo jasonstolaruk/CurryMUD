@@ -521,7 +521,7 @@ debugThread (NoArgs i mq cols) = do
     mkTypeName (Receive (showText -> pi)) = padOrTrunc 10 "Receive" <> pi
     mkTypeName (Server  (showText -> pi)) = padOrTrunc 10 "Server"  <> pi
     mkTypeName (Talk    (showText -> pi)) = padOrTrunc 10 "Talk"    <> pi
-    mkTypeName (showText -> tt)             = tt
+    mkTypeName (showText -> tt)           = tt
 debugThread p = withoutArgs debugThread p
 
 
