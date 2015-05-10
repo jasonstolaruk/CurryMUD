@@ -92,7 +92,7 @@ createWorld = do
 
     putRm iLoggedOut [iRoot] mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])
-    putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Down iVoid ])
+    putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Up iWeightRm, StdLink Down iVoid ])
     putRm iObjCloset [ iKewpie1, iKewpie2 ] mempty (Rm "Object closet" "This closet holds objects." zeroBits [ StdLink Southwest iCentral ])
     putRm iClothCloset [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ] mempty (Rm "Clothing closet" "This closet holds clothing." zeroBits [ StdLink West iCentral, StdLink Down iAccessoriesCloset ])
     putRm iAccessoriesCloset [ iEar1, iEar2, iEar3, iEar4, iEar5, iEar6, iEar7, iEar8, iNoseRing1, iNoseRing2, iNoseRing3, iNeck1, iNeck2, iNeck3, iNeck4, iBracelet1, iBracelet2, iBracelet3, iBracelet4, iBracelet5, iBracelet6, iBracelet7, iBracelet8, iRing1, iRing2, iRing3, iRing4, iRing5, iRing6, iRing7, iRing8, iRing9 ] mempty (Rm "Accessories closet" "This closet holds accessories." zeroBits [ StdLink Up iClothCloset ])
@@ -103,12 +103,28 @@ createWorld = do
     putRm iMobCloset [ iRockCavy, iPidge ] mempty (Rm "Mob closet" "This closet holds mobs." zeroBits [ StdLink Southeast iCentral ])
     putRm iVoid [] mempty (Rm "The void" "You have stumbled into an empty space. The world dissolves into nothingness. You are floating." zeroBits [ StdLink Up iCentral, NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ])
     putRm iLounge [] mempty (Rm "The admin lounge" "Welcome, admin! Have a seat by the fire and relax for awhile." zeroBits [ NonStdLink "out" iVoid "% exits the lounge." "% exits the lounge." ])
+    putRm iWeightRm [ i100Lb, i75Lb, i50Lb1, i50Lb2, i25Lb1, i25Lb2, i10Lb1, i10Lb2, i5Lb1, i5Lb2, i1Lb1, i1Lb2, i1Lb3, i1Lb4, i1Lb5 ] mempty (Rm "The weight room" "This room contains weights." zeroBits [ StdLink Down iCentral ])
 
     putRmTeleName iCentral "central"
     putRmTeleName iLounge "lounge"
 
     putObj iKewpie1 (Ent iKewpie1 (Just "doll") "kewpie doll" "" "The kewpie doll is disgustingly cute." zeroBits) (Obj 25 1)
     putObj iKewpie2 (Ent iKewpie2 (Just "doll") "kewpie doll" "" "The kewpie doll is disgustingly cute." zeroBits) (Obj 25 1)
+    putObj i100Lb (Ent i100Lb (Just "weight") "100 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 10000 1)
+    putObj i75Lb (Ent i75Lb (Just "weight") "75 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 7500 1)
+    putObj i50Lb1 (Ent i50Lb1 (Just "weight") "50 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 5000 1)
+    putObj i50Lb2 (Ent i50Lb2 (Just "weight") "50 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 5000 1)
+    putObj i25Lb1 (Ent i25Lb1 (Just "weight") "25 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 2500 1)
+    putObj i25Lb2 (Ent i25Lb2 (Just "weight") "25 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 2500 1)
+    putObj i10Lb1 (Ent i10Lb1 (Just "weight") "10 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 1000 1)
+    putObj i10Lb2 (Ent i10Lb2 (Just "weight") "10 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 1000 1)
+    putObj i5Lb1 (Ent i5Lb1 (Just "weight") "5 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 500 1)
+    putObj i5Lb2 (Ent i5Lb2 (Just "weight") "5 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 500 1)
+    putObj i1Lb1 (Ent i1Lb1 (Just "weight") "1 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 100 1)
+    putObj i1Lb2 (Ent i1Lb2 (Just "weight") "1 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 100 1)
+    putObj i1Lb3 (Ent i1Lb3 (Just "weight") "1 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 100 1)
+    putObj i1Lb4 (Ent i1Lb4 (Just "weight") "1 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 100 1)
+    putObj i1Lb5 (Ent i1Lb5 (Just "weight") "1 lb weight" "" "It's a heavy slab of metal." zeroBits) (Obj 100 1)
 
     putCloth iEar1 (Ent iEar1 (Just "earring") "azure earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring
     putCloth iEar2 (Ent iEar2 (Just "earring") "crimson earring" "" "It's a small, but tasteful, nondescript hoop." zeroBits) (Obj 2 1) Earring

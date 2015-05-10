@@ -73,7 +73,7 @@ import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
-import Data.List ((\\), delete, elemIndex, find, intercalate, nub)
+import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
 import qualified Data.Map.Lazy as M (notMember, toList)
@@ -225,20 +225,36 @@ helperGetEitherInv :: Id
                    -> (InvTbl, [Broadcast], [T.Text])
 helperGetEitherInv i ms d fi ti a = \case
   Left  (mkBroadcast i -> b                  ) -> a & _2 <>~ b
-  Right (sortByType    -> (pcs, mobs, others)) -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Get others
-                                                  in a & _1.ind fi %~  (\\ others)
-                                                       & _1.ind ti %~  (sortInv ms . (++ others))
-                                                       & _2        <>~ map sorryPC pcs ++ map sorryMob mobs ++ bs
-                                                       & _3        <>~ logMsgs
+  Right (sortByType    -> (pcs, mobs, others)) ->
+    let (_, cans, can'ts)  = foldl' (partitionByWeight (calcMaxEnc i ms)) (calcWeight i ms, [], []) others
+        (bs, logMsgs)      = mkGetDropInvDesc i ms d Get cans
+    in a & _1.ind fi %~  (\\ cans)
+         & _1.ind ti %~  (sortInv ms . (++ cans))
+         & _2        <>~ map sorryPC pcs ++ map sorryMob mobs ++ bs ++ mkCan'tGetInvDesc i ms can'ts
+         & _3        <>~ logMsgs
   where
     sortByType             = foldr helper ([], [], [])
     helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
                                                                     MobType -> _2
                                                                     _       -> _3
                              in sorted & lens %~ (targetId :)
+    partitionByWeight maxEnc acc@(w, _, _) targetId =
+        let w' = w + calcWeight targetId ms
+        in if w' <= maxEnc
+          then acc & _1 .~ w' & _2 <>~ [targetId]
+          else acc & _3 <>~ [targetId]
     sorryPC     targetId   = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
     sorryMob    targetId   = sorryHelper . theOnLower . getSing targetId $ ms
     sorryHelper targetName = ("You can't pick up " <> targetName <> ".", [i])
+
+
+mkCan'tGetInvDesc :: Id -> MudState -> Inv -> [Broadcast]
+mkCan'tGetInvDesc i ms = concatMap helper . mkNameCountBothList i ms
+  where
+    helper (_, c, (s, _)) | c == 1 =
+        mkBroadcast i $ "You are too encumbered to pick up the " <> s <> "."
+    helper (_, c, b) =
+        mkBroadcast i . T.concat $ [ "You are too encumbered to pick up ", showText c, " ", mkPlurFromBoth b, "." ]
 
 
 -----

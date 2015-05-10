@@ -165,6 +165,38 @@ iLeatherApron = 76 :: Int
 
 iTraveler'sBoots = 77 :: Int
 
-iRoot = 78 :: Int
+i100Lb = 78 :: Int
 
-iJason = 79 :: Int
+i75Lb = 79 :: Int
+
+i50Lb1 = 80 :: Int
+
+i50Lb2 = 81 :: Int
+
+i25Lb1 = 82 :: Int
+
+i25Lb2 = 83 :: Int
+
+i10Lb1 = 84 :: Int
+
+i10Lb2 = 85 :: Int
+
+i5Lb1 = 86 :: Int
+
+i5Lb2 = 87 :: Int
+
+i1Lb1 = 88 :: Int
+
+i1Lb2 = 89 :: Int
+
+i1Lb3 = 90 :: Int
+
+i1Lb4 = 91 :: Int
+
+i1Lb5 = 92 :: Int
+
+iWeightRm = 93 :: Int
+
+iRoot = 94 :: Int
+
+iJason = 95 :: Int
