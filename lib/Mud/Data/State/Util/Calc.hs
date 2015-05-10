@@ -23,7 +23,7 @@ calcEncPer i ms = round $ calcWeight i ms `divide` calcMaxEnc i ms * 100
 
 
 calcMaxEnc :: Id -> MudState -> Int
-calcMaxEnc i ms = (getSt i ms) ^ 2 `quot` 13 * 100
+calcMaxEnc i ms = getSt i ms ^ 2 `quot` 13 * 100
 
 
 -----
@@ -51,5 +51,5 @@ calcWeight i ms = case getType i ms of
     mobPC           = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
     calcInvWeight   = helper .           getInv   i $ ms
     calcEqWeight    = helper . M.elems . getEqMap i $ ms
-    helper          = sum . map (flip calcWeight ms)
+    helper          = sum . map (`calcWeight` ms)
     calcCoinsWeight = (* 2) . sum . coinsToList . getCoins i $ ms
