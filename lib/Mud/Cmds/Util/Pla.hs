@@ -251,10 +251,10 @@ helperGetEitherInv i ms d fi ti a = \case
 mkCan'tGetInvDesc :: Id -> MudState -> Inv -> [Broadcast]
 mkCan'tGetInvDesc i ms = concatMap helper . mkNameCountBothList i ms
   where
-    helper (_, c, (s, _)) | c == 1 =
-        mkBroadcast i $ "You are too encumbered to pick up the " <> s <> "."
-    helper (_, c, b) =
-        mkBroadcast i . T.concat $ [ "You are too encumbered to pick up ", showText c, " ", mkPlurFromBoth b, "." ]
+    helper (_, c, (s, _)) | c == 1 = mkBroadcast i . T.concat $ [ sorry, " the ", s, "." ]
+    helper (_, c, b     )          =
+        mkBroadcast i . T.concat $ [ sorry, " ", showText c, " ", mkPlurFromBoth b, "." ]
+    sorry = "You are too encumbered to pick up"
 
 
 -----
