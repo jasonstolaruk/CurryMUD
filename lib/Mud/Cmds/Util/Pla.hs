@@ -226,8 +226,8 @@ helperGetEitherInv :: Id
 helperGetEitherInv i ms d fi ti a = \case
   Left  (mkBroadcast i -> b                  ) -> a & _2 <>~ b
   Right (sortByType    -> (pcs, mobs, others)) ->
-    let (_, cans, can'ts)  = foldl' (partitionByWeight (calcMaxEnc i ms)) (calcWeight i ms, [], []) others
-        (bs, logMsgs)      = mkGetDropInvDesc i ms d Get cans
+    let (_, cans, can'ts) = foldl' (partitionByEnc (calcMaxEnc i ms)) (calcWeight i ms, [], []) others
+        (bs, logMsgs)     = mkGetDropInvDesc i ms d Get cans
     in a & _1.ind fi %~  (\\ cans)
          & _1.ind ti %~  (sortInv ms . (++ cans))
          & _2        <>~ map sorryPC pcs ++ map sorryMob mobs ++ bs ++ mkCan'tGetInvDesc i ms can'ts
@@ -238,11 +238,8 @@ helperGetEitherInv i ms d fi ti a = \case
                                                                     MobType -> _2
                                                                     _       -> _3
                              in sorted & lens %~ (targetId :)
-    partitionByWeight maxEnc acc@(w, _, _) targetId =
-        let w' = w + calcWeight targetId ms
-        in if w' <= maxEnc
-          then acc & _1 .~ w' & _2 <>~ [targetId]
-          else acc & _3 <>~ [targetId]
+    partitionByEnc maxEnc acc@(w, _, _) targetId = let w' = w + calcWeight targetId ms in
+        w' <= maxEnc ? (acc & _1 .~ w' & _2 <>~ [targetId]) :? (acc & _3 <>~ [targetId])
     sorryPC     targetId   = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
     sorryMob    targetId   = sorryHelper . theOnLower . getSing targetId $ ms
     sorryHelper targetName = ("You can't pick up " <> targetName <> ".", [i])
