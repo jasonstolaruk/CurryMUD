@@ -75,7 +75,7 @@ import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub)
 import Data.Maybe (catMaybes, fromJust)
-import Data.Monoid ((<>), Sum(..))
+import Data.Monoid ((<>), Sum(..), mempty)
 import qualified Data.Map.Lazy as M (notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile)
@@ -215,6 +215,84 @@ mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms target
                                      in nub . zip3 ens cs $ ebgns
 
 
+extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
+extractLogMsgs i bs = [ msg | (msg, targetIds) <- bs, targetIds == [i] ]
+
+
+mkGodVerb :: GetOrDrop -> Verb -> T.Text
+mkGodVerb Get  SndPer = "pick up"
+mkGodVerb Get  ThrPer = "picks up"
+mkGodVerb Drop SndPer = "drop"
+mkGodVerb Drop ThrPer = "drops"
+
+
+-----
+
+
+helperGetDropEitherCoins :: Id
+                         -> PCDesig
+                         -> GetOrDrop
+                         -> FromId
+                         -> ToId
+                         -> (MudState, [Broadcast], [T.Text])
+                         -> Either [T.Text] Coins
+                         -> (MudState, [Broadcast], [T.Text])
+helperGetDropEitherCoins i d god fi ti a@(ms, _, _) = \case
+  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
+  Right c    -> let (can, can't)  = case god of Get  -> partitionByEnc c
+                                                Drop -> (c, mempty)
+                    (bs, logMsgs) = mkGetDropCoinsDesc i d god can
+                in a & _1.coinsTbl.ind fi %~  (<> negateCoins can)
+                     & _1.coinsTbl.ind ti %~  (<>             can)
+                     & _2                 <>~ bs ++ mkCan'tGetCoinsDesc i can't
+                     & _3                 <>~ logMsgs
+  where
+    partitionByEnc c = let maxEnc      = calcMaxEnc i ms
+                           w           = calcWeight i ms
+                           noOfCoins   = sum . coinsToList $ c
+                           totalWeight = noOfCoins * coinWeight
+                       in if w + totalWeight <= maxEnc
+                         then (c, mempty)
+                         else let availWeight  = maxEnc - w
+                                  canNoOfCoins = availWeight `quot` coinWeight
+                              in mkCanCan't c canNoOfCoins
+    mkCanCan't (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
+    mkCanCan't (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
+    mkCanCan't (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
+    mkCanCan't c                 n = patternMatchFail "helperGetDropEitherCoins mkCanCan't" [ showText c, showText n ]
+
+
+mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
+mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+  where
+    helper 1 cn =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", aOrAn cn, "." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn cn, "." ], otherPCIds) ]
+    helper a cn =
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
+    otherPCIds = i `delete` pcIds d
+
+
+mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
+mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
+  where
+    c = Sum cop |!| Just . f cop $ "copper piece"
+    s = Sum sil |!| Just . f sil $ "silver piece"
+    g = Sum gol |!| Just . f gol $ "gold piece"
+
+
+mkCan'tGetCoinsDesc :: Id -> Coins -> [Broadcast]
+mkCan'tGetCoinsDesc i = (`mkCoinsBroadcasts` helper)
+  where
+    helper 1 cn = mkBroadcast i . T.concat $ [ sorry, " the ",              cn, "."  ]
+    helper a cn = mkBroadcast i . T.concat $ [ sorry, " ", showText a, " ", cn, "s." ]
+    sorry = "You are too encumbered to pick up" -- TODO: Refactor out.
+
+
+-----
+
+
 helperGetEitherInv :: Id
                    -> MudState
                    -> PCDesig
@@ -252,54 +330,6 @@ mkCan'tGetInvDesc i ms = concatMap helper . mkNameCountBothList i ms
     helper (_, c, b     )          =
         mkBroadcast i . T.concat $ [ sorry, " ", showText c, " ", mkPlurFromBoth b, "." ]
     sorry = "You are too encumbered to pick up"
-
-
------
-
-
-helperGetDropEitherCoins :: Id
-                         -> PCDesig
-                         -> GetOrDrop
-                         -> FromId
-                         -> ToId
-                         -> (CoinsTbl, [Broadcast], [T.Text])
-                         -> Either [T.Text] Coins
-                         -> (CoinsTbl, [Broadcast], [T.Text])
-helperGetDropEitherCoins i d god fi ti a = \case
-  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
-  Right c    -> let (bs, logMsgs) = mkGetDropCoinsDesc i d god c
-                in a & _1.ind fi %~ (<> negateCoins c) & _1.ind ti %~ (<> c) & _2 <>~ bs & _3 <>~ logMsgs
-
-
-mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
-mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
-  where
-    helper 1 cn =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", aOrAn cn, "." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn cn, "." ], otherPCIds) ]
-    helper a cn =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
-    otherPCIds = i `delete` pcIds d
-
-
-mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
-mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
-  where
-    c = Sum cop |!| Just . f cop $ "copper piece"
-    s = Sum sil |!| Just . f sil $ "silver piece"
-    g = Sum gol |!| Just . f gol $ "gold piece"
-
-
-extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
-extractLogMsgs i bs = [ msg | (msg, targetIds) <- bs, targetIds == [i] ]
-
-
-mkGodVerb :: GetOrDrop -> Verb -> T.Text
-mkGodVerb Get  SndPer = "pick up"
-mkGodVerb Get  ThrPer = "picks up"
-mkGodVerb Drop SndPer = "drop"
-mkGodVerb Drop ThrPer = "drops"
 
 
 -----

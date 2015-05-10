@@ -112,7 +112,7 @@ adjustIndent n cols = n >= cols ? pred cols :? n
 
 wrapLines :: Int -> [T.Text] -> [[T.Text]]
 wrapLines _    []                     = []
-wrapLines cols [t]                    = [ wrapIndent (numOfLeadingSpcs t) cols t ]
+wrapLines cols [t]                    = [ wrapIndent (noOfLeadingSpcs t) cols t ]
 wrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
                           | otherwise = helper a : wrapNext
   where
@@ -123,11 +123,11 @@ wrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
       | nolsb > 0    = wrapIndent nolsb cols
       | otherwise    = wrap cols
     hasIndentTag     = T.last a == indentTagChar
-    (nolsa, nolsb)   = (a, b) & both %~ numOfLeadingSpcs
+    (nolsa, nolsb)   = (a, b) & both %~ noOfLeadingSpcs
 
 
-numOfLeadingSpcs :: T.Text -> Int
-numOfLeadingSpcs = T.length . T.takeWhile isSpace
+noOfLeadingSpcs :: T.Text -> Int
+noOfLeadingSpcs = T.length . T.takeWhile isSpace
 
 
 wrapLineWithIndentTag :: Int -> T.Text -> [T.Text]
@@ -146,4 +146,4 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
 calcIndent :: T.Text -> Int
 calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
   | T.null rest = 0
-  | otherwise   = lenOfFirstWord + numOfLeadingSpcs rest
+  | otherwise   = lenOfFirstWord + noOfLeadingSpcs rest

@@ -51,16 +51,16 @@ resIsIndented n ls = patternMatchFail "resIsIndented" [ showText n, showText ls 
 
 
 prop_xformLeading :: Char -> Char -> Property
-prop_xformLeading a b = forAll (choose (0, 10))           $ \numOfLeading ->
+prop_xformLeading a b = forAll (choose (0, 10))           $ \noOfLeading ->
                         forAll (genTextOfRandLen (0, 10)) $ \rest ->
                         (T.null . T.takeWhile (== a) $ rest) ==>
-    let leading    = T.replicate numOfLeading . T.singleton $ a
+    let leading    = T.replicate noOfLeading . T.singleton $ a
         t          = leading <> rest
         res        = xformLeading a b t
-        resLeading = T.take numOfLeading res
+        resLeading = T.take noOfLeading res
     in T.length res == T.length t &&
        T.all (== b) resLeading    &&
-       T.drop numOfLeading res == rest
+       T.drop noOfLeading res == rest
 
 
 prop_wrapLineWithIndentTag :: Property
@@ -76,9 +76,9 @@ prop_wrapLineWithIndentTag = forAll genCols                       $ \c ->
 
 prop_calcIndent :: Property
 prop_calcIndent = forAll (genTextOfRandLen (0, 10)) $ \firstWord ->
-                  forAll (choose (1, 15))           $ \numOfFollowingSpcs ->
+                  forAll (choose (1, 15))           $ \noOfFollowingSpcs ->
                   forAll (genTextOfRandLen (0, 10)) $ \rest ->
                   T.all (not . isSpace) firstWord &&
                   (T.null . T.takeWhile isSpace $ rest) ==>
-    let t = firstWord <> T.replicate numOfFollowingSpcs " " <> rest
-    in calcIndent t == T.length firstWord + numOfFollowingSpcs
+    let t = firstWord <> T.replicate noOfFollowingSpcs " " <> rest
+    in calcIndent t == T.length firstWord + noOfFollowingSpcs

@@ -61,4 +61,8 @@ calcWeight i ms = case getType i ms of
     calcInvWeight   = helper .           getInv   i $ ms
     calcEqWeight    = helper . M.elems . getEqMap i $ ms
     helper          = sum . map (`calcWeight` ms)
-    calcCoinsWeight = (* 2) . sum . coinsToList . getCoins i $ ms
+    calcCoinsWeight = (* coinWeight) . sum . coinsToList . getCoins i $ ms
+
+
+coinWeight :: Int
+coinWeight = 2
