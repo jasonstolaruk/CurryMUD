@@ -287,15 +287,15 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs)
   where
     helper ms =
-        let invCoins             = getInvCoins i ms
-            d                    = mkStdDesig  i ms DoCap
-            ri                   = getRmId     i ms
-            (eiss, ecs)          = uncurry (resolvePCInvCoins i ms as) invCoins
-            (it,  bs,  logMsgs ) = foldl' (helperDropEitherInv      i ms d      i ri) (ms^.invTbl,  [], []     ) eiss
-            (ms', bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Drop i ri) (ms,          bs, logMsgs) ecs
+        let invCoins              = getInvCoins i ms
+            d                     = mkStdDesig  i ms DoCap
+            ri                    = getRmId     i ms
+            (eiss, ecs)           = uncurry (resolvePCInvCoins i ms as) invCoins
+            (ms',  bs,  logMsgs ) = foldl' (helperDropEitherInv      i d      i ri) (ms,  [], []     ) eiss
+            (ms'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ms', bs, logMsgs) ecs
         in if notEmpty invCoins
-          then (ms' & invTbl .~ it, (bs',                                 logMsgs'))
-          else (ms,                 (mkBroadcast i dudeYourHandsAreEmpty, []      ))
+          then (ms'', (bs',                                 logMsgs'))
+          else (ms,   (mkBroadcast i dudeYourHandsAreEmpty, []      ))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
@@ -440,15 +440,15 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
   where
     helper ms =
-        let ri                   = getRmId i ms
-            invCoins             = first (i `delete`) . getNonIncogInvCoins ri $ ms
-            d                    = mkStdDesig i ms DoCap
-            (eiss, ecs)          = uncurry (resolveRmInvCoins i ms as) invCoins
-            (it,  bs,  logMsgs ) = foldl' (helperGetEitherInv       i ms d     ri i) (ms^.invTbl, [], []     ) eiss
-            (ms', bs', logMsgs') = foldl' (helperGetDropEitherCoins i    d Get ri i) (ms,         bs, logMsgs) ecs
+        let ri                    = getRmId i ms
+            invCoins              = first (i `delete`) . getNonIncogInvCoins ri $ ms
+            d                     = mkStdDesig i ms DoCap
+            (eiss, ecs)           = uncurry (resolveRmInvCoins i ms as) invCoins
+            (ms',  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [], []     ) eiss
+            (ms'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ms', bs, logMsgs) ecs
         in if notEmpty invCoins
-          then (ms' & invTbl .~ it, (bs',                                                     logMsgs'))
-          else (ms,                 (mkBroadcast i "You don't see anything here to pick up.", []      ))
+          then (ms'', (bs',                                                     logMsgs'))
+          else (ms,   (mkBroadcast i "You don't see anything here to pick up.", []      ))
 getAction p = patternMatchFail "getAction" [ showText p ]
 
 

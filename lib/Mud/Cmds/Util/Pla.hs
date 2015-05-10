@@ -177,20 +177,19 @@ type ToId   = Id
 
 
 helperDropEitherInv :: Id
-                    -> MudState
                     -> PCDesig
                     -> FromId
                     -> ToId
-                    -> (InvTbl, [Broadcast], [T.Text])
+                    -> (MudState, [Broadcast], [T.Text])
                     -> Either T.Text Inv
-                    -> (InvTbl, [Broadcast], [T.Text])
-helperDropEitherInv i ms d fi ti a = \case
+                    -> (MudState, [Broadcast], [T.Text])
+helperDropEitherInv i d fi ti a@(ms, _, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is                   -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Drop is
-                                in a & _1.ind fi %~  (\\ is)
-                                     & _1.ind ti %~  (sortInv ms . (++ is))
-                                     & _2        <>~ bs
-                                     & _3        <>~ logMsgs
+                                in a & _1.invTbl.ind fi %~  (\\ is)
+                                     & _1.invTbl.ind ti %~  (sortInv ms . (++ is))
+                                     & _2               <>~ bs
+                                     & _3               <>~ logMsgs
 
 
 mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
@@ -247,11 +246,11 @@ helperGetDropEitherCoins i d god fi ti a@(ms, _, _) = \case
                      & _2                 <>~ bs ++ mkCan'tGetCoinsDesc i can't
                      & _3                 <>~ logMsgs
   where
-    partitionByEnc c = let maxEnc      = calcMaxEnc i ms
-                           w           = calcWeight i ms
-                           noOfCoins   = sum . coinsToList $ c
-                           totalWeight = noOfCoins * coinWeight
-                       in if w + totalWeight <= maxEnc
+    partitionByEnc c = let maxEnc           = calcMaxEnc i ms
+                           w                = calcWeight i ms
+                           noOfCoins        = sum . coinsToList $ c
+                           totalCoinsWeight = noOfCoins * coinWeight
+                       in if w + totalCoinsWeight <= maxEnc
                          then (c, mempty)
                          else let availWeight  = maxEnc - w
                                   canNoOfCoins = availWeight `quot` coinWeight
@@ -285,31 +284,34 @@ mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
 mkCan'tGetCoinsDesc :: Id -> Coins -> [Broadcast]
 mkCan'tGetCoinsDesc i = (`mkCoinsBroadcasts` helper)
   where
-    helper 1 cn = mkBroadcast i . T.concat $ [ sorry, " the ",              cn, "."  ]
-    helper a cn = mkBroadcast i . T.concat $ [ sorry, " ", showText a, " ", cn, "s." ]
-    sorry = "You are too encumbered to pick up" -- TODO: Refactor out.
+    helper a cn = let rest | a == 1    = " the " <> cn <> "."
+                           | otherwise = T.concat [ " ", showText a, " ", cn, "s." ]
+                  in mkBroadcast i $ sorryEnc <> rest
+
+
+sorryEnc :: T.Text
+sorryEnc = "You are too encumbered to pick up"
 
 
 -----
 
 
 helperGetEitherInv :: Id
-                   -> MudState
                    -> PCDesig
                    -> FromId
                    -> ToId
-                   -> (InvTbl, [Broadcast], [T.Text])
+                   -> (MudState, [Broadcast], [T.Text])
                    -> Either T.Text Inv
-                   -> (InvTbl, [Broadcast], [T.Text])
-helperGetEitherInv i ms d fi ti a = \case
+                   -> (MudState, [Broadcast], [T.Text])
+helperGetEitherInv i d fi ti a@(ms, _, _) = \case
   Left  (mkBroadcast i -> b                  ) -> a & _2 <>~ b
   Right (sortByType    -> (pcs, mobs, others)) ->
     let (_, cans, can'ts) = foldl' (partitionByEnc (calcMaxEnc i ms)) (calcWeight i ms, [], []) others
         (bs, logMsgs)     = mkGetDropInvDesc i ms d Get cans
-    in a & _1.ind fi %~  (\\ cans)
-         & _1.ind ti %~  (sortInv ms . (++ cans))
-         & _2        <>~ concat [ map sorryPC pcs, map sorryMob mobs, bs, mkCan'tGetInvDesc i ms can'ts ]
-         & _3        <>~ logMsgs
+    in a & _1.invTbl.ind fi %~  (\\ cans)
+         & _1.invTbl.ind ti %~  (sortInv ms . (++ cans))
+         & _2               <>~ concat [ map sorryPC pcs, map sorryMob mobs, bs, mkCan'tGetInvDesc i ms can'ts ]
+         & _3               <>~ logMsgs
   where
     sortByType             = foldr helper ([], [], [])
     helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
@@ -326,10 +328,9 @@ helperGetEitherInv i ms d fi ti a = \case
 mkCan'tGetInvDesc :: Id -> MudState -> Inv -> [Broadcast]
 mkCan'tGetInvDesc i ms = concatMap helper . mkNameCountBothList i ms
   where
-    helper (_, c, (s, _)) | c == 1 = mkBroadcast i . T.concat $ [ sorry, " the ", s, "." ]
-    helper (_, c, b     )          =
-        mkBroadcast i . T.concat $ [ sorry, " ", showText c, " ", mkPlurFromBoth b, "." ]
-    sorry = "You are too encumbered to pick up"
+    helper (_, c, b@(s, _)) = let rest | c == 1    = " the " <> s <> "."
+                                       | otherwise = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
+                              in mkBroadcast i $ sorryEnc <> rest
 
 
 -----
