@@ -197,7 +197,7 @@ debugCPU (NoArgs i mq cols) = do
     wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO cpuTime ]
     logPlaExec (prefixDebugCmd "cpu") i
   where
-    cpuTime = showText . (/ fromIntegral (10 ^ 12)) . fromIntegral <$> getCPUTime
+    cpuTime = showText . (`divide` 10 ^ 12) <$> getCPUTime
 debugCPU p = withoutArgs debugCPU p
 
 

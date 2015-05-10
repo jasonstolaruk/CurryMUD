@@ -3,6 +3,7 @@ module Mud.Data.State.Util.Calc where
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
 
@@ -15,6 +16,17 @@ blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 
 -- ==================================================
+
+
+calcEncPer :: Id -> MudState -> Int
+calcEncPer i ms = round $ calcWeight i ms `divide` calcMaxEnc i ms * 100
+
+
+calcMaxEnc :: Id -> MudState -> Int
+calcMaxEnc i ms = (getSt i ms) ^ 2 `quot` 13 * 100
+
+
+-----
 
 
 calcProbTeleShudder :: Id -> MudState -> Int

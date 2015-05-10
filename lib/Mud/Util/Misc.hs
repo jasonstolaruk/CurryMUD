@@ -5,7 +5,9 @@ module Mud.Util.Misc ( (?)
                      , (|$|)
                      , (|?|)
                      , Cond(..)
+                     , atLst1
                      , blowUp
+                     , divide
                      , dropIrrelevantFilenames
                      , dup
                      , eitherRet
@@ -33,6 +35,7 @@ import Mud.Util.Quoting
 import Control.Applicative ((<$>), (<*>))
 import Control.Lens (Lens', lens)
 import Control.Monad (guard)
+import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
 import Data.Monoid ((<>), Monoid, mempty)
@@ -42,9 +45,13 @@ import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
 
-infixr 0 |$|
 infixl 0 ?
 infixl 1 :?, |!|, |?|
+infixl 7 `divide`
+infixr 0 |$|
+
+
+-- ==================================================
 
 
 data Cond a = a :? a
@@ -70,9 +77,19 @@ a |?| b = a ? b :? mempty
 (|$|) = flip ($)
 
 
+atLst1 :: (Eq a, Num a) => a -> a
+atLst1 x = case signum x of -1 -> 1
+                            0  -> 1
+                            _  -> x
+
+
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
 blowUp modName funName msg (bracketQuote . T.intercalate ", " . map singleQuote -> vals) =
     error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, ". ", vals ]
+
+
+divide :: (Integral a, Fractional b) => a -> a -> b
+divide = (/) `on` fromIntegral
 
 
 dropIrrelevantFilenames :: [FilePath] -> [FilePath]

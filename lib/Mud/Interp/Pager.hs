@@ -11,10 +11,12 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 
+import Control.Arrow (second)
 import Control.Lens (both)
 import Control.Lens.Operators ((%~), (&))
 import Data.Monoid ((<>))
@@ -60,10 +62,7 @@ sendPagerPrompt mq pageLen txtLen =
                            , " of "
                            , showText txtLen
                            , " lines ("
-                           , let txtLen'  = realToFrac txtLen
-                                 pageLen' = realToFrac pageLen
-                                 (l, r)   = T.breakOn "." . showText $ pageLen' / txtLen' * 100
-                             in l <> T.take 2 r
+                           , uncurry (<>) . second (T.take 2) . T.breakOn "." . showText $ pageLen `divide` txtLen * 100
                            , "%) ] "
                            , dfltColor ]
 

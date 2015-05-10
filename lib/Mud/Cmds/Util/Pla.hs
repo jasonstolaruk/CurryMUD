@@ -49,6 +49,7 @@ import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
@@ -528,14 +529,15 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
 
 
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> T.Text
-mkInvCoinsDesc i cols ms descId descSing | descInv <- getInv descId ms, descCoins <- getCoins descId ms =
-    case (notEmpty *** notEmpty) (descInv, descCoins) of
-      (False, False) -> wrapUnlines cols (descId == i ? dudeYourHandsAreEmpty :? "The " <> descSing <> " is empty.")
-      (True,  False) -> header <> mkEntsInInvDesc i cols ms descInv
-      (False, True ) -> header                                      <> mkCoinsSummary cols descCoins
-      (True,  True ) -> header <> mkEntsInInvDesc i cols ms descInv <> mkCoinsSummary cols descCoins
+mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, targetCoins <- getCoins targetId ms =
+    case (null *** isEmpty) (targetInv, targetCoins) of
+      (True,  True ) -> wrapUnlines cols (targetId == i ? dudeYourHandsAreEmpty :? "The " <> targetSing <> " is empty.")
+      (False, True ) -> header <> mkEntsInInvDesc i cols ms targetInv                                    <> footer
+      (True,  False) -> header                                        <> mkCoinsSummary cols targetCoins <> footer
+      (False, False) -> header <> mkEntsInInvDesc i cols ms targetInv <> mkCoinsSummary cols targetCoins <> footer
   where
-    header = descId == i ? nl "You are carrying:" :? wrapUnlines cols ("The " <> descSing <> " contains:")
+    header = targetId == i ? nl "You are carrying:" :? wrapUnlines cols ("The " <> targetSing <> " contains:")
+    footer = targetId == i |?| nl $ (showText . calcEncPer i $ ms) <> "% encumbered."
 
 
 dudeYourHandsAreEmpty :: T.Text
