@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TransformListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where

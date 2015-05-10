@@ -230,7 +230,7 @@ helperGetEitherInv i ms d fi ti a = \case
         (bs, logMsgs)     = mkGetDropInvDesc i ms d Get cans
     in a & _1.ind fi %~  (\\ cans)
          & _1.ind ti %~  (sortInv ms . (++ cans))
-         & _2        <>~ map sorryPC pcs ++ map sorryMob mobs ++ bs ++ mkCan'tGetInvDesc i ms can'ts
+         & _2        <>~ concat [ map sorryPC pcs, map sorryMob mobs, bs, mkCan'tGetInvDesc i ms can'ts ]
          & _3        <>~ logMsgs
   where
     sortByType             = foldr helper ([], [], [])

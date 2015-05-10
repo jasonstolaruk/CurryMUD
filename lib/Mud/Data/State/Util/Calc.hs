@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.Data.State.Util.Calc where
 
 import Mud.Data.State.MudData
@@ -9,6 +12,12 @@ import qualified Mud.Util.Misc as U (blowUp)
 
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
+
+
+default (Int, Double)
+
+
+-----
 
 
 blowUp :: T.Text -> T.Text -> [T.Text] -> a
