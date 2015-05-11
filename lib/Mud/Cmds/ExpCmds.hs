@@ -523,6 +523,8 @@ expCmdSet = S.fromList
                                       "You scream at @."
                                       "% screams at you."
                                       "% screams at @.")
+    , ExpCmd "shiver"      (NoTarget  "You shiver."
+                                      "% shivers.")
     , ExpCmd "shrieklaugh" (Versatile "You shriek with laughter."
                                       "% shrieks with laughter."
                                       "You shriek with laughter at @."
@@ -530,6 +532,8 @@ expCmdSet = S.fromList
                                       "% shrieks with laughter at @.")
     , ExpCmd "shrug"       (NoTarget  "You shrug your shoulders."
                                       "% shrugs & shoulders.")
+    , ExpCmd "shudder"     (NoTarget  "You shudder."
+                                      "% shudders.")
     , ExpCmd "shush"       (HasTarget "You shush @."
                                       "% shushes you."
                                       "% shushed @.")
@@ -580,10 +584,6 @@ expCmdSet = S.fromList
                                       "You scowl with contempt at @."
                                       "% scowls with contempt at you."
                                       "% scowls with contempt at @.")
-    , ExpCmd "shiver"      (NoTarget  "You shiver."
-                                      "% shivers.")
-    , ExpCmd "shudder"     (NoTarget  "You shudder."
-                                      "% shudders.")
     , ExpCmd "snore"       (NoTarget  "You snore loudly."
                                       "% snores loudly.")
     , ExpCmd "sob"         (NoTarget  "You sob."

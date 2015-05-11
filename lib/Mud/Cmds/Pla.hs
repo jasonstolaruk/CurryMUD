@@ -166,6 +166,8 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("put",     "p",  putAction,  "Put one or more items into a container.")
     , ("ready",   "r",  ready,      "Ready one or more items.")
     , ("say",     "sa", say,        "Say something out loud.")
+    , ("show",    "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
+                                    \person.")
     , ("unready", "un", unready,    "Unready one or more items.") ]
 
 
@@ -1544,6 +1546,28 @@ helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
                                                                     , "." ]
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ] in
           appendMsg msg & _1.lens .~ x & _3 <>~ [msg]
+
+
+-----
+
+
+-- TODO: Help.
+showAction :: Action
+showAction p@AdviseNoArgs = advise p ["show"] advice
+  where
+    advice = T.concat [ "Please specify one or more items to show followed by the name of a person, as in "
+                      , quoteColor
+                      , dblQuote "show ring taro"
+                      , dfltColor
+                      , "." ]
+showAction p@(AdviseOneArg a) = advise p ["show"] advice
+  where
+    advice = T.concat [ "Please also provide the name of a person, as in "
+                      , quoteColor
+                      , dblQuote $ "show " <> a <> " taro"
+                      , dfltColor
+                      , "." ]
+showAction _ = undefined
 
 
 -----
