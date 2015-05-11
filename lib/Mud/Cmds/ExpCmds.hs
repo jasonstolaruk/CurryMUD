@@ -750,7 +750,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                 MobType -> onMob . theOnLower . getSing targetId $ ms
                 _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
             x -> patternMatchFail "expCmd helper" [ showText x ]
-          else wrapSend mq cols "You don't see anyone here."
+          else wrapSend mq cols noOneHere
 expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only target one person at a time with expressive commands."
 

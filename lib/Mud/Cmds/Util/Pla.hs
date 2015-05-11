@@ -10,6 +10,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , clothToSlot
                          , donMsgs
                          , dudeYou'reNaked
+                         , dudeYou'reScrewed
                          , dudeYourHandsAreEmpty
                          , findAvailSlot
                          , helperDropEitherInv
@@ -39,10 +40,13 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkReflexPro
                          , mkThrPerPro
                          , moveReadiedItem
+                         , noContainersHere
+                         , noOneHere
                          , otherHand
                          , putOnMsgs
                          , resolvePCInvCoins
-                         , resolveRmInvCoins ) where
+                         , resolveRmInvCoins
+                         , sorryIncog ) where
 
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
@@ -167,6 +171,13 @@ type ThrPerVerb = T.Text
 mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> PCDesig -> Sing -> (T.Text, Broadcast)
 mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
                             , (T.concat [ serialize d, " ", tpv, " ", aOrAn s, "." ], i `delete` pcIds d) )
+
+
+-----
+
+
+dudeYou'reScrewed :: T.Text
+dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything readied. You're naked!"
 
 
 -----
@@ -530,13 +541,13 @@ maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
 
 
 mkPutRemoveBindings :: Id -> MudState -> Args -> (PCDesig, (Inv, Coins), (Inv, Coins), ConName, Args)
-mkPutRemoveBindings i ms as = let d                        = mkStdDesig  i ms DoCap
-                                  pcInvCoins               = getInvCoins i ms
-                                  rmInvCoins               = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
-                                  conName                  = last as
-                                  (init -> argsWithoutCon) = case as of
-                                                               [_, _] -> as
-                                                               _      -> (++ [conName]) . nub . init $ as
+mkPutRemoveBindings i ms as = let d              = mkStdDesig  i ms DoCap
+                                  pcInvCoins     = getInvCoins i ms
+                                  rmInvCoins     = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+                                  conName        = last as
+                                  argsWithoutCon = init $ case as of
+                                                     [_, _] -> as
+                                                     _      -> (++ [conName]) . nub . init $ as
                               in (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon)
 
 
@@ -729,6 +740,20 @@ moveReadiedItem i a s targetId (msg, b) =
 -----
 
 
+noContainersHere :: T.Text
+noContainersHere = "You don't see any containers here."
+
+
+-----
+
+
+noOneHere :: T.Text
+noOneHere = "You don't see anyone here."
+
+
+-----
+
+
 otherHand :: Hand -> Hand
 otherHand RHand  = LHand
 otherHand LHand  = RHand
@@ -767,3 +792,10 @@ resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms 
 
 resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
+
+
+-----
+
+
+sorryIncog :: T.Text -> T.Text
+sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito."

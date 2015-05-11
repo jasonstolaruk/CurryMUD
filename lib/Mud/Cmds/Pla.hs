@@ -892,7 +892,7 @@ putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
                   then case T.uncons conName of
                     Just (c, not . T.null -> isn'tNull) | c == rmChar, isn'tNull -> if not . null . fst $ rmInvCoins
                       then shufflePut i ms d (T.tail conName) True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
-                      else (ms, (mkBroadcast i "You don't see any containers here.", []))
+                      else (ms, (mkBroadcast i noContainersHere, []))
                     _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
                   else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 putAction p = patternMatchFail "putAction" [ showText p ]
@@ -1319,7 +1319,7 @@ remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
                 in case T.uncons conName of
                   Just (c, not . T.null -> isn'tNull) | c == rmChar, isn'tNull -> if not . null . fst $ rmInvCoins
                     then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
-                    else (ms, (mkBroadcast i "You don't see any containers here.", []))
+                    else (ms, (mkBroadcast i noContainersHere, []))
                   _ -> shuffleRem i ms d conName False argsWithoutCon pcInvCoins procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 
@@ -1372,8 +1372,7 @@ say p@AdviseNoArgs = advise p ["say"] advice
                       , dfltColor
                       , "." ]
 say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
-  | getPlaFlag IsIncognito . getPla i $ ms -> wrapSend mq cols $ "You can't use the " <> dblQuote "say" <> " command \
-                                                                 \while incognito."
+  | getPlaFlag IsIncognito . getPla i $ ms -> wrapSend mq cols . sorryIncog $ "say"
   | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
     Left  msg -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
@@ -1567,7 +1566,62 @@ showAction p@(AdviseOneArg a) = advise p ["show"] advice
                       , dblQuote $ "show " <> a <> " taro"
                       , dfltColor
                       , "." ]
-showAction _ = undefined
+showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
+  then wrapSend mq cols . sorryIncog $ "show"
+  else let eqMap      = getEqMap    i ms
+           pcInvCoins = getInvCoins i ms
+           rmInvCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+       in if
+         | M.null eqMap && isEmpty pcInvCoins -> wrapSend mq cols dudeYou'reScrewed
+         | isEmpty rmInvCoins                 -> wrapSend mq cols noOneHere
+         | otherwise                          ->
+           let _ {-d-}                 = mkStdDesig  i ms DoCap
+               target            = last as
+               _ {-argsWithoutTarget-} = init $ case as of
+                 [_, _] -> as
+                 _      -> (++ [target]) . nub . init $ as
+               (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms [target]) rmInvCoins
+           in if null targetMiss && (not . null $ targetRcs)
+             then wrapSend mq cols . sorryCan'tShow $ "coin"
+             else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
+               Left  msg       -> wrapSend mq cols msg
+               Right targetIds -> let idSingTypes                       = mkIdSingTypeList targetIds ms
+                                      (cans, nubBy sameSings -> can'ts) = partitionByType idSingTypes
+                                      (mobs, pcs)                       = sortMobPC cans
+                                  in do
+                                      unless (null can'ts) . multiWrapSend mq cols . map (views _2 sorryCan'tShow) $ can'ts
+  where
+    sorryCan'tShow x               = "You can't show something to " <> aOrAn x <> "."
+    mkIdSingTypeList is ms         = [ (targetId, getSing targetId ms, getType targetId ms) | targetId <- is ]
+    partitionByType                = partition (views _3 (`elem` [ MobType, PCType ]))
+    sameSings (_, s, _) (_, s', _) = s == s'
+    sortMobPC                      = foldr f ([], [])
+      where
+        f (targetId, targetSing, targetType) acc =
+            let lens = case targetType of MobType -> _1
+                                          PCType  -> _2
+                                          x       -> patternMatchFail "showAction f" [ showText x ]
+            in acc & lens %~ ((targetId, targetSing) :)
+{-
+        Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
+          then sorry $ theOnLowerCap conSing <> " isn't a container."
+          else let invCoinsInCon       = getInvCoins conId ms
+                   (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) invCoinsInCon
+                   eiss                = zipWith (curry $ procGecrMisCon conSing) gecrs miss
+                   ecs                 = map (procReconciledCoinsCon conSing) rcs
+                   mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
+                   (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
+                                                (ms^.invTbl, [], [])
+                                                eiss
+                   (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i    d Rem mnom conId i conSing)
+                                                (ms^.coinsTbl, bs, logMsgs)
+                                                ecs
+               in if notEmpty invCoinsInCon
+                 then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
+                 else sorry $ "The " <> conSing <> " is empty."
+        Right {} -> sorry "You can only remove things from one container at a time."
+-}
+showAction p = patternMatchFail "showAction" [ showText p ]
 
 
 -----

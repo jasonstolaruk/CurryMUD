@@ -9,7 +9,7 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (each)
-import Control.Lens.Operators ((%~))
+import Control.Lens.Operators ((%~), (^..))
 import qualified Data.Text as T
 
 
@@ -26,7 +26,7 @@ coinsFromList xs                = patternMatchFail "coinsFromList" [ showText xs
 
 
 coinsToList :: Coins -> [Int]
-coinsToList (Coins (c, g, s)) = [ c, g, s ]
+coinsToList (Coins c) = c^..each
 
 
 negateCoins :: Coins -> Coins
