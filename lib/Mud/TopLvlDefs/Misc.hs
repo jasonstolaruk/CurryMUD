@@ -21,6 +21,10 @@ coinNames :: [T.Text]
 coinNames = [ "cp", "sp", "gp" ]
 
 
+coinFullNames :: [T.Text]
+coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
+
+
 dfltPrompt :: T.Text
 dfltPrompt = promptColor <> "->" <> dfltColor
 
