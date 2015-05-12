@@ -1588,11 +1588,11 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                Right targetIds ->
                  let idSingTypes                       = mkIdSingTypeList targetIds ms
                      (cans, nubBy sameSings -> can'ts) = partitionByType idSingTypes
-                     (_{-mobIdSings-}, pcIdSings)      = sortMobPC cans -- TODO: Don't need sings for pcs?
+                     (_{-mobIdSings-}, pis)            = sortMobPC cans
                      (inEqs, inInvs)                   = sortEqInv argsWithoutTarget
                  in bcastNl . concat $ [ mkBroadcast i . T.unlines . map (views _2 sorryCan'tShow) $ can'ts
-                                       , mkBroadcastsForInv ms invCoins inInvs . map fst $ pcIdSings
-                                       , mkBroadcastsForEq  ms eqMap    inEqs  . map fst $ pcIdSings ]
+                                       , mkBroadcastsForInv ms invCoins inInvs pis
+                                       , mkBroadcastsForEq  ms eqMap    inEqs  pis ]
   where
     sorryCan'tShow x               = "You can't show something to " <> aOrAn x <> "."
     mkIdSingTypeList is ms         = [ (targetId, getSing targetId ms, getType targetId ms) | targetId <- is ]
@@ -1600,11 +1600,10 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
     sameSings (_, s, _) (_, s', _) = s == s'
     sortMobPC                      = foldr f ([], [])
       where
-        f (targetId, targetSing, targetType) acc =
-            let lens = case targetType of MobType -> _1
-                                          PCType  -> _2
-                                          x       -> patternMatchFail "showAction f" [ showText x ]
-            in acc & lens %~ ((targetId, targetSing) :)
+        f (targetId, targetSing, targetType) acc = case targetType of
+          MobType -> acc & _1 %~ ((targetId, targetSing) :)
+          PCType  -> acc & _2 %~ ( targetId              :)
+          x       -> patternMatchFail "showAction sortMobPC f" [ showText x ]
     sortEqInv = foldr f ([], [])
       where
         f arg acc = case T.unpack arg of ('e':c:x:xs) | c == selectorChar -> _1 `g` (x : xs)
@@ -1613,30 +1612,6 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                          xs                               -> _2 `g` xs
           where
             lens `g` rest = acc & lens %~ (T.pack rest :)
-    mkBroadcastsForEq ms eqMap inEqs targetIds = if not . M.null $ eqMap
-      then let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
-               eiss                                = zipWith (curry procGecrMisPCEq) gecrs miss
-               showEqBs                            = foldl' helperEitherInv [] eiss
-               helperEitherInv acc (Left  msg)     = acc ++ mkBroadcast i msg
-               helperEitherInv acc (Right itemIds) = acc ++ concatMap (mkToSelfBs itemIds) targetIds ++ mkToTargetsBs itemIds
-               mkToSelfBs itemIds targetId = [ ( T.concat [ "You show the "
-                                                          , getSing itemId ms
-                                                          , " to "
-                                                          , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                          , "." ]
-                                               , [i] )
-                                             | itemId <- itemIds ]
-               mkToTargetsBs itemIds       = [ ( T.concat [ d -- TODO: Indicate where items are equipped.
-                                                          , " shows you "
-                                                          , aOrAn . getSing itemId $ ms
-                                                          , nl ":"
-                                                          , getEntDesc itemId ms ]
-                                               , targetIds )
-                                             | itemId <- itemIds ]
-               d                           = serialize . mkStdDesig i ms $ DoCap
-               showCoinsBs                 = rcs |!| mkBroadcast i noCoinsInEq
-           in showEqBs ++ showCoinsBs
-      else mkBroadcast i dudeYou'reNaked
     mkBroadcastsForInv ms invCoins inInvs targetIds = if notEmpty invCoins
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
                showInvBs                           = foldl' helperEitherInv [] eiss
@@ -1679,6 +1654,30 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                    | otherwise = acc
            in showInvBs ++ showCoinsBs
       else mkBroadcast i dudeYourHandsAreEmpty
+    mkBroadcastsForEq ms eqMap inEqs targetIds = if not . M.null $ eqMap
+      then let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
+               eiss                                = zipWith (curry procGecrMisPCEq) gecrs miss
+               showEqBs                            = foldl' helperEitherInv [] eiss
+               helperEitherInv acc (Left  msg)     = acc ++ mkBroadcast i msg
+               helperEitherInv acc (Right itemIds) = acc ++ concatMap (mkToSelfBs itemIds) targetIds ++ mkToTargetsBs itemIds
+               mkToSelfBs itemIds targetId = [ ( T.concat [ "You show the "
+                                                          , getSing itemId ms
+                                                          , " to "
+                                                          , serialize . mkStdDesig targetId ms $ Don'tCap
+                                                          , "." ]
+                                               , [i] )
+                                             | itemId <- itemIds ]
+               mkToTargetsBs itemIds       = [ ( T.concat [ d -- TODO: Indicate where items are equipped.
+                                                          , " shows you "
+                                                          , aOrAn . getSing itemId $ ms
+                                                          , nl ":"
+                                                          , getEntDesc itemId ms ]
+                                               , targetIds )
+                                             | itemId <- itemIds ]
+               d                           = serialize . mkStdDesig i ms $ DoCap
+               showCoinsBs                 = rcs |!| mkBroadcast i noCoinsInEq
+           in showEqBs ++ showCoinsBs
+      else mkBroadcast i dudeYou'reNaked
 showAction p = patternMatchFail "showAction" [ showText p ]
 
 
