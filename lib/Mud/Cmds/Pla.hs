@@ -1550,6 +1550,8 @@ helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
 
 
 -- TODO: Help.
+-- TODO: Consider using the "e-"/"i-" system elsewhere.
+-- TODO: Could target more than one person like this: "show ' taro/hanako"...
 showAction :: Action
 showAction p@AdviseNoArgs = advise p ["show"] advice
   where
@@ -1641,7 +1643,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                helperEitherInv   acc (Left  msg    ) = acc ++ mkBroadcast i msg
                helperEitherInv   acc (Right itemIds) = acc ++ concatMap (mkToSelf itemIds) targetIds ++ mkToOthers itemIds
                helperEitherCoins acc (Left  msgs   ) = acc ++ (mkBroadcast i . T.unlines $ msgs)
-               helperEitherCoins acc (Right c      ) = acc ++ mkBroadcast i ("You show coins: " <> showText c)
+               helperEitherCoins acc (Right c      ) = acc ++ mkBroadcast i ("You show coins: " <> showText c) -- TODO
                mkToSelf   itemIds targetId           = [ ( T.concat [ "You show your "
                                                                     , getSing itemId ms
                                                                     , " to "
