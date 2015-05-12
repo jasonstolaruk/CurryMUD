@@ -40,6 +40,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkReflexPro
                          , mkThrPerPro
                          , moveReadiedItem
+                         , noCoinsInEq
                          , noContainersHere
                          , noOneHere
                          , otherHand
@@ -735,6 +736,13 @@ moveReadiedItem :: Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 moveReadiedItem i a s targetId (msg, b) =
     a & _1.ind i.at s ?~ targetId & _2.ind i %~ (targetId `delete`) & _3 <>~ (mkBroadcast i msg ++ [b]) & _4 <>~ [msg]
+
+
+-----
+
+
+noCoinsInEq :: T.Text
+noCoinsInEq = "You don't have any coins among your readied equipment."
 
 
 -----

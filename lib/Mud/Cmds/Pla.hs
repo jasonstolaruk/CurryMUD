@@ -361,8 +361,7 @@ equip (LowerNub i mq cols as) = getState >>= \ms ->
                invDesc                               = foldl' helperEitherInv "" eiss
                helperEitherInv acc (Left  msg)       = (acc <>) . wrapUnlinesNl cols $ msg
                helperEitherInv acc (Right targetIds) = nl $ acc <> mkEntDescs i cols ms targetIds
-               coinsDesc                             = rcs |!| wrapUnlinesNl cols "You don't have any coins among your \
-                                                                                  \readied equipment."
+               coinsDesc                             = rcs |!| wrapUnlinesNl cols noCoinsInEq
            in invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYou'reNaked
 equip p = patternMatchFail "equip" [ showText p ]
@@ -1569,27 +1568,27 @@ showAction p@(AdviseOneArg a) = advise p ["show"] advice
 showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms
-           pcInvCoins = getInvCoins i ms
+           invCoins   = getInvCoins i ms
            rmInvCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
        in if
-         | M.null eqMap && isEmpty pcInvCoins -> wrapSend mq cols dudeYou'reScrewed
-         | isEmpty rmInvCoins                 -> wrapSend mq cols noOneHere
-         | otherwise                          ->
-           let _ {-d-}                 = mkStdDesig  i ms DoCap
-               target            = last as
-               _ {-argsWithoutTarget-} = init $ case as of
-                 [_, _] -> as
-                 _      -> (++ [target]) . nub . init $ as
+         | M.null eqMap && isEmpty invCoins -> wrapSend mq cols dudeYou'reScrewed
+         | isEmpty rmInvCoins               -> wrapSend mq cols noOneHere
+         | otherwise                        ->
+           let target            = last as
+               argsWithoutTarget = init $ case as of [_, _] -> as
+                                                     _      -> (++ [target]) . nub . init $ as
                (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms [target]) rmInvCoins
            in if null targetMiss && (not . null $ targetRcs)
              then wrapSend mq cols . sorryCan'tShow $ "coin"
              else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
                Left  msg       -> wrapSend mq cols msg
-               Right targetIds -> let idSingTypes                       = mkIdSingTypeList targetIds ms
-                                      (cans, nubBy sameSings -> can'ts) = partitionByType idSingTypes
-                                      (mobs, pcs)                       = sortMobPC cans
-                                  in do
-                                      unless (null can'ts) . multiWrapSend mq cols . map (views _2 sorryCan'tShow) $ can'ts
+               Right targetIds ->
+                 let idSingTypes                       = mkIdSingTypeList targetIds ms
+                     (cans, nubBy sameSings -> can'ts) = partitionByType idSingTypes
+                     (_{-mobIdSings-}, pcIdSings)           = sortMobPC cans -- TODO: Don't need sings for pcs?
+                     (inEqs, _{-inInvs-})                   = sortEqInv argsWithoutTarget
+                 in bcastNl . concat $ [ mkBroadcast i . T.unlines . map (views _2 sorryCan'tShow) $ can'ts
+                                       , mkBroadcastsForEq ms eqMap inEqs . map fst $ pcIdSings ]
   where
     sorryCan'tShow x               = "You can't show something to " <> aOrAn x <> "."
     mkIdSingTypeList is ms         = [ (targetId, getSing targetId ms, getType targetId ms) | targetId <- is ]
@@ -1602,24 +1601,51 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                           PCType  -> _2
                                           x       -> patternMatchFail "showAction f" [ showText x ]
             in acc & lens %~ ((targetId, targetSing) :)
+    sortEqInv = foldr f ([], [])
+      where
+        f arg acc = case T.unpack arg of ('e':c:x:xs) | c == selectorChar -> _1 `g` (x : xs)
+                                         ('i':c:x:xs) | c == selectorChar -> _2 `g` (x : xs)
+                                         (    c:x:xs) | c == selectorChar -> _2 `g` (x : xs)
+                                         xs             -> _1 `g` xs
+          where
+            lens `g` rest = acc & lens %~ (T.pack rest :)
+    mkBroadcastsForEq ms eqMap inEqs targetIds = if not . M.null $ eqMap
+      then let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
+               eiss                                = zipWith (curry procGecrMisPCEq) gecrs miss
+               showEqBs                            = foldl' helperEitherInv [] eiss
+               helperEitherInv acc (Left  msg)     = acc ++ mkBroadcast i msg
+               helperEitherInv acc (Right itemIds) = acc ++ concatMap (mkToSelfs itemIds) targetIds ++ mkToOthers itemIds
+               mkToSelfs  itemIds targetId         = [ ( T.concat [ "You show your "
+                                                                  , getSing itemId ms
+                                                                  , " to "
+                                                                  , serialize . mkStdDesig targetId ms $ Don'tCap
+                                                                  , "." ]
+                                                       , [i] )
+                                                     | itemId <- itemIds ]
+               mkToOthers itemIds                  = [ ( T.concat [ d
+                                                                  , " shows you "
+                                                                  , aOrAn . getSing itemId $ ms
+                                                                  , nl ":"
+                                                                  , getEntDesc itemId ms ]
+                                                       , targetIds )
+                                                     | itemId <- itemIds ]
+               d                                   = serialize . mkStdDesig i ms $ DoCap
+               showCoinsBs                         = rcs |!| mkBroadcast i noCoinsInEq
+           in showEqBs ++ showCoinsBs
+      else mkBroadcast i dudeYou'reNaked
+-- nl $ acc <> mkEntDescs i cols ms targetIds
 {-
-        Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
-          then sorry $ theOnLowerCap conSing <> " isn't a container."
-          else let invCoinsInCon       = getInvCoins conId ms
-                   (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) invCoinsInCon
-                   eiss                = zipWith (curry $ procGecrMisCon conSing) gecrs miss
-                   ecs                 = map (procReconciledCoinsCon conSing) rcs
-                   mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
-                   (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
-                                                (ms^.invTbl, [], [])
-                                                eiss
-                   (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i    d Rem mnom conId i conSing)
-                                                (ms^.coinsTbl, bs, logMsgs)
-                                                ecs
-               in if notEmpty invCoinsInCon
-                 then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
-                 else sorry $ "The " <> conSing <> " is empty."
-        Right {} -> sorry "You can only remove things from one container at a time."
+    let (eiss, ecs) = uncurry (resolvePCInvCoins i ms as) invCoins
+        invDesc     = foldl' (helperEitherInv ms) "" eiss
+        coinsDesc   = foldl' helperEitherCoins    "" ecs
+    in if notEmpty invCoins
+      then invDesc <> coinsDesc
+      else wrapUnlinesNl cols dudeYourHandsAreEmpty
+  where
+    helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
+    helperEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
+    helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
+    helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
 -}
 showAction p = patternMatchFail "showAction" [ showText p ]
 
