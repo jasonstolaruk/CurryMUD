@@ -125,12 +125,12 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = guard (not . null $ enscs) Prelud
                                                                  , [ mkEitherSil | someSil /= 0 ]
                                                                  , [ mkEitherGol | someGol /= 0 ] ]
       where
-        mkEitherCop | someCop <= cop = Right . SomeOf . Coins $ (someCop, 0,    0   )
-                    | otherwise      = Left  . SomeOf . Coins $ (someCop, 0,    0   )
-        mkEitherSil | someSil <= sil = Right . SomeOf . Coins $ (0,    someSil, 0   )
-                    | otherwise      = Left  . SomeOf . Coins $ (0,    someSil, 0   )
-        mkEitherGol | someGol <= gol = Right . SomeOf . Coins $ (0,    0,    someGol)
-                    | otherwise      = Left  . SomeOf . Coins $ (0,    0,    someGol)
+        mkEitherCop | someCop <= cop = Right . SomeOf . Coins $ (someCop, 0,       0      )
+                    | otherwise      = Left  . SomeOf . Coins $ (someCop, 0,       0      )
+        mkEitherSil | someSil <= sil = Right . SomeOf . Coins $ (0,       someSil, 0      )
+                    | otherwise      = Left  . SomeOf . Coins $ (0,       someSil, 0      )
+        mkEitherGol | someGol <= gol = Right . SomeOf . Coins $ (0,       0,       someGol)
+                    | otherwise      = Left  . SomeOf . Coins $ (0,       0,       someGol)
 
 
 distillEnscs :: [EmptyNoneSome Coins] -> [EmptyNoneSome Coins]
