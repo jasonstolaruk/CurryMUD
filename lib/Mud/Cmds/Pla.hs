@@ -1588,8 +1588,8 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                Right targetIds ->
                  let idSingTypes                       = mkIdSingTypeList targetIds ms
                      (cans, nubBy sameSings -> can'ts) = partitionByType idSingTypes
-                     (_{-mobIdSings-}, pis)            = sortMobPC cans
-                     (inEqs, inInvs)                   = sortEqInv argsWithoutTarget
+                     (_{-mobIdSings-}, pis)            = sortTargetsMobPC cans
+                     (inEqs, inInvs)                   = sortArgsEqInv argsWithoutTarget
                  in bcastNl . concat $ [ mkBroadcast i . T.unlines . map (views _2 sorryCan'tShow) $ can'ts
                                        , inInvs |!| mkBroadcastsForInv ms invCoins inInvs pis
                                        , inEqs  |!| mkBroadcastsForEq  ms eqMap    inEqs  pis ]
@@ -1598,13 +1598,13 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
     mkIdSingTypeList is ms         = [ (targetId, getSing targetId ms, getType targetId ms) | targetId <- is ]
     partitionByType                = partition (views _3 (`elem` [ MobType, PCType ]))
     sameSings (_, s, _) (_, s', _) = s == s'
-    sortMobPC                      = foldr f ([], [])
+    sortTargetsMobPC               = foldr f ([], [])
       where
         f (targetId, targetSing, targetType) acc = case targetType of
           MobType -> acc & _1 %~ ((targetId, targetSing) :)
           PCType  -> acc & _2 %~ ( targetId              :)
-          x       -> patternMatchFail "showAction sortMobPC f" [ showText x ]
-    sortEqInv = foldr f ([], [])
+          x       -> patternMatchFail "showAction sortTargetsMobPC f" [ showText x ]
+    sortArgsEqInv = foldr f ([], [])
       where
         f arg acc = case T.unpack arg of ('e':c:x:xs) | c == selectorChar -> _1 `g` (x : xs)
                                          ('i':c:x:xs) | c == selectorChar -> _2 `g` (x : xs)
@@ -1618,48 +1618,63 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                helperEitherInv acc (Left  msg    ) = acc ++ mkBroadcast i msg
                helperEitherInv acc (Right itemIds) = acc                                         ++
                                                      concatMap (mkToSelfInvBs itemIds) targetIds ++
-                                                     mkToTargetsInvBs itemIds
-               mkToSelfInvBs itemIds targetId = [ ( T.concat [ "You show the "
-                                                             , getSing itemId ms
-                                                             , " to "
-                                                             , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                             , "." ]
-                                                  , [i] )
-                                                | itemId <- itemIds ]
-               mkToTargetsInvBs itemIds       = [ ( T.concat [ d
-                                                             , " shows you "
-                                                             , underlineANSI
-                                                             , aOrAn . getSing itemId $ ms
-                                                             , noUnderlineANSI
-                                                             , nl ":"
-                                                             , getEntDesc itemId ms ]
-                                                  , targetIds )
-                                                | itemId <- itemIds ]
-               d                           = serialize . mkStdDesig i ms $ DoCap
+                                                     mkToTargetsInvBs itemIds                    ++
+                                                     concatMap (mkToOthersInvBs itemIds) targetIds
+               mkToSelfInvBs itemIds targetId   = [ ( T.concat [ "You show the "
+                                                               , getSing itemId ms
+                                                               , " to "
+                                                               , serialize . mkStdDesig targetId ms $ Don'tCap
+                                                               , "." ]
+                                                    , [i] )
+                                                  | itemId <- itemIds ]
+               mkToTargetsInvBs itemIds         = [ ( T.concat [ serialize d
+                                                               , " shows you "
+                                                               , underlineANSI
+                                                               , aOrAn . getSing itemId $ ms
+                                                               , noUnderlineANSI
+                                                               , nl ":"
+                                                               , getEntDesc itemId ms ]
+                                                    , targetIds )
+                                                  | itemId <- itemIds ]
+               mkToOthersInvBs itemIds targetId = [ ( T.concat [ serialize d
+                                                               , " shows "
+                                                               , aOrAn . getSing itemId $ ms
+                                                               , " to "
+                                                               , serialize . mkStdDesig targetId ms $ Don'tCap
+                                                               , "." ]
+                                                    , pcIds d \\ [ i, targetId ] )
+                                                  | itemId <- itemIds ]
+               d                           = mkStdDesig i ms DoCap
                (canCoins, can'tCoinMsgs)   = foldl' distillEcs (mempty, []) ecs
                distillEcs acc (Left  msgs) = acc & _2 <>~ msgs
                distillEcs acc (Right c   ) = acc & _1 <>~ c
                showCoinsBs                 = (mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs
-               mkCanCoinsBs                = concatMap mkToSelfCoinsBs targetIds ++ mkToTargetsCoinsBs
-               mkToSelfCoinsBs targetId    = coinTxt |!| let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                                                         in mkBroadcast i . T.concat $ [ "You show "
-                                                                                       , coinTxt
-                                                                                       , " to "
-                                                                                       , targetDesig
-                                                                                       , "." ]
-               mkToTargetsCoinsBs = coinTxt |!| [(T.concat [ d
-                                                           , " shows you "
-                                                           , underlineANSI
-                                                           , coinTxt
-                                                           , noUnderlineANSI
-                                                           , "." ], targetIds)]
-               coinTxt = case coinTxtList of
+               mkCanCoinsBs                = concatMap mkToSelfCoinsBs targetIds ++
+                                             mkToTargetsCoinsBs                  ++
+                                             concatMap mkToOthersCoinsBs targetIds
+               mkToSelfCoinsBs targetId    = mkCoinTxt |!| let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                                                           in mkBroadcast i . T.concat $ [ "You show "
+                                                                                         , mkCoinTxt
+                                                                                         , " to "
+                                                                                         , targetDesig
+                                                                                         , "." ]
+               mkToTargetsCoinsBs          = mkCoinTxt |!| [(T.concat [ serialize d
+                                                                      , " shows you "
+                                                                      , underlineANSI
+                                                                      , mkCoinTxt
+                                                                      , noUnderlineANSI
+                                                                      , "." ], targetIds)]
+               mkToOthersCoinsBs targetId  = mkCoinTxt |!| [(T.concat [ serialize d
+                                                                      , " shows some coins to "
+                                                                      , serialize . mkStdDesig targetId ms $ Don'tCap
+                                                                      , "." ], pcIds d \\ [ i, targetId ])]
+               mkCoinTxt = case mkCoinTxtList of
                  [ c, s, g ] -> T.concat [ c, ", ", s, ", and ", g ]
                  [ x, y    ] -> x <> " and " <> y
                  [ x       ] -> x
                  [         ] -> ""
-                 xs          -> patternMatchFail "showAction mkBroadcastsForInv coinTxt" [ showText xs ]
-               coinTxtList = dropBlanks . foldr combineAmntName [] . zip (coinsToList canCoins) $ coinFullNames
+                 xs          -> patternMatchFail "showAction mkBroadcastsForInv mkCoinTxt" [ showText xs ]
+               mkCoinTxtList = dropBlanks . foldr combineAmntName [] . zip (coinsToList canCoins) $ coinFullNames
                combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc
                                                    | amt == 1  = showText amt <> " " <> coinName : acc
                                                    | otherwise = acc
