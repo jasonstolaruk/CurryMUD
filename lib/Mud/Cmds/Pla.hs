@@ -1632,7 +1632,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                mkToSelfInvBsMobs itemIds mobSing   = [ ( T.concat [ "You show the "
                                                                   , getSing itemId ms
                                                                   , " to "
-                                                                  , mobSing
+                                                                  , theOnLower mobSing
                                                                   , "." ]
                                                        , [i] )
                                                      | itemId <- itemIds ]
@@ -1657,7 +1657,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                                   , " shows "
                                                                   , aOrAn . getSing itemId $ ms
                                                                   , " to "
-                                                                  , mobSing
+                                                                  , theOnLower mobSing
                                                                   , "." ]
                                                        , i `delete` pcIds d )
                                                      | itemId <- itemIds ]
@@ -1666,27 +1666,40 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                distillEcs acc (Left  msgs) = acc & _2 <>~ msgs
                distillEcs acc (Right c   ) = acc & _1 <>~ c
                showCoinsBs                 = (mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs
-               mkCanCoinsBs                = concatMap mkToSelfCoinsBs   targetIds ++
-                                             mkToTargetsCoinsBs                    ++
-                                             concatMap mkToOthersCoinsBs targetIds
-               mkToSelfCoinsBs targetId    = mkCoinTxt |!| let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                                                           in mkBroadcast i . T.concat $ [ "You show "
-                                                                                         , mkCoinTxt
-                                                                                         , " to "
-                                                                                         , targetDesig
-                                                                                         , "." ]
-               mkToTargetsCoinsBs          = mkCoinTxt |!| [(T.concat [ serialize d
-                                                                      , " shows you "
-                                                                      , underlineANSI
-                                                                      , mkCoinTxt
-                                                                      , noUnderlineANSI
-                                                                      , "." ], targetIds)]
-               mkToOthersCoinsBs targetId  = mkCoinTxt |!| [(T.concat [ serialize d
-                                                                      , " shows "
-                                                                      , aCoinSomeCoins canCoins
-                                                                      , " to "
-                                                                      , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                                      , "." ], pcIds d \\ [ i, targetId ])]
+               mkCanCoinsBs                = concatMap mkToSelfCoinsBs       targetIds ++
+                                             concatMap mkToSelfCoinsBsMobs   mobSings  ++
+                                             mkToTargetsCoinsBs                        ++
+                                             concatMap mkToOthersCoinsBs     targetIds ++
+                                             concatMap mkToOthersCoinsBsMobs mobSings
+               mkToSelfCoinsBs targetId      = mkCoinTxt |!| let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                                                             in mkBroadcast i . T.concat $ [ "You show "
+                                                                                           , mkCoinTxt
+                                                                                           , " to "
+                                                                                           , targetDesig
+                                                                                           , "." ]
+               mkToSelfCoinsBsMobs mobSing   = mkCoinTxt |!|    mkBroadcast i . T.concat $ [ "You show "
+                                                                                           , mkCoinTxt
+                                                                                           , " to "
+                                                                                           , theOnLower mobSing
+                                                                                           , "." ]
+               mkToTargetsCoinsBs            = mkCoinTxt |!| [(T.concat [ serialize d
+                                                                        , " shows you "
+                                                                        , underlineANSI
+                                                                        , mkCoinTxt
+                                                                        , noUnderlineANSI
+                                                                        , "." ], targetIds)]
+               mkToOthersCoinsBs targetId    = mkCoinTxt |!| [(T.concat [ serialize d
+                                                                        , " shows "
+                                                                        , aCoinSomeCoins canCoins
+                                                                        , " to "
+                                                                        , serialize . mkStdDesig targetId ms $ Don'tCap
+                                                                        , "." ], pcIds d \\ [ i, targetId ])]
+               mkToOthersCoinsBsMobs mobSing = mkCoinTxt |!| [(T.concat [ serialize d
+                                                                        , " shows "
+                                                                        , aCoinSomeCoins canCoins
+                                                                        , " to "
+                                                                        , theOnLower mobSing
+                                                                        , "." ], i `delete` pcIds d)]
                mkCoinTxt = case mkCoinTxtList of
                  [ c, s, g ] -> T.concat [ c, ", ", s, ", and ", g ]
                  [ x, y    ] -> x <> " and " <> y
@@ -1724,7 +1737,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                mkToSelfBsMobs itemIds mobSing   = [ ( T.concat [ "You show the "
                                                                , getSing itemId ms
                                                                , " to "
-                                                               , mobSing
+                                                               , theOnLower mobSing
                                                                , "." ]
                                                     , [i] )
                                                   | itemId <- itemIds ]
@@ -1752,8 +1765,10 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                mkToOthersBsMobs itemIds mobSing = [ ( T.concat [ serialize d
                                                                , " shows "
                                                                , aOrAn . getSing itemId $ ms
+                                                               , " "
+                                                               , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
                                                                , " to "
-                                                               , mobSing
+                                                               , theOnLower mobSing
                                                                , "." ]
                                                     , i `delete` pcIds d )
                                                   | itemId <- itemIds ]
