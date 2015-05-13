@@ -1591,8 +1591,8 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                      (_{-mobIdSings-}, pis)            = sortMobPC cans
                      (inEqs, inInvs)                   = sortEqInv argsWithoutTarget
                  in bcastNl . concat $ [ mkBroadcast i . T.unlines . map (views _2 sorryCan'tShow) $ can'ts
-                                       , mkBroadcastsForInv ms invCoins inInvs pis
-                                       , mkBroadcastsForEq  ms eqMap    inEqs  pis ]
+                                       , inInvs |!| mkBroadcastsForInv ms invCoins inInvs pis
+                                       , inEqs  |!| mkBroadcastsForEq  ms eqMap    inEqs  pis ]
   where
     sorryCan'tShow x               = "You can't show something to " <> aOrAn x <> "."
     mkIdSingTypeList is ms         = [ (targetId, getSing targetId ms, getType targetId ms) | targetId <- is ]
@@ -1667,9 +1667,11 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                           , "." ]
                                                , [i] )
                                              | itemId <- itemIds ]
-               mkToTargetsBs itemIds       = [ ( T.concat [ d -- TODO: Indicate where items are equipped.
+               mkToTargetsBs itemIds       = [ ( T.concat [ d
                                                           , " shows you "
                                                           , aOrAn . getSing itemId $ ms
+                                                          , " "
+                                                          , parensQuote . pp . reverseLookup itemId $ eqMap
                                                           , nl ":"
                                                           , getEntDesc itemId ms ]
                                                , targetIds )
