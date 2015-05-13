@@ -1626,7 +1626,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                 | itemId <- itemIds ]
                mkToTargetsInvBs itemIds       = [ ( T.concat [ d
                                                              , " shows you "
+                                                             , underlineANSI
                                                              , aOrAn . getSing itemId $ ms
+                                                             , noUnderlineANSI
                                                              , nl ":"
                                                              , getEntDesc itemId ms ]
                                                   , targetIds )
@@ -1642,7 +1644,12 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                                                     , " to "
                                                                                     , serialize . mkStdDesig targetId ms $ Don'tCap
                                                                                     , "." ]
-               mkToTargetsCoinsBs = coinTxt |!| [(T.concat [ d, " shows you ", coinTxt, "." ], targetIds)]
+               mkToTargetsCoinsBs = coinTxt |!| [(T.concat [ d
+                                                           , " shows you "
+                                                           , underlineANSI
+                                                           , coinTxt
+                                                           , noUnderlineANSI
+                                                           , "." ], targetIds)]
                coinTxt            = case coinTxtList of [ c, s, g ] -> T.concat [ c, ", ", s, ", and ", g ]
                                                         [ x, y    ] -> x <> " and " <> y
                                                         [ x       ] -> x
@@ -1669,9 +1676,11 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                              | itemId <- itemIds ]
                mkToTargetsBs itemIds       = [ ( T.concat [ d
                                                           , " shows you "
+                                                          , underlineANSI
                                                           , aOrAn . getSing itemId $ ms
+                                                          , noUnderlineANSI
                                                           , " "
-                                                          , parensQuote . pp . reverseLookup itemId $ eqMap
+                                                          , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
                                                           , nl ":"
                                                           , getEntDesc itemId ms ]
                                                , targetIds )
@@ -1681,6 +1690,59 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
            in showEqBs ++ showCoinsBs
       else mkBroadcast i dudeYou'reNaked
 showAction p = patternMatchFail "showAction" [ showText p ]
+
+
+mkSlotDesc :: Id -> MudState -> Slot -> T.Text
+mkSlotDesc i ms s = case s of
+  -- Clothing slots:
+  EarringR1S  -> wornOn -- "right ear"
+  EarringR2S  -> wornOn -- "right ear"
+  EarringL1S  -> wornOn -- "left ear"
+  EarringL2S  -> wornOn -- "left ear"
+  NoseRing1S  -> wornOn -- "nose"
+  NoseRing2S  -> wornOn -- "nose"
+  Necklace1S  -> wornOn -- "neck"
+  Necklace2S  -> wornOn -- "neck"
+  Necklace3S  -> wornOn -- "neck"
+  BraceletR1S -> wornOn -- "right wrist"
+  BraceletR2S -> wornOn -- "right wrist"
+  BraceletR3S -> wornOn -- "right wrist"
+  BraceletL1S -> wornOn -- "left wrist"
+  BraceletL2S -> wornOn -- "left wrist"
+  BraceletL3S -> wornOn -- "left wrist"
+  RingRIS     -> wornOn -- "right index finger"
+  RingRMS     -> wornOn -- "right middle finger"
+  RingRRS     -> wornOn -- "right ring finger"
+  RingRPS     -> wornOn -- "right pinky finger"
+  RingLIS     -> wornOn -- "left index finger"
+  RingLMS     -> wornOn -- "left middle finger"
+  RingLRS     -> wornOn -- "left ring finger"
+  RingLPS     -> wornOn -- "left pinky finger"
+  ShirtS      -> wornAs -- "shirt"
+  SmockS      -> wornAs -- "smock"
+  CoatS       -> wornAs -- "coat"
+  TrousersS   -> wornAs -- "trousers"
+  SkirtS      -> wornAs -- "skirt"
+  DressS      -> wornAs -- "dress"
+  FullBodyS   -> "worn about " <> hisHer <> " body" -- "about body"
+  BackpackS   -> wornAs -- "backpack"
+  CloakS      -> wornAs -- "cloak"
+  -- Armor slots:
+  HeadS       -> wornOn -- "head"
+  TorsoS      -> wornOn -- "torso"
+  ArmsS       -> wornOn -- "arms"
+  HandsS      -> wornOn -- "hands"
+  LowerBodyS  -> wornOn -- "lower body"
+  FeetS       -> wornOn -- "feet"
+  -- Weapon/shield slots:
+  RHandS      -> heldIn -- "right hand"
+  LHandS      -> heldIn -- "left hand"
+  BothHandsS  -> "wielding with both hands" -- "both hands"
+  where
+    hisHer = mkPossPro . getSex i $ ms
+    wornOn = T.concat [ "worn on ", hisHer, " ", pp s ]
+    wornAs = "worn as " <> (aOrAn . pp $ s)
+    heldIn = "held in " <> hisHer <> pp s
 
 
 -----
