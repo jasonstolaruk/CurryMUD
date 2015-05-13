@@ -1616,7 +1616,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
                showInvBs                           = foldl' helperEitherInv [] eiss
                helperEitherInv acc (Left  msg    ) = acc ++ mkBroadcast i msg
-               helperEitherInv acc (Right itemIds) = acc ++ concatMap (mkToSelfInvBs itemIds) targetIds ++ mkToTargetsInvBs itemIds
+               helperEitherInv acc (Right itemIds) = acc                                         ++
+                                                     concatMap (mkToSelfInvBs itemIds) targetIds ++
+                                                     mkToTargetsInvBs itemIds
                mkToSelfInvBs itemIds targetId = [ ( T.concat [ "You show the "
                                                              , getSing itemId ms
                                                              , " to "
@@ -1639,23 +1641,25 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                distillEcs acc (Right c   ) = acc & _1 <>~ c
                showCoinsBs                 = (mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs
                mkCanCoinsBs                = concatMap mkToSelfCoinsBs targetIds ++ mkToTargetsCoinsBs
-               mkToSelfCoinsBs targetId    = coinTxt |!| mkBroadcast i . T.concat $ [ "You show "
-                                                                                    , coinTxt
-                                                                                    , " to "
-                                                                                    , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                                                    , "." ]
+               mkToSelfCoinsBs targetId    = coinTxt |!| let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                                                         in mkBroadcast i . T.concat $ [ "You show "
+                                                                                       , coinTxt
+                                                                                       , " to "
+                                                                                       , targetDesig
+                                                                                       , "." ]
                mkToTargetsCoinsBs = coinTxt |!| [(T.concat [ d
                                                            , " shows you "
                                                            , underlineANSI
                                                            , coinTxt
                                                            , noUnderlineANSI
                                                            , "." ], targetIds)]
-               coinTxt            = case coinTxtList of [ c, s, g ] -> T.concat [ c, ", ", s, ", and ", g ]
-                                                        [ x, y    ] -> x <> " and " <> y
-                                                        [ x       ] -> x
-                                                        [         ] -> ""
-                                                        xs          -> patternMatchFail "showAction mkBroadcastsForInv coinTxt" [ showText xs ]
-               coinTxtList        = dropBlanks . foldr combineAmntName [] . zip (coinsToList canCoins) $ coinFullNames
+               coinTxt = case coinTxtList of
+                 [ c, s, g ] -> T.concat [ c, ", ", s, ", and ", g ]
+                 [ x, y    ] -> x <> " and " <> y
+                 [ x       ] -> x
+                 [         ] -> ""
+                 xs          -> patternMatchFail "showAction mkBroadcastsForInv coinTxt" [ showText xs ]
+               coinTxtList = dropBlanks . foldr combineAmntName [] . zip (coinsToList canCoins) $ coinFullNames
                combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc
                                                    | amt == 1  = showText amt <> " " <> coinName : acc
                                                    | otherwise = acc
@@ -1666,7 +1670,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                eiss                                = zipWith (curry procGecrMisPCEq) gecrs miss
                showEqBs                            = foldl' helperEitherInv [] eiss
                helperEitherInv acc (Left  msg)     = acc ++ mkBroadcast i msg
-               helperEitherInv acc (Right itemIds) = acc ++ concatMap (mkToSelfBs itemIds) targetIds ++ mkToTargetsBs itemIds
+               helperEitherInv acc (Right itemIds) = acc                                      ++
+                                                     concatMap (mkToSelfBs itemIds) targetIds ++
+                                                     mkToTargetsBs itemIds
                mkToSelfBs itemIds targetId = [ ( T.concat [ "You show the "
                                                           , getSing itemId ms
                                                           , " to "
