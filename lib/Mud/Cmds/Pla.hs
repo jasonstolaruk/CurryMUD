@@ -1616,9 +1616,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
                showInvBs                           = foldl' helperEitherInv [] eiss
                helperEitherInv acc (Left  msg    ) = acc ++ mkBroadcast i msg
-               helperEitherInv acc (Right itemIds) = acc                                         ++
-                                                     concatMap (mkToSelfInvBs itemIds) targetIds ++
-                                                     mkToTargetsInvBs itemIds                    ++
+               helperEitherInv acc (Right itemIds) = acc                                           ++
+                                                     concatMap (mkToSelfInvBs   itemIds) targetIds ++
+                                                     mkToTargetsInvBs itemIds                      ++
                                                      concatMap (mkToOthersInvBs itemIds) targetIds
                mkToSelfInvBs itemIds targetId   = [ ( T.concat [ "You show the "
                                                                , getSing itemId ms
@@ -1649,8 +1649,8 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                distillEcs acc (Left  msgs) = acc & _2 <>~ msgs
                distillEcs acc (Right c   ) = acc & _1 <>~ c
                showCoinsBs                 = (mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs
-               mkCanCoinsBs                = concatMap mkToSelfCoinsBs targetIds ++
-                                             mkToTargetsCoinsBs                  ++
+               mkCanCoinsBs                = concatMap mkToSelfCoinsBs   targetIds ++
+                                             mkToTargetsCoinsBs                    ++
                                              concatMap mkToOthersCoinsBs targetIds
                mkToSelfCoinsBs targetId    = mkCoinTxt |!| let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                                                            in mkBroadcast i . T.concat $ [ "You show "
@@ -1665,7 +1665,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                                       , noUnderlineANSI
                                                                       , "." ], targetIds)]
                mkToOthersCoinsBs targetId  = mkCoinTxt |!| [(T.concat [ serialize d
-                                                                      , " shows some coins to "
+                                                                      , " shows "
+                                                                      , aCoinSomeCoins canCoins
+                                                                      , " to "
                                                                       , serialize . mkStdDesig targetId ms $ Don'tCap
                                                                       , "." ], pcIds d \\ [ i, targetId ])]
                mkCoinTxt = case mkCoinTxtList of
@@ -1678,6 +1680,10 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc
                                                    | amt == 1  = showText amt <> " " <> coinName : acc
                                                    | otherwise = acc
+               aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece"
+                                      (Coins (0, 1, 0)) -> "a silver piece"
+                                      (Coins (0, 0, 1)) -> "a gold piece"
+                                      _                 -> "some coins"
            in showInvBs ++ showCoinsBs
       else mkBroadcast i dudeYourHandsAreEmpty
     mkBroadcastsForEq ms eqMap inEqs targetIds = if not . M.null $ eqMap
@@ -1685,29 +1691,40 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                eiss                                = zipWith (curry procGecrMisPCEq) gecrs miss
                showEqBs                            = foldl' helperEitherInv [] eiss
                helperEitherInv acc (Left  msg)     = acc ++ mkBroadcast i msg
-               helperEitherInv acc (Right itemIds) = acc                                      ++
-                                                     concatMap (mkToSelfBs itemIds) targetIds ++
-                                                     mkToTargetsBs itemIds
-               mkToSelfBs itemIds targetId = [ ( T.concat [ "You show the "
-                                                          , getSing itemId ms
-                                                          , " to "
-                                                          , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                          , "." ]
-                                               , [i] )
-                                             | itemId <- itemIds ]
-               mkToTargetsBs itemIds       = [ ( T.concat [ d
-                                                          , " shows you "
-                                                          , underlineANSI
-                                                          , aOrAn . getSing itemId $ ms
-                                                          , noUnderlineANSI
-                                                          , " "
-                                                          , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
-                                                          , nl ":"
-                                                          , getEntDesc itemId ms ]
-                                               , targetIds )
-                                             | itemId <- itemIds ]
-               d                           = serialize . mkStdDesig i ms $ DoCap
-               showCoinsBs                 = rcs |!| mkBroadcast i noCoinsInEq
+               helperEitherInv acc (Right itemIds) = acc                                        ++
+                                                     concatMap (mkToSelfBs   itemIds) targetIds ++
+                                                     mkToTargetsBs itemIds                      ++
+                                                     concatMap (mkToOthersBs itemIds) targetIds
+               mkToSelfBs itemIds targetId   = [ ( T.concat [ "You show the "
+                                                            , getSing itemId ms
+                                                            , " to "
+                                                            , serialize . mkStdDesig targetId ms $ Don'tCap
+                                                            , "." ]
+                                                 , [i] )
+                                               | itemId <- itemIds ]
+               mkToTargetsBs itemIds         = [ ( T.concat [ serialize d
+                                                            , " shows you "
+                                                            , underlineANSI
+                                                            , aOrAn . getSing itemId $ ms
+                                                            , noUnderlineANSI
+                                                            , " "
+                                                            , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
+                                                            , nl ":"
+                                                            , getEntDesc itemId ms ]
+                                                 , targetIds )
+                                               | itemId <- itemIds ]
+               mkToOthersBs itemIds targetId = [ ( T.concat [ serialize d
+                                                            , " shows "
+                                                            , aOrAn . getSing itemId $ ms
+                                                            , " "
+                                                            , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
+                                                            , " to "
+                                                            , serialize . mkStdDesig targetId ms $ Don'tCap
+                                                            , "." ]
+                                                 , pcIds d \\ [ i, targetId ] )
+                                               | itemId <- itemIds ]
+               d                             = mkStdDesig i ms DoCap
+               showCoinsBs                   = rcs |!| mkBroadcast i noCoinsInEq
            in showEqBs ++ showCoinsBs
       else mkBroadcast i dudeYou'reNaked
 showAction p = patternMatchFail "showAction" [ showText p ]
