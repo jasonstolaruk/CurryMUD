@@ -46,7 +46,7 @@ library
   ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   exposed-modules:     Mud.Cmds.Admin,
                        Mud.Cmds.Debug,
-                       Mud.Cmds.ExpCmds
+                       Mud.Cmds.ExpCmds,
                        Mud.Cmds.Pla,
                        Mud.Cmds.Util.Abbrev,
                        Mud.Cmds.Util.Misc,
@@ -64,7 +64,7 @@ library
                        Mud.Data.State.Util.Put,
                        Mud.Data.State.Util.Random,
                        Mud.Data.State.Util.Set,
-                       Mud.Interp.CentralDispatch
+                       Mud.Interp.CentralDispatch,
                        Mud.Interp.Login,
                        Mud.Interp.Pager,
                        Mud.Misc.ANSI,
@@ -150,6 +150,7 @@ test-suite             test
   hs-source-dirs:      tests
   main-is:             test.hs
   other-extensions:    OverloadedStrings,
+                       TupleSections,
                        ViewPatterns
   build-depends:       QuickCheck >=2.7 && <3.0,
                        base >=4.7 && <5.0,

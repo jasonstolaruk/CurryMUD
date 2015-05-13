@@ -350,8 +350,10 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< 
     helperSTM ms = forM_ [ getMsgQueue peeperId ms | peeperId <- peeperIds ]
                          (`writeTQueue` (mkPeepedMsg . getSing i $ ms))
     mkPeepedMsg s = Peeped $ case toOrFrom of
-      ToThePeeped   ->      T.concat   [ toPeepedColor,   " ", bracketQuote s, " ", dfltColor, " ", msg ]
-      FromThePeeped -> nl . T.concat $ [ fromPeepedColor, " ", bracketQuote s, " ", dfltColor, " ", msg ]
+      ToThePeeped   ->      T.concat $ toPeepedColor   : rest
+      FromThePeeped -> nl . T.concat $ fromPeepedColor : rest
+      where
+        rest = [ " ", bracketQuote s, " ", dfltColor, " ", msg ]
 
 
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()

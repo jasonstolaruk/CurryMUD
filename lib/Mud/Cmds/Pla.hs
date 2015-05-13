@@ -1710,7 +1710,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc
                                                    | amt == 1  = showText amt <> " " <> coinName : acc
                                                    | otherwise = acc
-               aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece"
+               aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece" -- TODO: This can be used elsewhere...
                                       (Coins (0, 1, 0)) -> "a silver piece"
                                       (Coins (0, 0, 1)) -> "a gold piece"
                                       _                 -> "some coins"
