@@ -117,6 +117,7 @@ debugCmds =
     , mkDebugCmd "wrap"       debugWrap        "Test the wrapping of a line containing ANSI escape sequences."
     , mkDebugCmd "wrapindent" debugWrapIndent  "Test the indented wrapping of a line containing ANSI escape \
                                                \sequences." ]
+  where
 
 
 mkDebugCmd :: T.Text -> Action -> CmdDesc -> Cmd

@@ -1587,7 +1587,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                Left  msg       -> wrapSend mq cols msg
                Right targetIds ->
                  let idSingTypes     = mkIdSingTypeList targetIds ms
-                     (cans,  can'ts) = second (nubBy sameSings) . partitionByType $ idSingTypes
+                     (cans,  can'ts) = second (nubBy ((==) `on` view _2)) . partitionByType $ idSingTypes
                      (mss,   pis   ) = sortTargetsMobPC cans
                      (inEqs, inInvs) = sortArgsEqInv argsWithoutTarget
                  in bcastNl . concat $ [ mkBroadcast i . T.unlines . map (views _2 sorryCan'tShow) $ can'ts
@@ -1597,7 +1597,6 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
     sorryCan'tShow x               = "You can't show something to " <> aOrAn x <> "."
     mkIdSingTypeList is ms         = [ (targetId, getSing targetId ms, getType targetId ms) | targetId <- is ]
     partitionByType                = partition (views _3 (`elem` [ MobType, PCType ]))
-    sameSings (_, s, _) (_, s', _) = s == s'
     sortTargetsMobPC               = foldr f ([], [])
       where
         f (targetId, targetSing, targetType) acc = case targetType of
@@ -1947,9 +1946,7 @@ mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- m
 mkIdCountBothList :: Id -> MudState -> Inv -> [(Id, Int, BothGramNos)]
 mkIdCountBothList i ms targetIds =
     let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-    in nubBy equalCountsAndBoths . zip3 targetIds counts $ boths
-  where
-    equalCountsAndBoths (_, c, b) (_, c', b') = c == c' && b == b'
+    in nubBy ((==) `on` dropFst) . zip3 targetIds counts $ boths
 
 
 -----

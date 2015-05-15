@@ -8,6 +8,7 @@ module Mud.Util.Misc ( (?)
                      , atLst1
                      , blowUp
                      , divide
+                     , dropFst
                      , dropIrrelevantFilenames
                      , dup
                      , eitherRet
@@ -28,7 +29,8 @@ module Mud.Util.Misc ( (?)
                      , reverseLookup
                      , toMaybe
                      , uncurry3
-                     , uncurry4 ) where
+                     , uncurry4
+                     , unit ) where
 
 import Mud.Util.Quoting
 
@@ -90,6 +92,10 @@ blowUp modName funName msg (bracketQuote . T.intercalate ", " . map singleQuote 
 
 divide :: (Integral a, Fractional b) => a -> a -> b
 divide = (/) `on` fromIntegral
+
+
+dropFst :: (a, b, c) -> (b, c)
+dropFst (_, x, y) = (x, y)
 
 
 dropIrrelevantFilenames :: [FilePath] -> [FilePath]
@@ -178,3 +184,7 @@ uncurry3 f (a, b, c) = f a b c
 
 uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
 uncurry4 f (a, b, c, d) = f a b c d
+
+
+unit :: ()
+unit = let in ()
