@@ -40,7 +40,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExe
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative ((<$>), (<*>))
-import Control.Arrow ((***), first, second)
+import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
@@ -1552,7 +1552,6 @@ helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
 
 -- TODO: Help.
 -- TODO: Consider using the "e-"/"i-" system elsewhere.
--- TODO: Could target more than one person like this: "show ' taro/hanako"...
 showAction :: Action
 showAction p@AdviseNoArgs = advise p ["show"] advice
   where
@@ -1584,30 +1583,22 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
            in if null targetMiss && (not . null $ targetRcs)
              then wrapSend mq cols . sorryCan'tShow $ "coin"
              else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
-               Left  msg       -> wrapSend mq cols msg
-               Right targetIds ->
-                 let idSingTypes      = mkIdSingTypeList targetIds ms
-                     (cans,  can'ts)  = second (nubBy ((==) `on` view _2)) . partitionByType $ idSingTypes
-                     (mss,   pis   )  = sortTargetsMobPC cans
-                     (inEqs, inInvs)  = sortArgsEqInv argsWithoutTarget
-                     (invBs, invLogs) = inInvs |!| showInv ms invCoins inInvs mss pis
-                     (eqBs,  eqLogs)  = inEqs  |!| showEq  ms eqMap    inEqs  mss pis
-                 in do
-                     bcastNl . concat $ [ mkBroadcast i . T.unlines . map (views _2 sorryCan'tShow) $ can'ts
-                                        , invBs
-                                        , eqBs ]
-                     logPla "show" i $ T.unlines invLogs <> T.unlines eqLogs
+               Left  msg        -> wrapSend mq cols msg
+               Right [targetId] ->
+                 let targetSing       = getSing targetId ms
+                     targetType       = getType targetId ms
+                     (inEqs, inInvs ) = sortArgsEqInv argsWithoutTarget
+                     (invBs, invLogs) = inInvs |!| showInv ms invCoins inInvs targetId targetSing targetType
+                     (eqBs,  eqLogs ) = inEqs  |!| showEq  ms eqMap    inEqs  targetId targetSing targetType
+                 in targetType `notElem` [ MobType, PCType ] ? (wrapSend mq cols . sorryCan'tShow $ targetSing) :? do
+                     bcastNl $ invBs ++ eqBs
+                     logPla "show" i $ T.unlines invLogs <> T.unlines eqLogs -- TODO: Make sure we aren't logging blank lines.
+               Right _ -> wrapSend mq cols $ "Sorry, but you can only target one person at a time with the " <>
+                                             dblQuote "show"                                                 <>
+                                             " command."
   where
-    sorryCan'tShow x       = "You can't show something to " <> aOrAn x <> "."
-    mkIdSingTypeList is ms = [ (targetId, getSing targetId ms, getType targetId ms) | targetId <- is ]
-    partitionByType        = partition (views _3 (`elem` [ MobType, PCType ]))
-    sortTargetsMobPC       = foldr f ([], [])
-      where
-        f (targetId, targetSing, targetType) acc = case targetType of
-          MobType -> acc & _1 %~ (targetSing :)
-          PCType  -> acc & _2 %~ (targetId   :)
-          x       -> patternMatchFail "showAction sortTargetsMobPC f" [ showText x ]
-    sortArgsEqInv = foldr f ([], [])
+    sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
+    sortArgsEqInv    = foldr f ([], [])
       where
         f arg acc = case T.unpack arg of ('e':c:x:xs) | c == selectorChar -> _1 `g` (x : xs)
                                          ('i':c:x:xs) | c == selectorChar -> _2 `g` (x : xs)
@@ -1615,94 +1606,97 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                          xs                               -> _2 `g` xs
           where
             lens `g` rest = acc & lens %~ (T.pack rest :)
-    showInv ms invCoins inInvs mobSings targetIds = if notEmpty invCoins
+    showInv ms invCoins inInvs targetId targetSing targetType = if notEmpty invCoins
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
-               showInvBs                           = foldl' helperEitherInv ([], []) eiss
-               helperEitherInv acc (Left  msg    ) = acc & _1 %~ (++ mkBroadcast i msg)
-               helperEitherInv acc (Right itemIds) = acc & _1 %~ (++
-                                                     concatMap (mkToSelfInvBs       itemIds) targetIds ++
-                                                     concatMap (mkToSelfInvBsMobs   itemIds) mobSings  ++
-                                                     mkToTargetsInvBs itemIds                          ++
-                                                     concatMap (mkToOthersInvBs     itemIds) targetIds ++
-                                                     concatMap (mkToOthersInvBsMobs itemIds) mobSings)
-               mkToSelfInvBs itemIds targetId      = [ ( T.concat [ "You show the "
-                                                                  , getSing itemId ms
-                                                                  , " to "
-                                                                  , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                                  , "." ]
-                                                       , [i] )
-                                                     | itemId <- itemIds ]
-               mkToSelfInvBsMobs itemIds mobSing   = [ ( T.concat [ "You show the "
-                                                                  , getSing itemId ms
-                                                                  , " to "
-                                                                  , theOnLower mobSing
-                                                                  , "." ]
-                                                       , [i] )
-                                                     | itemId <- itemIds ]
-               mkToTargetsInvBs itemIds            = [ ( T.concat [ serialize d
-                                                                  , " shows you "
-                                                                  , underlineANSI
-                                                                  , aOrAn . getSing itemId $ ms
-                                                                  , noUnderlineANSI
-                                                                  , nl ":"
-                                                                  , getEntDesc itemId ms ]
-                                                       , targetIds )
-                                                     | itemId <- itemIds ]
-               mkToOthersInvBs itemIds targetId    = [ ( T.concat [ serialize d
-                                                                  , " shows "
-                                                                  , aOrAn . getSing itemId $ ms
-                                                                  , " to "
-                                                                  , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                                  , "." ]
-                                                       , pcIds d \\ [ i, targetId ] )
-                                                     | itemId <- itemIds ]
-               mkToOthersInvBsMobs itemIds mobSing = [ ( T.concat [ serialize d
-                                                                  , " shows "
-                                                                  , aOrAn . getSing itemId $ ms
-                                                                  , " to "
-                                                                  , theOnLower mobSing
-                                                                  , "." ]
-                                                       , i `delete` pcIds d )
-                                                     | itemId <- itemIds ]
+               showInvHelper                       = foldl' helperEitherInv ([], []) eiss
+               helperEitherInv acc (Left  msg    ) = acc & _1 <>~ mkBroadcast i msg
+               helperEitherInv acc (Right itemIds) = case targetType of
+                 PCType  -> let bs   = concatMap (itemIds |$|) [ mkToSelfInvBs, mkToTargetInvBs, mkToOthersInvBs ]
+                                logs = [] -- TODO
+                            in acc & _1 <>~ bs & _2 <>~ logs
+                 MobType -> let bs   = concatMap (itemIds |$|) [ mkToSelfInvBsMobs, mkToOthersInvBsMobs ]
+                                logs = [] -- TODO
+                            in acc & _1 <>~ bs & _2 <>~ logs
+                 x       -> patternMatchFail "showAction showInv" [ showText x ]
+               mkToSelfInvBs       itemIds = [ ( T.concat [ "You show the "
+                                                          , getSing itemId ms
+                                                          , " to "
+                                                          , targetDesig
+                                                          , "." ]
+                                               , [i] )
+                                             | itemId <- itemIds ]
+               mkToSelfInvBsMobs   itemIds = [ ( T.concat [ "You show the "
+                                                          , getSing itemId ms
+                                                          , " to "
+                                                          , theOnLower targetSing
+                                                          , "." ]
+                                               , [i] )
+                                             | itemId <- itemIds ]
+               mkToTargetInvBs     itemIds = [ ( T.concat [ serialize d
+                                                          , " shows you "
+                                                          , underlineANSI
+                                                          , aOrAn . getSing itemId $ ms
+                                                          , noUnderlineANSI
+                                                          , nl ":"
+                                                          , getEntDesc itemId ms ]
+                                               , [targetId] )
+                                             | itemId <- itemIds ]
+               mkToOthersInvBs     itemIds = [ ( T.concat [ serialize d
+                                                          , " shows "
+                                                          , aOrAn . getSing itemId $ ms
+                                                          , " to "
+                                                          , targetDesig
+                                                          , "." ]
+                                               , pcIds d \\ [ i, targetId ] )
+                                             | itemId <- itemIds ]
+               mkToOthersInvBsMobs itemIds = [ ( T.concat [ serialize d
+                                                          , " shows "
+                                                          , aOrAn . getSing itemId $ ms
+                                                          , " to "
+                                                          , theOnLower targetSing
+                                                          , "." ]
+                                               , i `delete` pcIds d )
+                                             | itemId <- itemIds ]
+               targetDesig                 = serialize . mkStdDesig targetId ms $ Don'tCap
                d                           = mkStdDesig i ms DoCap
                (canCoins, can'tCoinMsgs)   = foldl' distillEcs (mempty, []) ecs
                distillEcs acc (Left  msgs) = acc & _2 <>~ msgs
                distillEcs acc (Right c   ) = acc & _1 <>~ c
-               showCoinsBs                 = ((mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs, [])
-               mkCanCoinsBs                = concatMap mkToSelfCoinsBs       targetIds ++
-                                             concatMap mkToSelfCoinsBsMobs   mobSings  ++
-                                             mkToTargetsCoinsBs                        ++
-                                             concatMap mkToOthersCoinsBs     targetIds ++
-                                             concatMap mkToOthersCoinsBsMobs mobSings
-               mkToSelfCoinsBs targetId      = mkCoinTxt |!| let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                                                             in mkBroadcast i . T.concat $ [ "You show "
-                                                                                           , mkCoinTxt
-                                                                                           , " to "
-                                                                                           , targetDesig
-                                                                                           , "." ]
-               mkToSelfCoinsBsMobs mobSing   = mkCoinTxt |!|    mkBroadcast i . T.concat $ [ "You show "
-                                                                                           , mkCoinTxt
-                                                                                           , " to "
-                                                                                           , theOnLower mobSing
-                                                                                           , "." ]
-               mkToTargetsCoinsBs            = mkCoinTxt |!| [(T.concat [ serialize d
-                                                                        , " shows you "
-                                                                        , underlineANSI
-                                                                        , mkCoinTxt
-                                                                        , noUnderlineANSI
-                                                                        , "." ], targetIds)]
-               mkToOthersCoinsBs targetId    = mkCoinTxt |!| [(T.concat [ serialize d
-                                                                        , " shows "
-                                                                        , aCoinSomeCoins canCoins
-                                                                        , " to "
-                                                                        , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                                        , "." ], pcIds d \\ [ i, targetId ])]
-               mkToOthersCoinsBsMobs mobSing = mkCoinTxt |!| [(T.concat [ serialize d
-                                                                        , " shows "
-                                                                        , aCoinSomeCoins canCoins
-                                                                        , " to "
-                                                                        , theOnLower mobSing
-                                                                        , "." ], i `delete` pcIds d)]
+               showCoinsHelper             = let bs   = (mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs
+                                                 logs = [] -- TODO
+                                             in (bs, logs)
+               mkCanCoinsBs = case targetType of
+                 PCType  -> mkToSelfCoinsBs     ++ mkToTargetCoinsBs ++ mkToOthersCoinsBs
+                 MobType -> mkToSelfCoinsBsMobs ++                      mkToOthersCoinsBsMobs
+                 x       -> patternMatchFail "showAction mkCanCoinsBs" [ showText x ]
+               mkToSelfCoinsBs       = mkCoinTxt |!| mkBroadcast i        . T.concat $ [ "You show "
+                                                                                       , mkCoinTxt
+                                                                                       , " to "
+                                                                                       , targetDesig
+                                                                                       , "." ]
+               mkToSelfCoinsBsMobs   = mkCoinTxt |!| mkBroadcast i        . T.concat $ [ "You show "
+                                                                                       , mkCoinTxt
+                                                                                       , " to "
+                                                                                       , theOnLower targetSing
+                                                                                       , "." ]
+               mkToTargetCoinsBs     = mkCoinTxt |!| mkBroadcast targetId . T.concat $ [ serialize d
+                                                                                       , " shows you "
+                                                                                       , underlineANSI
+                                                                                       , mkCoinTxt
+                                                                                       , noUnderlineANSI
+                                                                                       , "." ]
+               mkToOthersCoinsBs     = mkCoinTxt |!| [(T.concat [ serialize d
+                                                                , " shows "
+                                                                , aCoinSomeCoins canCoins
+                                                                , " to "
+                                                                , targetDesig
+                                                                , "." ], pcIds d \\ [ i, targetId ])]
+               mkToOthersCoinsBsMobs = mkCoinTxt |!| [(T.concat [ serialize d
+                                                                , " shows "
+                                                                , aCoinSomeCoins canCoins
+                                                                , " to "
+                                                                , theOnLower targetSing
+                                                                , "." ], i `delete` pcIds d)]
                mkCoinTxt = case mkCoinTxtList of
                  [ c, s, g ] -> T.concat [ c, ", ", s, ", and ", g ]
                  [ x, y    ] -> x <> " and " <> y
@@ -1717,71 +1711,74 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                       (Coins (0, 1, 0)) -> "a silver piece"
                                       (Coins (0, 0, 1)) -> "a gold piece"
                                       _                 -> "some coins"
-           in let (bs, logs)   = showInvBs
-                  (bs', logs') = showCoinsBs
+           in let (bs,  logs ) = showInvHelper
+                  (bs', logs') = showCoinsHelper
               in (bs ++ bs', logs ++ logs')
       else (mkBroadcast i dudeYourHandsAreEmpty, [])
-    showEq ms eqMap inEqs mobSings targetIds = if not . M.null $ eqMap
+    showEq ms eqMap inEqs targetId targetSing targetType = if not . M.null $ eqMap
       then let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
                eiss                                = zipWith (curry procGecrMisPCEq) gecrs miss
-               showEqBs                            = foldl' helperEitherInv ([], []) eiss
-               helperEitherInv acc (Left  msg)     = acc & _1 %~ (++ mkBroadcast i msg)
-               helperEitherInv acc (Right itemIds) = acc & _1 %~ (++
-                                                     concatMap (mkToSelfBs       itemIds) targetIds ++
-                                                     concatMap (mkToSelfBsMobs   itemIds) mobSings  ++
-                                                     mkToTargetsBs itemIds                          ++
-                                                     concatMap (mkToOthersBs     itemIds) targetIds ++
-                                                     concatMap (mkToOthersBsMobs itemIds) mobSings)
-               mkToSelfBs itemIds targetId      = [ ( T.concat [ "You show the "
-                                                               , getSing itemId ms
-                                                               , " to "
-                                                               , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                               , "." ]
-                                                    , [i] )
-                                                  | itemId <- itemIds ]
-               mkToSelfBsMobs itemIds mobSing   = [ ( T.concat [ "You show the "
-                                                               , getSing itemId ms
-                                                               , " to "
-                                                               , theOnLower mobSing
-                                                               , "." ]
-                                                    , [i] )
-                                                  | itemId <- itemIds ]
-               mkToTargetsBs itemIds            = [ ( T.concat [ serialize d
-                                                               , " shows you "
-                                                               , underlineANSI
-                                                               , aOrAn . getSing itemId $ ms
-                                                               , noUnderlineANSI
-                                                               , " "
-                                                               , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
-                                                               , nl ":"
-                                                               , getEntDesc itemId ms ]
-                                                    , targetIds )
-                                                  | itemId <- itemIds ]
-               mkToOthersBs itemIds targetId    = [ ( T.concat [ serialize d
-                                                               , " shows "
-                                                               , aOrAn . getSing itemId $ ms
-                                                               , " "
-                                                               , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
-                                                               , " to "
-                                                               , serialize . mkStdDesig targetId ms $ Don'tCap
-                                                               , "." ]
-                                                    , pcIds d \\ [ i, targetId ] )
-                                                  | itemId <- itemIds ]
-               mkToOthersBsMobs itemIds mobSing = [ ( T.concat [ serialize d
-                                                               , " shows "
-                                                               , aOrAn . getSing itemId $ ms
-                                                               , " "
-                                                               , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
-                                                               , " to "
-                                                               , theOnLower mobSing
-                                                               , "." ]
-                                                    , i `delete` pcIds d )
-                                                  | itemId <- itemIds ]
-               d           = mkStdDesig i ms DoCap
-               showCoinsBs = rcs |!| (mkBroadcast i noCoinsInEq, [])
-           in let (bs, logs)   = showEqBs
-                  (bs', logs') = showCoinsBs
-              in (bs ++ bs', logs ++ logs')
+               showEqHelper                        = foldl' helperEitherInv ([], []) eiss
+               helperEitherInv acc (Left  msg)     = acc & _1 <>~ mkBroadcast i msg
+               helperEitherInv acc (Right itemIds) = case targetType of
+                 PCType  -> let bs   = concatMap (itemIds |$|) [ mkToSelfBs, mkToTargetBs, mkToOthersBs ]
+                                logs = [] -- TODO
+                            in acc & _1 <>~ bs & _2 <>~ logs
+                 MobType -> let bs   = concatMap (itemIds |$|) [ mkToSelfBsMobs, mkToOthersBsMobs ]
+                                logs = [] -- TODO
+                            in acc & _1 <>~ bs & _2 <>~ logs
+                 x       -> patternMatchFail "showAction showEq" [ showText x ]
+               mkToSelfBs       itemIds = [ ( T.concat [ "You show the "
+                                                       , getSing itemId ms
+                                                       , " to "
+                                                       , targetDesig
+                                                       , "." ]
+                                            , [i] )
+                                          | itemId <- itemIds ]
+               mkToSelfBsMobs   itemIds = [ ( T.concat [ "You show the "
+                                                       , getSing itemId ms
+                                                       , " to "
+                                                       , theOnLower targetSing
+                                                       , "." ]
+                                            , [i] )
+                                          | itemId <- itemIds ]
+               mkToTargetBs     itemIds = [ ( T.concat [ serialize d
+                                                       , " shows you "
+                                                       , underlineANSI
+                                                       , aOrAn . getSing itemId $ ms
+                                                       , noUnderlineANSI
+                                                       , " "
+                                                       , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
+                                                       , nl ":"
+                                                       , getEntDesc itemId ms ]
+                                            , [targetId] )
+                                          | itemId <- itemIds ]
+               mkToOthersBs     itemIds = [ ( T.concat [ serialize d
+                                                       , " shows "
+                                                       , aOrAn . getSing itemId $ ms
+                                                       , " "
+                                                       , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
+                                                       , " to "
+                                                       , targetDesig
+                                                       , "." ]
+                                            , pcIds d \\ [ i, targetId ] )
+                                          | itemId <- itemIds ]
+               mkToOthersBsMobs itemIds = [ ( T.concat [ serialize d
+                                                       , " shows "
+                                                       , aOrAn . getSing itemId $ ms
+                                                       , " "
+                                                       , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
+                                                       , " to "
+                                                       , theOnLower targetSing
+                                                       , "." ]
+                                            , i `delete` pcIds d )
+                                          | itemId <- itemIds ]
+               targetDesig         = serialize . mkStdDesig targetId ms $ Don'tCap
+               d                   = mkStdDesig i ms DoCap
+               showCoinsInEqHelper = rcs |!| mkBroadcast i noCoinsInEq
+           in let (bs,  logs ) = showEqHelper
+                  bs'          = showCoinsInEqHelper
+              in (bs ++ bs', logs)
       else (mkBroadcast i dudeYou'reNaked, [])
 showAction p = patternMatchFail "showAction" [ showText p ]
 
@@ -1815,11 +1812,11 @@ mkSlotDesc i ms s = case s of
   ShirtS      -> wornAs -- "shirt"
   SmockS      -> wornAs -- "smock"
   CoatS       -> wornAs -- "coat"
-  TrousersS   -> wornAs -- "trousers"
+  TrousersS   -> "worn as trousers" -- "trousers"
   SkirtS      -> wornAs -- "skirt"
   DressS      -> wornAs -- "dress"
   FullBodyS   -> "worn about " <> hisHer <> " body" -- "about body"
-  BackpackS   -> wornAs -- "backpack"
+  BackpackS   -> "worn on "    <> hisHer <> " back" -- "backpack"
   CloakS      -> wornAs -- "cloak"
   -- Armor slots:
   HeadS       -> wornOn -- "head"
