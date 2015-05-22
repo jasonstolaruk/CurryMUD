@@ -118,9 +118,10 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     runAsync f    = onEnv $ liftIO . async . runReaderT f
     logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
-        let ifList = T.intercalate ", " [ bracketQuote . T.concat $ [ showText . NI.name $ n
-                                                                    , ": "
-                                                                    , showText . NI.ipv4 $ n ] | n <- ns ]
+        let ifList = commas [ bracketQuote . T.concat $ [ showText . NI.name $ n
+                                                        , ": "
+                                                        , showText . NI.ipv4 $ n ]
+                            | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
     loop sock = do
         (h, host, localPort) <- liftIO . accept $ sock

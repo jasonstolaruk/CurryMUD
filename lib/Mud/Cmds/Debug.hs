@@ -247,11 +247,11 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
     helper searchId@(showText -> searchIdTxt)
       | searchId < 0 = sorryWtf mq cols
       | otherwise    = getState >>= \ms -> do
-          let f     = T.intercalate ", " . map (showText . fst)
+          let f     = commas . map (showText . fst)
               g     = IM.toList . flip view ms
               mkTxt =
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
-                    , T.intercalate ", " . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
+                    , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
                   , [ T.concat [ "Entities with an ", dblQuote "entId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view entId . snd) . g $ entTbl ]
                   , [ T.concat [ "Equipment maps containing ID ", searchIdTxt, ": " ]

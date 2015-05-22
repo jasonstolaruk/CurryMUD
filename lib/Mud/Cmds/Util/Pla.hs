@@ -619,7 +619,7 @@ mkStyledName_Count_BothList i ms is =
 mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . coinsToList $ c
   where
-    helper         = T.unlines . wrapIndent 2 cols . T.intercalate ", " . filter (not . T.null)
+    helper         = T.unlines . wrapIndent 2 cols . commas . filter (not . T.null)
     mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
 
 
@@ -663,7 +663,7 @@ mkExitsSummary cols (view rmLinks -> rls) =
     in T.unlines . wrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"
-    summarize std cus = T.intercalate ", " . (std ++) $ cus
+    summarize std cus = commas . (std ++) $ cus
 
 
 linkDirToCmdName :: LinkDir -> CmdName

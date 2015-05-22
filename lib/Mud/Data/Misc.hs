@@ -19,6 +19,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , GetOrDrop(..)
                      , Help(..)
                      , HelpName
+                     , IdSingTypeDesig(..)
                      , Index
                      , LoggedInOrOut(..)
                      , PCDesig(..)
@@ -403,6 +404,15 @@ data Help = Help { helpName     :: HelpName
                  , helpFilePath :: FilePath
                  , isCmdHelp    :: Bool
                  , isAdminHelp  :: Bool } deriving (Eq, Ord)
+
+
+-----
+
+
+data IdSingTypeDesig = IdSingTypeDesig { theId    :: Id
+                                       , theSing  :: Sing
+                                       , theType  :: Type
+                                       , theDesig :: T.Text }
 
 
 -----

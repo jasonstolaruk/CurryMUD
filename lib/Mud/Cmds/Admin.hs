@@ -284,7 +284,7 @@ adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify on
 adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
     multiWrapSend mq cols msgs
-    logPla "adminPeep" i . (<> ".") . T.intercalate " / " $ logMsgsSelf
+    logPla "adminPeep" i . (<> ".") . slashes $ logMsgsSelf
     forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
   where
     helper ms =

@@ -3,6 +3,7 @@
 module Mud.Util.Text ( aOrAn
                      , aOrAnOnLower
                      , capitalize
+                     , commas
                      , dropBlanks
                      , findFullNameForAbbrev
                      , headTail
@@ -16,6 +17,7 @@ module Mud.Util.Text ( aOrAn
                      , nlnlPrefix
                      , notInfixOf
                      , showText
+                     , slashes
                      , stripControl
                      , stripTelnet
                      , theOnLower
@@ -68,6 +70,12 @@ capsHelper f (headTail -> (T.singleton . f -> h, t)) = h <> t
 
 -----
 
+
+commas :: [T.Text] -> T.Text
+commas = T.intercalate ", "
+
+
+-----
 
 dropBlanks :: [T.Text] -> [T.Text]
 dropBlanks []      = []
@@ -147,6 +155,13 @@ notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
 
 showText :: (Show a) => a -> T.Text
 showText = T.pack . show
+
+
+-----
+
+
+slashes :: [T.Text] -> T.Text
+slashes = T.intercalate " / "
 
 
 -----
