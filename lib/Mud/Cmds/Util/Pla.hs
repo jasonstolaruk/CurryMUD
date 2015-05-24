@@ -395,8 +395,8 @@ mkPutRemCoinsDescsSelf i por mnom c ts | bs <- mkCoinsBroadcasts c helper = (bs,
   where
     helper a cn | a == 1 = [ (T.concat [ start, aOrAn cn,   " ",           rest ], [i]) ]
     helper a cn          = [ (T.concat [ start, showText a, " ", cn, "s ", rest ], [i]) ]
-    start = "You " <> mkPorVerb por SndPer <> " "
-    rest  = mkPorPrep por SndPer mnom ts <> onTheGround mnom <> "."
+    start                = "You " <> mkPorVerb por SndPer <> " "
+    rest                 = mkPorPrep por SndPer mnom ts <> onTheGround mnom <> "."
 
 
 mkPorVerb :: PutOrRem -> Verb -> T.Text

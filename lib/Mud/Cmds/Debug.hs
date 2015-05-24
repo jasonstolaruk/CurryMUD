@@ -564,6 +564,7 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "d adminCmdChar"
                 , charTokenDelimiter  `T.cons` "e emoteNameChar"
                 , charTokenDelimiter  `T.cons` "i indexChar"
+                , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"
                 , charTokenDelimiter  `T.cons` "r rmChar"
@@ -572,7 +573,9 @@ debugToken (NoArgs i mq cols) = do
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("ddfltColor"         <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("hheaderColor"       <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("lselectorColor"     <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("nnoUnderlineANSI"   <> dfltColorStyleToken  )
+                , styleTokenDelimiter `T.cons` ("pprefixColor"       <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("qquoteColor"        <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("rarrowColor"        <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("ssyntaxSymbolColor" <> dfltColorStyleToken  )

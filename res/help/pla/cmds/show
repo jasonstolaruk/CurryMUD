@@ -1,0 +1,31 @@
+\h SHOW \d
+
+\uUSAGE\n
+show item \s...\d person
+
+\uDESCRIPTION\n
+Show one or more items in your inventory and/or readied equipment to another person.
+
+To show the ring in your inventory to Hanako:
+\q"show \li#l\qring hanako"\d4`
+...or just...
+\q"show ring hanako"\d4`
+
+To show the ring in your readied equipment to Hanako:
+\q"show \le#l\qring hanako"\d4`
+...or just...
+\q"show \l#l\qring hanako"\d4`
+
+\uEXAMPLES\n
+(Note: as described above, the "i#l" prefix may be omitted entirely, and the "e#l" prefix may be abbreviated to "#l".)
+\q"show \li#l\qring \le#l\qbracelet hanako"\d to show the ring in your inventory and the bracelet in your readied equipment to Hanako.4`
+\q"show \li#l\p2#i\qring hanako"\d to show the second ring in your inventory to Hanako.4`
+\q"show \le#l\p2#m\qbracelet hanako"\d to show the first two bracelets in your readied equipment to Hanako.4`
+\q"show \li#l\p3#i\qring \le#l\p3#m\qbracelet hanako"\d to show the third ring in your inventory and the first three bracelets in your readied equipment to Hanako.4`
+\q"show \li#l\p#a\qring \le#l\p#a\qbracelet hanako"\d to show all the rings in your inventory and all the bracelets in your readied equipment to Hanako.4`
+\q"show \li#l\p#a\q hanako"\d to show all the items in your inventory to Hanako.4`
+\q"show \le#l\p#a\q hanako"\d to show all the items in your readied equipment to Hanako.4`
+\q"show \p5#m\qgp \p#a\qsp hanako"\d to show five of your gold pieces and all your silver pieces to Hanako.4`
+\q"show \p#a\qcoin hanako"\d to show all your coins to Hanako.4`
+
+\uSEE ALSO\n

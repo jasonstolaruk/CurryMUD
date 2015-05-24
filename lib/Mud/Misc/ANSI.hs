@@ -32,11 +32,13 @@ module Mud.Misc.ANSI ( abbrevColor
                      , noHintANSI
                      , noUnderlineANSI
                      , pagerPromptColor
+                     , prefixColor
                      , printConsoleColor
                      , promoteDemoteColor
                      , promptColor
                      , quoteColor
                      , resetANSI
+                     , selectorColor
                      , selfColor
                      , shutdownMsgColor
                      , syntaxSymbolColor
@@ -201,6 +203,10 @@ pagerPromptColor :: T.Text
 pagerPromptColor = mkColorANSI (Dull, Black) (Dull, White)
 
 
+prefixColor :: T.Text
+prefixColor = red
+
+
 printConsoleColor :: T.Text
 printConsoleColor = magenta
 
@@ -215,6 +221,10 @@ promptColor = yellow
 
 quoteColor :: T.Text
 quoteColor = green
+
+
+selectorColor :: T.Text
+selectorColor = yellow
 
 
 selfColor :: T.Text

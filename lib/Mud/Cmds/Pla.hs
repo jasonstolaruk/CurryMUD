@@ -1550,7 +1550,6 @@ helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
 -----
 
 
--- TODO: Help.
 -- TODO: Consider using the "e-"/"i-" system elsewhere.
 showAction :: Action
 showAction p@AdviseNoArgs = advise p ["show"] advice

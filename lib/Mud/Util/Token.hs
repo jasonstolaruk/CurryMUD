@@ -49,6 +49,7 @@ expandCharCode (toLower -> code) = T.singleton $ case code of
   'd' -> adminCmdChar
   'e' -> emoteNameChar
   'i' -> indexChar
+  'l' -> selectorChar
   'm' -> amountChar
   'o' -> adverbOpenChar
   'r' -> rmChar
@@ -83,7 +84,9 @@ expandStyleCode (toLower -> code) = case code of
   'a' -> abbrevColor
   'd' -> dfltColor
   'h' -> headerColor
+  'l' -> selectorColor
   'n' -> noUnderlineANSI
+  'p' -> prefixColor
   'q' -> quoteColor
   'r' -> arrowColor
   's' -> syntaxSymbolColor
