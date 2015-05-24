@@ -295,7 +295,7 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             ri                    = getRmId     i ms
             (eiss, ecs)           = uncurry (resolvePCInvCoins i ms as) invCoins
             (ms',  bs,  logMsgs ) = foldl' (helperDropEitherInv      i d      i ri) (ms,  [], []     ) eiss
-            (ms'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Drop i ri) (ms', bs, logMsgs) ecs
+            (ms'', bs', logMsgs') =         helperGetDropEitherCoins i d Drop i ri  (ms', bs, logMsgs) ecs
         in if notEmpty invCoins
           then (ms'', (bs',                                 logMsgs'))
           else (ms,   (mkBroadcast i dudeYourHandsAreEmpty, []      ))
@@ -447,7 +447,7 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             d                     = mkStdDesig i ms DoCap
             (eiss, ecs)           = uncurry (resolveRmInvCoins i ms as) invCoins
             (ms',  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [], []     ) eiss
-            (ms'', bs', logMsgs') = foldl' (helperGetDropEitherCoins i d Get ri i) (ms', bs, logMsgs) ecs
+            (ms'', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i  (ms', bs, logMsgs) ecs
         in if notEmpty invCoins
           then (ms'', (bs',                                                     logMsgs'))
           else (ms,   (mkBroadcast i "You don't see anything here to pick up.", []      ))

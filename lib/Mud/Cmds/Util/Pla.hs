@@ -28,8 +28,6 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkEntDescs
                          , mkEqDesc
                          , mkExitsSummary
-                         , mkGetDropCoinsDesc
-                         , mkGetDropInvDesc
                          , mkInvCoinsDesc
                          , mkMaybeNthOfM
                          , mkPossPro
@@ -246,43 +244,49 @@ helperGetDropEitherCoins :: Id
                          -> FromId
                          -> ToId
                          -> (MudState, [Broadcast], [T.Text])
-                         -> Either [T.Text] Coins
+                         -> [Either [T.Text] Coins]
                          -> (MudState, [Broadcast], [T.Text])
-helperGetDropEitherCoins i d god fi ti a@(ms, _, _) = \case
-  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
-  Right c    -> let (can, can't)  = case god of Get  -> partitionByEnc c
-                                                Drop -> (c, mempty)
-                    (bs, logMsgs) = mkGetDropCoinsDesc i d god can
-                in a & _1.coinsTbl.ind fi %~  (<> negateCoins can)
-                     & _1.coinsTbl.ind ti %~  (<>             can)
-                     & _2                 <>~ bs ++ mkCan'tGetCoinsDesc i can't
-                     & _3                 <>~ logMsgs
+helperGetDropEitherCoins i d god fi ti (origMs, origBs, origMsgs) ecs =
+    let (finalMs, finalBs, finalMsgs, canCoins) = foldl' helper (origMs, origBs, origMsgs, mempty) ecs
+    in (finalMs, finalBs ++ mkGetDropCoinsDescOthers i d god canCoins, finalMsgs)
   where
-    partitionByEnc c = let maxEnc           = calcMaxEnc i ms
-                           w                = calcWeight i ms
-                           noOfCoins        = sum . coinsToList $ c
-                           totalCoinsWeight = noOfCoins * coinWeight
-                       in if w + totalCoinsWeight <= maxEnc
-                         then (c, mempty)
-                         else let availWeight  = maxEnc - w
-                                  canNoOfCoins = availWeight `quot` coinWeight
-                              in mkCanCan't c canNoOfCoins
-    mkCanCan't (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
-    mkCanCan't (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
-    mkCanCan't (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
-    mkCanCan't c                 n = patternMatchFail "helperGetDropEitherCoins mkCanCan't" [ showText c, showText n ]
+    helper a@(ms, _, _, _) = \case
+      Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
+      Right c    -> let (can, can't)  = case god of Get  -> partitionByEnc c
+                                                    Drop -> (c, mempty)
+                        (bs, logMsgs) = mkGetDropCoinsDescSelf i god can
+                    in a & _1.coinsTbl.ind fi %~  (<> negateCoins can)
+                         & _1.coinsTbl.ind ti %~  (<>             can)
+                         & _2                 <>~ bs ++ mkCan'tGetCoinsDesc i can't
+                         & _3                 <>~ logMsgs
+                         & _4                 <>~ can
+      where
+        partitionByEnc c = let maxEnc           = calcMaxEnc i ms
+                               w                = calcWeight i ms
+                               noOfCoins        = sum . coinsToList $ c
+                               totalCoinsWeight = noOfCoins * coinWeight
+                           in if w + totalCoinsWeight <= maxEnc
+                             then (c, mempty)
+                             else let availWeight  = maxEnc - w
+                                      canNoOfCoins = availWeight `quot` coinWeight
+                                  in mkCanCan't c canNoOfCoins
+        mkCanCan't (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
+        mkCanCan't (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
+        mkCanCan't (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
+        mkCanCan't c                 n = patternMatchFail "helperGetDropEitherCoins mkCanCan't" [ showText c
+                                                                                                , showText n ]
 
 
-mkGetDropCoinsDesc :: Id -> PCDesig -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
-mkGetDropCoinsDesc i d god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+mkGetDropCoinsDescOthers :: Id -> PCDesig -> GetOrDrop -> Coins -> [Broadcast]
+mkGetDropCoinsDescOthers i d god c =
+  c |!| [ (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aCoinSomeCoins c, "." ], i `delete` pcIds d) ]
+
+
+mkGetDropCoinsDescSelf :: Id -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
+mkGetDropCoinsDescSelf i god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
-    helper 1 cn =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", aOrAn cn, "." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn cn, "." ], otherPCIds) ]
-    helper a cn =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i])
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", showText a, " ", cn, "s." ], otherPCIds) ]
-    otherPCIds = i `delete` pcIds d
+    helper 1 cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "." ], [i]) ]
+    helper a cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i]) ]
 
 
 mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
