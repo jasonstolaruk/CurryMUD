@@ -928,7 +928,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                    (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
                                                 (ms^.invTbl,   [], [])
                                                 eiss
-                   (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i    d Put mnom i conId conSing)
+                   (ct, bs', logMsgs') =         helperPutRemEitherCoins i    d Put mnom i conId conSing
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
                in (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
@@ -1349,7 +1349,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                    (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
                                                 (ms^.invTbl, [], [])
                                                 eiss
-                   (ct, bs', logMsgs') = foldl' (helperPutRemEitherCoins i    d Rem mnom conId i conSing)
+                   (ct, bs', logMsgs') =         helperPutRemEitherCoins i    d Rem mnom conId i conSing
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
                in if notEmpty invCoinsInCon

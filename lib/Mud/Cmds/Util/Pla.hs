@@ -31,8 +31,6 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , mkInvCoinsDesc
                          , mkMaybeNthOfM
                          , mkPossPro
-                         , mkPutRemCoinsDescs
-                         , mkPutRemInvDesc
                          , mkPutRemoveBindings
                          , mkReadyMsgs
                          , mkReflexPro
@@ -364,55 +362,41 @@ helperPutRemEitherCoins :: Id
                         -> ToId
                         -> ToSing
                         -> (CoinsTbl, [Broadcast], [T.Text])
-                        -> Either [T.Text] Coins
+                        -> [Either [T.Text] Coins]
                         -> (CoinsTbl, [Broadcast], [T.Text])
-helperPutRemEitherCoins i d por mnom fi ti ts a = \case
-  Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
-  Right c    -> let (bs, logMsgs) = mkPutRemCoinsDescs i d por mnom c ts
-                in a & _1.ind fi %~ (<> negateCoins c) & _1.ind ti %~ (<> c) & _2 <>~ bs & _3 <>~ logMsgs
-
-
-mkPutRemCoinsDescs :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescs i d por mnom c ts | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+helperPutRemEitherCoins i d por mnom fi ti ts (origCoinsTbl, origBs, origMsgs) ecs =
+    let (finalCoinsTbl, finalBs, finalMsgs, canCoins) = foldl' helper (origCoinsTbl, origBs, origMsgs, mempty) ecs
+    in (finalCoinsTbl, finalBs ++ mkPutRemCoinsDescOthers i d por mnom canCoins ts, finalMsgs)
   where
-    helper a cn | a == 1 =
-        [ (T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , " "
-                    , aOrAn cn
-                    , " "
-                    , mkPorPrep por SndPer mnom ts
-                    , rest ], [i])
-        , (T.concat [ serialize d
-                    , " "
-                    , mkPorVerb por ThrPer
-                    , " "
-                    , aOrAn cn
-                    , " "
-                    , mkPorPrep por ThrPer mnom ts
-                    , rest ], otherPCIds) ]
-    helper a cn =
-        [ (T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , " "
-                    , showText a
-                    , " "
-                    , cn
-                    , "s "
-                    , mkPorPrep por SndPer mnom ts
-                    , rest ], [i])
-        , (T.concat [ serialize d
-                    , " "
-                    , mkPorVerb por ThrPer
-                    , " "
-                    , showText a
-                    , " "
-                    , cn
-                    , "s "
-                    , mkPorPrep por ThrPer mnom ts
-                    , rest ], otherPCIds) ]
-    rest       = onTheGround mnom <> "."
-    otherPCIds = i `delete` pcIds d
+    helper a = \case
+      Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
+      Right c    -> let (bs, logMsgs) = mkPutRemCoinsDescsSelf i por mnom c ts
+                    in a & _1.ind fi %~ (<> negateCoins c)
+                         & _1.ind ti %~ (<> c)
+                         & _2 <>~ bs
+                         & _3 <>~ logMsgs
+                         & _4 <>~ c
+
+
+mkPutRemCoinsDescOthers :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [Broadcast]
+mkPutRemCoinsDescOthers i d por mnom c ts = c |!| [ ( T.concat [ serialize d
+                                                               , " "
+                                                               , mkPorVerb por ThrPer
+                                                               , " "
+                                                               , aCoinSomeCoins c
+                                                               , " "
+                                                               , mkPorPrep por ThrPer mnom ts
+                                                               , onTheGround mnom <> "." ]
+                                                    , i `delete` pcIds d ) ]
+
+
+mkPutRemCoinsDescsSelf :: Id -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> ([Broadcast], [T.Text])
+mkPutRemCoinsDescsSelf i por mnom c ts | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+  where
+    helper a cn | a == 1 = [ (T.concat [ start, aOrAn cn,   " ",           rest ], [i]) ]
+    helper a cn          = [ (T.concat [ start, showText a, " ", cn, "s ", rest ], [i]) ]
+    start = "You " <> mkPorVerb por SndPer <> " "
+    rest  = mkPorPrep por SndPer mnom ts <> onTheGround mnom <> "."
 
 
 mkPorVerb :: PutOrRem -> Verb -> T.Text
