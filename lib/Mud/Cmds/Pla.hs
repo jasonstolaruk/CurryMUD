@@ -1668,58 +1668,43 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                , i `delete` pcIds d )
                                              | itemId <- itemIds ]
                -----
-               (canCoins, can'tCoinMsgs)   = foldl' distillEcs mempty ecs
-               distillEcs acc (Left  msgs) = acc & _2 <>~ msgs
-               distillEcs acc (Right c   ) = acc & _1 <>~ c
-               showCoinsHelper             = (mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs
-               mkCanCoinsBs = case theType of
+               (canCoins, can'tCoinMsgs) = distillEcs ecs
+               showCoinsHelper           = (mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs
+               mkCanCoinsBs              = case theType of
                  PCType  -> mkToSelfCoinsBs     ++ mkToTargetCoinsBs ++ mkToOthersCoinsBs
                  MobType -> mkToSelfCoinsBsMobs ++                      mkToOthersCoinsBsMobs
                  x       -> patternMatchFail "showAction mkCanCoinsBs" [ showText x ]
-               mkToSelfCoinsBs       = mkCoinTxt |!| mkBroadcast i     . T.concat $ [ "You show "
-                                                                                    , mkCoinTxt
-                                                                                    , " to "
-                                                                                    , theDesig
-                                                                                    , "." ]
-               mkToSelfCoinsBsMobs   = mkCoinTxt |!| mkBroadcast i     . T.concat $ [ "You show "
-                                                                                    , mkCoinTxt
-                                                                                    , " to "
-                                                                                    , theOnLower theSing
-                                                                                    , "." ]
-               mkToTargetCoinsBs     = mkCoinTxt |!| mkBroadcast theId . T.concat $ [ serialize d
-                                                                                    , " shows you "
-                                                                                    , underlineANSI
-                                                                                    , mkCoinTxt
-                                                                                    , noUnderlineANSI
-                                                                                    , "." ]
-               mkToOthersCoinsBs     = mkCoinTxt |!| [(T.concat [ serialize d
-                                                                , " shows "
-                                                                , aCoinSomeCoins canCoins
-                                                                , " to "
-                                                                , theDesig
-                                                                , "." ], pcIds d \\ [ i, theId ])]
-               mkToOthersCoinsBsMobs = mkCoinTxt |!| [(T.concat [ serialize d
-                                                                , " shows "
-                                                                , aCoinSomeCoins canCoins
-                                                                , " to "
-                                                                , theOnLower theSing
-                                                                , "." ], i `delete` pcIds d)]
-               mkCoinTxt = case mkCoinTxtList of
-                 [ c, s, g ] -> T.concat [ c, ", ", s, ", and ", g ]
-                 [ x, y    ] -> x <> " and " <> y
-                 [ x       ] -> x
-                 [         ] -> ""
-                 xs          -> patternMatchFail "showAction showInv mkCoinTxt" [ showText xs ]
-               mkCoinTxtList = dropBlanks . foldr combineAmntName [] . zip (coinsToList canCoins) $ coinFullNames
-               combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc
-                                                   | amt == 1  = showText amt <> " " <> coinName : acc
-                                                   | otherwise = acc
-               aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece" -- TODO: This can be used elsewhere...
-                                      (Coins (0, 1, 0)) -> "a silver piece"
-                                      (Coins (0, 0, 1)) -> "a gold piece"
-                                      _                 -> "some coins"
+               coinTxt               = mkCoinTxt canCoins
+               mkToSelfCoinsBs       = coinTxt |!| mkBroadcast i     . T.concat $ [ "You show "
+                                                                                  , coinTxt
+                                                                                  , " to "
+                                                                                  , theDesig
+                                                                                  , "." ]
+               mkToSelfCoinsBsMobs   = coinTxt |!| mkBroadcast i     . T.concat $ [ "You show "
+                                                                                  , coinTxt
+                                                                                  , " to "
+                                                                                  , theOnLower theSing
+                                                                                  , "." ]
+               mkToTargetCoinsBs     = coinTxt |!| mkBroadcast theId . T.concat $ [ serialize d
+                                                                                  , " shows you "
+                                                                                  , underlineANSI
+                                                                                  , coinTxt
+                                                                                  , noUnderlineANSI
+                                                                                  , "." ]
+               mkToOthersCoinsBs     = coinTxt |!| [(T.concat [ serialize d
+                                                              , " shows "
+                                                              , aCoinSomeCoins canCoins
+                                                              , " to "
+                                                              , theDesig
+                                                              , "." ], pcIds d \\ [ i, theId ])]
+               mkToOthersCoinsBsMobs = coinTxt |!| [(T.concat [ serialize d
+                                                              , " shows "
+                                                              , aCoinSomeCoins canCoins
+                                                              , " to "
+                                                              , theOnLower theSing
+                                                              , "." ], i `delete` pcIds d)]
            in let (invBs,   invLogs ) = showInvHelper
-                  (coinsBs, coinsLog) = (showCoinsHelper, mkCoinTxt)
+                  (coinsBs, coinsLog) = (showCoinsHelper, coinTxt)
               in (invBs ++ coinsBs, slashes . dropBlanks $ [ slashes invLogs, coinsLog ])
       else (mkBroadcast i dudeYourHandsAreEmpty, "")
     showEq ms d eqMap inEqs IdSingTypeDesig { .. } = if not . M.null $ eqMap
