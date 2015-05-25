@@ -9,12 +9,12 @@ When no arguments are provided, you'll get a list of all available settings and 
 To change one or more settings, provide arguments in the form of "setting=value".
 
 The following settings are available:
-"columns" This setting corresponds to the horizontal width of your screen, and impacts line wrapping. (Default value: 80.)10`
-"lines"   This setting corresponds to the vertical length of your screen, and impacts paging (when reading help files, etc.). (Default value: 24.)10`
+columns This setting corresponds to the horizontal width of your screen, and impacts line wrapping. (Default value: 80.)8`
+lines   This setting corresponds to the vertical length of your screen, and impacts paging (when reading help files, etc.). (Default value: 24.)8`
 
 \uEXAMPLES\n
-\q"set"\d to get a list of all available settings and their current values.4`
-\q"set columns=40"\d to change your columns setting to 40.4`
-\q"set columns=40 lines=20"\d to change your columns setting to 40 and your lines setting to 20.4`
+\qset\d to get a list of all available settings and their current values.4`
+\qset columns=40\d to change your columns setting to 40.4`
+\qset columns=40 lines=20\d to change your columns setting to 40 and your lines setting to 20.4`
 
 \uSEE ALSO\n

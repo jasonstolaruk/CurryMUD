@@ -7,7 +7,7 @@ ne \s[\ddirection \s...]\d
 Move northeast, optionally followed by more movement.
 
 \uEXAMPLES\n
-\q"ne"\d to move northeast.4`
-\q"ne u n"\d to move northeast, then up, then north.4`
+\qne\d to move northeast.4`
+\qne u n\d to move northeast, then up, then north.4`
 
 \uSEE ALSO\n

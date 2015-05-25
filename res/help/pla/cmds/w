@@ -7,7 +7,7 @@ w \s[\ddirection \s...]\d
 Move west, optionally followed by more movement.
 
 \uEXAMPLES\n
-\q"w"\d to move west.4`
-\q"w u n"\d to move west, then up, then north.4`
+\qw\d to move west.4`
+\qw u n\d to move west, then up, then north.4`
 
 \uSEE ALSO\n

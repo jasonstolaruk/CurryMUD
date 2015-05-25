@@ -7,6 +7,6 @@ help \s[\dkeyword \s...]\d
 Get help on one or more commands or topics.
 
 \uEXAMPLES\n
-\q"help intro"\d to get help on the "intro" command.4`
-\q"help abbreviation"\d to get help on the topic of "abbreviation".4`
-\q"help intro abbreviation"\d to get help on the "intro" command and the topic of "abbreviation".4`
+\qhelp intro\d to get help on the "intro" command.4`
+\qhelp abbreviation\d to get help on the topic of "abbreviation".4`
+\qhelp intro abbreviation\d to get help on the "intro" command and the topic of "abbreviation".4`

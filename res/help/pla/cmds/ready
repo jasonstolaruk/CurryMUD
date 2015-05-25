@@ -7,26 +7,26 @@ ready item\s[\d#slocation\s] ...\d
 Ready one or more items; move item(s) from your inventory to your readied equipment.
 
 You may optionally specify where to ready an item by appending a suffix to the item name:
-\q"\l#sr\q"\d for right (hand, wrist, or ear)2`
-\q"\l#sl\q"\d for left  (hand, wrist, or ear)2`
+\l#sr\d for right (hand, wrist, or ear)2`
+\l#sl\d for left  (hand, wrist, or ear)2`
 
-For rings, you may optionally specify which finger of which hand. This is accomplished with a three-character suffix: either \q"\l#sr\q"\d for right hand or \q"\l#sl\q"\d for left hand, followed by:
-\q"\li\q"\d for index finger2`
-\q"\lm\q"\d for middle finger2`
-\q"\lr\q"\d for ring finger2`
-\q"\lp\q"\d for pinky finger2`
+For rings, you may optionally specify which finger of which hand. This is accomplished with a three-character suffix: either \l#sr\d for right hand or \l#sl\d for left hand, followed by:
+\li\d for index finger2`
+\lm\d for middle finger2`
+\lr\d for ring finger2`
+\lp\d for pinky finger2`
 
 \uEXAMPLES\n
-\q"ready sword"\d to wield your sword.4`
-\q"ready sword\l#sr\q"\d to wield your sword with your right hand.4`
-\q"ready sword\l#sl\q ring"\d to wield your sword with your left hand and put on your ring.4`
-\q"ready ring\l#srm\q"\d to put your ring on your right hand middle finger.4`
-\q"ready \p2#i\qring"\d to put on your second ring.4`
-\q"ready \p2#i\qring\l#slp\q"\d to put your second ring on your left pinky finger.4`
-\q"ready \p2#m\qring"\d to put on your first two rings.4`
-\q"ready \p2#m\qearring\l#sl\q"\d to wear your first two earrings on your left ear.4`
-\q"ready \p3#m\qbracelet\l#sr\q"\d to wear your first three bracelets on your right wrist.4`
-\q"ready \p#a\qring"\d to put on all of your rings.4`
-\q"ready \p#a\q"\d to ready all of the items in your inventory.4`
+\qready sword\d to wield your sword.4`
+\qready sword\l#sr\d to wield your sword with your right hand.4`
+\qready sword\l#sl\q ring\d to wield your sword with your left hand and put on your ring.4`
+\qready ring\l#srm\d to put your ring on your right hand middle finger.4`
+\qready \p2#i\qring\d to put on your second ring.4`
+\qready \p2#i\qring\l#slp\d to put your second ring on your left pinky finger.4`
+\qready \p2#m\qring\d to put on your first two rings.4`
+\qready \p2#m\qearring\l#sl\d to wear your first two earrings on your left ear.4`
+\qready \p3#m\qbracelet\l#sr\d to wear your first three bracelets on your right wrist.4`
+\qready \p#a\qring\d to put on all of your rings.4`
+\qready \p#a\d to ready all of the items in your inventory.4`
 
 \uSEE ALSO\n

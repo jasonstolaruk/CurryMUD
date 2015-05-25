@@ -132,7 +132,7 @@ announceColor = magenta
 
 
 arrowColor :: T.Text
-arrowColor = yellow
+arrowColor = magenta
 
 
 asteriskColor :: T.Text

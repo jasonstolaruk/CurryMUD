@@ -7,14 +7,14 @@ drop item \s...\d
 Drop one or more items; move item(s) from your inventory to your current room.
 
 \uEXAMPLES\n
-\q"drop sword"\d to drop your sword.4`
-\q"drop sword bread"\d to drop your sword and your bread.4`
-\q"drop \p2#i\qsack"\d to drop your second sack.4`
-\q"drop \p2#m\qring"\d to drop your first two rings.4`
-\q"drop \p3#i\qring \p3#m\qbracelet"\d to drop your third ring and your first three bracelets.4`
-\q"drop \p#a\qring"\d to drop all of your rings.4`
-\q"drop \p#a\q"\d to drop everything in your inventory.4`
-\q"drop \p5#m\qgp \p#a\qsp"\d to drop five of your gold pieces and all of your silver pieces.4`
-\q"drop \p'\qcoin"\d to drop all of your coins.4`
+\qdrop sword\d to drop your sword.4`
+\qdrop sword bread\d to drop your sword and your bread.4`
+\qdrop \p2#i\qsack\d to drop your second sack.4`
+\qdrop \p2#m\qring\d to drop your first two rings.4`
+\qdrop \p3#i\qring \p3#m\qbracelet\d to drop your third ring and your first three bracelets.4`
+\qdrop \p#a\qring\d to drop all of your rings.4`
+\qdrop \p#a\q\d to drop everything in your inventory.4`
+\qdrop \p5#m\qgp \p#a\qsp\d to drop five of your gold pieces and all of your silver pieces.4`
+\qdrop \p'\qcoin\d to drop all of your coins.4`
 
 \uSEE ALSO\n

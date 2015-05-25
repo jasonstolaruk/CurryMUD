@@ -7,6 +7,6 @@
 Send a message to a player. The recipient of your message must be logged in.
 
 \uEXAMPLES\n
-\q"#dtell taro thank you for reporting the bug you found"\d4`
+\q#dtell taro thank you for reporting the bug you found\d4`
 
 \uSEE ALSO\n

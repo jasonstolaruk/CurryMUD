@@ -12,22 +12,22 @@ a two-handed long sword [\asw\dord]`
 (Each item is listed alongside a word in brackets: the bracketed word is the word you must use to refer to that item in commands.)
 Imagine that you'd like to examine the club and the sack. This is accomplished with the "look" command. Any of the following are valid:
 
-\q"look club sack"\d
-\q"look clu sac"\d
-\q"look cl sa"\d
-\q"look c s"\d
+\qlook club sack\d
+\qlook clu sac\d
+\qlook cl sa\d
+\qlook c s\d
 
 As you can see, "club" may be abbreviated down to "c", and "sack" may be abbreviated down to "s".
 The shortest possible abbreviation can be easily ascertained, as it is indicated by \athis color\d in the bracketed words. In fact, whenever you see a word that is partially written in \athis color\d, you know that it may be abbreviated.
 
 Referring back to our example... The names of commands may also be abbreviated. Thus any of the following are valid:
 
-\q"look c s"\d
-\q"loo c s"\d
-\q"lo c s"\d
-\q"l c s"\d
+\qlook c s\d
+\qloo c s\d
+\qlo c s\d
+\ql c s\d
 
 Note that the identifiers for coins (listed below) may NOT be abbreviated:
-\q"cp"\d (for copper pieces), \q"sp"\d (for silver pieces), \q"gp"\d (for gold pieces), \q"coin"\d, and \q"coins"\d
+"cp" (for copper pieces), "sp" (for silver pieces), "gp" (for gold pieces), "coin", and "coins"
 
 \uSEE ALSO\n

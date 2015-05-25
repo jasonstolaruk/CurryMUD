@@ -7,6 +7,6 @@
 Send a message to a player. If the recipient is currently logged in, the message will be delivered immediately. If the recipient is currently logged off, the message will be retained such that the recipient will see the message the next time he/she logs in.
 
 \uEXAMPLES\n
-\q"#dretained taro thank you for reporting the bug you found"\d4`
+\q#dretained taro thank you for reporting the bug you found\d4`
 
 \uSEE ALSO\n

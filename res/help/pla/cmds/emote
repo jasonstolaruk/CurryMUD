@@ -5,13 +5,13 @@ emote description
 
 \uDESCRIPTION\n
 Freely describe an action such that others in your current room will see your description.
-By default, your character's name (or a corresponding noun such as "The female human") will be prefixed to the description you provide. Optionally, you may specify where your character's name should appear using "#e". Furthermore, "#e's" will create a possessive noun.
+By default, your character's name (or a corresponding noun such as "The female human") will be prefixed to the description you provide. Optionally, you may specify where your character's name should appear using \l#e\d. Furthermore, \l#e's\d will create a possessive noun.
 
 \uEXAMPLES\n
 (The following examples assume that your name is Hanako.)
-\q"emote laughs with relief as tears roll down her face"\d \r->\d Hanako laughs with relief as tears roll down her face.4`
-\q"emote shielding her eyes from the sun, #e looks out across the plains"\d \r->\d Shielding her eyes from the sun, Hanako looks out across the plains.4`
-\q"emote #e's leg twitches involuntarily as she laughs with gusto"\d \r->\d Hanako's leg twitches involuntarily as she laughs with gusto.4`
+\qemote laughs with relief as tears roll down her face\d \r->\d Hanako laughs with relief as tears roll down her face.4`
+\qemote shielding her eyes from the sun, \l#e\q looks out across the plains\d \r->\d Shielding her eyes from the sun, Hanako looks out across the plains.4`
+\qemote \l#e's\q leg twitches involuntarily as she laughs with gusto\d \r->\d Hanako's leg twitches involuntarily as she laughs with gusto.4`
 
 \uRULES\n
 In order to preserve the integrity of the virtual world along with the enjoyment of all, the following rules must be followed. Violation of these rules is grounds for discipline including banishment from CurryMUD.

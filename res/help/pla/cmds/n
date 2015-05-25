@@ -7,7 +7,7 @@ n \s[\ddirection \s...]\d
 Move north, optionally followed by more movement.
 
 \uEXAMPLES\n
-\q"n"\d to move north.4`
-\q"n u s"\d to move north, then up, then south.4`
+\qn\d to move north.4`
+\qn u s\d to move north, then up, then south.4`
 
 \uSEE ALSO\n

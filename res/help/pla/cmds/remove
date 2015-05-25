@@ -7,16 +7,16 @@ remove item \s...\d container
 Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in your current room).
 
 \uEXAMPLES\n
-\q"remove ring sack"\d to remove a ring from your sack.4`
-\q"remove ring \l#l\qsack"\d to remove a ring from the sack in the room.4`
-\q"remove ring bracelet sack"\d to remove a ring and a bracelet from your sack.4`
-\q"remove \p2#i\qring \l#l\qsack"\d to remove the second ring from the sack in the room.4`
-\q"remove \p2#m\qring sack"\d to remove the first two rings from your sack.4`
-\q"remove \p3#i\qring \p3#m\qbracelet \l#l\qsack"\d to remove the third ring and the first three bracelets from the sack in the room.4`
-\q"remove \p#a\qring sack"\d to remove all of the rings from your sack.4`
-\q"remove \p#a\q \l#l\qsack"\d to remove everything from the sack in the room.4`
-\q"remove \p#a\q \l#l\p2#i\qsack"\d to remove everything from the second sack in the room.4`
-\q"remove \p5#m\qgp \p#a\qsp sack"\d to remove five of the gold pieces and all of the silver pieces from your sack.4`
-\q"remove \p#a\qcoin \l#l\qsack"\d to remove all of the coins from the sack in the room.4`
+\qremove ring sack\d to remove a ring from your sack.4`
+\qremove ring \l#l\qsack\d to remove a ring from the sack in the room.4`
+\qremove ring bracelet sack\d to remove a ring and a bracelet from your sack.4`
+\qremove \p2#i\qring \l#l\qsack\d to remove the second ring from the sack in the room.4`
+\qremove \p2#m\qring sack\d to remove the first two rings from your sack.4`
+\qremove \p3#i\qring \p3#m\qbracelet \l#l\qsack\d to remove the third ring and the first three bracelets from the sack in the room.4`
+\qremove \p#a\qring sack\d to remove all of the rings from your sack.4`
+\qremove \p#a\q \l#l\qsack\d to remove everything from the sack in the room.4`
+\qremove \p#a\q \l#l\p2#i\qsack\d to remove everything from the second sack in the room.4`
+\qremove \p5#m\qgp \p#a\qsp sack\d to remove five of the gold pieces and all of the silver pieces from your sack.4`
+\qremove \p#a\qcoin \l#l\qsack\d to remove all of the coins from the sack in the room.4`
 
 \uSEE ALSO\n

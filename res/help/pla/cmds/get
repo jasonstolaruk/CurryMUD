@@ -7,14 +7,14 @@ get item \s...\d
 Pick up one or more items in your current room; move item(s) from your current room to your inventory.
 
 \uEXAMPLES\n
-\q"get sword"\d to pick up the sword in the room.4`
-\q"get sword bread"\d to pick up the sword and the bread in the room.4`
-\q"get \p2#i\qsack"\d to pick up the second sack in the room.4`
-\q"get \p2#m\qring"\d to pick up the first two rings in the room.4`
-\q"get \p3#i\qring \p3#m\qbracelet"\d to pick up the third ring and the first three bracelets in the room.4`
-\q"get \p#a\qring"\d to pick up all of the rings in the room.4`
-\q"get \p#a\q"\d to pick up everything in the room.4`
-\q"get \p5#m\qgp \p#a\qsp"\d to pick up five of the gold pieces and all of the silver pieces in the room.4`
-\q"get \p'\qcoin"\d to pick up all of the coins in the room.4`
+\qget sword\d to pick up the sword in the room.4`
+\qget sword bread\d to pick up the sword and the bread in the room.4`
+\qget \p2#i\qsack\d to pick up the second sack in the room.4`
+\qget \p2#m\qring\d to pick up the first two rings in the room.4`
+\qget \p3#i\qring \p3#m\qbracelet\d to pick up the third ring and the first three bracelets in the room.4`
+\qget \p#a\qring\d to pick up all of the rings in the room.4`
+\qget \p#a\d to pick up everything in the room.4`
+\qget \p5#m\qgp \p#a\qsp\d to pick up five of the gold pieces and all of the silver pieces in the room.4`
+\qget \p'\qcoin\d to pick up all of the coins in the room.4`
 
 \uSEE ALSO\n

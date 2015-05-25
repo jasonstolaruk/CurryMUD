@@ -7,15 +7,15 @@ i \s[\ditem \s...]\d
 Display your inventory, or examine one or more items in your inventory.
 
 \uEXAMPLES\n
-\q"i"\d to get a list of the items in your inventory.4`
-\q"i sword"\d to examine the sword in your inventory.4`
-\q"i sword bread"\d to examine the sword and the bread in your inventory.4`
-\q"i \p2#i\qsack"\d to examine the second sack in your inventory.4`
-\q"i \p2#m\qring"\d to examine the first two rings in your inventory.4`
-\q"i \p3#i\qring \p3#m\qbracelet"\d to examine the third ring and the first three bracelets in your inventory.4`
-\q"i \p#a\qring"\d to examine all of the rings in your inventory.4`
-\q"i \p#a\q"\d to examine everything in your inventory.4`
-\q"i gp sp"\d to examine a gold piece and a silver piece in your inventory.4`
-\q"i 'coin"\d to examine all of the coins in your inventory.4`
+\qi\d to get a list of the items in your inventory.4`
+\qi sword\d to examine the sword in your inventory.4`
+\qi sword bread\d to examine the sword and the bread in your inventory.4`
+\qi \p2#i\qsack\d to examine the second sack in your inventory.4`
+\qi \p2#m\qring\d to examine the first two rings in your inventory.4`
+\qi \p3#i\qring \p3#m\qbracelet\d to examine the third ring and the first three bracelets in your inventory.4`
+\qi \p#a\qring\d to examine all of the rings in your inventory.4`
+\qi \p#a\d to examine everything in your inventory.4`
+\qi gp sp\d to examine a gold piece and a silver piece in your inventory.4`
+\qi \p'\qcoin\d to examine all of the coins in your inventory.4`
 
 \uSEE ALSO\n

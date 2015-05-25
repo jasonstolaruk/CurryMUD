@@ -7,7 +7,7 @@
 Display a list of rooms to which you may teleport, or teleport to a given room.
 
 \uEXAMPLES\n
-\q"#dtelerm"\d to get a list of rooms to which you may teleport.4`
-\q"#dtelerm lounge"\d to teleport to the admin lounge.4`
+\q#dtelerm\d to get a list of rooms to which you may teleport.4`
+\q#dtelerm lounge\d to teleport to the admin lounge.4`
 
 \uSEE ALSO\n

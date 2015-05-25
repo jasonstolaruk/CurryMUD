@@ -8,7 +8,7 @@ Start or stop peeping one or more players.
 When you peep a player, you will see all the text that the server sends to and receives from that player.
 
 \uEXAMPLES\n
-\q"#dpeep taro"\d to start peeping Taro. (Type \q"#dpeep taro"\d again to stop peeping Taro.)4`
-\q"#dpeep taro hanako"\d to start/stop peeping Taro and Hanako.4`
+\q#dpeep taro\d to start peeping Taro. (Type \q#dpeep taro\d again to stop peeping Taro.)4`
+\q#dpeep taro hanako\d to start/stop peeping Taro and Hanako.4`
 
 \uSEE ALSO\n

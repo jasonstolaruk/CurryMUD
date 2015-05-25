@@ -558,7 +558,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 -----
 
 
--- TODO: "help i" and "help intro" are not paging correctly.
+-- TODO: "help i" and "help intro" and "help eq" are not paging correctly.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
   where

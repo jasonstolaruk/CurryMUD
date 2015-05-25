@@ -7,7 +7,7 @@ se \s[\ddirection \s...]\d
 Move southeast, optionally followed by more movement.
 
 \uEXAMPLES\n
-\q"se"\d to move southeast.4`
-\q"se u n"\d to move southeast, then up, then north.4`
+\qse\d to move southeast.4`
+\qse u n\d to move southeast, then up, then north.4`
 
 \uSEE ALSO\n

@@ -7,13 +7,13 @@ equip \s[\ditem \s...]\d
 Display your readied equipment, or examine one or more items in your readied equipment.
 
 \uEXAMPLES\n
-\q"equip"\d to get a list of the items you have readied.4`
-\q"equip sword"\d to examine the sword you are wielding.4`
-\q"equip sword boots"\d to examine the sword you are wielding and the boots you are wearing.4`
-\q"equip \p2#i\qnecklace"\d to examine the second necklace you are wearing.4`
-\q"equip \p2#m\qring"\d to examine the first two rings you are wearing.4`
-\q"equip \p3#i\qring \p3#m\qbracelet"\d to examine the third ring and the first three bracelets you are wearing.4`
-\q"equip \p#a\qring"\d to examine all of the rings you are wearing.4`
-\q"equip \p#a\q"\d to examine everything you have readied.4`
+\qequip\d to get a list of the items you have readied.4`
+\qequip sword\d to examine the sword you are wielding.4`
+\qequip sword boots\d to examine the sword you are wielding and the boots you are wearing.4`
+\qequip \p2#i\qnecklace\d to examine the second necklace you are wearing.4`
+\qequip \p2#m\qring\d to examine the first two rings you are wearing.4`
+\qequip \p3#i\qring \p3#m\qbracelet\d to examine the third ring and the first three bracelets you are wearing.4`
+\qequip \p#a\qring\d to examine all of the rings you are wearing.4`
+\qequip \p#a\d to examine everything you have readied.4`
 
 \uSEE ALSO\n

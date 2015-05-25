@@ -7,6 +7,6 @@ admin name message
 Send a message to an administrator.
 
 \uEXAMPLES\n
-\q"admin jason are you available? I need your assistance"\d4`
+\qadmin jason are you available? I need your assistance\d4`
 
 \uSEE ALSO\n

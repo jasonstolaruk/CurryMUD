@@ -7,8 +7,8 @@
 Display a list of available administrator commands and their descriptions. Optionally, search the list for one or more terms.
 
 \uEXAMPLES\n
-\q"#d?"\d to display the full command list.4`
-\q"#d? up"\d to display entries containing "up".4`
-\q"#d? up down"\d to display entries containing "up", followed by entries containing "down".4`
+\q#d?\d to display the full command list.4`
+\q#d? up\d to display entries containing "up".4`
+\q#d? up down\d to display entries containing "up", followed by entries containing "down".4`
 
 \uSEE ALSO\n
