@@ -70,6 +70,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
+-- TODO: All cmds should use the selectorChar system, where applicable.
+
+
 {-# ANN helperSettings ("HLint: ignore Use ||"        :: String) #-}
 {-# ANN module         ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -245,7 +248,7 @@ bug p@AdviseNoArgs = advise p ["bug"] advice
   where
     advice = T.concat [ "Please describe the bug you've found, as in "
                       , quoteColor
-                      , dblQuote "bug I've fallen and I can't get up!"
+                      , dblQuote "bug i've fallen and I can't get up!"
                       , dfltColor
                       , "." ]
 bug p = bugTypoLogger p BugLog
@@ -1605,9 +1608,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                                           , theSing theTarget
                                                                           , ": "
                                                                           , log ]
-               Right _ -> wrapSend mq cols $ "Sorry, but you can only target one person at a time with the " <>
-                                             dblQuote "show"                                                 <>
-                                             " command."
+               Right _ -> wrapSend mq cols "Sorry, but you can only show something to one person at a time."
   where
     sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
     showInv ms d invCoins inInvs IdSingTypeDesig { .. } = if notEmpty invCoins

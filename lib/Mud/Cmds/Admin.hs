@@ -197,7 +197,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 
 adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
-                                                              \to boot, followed optionally by a custom message."
+                                                              \to boot, optionally followed by a custom message."
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
       []       -> wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> ". (Note that you must \
@@ -329,7 +329,7 @@ adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
   where
     advice = T.concat [ "You must provide a message to print to the server console, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "print" <> " Is anybody home?"
+                      , dblQuote $ prefixAdminCmd "print" <> " is anybody home?"
                       , dfltColor
                       , "." ]
 adminPrint (Msg i mq msg) = getState >>= \ms -> let s = getSing i ms in do

@@ -104,7 +104,7 @@ findFullNameForAbbrev needle hay =
     in (guard . not . null $ res) >> (return . head $ res)
 
 
-----
+-----
 
 
 headTail :: T.Text -> (Char, T.Text)
