@@ -296,8 +296,9 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv InInv as
             sorryInEq              = inEqs |!| mkBroadcast i "Sorry, but you can't drop an item in your readied \
                                                              \equipment. Please unready the item first."
-            sorryInRm              = inRms |!| mkBroadcast i "You can't drop an item in the room. If you're intent on \
-                                                             \dropping it, try picking it up first!"
+            sorryInRm              = inRms |!| mkBroadcast i "You can't drop an item that's already in your current \
+                                                             \room. If you're intent on dropping it, try picking it up \
+                                                             \first!"
             invCoins               = getInvCoins i ms
             d                      = mkStdDesig  i ms DoCap
             ri                     = getRmId     i ms
@@ -365,14 +366,26 @@ equip :: Action
 equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
     let em@(M.elems -> is) = getEqMap i ms in send mq $ if not . M.null $ em
-      then let (gecrs, miss, rcs)                    = resolveEntCoinNames i ms as is mempty
+      then let (inInvs, inEqs, inRms)                = sortArgsInvEqRm InEq InEq as
+               (gecrs, miss, rcs)                    = resolveEntCoinNames i ms inEqs is mempty
                eiss                                  = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                               = foldl' helperEitherInv "" eiss
                helperEitherInv acc (Left  msg)       = (acc <>) . wrapUnlinesNl cols $ msg
                helperEitherInv acc (Right targetIds) = nl $ acc <> mkEntDescs i cols ms targetIds
                coinsDesc                             = rcs |!| wrapUnlinesNl cols noCoinsInEq
-           in invDesc <> coinsDesc
+               in (inInvs |!| sorryInInv) <> (inRms |!| sorryInRm) <> invDesc <> coinsDesc
       else wrapUnlinesNl cols dudeYou'reNaked
+  where
+    sorryInInv        = mkSorryMsg "inventory"    "i"
+    sorryInRm         = mkSorryMsg "current room" "l"
+    mkSorryMsg loc cn = wrapUnlinesNl cols . T.concat $ [ "You can only use the "
+                                                        , dblQuote "equip"
+                                                        , " command to examine items in your readied equipment. To \
+                                                          \examine items in your "
+                                                        , loc
+                                                        , ", use the "
+                                                        , dblQuote cn
+                                                        , " command." ]
 equip p = patternMatchFail "equip" [ showText p ]
 
 
