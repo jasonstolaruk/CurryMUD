@@ -52,7 +52,6 @@ expandCharCode (toLower -> code) = T.singleton $ case code of
   'l' -> selectorChar
   'm' -> amountChar
   'o' -> adverbOpenChar
-  'r' -> rmChar
   's' -> slotChar
   't' -> sayToChar
   x   -> patternMatchFail "expandCharCode" [ T.singleton x ]

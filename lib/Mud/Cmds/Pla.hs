@@ -891,9 +891,10 @@ putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in if notEmpty pcInvCoins
                   then case T.uncons conName of
-                    Just (c, not . T.null -> isn'tNull) | c == rmChar, isn'tNull -> if not . null . fst $ rmInvCoins
-                      then shufflePut i ms d (T.tail conName) True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
-                      else (ms, (mkBroadcast i noContainersHere, []))
+                    Just (c, not . T.null -> isn'tNull) | c == selectorChar, isn'tNull ->
+                      if not . null . fst $ rmInvCoins
+                        then shufflePut i ms d (T.tail conName) True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
+                        else (ms, (mkBroadcast i noContainersHere, []))
                     _ -> shufflePut i ms d conName False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
                   else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 putAction p = patternMatchFail "putAction" [ showText p ]
@@ -1318,9 +1319,10 @@ remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in case T.uncons conName of
-                  Just (c, not . T.null -> isn'tNull) | c == rmChar, isn'tNull -> if not . null . fst $ rmInvCoins
-                    then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
-                    else (ms, (mkBroadcast i noContainersHere, []))
+                  Just (c, not . T.null -> isn'tNull) | c == selectorChar, isn'tNull ->
+                    if not . null . fst $ rmInvCoins
+                      then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
+                      else (ms, (mkBroadcast i noContainersHere, []))
                   _ -> shuffleRem i ms d conName False argsWithoutCon pcInvCoins procGecrMisPCInv
 remove p = patternMatchFail "remove" [ showText p ]
 

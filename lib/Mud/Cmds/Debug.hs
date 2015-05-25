@@ -472,7 +472,7 @@ debugRemPut (NoArgs' i mq) = do
     mapM_ (fakeClientInput mq) . take 10 . cycle . map (<> rest) $ [ "remove", "put" ]
     logPlaExec (prefixDebugCmd "remput") i
   where
-    rest = T.concat [ " ", T.singleton allChar, " ", T.singleton rmChar, "sack" ]
+    rest = T.concat [ " ", T.singleton allChar, " ", T.singleton selectorChar, "sack" ]
 debugRemPut p = withoutArgs debugRemPut p
 
 
@@ -567,7 +567,6 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"
-                , charTokenDelimiter  `T.cons` "r rmChar"
                 , charTokenDelimiter  `T.cons` "s slotChar"
                 , charTokenDelimiter  `T.cons` "t sayToChar"
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken  )
