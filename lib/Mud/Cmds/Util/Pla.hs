@@ -823,14 +823,14 @@ sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito
 -----
 
 
-sortArgsInvEqRm :: InInvEqRm -> InInvEqRm -> Args -> (Args, Args, Args)
-sortArgsInvEqRm noSelector withSelector = foldr f mempty -- TODO: Is it necessary to have a separate "withSelector"?
+sortArgsInvEqRm :: InInvEqRm -> Args -> (Args, Args, Args)
+sortArgsInvEqRm dflt = foldr f mempty
   where
-    f arg acc = case T.unpack arg of ('i':c:x:xs) | c == selectorChar -> getLens InInv        `g` (x : xs)
-                                     ('e':c:x:xs) | c == selectorChar -> getLens InEq         `g` (x : xs)
-                                     ('r':c:x:xs) | c == selectorChar -> getLens InRm         `g` (x : xs)
-                                     (    c:x:xs) | c == selectorChar -> getLens withSelector `g` (x : xs)
-                                     xs                               -> getLens noSelector   `g` xs
+    f arg acc = case T.unpack arg of ('i':c:x:xs) | c == selectorChar -> getLens InInv `g` (x : xs)
+                                     ('e':c:x:xs) | c == selectorChar -> getLens InEq  `g` (x : xs)
+                                     ('r':c:x:xs) | c == selectorChar -> getLens InRm  `g` (x : xs)
+                                     (    c:x:xs) | c == selectorChar -> getLens dflt  `g` (x : xs)
+                                     xs                               -> getLens dflt  `g` xs
       where
         getLens = \case InInv -> _1
                         InEq  -> _2

@@ -293,7 +293,7 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "drop" i)
   where
     helper ms =
-        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv InInv as
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
             sorryInEq              = inEqs |!| mkBroadcast i "Sorry, but you can't drop an item in your readied \
                                                              \equipment. Please unready the item first."
             sorryInRm              = inRms |!| mkBroadcast i "You can't drop an item that's already in your current \
@@ -366,7 +366,7 @@ equip :: Action
 equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
     let em@(M.elems -> is) = getEqMap i ms in send mq $ if not . M.null $ em
-      then let (inInvs, inEqs, inRms)                = sortArgsInvEqRm InEq InEq as
+      then let (inInvs, inEqs, inRms)                = sortArgsInvEqRm InEq as
                (gecrs, miss, rcs)                    = resolveEntCoinNames i ms inEqs is mempty
                eiss                                  = zipWith (curry procGecrMisPCEq) gecrs miss
                invDesc                               = foldl' helperEitherInv "" eiss
@@ -455,7 +455,7 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "get" i)
   where
     helper ms =
-        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm InRm as
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorryInInv = inInvs |!| mkBroadcast i   "You can't get an item that's already in your inventory. If you're \
                                                     \intent on picking it up, try dropping it first!"
             sorryInEq  = inEqs  |!| mkBroadcast i $ "Sorry, but you can't get an item in your readied equipment. If \
@@ -659,24 +659,22 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
       wrapSend mq cols introsTxt >> logPlaOut "intro" i [introsTxt]
   else let introsTxt = commas intros in
       multiWrapSend mq cols [ "You know the following names:", introsTxt ] >> logPlaOut "intro" i [introsTxt]
-intro (LowerNub' i (sortArgsInvEqRm InRm InRm -> (inInvs, inEqs, inRms)))
-  | sorryInInv <- inInvs |!| mkBroadcast i . nlnl $ "You can't introduce yourself to an item in your inventory."
-  , sorryInEq  <- inEqs  |!| mkBroadcast i . nlnl $ "You can't introduce yourself to an item in your readied equipment."
-  , sorrys     <- sorryInInv ++ sorryInEq
-  = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) -> do
-        unlessEmpty sorrys bcast
-        bcastIfNotIncog i bs
-        unlessEmpty logMsgs $ logPlaOut "intro" i
+intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
+    bcastIfNotIncog i bs >> unlessEmpty logMsgs (logPlaOut "intro" i)
   where
     helper ms =
-        let invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+            sorryInInv = inInvs |!| mkNTB "You can't introduce yourself to an item in your inventory."
+            sorryInEq  = inEqs  |!| mkNTB "You can't introduce yourself to an item in your readied equipment."
+            invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
             (eiss, ecs)          = uncurry (resolveRmInvCoins i ms inRms) invCoins'
             (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms (fst invCoins)) (ms^.pcTbl, [],  []     ) eiss
             (    cbs', logMsgs') = foldl' helperIntroEitherCoins                   (           cbs, logMsgs) ecs
         in if notEmpty invCoins'
-          then (ms & pcTbl .~ pt, (cbs', logMsgs'))
-          else (ms, (mkNTBroadcast i . nlnl $ "You don't see anyone here to introduce yourself to.", []))
-    helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? (a & _2 <>~ (mkNTBroadcast i . nlnl $ msg))
+          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs'))
+          else (ms, (mkNTB "You don't see anyone here to introduce yourself to.", []))
+    mkNTB                                           = mkNTBroadcast i . nlnl
+    helperIntroEitherInv _  _   a (Left msg       ) = T.null msg ? a :? (a & _2 <>~ mkNTB msg)
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
         tryIntro a'@(pt, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
@@ -714,11 +712,11 @@ intro (LowerNub' i (sortArgsInvEqRm InRm InRm -> (inInvs, inEqs, inRms)))
                            in a' & _2 <>~ mkNTBroadcast i sorry
                       else a' & _1.ind targetId.introduced %~ (sort . (s :)) & _2 <>~ cbs & _3 <>~ [logMsg]
           _      -> let msg = "You can't introduce yourself to " <> theOnLower targetSing <> "."
-                        b   = head . mkNTBroadcast i . nlnl $ msg
+                        b   = head . mkNTB $ msg
                     in a' & _2 %~ (`appendIfUnique` b)
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperIntroEitherCoins a (Right {}  ) =
-        let cb = head . mkNTBroadcast i . nlnl $ "You can't introduce yourself to a coin."
+        let cb = head . mkNTB $ "You can't introduce yourself to a coin."
         in first (`appendIfUnique` cb) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
@@ -731,11 +729,11 @@ intro p = patternMatchFail "intro" [ showText p ]
 inv :: Action
 inv (NoArgs i mq cols)      = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
 inv (LowerNub i mq cols as) = getState >>= \ms ->
-    let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv InInv as
-        invCoins    = getInvCoins i ms
-        (eiss, ecs) = uncurry (resolvePCInvCoins i ms inInvs) invCoins
-        invDesc     = foldl' (helperEitherInv ms) "" eiss
-        coinsDesc   = foldl' helperEitherCoins    "" ecs
+    let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
+        invCoins               = getInvCoins i ms
+        (eiss, ecs)            = uncurry (resolvePCInvCoins i ms inInvs) invCoins
+        invDesc                = foldl' (helperEitherInv ms) "" eiss
+        coinsDesc              = foldl' helperEitherCoins    "" ecs
     in send mq $ if notEmpty invCoins
     then T.concat [ inEqs |!| sorryInEq, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
@@ -762,19 +760,26 @@ look (NoArgs i mq cols) = getState >>= \ms ->
 look (LowerNub i mq cols as) = helper |$| modifyState >=> \(ms, msg, bs, maybeTargetDesigs) -> do
     send mq msg
     unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ bs
-    let logHelper targetDesigs | targetSings <- [ fromJust . stdPCEntSing $ targetDesig | targetDesig <- targetDesigs ]
+    let logHelper targetDesigs | targetSings <- [ fromJust . stdPCEntSing $ targetDesig
+                                                | targetDesig <- targetDesigs ]
                                = logPla "look" i $ "looked at: " <> commas targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
   where
     helper ms = let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms in if notEmpty invCoins
-        then let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms as) invCoins
-                 invDesc      = foldl' (helperLookEitherInv ms) "" eiss
-                 coinsDesc    = foldl' helperLookEitherCoins    "" ecs
-                 (pt, msg)    = firstLook i cols (ms^.plaTbl, invDesc <> coinsDesc)
-                 selfDesig    = mkStdDesig i ms DoCap
-                 selfDesig'   = serialize selfDesig
-                 pis          = i `delete` pcIds selfDesig
-                 targetDesigs = [ mkStdDesig targetId ms Don'tCap | targetId <- extractPCIdsFromEiss ms eiss ]
+        then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+                 sorryInInv             = sorryEquipInvLook cols LookCmd InvCmd
+                 sorryInEq              = sorryEquipInvLook cols LookCmd EquipCmd
+                 (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
+                 invDesc                = foldl' (helperLookEitherInv ms) "" eiss
+                 coinsDesc              = foldl' helperLookEitherCoins    "" ecs
+                 (pt, msg)              = firstLook i cols (ms^.plaTbl, T.concat [ inInvs |!| sorryInInv
+                                                                                 , inEqs  |!| sorryInEq
+                                                                                 , invDesc
+                                                                                 , coinsDesc ])
+                 selfDesig              = mkStdDesig i ms DoCap
+                 selfDesig'             = serialize selfDesig
+                 pis                    = i `delete` pcIds selfDesig
+                 targetDesigs           = [ mkStdDesig targetId ms Don'tCap | targetId <- extractPCIdsFromEiss ms eiss ]
                  mkBroadcastsForTarget targetDesig acc =
                      let targetId = pcId targetDesig
                          toTarget = (nlnl $ selfDesig' <> " looks at you.", [targetId])
@@ -1620,7 +1625,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                  , theSing  = getSing targetId ms
                                                  , theType  = getType targetId ms
                                                  , theDesig = serialize . mkStdDesig targetId ms $ Don'tCap }
-                     (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv InEq argsWithoutTarget
+                     (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq argsWithoutTarget
                      (invBs, invLog)        = inInvs |!| showInv ms d invCoins inInvs theTarget
                      (eqBs,  eqLog )        = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
                      rmBs                   = inRms  |!| mkBroadcast i "You can't show an item in your room."
