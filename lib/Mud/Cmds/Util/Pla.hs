@@ -43,6 +43,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , putOnMsgs
                          , resolvePCInvCoins
                          , resolveRmInvCoins
+                         , sorryEquipInvLook
                          , sorryIncog
                          , sortArgsInvEqRm ) where
 
@@ -790,6 +791,26 @@ resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms 
 
 resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
+
+
+-----
+
+
+sorryEquipInvLook :: Cols -> EquipInvLookCmd -> EquipInvLookCmd -> T.Text
+sorryEquipInvLook cols eilcA eilcB = wrapUnlinesNl cols . T.concat $ helper
+  where
+    helper = [ "You can only use the "
+             , dblQuote . showText $ eilcA
+             , " command to examine items in your "
+             , loc eilcA
+             , ". To examine items in your "
+             , loc eilcB
+             , ", use the "
+             , dblQuote . showText $ eilcB
+             , " command." ]
+    loc    = \case EquipCmd -> "readied equipment"
+                   InvCmd   -> "inventory"
+                   LookCmd  -> "current room"
 
 
 -----

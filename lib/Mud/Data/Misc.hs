@@ -12,6 +12,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , CmdPriorityAbbrevTxt
                      , Cols
                      , EmptyNoneSome(..)
+                     , EquipInvLookCmd(..)
                      , ExpCmd(..)
                      , ExpCmdName
                      , ExpCmdType(..)
@@ -364,6 +365,18 @@ instance Eq Cmd where
 
 instance Ord Cmd where
   Cmd { cmdName = cn1 } `compare` Cmd { cmdName = cn2 } = cn1 `compare` cn2
+
+
+-----
+
+
+data EquipInvLookCmd = EquipCmd | InvCmd | LookCmd deriving Eq
+
+
+instance Show EquipInvLookCmd where
+  show EquipCmd = "equip"
+  show InvCmd   = "i"
+  show LookCmd  = "l"
 
 
 -----

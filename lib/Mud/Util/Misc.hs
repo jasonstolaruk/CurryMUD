@@ -30,13 +30,14 @@ module Mud.Util.Misc ( (?)
                      , toMaybe
                      , uncurry3
                      , uncurry4
-                     , unit ) where
+                     , unit
+                     , unlessEmpty ) where
 
 import Mud.Util.Quoting
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Lens (Lens', lens)
-import Control.Monad (guard)
+import Control.Monad (guard, unless)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
@@ -184,6 +185,10 @@ uncurry3 f (a, b, c) = f a b c
 
 uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
 uncurry4 f (a, b, c, d) = f a b c d
+
+
+unlessEmpty :: (Monoid a, Monad m, Eq a) => a -> (a -> m ()) -> m ()
+unlessEmpty x f = unless (isEmpty x) . f $ x
 
 
 unit :: ()

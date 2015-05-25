@@ -368,7 +368,7 @@ adminRetained p@(AdviseOneArg a) = advise p [ prefixAdminCmd "retained" ] advice
                       , dfltColor
                       , "." ]
 adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
-    unless (null logMsgs) . forM_ logMsgs . uncurry $ logPla (prefixAdminCmd "retained")
+    unlessEmpty logMsgs $ let f = uncurry (logPla (prefixAdminCmd "retained")) in mapM_ f
   where
     helper ms =
         let s         = getSing i ms
@@ -525,7 +525,7 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dfltColor
                       , "." ]
 adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
-    unless (null logMsgs) . forM_ logMsgs . uncurry $ logPla (prefixAdminCmd "tell")
+    unlessEmpty logMsgs $ let f = uncurry (logPla (prefixAdminCmd "tell")) in mapM_ f
   where
     helper ms =
         let s        = getSing i ms

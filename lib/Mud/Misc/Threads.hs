@@ -43,7 +43,7 @@ import Control.Exception (AsyncException(..), IOException, SomeException, fromEx
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
-import Control.Monad ((>=>), forM_, forever, unless, void)
+import Control.Monad ((>=>), forM_, forever, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
@@ -335,7 +335,7 @@ server h i mq itq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThre
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p           = getPla i ms
-        thruCentral = unless (T.null msg) . uncurry (interpret p centralDispatch) . headTail . T.words $ msg
+        thruCentral = unlessEmpty msg $ uncurry (interpret p centralDispatch) . headTail . T.words
         thruOther f = uncurry (interpret p f) (T.null msg ? ("", []) :? (headTail . T.words $ msg))
     in maybe thruCentral thruOther $ p^.interp
   where

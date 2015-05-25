@@ -290,7 +290,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dfltColor
                       , "." ]
 dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "drop" i)
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv InInv as
@@ -373,19 +373,11 @@ equip (LowerNub i mq cols as) = getState >>= \ms ->
                helperEitherInv acc (Left  msg)       = (acc <>) . wrapUnlinesNl cols $ msg
                helperEitherInv acc (Right targetIds) = nl $ acc <> mkEntDescs i cols ms targetIds
                coinsDesc                             = rcs |!| wrapUnlinesNl cols noCoinsInEq
-               in (inInvs |!| sorryInInv) <> (inRms |!| sorryInRm) <> invDesc <> coinsDesc
+           in T.concat [ inInvs |!| sorryInInv, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYou'reNaked
   where
-    sorryInInv        = mkSorryMsg "inventory"    "i"
-    sorryInRm         = mkSorryMsg "current room" "l"
-    mkSorryMsg loc cn = wrapUnlinesNl cols . T.concat $ [ "You can only use the "
-                                                        , dblQuote "equip"
-                                                        , " command to examine items in your readied equipment. To \
-                                                          \examine items in your "
-                                                        , loc
-                                                        , ", use the "
-                                                        , dblQuote cn
-                                                        , " command." ]
+    sorryInInv = sorryEquipInvLook cols EquipCmd InvCmd
+    sorryInRm  = sorryEquipInvLook cols EquipCmd LookCmd
 equip p = patternMatchFail "equip" [ showText p ]
 
 
@@ -460,7 +452,7 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dfltColor
                                   , "." ]
 getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "get" i)
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm InRm as
@@ -611,7 +603,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
 help (LowerNub i mq cols as) = (getPlaFlag IsAdmin . getPla i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
-    unless (null hns) . logPla "help" i . ("read help on: " <>) . commas $ hns
+    unlessEmpty hns $ logPla "help" i . ("read help on: " <>) . commas
 help p = patternMatchFail "help" [ showText p ]
 
 
@@ -672,9 +664,9 @@ intro (LowerNub' i (sortArgsInvEqRm InRm InRm -> (inInvs, inEqs, inRms)))
   , sorryInEq  <- inEqs  |!| mkBroadcast i . nlnl $ "You can't introduce yourself to an item in your readied equipment."
   , sorrys     <- sorryInInv ++ sorryInEq
   = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) -> do
-        unless (null sorrys) . bcast $ sorrys
+        unlessEmpty sorrys bcast
         bcastIfNotIncog i bs
-        unless (null logMsgs) . logPlaOut "intro" i $ logMsgs
+        unlessEmpty logMsgs $ logPlaOut "intro" i
   where
     helper ms =
         let invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
@@ -739,18 +731,21 @@ intro p = patternMatchFail "intro" [ showText p ]
 inv :: Action
 inv (NoArgs i mq cols)      = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
 inv (LowerNub i mq cols as) = getState >>= \ms ->
-    let invCoins    = getInvCoins i ms
-        (eiss, ecs) = uncurry (resolvePCInvCoins i ms as) invCoins
+    let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv InInv as
+        invCoins    = getInvCoins i ms
+        (eiss, ecs) = uncurry (resolvePCInvCoins i ms inInvs) invCoins
         invDesc     = foldl' (helperEitherInv ms) "" eiss
         coinsDesc   = foldl' helperEitherCoins    "" ecs
     in send mq $ if notEmpty invCoins
-      then invDesc <> coinsDesc
+    then T.concat [ inEqs |!| sorryInEq, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
     helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
     helperEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
+    sorryInEq                           = sorryEquipInvLook cols InvCmd EquipCmd
+    sorryInRm                           = sorryEquipInvLook cols InvCmd LookCmd
 inv p = patternMatchFail "inv" [ showText p ]
 
 
@@ -920,7 +915,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dfltColor
                       , "." ]
 putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "put" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "put" i)
   where
     helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in if notEmpty pcInvCoins
@@ -1061,7 +1056,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dfltColor
                       , "." ]
 ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "ready" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "ready" i)
   where
     helper ms =
         let invCoins@(is, _)          = getInvCoins i ms
@@ -1349,7 +1344,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dfltColor
                       , "." ]
 remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "remove" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "remove" i)
   where
     helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
                 in case T.uncons conName of
@@ -1497,7 +1492,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i $ toSelfMsg <> hint, [toSelfMsg]))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
-    bcastAndLog (bs, logMsgs) = bcast bs >> (unless (null logMsgs) . logPlaOut "say" i $ logMsgs)
+    bcastAndLog (bs, logMsgs) = bcast bs >> unlessEmpty logMsgs (logPlaOut "say" i)
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         let d                 = mkStdDesig i ms DoCap
             toSelfMsg         = T.concat [ "You say", adverb, ", ", msg ]
@@ -1533,7 +1528,7 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
 setAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> (unless (null logMsgs) . logPlaOut "set" i $ logMsgs)
+    bcastNl bs >> unlessEmpty logMsgs (logPlaOut "set" i)
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
                 in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
@@ -1635,10 +1630,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                        bcastNl $ rmBs ++ invBs ++ eqBs
                        let log = slashes . dropBlanks $ [ invLog |!| parensQuote "inv" <> " " <> invLog
                                                         , eqLog  |!| parensQuote "eq"  <> " " <> eqLog ]
-                       unless (T.null log) . logPla "show" i . T.concat $ [ "showed to "
-                                                                          , theSing theTarget
-                                                                          , ": "
-                                                                          , log ]
+                       unlessEmpty log $ logPla "show" i . (T.concat [ "showed to "
+                                                                     , theSing theTarget
+                                                                     , ": " ] <>)
                Right _ -> wrapSend mq cols "Sorry, but you can only show something to one person at a time."
   where
     sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
@@ -1877,7 +1871,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dfltColor
                       , "." ]
 unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "unready" i $ logMsgs)
+    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "unready" i)
   where
     helper ms = let d                      = mkStdDesig i ms DoCap
                     is                     = M.elems . getEqMap i $ ms
