@@ -463,14 +463,21 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "get" i $ logMsgs)
   where
     helper ms =
-        let ri                    = getRmId i ms
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm InRm as
+            sorryInInv = inInvs |!| mkBroadcast i   "You can't get an item that's already in your inventory. If you're \
+                                                    \intent on picking it up, try dropping it first!"
+            sorryInEq  = inEqs  |!| mkBroadcast i $ "Sorry, but you can't get an item in your readied equipment. If \
+                                                    \you want to move a readied item to your inventory, use the " <>
+                                                    dblQuote "unready"                                            <>
+                                                    " command."
+            ri                    = getRmId i ms
             invCoins              = first (i `delete`) . getNonIncogInvCoins ri $ ms
             d                     = mkStdDesig i ms DoCap
-            (eiss, ecs)           = uncurry (resolveRmInvCoins i ms as) invCoins
+            (eiss, ecs)           = uncurry (resolveRmInvCoins i ms inRms) invCoins
             (ms',  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [], []     ) eiss
             (ms'', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i  (ms', bs, logMsgs) ecs
         in if notEmpty invCoins
-          then (ms'', (bs',                                                     logMsgs'))
+          then (ms'', (sorryInInv ++ sorryInEq ++ bs',                          logMsgs'))
           else (ms,   (mkBroadcast i "You don't see anything here to pick up.", []      ))
 getAction p = patternMatchFail "getAction" [ showText p ]
 

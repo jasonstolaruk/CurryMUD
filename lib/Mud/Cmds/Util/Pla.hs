@@ -803,7 +803,7 @@ sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito
 
 
 sortArgsInvEqRm :: InInvEqRm -> InInvEqRm -> Args -> (Args, Args, Args)
-sortArgsInvEqRm noSelector withSelector = foldr f mempty
+sortArgsInvEqRm noSelector withSelector = foldr f mempty -- TODO: Is it necessary to have a separate "withSelector"?
   where
     f arg acc = case T.unpack arg of ('i':c:x:xs) | c == selectorChar -> getLens InInv        `g` (x : xs)
                                      ('e':c:x:xs) | c == selectorChar -> getLens InEq         `g` (x : xs)
