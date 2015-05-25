@@ -4,19 +4,28 @@
 remove item \s...\d container
 
 \uDESCRIPTION\n
-Remove one or more items from a container (by default, from a container in your inventory; optionally, from a container in your current room).
+Remove one or more items from a container.
+
+To remove the ring from the sack in your inventory:
+\qremove ring \li#l\qsack\d4`
+...or just...
+\qremove ring sack\d4`
+
+To remove the ring from the sack in the room:
+\qremove ring \lr#l\qsack\d4`
+...or just...
+\qremove ring \l#l\qsack\d4`
 
 \uEXAMPLES\n
-\qremove ring sack\d to remove a ring from your sack.4`
-\qremove ring \l#l\qsack\d to remove a ring from the sack in the room.4`
-\qremove ring bracelet sack\d to remove a ring and a bracelet from your sack.4`
-\qremove \p2#i\qring \l#l\qsack\d to remove the second ring from the sack in the room.4`
-\qremove \p2#m\qring sack\d to remove the first two rings from your sack.4`
-\qremove \p3#i\qring \p3#m\qbracelet \l#l\qsack\d to remove the third ring and the first three bracelets from the sack in the room.4`
-\qremove \p#a\qring sack\d to remove all of the rings from your sack.4`
-\qremove \p#a\q \l#l\qsack\d to remove everything from the sack in the room.4`
-\qremove \p#a\q \l#l\p2#i\qsack\d to remove everything from the second sack in the room.4`
-\qremove \p5#m\qgp \p#a\qsp sack\d to remove five of the gold pieces and all of the silver pieces from your sack.4`
-\qremove \p#a\qcoin \l#l\qsack\d to remove all of the coins from the sack in the room.4`
+(Note: as described above, the \li#l\d prefix may be omitted entirely, and the \lr#l\d prefix may be abbreviated to \l#l\d.)
+\qremove ring bracelet \li#l\qsack\d to remove the ring and the bracelet from the sack in your inventory.4`
+\qremove \p2#i\qring \lr#l\qsack\d to remove the second ring from the sack in the room.4`
+\qremove \p2#m\qring \li#l\qsack\d to remove the first two rings from the sack in your inventory.4`
+\qremove \p3#i\qring \p3#m\qbracelet \lr#l\qsack\d to remove the third ring and the first three bracelets from the sack in the room.4`
+\qremove \p#a\qring \li#l\qsack\d to remove all of the rings from the sack in your inventory.4`
+\qremove \p#a\q \lr#l\qsack\d to remove everything from the sack in the room.4`
+\qremove \p#a\q \lr#l\p2#i\qsack\d to remove everything from the second sack in the room.4`
+\qremove \p5#m\qgp \p#a\qsp \li#l\qsack\d to remove five of the gold pieces and all of the silver pieces from the sack in your inventory.4`
+\qremove \p#a\qcoin \lr#l\qsack\d to remove all of the coins from the sack in the room.4`
 
 \uSEE ALSO\n
