@@ -14,6 +14,7 @@ debugCmdChar = '!'
 -- Denotative characters used in commands:
 
 
+-- TODO: rmChar is no longer needed. Remove #r from help files. Also sayToChar and #t?
 adverbCloseChar, adverbOpenChar, allChar, amountChar, emoteNameChar, indexChar, rmChar, sayToChar, selectorChar, slotChar :: Char
 adverbCloseChar = ']'
 adverbOpenChar  = '['

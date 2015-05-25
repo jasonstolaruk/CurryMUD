@@ -9,10 +9,10 @@ Unready one or more items; move item(s) from your readied equipment to your inve
 \uEXAMPLES\n
 \q"unready sword"\d to stop wielding your sword.4`
 \q"unready sword ring"\d to stop wielding your sword and take off your ring.4`
-\q"unready 2#iring"\d to take off your second ring.4`
-\q"unready 2#mring"\d to take off your first two rings.4`
-\q"unready 3#iring 3#mbracelet"\d to take off your third ring and first three bracelets.4`
-\q"unready #aring"\d to take off all your rings.4`
-\q"unready #a"\d to unready all your equipment. (You'll be naked!)4`
+\q"unready \p2#i\qring"\d to take off your second ring.4`
+\q"unready \p2#m\qring"\d to take off your first two rings.4`
+\q"unready \p3#i\qring \p3#m\qbracelet"\d to take off your third ring and first three bracelets.4`
+\q"unready \p#a\qring"\d to take off all of your rings.4`
+\q"unready \p#a\q"\d to unready all of your equipment. (You'll be naked!)4`
 
 \uSEE ALSO\n

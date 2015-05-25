@@ -5,7 +5,7 @@ bug description
 
 \uDESCRIPTION\n
 If you find a bug, please use this command to inform the CurryMUD administrators.
-Note that your location will be logged along with your description of the bug, so if you are bringing attention to a bug that is specific to your current location, you do not need to bother to describe where you are.
+Note that your room will be logged along with your description of the bug, so if you are bringing attention to a bug that is specific to your current room, you need not bother to describe where you are.
 
 \uEXAMPLES\n
 \q"bug I've fallen and I can't get up!"\d4`

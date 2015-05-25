@@ -122,8 +122,8 @@ regularCmds = map (uncurry3 mkRegularCmd)
                                       \equipment.")
     , ("expressive", expCmdList,      "Display or search a list of available expressive commands and their results.")
     , ("i",          inv,             "Display your inventory, or examine one or more items in your inventory.")
-    , ("l",          look,            "Display a description of your current location, or examine one or more items in \
-                                      \your current location.")
+    , ("l",          look,            "Display a description of your current room, or examine one or more items in \
+                                      \your current room.")
     , ("n",          go "n",          "Go north.")
     , ("ne",         go "ne",         "Go northeast.")
     , ("nw",         go "nw",         "Go northwest.")
@@ -558,6 +558,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 -----
 
 
+-- TODO: "help i" and "help intro" are not paging correctly.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
   where
@@ -804,8 +805,8 @@ firstLook i cols a@(pt, _) = if pt^.ind i.to (getPlaFlag IsNotFirstLook)
                           , noHintANSI
                           , " use the "
                           , dblQuote "l"
-                          , " command to examine one or more items in your current location. To examine items in \
-                            \your inventory, use the "
+                          , " command to examine one or more items in your current room. To examine items in your \
+                            \inventory, use the "
                           , dblQuote "i"
                           , " command "
                           , parensQuote $ "for example: " <> quoteColor <> dblQuote "i bread" <> dfltColor
@@ -1550,7 +1551,6 @@ helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
 -----
 
 
--- TODO: Consider using the "e-"/"i-" system elsewhere.
 showAction :: Action
 showAction p@AdviseNoArgs = advise p ["show"] advice
   where
@@ -1589,13 +1589,14 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                  , theSing  = getSing targetId ms
                                                  , theType  = getType targetId ms
                                                  , theDesig = serialize . mkStdDesig targetId ms $ Don'tCap }
-                     (inEqs, inInvs) = sortArgsEqInv argsWithoutTarget
-                     (invBs, invLog) = inInvs |!| showInv ms d invCoins inInvs theTarget
-                     (eqBs,  eqLog ) = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
+                     (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv InEq argsWithoutTarget
+                     (invBs, invLog)        = inInvs |!| showInv ms d invCoins inInvs theTarget
+                     (eqBs,  eqLog )        = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
+                     rmBs                   = inRms  |!| mkBroadcast i "You can't show an item in your room."
                  in if theType theTarget `notElem` [ MobType, PCType ]
                    then wrapSend mq cols . sorryCan'tShow . theSing $ theTarget
                    else do
-                       bcastNl $ invBs ++ eqBs
+                       bcastNl $ rmBs ++ invBs ++ eqBs
                        let log = slashes . dropBlanks $ [ invLog |!| parensQuote "inv" <> " " <> invLog
                                                         , eqLog  |!| parensQuote "eq"  <> " " <> eqLog ]
                        unless (T.null log) . logPla "show" i . T.concat $ [ "showed to "
@@ -1607,14 +1608,6 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                              " command."
   where
     sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
-    sortArgsEqInv    = foldr f ([], [])
-      where
-        f arg acc = case T.unpack arg of ('e':c:x:xs) | c == selectorChar -> _1 `g` (x : xs)
-                                         ('i':c:x:xs) | c == selectorChar -> _2 `g` (x : xs)
-                                         (    c:x:xs) | c == selectorChar -> _1 `g` (x : xs)
-                                         xs                               -> _2 `g` xs
-          where
-            lens `g` rest = acc & lens %~ (T.pack rest :)
     showInv ms d invCoins inInvs IdSingTypeDesig { .. } = if notEmpty invCoins
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
                showInvHelper                       = foldl' helperEitherInv ([], []) eiss

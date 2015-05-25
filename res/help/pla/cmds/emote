@@ -4,7 +4,7 @@
 emote description
 
 \uDESCRIPTION\n
-Freely describe an action, such that others in your current location will see your description.
+Freely describe an action such that others in your current room will see your description.
 By default, your character's name (or a corresponding noun such as "The female human") will be prefixed to the description you provide. Optionally, you may specify where your character's name should appear using "#e". Furthermore, "#e's" will create a possessive noun.
 
 \uEXAMPLES\n
@@ -14,10 +14,10 @@ By default, your character's name (or a corresponding noun such as "The female h
 \q"emote #e's leg twitches involuntarily as she laughs with gusto"\d \r->\d Hanako's leg twitches involuntarily as she laughs with gusto.4`
 
 \uRULES\n
-"emote" is a powerful command. Given the expressive medium of text, the possibilities are endless. However, in order to preserve the integrity of the virtual world along with the enjoyment of all, the following rules must be followed. Violation of these rules is grounds for discipline including banishment from CurryMUD.
+In order to preserve the integrity of the virtual world along with the enjoyment of all, the following rules must be followed. Violation of these rules is grounds for discipline including banishment from CurryMUD.
 1) Your emotes must not implicate the actions of others. "Hanako laughs at Taro, who falls when she trips him" is illegal, as Taro didn't consent to falling down.3`
-2) Your emotes may describe interactions with static objects in your location, within reason. "The chair creaks as Hanako sits down" is acceptable, while "Hanako sets the chair on fire" is not, for reasons that should be obvious.3`
+2) Your emotes may describe interactions with static objects in your room, within reason. "The chair creaks as Hanako sits down" is acceptable, while "Hanako sets the chair on fire" is not, for reasons that should be obvious.3`
 3) Your emotes must describe observable actions or states. Emotes such as "Hanako is afraid she lost her ring" violate this rule. (Instead, perhaps emote, "looks concerned as she fidgets with her bracelet", then say, "I'm afraid I lost my ring...")3`
-4) Avoid the use of "you." "Hanako casts you a menacing glance" is ambiguous when there is more than one person present with Hanako. Only use "you" if you are absolutely sure that there are only two of you in your present location.3`
+4) Avoid the use of "you." "Hanako casts you a menacing glance" is ambiguous when there is more than one person present with Hanako. Only use "you" if you are absolutely sure that there are only two of you in your present room.3`
 
 \uSEE ALSO\n

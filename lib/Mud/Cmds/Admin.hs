@@ -481,7 +481,7 @@ adminTeleRm :: Action
 adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExecArgs (prefixAdminCmd "telerm") [] i
   where
     mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tBracket . IM.elems) <$> getState
-    header = "You may teleport to the following locations:"
+    header = "You may teleport to the following rooms:"
 adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =

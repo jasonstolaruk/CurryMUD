@@ -43,7 +43,8 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , putOnMsgs
                          , resolvePCInvCoins
                          , resolveRmInvCoins
-                         , sorryIncog ) where
+                         , sorryIncog
+                         , sortArgsInvEqRm ) where
 
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
@@ -57,6 +58,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.Misc.NameResolution
+import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
@@ -795,3 +797,21 @@ resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
 
 sorryIncog :: T.Text -> T.Text
 sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito."
+
+
+-----
+
+
+sortArgsInvEqRm :: InInvEqRm -> InInvEqRm -> Args -> (Args, Args, Args)
+sortArgsInvEqRm noSelector withSelector = foldr f mempty
+  where
+    f arg acc = case T.unpack arg of ('i':c:x:xs) | c == selectorChar -> getLens InInv        `g` (x : xs)
+                                     ('e':c:x:xs) | c == selectorChar -> getLens InEq         `g` (x : xs)
+                                     ('r':c:x:xs) | c == selectorChar -> getLens InRm         `g` (x : xs)
+                                     (    c:x:xs) | c == selectorChar -> getLens withSelector `g` (x : xs)
+                                     xs                               -> getLens noSelector   `g` xs
+      where
+        getLens = \case InInv -> _1
+                        InEq  -> _2
+                        InRm  -> _3
+        lens `g` rest = acc & lens %~ (T.pack rest :)

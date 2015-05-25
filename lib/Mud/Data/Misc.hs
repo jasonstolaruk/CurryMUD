@@ -20,6 +20,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Help(..)
                      , HelpName
                      , IdSingTypeDesig(..)
+                     , InInvEqRm(..)
                      , Index
                      , LoggedInOrOut(..)
                      , PCDesig(..)
@@ -413,6 +414,12 @@ data IdSingTypeDesig = IdSingTypeDesig { theId    :: Id
                                        , theSing  :: Sing
                                        , theType  :: Type
                                        , theDesig :: T.Text }
+
+
+-----
+
+
+data InInvEqRm = InInv | InEq | InRm
 
 
 -----

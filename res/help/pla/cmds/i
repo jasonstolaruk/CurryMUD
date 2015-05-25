@@ -10,12 +10,12 @@ Display your inventory, or examine one or more items in your inventory.
 \q"i"\d to get a list of the items in your inventory.4`
 \q"i sword"\d to examine the sword in your inventory.4`
 \q"i sword bread"\d to examine the sword and the bread in your inventory.4`
-\q"i 2#isack"\d to examine the second sack in your inventory.4`
-\q"i 2#mring"\d to examine the first two rings in your inventory.4`
-\q"i 3#iring 3#mbracelet"\d to examine the third ring and the first three bracelets in your inventory.4`
-\q"i #aring"\d to examine all the rings in your inventory.4`
-\q"i #a"\d to examine everything in your inventory.4`
+\q"i \p2#i\qsack"\d to examine the second sack in your inventory.4`
+\q"i \p2#m\qring"\d to examine the first two rings in your inventory.4`
+\q"i \p3#i\qring \p3#m\qbracelet"\d to examine the third ring and the first three bracelets in your inventory.4`
+\q"i \p#a\qring"\d to examine all of the rings in your inventory.4`
+\q"i \p#a\q"\d to examine everything in your inventory.4`
 \q"i gp sp"\d to examine a gold piece and a silver piece in your inventory.4`
-\q"i 'coin"\d to examine all the coins in your inventory.4`
+\q"i 'coin"\d to examine all of the coins in your inventory.4`
 
 \uSEE ALSO\n

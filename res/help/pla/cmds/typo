@@ -5,7 +5,7 @@ typo description
 
 \uDESCRIPTION\n
 If you find a typo, please use this command to inform the CurryMUD administrators.
-Note that your location will be logged along with your description of the typo, so if you are bringing attention to a typo in the description of your current location, you do not need to bother to describe where you are.
+Note that your room will be logged along with your description of the typo, so if you are bringing attention to a typo in the description of your current room, you do not need to bother to describe where you are.
 
 \uEXAMPLES\n
 \q"typo 'accross from the fireplace' should be 'across from the fireplace'"\d4`

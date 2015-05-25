@@ -4,19 +4,19 @@
 put item \s...\d container
 
 \uDESCRIPTION\n
-Put one or more items into a container (by default, into a container in your inventory; optionally, into a container in your current location).
+Put one or more items into a container (by default, into a container in your inventory; optionally, into a container in your current room).
 
 \uEXAMPLES\n
 \q"put ring sack"\d to put your ring in your sack.4`
-\q"put ring #rsack"\d to put your ring in the sack in the room.4`
+\q"put ring \l#r\qsack"\d to put your ring in the sack in the room.4`
 \q"put ring bracelet sack"\d to put your ring and your bracelet in your sack.4`
-\q"put 2#iring #rsack"\d to put your second ring in the sack in the room.4`
-\q"put 2#mring sack"\d to put your first two rings in your sack.4`
-\q"put 3#iring 3#mbracelet #rsack"\d to put your third ring and your first three bracelets in the sack in the room.4`
-\q"put #aring sack"\d to put all your rings in your sack.4`
-\q"put #a #rsack"\d to put all the items in your inventory in the sack in the room.4`
-\q"put #a #r2#isack"\d to put all the items in your inventory in the second sack in the room.4`
-\q"put 5#mgp #asp sack"\d to put five of your gold pieces and all your silver pieces in your sack.4`
-\q"put #acoin #rsack"\d to put all your coins in the sack in the room.4`
+\q"put \p2#i\qring \l#r\qsack"\d to put your second ring in the sack in the room.4`
+\q"put \p2#m\qring sack"\d to put your first two rings in your sack.4`
+\q"put \p3#i\qring \p3#m\qbracelet \l#r\qsack"\d to put your third ring and your first three bracelets in the sack in the room.4`
+\q"put \p#a\qring sack"\d to put all of your rings in your sack.4`
+\q"put \p#a\q \l#r\qsack"\d to put all of the items in your inventory in the sack in the room.4`
+\q"put \p#a\q \l#r\p2#i\qsack"\d to put all of the items in your inventory in the second sack in the room.4`
+\q"put \p5#m\qgp \p#a\qsp sack"\d to put five of your gold pieces and all of your silver pieces in your sack.4`
+\q"put \p#a\qcoin \l#r\qsack"\d to put all of your coins in the sack in the room.4`
 
 \uSEE ALSO\n
