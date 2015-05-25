@@ -293,14 +293,19 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> (unless (null logMsgs) . logPlaOut "drop" i $ logMsgs)
   where
     helper ms =
-        let invCoins              = getInvCoins i ms
-            d                     = mkStdDesig  i ms DoCap
-            ri                    = getRmId     i ms
-            (eiss, ecs)           = uncurry (resolvePCInvCoins i ms as) invCoins
-            (ms',  bs,  logMsgs ) = foldl' (helperDropEitherInv      i d      i ri) (ms,  [], []     ) eiss
-            (ms'', bs', logMsgs') =         helperGetDropEitherCoins i d Drop i ri  (ms', bs, logMsgs) ecs
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv InInv as
+            sorryInEq              = inEqs |!| mkBroadcast i "Sorry, but you can't drop an item in your readied \
+                                                             \equipment. Please unready the item first."
+            sorryInRm              = inRms |!| mkBroadcast i "You can't drop an item in the room. If you're intent on \
+                                                             \dropping it, try picking it up first!"
+            invCoins               = getInvCoins i ms
+            d                      = mkStdDesig  i ms DoCap
+            ri                     = getRmId     i ms
+            (eiss, ecs)            = uncurry (resolvePCInvCoins i ms inInvs) invCoins
+            (ms',  bs,  logMsgs )  = foldl' (helperDropEitherInv      i d      i ri) (ms,  [], []     ) eiss
+            (ms'', bs', logMsgs')  =         helperGetDropEitherCoins i d Drop i ri  (ms', bs, logMsgs) ecs
         in if notEmpty invCoins
-          then (ms'', (bs',                                 logMsgs'))
+          then (ms'', (sorryInEq ++ sorryInRm ++ bs',       logMsgs'))
           else (ms,   (mkBroadcast i dudeYourHandsAreEmpty, []      ))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
