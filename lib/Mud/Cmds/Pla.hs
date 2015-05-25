@@ -670,8 +670,11 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
 intro (LowerNub' i (sortArgsInvEqRm InRm InRm -> (inInvs, inEqs, inRms)))
   | sorryInInv <- inInvs |!| mkBroadcast i . nlnl $ "You can't introduce yourself to an item in your inventory."
   , sorryInEq  <- inEqs  |!| mkBroadcast i . nlnl $ "You can't introduce yourself to an item in your readied equipment."
-  = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
-        bcastIfNotIncog i (sorryInInv ++ sorryInEq ++ bs) >> (unless (null logMsgs) . logPlaOut "intro" i $ logMsgs)
+  , sorrys     <- sorryInInv ++ sorryInEq
+  = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) -> do
+        unless (null sorrys) . bcast $ sorrys
+        bcastIfNotIncog i bs
+        unless (null logMsgs) . logPlaOut "intro" i $ logMsgs
   where
     helper ms =
         let invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
