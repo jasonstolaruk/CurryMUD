@@ -13,19 +13,16 @@ To put your ring into the sack in your inventory:
 
 To put your ring into the sack in the room:
 \qput ring \lr#l\qsack\d4`
-...or just...
-\qput ring \l#l\qsack\d4`
 
 \uEXAMPLES\n
-(Note: as described above, the \li#l\d prefix may be omitted entirely, and the \lr#l\d prefix may be abbreviated to \l#l\d.)
-\qput ring bracelet \li#l\qsack\d to put your ring and your bracelet into the sack in your inventory.4`
+\qput ring bracelet sack\d to put your ring and your bracelet into the sack in your inventory.4`
 \qput \p2#i\qring \lr#l\qsack\d to put your second ring into the sack in the room.4`
-\qput \p2#m\qring \li#l\qsack\d to put your first two rings into the sack in your inventory.4`
+\qput \p2#m\qring sack\d to put your first two rings into the sack in your inventory.4`
 \qput \p3#i\qring \p3#m\qbracelet \lr#l\qsack\d to put your third ring and your first three bracelets into the sack in the room.4`
-\qput \p#a\qring \li#l\qsack\d to put all of your rings into the sack in your inventory.4`
+\qput \p#a\qring sack\d to put all of your rings into the sack in your inventory.4`
 \qput \p#a\q \lr#l\qsack\d to put all of the items in your inventory into the sack in the room.4`
 \qput \p#a\q \lr#l\p2#i\qsack\d to put all of the items in your inventory into the second sack in the room.4`
-\qput \p5#m\qgp \p#a\qsp \li#l\qsack\d to put five of your gold pieces and all of your silver pieces into the sack in your inventory.4`
+\qput \p5#m\qgp \p#a\qsp sack\d to put five of your gold pieces and all of your silver pieces into the sack in your inventory.4`
 \qput \p#a\qcoin \lr#l\qsack\d to put all of your coins into the sack in the room.4`
 
 \uSEE ALSO\n

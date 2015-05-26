@@ -829,7 +829,6 @@ sortArgsInvEqRm dflt = foldr f mempty
     f arg acc = case T.unpack arg of ('i':c:x:xs) | c == selectorChar -> getLens InInv `g` (x : xs)
                                      ('e':c:x:xs) | c == selectorChar -> getLens InEq  `g` (x : xs)
                                      ('r':c:x:xs) | c == selectorChar -> getLens InRm  `g` (x : xs)
-                                     (    c:x:xs) | c == selectorChar -> getLens dflt  `g` (x : xs)
                                      xs                               -> getLens dflt  `g` xs
       where
         getLens = \case InInv -> _1

@@ -13,17 +13,14 @@ To show the ring in your inventory to Hanako:
 
 To show the ring in your readied equipment to Hanako:
 \qshow \le#l\qring hanako\d4`
-...or just...
-\qshow \l#l\qring hanako\d4`
 
 \uEXAMPLES\n
-(Note: as described above, the \li#l\d prefix may be omitted entirely, and the \le#l\d prefix may be abbreviated to \l#l\d.)
-\qshow \li#l\qring \le#l\qbracelet hanako\d to show the ring in your inventory and the bracelet in your readied equipment to Hanako.4`
-\qshow \li#l\p2#i\qring hanako\d to show the second ring in your inventory to Hanako.4`
+\qshow ring \le#l\qbracelet hanako\d to show the ring in your inventory and the bracelet in your readied equipment to Hanako.4`
+\qshow \p2#i\qring hanako\d to show the second ring in your inventory to Hanako.4`
 \qshow \le#l\p2#m\qbracelet hanako\d to show the first two bracelets in your readied equipment to Hanako.4`
-\qshow \li#l\p3#i\qring \le#l\p3#m\qbracelet hanako\d to show the third ring in your inventory and the first three bracelets in your readied equipment to Hanako.4`
-\qshow \li#l\p#a\qring \le#l\p#a\qbracelet hanako\d to show all of the rings in your inventory and all of the bracelets in your readied equipment to Hanako.4`
-\qshow \li#l\p#a\q hanako\d to show all of the items in your inventory to Hanako.4`
+\qshow \p3#i\qring \le#l\p3#m\qbracelet hanako\d to show the third ring in your inventory and the first three bracelets in your readied equipment to Hanako.4`
+\qshow \p#a\qring \le#l\p#a\qbracelet hanako\d to show all of the rings in your inventory and all of the bracelets in your readied equipment to Hanako.4`
+\qshow \p#a\q hanako\d to show all of the items in your inventory to Hanako.4`
 \qshow \le#l\p#a\q hanako\d to show all of the items in your readied equipment to Hanako.4`
 \qshow \p5#m\qgp \p#a\qsp hanako\d to show five of your gold pieces and all of your silver pieces to Hanako.4`
 \qshow \p#a\qcoin hanako\d to show all of your coins to Hanako.4`
