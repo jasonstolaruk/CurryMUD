@@ -295,7 +295,7 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
             sorryInEq              = inEqs |!| mkBroadcast i "Sorry, but you can't drop an item in your readied \
-                                                             \equipment. Please unready the item first."
+                                                             \equipment. Please unready the item(s) first."
             sorryInRm              = inRms |!| mkBroadcast i "You can't drop an item that's already in your current \
                                                              \room. If you're intent on dropping it, try picking it up \
                                                              \first!"
@@ -957,7 +957,12 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
         Left  msg     -> sorry msg
         Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
           then sorry $ theOnLowerCap conSing <> " isn't a container."
-          else let (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) pcInvCoins
+          else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
+                   sorryInEq = inEqs |!| mkBroadcast i "Sorry, but you can't put an item in your readied equipment \
+                                                       \into a container. Please unready the item(s) first."
+                   sorryInRm = inRms |!| mkBroadcast i "Sorry, but you can't put an item in your current room into a \
+                                                       \container. Please pick up the item(s) first."
+                   (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) pcInvCoins
                    eiss                = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                 = map procReconciledCoinsPCInv rcs
                    mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
@@ -967,7 +972,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                    (ct, bs', logMsgs') =         helperPutRemEitherCoins i    d Put mnom i conId conSing
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
-               in (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
+               in (ms & invTbl .~ it & coinsTbl .~ ct, (sorryInEq ++ sorryInRm ++ bs', logMsgs'))
         Right {} -> sorry "You can only put things into one container at a time."
   where
     sorry msg = (ms, (mkBroadcast i msg, []))
@@ -1378,8 +1383,9 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
         Left  msg     -> sorry msg
         Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
           then sorry $ theOnLowerCap conSing <> " isn't a container."
-          else let invCoinsInCon       = getInvCoins conId ms
-                   (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as) invCoinsInCon
+          else let (as', guessWhat)    = stripLocPrefs
+                   invCoinsInCon       = getInvCoins conId ms
+                   (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as') invCoinsInCon
                    eiss                = zipWith (curry $ procGecrMisCon conSing) gecrs miss
                    ecs                 = map (procReconciledCoinsCon conSing) rcs
                    mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
@@ -1390,11 +1396,25 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
                in if notEmpty invCoinsInCon
-                 then (ms & invTbl .~ it & coinsTbl .~ ct, (bs', logMsgs'))
+                 then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ bs', logMsgs'))
                  else sorry $ "The " <> conSing <> " is empty."
         Right {} -> sorry "You can only remove things from one container at a time."
   where
     sorry msg = (ms, (mkBroadcast i msg, []))
+    stripLocPrefs | any hasLocPref as = (map (T.pack . stripIt) as, mkBroadcast i msg)
+                  | otherwise         = (as,                        []               )
+      where
+        -- TODO: Use pattern synonyms?
+        hasLocPref arg = case T.unpack arg of ('i':c:_:_)  | c == selectorChar -> True
+                                              ('e':c:_:_)  | c == selectorChar -> True
+                                              ('r':c:_:_)  | c == selectorChar -> True
+                                              _                                -> False
+        stripIt    arg = case T.unpack arg of ('i':c:x:xs) | c == selectorChar -> x : xs
+                                              ('e':c:x:xs) | c == selectorChar -> x : xs
+                                              ('r':c:x:xs) | c == selectorChar -> x : xs
+                                              xs                               -> xs
+        msg = parensQuote "The names of items to be removed from a container need not be given location prefixes. The \
+                          \location prefixes you provided will be ignored."
 
 
 -----
