@@ -1351,13 +1351,13 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
 remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "remove" i)
   where
-    helper ms = let (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) = mkPutRemoveBindings i ms as
-                in case T.uncons conName of
-                  Just (c, not . isEmpty -> isn'tNull) | c == selectorChar, isn'tNull ->
-                    if notEmpty . fst $ rmInvCoins
-                      then shuffleRem i ms d (T.tail conName) True argsWithoutCon rmInvCoins procGecrMisRm
-                      else (ms, (mkBroadcast i noContainersHere, []))
-                  _ -> shuffleRem i ms d conName False argsWithoutCon pcInvCoins procGecrMisPCInv
+    helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
+        case singleArgInvEqRm InInv conName of
+          (InInv, conName') -> shuffleRem i ms d conName' False argsWithoutCon pcInvCoins procGecrMisPCInv
+          (InEq,  _       ) -> (ms, (mkBroadcast i . sorryConInEq $ Rem, []))
+          (InRm,  conName') -> if notEmpty . fst $ rmInvCoins
+            then shuffleRem i ms d conName' True argsWithoutCon rmInvCoins procGecrMisRm
+            else (ms, (mkBroadcast i noContainersHere, []))
 remove p = patternMatchFail "remove" [ showText p ]
 
 
