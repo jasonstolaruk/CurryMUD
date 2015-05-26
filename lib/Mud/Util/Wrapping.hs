@@ -37,7 +37,7 @@ wrap cols t | extracted <- extractANSI t
             , wrapped   <- wrapIt . T.concat . map fst $ extracted = insertANSI extracted wrapped
   where
     wrapIt txt
-      | T.null afterMax                                 = [txt]
+      | isEmpty afterMax                                = [txt]
       | T.any isSpace beforeMax
       , (beforeSpace, afterSpace) <- breakEnd beforeMax = beforeSpace : wrapIt (afterSpace <> afterMax)
       | otherwise                                       = beforeMax   : wrapIt afterMax
@@ -81,7 +81,7 @@ wrapIndent n cols t = let extracted = extractANSI t
   where
     helper = wrapIt . leadingSpcsToFiller
     wrapIt txt
-      | T.null afterMax = [txt]
+      | isEmpty afterMax = [txt]
       | T.any isSpace beforeMax, (beforeSpace, afterSpace) <- breakEnd beforeMax =
                       beforeSpace : helper (leadingIndent <> afterSpace <> afterMax)
       | otherwise   = beforeMax   : helper (leadingIndent               <> afterMax)
@@ -113,7 +113,7 @@ adjustIndent n cols = n >= cols ? pred cols :? n
 wrapLines :: Int -> [T.Text] -> [[T.Text]]
 wrapLines _    []                     = []
 wrapLines cols [t]                    = [ wrapIndent (noOfLeadingSpcs t) cols t ]
-wrapLines cols (a:b:rest) | T.null a  = [""]     : wrapNext
+wrapLines cols (a:b:rest) | isEmpty a = [""]     : wrapNext
                           | otherwise = helper a : wrapNext
   where
     wrapNext         = wrapLines cols $ b : rest
@@ -145,5 +145,5 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
 
 calcIndent :: T.Text -> Int
 calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
-  | T.null rest = 0
-  | otherwise   = lenOfFirstWord + noOfLeadingSpcs rest
+  | isEmpty rest = 0
+  | otherwise    = lenOfFirstWord + noOfLeadingSpcs rest

@@ -23,23 +23,23 @@ import qualified Data.Text as T
 
 
 prop_aOrAn :: T.Text -> Property
-prop_aOrAn t = (not . T.null . T.strip $ t) ==>
+prop_aOrAn t = (notEmpty . T.strip $ t) ==>
   let (a, b) = T.break isSpace . aOrAn $ t
   in a == ((isVowel . T.head . T.tail $ b) ? "an" :? "a")
 
 
 prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [T.Text] -> Property
-prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any (not . T.null) hay &&
+prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any notEmpty hay &&
                                                                             all (not . (needle `T.isInfixOf`)) hay ==>
   isNothing . findFullNameForAbbrev needle $ hay
 
 
 prop_findFullNameForAbbrev_findsMatch :: NonEmptyList Char -> [T.Text] -> Property
-prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (not . T.null) hay &&
+prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any notEmpty hay &&
                                                                           all (not . (needle `T.isInfixOf`)) hay ==>
-  let nonNull = head . filter (not . T.null) $ hay
-      match   = needle <> nonNull
-      hay'    = match : hay
+  let nonEmpty = head . filter notEmpty $ hay
+      match    = needle <> nonEmpty
+      hay'     = match : hay
   in findFullNameForAbbrev needle hay' == Just match
 
 

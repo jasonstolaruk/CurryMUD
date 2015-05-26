@@ -4,6 +4,7 @@ module MudTests.Util.Wrapping where
 
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Text
 import Mud.Util.Wrapping
 import MudTests.TestUtil
@@ -44,16 +45,16 @@ prop_wrapIndent_indents = forAll (choose (0, maxCols + 10)) $ \n ->
 
 
 resIsIndented :: Int -> [T.Text] -> Bool
-resIsIndented n (t:wrapped) = (not . T.null $ t) && all lineIsIndented wrapped
+resIsIndented n (t:wrapped) = notEmpty t && all lineIsIndented wrapped
   where
-    lineIsIndented (T.splitAt n -> (indent, rest)) = T.all isSpace indent && (not . T.null $ rest)
+    lineIsIndented (T.splitAt n -> (indent, rest)) = T.all isSpace indent && notEmpty rest
 resIsIndented n ls = patternMatchFail "resIsIndented" [ showText n, showText ls ]
 
 
 prop_xformLeading :: Char -> Char -> Property
 prop_xformLeading a b = forAll (choose (0, 10))           $ \noOfLeading ->
                         forAll (genTextOfRandLen (0, 10)) $ \rest ->
-                        (T.null . T.takeWhile (== a) $ rest) ==>
+                        (isEmpty . T.takeWhile (== a) $ rest) ==>
     let leading    = T.replicate noOfLeading . T.singleton $ a
         t          = leading <> rest
         res        = xformLeading a b t
@@ -67,7 +68,7 @@ prop_wrapLineWithIndentTag :: Property
 prop_wrapLineWithIndentTag = forAll genCols                       $ \c ->
                              forAll (genTextOfRandLen (0, c * 2)) $ \t ->
                              forAll (choose (1, maxCols + 10))    $ \n ->
-                             T.null t || (not . isDigit . T.last $ t) ==>
+                             isEmpty t || (not . isDigit . T.last $ t) ==>
     let res = wrapLineWithIndentTag c $ t <> showText n `T.snoc` indentTagChar
     in if T.length t <= c
       then res == [t]
@@ -79,6 +80,6 @@ prop_calcIndent = forAll (genTextOfRandLen (0, 10)) $ \firstWord ->
                   forAll (choose (1, 15))           $ \noOfFollowingSpcs ->
                   forAll (genTextOfRandLen (0, 10)) $ \rest ->
                   T.all (not . isSpace) firstWord &&
-                  (T.null . T.takeWhile isSpace $ rest) ==>
+                  (isEmpty . T.takeWhile isSpace $ rest) ==>
     let t = firstWord <> T.replicate noOfFollowingSpcs " " <> rest
     in calcIndent t == T.length firstWord + noOfFollowingSpcs

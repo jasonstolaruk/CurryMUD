@@ -214,8 +214,8 @@ logPlaExec modName cn i = logPla modName cn i $ "executed " <> dblQuote cn <> ".
 logPlaExecArgs :: T.Text -> CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs modName cn as i = logPla modName cn i $ "executed " <> helper <> "."
   where
-    helper | null as   = dblQuote cn <> " with no arguments"
-           | otherwise = dblQuote . T.unwords $ cn : as
+    helper | isEmpty as = dblQuote cn <> " with no arguments"
+           | otherwise  = dblQuote . T.unwords $ cn : as
 
 
 logPlaOut :: T.Text -> CmdName -> Id -> [T.Text] -> MudStack ()

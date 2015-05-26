@@ -275,7 +275,7 @@ dropANSI :: T.Text -> T.Text
 dropANSI t | ansiCSI `notInfixOf` t = t
            | otherwise              = let (left, rest)      = T.breakOn   (T.singleton ansiEsc) t
                                           (T.tail -> right) = T.dropWhile (/= ansiSGRDelimiter) rest
-                                      in T.null right ? left :? left <> dropANSI right
+                                      in isEmpty right ? left :? left <> dropANSI right
 
 
 -----
@@ -293,7 +293,7 @@ extractANSI t | (T.length -> l, rest) <- T.span (== ' ') t
       | ansiCSI `notInfixOf` txt = [(txt, "")]
       | (txt',                                  rest)            <- T.breakOn (T.singleton ansiEsc)          txt
       , ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') <- T.breakOn (T.singleton ansiSGRDelimiter) rest
-      = T.null rest' ? [(txt', escSeq)] :? (txt', escSeq) : helper rest'
+      = isEmpty rest' ? [(txt', escSeq)] :? (txt', escSeq) : helper rest'
 
 
 -----
@@ -309,7 +309,7 @@ loopOverExtractedList :: [(T.Text, EscSeq)] -> T.Text -> T.Text
 loopOverExtractedList []                  ys = ys
 loopOverExtractedList [("", escSeq)]      "" = escSeq
 loopOverExtractedList ((xs, escSeq):rest) ys
-  | T.null xs = escSeq <> loopOverExtractedList rest ys
+  | isEmpty xs = escSeq <> loopOverExtractedList rest ys
   | left         <- loopOverExtractedTxt xs ys
   , (Just right) <- left `T.stripPrefix` ys = left <> escSeq <> loopOverExtractedList rest right
 loopOverExtractedList xs ys = patternMatchFail "loopOverExtractedList" [ showText xs, ys ]

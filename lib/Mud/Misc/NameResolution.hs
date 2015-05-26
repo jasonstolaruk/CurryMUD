@@ -117,7 +117,7 @@ pruneDupIds = dropJustNulls . pruneThem []
 
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
-reconcileCoins (Coins (cop, sil, gol)) enscs = guard (not . null $ enscs) Prelude.>> concatMap helper enscs
+reconcileCoins (Coins (cop, sil, gol)) enscs = guard (notEmpty enscs) Prelude.>> concatMap helper enscs
   where
     helper Empty                                        = [ Left Empty        ]
     helper (NoneOf c)                                   = [ Left . NoneOf $ c ]
@@ -142,7 +142,7 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
     isSomeOf _          = False
     isNoneOf (NoneOf _) = True
     isNoneOf _          = False
-    distill  f enscs'   = guard (not . null $ enscs') Prelude.>> [ f . foldr ((<>) . fromEnsCoins) mempty $ enscs' ]
+    distill  f enscs'   = guard (notEmpty enscs') Prelude.>> [ f . foldr ((<>) . fromEnsCoins) mempty $ enscs' ]
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
@@ -245,7 +245,7 @@ resolveEntCoinNamesWithRols i ms (map T.toLower -> as) is c =
 
 mkGecrWithRol :: Id -> MudState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
 mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
-  | T.null b        = (mkGecr i ms is c n, Nothing)
+  | isEmpty  b      = (mkGecr i ms is c n, Nothing)
   | T.length b == 1 = sorry
   | parsed <- reads (T.unpack . T.toUpper . T.drop 1 $ b) :: [(RightOrLeft, String)] =
       case parsed of [(rol, _)] -> (mkGecr i ms is c a, Just rol)
@@ -258,8 +258,8 @@ mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
 -- Processing "GetEntsCoinsRes":
 
 
--- "DupIdsNull" applies when nothing is left after having eliminated duplicate IDs.
-pattern DupIdsNull       <- (_,                                                                        Just [])
+-- "DupIdsEmpty" applies when nothing is left after having eliminated duplicate IDs.
+pattern DupIdsEmpty      <- (_,                                                                        Just [])
 pattern SorryOne     n   <- (Mult { amount = 1,   nameSearchedFor = (aOrAn -> n), entsRes = Nothing  }, Nothing)
 pattern NoneMult     n   <- (Mult {               nameSearchedFor = n,            entsRes = Nothing  }, Nothing)
 pattern FoundMult    res <- (Mult {                                               entsRes = Just {}  }, Just (Right -> res))
@@ -271,7 +271,7 @@ pattern GenericSorry n   <- (Sorry   {            nameSearchedFor = (aOrAn -> n)
 
 
 procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisPCInv DupIdsNull         | res <- dupIdsRes               = res
+procGecrMisPCInv DupIdsEmpty        | res <- dupIdsRes               = res
 procGecrMisPCInv (SorryOne     (don'tHaveInv    -> res))             = res
 procGecrMisPCInv (NoneMult     (don'tHaveAnyInv -> res))             = res
 procGecrMisPCInv (FoundMult                        res)              = res
@@ -334,7 +334,7 @@ ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l
 
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisPCEq DupIdsNull         | res <- dupIdsRes              = res
+procGecrMisPCEq DupIdsEmpty        | res <- dupIdsRes              = res
 procGecrMisPCEq (SorryOne     (don'tHaveEq    -> res))             = res
 procGecrMisPCEq (NoneMult     (don'tHaveAnyEq -> res))             = res
 procGecrMisPCEq (FoundMult                       res)              = res
@@ -359,7 +359,7 @@ don'tHaveIndexedEq x = Left . sformat (do { "You don't have " % int % " "; " amo
 
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisRm DupIdsNull         | res <- dupIdsRes           = res
+procGecrMisRm DupIdsEmpty        | res <- dupIdsRes           = res
 procGecrMisRm (SorryOne     (don'tSee    -> res))             = res
 procGecrMisRm (NoneMult     (don'tSeeAny -> res))             = res
 procGecrMisRm (FoundMult                    res)              = res
@@ -384,7 +384,7 @@ don'tSeeIndexed x = Left . sformat (do { "You don't see " % int % " "; " here." 
 
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisCon _  DupIdsNull         | res <- dupIdsRes                    = res
+procGecrMisCon _  DupIdsEmpty        | res <- dupIdsRes                    = res
 procGecrMisCon cn (SorryOne     (doesn'tContain    cn -> res))             = res
 procGecrMisCon cn (NoneMult     (doesn'tContainAny cn -> res))             = res
 procGecrMisCon _  (FoundMult                             res)              = res

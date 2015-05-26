@@ -78,9 +78,7 @@ initMudData shouldLog = do
 
 initWorld :: MudStack Bool
 initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont ->
-    if null cont
-      then createWorld >> return True
-      else loadWorld . last $ cont
+    isEmpty cont ? (createWorld >> return True) :? (loadWorld . last $ cont)
 
 
 createWorld :: MudStack ()

@@ -43,6 +43,8 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , putOnMsgs
                          , resolvePCInvCoins
                          , resolveRmInvCoins
+                         , singleArgInvEqRm
+                         , sorryConInEq
                          , sorryEquipInvLook
                          , sorryIncog
                          , sortArgsInvEqRm ) where
@@ -447,10 +449,10 @@ helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
   Right is -> let (is', bs')      = ti `elem` is ? (filter (/= ti) is, bs ++ sorryInsideSelf) :? (is, bs)
                   (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' ts
-              in null (a^._1.ind fi) ? sorryEmpty :? (a & _1.ind fi %~  (\\ is')
-                                                        & _1.ind ti %~  (sortInv ms . (++ is'))
-                                                        & _2        .~  (bs' ++ bs'')
-                                                        & _3        <>~ logMsgs)
+              in isEmpty (a^._1.ind fi) ? sorryEmpty :? (a & _1.ind fi %~  (\\ is')
+                                                           & _1.ind ti %~  (sortInv ms . (++ is'))
+                                                           & _2        .~  (bs' ++ bs'')
+                                                           & _3        <>~ logMsgs)
   where
     sorryInsideSelf = mkBroadcast i $ "You can't put the " <> ts <> " inside itself."
     sorryEmpty      = a & _2 <>~ mkBroadcast i ("The " <> getSing fi ms <> " is empty.")
@@ -548,9 +550,9 @@ mkPutRemoveBindings i ms as = let d              = mkStdDesig  i ms DoCap
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
 mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
-    T.unlines . intercalate [""] . map (wrap cols) . filter (not . T.null) $ [ cop |!| copDesc
-                                                                             , sil |!| silDesc
-                                                                             , gol |!| golDesc ]
+    T.unlines . intercalate [""] . map (wrap cols) . filter notEmpty $ [ cop |!| copDesc
+                                                                       , sil |!| silDesc
+                                                                       , gol |!| golDesc ]
   where
     copDesc = "The copper piece is round and shiny."
     silDesc = "The silver piece is round and shiny."
@@ -577,7 +579,7 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
 
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> T.Text
 mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, targetCoins <- getCoins targetId ms =
-    case (null *** isEmpty) (targetInv, targetCoins) of
+    case (isEmpty *** isEmpty) (targetInv, targetCoins) of
       (True,  True ) -> wrapUnlines cols (targetId == i ? dudeYourHandsAreEmpty :? "The " <> targetSing <> " is empty.")
       (False, True ) -> header <> mkEntsInInvDesc i cols ms targetInv                                    <> footer
       (True,  False) -> header                                        <> mkCoinsSummary cols targetCoins <> footer
@@ -610,13 +612,13 @@ mkStyledName_Count_BothList i ms is =
 mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . coinsToList $ c
   where
-    helper         = T.unlines . wrapIndent 2 cols . commas . filter (not . T.null)
+    helper         = T.unlines . wrapIndent 2 cols . commas . filter notEmpty
     mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
 
 
 mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> T.Text
 mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsSelf :? mkDescsOther in
-    null descs ? none :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
+    isEmpty descs ? none :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
     mkDescsSelf =
         let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)          | (slot, ei) <- M.toList . getEqMap i $ ms ]
@@ -791,6 +793,32 @@ resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms 
 
 resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
+
+
+-----
+
+
+singleArgInvEqRm :: InInvEqRm -> T.Text -> (InInvEqRm, T.Text)
+singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt [arg] of
+  ([a], [],  [] ) -> (InInv, a)
+  ([],  [a], [] ) -> (InEq,  a)
+  ([],  [],  [a]) -> (InRm,  a)
+  x               -> patternMatchFail "singleArgInvEqRm" [ showText x ]
+
+
+-----
+
+
+sorryConInEq :: PutOrRem -> T.Text
+sorryConInEq por = let (a, b) = expand por
+                   in T.concat [ "Sorry, but you can't "
+                               , a
+                               , " an item "
+                               , b
+                               , " a container in your readied equipment. Please unready the container first." ]
+  where
+    expand = \case Put -> ("put",    "into")
+                   Rem -> ("remove", "from")
 
 
 -----
