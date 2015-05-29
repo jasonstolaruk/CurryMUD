@@ -23,6 +23,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
+import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.Misc.NameResolution
 import Mud.TheWorld.Ids
@@ -1401,18 +1402,9 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
         Right {} -> sorry "You can only remove things from one container at a time."
   where
     sorry msg = (ms, (mkBroadcast i msg, []))
-    stripLocPrefs | any hasLocPref as = (map (T.pack . stripIt) as, mkBroadcast i msg)
-                  | otherwise         = (as,                        []               )
+    stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBroadcast i msg)
+                  | otherwise         = (as,                  []               )
       where
-        -- TODO: Use pattern synonyms?
-        hasLocPref arg = case T.unpack arg of ('i':c:_:_)  | c == selectorChar -> True
-                                              ('e':c:_:_)  | c == selectorChar -> True
-                                              ('r':c:_:_)  | c == selectorChar -> True
-                                              _                                -> False
-        stripIt    arg = case T.unpack arg of ('i':c:x:xs) | c == selectorChar -> x : xs
-                                              ('e':c:x:xs) | c == selectorChar -> x : xs
-                                              ('r':c:x:xs) | c == selectorChar -> x : xs
-                                              xs                               -> xs
         msg = parensQuote "The names of items to be removed from a container need not be given location prefixes. The \
                           \location prefixes you provided will be ignored."
 

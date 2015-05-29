@@ -68,6 +68,7 @@ library
                        Mud.Interp.Login,
                        Mud.Interp.Pager,
                        Mud.Misc.ANSI,
+                       Mud.Misc.LocPref,
                        Mud.Misc.Logging,
                        Mud.Misc.NameResolution,
                        Mud.Misc.Persist,
