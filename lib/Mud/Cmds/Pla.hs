@@ -2001,7 +2001,8 @@ uptime p = withoutArgs uptime p
 getUptime :: MudStack Int
 getUptime = let start = asks $ view startTime
                 now   = liftIO . getTime $ Monotonic
-            in (-) <$> sec `fmap` now <*> sec `fmap` start
+                toSec = fmap $ fromIntegral . sec
+            in (-) <$> toSec now <*> toSec start
 
 
 uptimeHelper :: Int -> MudStack T.Text
