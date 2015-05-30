@@ -1488,9 +1488,9 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                   | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
         sayToHelper d targetId targetDesig (frontAdv, rearAdv, msg) =
             let toSelfMsg         = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                toSelfBroadcast   = head . mkBroadcast i . nlnl $ toSelfMsg
+                toSelfBroadcast   = (nlnl toSelfMsg, [i])
                 toTargetMsg       = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
-                toTargetBroadcast = head . mkBroadcast targetId . nlnl $ toTargetMsg
+                toTargetBroadcast = (nlnl toTargetMsg, [targetId])
                 toOthersMsg       = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
             in (ms, ([ toSelfBroadcast, toTargetBroadcast, toOthersBroadcast ], [ parsePCDesig i ms toSelfMsg ]))
@@ -1506,7 +1506,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                              , msg ]
                 toOthersBroadcast = (nlnl toOthersMsg, i `delete` pcIds d)
                 (pt, hint)        = firstMobSay i $ ms^.plaTbl
-            in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i $ toSelfMsg <> hint, [toSelfMsg]))
+            in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i . nlnl $ toSelfMsg <> hint, [toSelfMsg]))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
     bcastAndLog (bs, logMsgs) = bcast bs >> unlessEmpty logMsgs (logPlaOut "say" i)
@@ -1533,7 +1533,7 @@ firstMobSay i pt = if pt^.ind i.to (getPlaFlag IsNotFirstMobSay)
                           , dblQuote "ask guard crime"
                           , dfltColor
                           , "." ]
-       in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlnlPrefix . nlnl $ msg)
+       in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlnlPrefix msg)
 
 
 -----

@@ -7,13 +7,13 @@ module Mud.Misc.LocPref ( hasLocPref
 
 import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
+import Mud.Util.Text
+import qualified Data.Text as T
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, _2, _3)
 import Control.Lens.Operators ((%~), (&))
 import Data.Monoid (mempty)
-import Mud.Util.Text
-import qualified Data.Text as T
-import qualified Mud.Util.Misc as U (patternMatchFail)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
