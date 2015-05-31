@@ -315,6 +315,7 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
+-- TODO: Provide a one-time warning when players compose an emote that contains a form of the word "you."
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
@@ -580,6 +581,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
 -- TODO: "help i" and "help intro" and "help eq" are not paging correctly.
+-- TODO: Write a help topic file on prefixes.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
   where
