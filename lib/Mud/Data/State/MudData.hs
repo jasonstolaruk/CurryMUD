@@ -307,6 +307,7 @@ instance Random Race where
 -- ==================================================
 
 
+-- TODO: Track when a player last logged out.
 data Pla = Pla { _hostName     :: HostName
                , _plaFlags     :: Int
                , _columns      :: Int

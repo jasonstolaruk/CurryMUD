@@ -7,27 +7,34 @@ AFK     Away From Keyboard`
 
 BRB     Be Right Back`
 
-IC      In Character
+IC      In Character`
         Something said or done in the context of role-playing.
 
-INPC    Interactive Non-Player Character
-        A character that is usually controlled by the game server, and sometimes controlled, or otherwise managed, by staff.
+INPC    Interactive Non-Player Character`
+        A character that is usually controlled by the server, and sometimes controlled, or otherwise managed, by staff.
 
 IRL     In Real Life`
 
 MUD     Multi-User Dungeon`
+        This generally refers to a virtual world in its totality.
 
-NPC     Non-Player Character
-        A character controlled by the game server.
+NPC     Non-Player Character`
+        A character controlled by the server.
 
-OOC     Out Of Character
+OOC     Out Of Character`
         Something said or done as a player, outside the context of role-playing.
 
-PC      Player Character
+PC      Player Character`
         A character controlled by a human player.
 
-PK      Player Kill
-        The act of attacking another PC.
+PD      Permadeath`
+        When a PC dies, it is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form.
+
+PKing   Player Killing`
+        When one PC kills another PC.
+
+PvP     Player vs. Player`
+        The act of one PC attacking another PC.
 
 RP      Role-Playing`
 
