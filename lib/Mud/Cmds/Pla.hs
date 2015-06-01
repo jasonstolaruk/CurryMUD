@@ -760,9 +760,9 @@ look (NoArgs i mq cols) = getState >>= \ms ->
         top    = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
         bottom = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
     in send mq . nl . T.concat $ top : bottom
-look (LowerNub i mq cols as) = helper |$| modifyState >=> \(ms, msg, bs, maybeTargetDesigs) -> do
+look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTargetDesigs) -> do
     send mq msg
-    unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ bs -- TODO: Can we use "bcastIfNotIncog"?
+    bcastIfNotIncog i bs
     let logHelper targetDesigs | targetSings <- [ fromJust . stdPCEntSing $ targetDesig
                                                 | targetDesig <- targetDesigs ]
                                = logPla "look" i $ "looked at: " <> commas targetSings <> "."
@@ -790,11 +790,11 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(ms, msg, bs, maybeTa
                                     , targetId `delete` pis)
                      in toTarget : toOthers : acc
                  ms' = ms & plaTbl .~ pt
-             in (ms', (ms', msg, foldr mkBroadcastsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
+             in (ms', (msg, foldr mkBroadcastsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
         else let msg        = wrapUnlinesNl cols "You don't see anything here to look at."
                  (pt, msg') = firstLook i cols (ms^.plaTbl, msg)
                  ms'        = ms & plaTbl .~ pt
-             in (ms', (ms', msg', [], Nothing))
+             in (ms', (msg', [], Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
