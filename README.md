@@ -17,7 +17,7 @@ CurryMUD will have the following features:
 * Some degree of player-created content will be allowed and encouraged.
 * The state of the virtual world will be highly persisted upon server shutdown.
 * As is common with most textual MUDs, client connections will be supported with a loose implementation of the telnet protocol.
-* Financial gain is *not* a goal, and CurryMUD will always be free to play.
+* Financial gain is **not** a goal, and CurryMUD will always be free to play.
 
 ## What I have so far
 
@@ -38,7 +38,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 
 ## About the code
 
-The code is open source and available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that *I am not accepting PRs at this time*.
+The code is open source and available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs at this time**.
 
 ### Notable features of the code
 
