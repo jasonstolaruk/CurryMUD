@@ -225,19 +225,27 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dfltColor
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let adminIdSings = [ ais | ais@(ai, _) <- mkAdminIdSingList ms
+    let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorryLocPref)
+                            | otherwise                          = (target,                                ""          )
+        adminIdSings = [ ais | ais@(ai, _) <- mkAdminIdSingList ms
                              , let p = getPla ai ms, isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
         s            = getSing i ms
-        notFound     = wrapSend mq cols $ "No administrator by the name of " <> dblQuote target <> " is currently \
-                                          \logged in."
+        notFound     = sendWithSorryMsg sorryMsg $ "No administrator by the name of " <> dblQuote target' <> " is \
+                                                   \currently logged in."
         found (adminId, _        ) | adminId == i = wrapSend mq cols "You talk to yourself."
         found (adminId, adminSing) | adminMq <- getMsgQueue adminId ms, adminCols <- getColumns adminId ms = do
-            wrapSend mq      cols      . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
+            sendWithSorryMsg sorryMsg  . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
             wrapSend adminMq adminCols . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor      ]
             logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
             logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
             logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
-    in maybe notFound found . findFullNameForAbbrev target $ adminIdSings
+    in maybe notFound found . findFullNameForAbbrev target' $ adminIdSings
+  where
+    sorryLocPref = parensQuote "The administrator name need not be given a location prefix. The location prefix you \
+                               \provided will be ignored."
+    sendWithSorryMsg sorryMsg primaryMsg
+      | isEmpty sorryMsg = wrapSend      mq cols primaryMsg
+      | otherwise        = multiWrapSend mq cols [ sorryMsg, primaryMsg ]
 admin p = patternMatchFail "admin" [ showText p ]
 
 
@@ -316,6 +324,7 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 -- TODO: Provide a one-time warning when players compose an emote that contains a form of the word "you."
+-- TODO: We should probably provide a way to refer to a given PC/NPC, so that we can use "mkStdDesig".
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
@@ -1060,6 +1069,7 @@ quitCan'tAbbrev p = withoutArgs quitCan'tAbbrev p
 -----
 
 
+-- TODO: Continue from here.
 ready :: Action
 ready p@AdviseNoArgs = advise p ["ready"] advice
   where
