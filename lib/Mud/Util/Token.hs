@@ -29,6 +29,7 @@ parseTokens = parseCharTokens . parseMsgTokens . parseStyleTokens
 
 type Delimiter = Char
 
+
 parser :: (Char -> T.Text) -> Delimiter -> T.Text -> T.Text
 parser f d t
   | T.singleton d `notInfixOf` t = t
@@ -43,7 +44,8 @@ parseCharTokens = parser expandCharCode charTokenDelimiter
 
 
 expandCharCode :: Char -> T.Text
-expandCharCode (toLower -> code) = T.singleton $ case code of
+expandCharCode c | c == charTokenDelimiter = T.singleton charTokenDelimiter
+expandCharCode (toLower -> code)           = T.singleton $ case code of
   'a' -> allChar
   'c' -> adverbCloseChar
   'd' -> adminCmdChar
@@ -65,7 +67,8 @@ parseMsgTokens = parser expandMsgCode msgTokenDelimiter
 
 
 expandMsgCode :: Char -> T.Text
-expandMsgCode (toLower -> code) = case code of
+expandMsgCode c | c == msgTokenDelimiter = T.singleton msgTokenDelimiter
+expandMsgCode (toLower -> code)          = case code of
   'b' -> dfltBootMsg
   's' -> dfltShutdownMsg
   x   -> patternMatchFail "expandMsgCode" [ T.singleton x ]
@@ -79,7 +82,8 @@ parseStyleTokens = parser expandStyleCode styleTokenDelimiter
 
 
 expandStyleCode :: Char -> T.Text
-expandStyleCode (toLower -> code) = case code of
+expandStyleCode c | c == styleTokenDelimiter = T.singleton styleTokenDelimiter
+expandStyleCode (toLower -> code)            = case code of
   'a' -> abbrevColor
   'd' -> dfltColor
   'h' -> headerColor

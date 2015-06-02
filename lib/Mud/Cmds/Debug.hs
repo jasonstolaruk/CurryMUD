@@ -559,7 +559,8 @@ debugToken (NoArgs i mq cols) = do
     multiWrapSend mq cols . T.lines . parseTokens . T.unlines $ tokenTxts
     logPlaExec (prefixDebugCmd "token") i
   where
-    tokenTxts = [ charTokenDelimiter  `T.cons` "a allChar"
+    tokenTxts = [ charTokenDelimiter  `T.cons` charTokenDelimiter `T.cons` " literal charTokenDelimiter"
+                , charTokenDelimiter  `T.cons` "a allChar"
                 , charTokenDelimiter  `T.cons` "c adverbCloseChar"
                 , charTokenDelimiter  `T.cons` "d adminCmdChar"
                 , charTokenDelimiter  `T.cons` "e emoteNameChar"
@@ -569,6 +570,7 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"
                 , charTokenDelimiter  `T.cons` "s slotChar"
                 , charTokenDelimiter  `T.cons` "t sayToChar"
+                , styleTokenDelimiter `T.cons` styleTokenDelimiter `T.cons` " literal styleTokenDelimiter"
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("ddfltColor"         <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("hheaderColor"       <> dfltColorStyleToken  )
@@ -580,6 +582,7 @@ debugToken (NoArgs i mq cols) = do
                 , styleTokenDelimiter `T.cons` ("ssyntaxSymbolColor" <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("uunderlineANSI"     <> noUnderlineStyleToken)
                 , styleTokenDelimiter `T.cons` ("zzingColor"         <> dfltColorStyleToken  )
+                , "literal msgTokenDelimiter: " <> (T.pack . take 2 . repeat $ msgTokenDelimiter)
                 , "dfltBootMsg: "     <> (msgTokenDelimiter `T.cons` "b")
                 , "dfltShutdownMsg: " <> (msgTokenDelimiter `T.cons` "s") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"

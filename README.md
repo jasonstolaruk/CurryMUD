@@ -40,7 +40,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 
 The code is open source and available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs at this time**.
 
-### Notable features of the code
+### Notable features
 
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.

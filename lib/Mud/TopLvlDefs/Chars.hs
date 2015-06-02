@@ -21,7 +21,7 @@ allChar         = '\''
 amountChar      = '/'
 emoteNameChar   = '@'
 indexChar       = '.'
-sayToChar       = '-'
+sayToChar       = '>'
 selectorChar    = '-'
 slotChar        = ':'
 

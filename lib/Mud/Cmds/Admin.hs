@@ -37,7 +37,7 @@ import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
-import Control.Monad ((>=>), forM_, unless)
+import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
 import Data.Maybe (fromJust, fromMaybe)
@@ -465,13 +465,11 @@ teleHelper i ms p originId destId name =
                              \jarring flash of white light."
         desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a brief moment you \
                              \are overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
-        in (ms', [ unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ [ (msgAtOrigin, originPCIds)
-                                                                             , (msgAtDest,   destPCIds  ) ]
-                 , bcast . mkBroadcast i $ desc
-                 , look p
-                 , rndmDos [ (calcProbTeleVomit   i ms, mkExpAction "vomit"   p)
-                           , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ]
-                 , logPla "telehelper" i $ "teleported to " <> dblQuote name <> "." ])
+    in (ms', [ bcastIfNotIncog i [ (desc, [i]), (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ]
+             , look p
+             , rndmDos [ (calcProbTeleVomit   i ms, mkExpAction "vomit"   p)
+                       , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ]
+             , logPla "telehelper" i $ "teleported to " <> dblQuote name <> "." ])
 
 
 -----
