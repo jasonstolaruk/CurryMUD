@@ -1437,10 +1437,10 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
   | otherwise -> simpleSayHelper ms Nothing (T.unwords args) >>= bcastAndLog
   where
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
-      (_,   "")            -> Left adviceCloseChar
-      ("",  _ )            -> Left adviceEmptyAdverb
-      (" ", _ )            -> Left adviceEmptyAdverb
-      (_,   x ) | x == acc -> Left adviceEmptySay
+      (_,   "")            -> Left  adviceCloseChar
+      ("",  _ )            -> Left  adviceEmptyAdverb
+      (" ", _ )            -> Left  adviceEmptyAdverb
+      (_,   x ) | x == acc -> Left  adviceEmptySay
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     aoc               = T.singleton adverbOpenChar
     acc               = T.singleton adverbCloseChar
@@ -1464,22 +1464,25 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                  , "." ]
     adviseHelper      = advise p ["say"]
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
-        let d        = mkStdDesig i ms DoCap
-            invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+        let d              = mkStdDesig i ms DoCap
+            invCoins       = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
         in if notEmpty invCoins
-          then case uncurry (resolveRmInvCoins i ms [target]) invCoins of
-            (_,                    [ Left [msg] ]) -> sorry msg
-            (_,                    Right  _:_    ) -> sorry "You're talking to coins now?"
-            ([ Left  msg        ], _             ) -> sorry msg
-            ([ Right (_:_:_)    ], _             ) -> sorry "Sorry, but you can only say something to one person at a \
-                                                            \time."
-            ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
-                PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                           in either sorry (sayToHelper d targetId targetDesig) parseRearAdverb
-                MobType -> either sorry (sayToMobHelper d targetSing) parseRearAdverb
-                _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
-            x -> patternMatchFail "say sayTo" [ showText x ]
-          else sorry "You don't see anyone here to talk to."
+          then case singleArgInvEqRm InRm target of
+            (InInv, _      ) -> sorry "You can't talk to an item in your inventory. Try saying something to someone in the room."
+            (InEq,  _      ) -> sorry "You can't talk to an item in your readied equipment. Try saying something to someone in the room."
+            (InRm,  target') -> case uncurry (resolveRmInvCoins i ms [target']) invCoins of
+              (_,                    [ Left [msg] ]) -> sorry msg
+              (_,                    Right  _:_    ) -> sorry "You're talking to coins now?"
+              ([ Left  msg        ], _             ) -> sorry msg
+              ([ Right (_:_:_)    ], _             ) -> sorry "Sorry, but you can only say something to one person at \
+                                                              \a time."
+              ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
+                  PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                             in either sorry (sayToHelper d targetId targetDesig) parseRearAdverb
+                  MobType -> either sorry (sayToMobHelper d targetSing) parseRearAdverb
+                  _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
+              x -> patternMatchFail "say sayTo" [ showText x ]
+            else sorry "You don't see anyone here to talk to."
       where
         sorry msg       = (ms, (mkBroadcast i . nlnl $ msg, []))
         parseRearAdverb = case maybeAdverb of
