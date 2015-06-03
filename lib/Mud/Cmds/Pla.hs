@@ -1069,7 +1069,6 @@ quitCan'tAbbrev p = withoutArgs quitCan'tAbbrev p
 -----
 
 
--- TODO: Continue from here.
 ready :: Action
 ready p@AdviseNoArgs = advise p ["ready"] advice
   where
@@ -1082,14 +1081,19 @@ ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "ready" i)
   where
     helper ms =
-        let invCoins@(is, _)          = getInvCoins i ms
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
+            sorryInEq = inEqs |!| mkBroadcast i "You can't ready an item that's already in your readied equipment. If \
+                                                \you're intent on readying it, try unreadying it first!"
+            sorryInRm = inRms |!| mkBroadcast i "Sorry, but you can't ready an item in your current room. Please pick \
+                                                \up the item(s) first."
+            invCoins@(is, _)          = getInvCoins i ms
             d                         = mkStdDesig  i ms DoCap
-            (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ms as is mempty
+            (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ms inInvs is mempty
             eiss                      = zipWith (curry procGecrMisReady) gecrs miss
             bs                        = rcs |!| mkBroadcast i "You can't ready coins."
             (et, it, bs', logMsgs)    = foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) . zip eiss $ mrols
         in if notEmpty invCoins
-          then (ms & eqTbl .~ et & invTbl .~ it, (bs', logMsgs))
+          then (ms & eqTbl .~ et & invTbl .~ it, (sorryInEq ++ sorryInRm ++ bs', logMsgs))
           else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 ready p = patternMatchFail "ready" [ showText p ]
 
