@@ -16,6 +16,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
+import Mud.Misc.LocPref
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -139,35 +140,44 @@ prefixAdminCmd = prefixCmd adminCmdChar
 adminAdmin :: Action
 adminAdmin p@AdviseNoArgs = advise p [ prefixAdminCmd "admin" ] "Please specify the full PC name of the player you \
                                                                 \wish to promote/demote."
-adminAdmin (OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper >>= sequence_
+adminAdmin (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
-    helper ms = let fn = "adminAdmin helper" in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
-      []         -> (ms, [ wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> ". (Note that you \
-                                              \must specify the full PC name of the player you wish to \
-                                              \promote/demote.)" ])
-      [targetId] -> let selfSing       = getSing i ms
-                        targetSing     = getSing targetId ms
-                        isAdmin        = getPlaFlag IsAdmin . getPla targetId $ ms
-                        mkRetained msg = retainedMsg targetId ms $ T.concat [ promoteDemoteColor
-                                                                            , selfSing
-                                                                            , msg
-                                                                            , dfltColor ]
-                        fs = if isAdmin
-                          then [ mkRetained " has demoted you from admin status."
-                               , wrapSend  mq cols     $ "You have demoted "      <> targetSing <> "."
-                               , logPla    fn i        $ "demoted "               <> targetSing <> "."
-                               , logPla    fn targetId $ "demoted by "            <> selfSing   <> "."
-                               , logNotice fn          $ selfSing <> " demoted "  <> targetSing <> "." ]
-                          else [ mkRetained " has promoted you to admin status."
-                               , wrapSend  mq cols     $ "You have promoted "     <> targetSing <> "."
-                               , logPla    fn i        $ "promoted "              <> targetSing <> "."
-                               , logPla    fn targetId $ "promoted by "           <> selfSing   <> "."
-                               , logNotice fn          $ selfSing <> " promoted " <> targetSing <> "." ]
-                    in if
-                      | targetId == i        -> (ms, [ wrapSend mq cols "You can't demote yourself." ])
-                      | targetSing == "Root" -> (ms, [ wrapSend mq cols "You can't demote Root."     ])
-                      | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
-      xs         -> patternMatchFail "adminAdmin helper" [ showText xs ]
+    helper ms =
+      let fn = "adminAdmin helper"
+          (capitalize -> target', sorryMsg) | hasLocPref target = (T.tail . T.tail $ target, sorry)
+                                            | otherwise         = (target,                   ""   )
+          sendHelper = sendWithSorryMsg mq cols sorryMsg
+      in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target' ] of
+        []         -> (ms, [ let msg = T.concat [ "There is no PC by the name of "
+                                                , dblQuote target'
+                                                , ". "
+                                                , parensQuote "Note that you must specify the full PC name of the \
+                                                              \player you wish to promote/demote." ]
+                             in sendHelper msg ])
+        [targetId] -> let selfSing       = getSing i ms
+                          targetSing     = getSing targetId ms
+                          isAdmin        = getPlaFlag IsAdmin . getPla targetId $ ms
+                          mkRetained msg = retainedMsg targetId ms $ T.concat [ promoteDemoteColor
+                                                                              , selfSing
+                                                                              , msg
+                                                                              , dfltColor ]
+                          fs = if isAdmin
+                            then [ mkRetained " has demoted you from admin status."
+                                 , sendHelper            $ "You have demoted "      <> targetSing <> "."
+                                 , logPla    fn i        $ "demoted "               <> targetSing <> "."
+                                 , logPla    fn targetId $ "demoted by "            <> selfSing   <> "."
+                                 , logNotice fn          $ selfSing <> " demoted "  <> targetSing <> "." ]
+                            else [ mkRetained " has promoted you to admin status."
+                                 , sendHelper            $ "You have promoted "     <> targetSing <> "."
+                                 , logPla    fn i        $ "promoted "              <> targetSing <> "."
+                                 , logPla    fn targetId $ "promoted by "           <> selfSing   <> "."
+                                 , logNotice fn          $ selfSing <> " promoted " <> targetSing <> "." ]
+                      in if
+                        | targetId == i        -> (ms, [ sendHelper "You can't demote yourself." ])
+                        | targetSing == "Root" -> (ms, [ sendHelper "You can't demote Root."     ])
+                        | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
+        xs         -> patternMatchFail "adminAdmin helper" [ showText xs ]
+    sorry = sorryIgnoreLocPref "The PC name of the player you wish to promote/demote"
 adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
 

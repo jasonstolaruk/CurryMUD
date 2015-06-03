@@ -582,7 +582,7 @@ debugToken (NoArgs i mq cols) = do
                 , styleTokenDelimiter `T.cons` ("ssyntaxSymbolColor" <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("uunderlineANSI"     <> noUnderlineStyleToken)
                 , styleTokenDelimiter `T.cons` ("zzingColor"         <> dfltColorStyleToken  )
-                , "literal msgTokenDelimiter: " <> (T.pack . take 2 . repeat $ msgTokenDelimiter)
+                , "literal msgTokenDelimiter: " <> (T.pack . replicate 2 $ msgTokenDelimiter)
                 , "dfltBootMsg: "     <> (msgTokenDelimiter `T.cons` "b")
                 , "dfltShutdownMsg: " <> (msgTokenDelimiter `T.cons` "s") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"

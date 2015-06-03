@@ -225,27 +225,23 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dfltColor
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorryLocPref)
-                            | otherwise                          = (target,                                ""          )
+    let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
+                            | otherwise                          = (target,                                ""   )
+        sendHelper   = sendWithSorryMsg mq cols sorryMsg
         adminIdSings = [ ais | ais@(ai, _) <- mkAdminIdSingList ms
                              , let p = getPla ai ms, isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
         s            = getSing i ms
-        notFound     = sendWithSorryMsg sorryMsg $ "No administrator by the name of " <> dblQuote target' <> " is \
-                                                   \currently logged in."
-        found (adminId, _        ) | adminId == i = wrapSend mq cols "You talk to yourself."
+        notFound     = sendHelper $ "No administrator by the name of " <> dblQuote target' <> " is currently logged in."
+        found (adminId, _        ) | adminId == i = sendHelper "You talk to yourself."
         found (adminId, adminSing) | adminMq <- getMsgQueue adminId ms, adminCols <- getColumns adminId ms = do
-            sendWithSorryMsg sorryMsg  . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
+            sendHelper                 . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
             wrapSend adminMq adminCols . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor      ]
             logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
             logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
             logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
     in maybe notFound found . findFullNameForAbbrev target' $ adminIdSings
   where
-    sorryLocPref = parensQuote "The administrator name need not be given a location prefix. The location prefix you \
-                               \provided will be ignored."
-    sendWithSorryMsg sorryMsg primaryMsg
-      | isEmpty sorryMsg = wrapSend      mq cols primaryMsg
-      | otherwise        = multiWrapSend mq cols [ sorryMsg, primaryMsg ]
+    sorry = sorryIgnoreLocPref "The administrator name"
 admin p = patternMatchFail "admin" [ showText p ]
 
 
@@ -1643,10 +1639,8 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
          | isEmpty eqMap && isEmpty invCoins -> wrapSend mq cols dudeYou'reScrewed
          | isEmpty rmInvCoins                -> wrapSend mq cols noOneHere
          | otherwise                         -> case singleArgInvEqRm InRm (last as) of
-           (InInv, _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your inventory"         <> " " <>
-                                                 tryThisInstead
-           (InEq,  _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your readied equipment" <> " " <>
-                                                 tryThisInstead
+           (InInv, _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your inventory"         <> tryThisInstead
+           (InEq,  _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your readied equipment" <> tryThisInstead
            (InRm,  target) ->
              let argsWithoutTarget                    = init $ case as of [_, _] -> as
                                                                           _      -> (++ [target]) . nub . init $ as
@@ -1677,7 +1671,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                  Right _ -> wrapSend mq cols "Sorry, but you can only show something to one person at a time."
   where
     sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
-    tryThisInstead   = "Try showing something to someone in your current room."
+    tryThisInstead   = " Try showing something to someone in your current room."
     showInv ms d invCoins inInvs IdSingTypeDesig { .. } = if notEmpty invCoins
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
                showInvHelper                       = foldl' helperEitherInv ([], []) eiss

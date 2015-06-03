@@ -6,8 +6,9 @@ module Mud.Cmds.Util.Misc ( advise
                           , fileIOExHandler
                           , pager
                           , prefixCmd
-                          , throwToListenThread
                           , sendGenericErrorMsg
+                          , sorryIgnoreLocPref
+                          , throwToListenThread
                           , withoutArgs ) where
 
 import Mud.Cmds.Util.Abbrev
@@ -142,6 +143,14 @@ prefixCmd (T.singleton -> prefix) cn = prefix <> cn
 
 sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
+
+
+-----
+
+
+sorryIgnoreLocPref :: T.Text -> T.Text
+sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location prefix. The location prefix you provided \
+                                              \will be ignored."
 
 
 -----
