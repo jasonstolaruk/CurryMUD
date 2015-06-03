@@ -1915,15 +1915,19 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
 unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "unready" i)
   where
-    helper ms = let d                      = mkStdDesig i ms DoCap
-                    is                     = M.elems . getEqMap i $ ms
-                    (gecrs, miss, rcs)     = resolveEntCoinNames i ms as is mempty
-                    eiss                   = zipWith (curry procGecrMisPCEq) gecrs miss
-                    bs                     = rcs |!| mkBroadcast i "You can't unready coins."
-                    (et, it, bs', logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
-                in if notEmpty is
-                  then (ms & eqTbl .~ et & invTbl .~ it, (bs', logMsgs))
-                  else (ms, (mkBroadcast i dudeYou'reNaked, []))
+    helper ms =
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq as
+            sorryInInv             = inInvs |!| mkBroadcast i "You can't unready items in your inventory."
+            sorryInRm              = inRms  |!| mkBroadcast i "You can't unready items in your current room."
+            d                      = mkStdDesig i ms DoCap
+            is                     = M.elems . getEqMap i $ ms
+            (gecrs, miss, rcs)     = resolveEntCoinNames i ms inEqs is mempty
+            eiss                   = zipWith (curry procGecrMisPCEq) gecrs miss
+            bs                     = rcs |!| mkBroadcast i "You can't unready coins."
+            (et, it, bs', logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
+        in if notEmpty is
+          then (ms & eqTbl .~ et & invTbl .~ it, (sorryInInv ++ sorryInRm ++ bs', logMsgs))
+          else (ms, (mkBroadcast i dudeYou'reNaked, []))
 unready p = patternMatchFail "unready" [ showText p ]
 
 
