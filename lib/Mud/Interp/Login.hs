@@ -56,6 +56,7 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
+-- TODO: Ensure that a player cannot choose a name for their character that is the name of a race or mob. A player should not be allowed to name their character "Mhuman", etc.
 interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
   | not . inRange (3, 12) . T.length $ cn = promptRetryName mq "Your name must be between three and twelve characters \

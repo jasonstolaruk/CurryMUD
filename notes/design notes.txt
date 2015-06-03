@@ -1,53 +1,50 @@
-COMMUNITY:
+GOALS:
+
+Create a safe environment where people have freedom to explore (almost) any desired identity.
+Consider making this goal explicitly clear to players: after all, players share the responsibility of maintaining an environment that is safe for identity exploration. This is why outright evilness is not a winning strategy.
+
+Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
+
+Give players choice; give them the freedom to try anything. Let them forge their own paths. This promotes immersion.
 
 Avoid designing repetitive tasks that can be automated client-side.
 
 Do not launch with insufficient content.
 
-Help PCs foster relationships with each other and build communities. Religions, guilds, clans...
-Communities may have formal structure.
+==========
+
+COMMUNITY:
+
+Help PCs foster relationships with each other and build communities. Religions (formal devotion?), guilds, clans...
 Shared knowledge, goals, projects, and pressures.
 Shared history and future.
-Communication channels private to communities.
-Economic dependencies.
 Shared property.
 Shared "bank accounts."
 Shared iconography.
+Communication channels private to communities.
 Archives.
 
 Community participation should be entirely voluntary. Some players will prefer to remain independent.
 
-Create dependencies between communities (these usually concern resources).
+Create dependencies between communities (these usually concern resources/economics).
 
 Do not encourage xenophobia or prejudice (it could undermine community).
 
 ==========
 
-GOALS:
-
-Create a safe environment where people have freedom to explore (almost) any desired identity.
-Consider making this goal explicitly clear to players.
-Players share the responsibility of maintaining a safe environment for identity exploration. This is why outright evilness is not a winning strategy.
-
-Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
-
-Give players choice; give them the freedom to try anything. Let them take their own paths. This promotes immersion.
-
-==========
-
 SKILLS:
 
-Classless/skill based. Use an attribute and point system based on GURPS.
+Classless/skill based. Use an attribute and point system.
 
 Nevertheless, consider implementing a system of ranking, based perhaps on the total number of points accumulated. This will give players incremental goals to shoot for.
 
 Defeating mobs and using skills gives you exp. Exp translates to points which can be spent on skills. p.367-9
 
-Players must seek out "trainer" NPCs to learn (specialized?) skills.
-
 Ideally, the same skill system will be applicable for all conceivable skills (crafting, weapon use, spells, etc.).
 
 The skills you implement, and the complexity you assign to each "skill tree," sends a message to players regarding what is most important in your world.
+
+Players must seek out "trainer" NPCs to learn (specialized?) skills.
 
 Skill learning is an ideal candidate for an activity that players can opt to have their characters undertake while they are offline. (Travel is another.) p.450
 
@@ -57,6 +54,7 @@ PD:
 
 It is more realistic. Therefore, a virtual world with PD is more immersive.
 When NPCs/mobiles are killed, they seize to exist. There is no fiction that can satisfactorily explain why the same does not apply to PCs.
+
 If a character can continue its existence after death, then it clearly hasn't died. Without PD, all PCs are effectively immortal.
 
 A virtual world with PD is more exciting/thrilling.
@@ -97,18 +95,14 @@ Implementing PD means accepting the fact that many potential players will stay a
 MISC:
 
 Spell out a code of player conduct. It should be clear to players how they are expected to behave.
-"Yours is just one way of many to play."
 Age, harassment (with special attention to sexual orientation), RP (IC) vs. OOC, PD, PvP, multi-playing, bug abuse, loss of items.
 IC communication must always be appropriate for the context of the virtual world. References to reality are not allowed.
-
 Make it clear that by playing your virtual world, players are consenting to PD and PvP.
+"Yours is just one way of many to play."
 
-Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders.") p.458
-Allowing players to be builders is of course an option, but their creations will always be "very hit and miss." p.457
+Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders"). p.457-8
 
 Create a history and backstory for the virtual world.
-
-There is no hard-coded notion of alignment.
 
 (Returning) players should be able to opt out of all tutorials.
 
@@ -133,14 +127,14 @@ Intoxicants affect speech, etc.
 
 Make cigars and pipes.
 
-PCs may have pets. Make pet shop(s) where pets are sold.
+PCs may have pets. Make pet shops where pets are sold.
 
 Have musical instruments. PCs can sing and dance along with the music.
 
 Consider having cursed items that cannot be dropped, given to others, or unequipped.
 Make a cursed doll.
 
-Implement, in moderation, "environmental" affects, such as making mobs involuntarily sneeze when in a dusty room.
+Implement, in moderation, "environmental" affects, such as making PCs involuntarily sneeze when in a dusty room.
 
 To sacrifice something (typically a corpse), a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
 
@@ -152,8 +146,6 @@ Avoid teleportation mechanisms, as they tend to have a devastating effect on vir
 
 COMMANDS:
 
-Commands that change options and settings should be given a special prefix.
-
 You should be able to use "smell" and "listen" with no arguments. "smell air" could have the same effect as "smell" with no arguments.
 
 "intro" to formally introduce yourself to another PC. PCs must introduce themselves to each other before "link" can be used.
@@ -163,9 +155,7 @@ You should be able to use "smell" and "listen" with no arguments. "smell air" co
 
 When a PC dies, all those who have linked with him/her should be notified.
 
-"tryemote" to silently see the result of using a (built-in) emote.
-
-Encourage players to create aliases (using their mud clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
+Encourage players to create aliases (using their MUD clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
 
 "roomdesc" to specify a temporary description that appears next to your character's name in the description of your current room.
 "roomdesc leaning against the signpost" -> You (leaning against the signpost) / Taro (leaning against the signpost)
@@ -177,8 +167,6 @@ Certain commands, such as "sit", will automatically set one's room description.
 "bonus" to give another player a bonus for good RP.
 
 "nickname" to create your own nickname for another PC.
-
-"whoall", "whointro", "wholink"
 
 "punch", "kick", and "headbutt" to attack a PC without formally entering combat. These commands may not work with NPCs.
 
@@ -208,8 +196,6 @@ Certain objects (typically those that are a permanent fixture in a room) should 
 
 Have designated places where objects can be destroyed (trash bins).
 
-If you implement "a bunch of flowers" as an object, and "a tulip" as another object, players will want a means to put the tulip in the bunch, and so on.
-
 In a garden, where players can pick flowers, consider implementing a flower generator, which will generate a flower every time the player picks one. When a player drops a flower while still in the garden, you might just have the flower disappear.
 
 Players should be able to empty out containers that have liquid inside of them.
@@ -222,9 +208,9 @@ Consider putting seasonal content into the virtual world. Such content could be 
 
 GEOGRAPHY:
 
-Divide the overall geography into the world, regions (large swath of territory that have distinct, thematic differences), areas/zones (functional partitions imposed for technical reasons; these often coincide with and fit nicely inside regions), and rooms. The world should be partitioned such that it clusters players.
+Divide the overall geography into the world, regions (large swaths of territory that have distinct, thematic differences), areas/zones (functional partitions imposed for technical reasons; these often coincide with and fit nicely inside regions), and rooms. The world should be partitioned such that it clusters players.
 
-Where the map ends, consider creating unsurmountable physical boundaries. p275
+Where the map ends, consider creating unsurmountable physical boundaries. p.275
 
 The size of the virtual world should be proportionate to the number of players. A rule of thumb is to aim for 40 rooms per player. 20 rooms per player is crowded, while 60 rooms per player is sparse. The actual number of rooms need not coincide with the perceived size of the virtual world.
 
@@ -232,15 +218,16 @@ Provide both verbose and brief descriptions of rooms.
 
 Have "safe" zones/rooms, where PvP is impossible. Temples.
 
-Have at least one area where PCs can fight each other essentially to the death, but instead of actually dying, a defeated player character will instead "surrender."
+Have at least one area where PCs can fight each other essentially to the death, but instead of actually dying, a defeated player character will instead "surrender." Arenas.
 
 Have special rooms where OOC communication is allowed.
 
-The degree to which movement tires a character should be room specific (probably room-link specific). In this way, terrain can have an effect on the cost of movement. In addition, the physical distance between two rooms may be arbitrary; however, the distance between rooms should be kept relatively consistent so as to keep players from getting unnecessarily lost.
+The degree to which movement tires a character should be room specific (probably room *link* specific). In this way, terrain can have an effect on the cost of movement. In addition, the physical distance between two rooms may be arbitrary; however, the distance between rooms should be kept relatively consistent so as to keep players from getting unnecessarily lost.
 
 Believable settlements have access to food and water, nearby building materials, a nonthreatening climate/geology/geography, and a population. Often, settlements are centers of trade and commerce.
 
 Rooms may be either "outside" or "inside".
+
 Make a distinction between day and night. During the night, outside rooms automatically become dark (a light source is required).
 The sun rises and sets. Moon(s) become visible.
 
@@ -250,7 +237,7 @@ Make weather specific to zones. Weather must be appropriate for the given geogra
 
 PCs may own property and residences. The construction of a house should take some time, so as to be realistic; however, if it takes too long, players will become impatient.
 
-Make one or more cemeteries. If a PC's body is recovered and taken to a cemetery, it can be buried there, and a gravestone will be generated. (This assumes PD.)
+Make one or more cemeteries. If a PC's body is recovered and taken to a cemetery, it can be buried there, and a gravestone will be generated.
 
 Provide special venues for storytelling.
 
@@ -298,24 +285,16 @@ Have items wear out (realistically). This creates a money sink, thereby discoura
 
 Consider making certain services available for sale. This works especially well when the service is something that PCs can do for themselves, but players don't enjoy doing.
 
-Consider having multiple currencies, and variable exchange rates between them. This is good for limiting the spread of inflation: the more money of one kind there is in circulation, the less money of another kind it is worth.
-
-Coins should be given weight. When coins have a weight, the act of transporting them is nontrivial. This encourages the flourishing of local economies.
-
 Consider not having banks, as they are out of place in a pre-Renaissance setting.
 
 Charge for PC advancement.
 
 ==========
 
-MOBS (PCs and NPCs):
+PCs and NPCs:
 
 Every mob has a speed, which indicates how fast they can move from room to room. Groups travel at the speed of the slowest member.
 Naturally, encumbrance affects speed.
-
-Put a Beastly Fido somewhere.
-Also make a Unit Monster and a Multibeast.
-Giant Honey Badgers.
 
 ==========
 
@@ -325,9 +304,6 @@ For players who want to try out the game and start playing quickly, offer "chara
 Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
 
 Normal character generation can employ a "pick point" system similar to that of Hero's Quest. p.373-4
-
-Ensure that a player cannot choose a name for their character that is the name of a race or mob. A player should not be allowed to name their character "Mhuman".
-Players must choose fantasy names for their characters. Consider checking names against a dictionary of common real-world names.
 
 Make it clear that player descriptions must be written from an objective viewpoint. They must be passive.
 
@@ -347,7 +323,12 @@ NPCs act even when there are no PCs around. Make it so that this behavior can be
 
 Create "lore provider" NPCs designed to dispense knowledge in response to the "ask" command.
 
-Realistically, NPCs should go to bed at night. Different mobs should come out at night.
+Realistically, NPCs should go to bed at night. Certain mobs should only come out at night.
+
+Ideas for mobs:
+Beastly Fido
+Unit Monster and Multibeast
+Giant Honey Badgers
 
 ==========
 
@@ -371,7 +352,7 @@ Some spells can hit more than one mob.
 
 QUESTIONS:
 
-Can administrators/wizards arbitrarily take control of NPCs? p294
+Can administrators/wizards arbitrarily take control of NPCs? p.294
 
 How can the game be tailored to the visually impaired?
 This question is best answered by the actual community of visually impaired players.
@@ -383,9 +364,7 @@ Partition PCs geographically? Racial settlements?
 
 Can PCs higher henchmen NPCs to fight with them, heal them, and carry their items?
 
-Can mobs "run"?
-
-Profiling? Make this the basis for an auto-generated in-game newspaper? p185
+Profiling? Make this the basis for an auto-generated in-game newspaper? p.185
 
 Boats?
 
@@ -397,6 +376,12 @@ Doors? (When a door is opened, players on the other side would need to be inform
 
 ==========
 
-Free MUD hosting.
-http://www.mudconnect.com/SMF/index.php?topic=78251
-coindexter22@gmail.com MoeMuds.com
+Linux MUD clients supporting MXP:
+KMuddy
+MudMagic
+Mudlet
+
+Mac MUD clients supporting MXP:
+KMuddy
+MudMagic
+Mudlet
