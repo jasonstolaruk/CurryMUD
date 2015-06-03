@@ -303,7 +303,7 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-            sorryInEq              = inEqs |!| mkBroadcast i "Sorry, but you can't drop an item in your readied \
+            sorryInEq              = inEqs |!| mkBroadcast i "Sorry, but you can't drop items in your readied \
                                                              \equipment. Please unready the item(s) first."
             sorryInRm              = inRms |!| mkBroadcast i "You can't drop an item that's already in your current \
                                                              \room. If you're intent on dropping it, try picking it up \
@@ -970,9 +970,9 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
         Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
           then sorry $ theOnLowerCap conSing <> " isn't a container."
           else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-                   sorryInEq = inEqs |!| mkBroadcast i "Sorry, but you can't put an item in your readied equipment \
-                                                       \into a container. Please unready the item(s) first."
-                   sorryInRm = inRms |!| mkBroadcast i "Sorry, but you can't put an item in your current room into a \
+                   sorryInEq = inEqs |!| mkBroadcast i "Sorry, but you can't put items in your readied equipment into \
+                                                       \a container. Please unready the item(s) first."
+                   sorryInRm = inRms |!| mkBroadcast i "Sorry, but you can't put items in your current room into a \
                                                        \container. Please pick up the item(s) first."
                    (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) pcInvCoins
                    eiss                = zipWith (curry procGecrMisPCInv) gecrs miss
@@ -1082,10 +1082,9 @@ ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-            sorryInEq = inEqs |!| mkBroadcast i "You can't ready an item that's already in your readied equipment. If \
-                                                \you're intent on readying it, try unreadying it first!"
-            sorryInRm = inRms |!| mkBroadcast i "Sorry, but you can't ready an item in your current room. Please pick \
-                                                \up the item(s) first."
+            sorryInEq = inEqs |!| mkBroadcast i "You can't ready an item that's already in your readied equipment."
+            sorryInRm = inRms |!| mkBroadcast i "Sorry, but you can't ready items in your current room. Please pick up \
+                                                \the item(s) first."
             invCoins@(is, _)          = getInvCoins i ms
             d                         = mkStdDesig  i ms DoCap
             (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ms inInvs is mempty
@@ -1482,8 +1481,10 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             invCoins       = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
         in if notEmpty invCoins
           then case singleArgInvEqRm InRm target of
-            (InInv, _      ) -> sorry "You can't talk to an item in your inventory. Try saying something to someone in the room."
-            (InEq,  _      ) -> sorry "You can't talk to an item in your readied equipment. Try saying something to someone in the room."
+            (InInv, _      ) -> sorry "You can't talk to an item in your inventory. Try saying something to someone in \
+                                      \your current room."
+            (InEq,  _      ) -> sorry "You can't talk to an item in your readied equipment. Try saying something to \
+                                      \someone in your current room."
             (InRm,  target') -> case uncurry (resolveRmInvCoins i ms [target']) invCoins of
               (_,                    [ Left [msg] ]) -> sorry msg
               (_,                    Right  _:_    ) -> sorry "You're talking to coins now?"
@@ -1641,37 +1642,42 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
        in if
          | isEmpty eqMap && isEmpty invCoins -> wrapSend mq cols dudeYou'reScrewed
          | isEmpty rmInvCoins                -> wrapSend mq cols noOneHere
-         | otherwise                         ->
-           let target            = last as
-               argsWithoutTarget = init $ case as of [_, _] -> as
-                                                     _      -> (++ [target]) . nub . init $ as
-               (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms [target]) rmInvCoins
-           in if isEmpty targetMiss && notEmpty targetRcs
-             then wrapSend mq cols . sorryCan'tShow $ "coin"
-             else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
-               Left  msg        -> wrapSend mq cols msg
-               Right [targetId] ->
-                 let d         = mkStdDesig i ms DoCap
-                     theTarget = IdSingTypeDesig { theId    = targetId
-                                                 , theSing  = getSing targetId ms
-                                                 , theType  = getType targetId ms
-                                                 , theDesig = serialize . mkStdDesig targetId ms $ Don'tCap }
-                     (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq argsWithoutTarget
-                     (invBs, invLog)        = inInvs |!| showInv ms d invCoins inInvs theTarget
-                     (eqBs,  eqLog )        = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
-                     rmBs                   = inRms  |!| mkBroadcast i "You can't show an item in your room."
-                 in if theType theTarget `notElem` [ MobType, PCType ]
-                   then wrapSend mq cols . sorryCan'tShow . theSing $ theTarget
-                   else do
-                       bcastNl $ rmBs ++ invBs ++ eqBs
-                       let log = slashes . dropBlanks $ [ invLog |!| parensQuote "inv" <> " " <> invLog
-                                                        , eqLog  |!| parensQuote "eq"  <> " " <> eqLog ]
-                       unlessEmpty log $ logPla "show" i . (T.concat [ "showed to "
-                                                                     , theSing theTarget
-                                                                     , ": " ] <>)
-               Right _ -> wrapSend mq cols "Sorry, but you can only show something to one person at a time."
+         | otherwise                         -> case singleArgInvEqRm InRm (last as) of
+           (InInv, _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your inventory"         <> " " <>
+                                                 tryThisInstead
+           (InEq,  _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your readied equipment" <> " " <>
+                                                 tryThisInstead
+           (InRm,  target) ->
+             let argsWithoutTarget                    = init $ case as of [_, _] -> as
+                                                                          _      -> (++ [target]) . nub . init $ as
+                 (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms [target]) rmInvCoins
+             in if isEmpty targetMiss && notEmpty targetRcs
+               then wrapSend mq cols . sorryCan'tShow $ "coin"
+               else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
+                 Left  msg        -> wrapSend mq cols msg
+                 Right [targetId] ->
+                   let d         = mkStdDesig i ms DoCap
+                       theTarget = IdSingTypeDesig { theId    = targetId
+                                                   , theSing  = getSing targetId ms
+                                                   , theType  = getType targetId ms
+                                                   , theDesig = serialize . mkStdDesig targetId ms $ Don'tCap }
+                       (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq argsWithoutTarget
+                       (invBs, invLog)        = inInvs |!| showInv ms d invCoins inInvs theTarget
+                       (eqBs,  eqLog )        = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
+                       rmBs                   = inRms  |!| mkBroadcast i "You can't show an item in your current room."
+                   in if theType theTarget `notElem` [ MobType, PCType ]
+                     then wrapSend mq cols . sorryCan'tShow . theSing $ theTarget
+                     else do
+                         bcastNl $ rmBs ++ invBs ++ eqBs
+                         let log = slashes . dropBlanks $ [ invLog |!| parensQuote "inv" <> " " <> invLog
+                                                          , eqLog  |!| parensQuote "eq"  <> " " <> eqLog ]
+                         unlessEmpty log $ logPla "show" i . (T.concat [ "showed to "
+                                                                       , theSing theTarget
+                                                                       , ": " ] <>)
+                 Right _ -> wrapSend mq cols "Sorry, but you can only show something to one person at a time."
   where
     sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
+    tryThisInstead   = "Try showing something to someone in your current room."
     showInv ms d invCoins inInvs IdSingTypeDesig { .. } = if notEmpty invCoins
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
                showInvHelper                       = foldl' helperEitherInv ([], []) eiss
