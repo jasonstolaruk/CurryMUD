@@ -209,23 +209,30 @@ adminBoot :: Action
 adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
                                                               \to boot, optionally followed by a custom message."
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target ] of
-      []       -> wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> ". (Note that you must \
-                                     \specify the full PC name of the player you wish to boot.)"
+    let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
+                            | otherwise                          = (target,                                ""   )
+        sendHelper = sendWithSorryMsg mq cols sorryMsg
+    in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == target' ] of
+      []       -> sendHelper . T.concat $ [ "There is no PC by the name of "
+                                          , dblQuote target'
+                                          ,  ". "
+                                          , parensQuote "Note that you must specify the full PC name of the player you \
+                                                        \wish to boot." ]
       [bootId] -> let selfSing = getSing i ms in if
-                    | not . isLoggedIn . getPla bootId $ ms -> wrapSend mq cols $ target <> " is not logged in."
-                    | bootId == i -> wrapSend mq cols "You can't boot yourself."
+                    | not . isLoggedIn . getPla bootId $ ms -> sendHelper $ target' <> " is not logged in."
+                    | bootId == i -> sendHelper "You can't boot yourself."
                     | otherwise   -> let bootMq = getMsgQueue bootId ms
                                          f      = isEmpty msg ? dfltMsg :? customMsg
-                                     in ok mq >> (sendMsgBoot bootMq =<< f bootId selfSing)
+                                     in ok mq >> (sendMsgBoot bootMq =<< f bootId target' selfSing)
       xs       -> patternMatchFail "adminBoot" [ showText xs ]
   where
-    dfltMsg   bootId s = emptied $ do
-        logPla "adminBoot dfltMsg"   i      $ T.concat [ "booted ", target, " ", parensQuote "no message given", "." ]
-        logPla "adminBoot dfltMsg"   bootId $ T.concat [ "booted by ", s,   " ", parensQuote "no message given", "." ]
-    customMsg bootId s = do
-        logPla "adminBoot customMsg" i      $ T.concat [ "booted ", target, "; message: ", dblQuote msg ]
-        logPla "adminBoot customMsg" bootId $ T.concat [ "booted by ", s,   "; message: ", dblQuote msg ]
+    sorry                      = sorryIgnoreLocPref "The PC name of the player you wish to boot"
+    dfltMsg   bootId target' s = emptied $ do
+        logPla "adminBoot dfltMsg"   i      $ T.concat [ "booted ", target', " ", parensQuote "no message given", "." ]
+        logPla "adminBoot dfltMsg"   bootId $ T.concat [ "booted by ", s,    " ", parensQuote "no message given", "." ]
+    customMsg bootId target' s = do
+        logPla "adminBoot customMsg" i      $ T.concat [ "booted ", target', "; message: ", dblQuote msg ]
+        logPla "adminBoot customMsg" bootId $ T.concat [ "booted by ", s,    "; message: ", dblQuote msg ]
         return . Just $ msg
 adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
