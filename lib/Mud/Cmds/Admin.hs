@@ -373,7 +373,6 @@ adminProfanity p = withoutArgs adminProfanity p
 -----
 
 
--- TODO: When to log w/ function name vs. cmd name?
 adminRetained :: Action
 adminRetained p@AdviseNoArgs = advise p [ prefixAdminCmd "retained" ] advice
   where

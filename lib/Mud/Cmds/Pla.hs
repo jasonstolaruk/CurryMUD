@@ -1486,8 +1486,8 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                                               \a time."
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                   PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                             in either sorry (sayToHelper d targetId targetDesig) parseRearAdverb
-                  MobType -> either sorry (sayToMobHelper d targetSing) parseRearAdverb
+                             in parseRearAdverb |$| either sorry (sayToHelper d targetId targetDesig)
+                  MobType -> parseRearAdverb |$| either sorry (sayToMobHelper d targetSing)
                   _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
               x -> patternMatchFail "say sayTo" [ showText x ]
             else sorry "You don't see anyone here to talk to."
@@ -1591,7 +1591,7 @@ helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
                         "lines"   -> procEither (changeSetting minPageLines maxPageLines "lines"   pageLines)
                         t         -> patternMatchFail "helperSettings found" . pure $ t
       where
-        procEither f = either appendMsg f parseInt
+        procEither f = parseInt |$| either appendMsg f
         parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
                                                                              _         -> sorryParse
         sorryParse   = Left . T.concat $ [ dblQuote value

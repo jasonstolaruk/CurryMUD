@@ -159,7 +159,7 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
   | h == allChar = mkGecrMult i ms (maxBound :: Int) t searchIs searchCoins
   | isDigit h
   , (numText, rest) <- T.span isDigit searchName
-  , numInt <- either (oops numText) fst . decimal $ numText
+  , numInt <- decimal numText |$| either (oops numText) fst
   = numText /= "0" ? parse rest numInt :? Sorry searchName
   | otherwise = mkGecrMult i ms 1 searchName searchIs searchCoins
   where
