@@ -225,11 +225,11 @@ handleLogin params@(ActionParams { .. }) = do
     showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs, p) -> do
         unless (()# msgs) $ do
             let (fromAdmins, others) = first (map T.tail) . partition ((== retainedFromAdminMarker) . T.head) $ msgs
-            unlessEmpty others $ multiWrapSend plaMsgQueue plaCols . intersperse ""
-            unlessEmpty fromAdmins $ let m   = "message" <> case fromAdmins of [_] -> ""
-                                                                               _   -> "s"
-                                         msg = "You missed the following " <> m <> " while you were away:"
-                                     in multiWrapSend plaMsgQueue plaCols . (msg :)
+            others |#| multiWrapSend plaMsgQueue plaCols . intersperse ""
+            fromAdmins |#| let m   = "message" <> case fromAdmins of [_] -> ""
+                                                                     _   -> "s"
+                               msg = "You missed the following " <> m <> " while you were away:"
+                           in multiWrapSend plaMsgQueue plaCols . (msg :)
             logPla "handleLogin showRetainedMsgs" plaId "Showed retained messages."
         return (ms, p)
     helper ms = let p   = getPla plaId ms

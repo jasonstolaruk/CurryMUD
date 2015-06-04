@@ -5,6 +5,7 @@ module Mud.Util.Misc ( (!#)
                      , (#?)
                      , (?)
                      , (|!|)
+                     , (|#|)
                      , (|$|)
                      , (|?|)
                      , Cond(..)
@@ -31,8 +32,7 @@ module Mud.Util.Misc ( (!#)
                      , toMaybe
                      , uncurry3
                      , uncurry4
-                     , unit
-                     , unlessEmpty ) where
+                     , unit ) where
 
 import Mud.Util.Quoting
 
@@ -52,7 +52,8 @@ import qualified Data.Text as T
 infixl 0 ?
 infixl 1 :?, |!|, |?|
 infixl 7 `divide`
-infixl 9 #, !#
+infixl 8 |#|
+infixl 9 !#, #, #?
 infixr 0 |$|
 
 
@@ -79,12 +80,17 @@ True  ? (x :? _) = x
 False ? (_ :? y) = y
 
 
--- mempty on mempty.
+-- mempty on mempty
 (|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
 a |!| b = ()# a ? mempty :? b
 
 
--- mempty on False.
+-- unless mempty
+(|#|) :: (Monoid a, Monad m, Eq a) => a -> (a -> m ()) -> m ()
+x |#| f = unless (()# x) . f $ x
+
+
+-- mempty on False
 (|?|) :: (Monoid a) => Bool -> a -> a
 a |?| b = a ? b :? mempty
 
@@ -191,10 +197,6 @@ uncurry3 f (a, b, c) = f a b c
 
 uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
 uncurry4 f (a, b, c, d) = f a b c d
-
-
-unlessEmpty :: (Monoid a, Monad m, Eq a) => a -> (a -> m ()) -> m ()
-unlessEmpty x f = unless (()# x) . f $ x
 
 
 unit :: ()

@@ -295,7 +295,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dfltColor
                       , "." ]
 dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "drop" i)
+    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "drop" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
@@ -459,7 +459,7 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dfltColor
                                   , "." ]
 getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "get" i)
+    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "get" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -611,7 +611,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
 help (LowerNub i mq cols as) = (getPlaFlag IsAdmin . getPla i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
-    unlessEmpty hns $ logPla "help" i . ("read help on: " <>) . commas
+    hns |#| logPla "help" i . ("read help on: " <>) . commas
 help p = patternMatchFail "help" [ showText p ]
 
 
@@ -668,7 +668,7 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
   else let introsTxt = commas intros in
       multiWrapSend mq cols [ "You know the following names:", introsTxt ] >> (logPlaOut "intro" i . pure $ introsTxt)
 intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
-    bcastIfNotIncog i bs >> unlessEmpty logMsgs (logPlaOut "intro" i)
+    bcastIfNotIncog i bs >> logMsgs |#| logPlaOut "intro" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -928,7 +928,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dfltColor
                       , "." ]
 putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "put" i)
+    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "put" i
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
       if ()!# pcInvCoins
@@ -1074,7 +1074,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dfltColor
                       , "." ]
 ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "ready" i)
+    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "ready" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
@@ -1366,7 +1366,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dfltColor
                       , "." ]
 remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "remove" i)
+    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "remove" i
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
         case singleArgInvEqRm InInv conName of
@@ -1524,7 +1524,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             in (ms & plaTbl .~ pt, ((toOthersBroadcast :) . mkBroadcast i . nlnl $ toSelfMsg <> hint, pure toSelfMsg))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
-    bcastAndLog (bs, logMsgs) = bcast bs >> unlessEmpty logMsgs (logPlaOut "say" i)
+    bcastAndLog (bs, logMsgs) = bcast bs >> logMsgs |#| logPlaOut "say" i
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         let d                 = mkStdDesig i ms DoCap
             toSelfMsg         = T.concat [ "You say", adverb, ", ", msg ]
@@ -1560,7 +1560,7 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
 setAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> unlessEmpty logMsgs (logPlaOut "set" i)
+    bcastNl bs >> logMsgs |#| logPlaOut "set" i
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
                 in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
@@ -1664,9 +1664,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                          bcastNl $ rmBs ++ invBs ++ eqBs
                          let log = slashes . dropBlanks $ [ invLog |!| parensQuote "inv" <> " " <> invLog
                                                           , eqLog  |!| parensQuote "eq"  <> " " <> eqLog ]
-                         unlessEmpty log $ logPla "show" i . (T.concat [ "showed to "
-                                                                       , theSing theTarget
-                                                                       , ": " ] <>)
+                         log |#| logPla "show" i . (T.concat [ "showed to "
+                                                             , theSing theTarget
+                                                             , ": " ] <>)
                  Right _ -> wrapSend mq cols "Sorry, but you can only show something to one person at a time."
   where
     sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
@@ -1906,7 +1906,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dfltColor
                       , "." ]
 unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "unready" i)
+    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "unready" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq as

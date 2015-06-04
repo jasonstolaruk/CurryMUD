@@ -335,7 +335,7 @@ server h i mq itq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThre
 handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p           = getPla i ms
-        thruCentral = unlessEmpty msg $ uncurry (interpret p centralDispatch) . headTail . T.words
+        thruCentral = msg |#| uncurry (interpret p centralDispatch) . headTail . T.words
         thruOther f = uncurry (interpret p f) (()# msg ? ("", []) :? (headTail . T.words $ msg))
     in maybe thruCentral thruOther $ p^.interp
   where
