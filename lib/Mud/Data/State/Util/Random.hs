@@ -39,7 +39,7 @@ rndmDo prob = mWhen (isSuccess prob)
 
 
 rndmDos :: [(Int, MudStack ())] -> MudStack ()
-rndmDos []               = return ()
+rndmDos []               = unit
 rndmDos ((prob, act):xs) = mIf (isSuccess prob) act . rndmDos $ xs
 
 

@@ -490,7 +490,7 @@ go dir p@(ActionParams { args      }) = goDispatcher p { args = dir : args }
 
 
 goDispatcher :: Action
-goDispatcher   (ActionParams { args = [] }) = return ()
+goDispatcher   (ActionParams { args = [] }) = unit
 goDispatcher p@(Lower i mq cols as)         = mapM_ (tryMove i mq cols p { args = [] }) as
 goDispatcher p                              = patternMatchFail "goDispatcher" [ showText p ]
 

@@ -68,7 +68,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
     Left  Nothing    -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
                                                       , checkPropNamesDict     mq cn
                                                       , checkWordsDict         mq cn ])
-                            (return ())
+                            unit
                             nextPrompt
     Right (originId, oldSing) -> getState >>= \ms -> let cols = getColumns i ms in do
       greet cols

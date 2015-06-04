@@ -60,6 +60,7 @@ infixr 0 |$|
 -- ==================================================
 
 
+-- TODO: Consider moving these to an "Operators" module.
 (!#) :: (Eq m, Monoid m) => () -> m -> Bool
 ()!# x = not $ ()# x
 
@@ -86,7 +87,7 @@ a |!| b = ()# a ? mempty :? b
 
 
 -- unless mempty
-(|#|) :: (Monoid a, Monad m, Eq a) => a -> (a -> m ()) -> m ()
+(|#|) :: (Eq a, Monoid a, Monad m) => a -> (a -> m ()) -> m ()
 x |#| f = unless (()# x) . f $ x
 
 
@@ -148,12 +149,12 @@ isVowel :: Char -> Bool
 isVowel = (`elem` "aeiou")
 
 
-maybeRet :: Monad m => m a -> Maybe a -> m a
+maybeRet :: (Monad m) => m a -> Maybe a -> m a
 maybeRet = flip maybe return
 
 
 maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
-maybeVoid = maybe (return ())
+maybeVoid = maybe unit
 
 
 mIf :: (Monad m) => m Bool -> m a -> m a -> m a
@@ -162,11 +163,11 @@ mIf p x y = p >>= \case True  -> x
 
 
 mUnless :: (Monad m) => m Bool -> m () -> m ()
-mUnless p = mIf p (return ())
+mUnless p = mIf p unit
 
 
 mWhen :: (Monad m) => m Bool -> m () -> m ()
-mWhen p x = mIf p x . return $ ()
+mWhen p x = mIf p x unit
 
 
 mkDateTimeTxt :: IO (T.Text, T.Text)
@@ -199,5 +200,5 @@ uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
 uncurry4 f (a, b, c, d) = f a b c d
 
 
-unit :: ()
-unit = let in ()
+unit :: (Monad m) => m ()
+unit = return $ let in ()

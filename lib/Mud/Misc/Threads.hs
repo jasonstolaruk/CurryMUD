@@ -303,7 +303,7 @@ inacTimer i mq itq = sequence_ [ setThreadType . InacTimer $ i, loop 0 `catch` p
           Just Nothing | secs >= maxInacSecs -> inacBoot secs
                        | otherwise           -> loop . succ $ secs
           Just (Just ResetTimer)             -> loop 0
-          Nothing                            -> return ()
+          Nothing                            -> unit
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = getState >>= \ms -> let s = getSing i ms in do
         logPla "inacTimer" i $ "booted due to inactivity " <> secs <>  "."
         logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]

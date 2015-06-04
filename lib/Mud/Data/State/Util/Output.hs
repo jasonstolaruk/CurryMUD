@@ -63,7 +63,7 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 
 
 bcast :: [Broadcast] -> MudStack ()
-bcast [] = return ()
+bcast [] = unit
 bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ bs
   where
     sendBcastSTM ms (msg, is) = forM_ is $ \i ->
