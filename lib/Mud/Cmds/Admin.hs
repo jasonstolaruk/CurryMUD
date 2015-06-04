@@ -327,7 +327,7 @@ adminPeep (LowerNub i mq cols as) = do
                                msg     = "You are no longer peeping " <> peepSing <> "."
                                logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
-                in maybe notFound found . findFullNameForAbbrev target $ apiss
+                in findFullNameForAbbrev target apiss |$| maybe notFound found
             res = foldr (peep . capitalize . f) (ms^.plaTbl, [], []) as
         in (ms & plaTbl .~ res^._1, (res^._2.to g, res^._3))
     sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the player(s) you wish to start or stop peeping"
@@ -396,7 +396,7 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
         let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
                                 | otherwise                          = (target,                                ""   )
             sendHelper = sendWithSorryMsg mq cols sorryMsg
-            s = getSing i ms
+            s          = getSing i ms
             targetMsg  = T.concat [ T.singleton retainedFromAdminMarker
                                   , bracketQuote s
                                   , " "
@@ -434,7 +434,7 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                       receivedLogMsg = ( targetId
                                        , T.concat [ "received retained message from ", s,    ": ", dblQuote msg ] )
                   return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target' . mkAdminPlaIdSingList $ ms
+        in (findFullNameForAbbrev target' . mkAdminPlaIdSingList $ ms) |$| maybe notFound found
     sorry = sorryIgnoreLocPref "The PC name of the message recipient"
 adminRetained p = patternMatchFail "adminRetained" [ showText p ]
 
@@ -451,7 +451,7 @@ adminShutdown p              = patternMatchFail "adminShutdown" [ showText p ]
 shutdownHelper :: Id -> MsgQueue -> Maybe T.Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
-        rest = maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote) maybeMsg
+        rest = maybeMsg |$| maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote)
     in do
         massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg maybeMsg <> dfltColor
         logPla     "adminShutdown" i $ "initiating shutdown" <> rest
@@ -481,7 +481,7 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
               | otherwise                  = teleHelper i ms p { args = [] } originId destId targetSing sorryMsg
             notFound     = (ms, pure sorryInvalid)
             sorryInvalid = sendHelper $ "No PC by the name of " <> dblQuote target' <> " is currently logged in."
-        in maybe notFound found . findFullNameForAbbrev target' $ idSings
+        in findFullNameForAbbrev target' idSings |$| maybe notFound found
 adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
 
 
@@ -535,7 +535,7 @@ adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
                                                    , dblQuote . prefixAdminCmd $ "telerm"
                                                    , dfltColor
                                                    , " with no arguments to get a list of valid room names." ]
-        in maybe notFound found . findFullNameForAbbrev target' . views rmTeleNameTbl IM.toList $ ms
+        in (findFullNameForAbbrev target' . views rmTeleNameTbl IM.toList $ ms) |$| maybe notFound found
 adminTeleRm p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
@@ -567,26 +567,30 @@ adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsg
     logMsgs |#| let f = uncurry (logPla (prefixAdminCmd "tell")) in mapM_ f
   where
     helper ms =
-        let s        = getSing i ms
-            idSings  = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
-            notFound = emptied . wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently \
-                                                    \logged in."
+        let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
+                                | otherwise                          = (target,                                ""   )
+            sendHelper = sendWithSorryMsg mq cols sorryMsg
+            s          = getSing i ms
+            idSings    = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+            notFound   = emptied . sendHelper $ "No PC by the name of " <> dblQuote target' <> " is currently \
+                                                \logged in."
             found (tellId@(flip getPla ms -> tellPla), tellSing)
-              | tellId == i = emptied . wrapSend mq cols $ "You talk to yourself."
+              | tellId == i = emptied . sendHelper $ "You talk to yourself."
               | getPlaFlag IsIncognito . getPla i $ ms
               , not . getPlaFlag IsAdmin $ tellPla =
-                  emptied . wrapSend mq cols $ "You can only send messages to other administrators while incognito."
+                  emptied . sendHelper $ "You can only send messages to other administrators while incognito."
               | tellMq         <- getMsgQueue tellId ms
               , tellCols       <- tellPla^.columns
               , targetMsg      <- T.concat [ bracketQuote s, " ", adminTellColor, msg, dfltColor ]
               , sentLogMsg     <- (i,      T.concat [ "sent message to ", tellSing, ": ", dblQuote msg ])
               , receivedLogMsg <- (tellId, T.concat [ "received message from ", s,  ": ", dblQuote msg ]) = do
-                  wrapSend mq cols . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
+                  sendHelper . T.concat $ [ "You send ", tellSing, ": ", dblQuote msg ]
                   if getPlaFlag IsNotFirstAdminTell tellPla
                     then wrapSend      tellMq tellCols targetMsg
                     else multiWrapSend tellMq tellCols =<< [ targetMsg : hints | hints <- firstAdminTell tellId s ]
                   return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target $ idSings
+        in findFullNameForAbbrev target' idSings |$| maybe notFound found
+    sorry = sorryIgnoreLocPref "The PC name of the message recipient"
 adminTell p = patternMatchFail "adminTell" [ showText p ]
 
 

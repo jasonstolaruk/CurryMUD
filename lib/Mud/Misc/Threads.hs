@@ -337,7 +337,7 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getSta
     let p           = getPla i ms
         thruCentral = msg |#| uncurry (interpret p centralDispatch) . headTail . T.words
         thruOther f = uncurry (interpret p f) (()# msg ? ("", []) :? (headTail . T.words $ msg))
-    in maybe thruCentral thruOther $ p^.interp
+    in p^.interp |$| maybe thruCentral thruOther
   where
     interpret p f cn as = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg

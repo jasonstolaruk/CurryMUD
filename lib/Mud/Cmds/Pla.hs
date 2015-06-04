@@ -239,7 +239,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
             logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
             logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
             logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
-    in maybe notFound found . findFullNameForAbbrev target' $ adminIdSings
+    in findFullNameForAbbrev target' adminIdSings |$| maybe notFound found
   where
     sorry = sorryIgnoreLocPref "The administrator name"
 admin p = patternMatchFail "admin" [ showText p ]
@@ -647,7 +647,7 @@ parseHelpTxt cols = concat . wrapLines cols . T.lines . parseTokens
 
 
 getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (T.Text, T.Text)
-getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrev name $ [ (h, helpName h) | h <- hs ]
+getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <- hs ] |$| maybe sorry found
   where
     sorry                                      = return ("No help is available on " <> dblQuote name <> ".", "")
     found (helpFilePath -> hf, dblQuote -> hn) = (,) <$> readHelpFile hf hn <*> return hn
@@ -1112,7 +1112,7 @@ readyDispatcher :: Id
                 -> Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
-    maybe (sorry targetSing) (\f -> f i ms d mrol a targetId targetSing) helper
+    helper |$| maybe (sorry targetSing) (\f -> f i ms d mrol a targetId targetSing)
   where
     helper = case getType targetId ms of
       ClothType -> Just readyCloth
@@ -1135,7 +1135,7 @@ readyCloth :: Id
            -> Sing
            -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyCloth i ms d mrol a@(et, _, _, _) clothId clothSing | em <- et ! i, cloth <- getCloth clothId ms =
-    case maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) mrol of
+  case mrol |$| maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a slot clothId . mkReadyClothMsgs slot $ cloth
   where
@@ -1216,11 +1216,9 @@ getDesigClothSlot ms clothSing cloth em rol
   | isRingRol rol, cloth /= Ring                              = Left sorryCan'tWearThere
   | cloth == Ring, not . isRingRol $ rol                      = Left ringHelp
   | otherwise = case cloth of
-    Earring  -> maybe (Left sorryEarring ) Right (findSlotFromList rEarringSlots  lEarringSlots )
-    Bracelet -> maybe (Left sorryBracelet) Right (findSlotFromList rBraceletSlots lBraceletSlots)
-    Ring     -> maybe (Right slotFromRol)
-                      (Left . sorryRing slotFromRol)
-                      (M.lookup slotFromRol em)
+    Earring  -> findSlotFromList rEarringSlots  lEarringSlots  |$| maybe (Left sorryEarring ) Right
+    Bracelet -> findSlotFromList rBraceletSlots lBraceletSlots |$| maybe (Left sorryBracelet) Right
+    Ring     -> M.lookup slotFromRol em |$| maybe (Right slotFromRol) (Left . sorryRing slotFromRol)
     _        -> patternMatchFail "getDesigClothSlot" [ showText cloth ]
   where
     sorryCan'tWearThere    = T.concat [ "You can't wear ", aOrAn clothSing, " on your ", pp rol, "." ]
@@ -1264,7 +1262,7 @@ readyWpn :: Id
 readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
       then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _3 <>~ b
-      else case maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) mrol of
+               else case mrol |$| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
         Left  (mkBroadcast i -> b) -> a & _3 <>~ b
         Right slot  -> case sub of
           OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", wpnSing, " with your ", pp slot, "." ]
@@ -1293,7 +1291,7 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
 
 getAvailWpnSlot :: MudState -> Id -> EqMap -> Either T.Text Slot
 getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
-    maybe (Left "You're already wielding two weapons.") Right . findAvailSlot em . map getSlotForHand $ [ h, oh ]
+    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |$| maybe (Left "You're already wielding two weapons.") Right
   where
     getSlotForHand h = case h of RHand -> RHandS
                                  LHand -> LHandS
@@ -1303,7 +1301,7 @@ getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
 getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigWpnSlot ms wpnSing em rol
   | isRingRol rol = Left $ "You can't wield " <> aOrAn wpnSing <> " with your finger!"
-  | otherwise     = maybe (Right desigSlot) (Left . sorry) . M.lookup desigSlot $ em
+  | otherwise     = M.lookup desigSlot em |$| maybe (Right desigSlot) (Left . sorry)
   where
     sorry i = let s = getSing i ms in T.concat [ "You're already wielding "
                                                , aOrAn s
@@ -1327,7 +1325,7 @@ readyArm :: Id
          -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
-    case maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere mrol of
+    case mrol |$| maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
   where
@@ -1341,7 +1339,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
 
 
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
-getAvailArmSlot ms (armSubToSlot -> slot) em = maybe (Left sorryFullArmSlot) Right . maybeSingleSlot em $ slot
+getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |$| maybe (Left sorryFullArmSlot) Right
   where
     sorryFullArmSlot | i <- em M.! slot, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
 
@@ -1585,7 +1583,7 @@ helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
           f      = any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ])
       in a & _2 %~ f
 helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
-    maybe notFound found . findFullNameForAbbrev name $ settingNames
+    findFullNameForAbbrev name settingNames |$| maybe notFound found
   where
     notFound    = appendMsg $ dblQuote name <> " is not a valid setting name."
     appendMsg m = a & _2 <>~ pure m
