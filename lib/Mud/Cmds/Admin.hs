@@ -393,10 +393,10 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
     logMsgs |#| let f = uncurry (logPla (prefixAdminCmd "retained")) in mapM_ f
   where
     helper ms =
-        let s = getSing i ms
-            (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
+        let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
                                 | otherwise                          = (target,                                ""   )
             sendHelper = sendWithSorryMsg mq cols sorryMsg
+            s = getSing i ms
             targetMsg  = T.concat [ T.singleton retainedFromAdminMarker
                                   , bracketQuote s
                                   , " "
@@ -421,7 +421,7 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                 in do
                     sendHelper . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
                     (retainedMsg targetId ms =<<) $ if getPlaFlag IsNotFirstAdminTell targetPla
-                      then return . pure $ targetMsg -- TODO: Hmm?
+                      then unadulterated targetMsg
                       else [ targetMsg : hints | hints <- firstAdminTell targetId s ]
                     return [ sentLogMsg, receivedLogMsg ]
               | otherwise -> do
@@ -435,7 +435,7 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                                        , T.concat [ "received retained message from ", s,    ": ", dblQuote msg ] )
                   return [ sentLogMsg, receivedLogMsg ]
         in maybe notFound found . findFullNameForAbbrev target' . mkAdminPlaIdSingList $ ms
-    sorry = sorryIgnoreLocPref "The player's PC name"
+    sorry = sorryIgnoreLocPref "The PC name of the message recipient"
 adminRetained p = patternMatchFail "adminRetained" [ showText p ]
 
 
@@ -467,18 +467,22 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 adminTelePla :: Action
 adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] "Please specify the PC name of the player to which \
                                                                     \you want to teleport."
-adminTelePla p@(OneArgNubbed i mq cols (capitalize -> target)) = modifyState helper >>= sequence_
+adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
-        let idSings  = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
-            originId = getRmId i ms
+        let (capitalize -> target', sorryMsg) | hasLocPref target = (T.tail . T.tail $ target, sorry)
+                                              | otherwise         = (target,                   ""   )
+            sorry      = sorryIgnoreLocPref "The PC name of the player to which you want to teleport"
+            sendHelper = sendWithSorryMsg mq cols sorryMsg
+            idSings    = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+            originId   = getRmId i ms
             found (flip getRmId ms -> destId, targetSing)
-              | targetSing == getSing i ms = (ms, [ wrapSend mq cols "You can't teleport to yourself." ])
-              | destId     == originId     = (ms, [ wrapSend mq cols "You're already there!"           ])
+              | targetSing == getSing i ms = (ms, [ sendHelper "You can't teleport to yourself." ])
+              | destId     == originId     = (ms, [ sendHelper "You're already there!"           ])
               | otherwise                  = teleHelper i ms p { args = [] } originId destId targetSing
-            notFound = (ms, pure sorryInvalid)
-        in maybe notFound found . findFullNameForAbbrev target $ idSings
-    sorryInvalid = wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently logged in."
+            notFound     = (ms, pure sorryInvalid)
+            sorryInvalid = sendHelper $ "No PC by the name of " <> dblQuote target' <> " is currently logged in."
+        in maybe notFound found . findFullNameForAbbrev target' $ idSings
 adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
 
 

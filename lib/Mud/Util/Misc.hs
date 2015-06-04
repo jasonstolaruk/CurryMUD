@@ -30,13 +30,14 @@ module Mud.Util.Misc ( (!#)
                      , patternMatchFail
                      , reverseLookup
                      , toMaybe
+                     , unadulterated
                      , uncurry3
                      , uncurry4
                      , unit ) where
 
 import Mud.Util.Quoting
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), Applicative, pure)
 import Control.Lens (Lens', lens)
 import Control.Monad (guard, unless)
 import Data.Function (on)
@@ -190,6 +191,10 @@ reverseLookup v = fst . head . filter ((== v) . snd) . M.assocs
 
 toMaybe :: Bool -> a -> Maybe a
 toMaybe b = (guard b >>) . return
+
+
+unadulterated :: (Monad m) => (Applicative f) => a -> m (f a)
+unadulterated = return . pure
 
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
