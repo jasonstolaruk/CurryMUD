@@ -8,7 +8,6 @@ import Mud.Util.Misc
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
 import Control.Lens (to, view, views)
-import Data.Maybe (isNothing)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Text as T
@@ -176,7 +175,7 @@ getLoggedInAdminIds = IM.keys . IM.filter (\p -> getPlaFlag IsAdmin p && isLogge
 
 
 isLoggedIn :: Pla -> Bool
-isLoggedIn = views lastRmId isNothing
+isLoggedIn = views lastRmId (()#?)
 
 
 -----

@@ -46,7 +46,7 @@ import Control.Monad.Reader (asks, runReaderT)
 import Data.Char (ord, digitToInt, isDigit, toLower)
 import Data.Ix (inRange)
 import Data.List (delete, intercalate, sort)
-import Data.Maybe (fromJust, isNothing)
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Sum(..))
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import Numeric (readInt)
@@ -702,7 +702,7 @@ debugWrapIndent p@(AdviseOneArg _) = advise p [] advice
                       , "." ]
 debugWrapIndent (WithArgs i mq cols [a, b]) = do
     parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
-    unless (uncurry (||) $ parsed & both %~ isNothing) . uncurry helper $ parsed & both %~ (getSum . fromJust)
+    unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
   where
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
       [(x, "")] -> return . Just . Sum $ x

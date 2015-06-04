@@ -2,6 +2,7 @@
 
 module Mud.Util.Misc ( (!#)
                      , (#)
+                     , (#?)
                      , (?)
                      , (|!|)
                      , (|$|)
@@ -41,7 +42,7 @@ import Control.Monad (guard, unless)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
-import Data.Monoid ((<>), Monoid, mempty)
+import Data.Monoid ((<>), Monoid, Sum(..), mempty)
 import Data.Time (getZonedTime)
 import qualified Data.IntMap.Lazy as IM (IntMap, insert)
 import qualified Data.Map.Lazy as M (Map, assocs)
@@ -59,11 +60,15 @@ infixr 0 |$|
 
 
 (!#) :: (Eq m, Monoid m) => () -> m -> Bool
-()!# x = x /= mempty
+()!# x = not $ ()# x
 
 
 (#) :: (Eq m, Monoid m) => () -> m -> Bool
 ()# x = x == mempty
+
+
+(#?) :: (Eq (f (Sum a)), Functor f, Monoid (f (Sum a))) => () -> f a -> Bool
+()#? ((Sum <$>) -> x) = x == mempty
 
 
 data Cond a = a :? a

@@ -8,7 +8,6 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Data.Char (chr, isSpace)
-import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
 import Test.QuickCheck.Modifiers (NonEmptyList(..))
 import Test.Tasty.HUnit ((@?=), Assertion)
@@ -23,21 +22,21 @@ import qualified Data.Text as T
 
 
 prop_aOrAn :: T.Text -> Property
-prop_aOrAn t = (notEmpty . T.strip $ t) ==>
+prop_aOrAn t = (()!# T.strip t) ==>
   let (a, b) = T.break isSpace . aOrAn $ t
   in a == ((isVowel . T.head . T.tail $ b) ? "an" :? "a")
 
 
 prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [T.Text] -> Property
-prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any notEmpty hay &&
+prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any (()!#) hay &&
                                                                             all (not . (needle `T.isInfixOf`)) hay ==>
-  isNothing . findFullNameForAbbrev needle $ hay
+  (()#) . findFullNameForAbbrev needle $ hay
 
 
 prop_findFullNameForAbbrev_findsMatch :: NonEmptyList Char -> [T.Text] -> Property
-prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any notEmpty hay &&
+prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (()!#) hay &&
                                                                           all (not . (needle `T.isInfixOf`)) hay ==>
-  let nonEmpty = head . filter notEmpty $ hay
+  let nonEmpty = head . filter (()!#) $ hay
       match    = needle <> nonEmpty
       hay'     = match : hay
   in findFullNameForAbbrev needle hay' == Just match
