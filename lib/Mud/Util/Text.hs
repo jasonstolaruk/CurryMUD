@@ -101,7 +101,7 @@ instance HasText (a, T.Text) where
 findFullNameForAbbrev :: (Eq a, HasText a) => T.Text -> [a] -> Maybe a
 findFullNameForAbbrev needle hay =
     let res = sortBy (compare `on` extractText) . filter ((needle `T.isPrefixOf`) . extractText) $ hay
-    in (guard $ ()!# res) >> (return . head $ res)
+    in guard (()!# res) >> (return . head $ res)
 
 
 -----

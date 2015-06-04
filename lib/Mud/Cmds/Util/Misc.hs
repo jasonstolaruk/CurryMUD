@@ -8,6 +8,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , prefixCmd
                           , sendGenericErrorMsg
                           , sorryIgnoreLocPref
+                          , sorryIgnoreLocPrefPlur
                           , throwToListenThread
                           , withoutArgs ) where
 
@@ -151,6 +152,11 @@ sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 sorryIgnoreLocPref :: T.Text -> T.Text
 sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location prefix. The location prefix you provided \
                                               \will be ignored."
+
+
+sorryIgnoreLocPrefPlur :: T.Text -> T.Text
+sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
+                                                  \provided will be ignored."
 
 
 -----

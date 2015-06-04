@@ -36,7 +36,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, views)
+import Control.Lens (_1, _2, _3, to, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
@@ -298,7 +298,7 @@ adminIncognito p = withoutArgs adminIncognito p
 adminPeep :: Action
 adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify one or more PC names of the player(s) \
                                                               \you wish to start or stop peeping."
-adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
+adminPeep (LowerNub i mq cols as) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
     multiWrapSend mq cols msgs
     logPla "adminPeep" i . (<> ".") . slashes $ logMsgsSelf
@@ -307,6 +307,9 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
     helper ms =
         let s     = getSing i ms
             apiss = [ apis | apis@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+            (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
+                           | otherwise         = (id,           ""      )
+            g = ()# guessWhat ? id :? (guessWhat :)
             peep target a@(pt, _, _) =
                 let notFound = a & _2 %~ ("No PC by the name of " <> dblQuote target <> " is currently logged in." :)
                     found (peepId@(flip getPla ms -> peepPla), peepSing) = if peepId `notElem` pt^.ind i.peeping
@@ -325,8 +328,9 @@ adminPeep (LowerNub i mq cols (map capitalize -> as)) = do
                                logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
                 in maybe notFound found . findFullNameForAbbrev target $ apiss
-            res = foldr peep (ms^.plaTbl, [], []) as
-        in (ms & plaTbl .~ res^._1, (res^._2, res^._3))
+            res = foldr peep (ms^.plaTbl, [], []) . map (capitalize . f) $ as
+        in (ms & plaTbl .~ res^._1, (res^._2.to g, res^._3))
+    sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the player(s) you wish to start or stop peeping"
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 

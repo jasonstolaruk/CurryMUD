@@ -1416,8 +1416,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBroadcast i msg)
                   | otherwise         = (as,                  []               )
       where
-        msg = parensQuote "The names of items to be removed from a container need not be given location prefixes. The \
-                          \location prefixes you provided will be ignored."
+        msg = sorryIgnoreLocPrefPlur "The names of items to be removed from a container "
 
 
 -----
