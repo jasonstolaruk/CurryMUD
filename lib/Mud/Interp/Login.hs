@@ -23,6 +23,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
+import Control.Applicative (pure)
 import Control.Arrow (first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -117,7 +118,7 @@ logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId
     movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
                          & invTbl  .ind iLoggedOut     %~ (originId `delete`)
-                         & invTbl  .ind newRmId        %~ (sortInv ms' . (++ [newId]))
+                         & invTbl  .ind newRmId        %~ (sortInv ms' . (++ pure newId))
                          & pcTbl   .ind newId.rmId     .~ newRmId
                          & plaTbl  .ind newId.lastRmId .~ Nothing
     adoptNewId  =    ms  & coinsTbl.ind newId          .~ getCoins   originId ms
@@ -198,7 +199,7 @@ interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
                                & invTbl.ind iWelcome %~ (i `delete`)
                                & pcTbl .ind i.rmId   .~ iCentral
                                & plaTbl.ind i.interp .~ Nothing
-                    ms'' = ms' & invTbl.ind iCentral %~ (sortInv ms' . (++ [i]))
+                    ms'' = ms' & invTbl.ind iCentral %~ (sortInv ms' . (++ pure i))
                 in (ms'', (ms'', getSing i ms))
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 

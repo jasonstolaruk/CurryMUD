@@ -30,7 +30,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -328,7 +328,7 @@ adminPeep (LowerNub i mq cols as) = do
                                logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
                 in maybe notFound found . findFullNameForAbbrev target $ apiss
-            res = foldr peep (ms^.plaTbl, [], []) . map (capitalize . f) $ as
+            res = foldr (peep . capitalize . f) (ms^.plaTbl, [], []) as
         in (ms & plaTbl .~ res^._1, (res^._2.to g, res^._3))
     sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the player(s) you wish to start or stop peeping"
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
@@ -464,7 +464,7 @@ adminTelePla p@(OneArgNubbed i mq cols (capitalize -> target)) = modifyState hel
               | targetSing == getSing i ms = (ms, [ wrapSend mq cols "You can't teleport to yourself." ])
               | destId     == originId     = (ms, [ wrapSend mq cols "You're already there!"           ])
               | otherwise                  = teleHelper i ms p { args = [] } originId destId targetSing
-            notFound = (ms, [sorryInvalid])
+            notFound = (ms, pure sorryInvalid)
         in maybe notFound found . findFullNameForAbbrev target $ idSings
     sorryInvalid = wrapSend mq cols $ "No PC by the name of " <> dblQuote target <> " is currently logged in."
 adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
@@ -479,14 +479,14 @@ teleHelper i ms p originId destId name =
         destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
         ms'         = ms & pcTbl .ind i.rmId   .~ destId
                          & invTbl.ind originId %~ (i `delete`)
-                         & invTbl.ind destId   %~ (sortInv ms . (++ [i]))
+                         & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
         msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly vanishes in a \
                              \jarring flash of white light."
         msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly appears in a \
                              \jarring flash of white light."
         desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a brief moment you \
                              \are overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
-    in (ms', [ bcastIfNotIncog i [ (desc, [i]), (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ]
+    in (ms', [ bcastIfNotIncog i [ (desc, pure i), (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ]
              , look p
              , rndmDos [ (calcProbTeleVomit   i ms, mkExpAction "vomit"   p)
                        , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ]
@@ -508,7 +508,7 @@ adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
             found (destId, rmTeleName)
               | destId == originId = (ms, [ wrapSend mq cols "You're already there!" ])
               | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName
-            notFound = (ms, [sorryInvalid])
+            notFound = (ms, pure sorryInvalid)
         in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
     sorryInvalid = wrapSend mq cols . T.concat $ [ dblQuote target
                                                  , " is not a valid room name. Type "

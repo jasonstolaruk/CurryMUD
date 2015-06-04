@@ -70,6 +70,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Applicative (pure)
 import Control.Arrow ((***), first)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
@@ -207,10 +208,10 @@ mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
     let bs = concatMap helper ncbs in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], [i])
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], pure i)
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
     helper (_, c, b) =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], [i])
+        [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], pure i)
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
       where
         rest = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
@@ -225,7 +226,7 @@ mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms target
 
 
 extractLogMsgs :: Id -> [Broadcast] -> [T.Text]
-extractLogMsgs i bs = [ msg | (msg, targetIds) <- bs, targetIds == [i] ]
+extractLogMsgs i bs = [ msg | (msg, targetIds) <- bs, targetIds == pure i ]
 
 
 mkGodVerb :: GetOrDrop -> Verb -> T.Text
@@ -285,8 +286,8 @@ mkGetDropCoinsDescOthers i d god c =
 mkGetDropCoinsDescSelf :: Id -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
 mkGetDropCoinsDescSelf i god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
-    helper 1 cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "." ], [i]) ]
-    helper a cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], [i]) ]
+    helper 1 cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "." ], pure i) ]
+    helper a cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], pure i) ]
 
 
 mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
@@ -335,10 +336,10 @@ helperGetEitherInv i d fi ti a@(ms, _, _) = \case
                                                                     _       -> _3
                              in sorted & lens %~ (targetId :)
     partitionByEnc maxEnc acc@(w, _, _) targetId = let w' = w + calcWeight targetId ms in
-        w' <= maxEnc ? (acc & _1 .~ w' & _2 <>~ [targetId]) :? (acc & _3 <>~ [targetId])
+        w' <= maxEnc ? (acc & _1 .~ w' & _2 <>~ pure targetId) :? (acc & _3 <>~ pure targetId)
     sorryPC     targetId   = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
     sorryMob    targetId   = sorryHelper . theOnLower . getSing targetId $ ms
-    sorryHelper targetName = ("You can't pick up " <> targetName <> ".", [i])
+    sorryHelper targetName = ("You can't pick up " <> targetName <> ".", pure i)
 
 
 mkCan'tGetInvDesc :: Id -> MudState -> Inv -> [Broadcast]
@@ -395,8 +396,8 @@ mkPutRemCoinsDescOthers i d por mnom c ts = c |!| [ ( T.concat [ serialize d
 mkPutRemCoinsDescsSelf :: Id -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> ([Broadcast], [T.Text])
 mkPutRemCoinsDescsSelf i por mnom c ts | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
-    helper a cn | a == 1 = [ (T.concat [ start, aOrAn cn,   " ",           rest ], [i]) ]
-    helper a cn          = [ (T.concat [ start, showText a, " ", cn, "s ", rest ], [i]) ]
+    helper a cn | a == 1 = [ (T.concat [ start, aOrAn cn,   " ",           rest ], pure i) ]
+    helper a cn          = [ (T.concat [ start, showText a, " ", cn, "s ", rest ], pure i) ]
     start                = "You " <> mkPorVerb por SndPer <> " "
     rest                 = mkPorPrep por SndPer mnom ts <> onTheGround mnom <> "."
 
@@ -466,7 +467,7 @@ mkPutRemInvDesc i ms d por mnom is ts =
                     , withArticle
                     , " "
                     , mkPorPrep por SndPer mnom ts
-                    , rest ], [i])
+                    , rest ], pure i)
         , (T.concat [ serialize d
                     , " "
                     , mkPorVerb por ThrPer
@@ -486,7 +487,7 @@ mkPutRemInvDesc i ms d por mnom is ts =
                     , mkPlurFromBoth b
                     , " "
                     , mkPorPrep por SndPer mnom ts
-                    , rest ], [i])
+                    , rest ], pure i)
         , (T.concat [ serialize d
                     , " "
                     , mkPorVerb por ThrPer
@@ -538,7 +539,7 @@ mkPutRemoveBindings i ms as = let d              = mkStdDesig  i ms DoCap
                                   conName        = last as
                                   argsWithoutCon = init $ case as of
                                                      [_, _] -> as
-                                                     _      -> (++ [conName]) . nub . init $ as
+                                                     _      -> (++ pure conName) . nub . init $ as
                               in (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon)
 
 
@@ -724,8 +725,10 @@ moveReadiedItem :: Id
                 -> Id
                 -> (T.Text, Broadcast)
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-moveReadiedItem i a s targetId (msg, b) =
-    a & _1.ind i.at s ?~ targetId & _2.ind i %~ (targetId `delete`) & _3 <>~ (mkBroadcast i msg ++ [b]) & _4 <>~ [msg]
+moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
+                                            & _2.ind i %~ (targetId `delete`)
+                                            & _3 <>~ (mkBroadcast i msg ++ pure b)
+                                            & _4 <>~ pure msg
 
 
 -----

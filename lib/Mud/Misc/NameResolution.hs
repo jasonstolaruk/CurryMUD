@@ -27,6 +27,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
+import Control.Applicative (pure)
 import Control.Arrow (first)
 import Control.Lens (view)
 import Control.Monad (guard)
@@ -99,7 +100,7 @@ isSorryGecr _                 = False
 extractMesFromGecr :: GetEntsCoinsRes -> Maybe [Ent]
 extractMesFromGecr gecr = guard (not . isSorryGecr $ gecr) Prelude.>> case gecr of
   Mult    { entsRes = Just es } -> Just es
-  Indexed { entRes  = Right e } -> Just [e]
+  Indexed { entRes  = Right e } -> Just . pure $ e
   _                             -> Nothing
 
 
@@ -134,7 +135,7 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = guard (()!# enscs) Prelude.>> con
 
 
 distillEnscs :: [EmptyNoneSome Coins] -> [EmptyNoneSome Coins]
-distillEnscs enscs | Empty `elem` enscs               = [Empty]
+distillEnscs enscs | Empty `elem` enscs               = pure Empty
                    | someOfs <- filter isSomeOf enscs
                    , noneOfs <- filter isNoneOf enscs = distill SomeOf someOfs ++ distill NoneOf noneOfs
   where
@@ -162,7 +163,7 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
   = numText /= "0" ? parse rest numInt :? Sorry searchName
   | otherwise = mkGecrMult i ms 1 searchName searchIs searchCoins
   where
-    oops numText = blowUp "mkGecr" "unable to convert Text to Int" [numText]
+    oops numText = blowUp "mkGecr" "unable to convert Text to Int" . pure $ numText
     parse rest numInt
       | T.length rest < 2               = Sorry searchName
       | (delim, rest') <- headTail rest =
@@ -196,7 +197,7 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
              "gp" | gol == 0               -> NoneOf . Coins $ (0,   0,   a  )
                   | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   0,   gol)
                   | otherwise              -> SomeOf . Coins $ (0,   0,   a  )
-             _                             -> patternMatchFail "mkGecrMultForCoins helper" [n]
+             _                             -> patternMatchFail "mkGecrMultForCoins helper" . pure $ n
 
 
 distributeAmt :: Int -> [Int] -> [Int]

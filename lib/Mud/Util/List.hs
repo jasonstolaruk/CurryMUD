@@ -8,7 +8,7 @@ module Mud.Util.List ( appendIfUnique
 
 import Mud.Util.Misc
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))
 import Data.List (foldl', group, sort)
 import qualified Data.Set as S (fromList, toList)
@@ -16,7 +16,7 @@ import qualified Data.Set as S (fromList, toList)
 
 appendIfUnique :: (Eq a) => [a] -> a -> [a]
 xs `appendIfUnique` x | x `elem` xs = xs
-                      | otherwise   = xs ++ [x]
+                      | otherwise   = xs ++ pure x
 
 
 countOcc :: (Eq a) => a -> [a] -> Int

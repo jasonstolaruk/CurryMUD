@@ -267,7 +267,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   , [ T.concat [ "Players with a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== Just searchId) . view lastRmId . snd) . g $ plaTbl ] ]
           mapM_ (multiWrapSend mq cols) mkTxt
-          logPlaExecArgs (prefixDebugCmd "id") [a] i
+          logPlaExecArgs (prefixDebugCmd "id") (pure a) i
 debugId p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the ID to search for, as in "
@@ -623,7 +623,7 @@ debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] 
       | searchId < 0 = sorryWtf mq cols
       | otherwise    = do
           send mq . nlnl . showText . calcWeight searchId =<< getState
-          logPlaExecArgs (prefixDebugCmd "weight") [a] i
+          logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
 debugWeight p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the ID for which you would like to calculate weight, as in "
@@ -653,7 +653,7 @@ debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                    | not . inRange (minCols, maxCols) $ lineLen = wrapSorryLineLen mq cols
                    | otherwise                                  = do
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
-                       logPlaExecArgs (prefixDebugCmd "wrap") [a] i
+                       logPlaExecArgs (prefixDebugCmd "wrap") (pure a) i
 debugWrap p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: line length, as in "

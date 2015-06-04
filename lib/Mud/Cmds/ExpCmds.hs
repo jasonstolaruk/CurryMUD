@@ -17,6 +17,7 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Applicative (pure)
 import Control.Arrow (first)
 import Control.Lens (each)
 import Control.Lens.Operators ((%~), (&))
@@ -703,7 +704,7 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBroadcast           = [(nlnl . replace substitutions $ toOthers, i `delete` pcIds d)]
-        in bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast >> logPlaOut ecn i [toSelf]
+        in bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast >> (logPlaOut ecn i . pure $ toSelf)
 expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_) ) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
                                                                               \command cannot be used with a target."
 expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
@@ -715,7 +716,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
         let d                                = mkStdDesig i ms DoCap
             (first (i `delete`) -> invCoins) = getPCRmInvCoins i ms
         in if ()!# invCoins
-          then case uncurry (resolveRmInvCoins i ms [target]) invCoins of
+          then case uncurry (resolveRmInvCoins i ms (pure target)) invCoins of
             (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
             (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot \
                                                                              \be used with coins."
@@ -728,7 +729,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                       let (toSelf', toSelfBroadcast, serialized, hisHer, toOthers') = mkBindings targetDesigTxt
                           toOthersBroadcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
                           toTarget'         = replace [ ("%", serialized), ("&", hisHer) ] toTarget
-                          toTargetBroadcast = (nlnl toTarget', [targetId])
+                          toTargetBroadcast = (nlnl toTarget', pure targetId)
                       in do
                           bcastSelfOthers i ms toSelfBroadcast  [ toTargetBroadcast, toOthersBroadcast ]
                           logPlaOut ecn i [ parsePCDesig i ms toSelf' ]

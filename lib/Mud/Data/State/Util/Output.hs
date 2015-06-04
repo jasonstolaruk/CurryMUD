@@ -173,14 +173,14 @@ mkDividerTxt = flip T.replicate "="
 
 
 mkBroadcast :: Id -> T.Text -> [Broadcast]
-mkBroadcast i = pure . (, [i])
+mkBroadcast i = pure . (, pure i)
 
 
 -----
 
 
 mkNTBroadcast :: Id -> T.Text -> [ClassifiedBroadcast]
-mkNTBroadcast i msg = [NonTargetBroadcast (msg, [i])]
+mkNTBroadcast i msg = [NonTargetBroadcast (msg, pure i)]
 
 
 -----
@@ -231,7 +231,7 @@ expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) pcIdToExpand ((i 
               in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
     expandSex 'm'                = "male"
     expandSex 'f'                = "female"
-    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
+    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" . pure $ x
 
 
 -----
@@ -248,7 +248,7 @@ retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
 retainedMsg targetId ms targetMsg
   | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                                         in wrapSend targetMq targetCols . stripMarker $ targetMsg
-  | otherwise = modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ [targetMsg])
+  | otherwise = modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ pure targetMsg)
   where
     stripMarker ""  = ""
     stripMarker msg | T.head msg == retainedFromAdminMarker = T.tail msg

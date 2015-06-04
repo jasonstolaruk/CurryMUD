@@ -10,6 +10,7 @@ import Mud.Util.Wrapping
 import MudTests.TestUtil
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Applicative (pure)
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
 import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
@@ -71,7 +72,7 @@ prop_wrapLineWithIndentTag = forAll genCols                       $ \c ->
                              isEmpty t || (not . isDigit . T.last $ t) ==>
     let res = wrapLineWithIndentTag c $ t <> showText n `T.snoc` indentTagChar
     in if T.length t <= c
-      then res == [t]
+      then res == pure t
       else resIsIndented (adjustIndent n c) res
 
 

@@ -32,7 +32,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text hiding (headTail)
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
@@ -250,7 +250,7 @@ adHoc mq host = do
                        & entTbl     .ind i        .~ e
                        & eqTbl      .ind i        .~ M.empty
                        & invTbl     .ind i        .~ []
-                       & invTbl     .ind iWelcome .~ getInv iWelcome ms ++ [i]
+                       & invTbl     .ind iWelcome .~ getInv iWelcome ms ++ pure i
                        & mobTbl     .ind i        .~ m
                        & msgQueueTbl.ind i        .~ mq
                        & pcTbl      .ind i        .~ pc

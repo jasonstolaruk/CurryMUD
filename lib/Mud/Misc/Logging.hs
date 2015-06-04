@@ -29,7 +29,7 @@ import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
@@ -87,7 +87,7 @@ spawnLogger fn p (T.unpack -> ln) f q =
   where
     initLog = p |$| fileHandler fn >=> \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
-        in updateGlobalLogger ln (setHandlers [h] . setLevel p) >> return gh
+        in updateGlobalLogger ln (setHandlers (pure h) . setLevel p) >> return gh
     loop gh = q |$| atomically . readTQueue >=> \case
       LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
       RotateLog                -> rotateLog gh

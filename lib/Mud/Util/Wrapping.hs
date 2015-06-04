@@ -18,6 +18,7 @@ import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Applicative (pure)
 import Control.Lens (both)
 import Control.Lens.Operators ((%~), (&))
 import Data.Char (isDigit, isSpace)
@@ -37,7 +38,7 @@ wrap cols t | extracted <- extractANSI t
             , wrapped   <- wrapIt . T.concat . map fst $ extracted = insertANSI extracted wrapped
   where
     wrapIt txt
-      | ()# afterMax                                    = [txt]
+      | ()# afterMax                                    = pure txt
       | T.any isSpace beforeMax
       , (beforeSpace, afterSpace) <- breakEnd beforeMax = beforeSpace : wrapIt (afterSpace <> afterMax)
       | otherwise                                       = beforeMax   : wrapIt afterMax
@@ -81,7 +82,7 @@ wrapIndent n cols t = let extracted = extractANSI t
   where
     helper = wrapIt . leadingSpcsToFiller
     wrapIt txt
-      | ()# afterMax = [txt]
+      | ()# afterMax = pure txt
       | T.any isSpace beforeMax, (beforeSpace, afterSpace) <- breakEnd beforeMax =
                       beforeSpace : helper (leadingIndent <> afterSpace <> afterMax)
       | otherwise   = beforeMax   : helper (leadingIndent               <> afterMax)

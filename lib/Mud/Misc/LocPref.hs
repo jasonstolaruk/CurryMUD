@@ -11,6 +11,7 @@ import Mud.Util.Text
 import qualified Data.Text as T
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Applicative (pure)
 import Control.Lens (_1, _2, _3)
 import Control.Lens.Operators ((%~), (&))
 import Data.Monoid (mempty)
@@ -45,7 +46,7 @@ hasLocPref = \case InvPref -> True
 
 
 singleArgInvEqRm :: InInvEqRm -> T.Text -> (InInvEqRm, T.Text)
-singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt [arg] of
+singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt . pure $ arg of
   ([a], [],  [] ) -> (InInv, a)
   ([],  [a], [] ) -> (InEq,  a)
   ([],  [],  [a]) -> (InRm,  a)
