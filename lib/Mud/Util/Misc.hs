@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase, MonadComprehensions, RankNTypes, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.Misc ( (?)
+module Mud.Util.Misc ( (!#)
+                     , (#)
+                     , (?)
                      , (|!|)
                      , (|$|)
                      , (|?|)
@@ -15,7 +17,6 @@ module Mud.Util.Misc ( (?)
                      , emptied
                      , ifThenElse
                      , ind
-                     , isEmpty
                      , isVowel
                      , mIf
                      , mUnless
@@ -24,7 +25,6 @@ module Mud.Util.Misc ( (?)
                      , maybeVoid
                      , mkDateTimeTxt
                      , mkTimestamp
-                     , notEmpty
                      , patternMatchFail
                      , reverseLookup
                      , toMaybe
@@ -51,10 +51,19 @@ import qualified Data.Text as T
 infixl 0 ?
 infixl 1 :?, |!|, |?|
 infixl 7 `divide`
+infixl 9 #, !#
 infixr 0 |$|
 
 
 -- ==================================================
+
+
+(!#) :: (Eq m, Monoid m) => () -> m -> Bool
+()!# x = x /= mempty
+
+
+(#) :: (Eq m, Monoid m) => () -> m -> Bool
+()# x = x == mempty
 
 
 data Cond a = a :? a
@@ -67,7 +76,7 @@ False ? (_ :? y) = y
 
 -- mempty on mempty.
 (|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
-a |!| b = isEmpty a ? mempty :? b
+a |!| b = ()# a ? mempty :? b
 
 
 -- mempty on False.
@@ -124,10 +133,6 @@ ind :: Int -> Lens' (IM.IntMap a) a
 ind k = lens (! k) (flip (IM.insert k))
 
 
-isEmpty :: (Eq m, Monoid m) => m -> Bool
-isEmpty = (== mempty)
-
-
 isVowel :: Char -> Bool
 isVowel = (`elem` "aeiou")
 
@@ -163,10 +168,6 @@ mkTimestamp :: IO T.Text
 mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeTxt ]
 
 
-notEmpty :: (Eq m, Monoid m) => m -> Bool
-notEmpty = not . isEmpty
-
-
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a
 patternMatchFail modName funName = blowUp modName funName "pattern match failure"
 
@@ -188,7 +189,7 @@ uncurry4 f (a, b, c, d) = f a b c d
 
 
 unlessEmpty :: (Monoid a, Monad m, Eq a) => a -> (a -> m ()) -> m ()
-unlessEmpty x f = unless (isEmpty x) . f $ x
+unlessEmpty x f = unless (()# x) . f $ x
 
 
 unit :: ()

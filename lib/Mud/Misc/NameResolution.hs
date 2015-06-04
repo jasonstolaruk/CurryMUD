@@ -117,7 +117,7 @@ pruneDupIds = dropJustNulls . pruneThem []
 
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
-reconcileCoins (Coins (cop, sil, gol)) enscs = guard (notEmpty enscs) Prelude.>> concatMap helper enscs
+reconcileCoins (Coins (cop, sil, gol)) enscs = guard (()!# enscs) Prelude.>> concatMap helper enscs
   where
     helper Empty                                        = [ Left Empty        ]
     helper (NoneOf c)                                   = [ Left . NoneOf $ c ]
@@ -142,7 +142,7 @@ distillEnscs enscs | Empty `elem` enscs               = [Empty]
     isSomeOf _          = False
     isNoneOf (NoneOf _) = True
     isNoneOf _          = False
-    distill  f enscs'   = guard (notEmpty enscs') Prelude.>> [ f . foldr ((<>) . fromEnsCoins) mempty $ enscs' ]
+    distill  f enscs'   = guard (()!# enscs') Prelude.>> [ f . foldr ((<>) . fromEnsCoins) mempty $ enscs' ]
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
@@ -182,7 +182,7 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
                                                         , entsRes         = Nothing
                                                         , coinsRes        = Just helper }
   where
-    helper | isEmpty c                   = Empty
+    helper | ()# c                       = Empty
            | n `elem` aggregateCoinNames = SomeOf $ if a == (maxBound :: Int)
              then c
              else coinsFromList . distributeAmt a . coinsToList $ c
@@ -245,7 +245,7 @@ resolveEntCoinNamesWithRols i ms (map T.toLower -> as) is c =
 
 mkGecrWithRol :: Id -> MudState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
 mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
-  | isEmpty  b      = (mkGecr i ms is c n, Nothing)
+  | ()# b           = (mkGecr i ms is c n, Nothing)
   | T.length b == 1 = sorry
   | parsed <- reads (T.unpack . T.toUpper . T.drop 1 $ b) :: [(RightOrLeft, String)] =
       case parsed of [(rol, _)] -> (mkGecr i ms is c a, Just rol)

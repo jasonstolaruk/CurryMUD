@@ -714,7 +714,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
     helper toSelf toTarget toOthers = getState >>= \ms ->
         let d                                = mkStdDesig i ms DoCap
             (first (i `delete`) -> invCoins) = getPCRmInvCoins i ms
-        in if notEmpty invCoins
+        in if ()!# invCoins
           then case uncurry (resolveRmInvCoins i ms [target]) invCoins of
             (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
             (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot \

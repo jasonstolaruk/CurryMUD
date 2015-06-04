@@ -78,7 +78,7 @@ dispCmdList cmds p                  = dispMatches p (succ maxCmdLen) . mkCmdList
 
 mkCmdListText :: [Cmd] -> [T.Text]
 mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
-                     in [ pad (succ maxCmdLen) n <> d | (n, d) <- zipped, notEmpty d ]
+                     in [ pad (succ maxCmdLen) n <> d | (n, d) <- zipped, ()!# d ]
 
 
 styleCmdAbbrevs :: [Cmd] -> [T.Text]
@@ -95,8 +95,8 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
 
 
 dispMatches :: ActionParams -> Int -> [T.Text] -> MudStack ()
-dispMatches (LowerNub i mq cols needles) indent haystack = let (filter notEmpty -> matches) = map grep needles in
-    if isEmpty matches
+dispMatches (LowerNub i mq cols needles) indent haystack = let (filter (()!#) -> matches) = map grep needles in
+    if ()# matches
       then wrapSend mq cols "No matches found."
       else pager i mq . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
   where

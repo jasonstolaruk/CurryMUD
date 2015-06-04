@@ -38,7 +38,7 @@ import qualified Data.Text as T
 
 
 aOrAn :: T.Text -> T.Text
-aOrAn (T.strip -> t) | isEmpty t            = ""
+aOrAn (T.strip -> t) | ()# t                = ""
                      | isVowel . T.head $ t = "an " <> t
                      | otherwise            = "a "  <> t
 
@@ -101,7 +101,7 @@ instance HasText (a, T.Text) where
 findFullNameForAbbrev :: (Eq a, HasText a) => T.Text -> [a] -> Maybe a
 findFullNameForAbbrev needle hay =
     let res = sortBy (compare `on` extractText) . filter ((needle `T.isPrefixOf`) . extractText) $ hay
-    in (guard . notEmpty $ res) >> (return . head $ res)
+    in (guard $ ()!# res) >> (return . head $ res)
 
 
 -----

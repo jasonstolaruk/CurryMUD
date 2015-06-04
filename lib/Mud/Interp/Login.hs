@@ -204,7 +204,7 @@ interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQu
 
 
 yesNo :: T.Text -> Maybe Bool
-yesNo (T.toLower -> a) = guard (notEmpty a) >> helper
+yesNo (T.toLower -> a) = guard (()!# a) >> helper
   where
     helper | a `T.isPrefixOf` "yes" = return True
            | a `T.isPrefixOf` "no"  = return False
@@ -222,7 +222,7 @@ handleLogin params@(ActionParams { .. }) = do
     initPlaLog plaId s
   where
     showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs, p) -> do
-        unless (isEmpty msgs) $ do
+        unless (()# msgs) $ do
             let (fromAdmins, others) = first (map T.tail) . partition ((== retainedFromAdminMarker) . T.head) $ msgs
             unlessEmpty others $ multiWrapSend plaMsgQueue plaCols . intersperse ""
             unlessEmpty fromAdmins $ let m   = "message" <> case fromAdmins of [_] -> ""

@@ -222,7 +222,7 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                     | not . isLoggedIn . getPla bootId $ ms -> sendHelper $ target' <> " is not logged in."
                     | bootId == i -> sendHelper "You can't boot yourself."
                     | otherwise   -> let bootMq = getMsgQueue bootId ms
-                                         f      = isEmpty msg ? dfltMsg :? customMsg
+                                         f      = ()# msg ? dfltMsg :? customMsg
                                      in ok mq >> (sendMsgBoot bootMq =<< f bootId target' selfSing)
       xs       -> patternMatchFail "adminBoot" [ showText xs ]
   where

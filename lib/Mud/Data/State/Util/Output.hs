@@ -274,8 +274,8 @@ sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dflt
 
 sendWithSorryMsg :: MsgQueue -> Cols -> T.Text -> T.Text -> MudStack ()
 sendWithSorryMsg mq cols sorryMsg primaryMsg
-  | isEmpty sorryMsg = wrapSend      mq cols primaryMsg
-  | otherwise        = multiWrapSend mq cols [ sorryMsg, primaryMsg ]
+  | ()# sorryMsg = wrapSend      mq cols primaryMsg
+  | otherwise    = multiWrapSend mq cols [ sorryMsg, primaryMsg ]
 
 
 -----

@@ -310,7 +310,7 @@ dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             (eiss, ecs)            = uncurry (resolvePCInvCoins i ms inInvs) invCoins
             (ms',  bs,  logMsgs )  = foldl' (helperDropEitherInv      i d      i ri) (ms,  [], []     ) eiss
             (ms'', bs', logMsgs')  =         helperGetDropEitherCoins i d Drop i ri  (ms', bs, logMsgs) ecs
-        in if notEmpty invCoins
+        in if ()!# invCoins
           then (ms'', (sorryInEq ++ sorryInRm ++ bs',       logMsgs'))
           else (ms,   (mkBroadcast i dudeYourHandsAreEmpty, []      ))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
@@ -372,7 +372,7 @@ emote p@(ActionParams { plaId, args })
 equip :: Action
 equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
-    let em@(M.elems -> is) = getEqMap i ms in send mq $ if notEmpty em
+    let em@(M.elems -> is) = getEqMap i ms in send mq $ if ()!# em
       then let (inInvs, inEqs, inRms)                = sortArgsInvEqRm InEq as
                (gecrs, miss, rcs)                    = resolveEntCoinNames i ms inEqs is mempty
                eiss                                  = zipWith (curry procGecrMisPCEq) gecrs miss
@@ -475,7 +475,7 @@ getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             (eiss, ecs)           = uncurry (resolveRmInvCoins i ms inRms) invCoins
             (ms',  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [], []     ) eiss
             (ms'', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i  (ms', bs, logMsgs) ecs
-        in if notEmpty invCoins
+        in if ()!# invCoins
           then (ms'', (sorryInInv ++ sorryInEq ++ bs',                          logMsgs'))
           else (ms,   (mkBroadcast i "You don't see anything here to pick up.", []      ))
 getAction p = patternMatchFail "getAction" [ showText p ]
@@ -662,7 +662,7 @@ getHelpByName cols hs name = maybe sorry found . findFullNameForAbbrev name $ [ 
 
 
 intro :: Action
-intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if isEmpty intros
+intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet." in
       wrapSend mq cols introsTxt >> logPlaOut "intro" i [introsTxt]
   else let introsTxt = commas intros in
@@ -678,11 +678,11 @@ intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcas
             (eiss, ecs)          = uncurry (resolveRmInvCoins i ms inRms) invCoins'
             (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms (fst invCoins)) (ms^.pcTbl, [],  []     ) eiss
             (    cbs', logMsgs') = foldl' helperIntroEitherCoins                   (           cbs, logMsgs) ecs
-        in if notEmpty invCoins'
+        in if ()!# invCoins'
           then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs'))
           else (ms, (mkNTB "You don't see anyone here to introduce yourself to.", []))
     mkNTB                                           = mkNTBroadcast i . nlnl
-    helperIntroEitherInv _  _   a (Left msg       ) = isEmpty msg ? a :? (a & _2 <>~ mkNTB msg)
+    helperIntroEitherInv _  _   a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
         tryIntro a'@(pt, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
@@ -742,7 +742,7 @@ inv (LowerNub i mq cols as) = getState >>= \ms ->
         (eiss, ecs)            = uncurry (resolvePCInvCoins i ms inInvs) invCoins
         invDesc                = foldl' (helperEitherInv ms) "" eiss
         coinsDesc              = foldl' helperEitherCoins    "" ecs
-    in send mq $ if notEmpty invCoins
+    in send mq $ if ()!# invCoins
     then T.concat [ inEqs |!| sorryInEq, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
@@ -773,7 +773,7 @@ look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTarget
                                = logPla "look" i $ "looked at: " <> commas targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
   where
-    helper ms = let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms in if notEmpty invCoins
+    helper ms = let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms in if ()!# invCoins
         then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
                  sorryInInv             = sorryEquipInvLook cols LookCmd InvCmd
                  sorryInEq              = sorryEquipInvLook cols LookCmd EquipCmd
@@ -931,11 +931,11 @@ putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> unlessEmpty logMsgs (logPlaOut "put" i)
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
-      if notEmpty pcInvCoins
+      if ()!# pcInvCoins
         then case singleArgInvEqRm InInv conName of
           (InInv, conName') -> shufflePut i ms d conName' False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
           (InEq,  _       ) -> (ms, (mkBroadcast i . sorryConInEq $ Put, []))
-          (InRm,  conName') -> if notEmpty . fst $ rmInvCoins
+          (InRm,  conName') -> if ()!# fst rmInvCoins
             then shufflePut i ms d conName' True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
             else (ms, (mkBroadcast i noContainersHere, []))
         else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
@@ -959,7 +959,7 @@ shufflePut :: Id
            -> (MudState, ([Broadcast], [T.Text]))
 shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms [conName]) invCoinsWithCon
-    in if isEmpty conMiss && notEmpty conRcs
+    in if ()# conMiss && ()!# conRcs
       then sorry "You can't put something inside a coin."
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> sorry msg
@@ -1087,7 +1087,7 @@ ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             eiss                      = zipWith (curry procGecrMisReady) gecrs miss
             bs                        = rcs |!| mkBroadcast i "You can't ready coins."
             (et, it, bs', logMsgs)    = foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) . zip eiss $ mrols
-        in if notEmpty invCoins
+        in if ()!# invCoins
           then (ms & eqTbl .~ et & invTbl .~ it, (sorryInEq ++ sorryInRm ++ bs', logMsgs))
           else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 ready p = patternMatchFail "ready" [ showText p ]
@@ -1372,7 +1372,7 @@ remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
         case singleArgInvEqRm InInv conName of
           (InInv, conName') -> shuffleRem i ms d conName' False argsWithoutCon pcInvCoins procGecrMisPCInv
           (InEq,  _       ) -> (ms, (mkBroadcast i . sorryConInEq $ Rem, []))
-          (InRm,  conName') -> if notEmpty . fst $ rmInvCoins
+          (InRm,  conName') -> if ()!# fst rmInvCoins
             then shuffleRem i ms d conName' True argsWithoutCon rmInvCoins procGecrMisRm
             else (ms, (mkBroadcast i noContainersHere, []))
 remove p = patternMatchFail "remove" [ showText p ]
@@ -1389,7 +1389,7 @@ shuffleRem :: Id
            -> (MudState, ([Broadcast], [T.Text]))
 shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms [conName]) invCoinsWithCon
-    in if isEmpty conMiss && notEmpty conRcs
+    in if ()# conMiss && ()!# conRcs
       then sorry "You can't remove something from a coin."
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> sorry msg
@@ -1407,7 +1407,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                    (ct, bs', logMsgs') =         helperPutRemEitherCoins i    d Rem mnom conId i conSing
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
-               in if notEmpty invCoinsInCon
+               in if ()!# invCoinsInCon
                  then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ bs', logMsgs'))
                  else sorry $ "The " <> conSing <> " is empty."
         Right {} -> sorry "You can only remove things from one container at a time."
@@ -1475,7 +1475,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d              = mkStdDesig i ms DoCap
             invCoins       = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
-        in if notEmpty invCoins
+        in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
             (InInv, _      ) -> sorry "You can't talk to an item in your inventory. Try saying something to someone in \
                                       \your current room."
@@ -1636,16 +1636,16 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
            invCoins   = getInvCoins i ms
            rmInvCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
        in if
-         | isEmpty eqMap && isEmpty invCoins -> wrapSend mq cols dudeYou'reScrewed
-         | isEmpty rmInvCoins                -> wrapSend mq cols noOneHere
-         | otherwise                         -> case singleArgInvEqRm InRm (last as) of
+         | ()# eqMap && ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
+         | ()# rmInvCoins            -> wrapSend mq cols noOneHere
+         | otherwise                 -> case singleArgInvEqRm InRm (last as) of
            (InInv, _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your inventory"         <> tryThisInstead
            (InEq,  _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your readied equipment" <> tryThisInstead
            (InRm,  target) ->
              let argsWithoutTarget                    = init $ case as of [_, _] -> as
                                                                           _      -> (++ [target]) . nub . init $ as
                  (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms [target]) rmInvCoins
-             in if isEmpty targetMiss && notEmpty targetRcs
+             in if ()# targetMiss && ()!# targetRcs
                then wrapSend mq cols . sorryCan'tShow $ "coin"
                else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
                  Left  msg        -> wrapSend mq cols msg
@@ -1672,7 +1672,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
   where
     sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
     tryThisInstead   = " Try showing something to someone in your current room."
-    showInv ms d invCoins inInvs IdSingTypeDesig { .. } = if notEmpty invCoins
+    showInv ms d invCoins inInvs IdSingTypeDesig { .. } = if ()!# invCoins
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
                showInvHelper                       = foldl' helperEitherInv ([], []) eiss
                helperEitherInv acc (Left  msg    ) = acc & _1 <>~ mkBroadcast i msg
@@ -1763,7 +1763,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                   (coinsBs, coinsLog) = (showCoinsHelper, coinTxt)
               in (invBs ++ coinsBs, slashes . dropBlanks $ [ slashes invLogs, coinsLog ])
       else (mkBroadcast i dudeYourHandsAreEmpty, "")
-    showEq ms d eqMap inEqs IdSingTypeDesig { .. } = if notEmpty eqMap
+    showEq ms d eqMap inEqs IdSingTypeDesig { .. } = if ()!# eqMap
       then let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
                eiss                                = zipWith (curry procGecrMisPCEq) gecrs miss
                showEqHelper                        = foldl' helperEitherInv ([], []) eiss
@@ -1919,7 +1919,7 @@ unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
             eiss                   = zipWith (curry procGecrMisPCEq) gecrs miss
             bs                     = rcs |!| mkBroadcast i "You can't unready coins."
             (et, it, bs', logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
-        in if notEmpty is
+        in if ()!# is
           then (ms & eqTbl .~ et & invTbl .~ it, (sorryInInv ++ sorryInRm ++ bs', logMsgs))
           else (ms, (mkBroadcast i dudeYou'reNaked, []))
 unready p = patternMatchFail "unready" [ showText p ]
@@ -2057,7 +2057,7 @@ whoAdmin (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >>
                                                                               , then sortWith by s ]
             adminAbbrevs                          = dropBlanks . (self :) . styleAbbrevs Don'tBracket $ adminSings
             footer                                = [ noOfAdmins adminIds <> " logged in." ]
-        in return (isEmpty adminAbbrevs ? footer :? commas adminAbbrevs : footer)
+        in return (()# adminAbbrevs ? footer :? commas adminAbbrevs : footer)
       where
         noOfAdmins (length -> num) | num == 1  = "1 administrator"
                                    | otherwise = showText num <> " administrators"

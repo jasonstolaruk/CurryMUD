@@ -336,7 +336,7 @@ handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p           = getPla i ms
         thruCentral = unlessEmpty msg $ uncurry (interpret p centralDispatch) . headTail . T.words
-        thruOther f = uncurry (interpret p f) (isEmpty msg ? ("", []) :? (headTail . T.words $ msg))
+        thruOther f = uncurry (interpret p f) (()# msg ? ("", []) :? (headTail . T.words $ msg))
     in maybe thruCentral thruOther $ p^.interp
   where
     interpret p f cn as = do
