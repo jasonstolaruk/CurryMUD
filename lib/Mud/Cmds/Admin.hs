@@ -463,7 +463,6 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 -----
 
 
-
 adminTelePla :: Action
 adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] "Please specify the PC name of the player to which \
                                                                     \you want to teleport."
@@ -479,15 +478,15 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
             found (flip getRmId ms -> destId, targetSing)
               | targetSing == getSing i ms = (ms, [ sendHelper "You can't teleport to yourself." ])
               | destId     == originId     = (ms, [ sendHelper "You're already there!"           ])
-              | otherwise                  = teleHelper i ms p { args = [] } originId destId targetSing
+              | otherwise                  = teleHelper i ms p { args = [] } originId destId targetSing sorryMsg
             notFound     = (ms, pure sorryInvalid)
             sorryInvalid = sendHelper $ "No PC by the name of " <> dblQuote target' <> " is currently logged in."
         in maybe notFound found . findFullNameForAbbrev target' $ idSings
 adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
 
 
-teleHelper :: Id -> MudState -> ActionParams -> Id -> Id -> T.Text -> (MudState, [MudStack ()])
-teleHelper i ms p originId destId name =
+teleHelper :: Id -> MudState -> ActionParams -> Id -> Id -> T.Text -> T.Text -> (MudState, [MudStack ()])
+teleHelper i ms p originId destId name sorryMsg =
     let originDesig = mkStdDesig i ms Don'tCap
         originPCIds = i `delete` pcIds originDesig
         s           = fromJust . stdPCEntSing $ originDesig
@@ -502,7 +501,8 @@ teleHelper i ms p originId destId name =
                              \jarring flash of white light."
         desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a brief moment you \
                              \are overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
-    in (ms', [ bcastIfNotIncog i [ (desc, pure i), (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ]
+        f           = ()# sorryMsg ? id :? ((sorryMsg, pure i) :)
+    in (ms', [ bcastIfNotIncog i . f $ [ (desc, pure i), (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ]
              , look p
              , rndmDos [ (calcProbTeleVomit   i ms, mkExpAction "vomit"   p)
                        , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ]
@@ -520,18 +520,22 @@ adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExec
 adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
-        let originId = getRmId i ms
+        let (target', sorryMsg) | hasLocPref target = (T.tail . T.tail $ target, sorry)
+                                | otherwise         = (target,                   ""   )
+            sorry      = sorryIgnoreLocPref "The name of the room to which you want to teleport"
+            sendHelper = sendWithSorryMsg mq cols sorryMsg
+            originId   = getRmId i ms
             found (destId, rmTeleName)
-              | destId == originId = (ms, [ wrapSend mq cols "You're already there!" ])
-              | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName
-            notFound = (ms, pure sorryInvalid)
-        in maybe notFound found . findFullNameForAbbrev target . views rmTeleNameTbl IM.toList $ ms
-    sorryInvalid = wrapSend mq cols . T.concat $ [ dblQuote target
-                                                 , " is not a valid room name. Type "
-                                                 , quoteColor
-                                                 , dblQuote . prefixAdminCmd $ "telerm"
-                                                 , dfltColor
-                                                 , " with no arguments to get a list of valid room names." ]
+              | destId == originId = (ms, [ sendHelper "You're already there!" ])
+              | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName sorryMsg
+            notFound     = (ms, pure sorryInvalid)
+            sorryInvalid = sendHelper . T.concat $ [ dblQuote target'
+                                                   , " is not a valid room name. Type "
+                                                   , quoteColor
+                                                   , dblQuote . prefixAdminCmd $ "telerm"
+                                                   , dfltColor
+                                                   , " with no arguments to get a list of valid room names." ]
+        in maybe notFound found . findFullNameForAbbrev target' . views rmTeleNameTbl IM.toList $ ms
 adminTeleRm p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
