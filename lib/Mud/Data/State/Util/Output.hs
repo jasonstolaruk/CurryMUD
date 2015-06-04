@@ -244,15 +244,14 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 -----
 
 
-retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
-retainedMsg targetId ms targetMsg
+retainedMsg :: Id -> MudState -> [T.Text] -> MudStack ()
+retainedMsg _        _  []               = unit
+retainedMsg targetId ms targetMsgs@(x:xs)
   | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
-                                        in wrapSend targetMq targetCols . stripMarker $ targetMsg
-  | otherwise = modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ pure targetMsg)
+                                        in multiWrapSend targetMq targetCols stripMarker
+  | otherwise = modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ targetMsgs)
   where
-    stripMarker ""  = ""
-    stripMarker msg | T.head msg == retainedFromAdminMarker = T.tail msg
-                    | otherwise                             = msg
+    stripMarker = ()# x ? targetMsgs :? T.tail x : xs
 
 
 -----

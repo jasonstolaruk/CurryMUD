@@ -154,20 +154,20 @@ adminAdmin (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                                                 , parensQuote "Note that you must specify the full PC name of the \
                                                               \player you wish to promote/demote." ]
                              in sendHelper msg ])
-        [targetId] -> let selfSing       = getSing i ms
-                          targetSing     = getSing targetId ms
-                          isAdmin        = getPlaFlag IsAdmin . getPla targetId $ ms
-                          mkRetained msg = retainedMsg targetId ms $ T.concat [ promoteDemoteColor
-                                                                              , selfSing
-                                                                              , msg
-                                                                              , dfltColor ]
-                          fs = if isAdmin
-                            then [ mkRetained " has demoted you from admin status."
+        [targetId] -> let selfSing           = getSing i ms
+                          targetSing         = getSing targetId ms
+                          isAdmin            = getPlaFlag IsAdmin . getPla targetId $ ms
+                          retainedHelper msg = retainedMsg targetId ms . pure $ T.concat [ promoteDemoteColor
+                                                                                         , selfSing
+                                                                                         , msg
+                                                                                         , dfltColor ]
+                          fs                 = if isAdmin
+                            then [ retainedHelper " has demoted you from admin status."
                                  , sendHelper            $ "You have demoted "      <> targetSing <> "."
                                  , logPla    fn i        $ "demoted "               <> targetSing <> "."
                                  , logPla    fn targetId $ "demoted by "            <> selfSing   <> "."
                                  , logNotice fn          $ selfSing <> " demoted "  <> targetSing <> "." ]
-                            else [ mkRetained " has promoted you to admin status."
+                            else [ retainedHelper " has promoted you to admin status."
                                  , sendHelper            $ "You have promoted "     <> targetSing <> "."
                                  , logPla    fn i        $ "promoted "              <> targetSing <> "."
                                  , logPla    fn targetId $ "promoted by "           <> selfSing   <> "."
@@ -373,7 +373,7 @@ adminProfanity p = withoutArgs adminProfanity p
 -----
 
 
--- TODO: Continue from here.
+-- TODO: When to log w/ function name vs. cmd name?
 adminRetained :: Action
 adminRetained p@AdviseNoArgs = advise p [ prefixAdminCmd "retained" ] advice
   where
@@ -393,38 +393,49 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
     logMsgs |#| let f = uncurry (logPla (prefixAdminCmd "retained")) in mapM_ f
   where
     helper ms =
-        let s         = getSing i ms
-            targetMsg = T.concat [ T.singleton retainedFromAdminMarker
-                                 , bracketQuote s
-                                 , " "
-                                 , adminTellColor
-                                 , msg
-                                 , dfltColor ]
-            notFound  = emptied . wrapSend mq cols $ "There is no PC by the name of " <> dblQuote target <> "."
+        let s = getSing i ms
+            (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
+                                | otherwise                          = (target,                                ""   )
+            sendHelper = sendWithSorryMsg mq cols sorryMsg
+            targetMsg  = T.concat [ T.singleton retainedFromAdminMarker
+                                  , bracketQuote s
+                                  , " "
+                                  , adminTellColor
+                                  , msg
+                                  , dfltColor ]
+            notFound   = emptied . sendHelper $ "There is no PC by the name of " <> dblQuote target' <> "."
             found (targetId, targetSing) = let targetPla = getPla targetId ms in if
-              | targetId == i -> emptied . wrapSend mq cols $ "You talk to yourself."
+              | targetId == i -> emptied . sendHelper $ "You talk to yourself."
               | isLoggedIn targetPla, getPlaFlag IsIncognito . getPla i $ ms, not . getPlaFlag IsAdmin $ targetPla ->
-                emptied . wrapSend mq cols $ "When the recipient of your message is logged in and you are incognito, \
-                                             \the recipient must be an administrator."
+                emptied . sendHelper $ "When the recipient of your message is logged in and you are incognito, the \
+                                       \recipient must be an administrator."
               | isLoggedIn targetPla ->
-                let sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", dblQuote msg ])
-                    receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", dblQuote msg ])
+                let sentLogMsg     = (i,        T.concat [ "sent retained message to "
+                                                         , targetSing
+                                                         , ": "
+                                                         , dblQuote msg ])
+                    receivedLogMsg = (targetId, T.concat [ "received retained message from "
+                                                         , s
+                                                         , ": "
+                                                         , dblQuote msg ])
                 in do
-                    wrapSend mq cols . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
+                    sendHelper . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
                     (retainedMsg targetId ms =<<) $ if getPlaFlag IsNotFirstAdminTell targetPla
-                      then return targetMsg
-                      else [ T.intercalate "\n" $ targetMsg : hints | hints <- firstAdminTell targetId s ]
+                      then return . pure $ targetMsg -- TODO: Hmm?
+                      else [ targetMsg : hints | hints <- firstAdminTell targetId s ]
                     return [ sentLogMsg, receivedLogMsg ]
               | otherwise -> do
-                  multiWrapSend mq cols [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ]
-                                        , parensQuote "Message retained." ]
-                  retainedMsg targetId ms targetMsg
+                  let f = ()# sorryMsg ? id :? (sorryMsg :)
+                  multiWrapSend mq cols . f $ [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ]
+                                              , parensQuote "Message retained." ]
+                  retainedMsg targetId ms . pure $ targetMsg
                   let sentLogMsg     = ( i
                                        , T.concat [ "sent retained message to ", targetSing, ": ", dblQuote msg ] )
                       receivedLogMsg = ( targetId
                                        , T.concat [ "received retained message from ", s,    ": ", dblQuote msg ] )
                   return [ sentLogMsg, receivedLogMsg ]
-        in maybe notFound found . findFullNameForAbbrev target . mkAdminPlaIdSingList $ ms
+        in maybe notFound found . findFullNameForAbbrev target' . mkAdminPlaIdSingList $ ms
+    sorry = sorryIgnoreLocPref "The player's PC name"
 adminRetained p = patternMatchFail "adminRetained" [ showText p ]
 
 
