@@ -705,7 +705,7 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
     unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
   where
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
-      [(x, "")] -> return . Just . Sum $ x
+      [(x, "")] -> unadulterated . Sum $ x
       _         -> emptied sorry
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
