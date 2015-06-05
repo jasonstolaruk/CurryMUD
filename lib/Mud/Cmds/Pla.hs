@@ -72,9 +72,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
--- TODO: All cmds should use the selectorChar system, where applicable.
-
-
 {-# ANN helperSettings ("HLint: ignore Use ||"        :: String) #-}
 {-# ANN module         ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -317,8 +314,8 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
--- TODO: Provide a one-time warning when players compose an emote that contains a form of the word "you."
 -- TODO: We should probably provide a way to refer to a given PC/NPC, so that we can use "mkStdDesig".
+-- TODO: No emotes can contain a form of the word "you."
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where

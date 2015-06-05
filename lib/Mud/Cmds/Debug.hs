@@ -569,6 +569,7 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"
+                , charTokenDelimiter  `T.cons` "r emoteTargetChar"
                 , charTokenDelimiter  `T.cons` "s slotChar"
                 , charTokenDelimiter  `T.cons` "t sayToChar"
                 , styleTokenDelimiter `T.cons` styleTokenDelimiter `T.cons` " literal styleTokenDelimiter"
