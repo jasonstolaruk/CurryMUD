@@ -21,7 +21,6 @@ module Mud.Data.State.Util.Output ( bcast
                                   , retainedMsg
                                   , send
                                   , sendMsgBoot
-                                  , sendWithSorryMsg
                                   , wrapSend ) where
 
 import Mud.Data.Misc
@@ -267,16 +266,6 @@ send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
 sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
-
-
------
-
-
--- TODO: Needed?
-sendWithSorryMsg :: MsgQueue -> Cols -> T.Text -> T.Text -> MudStack ()
-sendWithSorryMsg mq cols sorryMsg primaryMsg
-  | ()# sorryMsg = wrapSend      mq cols primaryMsg
-  | otherwise    = multiWrapSend mq cols [ sorryMsg, primaryMsg ]
 
 
 -----

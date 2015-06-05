@@ -11,6 +11,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Misc.LocPref
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -712,46 +713,53 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
-    helper toSelf toTarget toOthers = getState >>= \ms ->
-        let d                                = mkStdDesig i ms DoCap
-            (first (i `delete`) -> invCoins) = getPCRmInvCoins i ms
-        in if ()!# invCoins
-          then case uncurry (resolveRmInvCoins i ms (pure target)) invCoins of
-            (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
-            (_,                    Right _:_           ) -> wrapSend mq cols "Sorry, but expressive commands cannot \
-                                                                             \be used with coins."
-            ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
-            ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols "Sorry, but you can only target one \
-                                                                             \person at a time with expressive \
-                                                                             \commands."
-            ([ Right [targetId] ], _                   ) ->
-              let onPC targetDesigTxt =
-                      let (toSelf', toSelfBroadcast, serialized, hisHer, toOthers') = mkBindings targetDesigTxt
-                          toOthersBroadcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
-                          toTarget'         = replace [ ("%", serialized), ("&", hisHer) ] toTarget
-                          toTargetBroadcast = (nlnl toTarget', pure targetId)
-                      in do
-                          bcastSelfOthers i ms toSelfBroadcast  [ toTargetBroadcast, toOthersBroadcast ]
-                          logPlaOut ecn i [ parsePCDesig i ms toSelf' ]
-                  onMob targetNoun =
-                      let (toSelf', toSelfBroadcast, _, _, toOthers') = mkBindings targetNoun
-                          toOthersBroadcast                           = [(nlnl toOthers', i `delete` pcIds d)]
-                      in do
-                          bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast
-                          logPlaOut ecn i [toSelf']
-                  mkBindings targetTxt =
-                      let toSelf'         = replace [("@", targetTxt)] toSelf
-                          toSelfBroadcast = mkBroadcast i . nlnl $ toSelf'
-                          serialized      = mkSerializedDesig d toOthers
-                          (_, hisHer, _)  = mkPros . getSex i $ ms
-                          toOthers'       = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
-                      in (toSelf', toSelfBroadcast, serialized, hisHer, toOthers')
-              in case getType targetId ms of
-                PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
-                MobType -> onMob . theOnLower . getSing targetId $ ms
-                _       -> wrapSend mq cols "Sorry, but expressive commands can only target people."
-            x -> patternMatchFail "expCmd helper" [ showText x ]
-          else wrapSend mq cols noOneHere
+    helper toSelf toTarget toOthers = getState >>= \ms -> case singleArgInvEqRm InRm target of
+      (InRm, target') ->
+          let d                                = mkStdDesig i ms DoCap
+              (first (i `delete`) -> invCoins) = getPCRmInvCoins i ms
+          in if ()!# invCoins
+            then case uncurry (resolveRmInvCoins i ms (pure target')) invCoins of
+              (_,                    [ Left  [sorryMsg] ]) -> sendHelper sorryMsg
+              (_,                    Right _:_           ) -> sendHelper "Sorry, but expressive commands cannot be \
+                                                                         \user with coins."
+              ([ Left sorryMsg    ], _                   ) -> sendHelper sorryMsg
+              ([ Right (_:_:_)    ], _                   ) -> sendHelper "Sorry, but you can only target one person at \
+                                                                         \a time with expressive commands."
+              ([ Right [targetId] ], _                   ) ->
+                let onPC targetDesigTxt =
+                        let (toSelf', toSelfBroadcast, serialized, hisHer, toOthers') = mkBindings targetDesigTxt
+                            toOthersBroadcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
+                            toTarget'         = replace [ ("%", serialized), ("&", hisHer) ] toTarget
+                            toTargetBroadcast = (nlnl toTarget', pure targetId)
+                        in do
+                            bcastSelfOthers i ms toSelfBroadcast [ toTargetBroadcast, toOthersBroadcast ]
+                            logPlaOut ecn i [ parsePCDesig i ms toSelf' ]
+                    onMob targetNoun =
+                        let (toSelf', toSelfBroadcast, _, _, toOthers') = mkBindings targetNoun
+                            toOthersBroadcast                           = [(nlnl toOthers', i `delete` pcIds d)]
+                        in do
+                            bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast
+                            logPlaOut ecn i [toSelf']
+                    mkBindings targetTxt =
+                        let toSelf'         = replace [("@", targetTxt)] toSelf
+                            toSelfBroadcast = mkBroadcast i . nlnl $ toSelf'
+                            serialized      = mkSerializedDesig d toOthers
+                            (_, hisHer, _)  = mkPros . getSex i $ ms
+                            toOthers'       = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
+                        in (toSelf', toSelfBroadcast, serialized, hisHer, toOthers')
+                in case getType targetId ms of
+                  PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
+                  MobType -> onMob . theOnLower . getSing targetId $ ms
+                  _       -> sendHelper "Sorry, but expressive commands can only target people."
+              x -> patternMatchFail "expCmd helper" [ showText x ]
+            else sendHelper noOneHere
+      (x, _) -> sorry x
+    sendHelper = wrapSend mq cols
+    sorry loc  = sendHelper $ "You can't target an item in your " <> loc' <> " with an expressive command."
+      where
+        loc' = case loc of InInv -> "inventory"
+                           InEq  -> "readied equipment"
+                           _     -> patternMatchFail "expCmd sorry loc'" [ showText loc ]
 expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only target one person at a time with expressive commands."
 

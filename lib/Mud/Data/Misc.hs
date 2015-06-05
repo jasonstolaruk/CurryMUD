@@ -433,7 +433,7 @@ data IdSingTypeDesig = IdSingTypeDesig { theId    :: Id
 -----
 
 
-data InInvEqRm = InInv | InEq | InRm
+data InInvEqRm = InInv | InEq | InRm deriving (Show)
 
 
 -----
