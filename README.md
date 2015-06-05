@@ -58,6 +58,8 @@ The code is open source and available here on GitHub under the 3-clause BSD lice
   * `TemplateHaskell`
   * `TupleSections`
   * `ViewPatterns`
+* Over 40 modules.
+* A handful of unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 
 ### How to try it out
 
