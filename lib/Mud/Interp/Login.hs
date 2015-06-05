@@ -153,7 +153,8 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
                                   dfltColor
         sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
         logProfanity cn hn
-        logNotice "checkProfanitiesDict" . T.concat $ [ "booting player ", showText i, " ", s, " due to profanity." ]
+        let logMsg = T.concat [ "booting player ", showText i, " ", s, " due to profanity." ]
+        logNotice "checkProfanitiesDict sorry" logMsg
 
 
 checkNameHelper :: Maybe FilePath -> T.Text -> MudStack () -> CmdName -> MudStack Any

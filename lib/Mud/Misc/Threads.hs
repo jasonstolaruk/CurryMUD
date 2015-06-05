@@ -103,7 +103,7 @@ saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) =
     checkRecord recUp = case up `compare` recUp of GT -> saveIt >> logRec
                                                    _  -> logIt
     logRec            = logHelper " - it's a new record!"
-    logHelper         = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (upTxt <>)
+    logHelper         = logNotice "saveUptime logHelper" . ("CurryMUD was up for " <>) . (upTxt <>)
 
 
 listen :: MudStack ()
@@ -112,7 +112,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     proceed = do
         sortAllInvs
         logInterfaces
-        logNotice "listen" $ "listening for incoming connections on port " <> showText port <> "."
+        logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
         auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
@@ -305,8 +305,9 @@ inacTimer i mq itq = sequence_ [ setThreadType . InacTimer $ i, loop 0 `catch` p
           Just (Just ResetTimer)             -> loop 0
           Nothing                            -> unit
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = getState >>= \ms -> let s = getSing i ms in do
-        logPla "inacTimer" i $ "booted due to inactivity " <> secs <>  "."
-        logNotice "inacTimer" . T.concat $ [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]
+        logPla "inacTimer inacBoot" i $ "booted due to inactivity " <> secs <>  "."
+        let noticeMsg = T.concat [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]
+        logNotice "inacTimer inacBoot" noticeMsg
         liftIO . atomically . writeTQueue mq $ InacBoot
 
 
@@ -407,7 +408,7 @@ receive :: Handle -> Id -> MsgQueue -> MudStack ()
 receive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler "receive" i ]
   where
     loop = mIf (liftIO . hIsEOF $ h)
-               (sequence_ [ logPla "receive" i "connection dropped."
+               (sequence_ [ logPla "receive loop" i "connection dropped."
                           , liftIO . atomically . writeTQueue mq $ Dropped ])
                (sequence_ [ liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters =<< T.hGetLine h
                           , loop ])

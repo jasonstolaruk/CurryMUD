@@ -285,9 +285,9 @@ adminIncognito (NoArgs i mq cols) = modifyState helper >>= sequence_
     helper ms = let isIncognito = getPlaFlag IsIncognito . getPla i $ ms
                     fs          = if isIncognito
                       then [ wrapSend mq cols "You are no longer incognito."
-                           , logPla "adminIncognito helper" i "no longer incognito." ]
+                           , logPla "adminIncognito helper fs" i "no longer incognito." ]
                       else [ wrapSend mq cols "You have gone incognito."
-                           , logPla "adminIncognito helper" i "went incognito." ]
+                           , logPla "adminIncognito helper fs" i "went incognito." ]
                 in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncognito), fs)
 adminIncognito p = withoutArgs adminIncognito p
 
@@ -389,7 +389,7 @@ adminRetained p@(AdviseOneArg a) = advise p [ prefixAdminCmd "retained" ] advice
                       , dfltColor
                       , "." ]
 adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
-    logMsgs |#| let f = uncurry (logPla (prefixAdminCmd "retained")) in mapM_ f
+    logMsgs |#| let f = uncurry (logPla "adminRetained") in mapM_ f
   where
     helper ms =
         let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
@@ -453,9 +453,9 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
         rest = maybeMsg |$| maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote)
     in do
         massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg maybeMsg <> dfltColor
-        logPla     "adminShutdown" i $ "initiating shutdown" <> rest
-        massLogPla "adminShutdown"   $ "closing connection due to server shutdown initiated by " <> s <> rest
-        logNotice  "adminShutdown"   $ "server shutdown initiated by "                           <> s <> rest
+        logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
+        massLogPla "shutdownHelper"   $ "closing connection due to server shutdown initiated by " <> s <> rest
+        logNotice  "shutdownHelper"   $ "server shutdown initiated by "                           <> s <> rest
         liftIO . atomically . writeTQueue mq $ Shutdown
 
 
@@ -563,7 +563,7 @@ adminTell p@(AdviseOneArg a) = advise p [ prefixAdminCmd "tell" ] advice
                       , dfltColor
                       , "." ]
 adminTell (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
-    logMsgs |#| let f = uncurry (logPla (prefixAdminCmd "tell")) in mapM_ f
+    logMsgs |#| let f = uncurry (logPla "adminTell") in mapM_ f
   where
     helper ms =
         let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
