@@ -226,23 +226,20 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dfltColor
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let (target', sorryMsg) | hasLocPref . uncapitalize $ target = (capitalize . T.tail . T.tail $ target, sorry)
-                            | otherwise                          = (target,                                ""   )
-        sendHelper   = sendWithSorryMsg mq cols sorryMsg
-        adminIdSings = [ ais | ais@(ai, _) <- mkAdminIdSingList ms
-                             , let p = getPla ai ms, isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
-        s            = getSing i ms
-        notFound     = sendHelper $ "No administrator by the name of " <> dblQuote target' <> " is currently logged in."
-        found (adminId, _        ) | adminId == i = sendHelper "You talk to yourself."
+    let SingleTarget { .. } = mkSingleTarget mq cols target "The administrator name"
+        adminIdSings        = [ ais | ais@(ai, _) <- mkAdminIdSingList ms
+                                    , let p = getPla ai ms, isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
+        s                   = getSing i ms
+        notFound            = sendFun $ "No administrator by the name of " <> dblQuote strippedTarget <> " is \
+                                        \currently logged in."
+        found (adminId, _        ) | adminId == i = sendFun "You talk to yourself."
         found (adminId, adminSing) | adminMq <- getMsgQueue adminId ms, adminCols <- getColumns adminId ms = do
-            sendHelper                 . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
+            sendFun                    . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
             wrapSend adminMq adminCols . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor      ]
             logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
             logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
             logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
-    in findFullNameForAbbrev target' adminIdSings |$| maybe notFound found
-  where
-    sorry = sorryIgnoreLocPref "The administrator name"
+    in findFullNameForAbbrev strippedTarget adminIdSings |$| maybe notFound found
 admin p = patternMatchFail "admin" [ showText p ]
 
 
@@ -1411,7 +1408,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                  else sorry $ "The " <> conSing <> " is empty."
         Right {} -> sorry "You can only remove things from one container at a time."
   where
-    sorry msg = (ms, (mkBroadcast i msg, []))
+    sorry msg                         = (ms, (mkBroadcast i msg, []))
     stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBroadcast i msg)
                   | otherwise         = (as,                  []               )
       where
