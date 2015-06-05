@@ -4,6 +4,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
+                          , mkSingleTarget
                           , pager
                           , prefixCmd
                           , sendGenericErrorMsg
@@ -23,9 +24,10 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
 import Mud.Interp.Pager
 import Mud.Misc.ANSI
+import Mud.Misc.LocPref
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -33,6 +35,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Applicative (pure)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (throwTo)
 import Control.Monad (unless)
@@ -118,6 +121,22 @@ fileIOExHandler fn e = do
 
 throwToListenThread :: SomeException -> MudStack ()
 throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+
+
+-----
+
+
+mkSingleTarget :: MsgQueue -> Cols -> T.Text -> T.Text -> SingleTarget
+mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
+    SingleTarget { strippedTarget     = capitalize   t
+                 , strippedTarget'    = uncapitalize t
+                 , sendFun            = hlp ? (multiWrapSend mq cols . (sorryMsg :) . pure) :? wrapSend mq cols
+                 , consSorry          = hlp ? (sorryMsg :)                                  :? id
+                 , consSorryBroadcast = hlp ? f                                             :? const id }
+  where
+    hlp = hasLocPref . uncapitalize $ target
+    t   = hlp ? (T.tail . T.tail $ target) :? target
+    f i = ((sorryMsg, pure i) :)
 
 
 -----

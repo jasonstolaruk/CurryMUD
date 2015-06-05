@@ -4,6 +4,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Util.Misc
+import Mud.Util.Operators
 
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)

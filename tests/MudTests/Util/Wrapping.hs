@@ -4,7 +4,7 @@ module MudTests.Util.Wrapping where
 
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Text
 import Mud.Util.Wrapping
 import MudTests.TestUtil

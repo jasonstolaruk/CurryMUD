@@ -25,6 +25,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TheWorld.Ids
 import Mud.Util.Misc
+import Mud.Util.Operators
 import Mud.Util.Text
 
 import Control.Arrow ((***))

@@ -13,7 +13,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
+import Mud.Util.Operators
 import Mud.Util.Text
 
 import Control.Lens (view)

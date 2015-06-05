@@ -26,6 +26,7 @@ import Mud.Data.State.Util.Set
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 

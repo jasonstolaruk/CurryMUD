@@ -23,6 +23,7 @@ import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)

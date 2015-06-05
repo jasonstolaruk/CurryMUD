@@ -26,6 +26,7 @@ module Mud.Util.Text ( aOrAn
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc
+import Mud.Util.Operators
 
 import Control.Arrow ((***))
 import Control.Monad (guard)

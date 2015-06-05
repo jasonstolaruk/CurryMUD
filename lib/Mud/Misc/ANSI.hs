@@ -49,7 +49,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , zingColor ) where
 
 import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 

@@ -1,15 +1,6 @@
 {-# LANGUAGE LambdaCase, MonadComprehensions, RankNTypes, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Util.Misc ( (!#)
-                     , (#)
-                     , (#?)
-                     , (?)
-                     , (|!|)
-                     , (|#|)
-                     , (|$|)
-                     , (|?|)
-                     , Cond(..)
-                     , atLst1
+module Mud.Util.Misc ( atLst1
                      , blowUp
                      , divide
                      , dropFst
@@ -39,67 +30,21 @@ import Mud.Util.Quoting
 
 import Control.Applicative ((<$>), (<*>), Applicative, pure)
 import Control.Lens (Lens', lens)
-import Control.Monad (guard, unless)
+import Control.Monad (guard)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
-import Data.Monoid ((<>), Monoid, Sum(..), mempty)
+import Data.Monoid ((<>), Monoid, mempty)
 import Data.Time (getZonedTime)
 import qualified Data.IntMap.Lazy as IM (IntMap, insert)
 import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
 
-infixl 0 ?
-infixl 1 :?, |!|, |?|
 infixl 7 `divide`
-infixl 8 |#|
-infixl 9 !#, #, #?
-infixr 0 |$|
 
 
 -- ==================================================
-
-
--- TODO: Consider moving these to an "Operators" module.
-(!#) :: (Eq m, Monoid m) => () -> m -> Bool
-()!# x = not $ ()# x
-
-
-(#) :: (Eq m, Monoid m) => () -> m -> Bool
-()# x = x == mempty
-
-
-(#?) :: (Eq (f (Sum a)), Functor f, Monoid (f (Sum a))) => () -> f a -> Bool
-()#? ((Sum <$>) -> x) = x == mempty
-
-
-data Cond a = a :? a
-
-
-(?) :: Bool -> Cond a -> a
-True  ? (x :? _) = x
-False ? (_ :? y) = y
-
-
--- mempty on mempty
-(|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
-a |!| b = ()# a ? mempty :? b
-
-
--- unless mempty
-(|#|) :: (Eq a, Monoid a, Monad m) => a -> (a -> m ()) -> m ()
-x |#| f = unless (()# x) . f $ x
-
-
--- mempty on False
-(|?|) :: (Monoid a) => Bool -> a -> a
-a |?| b = a ? b :? mempty
-
-
--- TODO: GHC 7.10 will have a similar function named "(&)"...
-(|$|) :: a -> (a -> b) -> b
-(|$|) = flip ($)
 
 
 atLst1 :: (Eq a, Num a) => a -> a

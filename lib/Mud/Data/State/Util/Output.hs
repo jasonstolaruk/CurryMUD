@@ -34,6 +34,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.List (nubSort)
 import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping

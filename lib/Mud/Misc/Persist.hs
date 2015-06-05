@@ -8,6 +8,7 @@ import Mud.Data.State.Util.Misc
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
+import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice)
 
 import Control.Applicative ((<$>))

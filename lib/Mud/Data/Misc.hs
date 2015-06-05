@@ -32,6 +32,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , ShouldBracketQuote(..)
                      , ShouldCap(..)
                      , ShouldLog(..)
+                     , SingleTarget(..)
                      , ToOrFromThePeeped(..)
                      , Verb(..)
                      , WhichLog(..)
@@ -50,7 +51,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MudData
 import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -495,6 +496,16 @@ data ShouldBracketQuote = DoBracket | Don'tBracket
 
 
 data ShouldLog = DoLog | Don'tLog
+
+
+-----
+
+
+data SingleTarget = SingleTarget { strippedTarget     :: T.Text
+                                 , strippedTarget'    :: T.Text
+                                 , sendFun            :: T.Text   -> MudStack ()
+                                 , consSorry          :: [T.Text] -> [T.Text]
+                                 , consSorryBroadcast :: Id -> [Broadcast] -> [Broadcast] }
 
 
 -----

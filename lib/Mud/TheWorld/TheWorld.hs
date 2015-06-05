@@ -12,6 +12,7 @@ import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.Misc
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import qualified Mud.Misc.Logging as L (logNotice)
 

@@ -6,6 +6,7 @@ module Mud.Data.State.Util.Random ( percent
 
 import Mud.Data.State.MudData
 import Mud.Util.Misc
+import Mud.Util.Operators
 
 import Control.Applicative ((<$>))
 import Control.Lens (view)

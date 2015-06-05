@@ -81,6 +81,7 @@ library
                        Mud.TopLvlDefs.Msgs,
                        Mud.Util.List,
                        Mud.Util.Misc,
+                       Mud.Util.Operators,
                        Mud.Util.Padding,
                        Mud.Util.Quoting,
                        Mud.Util.Text,

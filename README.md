@@ -67,4 +67,4 @@ If you'd like to try out what I have so far, just clone the repo and build the p
 
 ## How to contact me
 
-Feel free to email me (at the address associated with [my GitHub account](https://github.com/jasonstolaruk)) if you have any questions.
+Feel free to email me at the address associated with [my GitHub account](https://github.com/jasonstolaruk) if you have any questions.

@@ -28,6 +28,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
 import Mud.Util.Misc
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text hiding (headTail)
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)

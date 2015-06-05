@@ -7,6 +7,7 @@ module Mud.Util.List ( appendIfUnique
                      , nubSort ) where
 
 import Mud.Util.Misc
+import Mud.Util.Operators
 
 import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))

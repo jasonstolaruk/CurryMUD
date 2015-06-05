@@ -23,6 +23,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -426,27 +427,6 @@ adminRetained (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \lo
                   return [ sentLogMsg, receivedLogMsg ]
         in (findFullNameForAbbrev strippedTarget . mkAdminPlaIdSingList $ ms) |$| maybe notFound found
 adminRetained p = patternMatchFail "adminRetained" [ showText p ]
-
-
--- TODO: Move this stuff. Use in Pla module...
-data SingleTarget = SingleTarget { strippedTarget     :: T.Text
-                                 , strippedTarget'    :: T.Text
-                                 , sendFun            :: T.Text   -> MudStack ()
-                                 , consSorry          :: [T.Text] -> [T.Text]
-                                 , consSorryBroadcast :: Id -> [Broadcast] -> [Broadcast] }
-
-
-mkSingleTarget :: MsgQueue -> Cols -> T.Text -> T.Text -> SingleTarget
-mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
-    SingleTarget { strippedTarget     = capitalize   t
-                 , strippedTarget'    = uncapitalize t
-                 , sendFun            = hlp ? (multiWrapSend mq cols . (sorryMsg :) . pure) :? wrapSend mq cols
-                 , consSorry          = hlp ? (sorryMsg :)                                  :? id
-                 , consSorryBroadcast = hlp ? f                                             :? const id }
-  where
-    hlp = hasLocPref . uncapitalize $ target
-    t   = hlp ? (T.tail . T.tail $ target) :? target
-    f i = ((sorryMsg, pure i) :)
 
 
 -----

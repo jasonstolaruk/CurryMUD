@@ -4,6 +4,7 @@ module MudTests.Util.Text where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
