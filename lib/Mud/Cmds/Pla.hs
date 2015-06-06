@@ -314,8 +314,7 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
--- TODO: We should probably provide a way to refer to a given PC/NPC, so that we can use "mkStdDesig".
--- TODO: No emotes can contain a form of the word "you."
+-- TODO: Figure out what to do about emotes that target other PCs or NPCs.
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where

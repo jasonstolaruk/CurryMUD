@@ -1,7 +1,6 @@
 GOALS:
 
 Create a safe environment where people have freedom to explore (almost) any desired identity.
-Consider making this goal explicitly clear to players: after all, players share the responsibility of maintaining an environment that is safe for identity exploration. This is why outright evilness is not a winning strategy.
 
 Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
 
@@ -98,6 +97,7 @@ Spell out a code of player conduct. It should be clear to players how they are e
 Age, harassment (with special attention to sexual orientation), RP (IC) vs. OOC, PD, PvP, multi-playing, bug abuse, loss of items.
 IC communication must always be appropriate for the context of the virtual world. References to reality are not allowed.
 Make it clear that by playing your virtual world, players are consenting to PD and PvP.
+"Evilness is not a winning strategy."
 "Yours is just one way of many to play."
 
 Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders"). p.457-8

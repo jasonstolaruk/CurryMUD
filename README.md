@@ -9,7 +9,7 @@ CurryMUD is essentially the hobby project and brainchild of a single developer (
 I hope to create a new MUD from the ground up, _written entirely in the Haskell programming language_.
 
 CurryMUD will have the following features:
-* Players will be offered a safe and immersive virtual world environment in which they are free to explore identity.
+* Players will be offered an immersive virtual world environment.
 * Content will be created and development will proceed with the aim of supporting a small community of players.
 * Role-playing will be strictly enforced.
 * Classless/skill-based.
