@@ -5,10 +5,10 @@ intro \s[\dperson \s...]\d
 
 \uDESCRIPTION\n
 Introduce yourself to one or more people, who will then know you by name.
-When no arguments are provided, you'll get a list of all of the people who have introduced themselves to you.
+When no arguments are provided, you'll get a list of the people who have introduced themselves to you.
 
 \uEXAMPLES\n
-\qintro\d to get a list of all of the names you know.4`
+\qintro\d to get a list of the names you know.4`
 \qintro taro\d to introduce yourself to Taro.4`
 \qintro taro hanako\d to introduce yourself to Taro and Hanako.4`
 \qintro \p2#i\qmelf\d to introduce yourself to the second male elf.4`

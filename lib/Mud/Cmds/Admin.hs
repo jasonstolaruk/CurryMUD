@@ -368,6 +368,8 @@ adminProfanity p = withoutArgs adminProfanity p
 -----
 
 
+-- TODO: Rename this command to ":tell".
+-- TODO: This command should only target players, not administrators.
 adminRetained :: Action
 adminRetained p@AdviseNoArgs = advise p [ prefixAdminCmd "retained" ] advice
   where
@@ -539,6 +541,7 @@ adminTeleRm p = advise p [] advice
 -----
 
 
+-- TODO: Delete this command. ":retained" will become the new ":tell".
 adminTell :: Action
 adminTell p@AdviseNoArgs = advise p [ prefixAdminCmd "tell" ] advice
   where

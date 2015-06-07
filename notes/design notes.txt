@@ -142,7 +142,7 @@ Have an in-game calendar.
 
 Have in-game mail and BBS. Have a special BBS dedicated to OOC topics.
 
-Recommend that players use an external text editor with spell checking for composing multi-line input. Specifically recommend SublimeText?
+Recommend that players use an external text editor with spell checking for composing multi-line input.
 The MUD could it self check spelling...
 
 Make a library or similar area where players may read, for example, the history and backstory of the virtual world.
@@ -175,10 +175,8 @@ COMMANDS:
 
 You should be able to use "smell" and "listen" with no arguments. "smell air" could have the same effect as "smell" with no arguments.
 
-"intro" to formally introduce yourself to another PC. PCs must introduce themselves to each other before "link" can be used.
-"link" to establish a telepathic link. PCs must link with each other before "tell" can be used.
 "intro" and "link" should award experience points.
-"block" to block tells from a PC. "unblock"
+"block" to block/unblock telepathic messages from a PC.
 
 When a PC dies, all those who have linked with him/her should be notified.
 

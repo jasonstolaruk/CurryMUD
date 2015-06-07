@@ -117,13 +117,15 @@ regularCmds :: [Cmd]
 regularCmds = map (uncurry3 mkRegularCmd)
     [ ("?",          plaDispCmdList,  "Display or search this command list.")
     , ("about",      about,           "About CurryMUD.")
-    , ("admin",      admin,           "Send a message to an administrator.")
+    , ("admin",      admin,           "Display a list of administrators, or send a message to an administrator.")
     , ("d",          go "d",          "Go down.")
     , ("e",          go "e",          "Go east.")
     , ("equip",      equip,           "Display your readied equipment, or examine one or more items in your readied \
                                       \equipment.")
     , ("expressive", expCmdList,      "Display or search a list of available expressive commands and their results.")
+    -- TODO: Can we change the name of this command to "inv" and make it a priority abbrev command?
     , ("i",          inv,             "Display your inventory, or examine one or more items in your inventory.")
+    -- TODO: Can we change the name of this command to "look" and make it a priority abbrev command?
     , ("l",          look,            "Display a description of your current room, or examine one or more items in \
                                       \your current room.")
     , ("n",          go "n",          "Go north.")
@@ -141,7 +143,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("u",          go "u",          "Go up.")
     , ("uptime",     uptime,          "Display how long CurryMUD has been running.")
     , ("w",          go "w",          "Go west.")
-    , ("whoadmin",   whoAdmin,        "Display a list of the administrators who are currently logged in.")
+    , ("whoadmin",   whoAdmin,        "Display a list of the administrators who are currently logged in.") -- TODO: Delete.
     , ("whoami",     whoAmI,          "Confirm your name, sex, and race.") ]
 
 
@@ -153,25 +155,30 @@ mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
                               , cmdDesc           = cd }
 
 
--- TODO: "wh" should be "who".
 priorityAbbrevCmds :: [Cmd]
 priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
-    [ ("bug",     "b",  bug,        "Report a bug.")
-    , ("clear",   "c",  clear,      "Clear the screen.")
-    , ("color",   "co", color,      "Perform a color test.")
-    , ("drop",    "dr", dropAction, "Drop one or more items.")
-    , ("emote",   "em", emote,      "Freely describe an action.")
-    , ("exits",   "ex", exits,      "Display obvious exits.")
-    , ("get",     "g",  getAction,  "Pick up one or more items.")
-    , ("help",    "h",  help,       "Get help on one or more commands or topics.")
-    , ("intro",   "in", intro,      "Introduce yourself.")
-    , ("motd",    "m",  motd,       "Display the message of the day.")
-    , ("put",     "p",  putAction,  "Put one or more items into a container.")
-    , ("ready",   "r",  ready,      "Ready one or more items.")
-    , ("say",     "sa", say,        "Say something out loud.")
-    , ("show",    "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
-                                    \person.")
-    , ("unready", "un", unready,    "Unready one or more items.") ]
+    [ ("bug",        "b",  bug,        "Report a bug.")
+    , ("clear",      "c",  clear,      "Clear the screen.")
+    , ("color",      "co", color,      "Perform a color test.")
+    , ("drop",       "dr", dropAction, "Drop one or more items.")
+    , ("emote",      "em", emote,      "Freely describe an action.")
+    , ("exits",      "ex", exits,      "Display obvious exits.")
+    , ("get",        "g",  getAction,  "Pick up one or more items.")
+    , ("help",       "h",  help,       "Get help on one or more commands or topics.")
+    , ("intro",      "in", intro,      "Display a list of the people who have introduced themselves to you, or \
+                                       \introduce yourself to one or more people.")
+    , ("link",       "li", undefined,  "Display a list of the people with whom you have established a telepathic link, \
+                                       \or established a telepathic link with one or more people.") -- TODO: The list should indicate who is logged in and who is logged out.
+    , ("motd",       "m",  motd,       "Display the message of the day.")
+    , ("put",        "p",  putAction,  "Put one or more items into a container.")
+    , ("ready",      "r",  ready,      "Ready one or more items.")
+    , ("say",        "sa", say,        "Say something out loud.")
+    , ("show",       "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
+                                       \person.")
+    , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
+                                       \telepathic link.")
+    , ("unready",    "un", unready,    "Unready one or more items.")
+    , ("who",        "wh", undefined,  "Display or search a list of the people who are currently logged in.") ] -- TODO: Only display the names of characters with whom the player has established a link; otherwise, just display sex and race. Display each PC's level. Display the total number of logged in players.
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> [Cmd]
@@ -207,7 +214,8 @@ about p = withoutArgs about p
 -----
 
 
--- TODO: Players ought to have a way to send a message to administrators who are off-line.
+-- TODO: When no arguments are provided, display a list of administrators, indicating who is logged in and who is logged out.
+-- TODO: You should be able to send a message to an administrator who is logged out using this command. (If the administrator is logged out, the message should be retained.)
 admin :: Action
 admin p@AdviseNoArgs = advise p ["admin"] advice
   where
@@ -2037,6 +2045,7 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 -----
 
 
+-- TODO: This functionality should be moved to the "admin" command.
 whoAdmin :: Action
 whoAdmin (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoadmin" i
   where
