@@ -207,6 +207,7 @@ about p = withoutArgs about p
 -----
 
 
+-- TODO: Players ought to have a way to send a message to administrators who are off-line.
 admin :: Action
 admin p@AdviseNoArgs = advise p ["admin"] advice
   where

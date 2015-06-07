@@ -1,6 +1,7 @@
 GOALS:
 
 Create a safe environment where people have freedom to explore (almost) any desired identity.
+Should the goal of identity exploration be made explicitly clear to players?
 
 Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
 
@@ -33,17 +34,36 @@ Do not encourage xenophobia or prejudice (it could undermine community).
 
 SKILLS:
 
-Classless/skill based. Use an attribute and point system.
+Classless/skill based.
 
-Nevertheless, consider implementing a system of ranking, based perhaps on the total number of points accumulated. This will give players incremental goals to shoot for.
+Experience points and levels. Leveling awards you skill points, which can be spent to advance individual skills.
 
-Defeating mobs and using skills gives you exp. Exp translates to points which can be spent on skills. p.367-9
+Attributes are fixed. They represent innate ability.
+
+Character generation can employ a "pick point" system similar to that of Hero's Quest. p.373-4
+
+Have one pool of points go towards attributes, and an entirely separate pool of points go towards initial skills.
+
+Consider having different and distinct attributes to represent (innate) ability in these areas:
+magic
+clerical magic
+psionics
+
+"Warning: don't have skills or attributes that affect how quickly characters learn skills. If you do, players will max them out at the first opportunity." p.367
+
+If a character's crafting skill increases on the basis of use, then players are likely to create many items solely so that their crafting skill will rise, leading to a severe over-production of goods. p.565
+Consider awarding experience points to crafters when someone buys their goods. p.368
+
+Players who want to craft items must pay dues to a merchants guild. By paying dues, they gain access to the raw materials needed to construct items. The items that a character can craft depend on the character's skills.
 
 Ideally, the same skill system will be applicable for all conceivable skills (crafting, weapon use, spells, etc.).
 
 The skills you implement, and the complexity you assign to each "skill tree," sends a message to players regarding what is most important in your world.
 
-Players must seek out "trainer" NPCs to learn (specialized?) skills.
+If a skill is considered by nearly all players to be essential, then all characters should be given it automatically. p.362
+
+Players must seek out "trainer" NPCs to learn and improve skills. Most trainers can be found in "schools."
+Training should cost money.
 
 Skill learning is an ideal candidate for an activity that players can opt to have their characters undertake while they are offline. (Travel is another.) p.450
 
@@ -52,7 +72,7 @@ Skill learning is an ideal candidate for an activity that players can opt to hav
 PD:
 
 It is more realistic. Therefore, a virtual world with PD is more immersive.
-When NPCs/mobiles are killed, they seize to exist. There is no fiction that can satisfactorily explain why the same does not apply to PCs.
+When mobiles are killed, they seize to exist. There is no fiction that can satisfactorily explain why the same does not apply to PCs.
 
 If a character can continue its existence after death, then it clearly hasn't died. Without PD, all PCs are effectively immortal.
 
@@ -94,11 +114,17 @@ Implementing PD means accepting the fact that many potential players will stay a
 MISC:
 
 Spell out a code of player conduct. It should be clear to players how they are expected to behave.
+"...players have a prevailing attitude that anything the virtual world lets them do, they're allowed to do." p.548
 Age, harassment (with special attention to sexual orientation), RP (IC) vs. OOC, PD, PvP, multi-playing, bug abuse, loss of items.
 IC communication must always be appropriate for the context of the virtual world. References to reality are not allowed.
 Make it clear that by playing your virtual world, players are consenting to PD and PvP.
 "Evilness is not a winning strategy."
 "Yours is just one way of many to play."
+
+Is multi-playing and allowed? If not, then players need a way to formally retire their character.
+
+Consider what to do when a player tries to "rape" another character. p.553
+Consider immediately alerting administrators when any in-game communication includes the word "rape."
 
 Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders"). p.457-8
 
@@ -117,6 +143,7 @@ Have an in-game calendar.
 Have in-game mail and BBS. Have a special BBS dedicated to OOC topics.
 
 Recommend that players use an external text editor with spell checking for composing multi-line input. Specifically recommend SublimeText?
+The MUD could it self check spelling...
 
 Make a library or similar area where players may read, for example, the history and backstory of the virtual world.
 A museum-like facility could fill this role. There could be a statue for each race and god, along with a description on a placard. Refer to the Pantheon in "City Sites."
@@ -150,7 +177,7 @@ You should be able to use "smell" and "listen" with no arguments. "smell air" co
 
 "intro" to formally introduce yourself to another PC. PCs must introduce themselves to each other before "link" can be used.
 "link" to establish a telepathic link. PCs must link with each other before "tell" can be used.
-"intro" and "link" should award exp.
+"intro" and "link" should award experience points.
 "block" to block tells from a PC. "unblock"
 
 When a PC dies, all those who have linked with him/her should be notified.
@@ -263,7 +290,7 @@ Economics is concerned with the allocation of resources.
 
 The more persistent the virtual world is, the greater the need for a formal economy.
 
-Wealth enters the system. This happens when, for example, coin-carrying mobs are generated, and when new characters are created.
+Wealth enters the system. This happens when, for example, coin-carrying mobiles are generated, and when new characters are created.
 PCs accumulate wealth when, for example, they mine for resources, and then sell them.
 Wealth leaves the system when PCs buy items and services from NPCs.
 
@@ -273,7 +300,7 @@ Most virtual world economies are open. In an open system, what enters the system
 In a fixed-price economy, the cost of commodities never changes. In such a system, inflation hurts everyone who crafts goods for which fixed-prices pertain.
 In a free-market economy, prices fluctuate depending on supply and demand (and inflation, too). Most virtual worlds choose this model for their economy.
 
-The free-market model certainly appears to be more maintainable than the fixed-price model. However, there has yet to be a successful large-scale implementation. It only works if ALL prices are variable. Mob drops should be variable, too, along with the amount of money that new characters start with. Everything must accommodate for supply, demand, and inflation.
+The free-market model certainly appears to be more maintainable than the fixed-price model. However, there has yet to be a successful large-scale implementation. It only works if ALL prices are variable. Mobile drops should be variable, too, along with the amount of money that new characters start with. Everything must accommodate for supply, demand, and inflation.
 
 The trick is to give goods rather than cash as rewards. Goods get their value from the free market; therefore their value varies in keeping with supply and demand.
 
@@ -286,14 +313,15 @@ Have items wear out (realistically). This creates a money sink, thereby discoura
 Consider making certain services available for sale. This works especially well when the service is something that PCs can do for themselves, but players don't enjoy doing.
 
 Consider not having banks, as they are out of place in a pre-Renaissance setting.
+The absence of vaults will discourage hoarding.
 
 Charge for PC advancement.
 
 ==========
 
-PCs and NPCs:
+MOBILES:
 
-Every mob has a speed, which indicates how fast they can move from room to room. Groups travel at the speed of the slowest member.
+Every mobile has a speed, which indicates how fast they can move from room to room. Groups travel at the speed of the slowest member.
 Naturally, encumbrance affects speed.
 
 ==========
@@ -303,13 +331,11 @@ PCs:
 For players who want to try out the game and start playing quickly, offer "character kits."
 Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
 
-Normal character generation can employ a "pick point" system similar to that of Hero's Quest. p.373-4
-
 Make it clear that player descriptions must be written from an objective viewpoint. They must be passive.
 
 Consider giving players the ability to change their character's description at any time.
 
-Perhaps make the composing of a background story/"character essay" an optional endeavor that awards exp.
+Perhaps make the composing of a background story/"character essay" an optional endeavor that awards experience points.
 
 Racial languages. PCs can spend points to (magically?) learn extra languages, though it should be difficult to find NPC "trainers" who teach them.
 
@@ -323,9 +349,9 @@ NPCs act even when there are no PCs around. Make it so that this behavior can be
 
 Create "lore provider" NPCs designed to dispense knowledge in response to the "ask" command.
 
-Realistically, NPCs should go to bed at night. Certain mobs should only come out at night.
+Realistically, NPCs should go to bed at night. Certain mobiles should only come out at night.
 
-Ideas for mobs:
+Ideas for mobiles:
 Beastly Fido
 Unit Monster and Multibeast
 Giant Honey Badgers
@@ -335,10 +361,10 @@ Giant Honey Badgers
 COMBAT:
 
 During combat, a PC may manually switch the opponent they attack.
-In a combat where there are multiple opponents, a mob may automatically switch the opponent they attack.
+In a combat where there are multiple opponents, a mobile may automatically switch the opponent they attack.
 
 Attempting to flee gives the opponent a free attack.
-When fighting more than one mob, there is a chance you will be unable to flee. The chance to flee could also be contingent upon the number of exits.
+When fighting more than one mobile, there is a chance you will be unable to flee. The chance to flee could also be contingent upon the number of exits.
 
 ==========
 
@@ -346,7 +372,7 @@ SPELLS/PSI:
 
 There is a cool-down period in which another spell cannot be cast.
 
-Some spells can hit more than one mob.
+Some spells can hit more than one mobile.
 
 ==========
 
