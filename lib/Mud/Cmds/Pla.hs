@@ -2014,7 +2014,6 @@ uptime (NoArgs i mq cols) = do
 uptime p = withoutArgs uptime p
 
 
--- TODO: Ensure that all uptime-related functions are correctly handling Int64.
 getUptime :: MudStack Int64
 getUptime = ((-) `on` sec) <$> (liftIO . getTime $ Monotonic) <*> asks (view startTime)
 
@@ -2030,7 +2029,7 @@ uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime
                                               , dfltColor ]
     mkRecTxt recUp = mkTxtHelper $ " (record uptime: " <> renderIt recUp <> ")."
     mkTxtHelper    = ("Up " <>) . (renderIt up <>)
-    renderIt       = T.pack . renderSecs . toInteger
+    renderIt       = T.pack . renderSecs . fromIntegral
 
 
 getRecordUptime :: MudStack (Maybe (Sum Int64))

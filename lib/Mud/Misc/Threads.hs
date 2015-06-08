@@ -97,7 +97,7 @@ listenWrapper =
 
 
 saveUptime :: Int64 -> MudStack ()
-saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) =
+saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
     maybe (saveIt >> logIt) checkRecord =<< (fmap . fmap) getSum getRecordUptime
   where
     saveIt            = (liftIO . writeFile uptimeFile . show $ up) `catch` logIOEx "saveUptime saveIt"

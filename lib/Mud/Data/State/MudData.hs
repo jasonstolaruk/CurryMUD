@@ -271,10 +271,9 @@ data Hand = RHand
 -- ==================================================
 
 
--- TODO: "lastLogout" should be a date and time.
 data HostRecord = HostRecord { _hostName   :: HostName
                              , _noOfLogins :: Int
-                             , _lastLogout :: Int } deriving (Eq, Generic, Show)
+                             , _lastLogout :: T.Text } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
