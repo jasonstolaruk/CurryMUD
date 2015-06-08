@@ -24,6 +24,7 @@ import System.Random (Random, random, randomR)
 import System.Random.MWC (GenIO)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
+import qualified Data.Set as S (Set)
 import qualified Data.Text as T
 
 
@@ -47,6 +48,7 @@ data MudState = MudState { _armTbl        :: ArmTbl
                          , _conTbl        :: ConTbl
                          , _entTbl        :: EntTbl
                          , _eqTbl         :: EqTbl
+                         , _hostNameTbl   :: HostNameTbl
                          , _invTbl        :: InvTbl
                          , _mobTbl        :: MobTbl
                          , _msgQueueTbl   :: MsgQueueTbl
@@ -68,6 +70,7 @@ type CoinsTbl      = IM.IntMap Coins
 type ConTbl        = IM.IntMap Con
 type EntTbl        = IM.IntMap Ent
 type EqTbl         = IM.IntMap EqMap
+type HostNameTbl   = M.Map Sing (S.Set HostRecord)
 type InvTbl        = IM.IntMap Inv
 type MobTbl        = IM.IntMap Mob
 type MsgQueueTbl   = IM.IntMap MsgQueue
@@ -268,6 +271,15 @@ data Hand = RHand
 -- ==================================================
 
 
+-- TODO: "lastLogout" should be a date and time.
+data HostRecord = HostRecord { _hostName   :: HostName
+                             , _noOfLogins :: Int
+                             , _lastLogout :: Int } deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
 data PersisterDone = PersisterDone
 
 
@@ -307,8 +319,7 @@ instance Random Race where
 -- ==================================================
 
 
--- TODO: Track when a player last logged out.
-data Pla = Pla { _hostName     :: HostName
+data Pla = Pla { _currHostName :: HostName
                , _plaFlags     :: Int
                , _columns      :: Int
                , _pageLines    :: Int
@@ -338,7 +349,7 @@ instance ToJSON   Pla where toJSON    = plaToJSON
 
 
 plaToJSON :: Pla -> Value
-plaToJSON Pla { .. } = object [ "_hostName"     .= _hostName
+plaToJSON Pla { .. } = object [ "_currHostName" .= _currHostName
                               , "_plaFlags"     .= _plaFlags
                               , "_columns"      .= _columns
                               , "_pageLines"    .= _pageLines
@@ -347,7 +358,7 @@ plaToJSON Pla { .. } = object [ "_hostName"     .= _hostName
 
 
 jsonToPla :: Value -> Parser Pla
-jsonToPla (Object o) = Pla <$> o .: "_hostName"
+jsonToPla (Object o) = Pla <$> o .: "_currHostName"
                            <*> o .: "_plaFlags"
                            <*> o .: "_columns"
                            <*> o .: "_pageLines"
@@ -446,6 +457,7 @@ instance FromJSON Coins
 instance FromJSON Con
 instance FromJSON Ent
 instance FromJSON Hand
+instance FromJSON HostRecord
 instance FromJSON LinkDir
 instance FromJSON Mob
 instance FromJSON Obj
@@ -465,6 +477,7 @@ instance ToJSON   Coins
 instance ToJSON   Con
 instance ToJSON   Ent
 instance ToJSON   Hand
+instance ToJSON   HostRecord
 instance ToJSON   LinkDir
 instance ToJSON   Mob
 instance ToJSON   Obj

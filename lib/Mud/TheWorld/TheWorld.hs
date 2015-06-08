@@ -54,6 +54,7 @@ initMudData shouldLog = do
                                  , _conTbl        = IM.empty
                                  , _entTbl        = IM.empty
                                  , _eqTbl         = IM.empty
+                                 , _hostNameTbl   =  M.empty
                                  , _invTbl        = IM.empty
                                  , _mobTbl        = IM.empty
                                  , _msgQueueTbl   = IM.empty

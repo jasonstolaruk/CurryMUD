@@ -53,6 +53,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Char (isDigit)
 import Data.Function (on)
+import Data.Int (Int64)
 import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
@@ -2013,14 +2014,12 @@ uptime (NoArgs i mq cols) = do
 uptime p = withoutArgs uptime p
 
 
-getUptime :: MudStack Int
-getUptime = let start = asks $ view startTime
-                now   = liftIO . getTime $ Monotonic
-                toSec = fmap $ fromIntegral . sec
-            in (-) <$> toSec now <*> toSec start
+-- TODO: Ensure that all uptime-related functions are correctly handling Int64.
+getUptime :: MudStack Int64
+getUptime = ((-) `on` sec) <$> (liftIO . getTime $ Monotonic) <*> asks (view startTime)
 
 
-uptimeHelper :: Int -> MudStack T.Text
+uptimeHelper :: Int64 -> MudStack T.Text
 uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime
   where
     helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
@@ -2034,7 +2033,7 @@ uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime
     renderIt       = T.pack . renderSecs . toInteger
 
 
-getRecordUptime :: MudStack (Maybe (Sum Int))
+getRecordUptime :: MudStack (Maybe (Sum Int64))
 getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
                       (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime"))
                       (return Nothing)

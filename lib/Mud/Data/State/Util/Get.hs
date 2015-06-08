@@ -53,6 +53,13 @@ getCon i = view (conTbl.ind i)
 -----
 
 
+getCurrHostName :: Id -> MudState -> HostName
+getCurrHostName i = view currHostName . getPla i
+
+
+-----
+
+
 getDx :: Id -> MudState -> Int
 getDx i = view dx . getMob i
 
@@ -80,13 +87,6 @@ getEqMap i = view (eqTbl.ind i)
 
 getHand :: Id -> MudState -> Hand
 getHand i = view hand . getMob i
-
-
------
-
-
-getHostName :: Id -> MudState -> HostName
-getHostName i = view hostName . getPla i
 
 
 -----

@@ -48,6 +48,7 @@ import Control.Monad ((>=>), forM_, forever, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
+import Data.Int (Int64)
 import Data.List ((\\))
 import Data.Monoid ((<>), getSum, mempty)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
@@ -95,7 +96,7 @@ listenWrapper =
     in (logNotice "listenWrapper" "server started." >> listen) `finally` (getUptime >>= saveUptime >> closeLogs >> bye)
 
 
-saveUptime :: Int -> MudStack ()
+saveUptime :: Int64 -> MudStack ()
 saveUptime up@(T.pack . renderSecs . toInteger -> upTxt) =
     maybe (saveIt >> logIt) checkRecord =<< (fmap . fmap) getSum getRecordUptime
   where
@@ -238,7 +239,7 @@ adHoc mq host = do
                        , _race       = r
                        , _introduced = []
                        , _linked     = [] }
-            pla  = Pla { _hostName     = host
+            pla  = Pla { _currHostName = host
                        , _plaFlags     = zeroBits
                        , _columns      = 80
                        , _pageLines    = 24

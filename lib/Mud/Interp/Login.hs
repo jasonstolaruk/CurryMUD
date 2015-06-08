@@ -74,7 +74,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
     Right (originId, oldSing) -> getState >>= \ms -> let cols = getColumns i ms in do
       greet cols
       handleLogin p { args = [] }
-      logPla    "interpName" i $ "logged in from " <> T.pack (getHostName i ms) <> "."
+      logPla    "interpName" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
       logNotice "interpName" . T.concat $ [ dblQuote oldSing
                                           , " has logged in as "
                                           , cn'
@@ -94,7 +94,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
             matches = filter ((== cn') . snd) . snd $ sorted
         in if cn' `elem` fst sorted
           then (ms, Left . Just $ cn' <> " is already logged in.")
-          else case matches of [(pi, _)] -> logIn i ms (getHostName i ms) pi
+          else case matches of [(pi, _)] -> logIn i ms (getCurrHostName i ms) pi
                                _         -> (ms, Left Nothing)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
@@ -134,7 +134,7 @@ logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId
                          & mobTbl  .at  originId       .~ Nothing
                          & pcTbl   .ind newId          .~ getPC      originId ms
                          & pcTbl   .at  originId       .~ Nothing
-                         & plaTbl  .ind newId          .~ (getPla    originId ms & hostName .~ host)
+                         & plaTbl  .ind newId          .~ (getPla    originId ms & currHostName .~ host)
                          & plaTbl  .ind newId.peepers  .~ getPeepers originId ms
                          & plaTbl  .at  originId       .~ Nothing
                          & typeTbl .at  originId       .~ Nothing
@@ -148,7 +148,7 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
   where
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
-            hn = getHostName i ms
+            hn = getCurrHostName i ms
         send mq . nlPrefix . nl $ bootMsgColor                                                                     <>
                                   "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
                                   dfltColor
@@ -192,7 +192,7 @@ interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
   Just True -> helper |$| modifyState >=> \(getPla i -> p, oldSing) -> do
       send mq . nl $ ""
       handleLogin params { args = [] }
-      logPla    "interpConfirmName" i $ "new character logged in from " <> T.pack (p^.hostName) <> "."
+      logPla    "interpConfirmName" i $ "new character logged in from " <> T.pack (p^.currHostName) <> "."
       logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged in as " <> s <> " (new character)."
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq

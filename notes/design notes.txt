@@ -1,6 +1,6 @@
 GOALS:
 
-Create a safe environment where people have freedom to explore (almost) any desired identity.
+Create a safe environment where people have freedom to engage in identity exploration.
 Should the goal of identity exploration be made explicitly clear to players?
 
 Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
