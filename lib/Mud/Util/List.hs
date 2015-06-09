@@ -1,4 +1,5 @@
-module Mud.Util.List ( appendIfUnique
+module Mud.Util.List ( allValues
+                     , appendIfUnique
                      , countOcc
                      , countOccs
                      , headLast
@@ -13,6 +14,10 @@ import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))
 import Data.List (foldl', group, sort)
 import qualified Data.Set as S (fromList, toList)
+
+
+allValues :: (Enum a, Bounded a) => [a]
+allValues = [ minBound .. ]
 
 
 appendIfUnique :: (Eq a) => [a] -> a -> [a]

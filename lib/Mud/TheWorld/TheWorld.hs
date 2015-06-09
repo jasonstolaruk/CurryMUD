@@ -87,8 +87,8 @@ createWorld :: MudStack ()
 createWorld = do
     logNotice "createWorld" "creating the world."
 
-    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 50 50 50 50 10 10 0 RHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
-    putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 50 50 50 50 10 10 0 LHand) (PC iLoggedOut Human [] []) (Pla "" adminFlags 80 24 Nothing [] [] [] (Just iLounge))
+    putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 50 50 50 50 10 10 0 RHand) (PC iLoggedOut Human [] []) (Pla "" Nothing adminFlags 80 24 Nothing [] [] [] (Just iLounge))
+    putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 50 50 50 50 10 10 0 LHand) (PC iLoggedOut Human [] []) (Pla "" Nothing adminFlags 80 24 Nothing [] [] [] (Just iLounge))
 
     putRm iLoggedOut (pure iRoot) mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])

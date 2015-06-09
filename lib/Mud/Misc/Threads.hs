@@ -51,6 +51,7 @@ import Data.Bits (zeroBits)
 import Data.Int (Int64)
 import Data.List ((\\))
 import Data.Monoid ((<>), getSum, mempty)
+import Data.Time (getCurrentTime)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
 import System.FilePath ((</>))
@@ -217,6 +218,7 @@ talk h host = helper `finally` cleanUp
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = do
     (sexy, r) <- liftIO $ (,) <$> randomSex <*> randomRace
+    ct        <- liftIO getCurrentTime
     modifyState $ \ms ->
         let i    = getUnusedId ms
             s    = showText r <> showText i
@@ -240,6 +242,7 @@ adHoc mq host = do
                        , _introduced = []
                        , _linked     = [] }
             pla  = Pla { _currHostName = host
+                       , _connectTime  = Just ct
                        , _plaFlags     = zeroBits
                        , _columns      = 80
                        , _pageLines    = 24

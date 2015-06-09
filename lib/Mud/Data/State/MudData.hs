@@ -17,6 +17,7 @@ import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), object)
 import Data.Aeson.Types (Parser)
 import Data.IORef (IORef)
 import Data.Monoid (Monoid, mappend, mempty)
+import Data.Time (UTCTime)
 import GHC.Generics (Generic)
 import Network (HostName)
 import System.Clock (TimeSpec)
@@ -271,9 +272,10 @@ data Hand = RHand
 -- ==================================================
 
 
-data HostRecord = HostRecord { _hostName   :: HostName
-                             , _noOfLogins :: Int
-                             , _lastLogout :: T.Text } deriving (Eq, Generic, Show)
+data HostRecord = HostRecord { _hostName     :: HostName
+                             , _noOfLogins   :: Int
+                             , _hrsConnected :: Int
+                             , _lastLogout   :: UTCTime } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -319,6 +321,7 @@ instance Random Race where
 
 
 data Pla = Pla { _currHostName :: HostName
+               , _connectTime  :: Maybe UTCTime
                , _plaFlags     :: Int
                , _columns      :: Int
                , _pageLines    :: Int
@@ -349,6 +352,7 @@ instance ToJSON   Pla where toJSON    = plaToJSON
 
 plaToJSON :: Pla -> Value
 plaToJSON Pla { .. } = object [ "_currHostName" .= _currHostName
+                              , "_connectTime"  .= _connectTime
                               , "_plaFlags"     .= _plaFlags
                               , "_columns"      .= _columns
                               , "_pageLines"    .= _pageLines
@@ -358,6 +362,7 @@ plaToJSON Pla { .. } = object [ "_currHostName" .= _currHostName
 
 jsonToPla :: Value -> Parser Pla
 jsonToPla (Object o) = Pla <$> o .: "_currHostName"
+                           <*> o .: "_connectTime"
                            <*> o .: "_plaFlags"
                            <*> o .: "_columns"
                            <*> o .: "_pageLines"

@@ -1018,12 +1018,12 @@ handleEgress i = do
         unless (getRmId i ms == iWelcome) . bcastOthersInRm i $ nlnl (serialize d <> " slowly dissolves into \
                                                                                      \nothingness.")
     helper ms =
-        let ri                 = getRmId i ms
-            s                  = getSing i ms
+        let ri                 = getRmId i  ms
+            s                  = getSing i  ms
             (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = if T.takeWhile (not . isDigit) s `elem` map showText [ Dwarf .. Vulpenoid ]
+            ms''               = if T.takeWhile (not . isDigit) s `elem` map showText (allValues :: [Race])
                                    then removeAdHoc i ms'
-                                   else movePC ms' ri
+                                   else updateHostRecord (movePC ms' ri)
         in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
@@ -1051,6 +1051,7 @@ handleEgress i = do
                       & msgQueueTbl.at  i          .~ Nothing
                       & pcTbl      .ind i.rmId     .~ iLoggedOut
                       & plaTbl     .ind i.lastRmId .~ Just ri
+    updateHostRecord ms = ms -- TODO
 
 
 -----

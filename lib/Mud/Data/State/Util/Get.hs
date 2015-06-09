@@ -9,6 +9,7 @@ import Mud.Util.Operators
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
 import Control.Lens (to, view, views)
+import Data.Time (UTCTime)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Text as T
@@ -48,6 +49,13 @@ getColumns i = view columns . getPla i
 
 getCon :: Id -> MudState -> Con
 getCon i = view (conTbl.ind i)
+
+
+-----
+
+
+getConnectTime :: Id -> MudState -> Maybe UTCTime
+getConnectTime i = view connectTime . getPla i
 
 
 -----

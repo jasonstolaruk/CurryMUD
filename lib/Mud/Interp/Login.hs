@@ -39,6 +39,7 @@ import Data.Ix (inRange)
 import Data.List (delete, intersperse, partition)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..), mempty)
+import Data.Time (UTCTime)
 import Network (HostName)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (foldrWithKey)
@@ -86,15 +87,16 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
-        let sorted  = IM.foldrWithKey (\pi pla acc -> acc & if isLoggedIn pla
-                                        then _1 %~ (getSing pi ms       :)
+        let newPla  = getPla i ms
+            sorted  = IM.foldrWithKey (\pi pla acc -> acc & if isLoggedIn pla
+                                        then _1 %~ (     getSing pi ms  :)
                                         else _2 %~ ((pi, getSing pi ms) :))
                                       ([], [])
                                       (ms^.plaTbl)
             matches = filter ((== cn') . snd) . snd $ sorted
         in if cn' `elem` fst sorted
           then (ms, Left . Just $ cn' <> " is already logged in.")
-          else case matches of [(pi, _)] -> logIn i ms (getCurrHostName i ms) pi
+          else case matches of [(pi, _)] -> logIn i ms (newPla^.currHostName) (newPla^.connectTime) pi
                                _         -> (ms, Left Nothing)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
@@ -113,8 +115,8 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: Id -> MudState -> HostName -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
-logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId, getSing newId ms))
+logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
+logIn newId ms newHost newTime originId = (peepNewId . movePC $ adoptNewId, Right (originId, getSing newId ms))
   where
     movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
@@ -134,7 +136,8 @@ logIn newId ms host originId = (peepNewId . movePC $ adoptNewId, Right (originId
                          & mobTbl  .at  originId       .~ Nothing
                          & pcTbl   .ind newId          .~ getPC      originId ms
                          & pcTbl   .at  originId       .~ Nothing
-                         & plaTbl  .ind newId          .~ (getPla    originId ms & currHostName .~ host)
+                         & plaTbl  .ind newId          .~ (getPla    originId ms & currHostName .~ newHost
+                                                                                 & connectTime  .~ newTime)
                          & plaTbl  .ind newId.peepers  .~ getPeepers originId ms
                          & plaTbl  .at  originId       .~ Nothing
                          & typeTbl .at  originId       .~ Nothing
