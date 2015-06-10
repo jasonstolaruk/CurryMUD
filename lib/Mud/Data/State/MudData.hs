@@ -25,7 +25,6 @@ import System.Random (Random, random, randomR)
 import System.Random.MWC (GenIO)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
-import qualified Data.Set as S (Set)
 import qualified Data.Text as T
 
 
@@ -49,7 +48,7 @@ data MudState = MudState { _armTbl        :: ArmTbl
                          , _conTbl        :: ConTbl
                          , _entTbl        :: EntTbl
                          , _eqTbl         :: EqTbl
-                         , _hostNameTbl   :: HostNameTbl
+                         , _hostTbl       :: HostTbl
                          , _invTbl        :: InvTbl
                          , _mobTbl        :: MobTbl
                          , _msgQueueTbl   :: MsgQueueTbl
@@ -71,7 +70,7 @@ type CoinsTbl      = IM.IntMap Coins
 type ConTbl        = IM.IntMap Con
 type EntTbl        = IM.IntMap Ent
 type EqTbl         = IM.IntMap EqMap
-type HostNameTbl   = M.Map Sing (S.Set HostRecord)
+type HostTbl       = M.Map Sing HostMap
 type InvTbl        = IM.IntMap Inv
 type MobTbl        = IM.IntMap Mob
 type MsgQueueTbl   = IM.IntMap MsgQueue
@@ -227,6 +226,17 @@ data Slot =
 -- ==================================================
 
 
+type HostMap = M.Map HostName HostRecord
+
+
+data HostRecord = HostRecord { _noOfLogins    :: Int
+                             , _secsConnected :: Integer
+                             , _lastLogout    :: UTCTime } deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
 type Inv = [Id]
 
 
@@ -267,15 +277,6 @@ data Sex = Male
 data Hand = RHand
           | LHand
           | NoHand deriving (Eq, Generic, Show)
-
-
--- ==================================================
-
-
-data HostRecord = HostRecord { _hostName     :: HostName
-                             , _noOfLogins   :: Int
-                             , _hrsConnected :: Int
-                             , _lastLogout   :: UTCTime } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -502,6 +503,7 @@ instance ToJSON   WpnSub
 makeLenses ''Arm
 makeLenses ''Con
 makeLenses ''Ent
+makeLenses ''HostRecord
 makeLenses ''Mob
 makeLenses ''MudData
 makeLenses ''MudState

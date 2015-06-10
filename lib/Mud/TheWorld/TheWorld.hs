@@ -54,7 +54,7 @@ initMudData shouldLog = do
                                  , _conTbl        = IM.empty
                                  , _entTbl        = IM.empty
                                  , _eqTbl         = IM.empty
-                                 , _hostNameTbl   =  M.empty
+                                 , _hostTbl       =  M.empty
                                  , _invTbl        = IM.empty
                                  , _mobTbl        = IM.empty
                                  , _msgQueueTbl   = IM.empty
@@ -208,6 +208,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl coinsTblFile      coinsTbl
                                                  , loadTbl conTblFile        conTbl
                                                  , loadTbl entTblFile        entTbl
+                                                 , loadTbl hostTblFile       hostTbl
                                                  , loadTbl invTblFile        invTbl
                                                  , loadTbl mobTblFile        mobTbl
                                                  , loadTbl objTblFile        objTbl

@@ -69,7 +69,7 @@ persistHelper persistTMVar ms = do
                                              , helper (ms^.conTbl       ) $ path </> conTblFile
                                              , helper (ms^.entTbl       ) $ path </> entTblFile
                                              , helper (eqTblHelper ms   ) $ path </> eqTblFile
-                                             , helper (ms^.hostNameTbl  ) $ path </> hostNameTblFile
+                                             , helper (ms^.hostTbl      ) $ path </> hostTblFile
                                              , helper (ms^.invTbl       ) $ path </> invTblFile
                                              , helper (ms^.mobTbl       ) $ path </> mobTblFile
                                              , helper (ms^.objTbl       ) $ path </> objTblFile

@@ -8,7 +8,7 @@ import Mud.Util.Operators
 
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
-import Control.Lens (to, view, views)
+import Control.Lens (at, to, view, views)
 import Data.Time (UTCTime)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (filter, keys)
@@ -95,6 +95,13 @@ getEqMap i = view (eqTbl.ind i)
 
 getHand :: Id -> MudState -> Hand
 getHand i = view hand . getMob i
+
+
+-----
+
+
+getHostMap :: Sing -> MudState -> Maybe HostMap
+getHostMap s = view (hostTbl.at s)
 
 
 -----

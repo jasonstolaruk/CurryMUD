@@ -46,8 +46,8 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, _4, at, both, to, view, views)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~), (.~), (^.))
+import Control.Lens (_1, _2, _3, _4, at, both, set, to, view, views)
+import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -60,6 +60,8 @@ import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, pa
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Sum(..), mempty)
+import Data.Time (getCurrentTime)
+import Data.Time.Clock (diffUTCTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (log, pi)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
@@ -67,7 +69,7 @@ import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.Map.Lazy as M ((!), elems, filter, lookup)
+import qualified Data.Map.Lazy as M ((!), elems, filter, lookup, singleton)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -1005,9 +1007,9 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 
 
 handleEgress :: Id -> MudStack ()
-handleEgress i = do
+handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress
-    helper |$| modifyState >=> \(s, bs, logMsgs) -> do
+    helper now |$| modifyState >=> \(s, bs, logMsgs) -> do
         closePlaLog i
         bcast bs
         bcastAdmins $ s <> " has left CurryMUD."
@@ -1017,13 +1019,13 @@ handleEgress i = do
     informEgress = getState >>= \ms -> let d = mkStdDesig i ms DoCap in
         unless (getRmId i ms == iWelcome) . bcastOthersInRm i $ nlnl (serialize d <> " slowly dissolves into \
                                                                                      \nothingness.")
-    helper ms =
+    helper now ms =
         let ri                 = getRmId i  ms
             s                  = getSing i  ms
             (ms', bs, logMsgs) = peepHelper ms s
             ms''               = if T.takeWhile (not . isDigit) s `elem` map showText (allValues :: [Race])
                                    then removeAdHoc i ms'
-                                   else updateHostRecord (movePC ms' ri)
+                                   else updateHostMap (movePC ms' ri) s now
         in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
@@ -1051,7 +1053,20 @@ handleEgress i = do
                       & msgQueueTbl.at  i          .~ Nothing
                       & pcTbl      .ind i.rmId     .~ iLoggedOut
                       & plaTbl     .ind i.lastRmId .~ Just ri
-    updateHostRecord ms = ms -- TODO
+    updateHostMap ms s now = flip (set $ hostTbl.at s) ms $ case getHostMap s ms of
+      Nothing      -> Just . M.singleton host $ newRecord
+      Just hostMap -> case hostMap^.at host of Nothing  -> Just $ hostMap & at host .~ Just newRecord
+                                               Just rec -> Just $ hostMap & at host .~ (Just . reviseRecord $ rec)
+      where
+        newRecord        = HostRecord { _noOfLogins    = 1
+                                      , _secsConnected = duration
+                                      , _lastLogout    = now }
+        reviseRecord rec = rec & noOfLogins    +~ 1
+                               & secsConnected +~ duration
+                               & lastLogout    .~ now
+        host             = getCurrHostName i ms
+        duration         = round $ now `diffUTCTime` conTime
+        conTime          = fromJust . getConnectTime i $ ms
 
 
 -----
