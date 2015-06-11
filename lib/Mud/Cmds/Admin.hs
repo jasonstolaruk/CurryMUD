@@ -303,20 +303,21 @@ adminHost p = patternMatchFail "adminHost" [ showText p ]
 
 -- TODO: Refine and refactor.
 mkHostReport :: MudState -> UTCTime -> Id -> Sing -> [T.Text]
-mkHostReport ms now i s = (header :) . (++ pure footer) $ case getHostMap s ms of
+mkHostReport ms now i s = (header :) . (++ [ footer, total ]) $ case getHostMap s ms of
   Nothing      -> [ "There are no host records for " <> s <> "." ]
   Just hostMap -> M.foldrWithKey helper [] hostMap
   where
-    header   = s <> ": "
-    footer   | isLoggedIn . getPla i $ ms = T.concat [ s
-                                                     , " is currently logged in from "
-                                                     , T.pack . getCurrHostName i $ ms
-                                                     , " "
-                                                     , parensQuote . T.pack . renderSecs $ duration
-                                                     , "." ]
-             | otherwise                  = s <> " is currently logged out."
-    duration = round $ now `diffUTCTime` conTime
-    conTime  = fromJust . getConnectTime i $ ms
+    header    = s <> ": "
+    footer    | isLoggedIn . getPla i $ ms = T.concat [ s
+                                                      , " is currently logged in from "
+                                                      , T.pack . getCurrHostName i $ ms
+                                                      , " "
+                                                      , parensQuote . T.pack . renderSecs $ duration
+                                                      , "." ]
+              | otherwise                  = s <> " is currently logged out."
+    total     = "Total time logged in: " -- TODO
+    duration  = round $ now `diffUTCTime` conTime
+    conTime   = fromJust . getConnectTime i $ ms
     helper host rec acc = T.concat [ T.pack host
                                    , ": "
                                    , showText $ rec^.noOfLogouts
