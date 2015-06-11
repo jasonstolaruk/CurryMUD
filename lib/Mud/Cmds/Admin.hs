@@ -44,14 +44,17 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
-import Data.Time (getCurrentTime, getZonedTime)
+import Data.Time (UTCTime, getCurrentTime, getZonedTime)
+import Data.Time.Clock (diffUTCTime)
 import Data.Time.Format (formatTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Directory (doesFileExist)
 import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
+import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
+import qualified Data.Map.Lazy as M (foldrWithKey)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
@@ -105,6 +108,7 @@ adminCmds =
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"       adminBug         "Dump the bug log."
     , mkAdminCmd "date"      adminDate        "Display the current system date."
+    , mkAdminCmd "host"      adminHost        "Display host statistics for one or more players."
     , mkAdminCmd "incognito" adminIncognito   "Toggle your incognito status."
     , mkAdminCmd "peep"      adminPeep        "Start or stop peeping one or more players."
     , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state to disk)."
@@ -275,6 +279,56 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
+-- TODO: Help.
+adminHost :: Action
+adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify the PC name(s) of one or more players \
+                                                              \whose host statistics you would like to see."
+adminHost (LowerNub i mq cols as) = do
+    ms  <- getState
+    now <- liftIO getCurrentTime
+    let apiss = mkAdminPlaIdSingList ms
+        (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
+                       | otherwise         = (id,           ""      )
+        g = ()# guessWhat ? id :? (guessWhat :)
+        helper target =
+            let notFound = [ "There is no PC by the name of " <> dblQuote target <> "." ]
+                found    = uncurry (mkHostReport ms now)
+            in findFullNameForAbbrev target apiss |$| maybe notFound found
+    multiWrapSend mq cols . g . concatMap (helper . capitalize . f) $ as
+    logPlaExec (prefixAdminCmd "host") i
+  where
+    sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
+adminHost p = patternMatchFail "adminHost" [ showText p ]
+
+
+-- TODO: Refine and refactor.
+mkHostReport :: MudState -> UTCTime -> Id -> Sing -> [T.Text]
+mkHostReport ms now i s = (header :) . (++ pure footer) $ case getHostMap s ms of
+  Nothing      -> [ "There are no host records for " <> s <> "." ]
+  Just hostMap -> M.foldrWithKey helper [] hostMap
+  where
+    header   = s <> ": "
+    footer   | isLoggedIn . getPla i $ ms = T.concat [ s
+                                                     , " is currently logged in from "
+                                                     , T.pack . getCurrHostName i $ ms
+                                                     , " "
+                                                     , parensQuote . T.pack . renderSecs $ duration
+                                                     , "." ]
+             | otherwise                  = s <> " is currently logged out."
+    duration = round $ now `diffUTCTime` conTime
+    conTime  = fromJust . getConnectTime i $ ms
+    helper host rec acc = T.concat [ T.pack host
+                                   , ": "
+                                   , showText $ rec^.noOfLogouts
+                                   , " "
+                                   ,  T.pack . renderSecs $ rec^.secsConnected
+                                   , " "
+                                   , showText $ rec^.lastLogout ] : acc
+
+
+-----
+
+
 adminIncognito :: Action
 adminIncognito (NoArgs i mq cols) = modifyState helper >>= sequence_
   where
@@ -292,7 +346,7 @@ adminIncognito p = withoutArgs adminIncognito p
 
 
 adminPeep :: Action
-adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify one or more PC names of the player(s) \
+adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify the PC name(s) of one or more players \
                                                               \you wish to start or stop peeping."
 adminPeep (LowerNub i mq cols as) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
@@ -326,7 +380,7 @@ adminPeep (LowerNub i mq cols as) = do
                 in findFullNameForAbbrev target apiss |$| maybe notFound found
             res = foldr (peep . capitalize . f) (ms^.plaTbl, [], []) as
         in (ms & plaTbl .~ res^._1, (res^._2.to g, res^._3))
-    sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the player(s) you wish to start or stop peeping"
+    sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 

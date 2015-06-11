@@ -1058,10 +1058,10 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
       Just hostMap -> case hostMap^.at host of Nothing  -> Just $ hostMap & at host .~ Just newRecord
                                                Just rec -> Just $ hostMap & at host .~ (Just . reviseRecord $ rec)
       where
-        newRecord        = HostRecord { _noOfLogins    = 1
+        newRecord        = HostRecord { _noOfLogouts   = 1
                                       , _secsConnected = duration
                                       , _lastLogout    = now }
-        reviseRecord rec = rec & noOfLogins    +~ 1
+        reviseRecord rec = rec & noOfLogouts   +~ 1
                                & secsConnected +~ duration
                                & lastLogout    .~ now
         host             = getCurrHostName i ms
@@ -1434,7 +1434,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBroadcast i msg)
                   | otherwise         = (as,                  []               )
       where
-        msg = sorryIgnoreLocPrefPlur "The names of items to be removed from a container "
+        msg = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
 
 
 -----

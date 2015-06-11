@@ -229,7 +229,7 @@ data Slot =
 type HostMap = M.Map HostName HostRecord
 
 
-data HostRecord = HostRecord { _noOfLogins    :: Int
+data HostRecord = HostRecord { _noOfLogouts   :: Int
                              , _secsConnected :: Integer
                              , _lastLogout    :: UTCTime } deriving (Eq, Generic, Show)
 
