@@ -239,7 +239,7 @@ expCmdSet = S.fromList
                                       "You make a funny face at @."
                                       "% makes a funny face at you."
                                       "% makes a funny face at @.")
-    , ExpCmd "giggle"      (Versatile "You gag."
+    , ExpCmd "gag"         (Versatile "You gag."
                                       "% gags."
                                       "You gag in reaction to @."
                                       "% gags in reaction to you."
@@ -309,6 +309,9 @@ expCmdSet = S.fromList
                                       "% hesitates.")
     , ExpCmd "hiccup"      (NoTarget  "You hiccup involuntarily."
                                       "% hiccups involuntarily.")
+    , ExpCmd "highfive"    (HasTarget "You give @ a high five."
+                                      "% gives you a high five."
+                                      "% gives @ a high five.")
     , ExpCmd "holdhand"    (HasTarget "You hold @'s hand."
                                       "% holds your hand."
                                       "% holds @'s hand.")
@@ -569,6 +572,11 @@ expCmdSet = S.fromList
                                       "You smirk at @."
                                       "% smirks at you."
                                       "% smirks at @.")
+    , ExpCmd "snap"        (Versatile "You snap your fingers."
+                                      "% snaps & fingers."
+                                      "You snap your fingers at @."
+                                      "% snaps & fingers at you."
+                                      "% snaps & fingers at @.")
     , ExpCmd "snicker"     (Versatile "You snicker derisively."
                                       "% snickers derisively."
                                       "You snicker derisively at @."

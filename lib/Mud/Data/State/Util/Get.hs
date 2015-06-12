@@ -4,7 +4,6 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Util.Misc
-import Mud.Util.Operators
 
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
@@ -191,7 +190,7 @@ getLoggedInAdminIds = IM.keys . IM.filter (\p -> getPlaFlag IsAdmin p && isLogge
 
 
 isLoggedIn :: Pla -> Bool
-isLoggedIn = views lastRmId (()#?)
+isLoggedIn = views lastRmId (maybe False (== 0))
 
 
 -----

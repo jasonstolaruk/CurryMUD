@@ -41,12 +41,10 @@ import Control.Lens (_1, _2, _3, to, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (delete)
+import Data.List (delete, intercalate)
 import Data.Maybe (fromJust, fromMaybe)
-import Data.Monoid ((<>))
-import Data.Time (UTCTime, getCurrentTime, getZonedTime)
-import Data.Time.Clock (diffUTCTime)
-import Data.Time.Format (formatTime)
+import Data.Monoid ((<>), Sum(..), getSum)
+import Data.Time (TimeZone, UTCTime, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Directory (doesFileExist)
@@ -54,7 +52,7 @@ import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
-import qualified Data.Map.Lazy as M (foldrWithKey)
+import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn, readFile)
 
@@ -284,46 +282,51 @@ adminHost :: Action
 adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify the PC name(s) of one or more players \
                                                               \whose host statistics you would like to see."
 adminHost (LowerNub i mq cols as) = do
-    ms  <- getState
-    now <- liftIO getCurrentTime
+    ms          <- getState
+    (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
                        | otherwise         = (id,           ""      )
         g = ()# guessWhat ? id :? (guessWhat :)
         helper target =
             let notFound = [ "There is no PC by the name of " <> dblQuote target <> "." ]
-                found    = uncurry (mkHostReport ms now)
+                found    = uncurry (mkHostReport ms now zone)
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |$| maybe notFound found
-    multiWrapSend mq cols . g . concatMap (helper . capitalize . f) $ as
+    multiWrapSend mq cols . g . intercalate [""] . map (helper . capitalize . f) $ as
     logPlaExec (prefixAdminCmd "host") i
   where
     sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
 adminHost p = patternMatchFail "adminHost" [ showText p ]
 
 
--- TODO: Refine and refactor.
-mkHostReport :: MudState -> UTCTime -> Id -> Sing -> [T.Text]
-mkHostReport ms now i s = (header :) . (++ [ footer, total ]) $ case getHostMap s ms of
+mkHostReport :: MudState -> UTCTime -> TimeZone -> Id -> Sing -> [T.Text]
+mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
   Nothing      -> [ "There are no host records for " <> s <> "." ]
-  Just hostMap -> M.foldrWithKey helper [] hostMap
+  Just hostMap | dur       <- ili |?| duration
+               , total     <- M.foldl (\acc -> views secsConnected (+ acc)) 0 hostMap + getSum dur
+               , totalDesc <- "Total time logged in: " <> renderIt total
+               -> M.foldrWithKey helper [] hostMap ++ pure totalDesc
   where
-    header    = s <> ": "
-    footer    | isLoggedIn . getPla i $ ms = T.concat [ s
-                                                      , " is currently logged in from "
-                                                      , T.pack . getCurrHostName i $ ms
-                                                      , " "
-                                                      , parensQuote . T.pack . renderSecs $ duration
-                                                      , "." ]
-              | otherwise                  = s <> " is currently logged out."
-    total     = "Total time logged in: " -- TODO
-    duration  = round $ now `diffUTCTime` conTime
+    header = [ s <> ": "
+             , "Currently logged " <> if ili
+                 then T.concat [ "in from "
+                               , T.pack . getCurrHostName i $ ms
+                               , " "
+                               , parensQuote . renderIt . getSum $ duration
+                               , "." ]
+                 else "out." ]
+    ili       = isLoggedIn . getPla i $ ms
+    renderIt  = T.pack . renderSecs
+    duration  = Sum . round $ now `diffUTCTime` conTime
     conTime   = fromJust . getConnectTime i $ ms
-    helper host rec acc = T.concat [ T.pack host
-                                   , ": "
-                                   , showText $ rec^.noOfLogouts
-                                   , " "
-                                   ,  T.pack . renderSecs $ rec^.secsConnected
-                                   , " "
-                                   , showText $ rec^.lastLogout ] : acc
+    helper (T.pack -> host) rec = (T.concat [ host
+                                            , ": "
+                                            , let n      = rec^.noOfLogouts
+                                                  suffix = n > 1 |?| "s"
+                                              in showText n <> " time" <> suffix
+                                            , ", "
+                                            , views secsConnected renderIt rec
+                                            , ", "
+                                            , views lastLogout (showText . utcToLocalTime zone) rec ] :)
 
 
 -----
