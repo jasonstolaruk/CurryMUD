@@ -286,14 +286,13 @@ adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify th
 adminHost (LowerNub i mq cols as) = do
     ms  <- getState
     now <- liftIO getCurrentTime
-    let apiss = mkAdminPlaIdSingList ms
-        (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
+    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
                        | otherwise         = (id,           ""      )
         g = ()# guessWhat ? id :? (guessWhat :)
         helper target =
             let notFound = [ "There is no PC by the name of " <> dblQuote target <> "." ]
                 found    = uncurry (mkHostReport ms now)
-            in findFullNameForAbbrev target apiss |$| maybe notFound found
+            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |$| maybe notFound found
     multiWrapSend mq cols . g . concatMap (helper . capitalize . f) $ as
     logPlaExec (prefixAdminCmd "host") i
   where
