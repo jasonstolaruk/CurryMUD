@@ -15,6 +15,6 @@ Drop one or more items; move item(s) from your inventory to your current room.
 \qdrop \p#a\qring\d to drop all of your rings.4`
 \qdrop \p#a\q\d to drop everything in your inventory.4`
 \qdrop \p5#m\qgp \p#a\qsp\d to drop five of your gold pieces and all of your silver pieces.4`
-\qdrop \p'\qcoin\d to drop all of your coins.4`
+\qdrop \p#a\qcoin\d to drop all of your coins.4`
 
 \uSEE ALSO\n

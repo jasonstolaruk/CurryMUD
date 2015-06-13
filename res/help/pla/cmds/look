@@ -1,0 +1,21 @@
+\h LOOK \d
+
+\uUSAGE\n
+look \s[\dobject \s...]\d
+
+\uDESCRIPTION\n
+Display a description of your current room, or examine one or more objects in your current room.
+
+\uEXAMPLES\n
+\qlook\d to get a description of the room followed by a list of its contents.4`
+\qlook sword\d to examine the sword in the room.4`
+\qlook sword melf\d to examine the sword and the male elf in the room.4`
+\qlook \p2#i\qsack\d to examine the second sack in the room.4`
+\qlook \p2#m\qring\d to examine the first two rings in the room.4`
+\qlook \p3#i\qring \p3#m\qbracelet\d to examine the third ring and the first three bracelets in the room.4`
+\qlook \p#a\qring\d to examine all of the rings in the room.4`
+\qlook \p#a\d to examine everything in the room.4`
+\qlook gp sp\d to examine a gold piece and a silver piece in the room.4`
+\qlook \p#a\qcoin\d to examine all of the coins in the room.4`
+
+\uSEE ALSO\n

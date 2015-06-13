@@ -375,9 +375,9 @@ data EquipInvLookCmd = EquipCmd | InvCmd | LookCmd deriving Eq
 
 
 instance Show EquipInvLookCmd where
-  show EquipCmd = "equip"
-  show InvCmd   = "i"
-  show LookCmd  = "l"
+  show EquipCmd = "equipment"
+  show InvCmd   = "inventory"
+  show LookCmd  = "look"
 
 
 -----

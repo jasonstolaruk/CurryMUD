@@ -15,6 +15,6 @@ Pick up one or more items in your current room; move item(s) from your current r
 \qget \p#a\qring\d to pick up all of the rings in the room.4`
 \qget \p#a\d to pick up everything in the room.4`
 \qget \p5#m\qgp \p#a\qsp\d to pick up five of the gold pieces and all of the silver pieces in the room.4`
-\qget \p'\qcoin\d to pick up all of the coins in the room.4`
+\qget \p#a\qcoin\d to pick up all of the coins in the room.4`
 
 \uSEE ALSO\n

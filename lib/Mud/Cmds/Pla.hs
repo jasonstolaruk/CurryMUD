@@ -122,14 +122,9 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("admin",      admin,           "Display a list of administrators, or send a message to an administrator.")
     , ("d",          go "d",          "Go down.")
     , ("e",          go "e",          "Go east.")
-    , ("equip",      equip,           "Display your readied equipment, or examine one or more items in your readied \
+    , ("equipment",  equip,           "Display your readied equipment, or examine one or more items in your readied \
                                       \equipment.")
     , ("expressive", expCmdList,      "Display or search a list of available expressive commands and their results.")
-    -- TODO: Can we change the name of this command to "inv" and make it a priority abbrev command?
-    , ("i",          inv,             "Display your inventory, or examine one or more items in your inventory.")
-    -- TODO: Can we change the name of this command to "look" and make it a priority abbrev command?
-    , ("l",          look,            "Display a description of your current room, or examine one or more items in \
-                                      \your current room.")
     , ("n",          go "n",          "Go north.")
     , ("ne",         go "ne",         "Go northeast.")
     , ("nw",         go "nw",         "Go northwest.")
@@ -169,6 +164,9 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("help",       "h",  help,       "Get help on one or more commands or topics.")
     , ("intro",      "in", intro,      "Display a list of the people who have introduced themselves to you, or \
                                        \introduce yourself to one or more people.")
+    , ("inventory",  "i",  inv,        "Display your inventory, or examine one or more items in your inventory.")
+    , ("look",       "l",  look,       "Display a description of your current room, or examine one or more items in \
+                                       \your current room.")
     , ("link",       "li", undefined,  "Display a list of the people with whom you have established a telepathic link, \
                                        \or established a telepathic link with one or more people.") -- TODO: The list should indicate who is logged in and who is logged out.
     , ("motd",       "m",  motd,       "Display the message of the day.")
@@ -851,23 +849,23 @@ firstLook i cols a@(pt, _) = if pt^.ind i.to (getPlaFlag IsNotFirstLook)
                           , "Hint:"
                           , noHintANSI
                           , " use the "
-                          , dblQuote "l"
+                          , dblQuote "look"
                           , " command to examine one or more items in your current room. To examine items in your \
                             \inventory, use the "
-                          , dblQuote "i"
+                          , dblQuote "inventory"
                           , " command "
-                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "i bread" <> dfltColor
+                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "inventory bread" <> dfltColor
                           , ". To examine items in your readied equipment, use the "
-                          , dblQuote "equip"
+                          , dblQuote "equipment"
                           , " command "
-                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "equip sword" <> dfltColor
+                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "equipment sword" <> dfltColor
                           , ". "
                           , quoteColor
-                          , dblQuote "i"
+                          , dblQuote "inventory"
                           , dfltColor
                           , " and "
                           , quoteColor
-                          , dblQuote "equip"
+                          , dblQuote "equipment"
                           , dfltColor
                           , " alone will list the items in your inventory and readied equipment, respectively." ]
        in a & _1.ind i %~ setPlaFlag IsNotFirstLook True & _2 <>~ wrapUnlinesNl cols msg
