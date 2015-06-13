@@ -106,7 +106,7 @@ adminCmds =
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"       adminBug         "Dump the bug log."
     , mkAdminCmd "date"      adminDate        "Display the current system date."
-    , mkAdminCmd "host"      adminHost        "Display host statistics for one or more players."
+    , mkAdminCmd "host"      adminHost        "Display a report of connection statistics for one or more players."
     , mkAdminCmd "incognito" adminIncognito   "Toggle your incognito status."
     , mkAdminCmd "peep"      adminPeep        "Start or stop peeping one or more players."
     , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state to disk)."
@@ -277,7 +277,6 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
--- TODO: Help.
 adminHost :: Action
 adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify the PC name(s) of one or more players \
                                                               \whose host statistics you would like to see."
@@ -303,7 +302,7 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
   Nothing      -> [ "There are no host records for " <> s <> "." ]
   Just hostMap | dur       <- ili |?| duration
                , total     <- M.foldl (\acc -> views secsConnected (+ acc)) 0 hostMap + getSum dur
-               , totalDesc <- "Total time logged in: " <> renderIt total
+               , totalDesc <- "Grand total time connected: " <> renderIt total
                -> M.foldrWithKey helper [] hostMap ++ pure totalDesc
   where
     header = [ s <> ": "

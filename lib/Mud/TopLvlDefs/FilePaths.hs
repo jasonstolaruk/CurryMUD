@@ -95,9 +95,9 @@ uptimeFile  = mudDir  </> "uptime"
 -- Dictionaries:
 
 
-wordsFile, propNamesFile :: Maybe FilePath
+propNamesFile, wordsFile :: Maybe FilePath
+propNamesFile = Just $ miscDir </> "propernames"
 wordsFile     = Just $ drive : "usr" </> "share" </> "dict" </> "words"
-propNamesFile = Just $ drive : "usr" </> "share" </> "dict" </> "propernames"
 
 
 profanitiesFile :: FilePath

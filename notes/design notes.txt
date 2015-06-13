@@ -397,15 +397,3 @@ Tour duty?
 In what cases do PCs remain active after the player's connection drops?
 
 Doors? (When a door is opened, players on the other side would need to be informed.)
-
-==========
-
-Linux MUD clients supporting MXP:
-KMuddy
-MudMagic
-Mudlet
-
-Mac MUD clients supporting MXP:
-KMuddy
-MudMagic
-Mudlet

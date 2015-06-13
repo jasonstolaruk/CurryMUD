@@ -4,10 +4,12 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Util.Misc
+import Mud.Util.Operators
 
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
 import Control.Lens (at, to, view, views)
+import Data.Monoid (Sum(..))
 import Data.Time (UTCTime)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (filter, keys)
@@ -190,7 +192,7 @@ getLoggedInAdminIds = IM.keys . IM.filter (\p -> getPlaFlag IsAdmin p && isLogge
 
 
 isLoggedIn :: Pla -> Bool
-isLoggedIn = views lastRmId (maybe False (== 0))
+isLoggedIn = views lastRmId ((()#) . fmap Sum)
 
 
 -----
