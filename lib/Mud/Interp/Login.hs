@@ -44,7 +44,7 @@ import Data.Time (UTCTime)
 import Network (HostName)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (foldr, foldrWithKey)
-import qualified Data.Set as S (Set, empty, insert, fromList, member)
+import qualified Data.Set as S (Set, empty, fromList, insert, member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, readFile)
 

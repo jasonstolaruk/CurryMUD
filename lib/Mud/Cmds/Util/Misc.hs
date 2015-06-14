@@ -143,7 +143,7 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
 
 
 pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
-pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 2 <= pl
+pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 3 <= pl
   then send mq . nl . T.unlines $ txt
   else let (page, rest) = splitAt (pl - 2) txt in do
       send mq . T.unlines $ page

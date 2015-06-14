@@ -620,7 +620,6 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 -----
 
 
--- TODO: "help i" and "help intro" and "help eq" are not paging correctly.
 -- TODO: Write a help topic file on prefixes.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
