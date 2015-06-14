@@ -335,7 +335,7 @@ data Pla = Pla { _currHostName :: HostName
 
 data PlaFlags = IsAdmin
               | IsIncognito
-              | IsNotFirstAdminTell
+              | IsNotFirstAdminMsg
               | IsNotFirstLook
               | IsNotFirstMobSay
               | IsSeeingInvis deriving Enum

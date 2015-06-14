@@ -54,6 +54,14 @@ maxInacSecs :: Integer
 maxInacSecs = 10 * 60
 
 
+maxNameLen,    minNameLen    :: Int
+maxNameLenTxt, minNameLenTxt :: T.Text
+maxNameLen    = 12
+maxNameLenTxt = "twelve"
+minNameLen    = 3
+minNameLenTxt = "three"
+
+
 maxPageLines, minPageLines :: Int
 maxPageLines = 150
 minPageLines = 8

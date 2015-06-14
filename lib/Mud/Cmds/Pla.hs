@@ -59,7 +59,7 @@ import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
-import Data.Monoid ((<>), Sum(..), mempty)
+import Data.Monoid ((<>), All(..), Sum(..), mconcat, mempty)
 import Data.Time (diffUTCTime, getCurrentTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (log, pi)
@@ -140,7 +140,6 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("u",          go "u",          "Go up.")
     , ("uptime",     uptime,          "Display how long CurryMUD has been running.")
     , ("w",          go "w",          "Go west.")
-    , ("whoadmin",   whoAdmin,        "Display a list of the administrators who are currently logged in.") -- TODO: Delete.
     , ("whoami",     whoAmI,          "Confirm your name, sex, and race.") ]
 
 
@@ -214,16 +213,8 @@ about p = withoutArgs about p
 -----
 
 
--- TODO: When no arguments are provided, display a list of administrators, indicating who is logged in and who is logged out.
--- TODO: You should be able to send a message to an administrator who is logged out using this command. (If the administrator is logged out, the message should be retained.)
 admin :: Action
-admin p@AdviseNoArgs = advise p ["admin"] advice
-  where
-    advice = T.concat [ "Please specify the name of an administrator followed by a message, as in "
-                      , quoteColor
-                      , dblQuote "admin jason are you available? I need your assistance"
-                      , dfltColor
-                      , "." ]
+admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] advice
   where
     advice = T.concat [ "Please also provide a message to send, as in "
@@ -231,22 +222,63 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
                       , dblQuote $ "admin " <> a <> " are you available? I need your assistance"
                       , dfltColor
                       , "." ]
-admin (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let SingleTarget { .. } = mkSingleTarget mq cols target "The administrator name"
-        adminIdSings        = [ ais | ais@(ai, _) <- mkAdminIdSingList ms
-                                    , let p = getPla ai ms, isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
-        s                   = getSing i ms
-        notFound            = sendFun $ "No administrator by the name of " <> dblQuote strippedTarget <> " is \
-                                        \currently logged in."
-        found (adminId, _        ) | adminId == i = sendFun "You talk to yourself."
-        found (adminId, adminSing) | adminMq <- getMsgQueue adminId ms, adminCols <- getColumns adminId ms = do
-            sendFun                    . T.concat $ [ "You send ",              adminSing, ": ", dblQuote msg ]
-            wrapSend adminMq adminCols . T.concat $ [ bracketQuote s, " ", adminMsgColor, msg, dfltColor      ]
-            logPla    "admin" i        . T.concat $ [     "sent message to ",   adminSing, ": ", dblQuote msg ]
-            logPla    "admin" adminId  . T.concat $ [ "received message from ", s,         ": ", dblQuote msg ]
-            logNotice "admin"          . T.concat $ [ s, " sent message to ",   adminSing, ": ", dblQuote msg ]
-    in findFullNameForAbbrev strippedTarget adminIdSings |$| maybe notFound found
+admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
+    logMsgs |#| let f = uncurry (logPla "admin") in mapM_ f
+  where
+    helper ms =
+        let SingleTarget { .. } = mkSingleTarget mq cols target "The administrator name"
+            s                   = getSing i ms
+            msg'                = mkRetainedMsgFromPerson s msg
+            isAdmin             = getPlaFlag IsAdmin . getPla i $ ms
+            notFound            = emptied . sendFun $ "There is no administrator by the name of " <>
+                                                      dblQuote strippedTarget                     <>
+                                                      "."
+            found (adminId, _        ) | adminId == i = emptied . sendFun $ "You talk to yourself."
+            found (adminId, adminSing) = let adminPla  = getPla adminId ms in
+                if getAll . mconcat $ [ All . isLoggedIn $ adminPla
+                                      , not isAdmin |?| (All . not . getPlaFlag IsIncognito $ adminPla) ]
+                  then let sentLogMsg     = (i,       T.concat [ "sent message to "
+                                                               , adminSing
+                                                               , ": "
+                                                               , dblQuote msg ])
+                           receivedLogMsg = (adminId, T.concat [ "received message from "
+                                                               , s
+                                                               , ": "
+                                                               , dblQuote msg ])
+                       in do
+                           sendFun . T.concat $ [ "You send ", adminSing, ": ", dblQuote msg ]
+                           retainedMsg adminId ms msg'
+                           return [ sentLogMsg, receivedLogMsg ]
+                  else do
+                      multiWrapSend mq cols . consSorry $ [ T.concat [ "You send ", adminSing, ": ", dblQuote msg ]
+                                                          , parensQuote "Message retained." ]
+                      retainedMsg adminId ms msg'
+                      let sentLogMsg     = ( i
+                                           , T.concat [ "sent message to ", adminSing, ": ", dblQuote msg ] )
+                          receivedLogMsg = ( adminId
+                                           , T.concat [ "received message from ", s,   ": ", dblQuote msg ] )
+                      return [ sentLogMsg, receivedLogMsg ]
+        in (findFullNameForAbbrev strippedTarget . dropRoot . mkAdminIdSingList $ ms) |$| maybe notFound found
 admin p = patternMatchFail "admin" [ showText p ]
+
+
+adminList :: Action
+adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExecArgs "admin" [] i
+  where
+    helper ms =
+        let singSuffixes = [ (s, suffix) | (ai, s) <- dropRoot . mkAdminIdSingList $ ms
+                                         , let suffix = " " <> "logged " <> mkSuffix ai
+                                         , then sortWith by s ]
+            mkSuffix ai
+              | uncurry (&&) . (isLoggedIn *** not . getPlaFlag IsIncognito) . dup . getPla ai $ ms = "in"
+              | uncurry (&&) . (getPlaFlag IsAdmin *** getPlaFlag IsIncognito) $ (i, ai) & both %~ (`getPla` ms) =
+                  "in " <> parensQuote "incognito"
+              | otherwise = "out"
+            combineds = [ pad (succ maxNameLen) abbrev <> suffix
+                        | (_, suffix) <- singSuffixes
+                        | abbrev      <- styleAbbrevs Don'tBracket . map fst $ singSuffixes ]
+        in ()!# combineds ? return combineds :? unadulterated "No administrators exist!"
+adminList p = patternMatchFail "adminList" [ showText p ]
 
 
 -----
@@ -1052,18 +1084,18 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
                       & plaTbl     .ind i.lastRmId .~ Just ri
     updateHostMap ms s now = flip (set $ hostTbl.at s) ms $ case getHostMap s ms of
       Nothing      -> Just . M.singleton host $ newRecord
-      Just hostMap -> case hostMap^.at host of Nothing  -> Just $ hostMap & at host .~ Just newRecord
-                                               Just rec -> Just $ hostMap & at host .~ (Just . reviseRecord $ rec)
+      Just hostMap -> case hostMap^.at host of Nothing -> Just $ hostMap & at host .~ Just newRecord
+                                               Just r  -> Just $ hostMap & at host .~ (Just . reviseRecord $ r)
       where
-        newRecord        = HostRecord { _noOfLogouts   = 1
-                                      , _secsConnected = duration
-                                      , _lastLogout    = now }
-        reviseRecord rec = rec & noOfLogouts   +~ 1
-                               & secsConnected +~ duration
-                               & lastLogout    .~ now
-        host             = getCurrHostName i ms
-        duration         = round $ now `diffUTCTime` conTime
-        conTime          = fromJust . getConnectTime i $ ms
+        newRecord      = HostRecord { _noOfLogouts   = 1
+                                    , _secsConnected = duration
+                                    , _lastLogout    = now }
+        reviseRecord r = r & noOfLogouts   +~ 1
+                           & secsConnected +~ duration
+                           & lastLogout    .~ now
+        host           = getCurrHostName i ms
+        duration       = round $ now `diffUTCTime` conTime
+        conTime        = fromJust . getConnectTime i $ ms
 
 
 -----
@@ -2051,29 +2083,6 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
                       (return Nothing)
   where
     readUptime = Just . Sum . read <$> readFile uptimeFile
-
-
------
-
-
--- TODO: This functionality should be moved to the "admin" command.
-whoAdmin :: Action
-whoAdmin (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoadmin" i
-  where
-    helper ms =
-        let adminIds                              = [ ai | ai <-  getLoggedInAdminIds ms
-                                                    , not . getPlaFlag IsIncognito . getPla ai $ ms ]
-            (adminIds', self) | i `elem` adminIds = (i `delete` adminIds, selfColor <> getSing i ms <> dfltColor)
-                              | otherwise         = (           adminIds, ""                                    )
-            adminSings                            = [ s | adminId <- adminIds', let s = getSing adminId ms
-                                                                              , then sortWith by s ]
-            adminAbbrevs                          = dropBlanks . (self :) . styleAbbrevs Don'tBracket $ adminSings
-            footer                                = [ noOfAdmins adminIds <> " logged in." ]
-        in return (()# adminAbbrevs ? footer :? commas adminAbbrevs : footer)
-      where
-        noOfAdmins (length -> num) | num == 1  = "1 administrator"
-                                   | otherwise = showText num <> " administrators"
-whoAdmin p = withoutArgs whoAdmin p
 
 
 -----

@@ -1,9 +1,0 @@
-\h WHOADMIN \d
-
-\uUSAGE\n
-whoadmin
-
-\uDESCRIPTION\n
-Display a list of the administrators who are currently logged in.
-
-\uSEE ALSO\n

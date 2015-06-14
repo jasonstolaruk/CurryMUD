@@ -16,8 +16,22 @@ import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Text as T
 
 
+getAdminIds :: MudState -> Inv
+getAdminIds = getAdminIdsHelper (const True)
+
+
+getAdminIdsHelper :: (Pla -> Bool) -> MudState -> Inv
+getAdminIdsHelper f = IM.keys . IM.filter (uncurry (&&) . (getPlaFlag IsAdmin *** f) . dup) . view plaTbl
+
+
+-----
+
+
 getArm :: Id -> MudState -> Arm
 getArm i = view (armTbl.ind i)
+
+
+-----
 
 
 getArmSub :: Id -> MudState -> ArmSub
@@ -80,6 +94,9 @@ getEnt :: Id -> MudState -> Ent
 getEnt i = view (entTbl.ind i)
 
 
+-----
+
+
 getEntDesc :: Id -> MudState -> T.Text
 getEntDesc i = view entDesc . getEnt i
 
@@ -133,20 +150,11 @@ getInv :: Id -> MudState -> Inv
 getInv i = view (invTbl.ind i)
 
 
+-----
+
+
 getInvCoins :: Id -> MudState -> (Inv, Coins)
 getInvCoins i = (getInv i *** getCoins i) . dup
-
-
-getNonIncogInv :: Id -> MudState -> Inv
-getNonIncogInv i ms = filter notIncog . getInv i $ ms
-  where
-    notIncog targetId | getType targetId ms /= PCType                       = True
-                      | not . getPlaFlag IsIncognito . getPla targetId $ ms = True
-                      | otherwise                                           = False
-
-
-getNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
-getNonIncogInvCoins i = (getNonIncogInv i *** getCoins i) . dup
 
 
 -----
@@ -188,7 +196,7 @@ getLogQueue i = view (plaLogTbl.ind i.to snd)
 
 
 getLoggedInAdminIds :: MudState -> Inv
-getLoggedInAdminIds = IM.keys . IM.filter (\p -> getPlaFlag IsAdmin p && isLoggedIn p) . view plaTbl
+getLoggedInAdminIds = getAdminIdsHelper isLoggedIn
 
 
 isLoggedIn :: Pla -> Bool
@@ -209,8 +217,29 @@ getMsgQueue :: Id -> MudState -> MsgQueue
 getMsgQueue i = view (msgQueueTbl.ind i)
 
 
+-----
+
+
 getMsgQueueColumns :: Id -> MudState -> (MsgQueue, Cols)
 getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
+
+
+-----
+
+
+getNonIncogInv :: Id -> MudState -> Inv
+getNonIncogInv i ms = filter notIncog . getInv i $ ms
+  where
+    notIncog targetId | getType targetId ms /= PCType                       = True
+                      | not . getPlaFlag IsIncognito . getPla targetId $ ms = True
+                      | otherwise                                           = False
+
+
+-----
+
+
+getNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
+getNonIncogInvCoins i = (getNonIncogInv i *** getCoins i) . dup
 
 
 -----
@@ -227,20 +256,35 @@ getPC :: Id -> MudState -> PC
 getPC i = view (pcTbl.ind i)
 
 
+-----
+
+
 getPCRm :: Id -> MudState -> Rm
 getPCRm i ms = let ri = getRmId i ms in getRm ri ms
+
+
+-----
 
 
 getPCRmCoins :: Id -> MudState -> Coins
 getPCRmCoins i ms = let ri = getRmId i ms in getCoins ri ms
 
 
+-----
+
+
 getPCRmInv :: Id -> MudState -> Inv
 getPCRmInv i ms = let ri = getRmId i ms in getInv ri ms
 
 
+-----
+
+
 getPCRmInvCoins :: Id -> MudState -> (Inv, Coins)
 getPCRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
+
+
+-----
 
 
 getPCRmNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
@@ -261,8 +305,14 @@ getPeepers :: Id -> MudState -> Inv
 getPeepers i = view peepers . getPla i
 
 
+-----
+
+
 getPeeping :: Id -> MudState -> Inv
 getPeeping i = view peeping . getPla i
+
+
+-----
 
 
 getPeepersPeeping :: Id -> MudState -> (Inv, Inv)
@@ -304,6 +354,9 @@ getSex :: Id -> MudState -> Sex
 getSex i = view sex . getMob i
 
 
+-----
+
+
 getSexRace :: Id -> MudState -> (Sex, Race)
 getSexRace i = (getSex i *** getRace i) . dup
 
@@ -341,6 +394,9 @@ getWeight i = view weight . getObj i
 
 getWpn :: Id -> MudState -> Wpn
 getWpn i = view (wpnTbl.ind i)
+
+
+-----
 
 
 getWpnSub :: Id -> MudState -> WpnSub

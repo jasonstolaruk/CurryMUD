@@ -54,7 +54,7 @@ atLst1 x = case signum x of -1 -> 1
 
 
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
-blowUp modName funName msg (bracketQuote . T.intercalate ", " . map singleQuote -> vals) =
+blowUp modName funName msg (bracketQuote . T.intercalate "" . map singleQuote -> vals) =
     error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, ". ", vals ]
 
 

@@ -62,10 +62,14 @@ logPla = L.logPla "Mud.Interp.Login"
 -- TODO: Ensure that a player cannot choose a name for their character that is the name of a race or mob. A player should not be allowed to name their character "Mhuman", etc.
 interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
-  | not . inRange (3, 12) . T.length $ cn = promptRetryName mq "Your name must be between three and twelve characters \
-                                                               \long."
-  | T.any (`elem` illegalChars) cn        = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                             = helper |$| modifyState >=> \case
+  | not . inRange (minNameLen, maxNameLen) . T.length $ cn =
+      promptRetryName mq . T.concat $ [ "Your name must be between "
+                                      , minNameLenTxt
+                                      , " and "
+                                      , maxNameLenTxt
+                                      , " characters long." ]
+  | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
+  | otherwise                      = helper |$| modifyState >=> \case
     Left  (Just msg) -> promptRetryName mq msg
     Left  Nothing    -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
                                                       , checkPropNamesDict     mq cn
@@ -229,12 +233,12 @@ handleLogin params@(ActionParams { .. }) = do
   where
     showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs, p) -> do
         unless (()# msgs) $ do
-            let (fromAdmins, others) = first (map T.tail) . partition ((== retainedFromAdminMarker) . T.head) $ msgs
-            others |#| multiWrapSend plaMsgQueue plaCols . intersperse ""
-            fromAdmins |#| let m   = "message" <> case fromAdmins of [_] -> ""
-                                                                     _   -> "s"
-                               msg = "You missed the following " <> m <> " while you were away:"
-                           in multiWrapSend plaMsgQueue plaCols . (msg :)
+            let (fromPpl, others) = first (map T.tail) . partition ((== fromPersonMarker) . T.head) $ msgs
+            others  |#| multiWrapSend plaMsgQueue plaCols . intersperse ""
+            fromPpl |#| let m   = "message" <> case fromPpl of [_] -> ""
+                                                               _   -> "s"
+                            msg = "You missed the following " <> m <> " while you were away:"
+                        in multiWrapSend plaMsgQueue plaCols . (msg :)
             logPla "handleLogin showRetainedMsgs" plaId "Showed retained messages."
         return (ms, p)
     helper ms = let p   = getPla plaId ms

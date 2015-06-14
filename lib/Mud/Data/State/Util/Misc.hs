@@ -12,6 +12,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , mkCapsFun
                                 , mkPlaIdSingList
                                 , mkPlurFromBoth
+                                , mkRetainedMsgFromPerson
                                 , mkSerializedNonStdDesig
                                 , mkStdDesig
                                 , mkUnknownPCEntName
@@ -23,9 +24,12 @@ module Mud.Data.State.Util.Misc ( BothGramNos
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Misc.ANSI
 import Mud.TheWorld.Ids
+import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Control.Arrow ((***))
@@ -130,6 +134,17 @@ type BothGramNos = (Sing, Plur)
 mkPlurFromBoth :: BothGramNos -> Plur
 mkPlurFromBoth (s, "") = s <> "s"
 mkPlurFromBoth (_, p ) = p
+
+
+-----
+
+
+mkRetainedMsgFromPerson :: Sing -> T.Text -> T.Text
+mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` T.concat [ bracketQuote s
+                                                                   , " "
+                                                                   , retainedMsgColor
+                                                                   , msg
+                                                                   , dfltColor ]
 
 
 -----

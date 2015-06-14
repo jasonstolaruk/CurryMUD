@@ -244,14 +244,15 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 -----
 
 
-retainedMsg :: Id -> MudState -> [T.Text] -> MudStack ()
-retainedMsg _        _  []               = unit
-retainedMsg targetId ms targetMsgs@(x:xs)
+retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
+retainedMsg targetId ms targetMsg@(T.uncons -> Just (x, xs))
   | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
-                                        in multiWrapSend targetMq targetCols stripMarker
-  | otherwise = modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ targetMsgs)
+                                        in wrapSend targetMq targetCols stripMarker
+  | otherwise                         = modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ pure targetMsg)
   where
-    stripMarker = ()# x ? targetMsgs :? T.tail x : xs
+    stripMarker | x == fromPersonMarker = xs
+                | otherwise             = targetMsg
+retainedMsg _ _ _ = unit
 
 
 -----

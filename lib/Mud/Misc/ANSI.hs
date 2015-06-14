@@ -2,8 +2,6 @@
 
 module Mud.Misc.ANSI ( abbrevColor
                      , adminBroadcastColor
-                     , adminMsgColor
-                     , adminTellColor
                      , announceColor
                      , arrowColor
                      , asteriskColor
@@ -38,8 +36,8 @@ module Mud.Misc.ANSI ( abbrevColor
                      , promptColor
                      , quoteColor
                      , resetANSI
+                     , retainedMsgColor
                      , selectorColor
-                     , selfColor
                      , shutdownMsgColor
                      , syntaxSymbolColor
                      , toPeepedColor
@@ -117,14 +115,6 @@ abbrevColor = cyan
 
 adminBroadcastColor :: T.Text
 adminBroadcastColor = yellow
-
-
-adminMsgColor :: T.Text
-adminMsgColor = magenta
-
-
-adminTellColor :: T.Text
-adminTellColor = magenta
 
 
 announceColor :: T.Text
@@ -223,12 +213,12 @@ quoteColor :: T.Text
 quoteColor = green
 
 
+retainedMsgColor :: T.Text
+retainedMsgColor = magenta
+
+
 selectorColor :: T.Text
 selectorColor = yellow
-
-
-selfColor :: T.Text
-selfColor = green
 
 
 shutdownMsgColor :: T.Text

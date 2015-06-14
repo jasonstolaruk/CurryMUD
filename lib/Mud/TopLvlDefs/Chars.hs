@@ -82,5 +82,5 @@ styleTokenDelimiter = '\\'
 -- Other:
 
 
-retainedFromAdminMarker :: Char
-retainedFromAdminMarker = '\133'
+fromPersonMarker :: Char
+fromPersonMarker = '\133'

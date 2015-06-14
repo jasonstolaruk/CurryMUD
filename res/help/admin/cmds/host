@@ -9,9 +9,8 @@ For each PC name you provide, you will get a report beginning with whether or no
 Next you will see a list of "host records." When a player logs out, a host record is generated (or updated) for the IP address from which that player connected. Each host record contains the following information:
 * IP address.2`
 * The number of times the player has logged out after having connected from said IP address.2`
-* The total time the player has been connected to CurryMUD from said IP address.2`
+* The total time the player has been connected from said IP address.2`
 * The last date and time the player logged out after having connected from said IP address.2`
-As host records are only generated/updated when a player logs out, a player who has never logged out (that is, a player who is presently connected to CurryMUD for the first time) will not have any host records.
 The list of host records is followed by the grand total time the player has been connected to CurryMUD.
 
 \uEXAMPLES\n
