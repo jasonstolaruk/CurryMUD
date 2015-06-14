@@ -8,11 +8,11 @@ import Mud.Data.State.MudData
 import Mud.Util.Misc
 import Mud.Util.Operators
 
-import Control.Applicative ((<$>))
 import Control.Lens (view)
 import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
+import Data.Functor ((<$>))
 import Data.Ix (inRange)
 import System.Random.MWC (GenIO, uniformR)
 

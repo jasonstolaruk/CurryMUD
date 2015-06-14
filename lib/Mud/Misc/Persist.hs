@@ -11,7 +11,6 @@ import Mud.Util.Misc
 import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice)
 
-import Control.Applicative ((<$>))
 import Control.Concurrent.Async (wait, withAsync)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
@@ -24,6 +23,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (encode, toJSON)
 import Data.Conduit (($$), (=$), yield)
+import Data.Functor ((<$>))
 import Data.IORef (readIORef)
 import Data.List (sort)
 import Data.Tuple (swap)

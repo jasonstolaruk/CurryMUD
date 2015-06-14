@@ -18,6 +18,7 @@ import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -29,7 +30,7 @@ import Control.Arrow (first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, at)
+import Control.Lens (_1, _2, at, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), guard, unless, when)
 import Control.Monad.IO.Class (liftIO)
@@ -42,8 +43,8 @@ import Data.Monoid ((<>), Any(..), mempty)
 import Data.Time (UTCTime)
 import Network (HostName)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (foldrWithKey)
-import qualified Data.Set as S (fromList, member)
+import qualified Data.IntMap.Lazy as IM (foldr, foldrWithKey)
+import qualified Data.Set as S (Set, empty, insert, fromList, member)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, readFile)
 
@@ -59,7 +60,6 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
--- TODO: Ensure that a player cannot choose a name for their character that is the name of a race or mob. A player should not be allowed to name their character "Mhuman", etc.
 interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn =
@@ -70,24 +70,25 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                       , " characters long." ]
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise                      = helper |$| modifyState >=> \case
-    Left  (Just msg) -> promptRetryName mq msg
-    Left  Nothing    -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i mq cn
-                                                      , checkPropNamesDict     mq cn
-                                                      , checkWordsDict         mq cn ])
-                            unit
-                            nextPrompt
-    Right (originId, oldSing) -> getState >>= \ms -> let cols = getColumns i ms in do
-      greet cols
-      handleLogin p { args = [] }
-      logPla    "interpName" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
-      logNotice "interpName" . T.concat $ [ dblQuote oldSing
-                                          , " has logged in as "
-                                          , cn'
-                                          , ". Id "
-                                          , showText originId
-                                          , " has been changed to "
-                                          , showText i
-                                          , "." ]
+    (_,  Left  (Just msg)) -> promptRetryName mq msg
+    (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn
+                                                            , checkIllegalNames    ms mq cn
+                                                            , checkPropNamesDict      mq cn
+                                                            , checkWordsDict          mq cn ])
+                                  unit
+                                  nextPrompt
+    (ms, Right (originId, oldSing)) -> let cols = getColumns i ms in do
+        greet cols
+        handleLogin p { args = [] }
+        logPla    "interpName" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
+        logNotice "interpName" . T.concat $ [ dblQuote oldSing
+                                            , " has logged in as "
+                                            , cn'
+                                            , ". Id "
+                                            , showText originId
+                                            , " has been changed to "
+                                            , showText i
+                                            , "." ]
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
@@ -99,9 +100,9 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                       (ms^.plaTbl)
             matches = filter ((== cn') . snd) . snd $ sorted
         in if cn' `elem` fst sorted
-          then (ms, Left . Just $ cn' <> " is already logged in.")
+          then (ms, (ms, Left . Just $ cn' <> " is already logged in."))
           else case matches of [(pi, _)] -> logIn i ms (newPla^.currHostName) (newPla^.connectTime) pi
-                               _         -> (ms, Left Nothing)
+                               _         -> (ms, (ms, Left Nothing))
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
@@ -119,15 +120,10 @@ promptRetryName mq msg = do
     prompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, Either (Maybe T.Text) (Id, Sing))
-logIn newId ms newHost newTime originId = (peepNewId . movePC $ adoptNewId, Right (originId, getSing newId ms))
+logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudState, Either (Maybe T.Text) (Id, Sing)))
+logIn newId ms newHost newTime originId = let ms' = peepNewId . movePC $ adoptNewId
+                                          in (ms', (ms', Right (originId, getSing newId ms')))
   where
-    movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
-                  in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
-                         & invTbl  .ind iLoggedOut     %~ (originId `delete`)
-                         & invTbl  .ind newRmId        %~ (sortInv ms' . (++ pure newId))
-                         & pcTbl   .ind newId.rmId     .~ newRmId
-                         & plaTbl  .ind newId.lastRmId .~ Nothing
     adoptNewId  =    ms  & coinsTbl.ind newId          .~ getCoins   originId ms
                          & coinsTbl.at  originId       .~ Nothing
                          & entTbl  .ind newId          .~ (getEnt    originId ms & entId .~ newId)
@@ -145,6 +141,12 @@ logIn newId ms newHost newTime originId = (peepNewId . movePC $ adoptNewId, Righ
                          & plaTbl  .ind newId.peepers  .~ getPeepers originId ms
                          & plaTbl  .at  originId       .~ Nothing
                          & typeTbl .at  originId       .~ Nothing
+    movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
+                  in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
+                         & invTbl  .ind iLoggedOut     %~ (originId `delete`)
+                         & invTbl  .ind newRmId        %~ (sortInv ms' . (++ pure newId))
+                         & pcTbl   .ind newId.rmId     .~ newRmId
+                         & plaTbl  .ind newId.lastRmId .~ Nothing
     peepNewId ms'@(getPeepers newId -> peeperIds) =
         let replaceId = (newId :) . (originId `delete`)
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
@@ -169,10 +171,11 @@ checkNameHelper :: Maybe FilePath -> T.Text -> MudStack () -> CmdName -> MudStac
 checkNameHelper Nothing     _       _     _  = return mempty
 checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |$| try >=> either
                                                    (emptied . fileIOExHandler funName)
-                                                   helper
-  where
-    helper (S.fromList . T.lines . T.toLower -> set) = let isNG = cn `S.member` set
-                                                       in when isNG sorry >> (return . Any $ isNG)
+                                                   (checkSet cn sorry . S.fromList . T.lines . T.toLower)
+
+
+checkSet :: CmdName -> MudStack () -> S.Set T.Text -> MudStack Any
+checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (return . Any $ isNG)
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()
@@ -180,6 +183,19 @@ logProfanity cn (T.pack -> hn) =
     liftIO (helper =<< mkTimestamp |$| try) >>= eitherRet (fileIOExHandler "logProfanity")
   where
     helper ts = T.appendFile profanityLogFile . T.concat $ [ ts, " ", hn, " ", cn ]
+
+
+checkIllegalNames :: MudState -> MsgQueue -> CmdName -> MudStack Any
+checkIllegalNames ms mq cn = checkSet cn sorry . insertEntNames $ insertRaceNames
+  where
+    insertRaceNames = foldr helper S.empty (allValues :: [Race])
+      where
+        helper (uncapitalize . showText -> r) acc = foldr S.insert acc . (r :) . map (`T.cons` r) $ "mf"
+    insertEntNames = views entTbl (flip (IM.foldr (views entName helper))) ms
+      where
+        helper Nothing  = id
+        helper (Just n) = S.insert n
+    sorry = promptRetryName mq "Sorry, but that name is already taken."
 
 
 checkPropNamesDict :: MsgQueue -> CmdName -> MudStack Any

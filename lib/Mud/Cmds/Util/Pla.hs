@@ -72,7 +72,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative (pure)
+import Control.Applicative ((<$>), pure)
 import Control.Arrow ((***), first)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
@@ -435,7 +435,7 @@ descNthOfM n _ = mkOrdinal n <> " "
 
 
 onTheGround :: Maybe NthOfM -> T.Text
-onTheGround = (|!| " on the ground") . fmap (both %~ Sum)
+onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
 
 
 -----

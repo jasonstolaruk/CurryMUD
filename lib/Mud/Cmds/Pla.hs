@@ -175,7 +175,7 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("show",       "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
                                        \person.")
     , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
-                                       \telepathic link.")
+                                       \telepathic link.") -- TODO: Emotes and exp cmds.
     , ("unready",    "un", unready,    "Unready one or more items.")
     , ("who",        "wh", undefined,  "Display or search a list of the people who are currently logged in.") ] -- TODO: Only display the names of characters with whom the player has established a link; otherwise, just display sex and race. Display each PC's level. Display the total number of logged in players.
 
