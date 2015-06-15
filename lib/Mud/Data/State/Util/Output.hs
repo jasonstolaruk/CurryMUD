@@ -2,6 +2,7 @@
 
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
+                                  , bcastAdminsExcept
                                   , bcastIfNotIncog
                                   , bcastIfNotIncogNl
                                   , bcastNl
@@ -39,7 +40,7 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative (pure)
+import Control.Applicative ((<$>), pure)
 import Control.Arrow (second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -47,7 +48,7 @@ import Control.Lens (views)
 import Control.Lens.Operators ((<>~))
 import Control.Monad (forM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (delete, elemIndex)
+import Data.List ((\\), delete, elemIndex)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
 import Prelude hiding (pi)
@@ -76,11 +77,19 @@ bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ b
 
 
 bcastAdmins :: T.Text -> MudStack ()
-bcastAdmins msg = getState >>= bcastAdminsHelper msg . getLoggedInAdminIds
+bcastAdmins = bcastAdminsHelper id
 
 
-bcastAdminsHelper :: T.Text -> Inv -> MudStack ()
-bcastAdminsHelper msg targetIds = bcastNl [( adminBroadcastColor <> msg <> dfltColor, targetIds )]
+bcastAdminsHelper :: (Inv -> Inv) -> T.Text -> MudStack ()
+bcastAdminsHelper f msg =
+    (f . getLoggedInAdminIds <$> getState) >>= bcastNl . pure . (adminBroadcastColor <> msg <> dfltColor, )
+
+
+-----
+
+
+bcastAdminsExcept :: Inv -> T.Text -> MudStack ()
+bcastAdminsExcept is = bcastAdminsHelper (\\ is)
 
 
 -----
@@ -114,7 +123,7 @@ bcastNl = bcast . appendNlBs
 
 
 bcastOtherAdmins :: Id -> T.Text -> MudStack ()
-bcastOtherAdmins i msg = getState >>= bcastAdminsHelper msg . (i `delete`) . getLoggedInAdminIds
+bcastOtherAdmins i = bcastAdminsHelper (i `delete`)
 
 
 -----

@@ -97,7 +97,8 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Give admins functionality to ban given hostnames.
+-- TODO: Give admins functionality to ban given hostnames and PC names.
+-- TODO: Give admins functionality to message all other logged in admins?
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
@@ -140,6 +141,7 @@ prefixAdminCmd = prefixCmd adminCmdChar
 -----
 
 
+-- TODO: Demoted player must stop peeping and stop being incognito.
 adminAdmin :: Action
 adminAdmin p@AdviseNoArgs = advise p [ prefixAdminCmd "admin" ] "Please specify the full PC name of the player you \
                                                                 \wish to promote/demote."
@@ -149,35 +151,34 @@ adminAdmin (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
       let fn                  = "adminAdmin helper"
           SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
       in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-        []         -> (ms, [ let msg = T.concat [ "There is no PC by the name of "
-                                                , dblQuote strippedTarget
-                                                , ". "
-                                                , parensQuote "Note that you must specify the full PC name of the \
-                                                              \player you wish to promote/demote." ]
+        [] -> (ms, [ let msg = T.concat [ "There is no PC by the name of "
+                                        , dblQuote strippedTarget
+                                        , ". "
+                                        , parensQuote "Note that you must specify the full PC name of the player you  \
+                                                      \wish to promote/demote." ]
                              in sendFun msg ])
-        [targetId] -> let selfSing           = getSing i ms
-                          targetSing         = getSing targetId ms
-                          isAdmin            = getPlaFlag IsAdmin . getPla targetId $ ms
-                          retainedHelper msg = retainedMsg targetId ms . T.concat $ [ promoteDemoteColor
-                                                                                    , selfSing
-                                                                                    , msg
-                                                                                    , dfltColor ]
-                          fs                 = if isAdmin
-                            then [ retainedHelper " has demoted you from admin status."
-                                 , sendFun               $ "You have demoted "      <> targetSing <> "."
-                                 , logPla    fn i        $ "demoted "               <> targetSing <> "."
-                                 , logPla    fn targetId $ "demoted by "            <> selfSing   <> "."
-                                 , logNotice fn          $ selfSing <> " demoted "  <> targetSing <> "." ]
-                            else [ retainedHelper " has promoted you to admin status."
-                                 , sendFun               $ "You have promoted "     <> targetSing <> "."
-                                 , logPla    fn i        $ "promoted "              <> targetSing <> "."
-                                 , logPla    fn targetId $ "promoted by "           <> selfSing   <> "."
-                                 , logNotice fn          $ selfSing <> " promoted " <> targetSing <> "." ]
-                      in if
-                        | targetId == i        -> (ms, [ sendFun "You can't demote yourself." ])
-                        | targetSing == "Root" -> (ms, [ sendFun "You can't demote Root."     ])
-                        | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
-        xs         -> patternMatchFail "adminAdmin helper" [ showText xs ]
+        [targetId]
+          | selfSing       <- getSing i ms
+          , targetSing     <- getSing targetId ms
+          , isAdmin        <- getPlaFlag IsAdmin . getPla targetId $ ms
+          , (verb, toFrom) <- isAdmin ? ("demoted", "from") :? ("promoted", "to")
+          , fs <- [ retainedMsg targetId ms           . T.concat $ [ promoteDemoteColor
+                                                                   , selfSing
+                                                                   , " has "
+                                                                   , verb
+                                                                   , " you "
+                                                                   , toFrom
+                                                                   , " admin status."
+                                                                   , dfltColor ]
+                  , sendFun                           . T.concat $ [ "You have ",       verb, " ", targetSing, "." ]
+                  , bcastAdminsExcept [ i, targetId ] . T.concat $ [ selfSing, " has ", verb, " ", targetSing, "." ]
+                  , logNotice fn                      . T.concat $ [ selfSing, " ",     verb, " ", targetSing, "." ]
+                  , logPla    fn i                    . T.concat $ [ verb, " ",    targetSing, "." ]
+                  , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ] ]
+          -> if | targetId   == i      -> (ms, [ sendFun "You can't demote yourself." ])
+                | targetSing == "Root" -> (ms, [ sendFun "You can't demote Root."     ])
+                | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
+        xs -> patternMatchFail "adminAdmin helper" [ showText xs ]
 adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
     wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
 
@@ -219,9 +220,10 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
       [bootId] -> let selfSing = getSing i ms in if
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun $ strippedTarget <> " is not logged in."
                     | bootId == i -> sendFun "You can't boot yourself."
-                    | otherwise   -> let bootMq = getMsgQueue bootId ms
-                                         f      = ()# msg ? dfltMsg :? customMsg
-                                     in ok mq >> (sendMsgBoot bootMq =<< f bootId strippedTarget selfSing)
+                    | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
+                        ok mq
+                        sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
+                        bcastAdminsExcept [ i, bootId ] . T.concat $ [ selfSing, " booted ", strippedTarget, "." ]
       xs       -> patternMatchFail "adminBoot" [ showText xs ]
   where
     dfltMsg   bootId target' s = emptied $ do
@@ -333,12 +335,14 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
 adminIncognito :: Action
 adminIncognito (NoArgs i mq cols) = modifyState helper >>= sequence_
   where
-    helper ms = let isIncognito = getPlaFlag IsIncognito . getPla i $ ms
-                    fs          = if isIncognito
-                      then [ wrapSend mq cols "You are no longer incognito."
-                           , logPla "adminIncognito helper fs" i "no longer incognito." ]
-                      else [ wrapSend mq cols "You have gone incognito."
-                           , logPla "adminIncognito helper fs" i "went incognito." ]
+    helper ms = let s           = getSing i ms
+                    isIncognito = getPlaFlag IsIncognito . getPla i $ ms
+                    fs | isIncognito = [ wrapSend mq cols "You are no longer incognito."
+                                       , bcastOtherAdmins i $ s <> " is no longer incognito."
+                                       , logPla "adminIncognito helper fs" i "no longer incognito." ]
+                       | otherwise   = [ wrapSend mq cols "You have gone incognito."
+                                       , bcastOtherAdmins i $ s <> " has gone incognito."
+                                       , logPla "adminIncognito helper fs" i "went incognito." ]
                 in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncognito), fs)
 adminIncognito p = withoutArgs adminIncognito p
 
