@@ -20,6 +20,7 @@ import Mud.Misc.LocPref
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -39,7 +40,7 @@ import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, to, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
-import Control.Monad ((>=>), forM_)
+import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, intercalate)
 import Data.Maybe (fromJust, fromMaybe)
@@ -141,7 +142,6 @@ prefixAdminCmd = prefixCmd adminCmdChar
 -----
 
 
--- TODO: Demoted player must stop peeping and stop being incognito.
 adminAdmin :: Action
 adminAdmin p@AdviseNoArgs = advise p [ prefixAdminCmd "admin" ] "Please specify the full PC name of the player you \
                                                                 \wish to promote/demote."
@@ -162,6 +162,11 @@ adminAdmin (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
           , targetSing     <- getSing targetId ms
           , isAdmin        <- getPlaFlag IsAdmin . getPla targetId $ ms
           , (verb, toFrom) <- isAdmin ? ("demoted", "from") :? ("promoted", "to")
+          , handleIncog    <- let act = adminIncognito . mkActionParams targetId ms $ []
+                              in when (getPlaFlag IsIncognito . getPla targetId $ ms) act
+          , handlePeep     <- let peepingIds = getPeeping targetId ms
+                                  act        = adminPeep . mkActionParams targetId ms . map (`getSing` ms) $ peepingIds
+                              in unless (()# peepingIds) act
           , fs <- [ retainedMsg targetId ms           . T.concat $ [ promoteDemoteColor
                                                                    , selfSing
                                                                    , " has "
@@ -175,7 +180,8 @@ adminAdmin (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                   , logNotice fn                      . T.concat $ [ selfSing, " ",     verb, " ", targetSing, "." ]
                   , logPla    fn i                    . T.concat $ [ verb, " ",    targetSing, "." ]
                   , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
-                  , getPlaFlag IsIncognito (getPla targetId ms) ? (adminIncognito . mkActionParams $ i) :? unit ]
+                  , handleIncog
+                  , handlePeep ]
           -> if | targetId   == i      -> (ms, [ sendFun "You can't demote yourself." ])
                 | targetSing == "Root" -> (ms, [ sendFun "You can't demote Root."     ])
                 | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
@@ -669,19 +675,25 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
                                ias              = zip is' . styleAbbrevs Don'tBracket $ ss
                                mkCharTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
                                                       name                  = mkAnnotatedName i a
-                                                  in T.concat [ pad 15 name, pad 7 s, pad 10 r ]
+                                                  in T.concat [ pad (maxNameLen + 3) name
+                                                              , pad 7 s
+                                                              , pad (succ maxRaceLen) r ]
                            in map mkCharTxt ias ++ [ T.concat [ mkNumOfCharsTxt is, " ", showText inOrOut, "." ] ]
   where
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn
                                           LoggedOut -> not . isLoggedIn
     mkAnnotatedName i a = let p = getPla i ms
-                              admin | getPlaFlag IsAdmin p     = asteriskColor <> "*" <> dfltColor
+                              admin | getPlaFlag IsAdmin     p = asteriskColor <> "*" <> dfltColor
                                     | otherwise                = ""
                               incog | getPlaFlag IsIncognito p = asteriskColor <> "@" <> dfltColor
                                     | otherwise                = ""
                           in a <> admin <> incog
     mkNumOfCharsTxt (length -> nop) | nop == 1  = "1 character"
                                     | otherwise = showText nop <> " characters"
+
+
+maxRaceLen :: Int
+maxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 
 
 -----

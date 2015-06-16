@@ -127,11 +127,11 @@ throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 -----
 
 
-mkActionParams :: Id -> MudState -> ActionParams
-mkActionParams i ms = ActionParams { plaId       = i
-                                   , plaMsgQueue = getMsgQueue i ms
-                                   , plaCols     = getColumns  i ms
-                                   , args        = [] }
+mkActionParams :: Id -> MudState -> Args -> ActionParams
+mkActionParams i ms as = ActionParams { plaId       = i
+                                      , plaMsgQueue = getMsgQueue i ms
+                                      , plaCols     = getColumns  i ms
+                                      , args        = as }
 
 
 -----
