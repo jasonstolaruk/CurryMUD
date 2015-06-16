@@ -4,6 +4,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
+                          , mkActionParams
                           , mkSingleTarget
                           , pager
                           , prefixCmd
@@ -121,6 +122,16 @@ fileIOExHandler fn e = do
 
 throwToListenThread :: SomeException -> MudStack ()
 throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+
+
+-----
+
+
+mkActionParams :: Id -> MudState -> ActionParams
+mkActionParams i ms = ActionParams { plaId       = i
+                                   , plaMsgQueue = getMsgQueue i ms
+                                   , plaCols     = getColumns  i ms
+                                   , args        = [] }
 
 
 -----

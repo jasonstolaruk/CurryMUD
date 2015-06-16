@@ -174,7 +174,8 @@ adminAdmin (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                   , bcastAdminsExcept [ i, targetId ] . T.concat $ [ selfSing, " has ", verb, " ", targetSing, "." ]
                   , logNotice fn                      . T.concat $ [ selfSing, " ",     verb, " ", targetSing, "." ]
                   , logPla    fn i                    . T.concat $ [ verb, " ",    targetSing, "." ]
-                  , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ] ]
+                  , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
+                  , getPlaFlag IsIncognito (getPla targetId ms) ? (adminIncognito . mkActionParams $ i) :? unit ]
           -> if | targetId   == i      -> (ms, [ sendFun "You can't demote yourself." ])
                 | targetSing == "Root" -> (ms, [ sendFun "You can't demote Root."     ])
                 | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
