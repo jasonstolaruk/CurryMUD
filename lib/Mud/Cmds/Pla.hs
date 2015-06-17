@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -46,12 +46,13 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, _4, at, both, set, to, view, views)
+import Control.Lens (_1, _2, _3, _4, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (.~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Char (isDigit)
+import Data.Either (isLeft)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.IntMap.Lazy ((!))
@@ -355,7 +356,6 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
--- TODO: Figure out what to do about emotes that target other PCs or NPCs.
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
@@ -364,7 +364,40 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , dblQuote "emote laughs with relief as tears roll down her face"
                       , dfltColor
                       , "." ]
-emote p@(ActionParams { plaId, args })
+emote (WithArgs i mq cols as) = getState >>= \ms ->
+    let d@(stdPCEntSing -> Just s) = mkStdDesig i ms DoCap
+        ser                        = serialize d
+        d'                         = d { shouldCap = Don'tCap }
+        ser'                       = serialize d'
+        xformed                    = xformArgs True as
+        xformArgs _      []        = []
+        xformArgs isHead (x:xs)    = (: xformArgs False xs) $ if
+          | x == enc               -> helper
+          | x == enc's             -> (each %~ (<> "'s")) <$> helper
+          | enc `T.isInfixOf` x    -> Left  advice
+          | x == etc               -> Left  advice
+          | T.take 1 x == etc      -> Right ("X", "X", "X")
+          | etc `T.isInfixOf` x    -> Left  advice
+          | isHead, hasEnc         -> Right $ (x, x, x) & each %~ capitalizeMsg
+          | isHead, x' <- " " <> x -> Right $ (x', x', x') & _1 %~ (s   <>)
+                                                           & _2 %~ (ser <>)
+                                                           & _3 %~ (ser <>)
+          | otherwise              -> Right (x, x, x)
+          where
+            helper = (isHead ? (ser, ser) :? (ser', ser')) |$| Right . uncurry (s, , )
+        enc    = T.singleton emoteNameChar
+        enc's  = enc <> "'s" -- TODO: What about "'S"?
+        etc    = T.singleton emoteTargetChar
+        hasEnc = any (`elem` [ enc, enc's ]) as
+        advice = "advice"
+    in case filter isLeft xformed of
+      [] -> let f = each %~ (bracketQuote . punctuateMsg . T.unwords)
+                ((, pure i) -> toSelf, _, (, i `delete` pcIds d) -> toOthers) = f . unzip3 . map fromRight $ xformed
+            in bcastNl [ toSelf, toOthers ]
+      advices -> multiWrapSend mq cols . map fromLeft $ advices
+emote p = patternMatchFail "emote" [ showText p ]
+
+{-
   | any (`elem` args) [ enc, enc <> "'s" ] = getState >>= \ms ->
       let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
           toSelfMsg                  = bracketQuote . T.replace enc s . formatMsgArgs $ args
@@ -399,6 +432,7 @@ emote p@(ActionParams { plaId, args })
                                , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
                                , dfltColor
                                , "." ]
+-}
 
 
 -----

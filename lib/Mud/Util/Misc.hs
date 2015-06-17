@@ -8,6 +8,8 @@ module Mud.Util.Misc ( atLst1
                      , dup
                      , eitherRet
                      , emptied
+                     , fromLeft
+                     , fromRight
                      , ifThenElse
                      , ind
                      , isVowel
@@ -80,6 +82,16 @@ eitherRet = flip either return
 
 emptied :: (Monad m, Monoid b) => m a -> m b
 emptied m = m >> return mempty
+
+
+fromLeft :: Either a b -> a
+fromLeft (Left x) = x
+fromLeft _        = error "fromLeft: Right" -- TODO: blowUp
+
+
+fromRight :: Either a b -> b
+fromRight (Right x) = x
+fromRight _         = error "fromRight: Left" -- TODO: blowUp
 
 
 ifThenElse :: Bool -> a -> a -> a
