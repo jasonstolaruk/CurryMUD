@@ -374,9 +374,9 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
         xformArgs isHead (x:xs)    = (: xformArgs False xs) $ if
           | x == enc               -> helper
           | x == enc's             -> (each %~ (<> "'s")) <$> helper
-          | enc `T.isInfixOf` x    -> Left  advice
+          | enc `T.isInfixOf` x    -> Left  adviceInfixEnc
           | x == etc               -> Left  advice
-          | T.take 1 x == etc      -> Right ("X", "X", "X")
+          | T.take 1 x == etc      -> procTarget ms (T.tail x)
           | etc `T.isInfixOf` x    -> Left  advice
           | isHead, hasEnc         -> Right $ (x, x, x) & each %~ capitalizeMsg
           | isHead, x' <- " " <> x -> Right $ (x', x', x') & _1 %~ (s   <>)
@@ -385,16 +385,49 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | otherwise              -> Right (x, x, x)
           where
             helper = (isHead ? (ser, ser) :? (ser', ser')) |$| Right . uncurry (s, , )
-        enc    = T.singleton emoteNameChar
-        enc's  = enc <> "'s" -- TODO: What about "'S"?
-        etc    = T.singleton emoteTargetChar
-        hasEnc = any (`elem` [ enc, enc's ]) as
-        advice = "advice"
     in case filter isLeft xformed of
       [] -> let f = each %~ (bracketQuote . punctuateMsg . T.unwords)
                 ((, pure i) -> toSelf, _, (, i `delete` pcIds d) -> toOthers) = f . unzip3 . map fromRight $ xformed
             in bcastNl [ toSelf, toOthers ]
       advices -> multiWrapSend mq cols . map fromLeft $ advices
+  where
+    enc    = T.singleton emoteNameChar
+    enc's  = enc <> "'s" -- TODO: What about "'S"?
+    etc    = T.singleton emoteTargetChar
+    hasEnc = any (`elem` [ enc, enc's ]) as
+    procTarget ms target =
+        let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+        in if ()!# invCoins
+          then case singleArgInvEqRm InRm target of
+            (InInv, _      ) -> sorry "You can't target an item in your inventory."
+            (InEq,  _      ) -> sorry "You can't target an item in your readied equipment."
+            (InRm,  target') -> case uncurry (resolveRmInvCoins i ms [target']) invCoins of
+              (_,                    [ Left [msg] ]) -> Left msg
+              (_,                    Right  _:_    ) -> sorry "You can't target coins."
+              ([ Left  msg        ], _             ) -> Left msg
+              ([ Right (_:_:_)    ], _             ) -> Left "Sorry, but you can only target one person at a time."
+              ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
+                PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                           in Right (targetDesig, "you", targetDesig)
+                MobType -> Right (targetSing, "", targetSing)
+                _       -> sorry $ "You can't target " <> aOrAn targetSing <> ". "
+              x -> patternMatchFail "emote procTarget" [ showText x ]
+          else Left "You don't see anyone here."
+    sorry = Left . (<> " You can only target a person in your current room.")
+    advice = "advice"
+    adviceInfixEnc = T.concat [ dblQuote enc
+                              , " must either be used alone, or with a "
+                              , dblQuote "'s"
+                              , " suffix (to create a possessive noun), as in "
+                              , quoteColor
+                              , dblQuote $ "emote shielding her eyes from the sun, " <> enc <> " looks out across the \
+                                           \plains"
+                              , dfltColor
+                              , ", or "
+                              , quoteColor
+                              , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
+                              , dfltColor
+                              , "." ]
 emote p = patternMatchFail "emote" [ showText p ]
 
 {-
@@ -1567,12 +1600,12 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
               ([ Right (_:_:_)    ], _             ) -> sorry "Sorry, but you can only say something to one person at \
                                                               \a time."
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
-                  PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                             in parseRearAdverb |$| either sorry (sayToHelper d targetId targetDesig)
-                  MobType -> parseRearAdverb |$| either sorry (sayToMobHelper d targetSing)
-                  _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
+                PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                           in parseRearAdverb |$| either sorry (sayToHelper d targetId targetDesig)
+                MobType -> parseRearAdverb |$| either sorry (sayToMobHelper d targetSing)
+                _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
               x -> patternMatchFail "say sayTo" [ showText x ]
-            else sorry "You don't see anyone here to talk to."
+          else sorry "You don't see anyone here to talk to."
       where
         sorry msg       = (ms, (mkBroadcast i . nlnl $ msg, []))
         parseRearAdverb = case maybeAdverb of
