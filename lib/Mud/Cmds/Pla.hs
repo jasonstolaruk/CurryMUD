@@ -69,6 +69,7 @@ import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
+import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, map, mapWithKey)
 import qualified Data.Map.Lazy as M ((!), elems, filter, lookup, singleton)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -356,6 +357,14 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
+-- TODO: Move.
+data EmoteWord = ToNonTargets T.Text
+               | ToTargetYou  Id
+               | ToTargetYour Id deriving (Show)
+
+
+-- TODO: Check for forms of "you" in the emote text.
+-- TODO: Revise the "emote" help file.
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
@@ -372,29 +381,55 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
         xformed                    = xformArgs True as
         xformArgs _      []        = []
         xformArgs isHead (x:xs)    = (: xformArgs False xs) $ if
-          | x == enc               -> helper
-          | x == enc's             -> (each %~ (<> "'s")) <$> helper
+          | x == enc               -> mkRight   expandEnc
+          | x == enc's             -> mkRight $ expandEnc & each %~ (<> "'s")
           | enc `T.isInfixOf` x    -> Left  adviceInfixEnc
           | x == etc               -> Left  advice
           | T.take 1 x == etc      -> procTarget ms (T.tail x)
           | etc `T.isInfixOf` x    -> Left  advice
-          | isHead, hasEnc         -> Right $ (x, x, x) & each %~ capitalizeMsg
-          | isHead, x' <- " " <> x -> Right $ (x', x', x') & _1 %~ (s   <>)
-                                                           & _2 %~ (ser <>)
-                                                           & _3 %~ (ser <>)
-          | otherwise              -> Right (x, x, x)
+          | isHead, hasEnc         -> mkRight $ dup3 x & each %~ capitalizeMsg
+          | isHead, x' <- " " <> x -> mkRight $ dup3 x'& _1 %~ (s   <>)
+                                                       & _2 %~ (ser <>)
+                                                       & _3 %~ (ser <>)
+          | otherwise              -> mkRight . dup3 $ x
           where
-            helper = (isHead ? (ser, ser) :? (ser', ser')) |$| Right . uncurry (s, , )
+            expandEnc = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
     in case filter isLeft xformed of
-      [] -> let f = each %~ (bracketQuote . punctuateMsg . T.unwords)
-                ((, pure i) -> toSelf, _, (, i `delete` pcIds d) -> toOthers) = f . unzip3 . map fromRight $ xformed
-            in bcastNl [ toSelf, toOthers ]
+      [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
+
+                -- TODO: Refactor the below functions / move them to the "where" block.
+                targetIds = nub . foldr extractIds [] $ toTargets
+                extractIds [ToNonTargets _]    acc = acc
+                extractIds (ToTargetYou  ti:_) acc = ti : acc
+                extractIds (ToTargetYour ti:_) acc = ti : acc
+                extractIds xs                    _   = patternMatchFail "emote extractIds" [ showText xs ]
+
+                msgMap  = foldr (\targetId acc -> acc & at targetId .~ Just []) IM.empty targetIds
+                msgMap' = foldr consWord msgMap toTargets
+
+                consWord [ToNonTargets word]                        m = IM.map (word :) m
+                consWord [ToTargetYou  targetId, ToNonTargets word] m = selectiveCons targetId "you"  word m
+                consWord [ToTargetYour targetId, ToNonTargets word] m = selectiveCons targetId "your" word m
+                consWord xs                                         _ = patternMatchFail "emote consWord" [ showText xs ]
+
+                selectiveCons targetId youYour word = IM.mapWithKey helper
+                  where
+                    helper k v | k == targetId = youYour : v
+                               | otherwise     = word    : v
+
+                msgMapToBroadcasts = IM.foldrWithKey (\k v acc -> (formatMsg v, pure k) : acc) [] msgMap'
+
+                formatMsg = bracketQuote . punctuateMsg . T.unwords
+
+            in bcastNl $ (formatMsg toSelf, pure i) : (formatMsg toOthers, pcIds d \\ (i : targetIds)) : msgMapToBroadcasts
       advices -> multiWrapSend mq cols . map fromLeft $ advices
   where
-    enc    = T.singleton emoteNameChar
-    enc's  = enc <> "'s" -- TODO: What about "'S"?
-    etc    = T.singleton emoteTargetChar
-    hasEnc = any (`elem` [ enc, enc's ]) as
+    enc            = T.singleton emoteNameChar
+    enc's          = enc <> "'s" -- TODO: What about "'S"?
+    etc            = T.singleton emoteTargetChar
+    mkRight        = Right . mkToNonTargets
+    mkToNonTargets = _2 %~ (pure . ToNonTargets)
+    hasEnc         = any (`elem` [ enc, enc's ]) as
     procTarget ms target =
         let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
@@ -408,13 +443,13 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
               ([ Right (_:_:_)    ], _             ) -> Left "Sorry, but you can only target one person at a time."
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                           in Right (targetDesig, "you", targetDesig)
-                MobType -> Right (targetSing, "", targetSing)
+                           in Right $ dup3 targetDesig & _2 %~ ((ToTargetYou targetId :). pure . ToNonTargets)
+                MobType -> mkRight $ dup3 targetSing
                 _       -> sorry $ "You can't target " <> aOrAn targetSing <> ". "
               x -> patternMatchFail "emote procTarget" [ showText x ]
           else Left "You don't see anyone here."
-    sorry = Left . (<> " You can only target a person in your current room.")
-    advice = "advice"
+    sorry  = Left . (<> " You can only target a person in your current room.")
+    advice = "advice" -- TODO
     adviceInfixEnc = T.concat [ dblQuote enc
                               , " must either be used alone, or with a "
                               , dblQuote "'s"
@@ -429,43 +464,6 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                               , dfltColor
                               , "." ]
 emote p = patternMatchFail "emote" [ showText p ]
-
-{-
-  | any (`elem` args) [ enc, enc <> "'s" ] = getState >>= \ms ->
-      let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
-          toSelfMsg                  = bracketQuote . T.replace enc s . formatMsgArgs $ args
-          toSelfBroadcast            = mkBroadcast plaId . nlnl $ toSelfMsg
-          toOthersMsg | c == emoteNameChar = T.concat [ serialize d, T.tail h, " ", T.unwords . tail $ args ]
-                      | otherwise          = capitalizeMsg . T.unwords $ args
-          toOthersMsg'      = T.replace enc (serialize d { shouldCap = Don'tCap }) . punctuateMsg $ toOthersMsg
-          toOthersBroadcast = [(nlnl . bracketQuote $ toOthersMsg', plaId `delete` pcIds d)]
-      in bcastSelfOthers plaId ms toSelfBroadcast toOthersBroadcast >> (logPlaOut "emote" plaId . pure $ toSelfMsg)
-  | any (enc `T.isInfixOf`) args = advise p ["emote"] advice
-  | otherwise = getState >>= \ms ->
-    let d@(stdPCEntSing -> Just s) = mkStdDesig plaId ms DoCap
-        msg                        = punctuateMsg . T.unwords $ args
-        toSelfMsg                  = bracketQuote $ s <> " " <> msg
-        toSelfBroadcast            = mkBroadcast plaId . nlnl $ toSelfMsg
-        toOthersMsg                = bracketQuote $ serialize d <> " " <> msg
-        toOthersBroadcast          = [(nlnl toOthersMsg, plaId `delete` pcIds d)]
-    in bcastSelfOthers plaId ms toSelfBroadcast toOthersBroadcast >> (logPlaOut "emote" plaId . pure $ toSelfMsg)
-  where
-    h@(T.head -> c) = head args
-    enc             = T.singleton emoteNameChar
-    advice          = T.concat [ dblQuote enc
-                               , " must either be used alone, or with a "
-                               , dblQuote "'s"
-                               , " suffix (to create a possessive noun), as in "
-                               , quoteColor
-                               , dblQuote $ "emote shielding her eyes from the sun, " <> enc <> " looks out across the \
-                                            \plains"
-                               , dfltColor
-                               , ", or "
-                               , quoteColor
-                               , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
-                               , dfltColor
-                               , "." ]
--}
 
 
 -----

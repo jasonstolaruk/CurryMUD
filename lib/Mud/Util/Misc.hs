@@ -6,6 +6,7 @@ module Mud.Util.Misc ( atLst1
                      , dropFst
                      , dropIrrelevantFilenames
                      , dup
+                     , dup3
                      , eitherRet
                      , emptied
                      , fromLeft
@@ -74,6 +75,10 @@ dropIrrelevantFilenames = foldr ((.) . delete) id [ ".", "..", ".DS_Store" ]
 
 dup :: a -> (a, a)
 dup x = (x, x)
+
+
+dup3 :: a -> (a, a, a)
+dup3 x = (x, x, x)
 
 
 eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
