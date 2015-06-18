@@ -387,10 +387,10 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | x == etc               -> Left  advice
           | T.take 1 x == etc      -> procTarget ms (T.tail x)
           | etc `T.isInfixOf` x    -> Left  advice
-          | isHead, hasEnc         -> mkRight $ dup3 x & each %~ capitalizeMsg
-          | isHead, x' <- " " <> x -> mkRight $ dup3 x'& _1 %~ (s   <>)
-                                                       & _2 %~ (ser <>)
-                                                       & _3 %~ (ser <>)
+          | isHead, hasEnc         -> mkRight $ dup3 x  & each %~ capitalizeMsg
+          | isHead, x' <- " " <> x -> mkRight $ dup3 x' & _1 %~ (s   <>)
+                                                        & _2 %~ (ser <>)
+                                                        & _3 %~ (ser <>)
           | otherwise              -> mkRight . dup3 $ x
           where
             expandEnc = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
@@ -444,7 +444,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                            in Right $ dup3 targetDesig & _2 %~ ((ToTargetYou targetId :). pure . ToNonTargets)
-                MobType -> mkRight $ dup3 targetSing
+                MobType -> mkRight $ dup3 targetSing -- TODO: Test.
                 _       -> sorry $ "You can't target " <> aOrAn targetSing <> ". "
               x -> patternMatchFail "emote procTarget" [ showText x ]
           else Left "You don't see anyone here."
