@@ -357,7 +357,6 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
--- TODO: Check for forms of "you" in the emote text.
 -- TODO: Revise the "emote" help file.
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
@@ -365,6 +364,28 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
     advice = T.concat [ "Please provide a description of an action, as in "
                       , quoteColor
                       , dblQuote "emote laughs with relief as tears roll down her face"
+                      , dfltColor
+                      , "." ]
+emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] advice
+  where
+    yous = [ "you"
+           , "you'd"
+           , "you'll"
+           , "you're"
+           , "you's"
+           , "you've"
+           , "your"
+           , "yours"
+           , "yourself"
+           , "yourselves"
+           , "yous" ]
+    advice = T.concat [ "You can't use a form of the word "
+                      , dblQuote "you"
+                      , " in an emote. Instead, you must specify who you wish to target using "
+                      , dblQuote . T.singleton $ emoteTargetChar
+                      , ", as in "
+                      , quoteColor
+                      , dblQuote "emote slowly turns his head to look directly at >taro"
                       , dfltColor
                       , "." ]
 emote (WithArgs i mq cols as) = getState >>= \ms ->
@@ -378,9 +399,9 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | x == enc               -> mkRight   expandEnc
           | x == enc's             -> mkRight $ expandEnc & each %~ (<> "'s")
           | enc `T.isInfixOf` x    -> Left  adviceInfixEnc
-          | x == etc               -> Left  advice
-          | T.take 1 x == etc      -> isHead ? Left advice :? (procTarget ms . parsePoss . T.tail $ x)
-          | etc `T.isInfixOf` x    -> Left  advice
+          | x == etc               -> Left  adviceEtc
+          | T.take 1 x == etc      -> isHead ? Left adviceEtcHead :? (procTarget ms . parsePoss . T.tail $ x)
+          | etc `T.isInfixOf` x    -> Left  adviceEtc
           | isHead, hasEnc         -> mkRight $ dup3 x  & each %~ capitalizeMsg
           | isHead, x' <- " " <> x -> mkRight $ dup3 x' & _1 %~ (s   <>)
                                                         & _2 %~ (ser <>)
@@ -407,13 +428,13 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                 selectiveCons targetId ((== IsPoss) -> isPoss) word = IM.mapWithKey helper
                   where
                     helper k v = let targetSing = getSing k ms |$| (isPoss ? (<> "'s") :? id)
-                                 in (k == targetId ? targetSing :? word) |$| (: v)
+                                 in (k == targetId ? emoteTargetColor <> targetSing <> dfltColor :? word) |$| (: v)
                 toTargetBs = IM.foldlWithKey' helper [] msgMap'
                   where
                     helper acc k = (: acc) . (formatMsg *** pure) . (, k)
                 formatMsg = bracketQuote . punctuateMsg . T.unwords
             in bcastNl $ (formatMsg toSelf, pure i) : (formatMsg toOthers, pcIds d \\ (i : targetIds)) : toTargetBs
-      advices -> multiWrapSend mq cols . map fromLeft $ advices
+      advices -> multiWrapSend mq cols . map fromLeft . nub $ advices
   where
     enc             = T.singleton emoteNameChar
     enc's           = enc <> "'s"
@@ -435,19 +456,20 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = addSuffix . serialize . mkStdDesig targetId ms $ Don'tCap
                            in Right (targetDesig, [ mkEmoteWord targetId, ForNonTargets targetDesig ], targetDesig)
-                MobType -> mkRight $ dup3 targetSing
+                MobType -> mkRight . dup3 . addSuffix $ targetSing -- TODO: Test suffix.
                 _       -> sorry $ "You can't target " <> aOrAn targetSing <> "."
               x -> patternMatchFail "emote procTarget" [ showText x ]
           else Left "You don't see anyone here."
       where
         addSuffix   = isPoss ? (<> "'s")     :? id
         mkEmoteWord = isPoss ? ForTargetPoss :? ForTarget
-    sorry  = Left . (<> " You can only target a person in your current room.")
-    advice = "advice" -- TODO
+    sorry          = Left . (<> " You can only target a person in your current room.")
     adviceInfixEnc = T.concat [ dblQuote enc
                               , " must either be used alone, or with a "
                               , dblQuote "'s"
-                              , " suffix (to create a possessive noun), as in "
+                              , " suffix "
+                              , parensQuote "to create a possessive noun"
+                              , ", as in "
                               , quoteColor
                               , dblQuote $ "emote shielding her eyes from the sun, " <> enc <> " looks out across the \
                                            \plains"
@@ -457,6 +479,19 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                               , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
                               , dfltColor
                               , "." ]
+    adviceEtc      = T.concat [ dblQuote etc
+                              , " must be immediately followed by the name of the person you wish to target, as in "
+                              , quoteColor
+                              , dblQuote "emote slowly turns his head to look directly at >taro"
+                              , dfltColor
+                              , ". To create a possesive noun, append "
+                              , dblQuote "'s"
+                              , " to the target name, as in "
+                              , quoteColor
+                              , dblQuote "emote places his hand firmly on >taro's shoulder"
+                              , dfltColor
+                              , "." ]
+    adviceEtcHead  = "You can't begin an emote with a target."
 emote p = patternMatchFail "emote" [ showText p ]
 
 

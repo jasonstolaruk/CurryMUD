@@ -523,11 +523,16 @@ expCmdSet = S.fromList
                                       "% scratches & chin.")
     , ExpCmd "scratchhead" (NoTarget  "You scratch your head."
                                       "% scratches & head.")
-    , ExpCmd "scream"      (Versatile "You unleach a high-pitched scream."
+    , ExpCmd "scream"      (Versatile "You unleash a high-pitched scream."
                                       "% unleashes high-pitched scream."
                                       "You scream at @."
                                       "% screams at you."
                                       "% screams at @.")
+    , ExpCmd "shake"       (Versatile "You shake your head."
+                                      "% shakes & head."
+                                      "You shake your head at @."
+                                      "% shakes & head at you."
+                                      "% shakes & head at @.")
     , ExpCmd "shiver"      (NoTarget  "You shiver."
                                       "% shivers.")
     , ExpCmd "shrieklaugh" (Versatile "You shriek with laughter."
@@ -577,6 +582,8 @@ expCmdSet = S.fromList
                                       "You snap your fingers at @."
                                       "% snaps & fingers at you."
                                       "% snaps & fingers at @.")
+    , ExpCmd "sneeze"      (NoTarget  "You sneeze."
+                                      "% sneezes.")
     , ExpCmd "snicker"     (Versatile "You snicker derisively."
                                       "% snickers derisively."
                                       "You snicker derisively at @."

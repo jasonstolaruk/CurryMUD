@@ -305,7 +305,7 @@ instance Serializable PCDesig where
 
 data EmoteWord = ForNonTargets T.Text
                | ForTarget     Id
-               | ForTargetPoss Id deriving (Show)
+               | ForTargetPoss Id deriving (Eq, Show)
 
 
 -----

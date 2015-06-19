@@ -12,6 +12,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , dfltColor
                      , dfltColor'
                      , dropANSI
+                     , emoteTargetColor
                      , envVarColor
                      , exitsColor
                      , extractANSI
@@ -143,6 +144,10 @@ dfltColor = resetANSI
 
 dfltColor' :: T.Text
 dfltColor' = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelimiter
+
+
+emoteTargetColor :: T.Text
+emoteTargetColor = red
 
 
 envVarColor :: T.Text
