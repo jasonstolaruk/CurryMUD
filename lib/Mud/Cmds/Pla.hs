@@ -357,7 +357,6 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
--- TODO: Revise the "emote" help file.
 emote :: Action
 emote p@AdviseNoArgs = advise p ["emote"] advice
   where
@@ -382,12 +381,13 @@ emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = adv
     advice = T.concat [ "You can't use a form of the word "
                       , dblQuote "you"
                       , " in an emote. Instead, you must specify who you wish to target using "
-                      , dblQuote . T.singleton $ emoteTargetChar
+                      , dblQuote etc
                       , ", as in "
                       , quoteColor
-                      , dblQuote "emote slowly turns his head to look directly at >taro"
+                      , dblQuote $ "emote slowly turns her head to look directly at " <> etc <> "taro"
                       , dfltColor
                       , "." ]
+    etc = T.singleton emoteTargetChar
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d@(stdPCEntSing -> Just s) = mkStdDesig i ms DoCap
         ser                        = serialize d
@@ -456,7 +456,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = addSuffix . serialize . mkStdDesig targetId ms $ Don'tCap
                            in Right (targetDesig, [ mkEmoteWord targetId, ForNonTargets targetDesig ], targetDesig)
-                MobType -> mkRight . dup3 . addSuffix $ targetSing -- TODO: Test suffix.
+                MobType -> mkRight . dup3 . addSuffix $ targetSing
                 _       -> sorry $ "You can't target " <> aOrAn targetSing <> "."
               x -> patternMatchFail "emote procTarget" [ showText x ]
           else Left "You don't see anyone here."
@@ -482,13 +482,13 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
     adviceEtc      = T.concat [ dblQuote etc
                               , " must be immediately followed by the name of the person you wish to target, as in "
                               , quoteColor
-                              , dblQuote "emote slowly turns his head to look directly at >taro"
+                              , dblQuote $ "emote slowly turns her head to look directly at " <> etc <> "taro"
                               , dfltColor
                               , ". To create a possesive noun, append "
                               , dblQuote "'s"
                               , " to the target name, as in "
                               , quoteColor
-                              , dblQuote "emote places his hand firmly on >taro's shoulder"
+                              , dblQuote $ "emote places her hand firmly on " <> etc <> "taro's shoulder"
                               , dfltColor
                               , "." ]
     adviceEtcHead  = "You can't begin an emote with a target."

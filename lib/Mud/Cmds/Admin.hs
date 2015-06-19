@@ -360,7 +360,7 @@ adminIncognito p = withoutArgs adminIncognito p
 adminMsg :: Action
 adminMsg p@AdviseNoArgs = advise p [ prefixAdminCmd "message" ] advice
   where
-    advice = T.concat [ "Please specify the PC name of a player followed by a message, as in "
+    advice = T.concat [ "Please specify the PC name of a regular player followed by a message, as in "
                       , quoteColor
                       , dblQuote $ prefixAdminCmd "message" <> " taro thank you for reporting the bug you found"
                       , dfltColor
@@ -379,7 +379,9 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
         let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the message recipient"
             s                   = getSing i ms
             targetMsg           = mkRetainedMsgFromPerson s msg
-            notFound            = emptied . sendFun $ "There is no PC by the name of " <> dblQuote strippedTarget <> "."
+            notFound            = emptied . sendFun $ "There is no regular player by the name of " <>
+                                                      dblQuote strippedTarget                      <>
+                                                      "."
             found (targetId, targetSing) = let targetPla = getPla targetId ms in if
               | isLoggedIn targetPla, getPlaFlag IsIncognito . getPla i $ ms ->
                 emptied . sendFun $ "You can't send a message to a player who is logged in while you are incognito."
