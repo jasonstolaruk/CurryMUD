@@ -410,8 +410,8 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           where
             expandEnc  = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
             parse word = _2 %~ (word |$|) $ if "'s" `T.isSuffixOf` word
-              then (IsPoss,    T.dropEnd 2)
-              else (Isn'tPoss, id         )
+              then (IsPoss,    T.reverse . T.drop 2 . T.reverse) -- TODO: dropEnd?
+              else (Isn'tPoss, id                              )
             -- TODO: punc = [ "!", "\"", ")", ",", ".", "/", ":", ";", "?" ]
     in case filter isLeft xformed of
       [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
