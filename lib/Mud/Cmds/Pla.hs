@@ -168,18 +168,18 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("inventory",  "i",  inv,        "Display your inventory, or examine one or more items in your inventory.")
     , ("look",       "l",  look,       "Display a description of your current room, or examine one or more items in \
                                        \your current room.")
-    , ("link",       "li", undefined,  "Display a list of the people with whom you have established a telepathic link, \
-                                       \or established a telepathic link with one or more people.") -- TODO: The list should indicate who is logged in and who is logged out.
+    -- , ("link",       "li", undefined,  "Display a list of the people with whom you have established a telepathic link, \
+    --                                    \or established a telepathic link with one or more people.") -- TODO: The list should indicate who is logged in and who is logged out.
     , ("motd",       "m",  motd,       "Display the message of the day.")
     , ("put",        "p",  putAction,  "Put one or more items into a container.")
     , ("ready",      "r",  ready,      "Ready one or more items.")
     , ("say",        "sa", say,        "Say something out loud.")
     , ("show",       "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
                                        \person.")
-    , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
-                                       \telepathic link.") -- TODO: Emotes and exp cmds.
-    , ("unready",    "un", unready,    "Unready one or more items.")
-    , ("who",        "wh", undefined,  "Display or search a list of the people who are currently logged in.") ] -- TODO: Only display the names of characters with whom the player has established a link; otherwise, just display sex and race. Display each PC's level. Display the total number of logged in players.
+    -- , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
+    --                                    \telepathic link.") -- TODO: Emotes and exp cmds.
+    , ("unready",    "un", unready,    "Unready one or more items.") ]
+    -- , ("who",        "wh", undefined,  "Display or search a list of the people who are currently logged in.") ] -- TODO: Only display the names of characters with whom the player has established a link; otherwise, just display sex and race. Display each PC's level. Display the total number of logged in players.
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> [Cmd]
