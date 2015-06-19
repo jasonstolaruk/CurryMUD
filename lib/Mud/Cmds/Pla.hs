@@ -69,7 +69,7 @@ import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, map, mapWithKey)
+import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', map, mapWithKey)
 import qualified Data.Map.Lazy as M ((!), elems, filter, lookup, singleton)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -379,7 +379,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | x == enc's             -> mkRight $ expandEnc & each %~ (<> "'s")
           | enc `T.isInfixOf` x    -> Left  adviceInfixEnc
           | x == etc               -> Left  advice
-          | T.take 1 x == etc      -> procTarget ms . parsePoss . T.tail $ x
+          | T.take 1 x == etc      -> isHead ? Left advice :? (procTarget ms . parsePoss . T.tail $ x)
           | etc `T.isInfixOf` x    -> Left  advice
           | isHead, hasEnc         -> mkRight $ dup3 x  & each %~ capitalizeMsg
           | isHead, x' <- " " <> x -> mkRight $ dup3 x' & _1 %~ (s   <>)
@@ -388,35 +388,40 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | otherwise              -> mkRight . dup3 $ x
           where
             expandEnc      = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
-            parsePoss word = "'s" `T.isSuffixOf` word ? (True, T.reverse . T.drop 2 . T.reverse $ word) :? (False, word)
+            parsePoss word = _2 %~ (word |$|) $ if "'s" `T.isSuffixOf` word
+              then (IsPoss,    T.reverse . T.drop 2 . T.reverse)
+              else (Isn'tPoss, id                              )
     in case filter isLeft xformed of
       [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
                 targetIds = nub . foldr extractIds [] $ toTargets
-                extractIds [ToNonTargets _]          acc = acc
-                extractIds (ToTargetYou  targetId:_) acc = targetId : acc
-                extractIds (ToTargetYour targetId:_) acc = targetId : acc
-                extractIds xs                        _   = patternMatchFail "emote extractIds" [ showText xs ]
+                extractIds [ForNonTargets _         ] acc = acc
+                extractIds (ForTarget     targetId:_) acc = targetId : acc
+                extractIds (ForTargetPoss targetId:_) acc = targetId : acc
+                extractIds xs                         _   = patternMatchFail "emote extractIds" [ showText xs ]
                 msgMap  = foldr (\targetId -> at targetId .~ Just []) IM.empty targetIds
                 msgMap' = foldr consWord msgMap toTargets
-                consWord [ToNonTargets word]                        m = IM.map (word :) m
-                consWord [ToTargetYou  targetId, ToNonTargets word] m = selectiveCons targetId "you"  word m
-                consWord [ToTargetYour targetId, ToNonTargets word] m = selectiveCons targetId "your" word m
-                consWord xs _ = patternMatchFail "emote consWord" [ showText xs ]
-                selectiveCons targetId youYour word = IM.mapWithKey helper
+                consWord [ ForNonTargets word                         ] = IM.map (word :)
+                consWord [ ForTarget     targetId, ForNonTargets word ] = selectiveCons targetId Isn'tPoss word
+                consWord [ ForTargetPoss targetId, ForNonTargets word ] = selectiveCons targetId IsPoss    word
+                consWord xs = const . patternMatchFail "emote consWord" $ [ showText xs ]
+                selectiveCons targetId ((== IsPoss) -> isPoss) word = IM.mapWithKey helper
                   where
-                    helper k v = (k == targetId ? youYour :? word) |$| (: v)
-                toTargetBs = IM.foldrWithKey (\k v acc -> (formatMsg v, pure k) : acc) [] msgMap'
-                formatMsg  = bracketQuote . punctuateMsg . T.unwords
+                    helper k v = let targetSing = getSing k ms |$| (isPoss ? (<> "'s") :? id)
+                                 in (k == targetId ? targetSing :? word) |$| (: v)
+                toTargetBs = IM.foldlWithKey' helper [] msgMap'
+                  where
+                    helper acc k = (: acc) . (formatMsg *** pure) . (, k)
+                formatMsg = bracketQuote . punctuateMsg . T.unwords
             in bcastNl $ (formatMsg toSelf, pure i) : (formatMsg toOthers, pcIds d \\ (i : targetIds)) : toTargetBs
       advices -> multiWrapSend mq cols . map fromLeft $ advices
   where
-    enc            = T.singleton emoteNameChar
-    enc's          = enc <> "'s"
-    etc            = T.singleton emoteTargetChar
-    mkRight        = Right . mkToNonTargets
-    mkToNonTargets = _2 %~ (pure . ToNonTargets)
-    hasEnc         = any (`elem` [ enc, enc's ]) as
-    procTarget ms (isPoss, target) =
+    enc             = T.singleton emoteNameChar
+    enc's           = enc <> "'s"
+    etc             = T.singleton emoteTargetChar
+    mkRight         = Right . mkForNonTargets
+    mkForNonTargets = _2 %~ (pure . ForNonTargets)
+    hasEnc          = any (`elem` [ enc, enc's ]) as
+    procTarget ms ((== IsPoss) -> isPoss, target) =
         let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
@@ -429,14 +434,14 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
               ([ Right (_:_:_)    ], _             ) -> Left "Sorry, but you can only target one person at a time."
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = addSuffix . serialize . mkStdDesig targetId ms $ Don'tCap
-                           in Right (targetDesig, [ mkEmoteWord targetId, ToNonTargets targetDesig ], targetDesig)
+                           in Right (targetDesig, [ mkEmoteWord targetId, ForNonTargets targetDesig ], targetDesig)
                 MobType -> mkRight $ dup3 targetSing
-                _       -> sorry $ "You can't target " <> aOrAn targetSing <> ". "
+                _       -> sorry $ "You can't target " <> aOrAn targetSing <> "."
               x -> patternMatchFail "emote procTarget" [ showText x ]
           else Left "You don't see anyone here."
       where
-        addSuffix   = isPoss ? (<> "'s")    :? id
-        mkEmoteWord = isPoss ? ToTargetYour :? ToTargetYou
+        addSuffix   = isPoss ? (<> "'s")     :? id
+        mkEmoteWord = isPoss ? ForTargetPoss :? ForTarget
     sorry  = Left . (<> " You can only target a person in your current room.")
     advice = "advice" -- TODO
     adviceInfixEnc = T.concat [ dblQuote enc

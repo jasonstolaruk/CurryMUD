@@ -27,6 +27,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , LoggedInOrOut(..)
                      , PCDesig(..)
                      , PlsDie(..)
+                     , Poss(..)
                      , PutOrRem(..)
                      , RightOrLeft(..)
                      , Serializable
@@ -302,9 +303,9 @@ instance Serializable PCDesig where
 -- Data types:
 
 
-data EmoteWord = ToNonTargets T.Text
-               | ToTargetYou  Id
-               | ToTargetYour Id deriving (Show)
+data EmoteWord = ForNonTargets T.Text
+               | ForTarget     Id
+               | ForTargetPoss Id deriving (Show)
 
 
 -----
@@ -478,6 +479,12 @@ data PlsDie = PlsDie deriving (Show, Typeable)
 
 
 instance Exception PlsDie
+
+
+-----
+
+
+data Poss = IsPoss | Isn'tPoss deriving (Eq)
 
 
 -----
