@@ -89,14 +89,14 @@ emptied :: (Monad m, Monoid b) => m a -> m b
 emptied m = m >> return mempty
 
 
-fromLeft :: Either a b -> a
-fromLeft (Left x) = x
-fromLeft _        = error "fromLeft: Right" -- TODO: blowUp
+fromLeft :: (Show a, Show b) => Either a b -> a
+fromLeft (Left  x) = x
+fromLeft x         = blowUp "Mud.Util.Misc" "fromLeft" "Right" [ T.pack . show $ x ]
 
 
-fromRight :: Either a b -> b
+fromRight :: (Show a, Show b) => Either a b -> b
 fromRight (Right x) = x
-fromRight _         = error "fromRight: Left" -- TODO: blowUp
+fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" [ T.pack . show $ x ]
 
 
 ifThenElse :: Bool -> a -> a -> a

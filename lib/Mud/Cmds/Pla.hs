@@ -379,7 +379,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | x == enc's             -> mkRight $ expandEnc & each %~ (<> "'s")
           | enc `T.isInfixOf` x    -> Left  adviceInfixEnc
           | x == etc               -> Left  advice
-          | T.take 1 x == etc      -> procTarget ms (T.tail x)
+          | T.take 1 x == etc      -> procTarget ms . parsePoss . T.tail $ x
           | etc `T.isInfixOf` x    -> Left  advice
           | isHead, hasEnc         -> mkRight $ dup3 x  & each %~ capitalizeMsg
           | isHead, x' <- " " <> x -> mkRight $ dup3 x' & _1 %~ (s   <>)
@@ -387,7 +387,8 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                         & _3 %~ (ser <>)
           | otherwise              -> mkRight . dup3 $ x
           where
-            expandEnc = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
+            expandEnc      = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
+            parsePoss word = "'s" `T.isSuffixOf` word ? (True, T.reverse . T.drop 2 . T.reverse $ word) :? (False, word)
     in case filter isLeft xformed of
       [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
                 targetIds = nub . foldr extractIds [] $ toTargets
@@ -410,12 +411,12 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
       advices -> multiWrapSend mq cols . map fromLeft $ advices
   where
     enc            = T.singleton emoteNameChar
-    enc's          = enc <> "'s" -- TODO: What about "'S"?
+    enc's          = enc <> "'s"
     etc            = T.singleton emoteTargetChar
     mkRight        = Right . mkToNonTargets
     mkToNonTargets = _2 %~ (pure . ToNonTargets)
     hasEnc         = any (`elem` [ enc, enc's ]) as
-    procTarget ms target =
+    procTarget ms (isPoss, target) =
         let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
@@ -427,12 +428,15 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
               ([ Left  msg        ], _             ) -> Left msg
               ([ Right (_:_:_)    ], _             ) -> Left "Sorry, but you can only target one person at a time."
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
-                PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                           in Right $ dup3 targetDesig & _2 %~ ((ToTargetYou targetId :). pure . ToNonTargets)
-                MobType -> mkRight $ dup3 targetSing -- TODO: Test.
+                PCType  -> let targetDesig = addSuffix . serialize . mkStdDesig targetId ms $ Don'tCap
+                           in Right (targetDesig, [ mkEmoteWord targetId, ToNonTargets targetDesig ], targetDesig)
+                MobType -> mkRight $ dup3 targetSing
                 _       -> sorry $ "You can't target " <> aOrAn targetSing <> ". "
               x -> patternMatchFail "emote procTarget" [ showText x ]
           else Left "You don't see anyone here."
+      where
+        addSuffix   = isPoss ? (<> "'s")    :? id
+        mkEmoteWord = isPoss ? ToTargetYour :? ToTargetYou
     sorry  = Left . (<> " You can only target a person in your current room.")
     advice = "advice" -- TODO
     adviceInfixEnc = T.concat [ dblQuote enc

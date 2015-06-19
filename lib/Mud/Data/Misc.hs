@@ -11,6 +11,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , CmdFullName
                      , CmdPriorityAbbrevTxt
                      , Cols
+                     , EmoteWord(..)
                      , EmptyNoneSome(..)
                      , EquipInvLookCmd(..)
                      , ExpCmd(..)
