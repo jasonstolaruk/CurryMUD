@@ -357,12 +357,6 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
--- TODO: Move.
-data EmoteWord = ToNonTargets T.Text
-               | ToTargetYou  Id
-               | ToTargetYour Id deriving (Show)
-
-
 -- TODO: Check for forms of "you" in the emote text.
 -- TODO: Revise the "emote" help file.
 emote :: Action

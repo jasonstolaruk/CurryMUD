@@ -301,6 +301,14 @@ instance Serializable PCDesig where
 -- Data types:
 
 
+data EmoteWord = ToNonTargets T.Text
+               | ToTargetYou  Id
+               | ToTargetYour Id deriving (Show)
+
+
+-----
+
+
 type ExpCmdName = T.Text
 
 
