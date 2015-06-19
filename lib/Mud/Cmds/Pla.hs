@@ -400,7 +400,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | x == enc's             -> mkRight $ expandEnc & each %~ (<> "'s")
           | enc `T.isInfixOf` x    -> Left  adviceInfixEnc
           | x == etc               -> Left  adviceEtc
-          | T.take 1 x == etc      -> isHead ? Left adviceEtcHead :? (procTarget ms . parsePoss . T.tail $ x)
+          | T.take 1 x == etc      -> isHead ? Left adviceEtcHead :? (procTarget ms . parse . T.tail $ x)
           | etc `T.isInfixOf` x    -> Left  adviceEtc
           | isHead, hasEnc         -> mkRight $ dup3 x  & each %~ capitalizeMsg
           | isHead, x' <- " " <> x -> mkRight $ dup3 x' & _1 %~ (s   <>)
@@ -408,10 +408,11 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                         & _3 %~ (ser <>)
           | otherwise              -> mkRight . dup3 $ x
           where
-            expandEnc      = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
-            parsePoss word = _2 %~ (word |$|) $ if "'s" `T.isSuffixOf` word
-              then (IsPoss,    T.reverse . T.drop 2 . T.reverse)
-              else (Isn'tPoss, id                              )
+            expandEnc  = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
+            parse word = _2 %~ (word |$|) $ if "'s" `T.isSuffixOf` word
+              then (IsPoss,    T.dropEnd 2)
+              else (Isn'tPoss, id         )
+            -- TODO: punc = [ "!", "\"", ")", ",", ".", "/", ":", ";", "?" ]
     in case filter isLeft xformed of
       [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
                 targetIds = nub . foldr extractIds [] $ toTargets
