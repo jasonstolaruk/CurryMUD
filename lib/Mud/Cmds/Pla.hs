@@ -390,32 +390,23 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
             expandEnc = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
     in case filter isLeft xformed of
       [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
-
-                -- TODO: Refactor the below functions / move them to the "where" block.
                 targetIds = nub . foldr extractIds [] $ toTargets
-                extractIds [ToNonTargets _]    acc = acc
-                extractIds (ToTargetYou  ti:_) acc = ti : acc
-                extractIds (ToTargetYour ti:_) acc = ti : acc
-                extractIds xs                    _   = patternMatchFail "emote extractIds" [ showText xs ]
-
-                msgMap  = foldr (\targetId acc -> acc & at targetId .~ Just []) IM.empty targetIds
+                extractIds [ToNonTargets _]          acc = acc
+                extractIds (ToTargetYou  targetId:_) acc = targetId : acc
+                extractIds (ToTargetYour targetId:_) acc = targetId : acc
+                extractIds xs                        _   = patternMatchFail "emote extractIds" [ showText xs ]
+                msgMap  = foldr (\targetId -> at targetId .~ Just []) IM.empty targetIds
                 msgMap' = foldr consWord msgMap toTargets
-
                 consWord [ToNonTargets word]                        m = IM.map (word :) m
                 consWord [ToTargetYou  targetId, ToNonTargets word] m = selectiveCons targetId "you"  word m
                 consWord [ToTargetYour targetId, ToNonTargets word] m = selectiveCons targetId "your" word m
-                consWord xs                                         _ = patternMatchFail "emote consWord" [ showText xs ]
-
+                consWord xs _ = patternMatchFail "emote consWord" [ showText xs ]
                 selectiveCons targetId youYour word = IM.mapWithKey helper
                   where
-                    helper k v | k == targetId = youYour : v
-                               | otherwise     = word    : v
-
-                msgMapToBroadcasts = IM.foldrWithKey (\k v acc -> (formatMsg v, pure k) : acc) [] msgMap'
-
-                formatMsg = bracketQuote . punctuateMsg . T.unwords
-
-            in bcastNl $ (formatMsg toSelf, pure i) : (formatMsg toOthers, pcIds d \\ (i : targetIds)) : msgMapToBroadcasts
+                    helper k v = (k == targetId ? youYour :? word) |$| (: v)
+                toTargetBs = IM.foldrWithKey (\k v acc -> (formatMsg v, pure k) : acc) [] msgMap'
+                formatMsg  = bracketQuote . punctuateMsg . T.unwords
+            in bcastNl $ (formatMsg toSelf, pure i) : (formatMsg toOthers, pcIds d \\ (i : targetIds)) : toTargetBs
       advices -> multiWrapSend mq cols . map fromLeft $ advices
   where
     enc            = T.singleton emoteNameChar
