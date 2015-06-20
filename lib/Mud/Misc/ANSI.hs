@@ -147,7 +147,7 @@ dfltColor' = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelim
 
 
 emoteTargetColor :: T.Text
-emoteTargetColor = red
+emoteTargetColor = green
 
 
 envVarColor :: T.Text

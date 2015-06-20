@@ -101,102 +101,104 @@ iSandals2 = 44 :: Int
 
 iBoots = 45 :: Int
 
-iRockCavy = 46 :: Int
+iRockCavy1 = 46 :: Int
 
-iVoid = 47 :: Int
+iRockCavy2 = 47 :: Int
 
-iLounge = 48 :: Int
+iVoid = 48 :: Int
 
-iEar5 = 49 :: Int
+iLounge = 49 :: Int
 
-iEar6 = 50 :: Int
+iEar5 = 50 :: Int
 
-iEar7 = 51 :: Int
+iEar6 = 51 :: Int
 
-iEar8 = 52 :: Int
+iEar7 = 52 :: Int
 
-iBracelet5 = 53 :: Int
+iEar8 = 53 :: Int
 
-iBracelet6 = 54 :: Int
+iBracelet5 = 54 :: Int
 
-iBracelet7 = 55 :: Int
+iBracelet6 = 55 :: Int
 
-iBracelet8 = 56 :: Int
+iBracelet7 = 56 :: Int
 
-iRing5 = 57 :: Int
+iBracelet8 = 57 :: Int
 
-iRing6 = 58 :: Int
+iRing5 = 58 :: Int
 
-iRing7 = 59 :: Int
+iRing6 = 59 :: Int
 
-iRing8 = 60 :: Int
+iRing7 = 60 :: Int
 
-iRing9 = 61 :: Int
+iRing8 = 61 :: Int
 
-iAccessoriesCloset = 62 :: Int
+iRing9 = 62 :: Int
 
-iChemise = 63 :: Int
+iAccessoriesCloset = 63 :: Int
 
-iTunic = 64 :: Int
+iChemise = 64 :: Int
 
-iApron = 65 :: Int
+iTunic = 65 :: Int
 
-iTabard = 66 :: Int
+iApron = 66 :: Int
 
-iGreyCoat = 67 :: Int
+iTabard = 67 :: Int
 
-iFrockCoat = 68 :: Int
+iGreyCoat = 68 :: Int
 
-iBreeches1 = 69 :: Int
+iFrockCoat = 69 :: Int
 
-iBreeches2 = 70 :: Int
+iBreeches1 = 70 :: Int
 
-iTrousers1 = 71 :: Int
+iBreeches2 = 71 :: Int
 
-iTrousers2 = 72 :: Int
+iTrousers1 = 72 :: Int
 
-iPidge = 73 :: Int
+iTrousers2 = 73 :: Int
 
-iPeasant'sShirt = 74 :: Int
+iPidge = 74 :: Int
 
-iOveralls = 75 :: Int
+iPeasant'sShirt = 75 :: Int
 
-iLeatherApron = 76 :: Int
+iOveralls = 76 :: Int
 
-iTraveler'sBoots = 77 :: Int
+iLeatherApron = 77 :: Int
 
-i100Lb = 78 :: Int
+iTraveler'sBoots = 78 :: Int
 
-i75Lb = 79 :: Int
+i100Lb = 79 :: Int
 
-i50Lb1 = 80 :: Int
+i75Lb = 80 :: Int
 
-i50Lb2 = 81 :: Int
+i50Lb1 = 81 :: Int
 
-i25Lb1 = 82 :: Int
+i50Lb2 = 82 :: Int
 
-i25Lb2 = 83 :: Int
+i25Lb1 = 83 :: Int
 
-i10Lb1 = 84 :: Int
+i25Lb2 = 84 :: Int
 
-i10Lb2 = 85 :: Int
+i10Lb1 = 85 :: Int
 
-i5Lb1 = 86 :: Int
+i10Lb2 = 86 :: Int
 
-i5Lb2 = 87 :: Int
+i5Lb1 = 87 :: Int
 
-i1Lb1 = 88 :: Int
+i5Lb2 = 88 :: Int
 
-i1Lb2 = 89 :: Int
+i1Lb1 = 89 :: Int
 
-i1Lb3 = 90 :: Int
+i1Lb2 = 90 :: Int
 
-i1Lb4 = 91 :: Int
+i1Lb3 = 91 :: Int
 
-i1Lb5 = 92 :: Int
+i1Lb4 = 92 :: Int
 
-iWeightRm = 93 :: Int
+i1Lb5 = 93 :: Int
 
-iRoot = 94 :: Int
+iWeightRm = 94 :: Int
 
-iJason = 95 :: Int
+iRoot = 95 :: Int
+
+iJason = 96 :: Int
