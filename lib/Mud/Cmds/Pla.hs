@@ -379,7 +379,7 @@ emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = adv
            , "yourself"
            , "yourselves"
            , "yous" ]
-    advice = T.concat [ "You can't use a form of the word "
+    advice = T.concat [ "Sorry, but you can't use a form of the word "
                       , dblQuote "you"
                       , " in an emote. Instead, you must specify who you wish to target using "
                       , dblQuote etc
@@ -727,7 +727,6 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 -----
 
 
--- TODO: Write a help topic file on prefixes.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
   where
@@ -751,7 +750,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=>
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
 help (LowerNub i mq cols as) = (getPlaFlag IsAdmin . getPla i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
-    pager i mq . intercalate [ "", mkDividerTxt cols, "" ] $ helpTxts
+    pager i mq . intercalate [ "", T.replicate cols "=", "" ] $ helpTxts
     hns |#| logPla "help" i . ("read help on: " <>) . commas
 help p = patternMatchFail "help" [ showText p ]
 
@@ -784,7 +783,10 @@ mkHelpData isAdmin = helpDirs |$| mapM getHelpDirectoryContents >=> \[ plaHelpCm
 
 
 parseHelpTxt :: Cols -> T.Text -> [T.Text]
-parseHelpTxt cols = concat . wrapLines cols . T.lines . parseTokens
+parseHelpTxt cols = concat . wrapLines cols . map expandDividers . T.lines . parseTokens
+  where
+    expandDividers l | l == T.singleton dividerToken = T.replicate cols "-"
+                     | otherwise                     = l
 
 
 getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (T.Text, T.Text)
@@ -1807,7 +1809,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                    , theSing  = getSing targetId ms
                                                    , theType  = getType targetId ms
                                                    , theDesig = serialize . mkStdDesig targetId ms $ Don'tCap }
-                       (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq argsWithoutTarget
+                       (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv argsWithoutTarget
                        (invBs, invLog)        = inInvs |!| showInv ms d invCoins inInvs theTarget
                        (eqBs,  eqLog )        = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
                        rmBs                   = inRms  |!| mkBroadcast i "You can't show an item in your current room."

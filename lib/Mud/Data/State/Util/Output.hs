@@ -13,7 +13,6 @@ module Mud.Data.State.Util.Output ( bcast
                                   , massMsg
                                   , massSend
                                   , mkBroadcast
-                                  , mkDividerTxt
                                   , mkNTBroadcast
                                   , multiWrapSend
                                   , ok
@@ -148,7 +147,7 @@ bcastSelfOthers i ms toSelf toOthers = do
 
 
 frame :: Cols -> T.Text -> T.Text
-frame cols | divider <- nl . mkDividerTxt $ cols = nl . (<> divider) . (divider <>)
+frame cols | divider <- nl . T.replicate cols $ "=" = nl . (<> divider) . (divider <>)
 
 
 -----
@@ -169,13 +168,6 @@ massSend msg = liftIO . atomically . helperSTM =<< getState
     helperSTM ms@(views msgQueueTbl IM.toList -> kvs) = forM_ kvs $ \(i, mq) ->
         let cols = getColumns i ms
         in writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
-
-
------
-
-
-mkDividerTxt :: Cols -> T.Text
-mkDividerTxt = flip T.replicate "="
 
 
 -----

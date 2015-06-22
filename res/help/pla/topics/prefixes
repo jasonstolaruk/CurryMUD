@@ -1,0 +1,81 @@
+\h PREFIXES \d
+
+You can add prefixes to the names of things in your commands so as to indicate location, ordinal number, and amount.
+
+-
+
+LOCATION PREFIXES: "i#l", "e#l", and "r#l"
+
+\li#l\d to specify something in your inventory4`
+\le#l\d to specify something in your readied equipment4`
+\lr#l\d to specify something in your current room4`
+
+Examples:
+\qsmell \li#l\qpotion\d to smell the potion in your inventory.4`
+\qsmell \le#l\qboots\d to smell the boots you're wearing.4`
+\qsmell \lr#l\qflower\d to smell the flower in the room.4`
+
+-
+
+ORDINAL NUMBER PREFIX: "#i"
+
+"#i" allows you to select a single thing out of a group of things with the same name.
+
+Examples:
+\qinventory \p2#i\qring\d to examine the second ring in your inventory.4`
+\qequipment \p3#i\qbracelet\d to examine the third bracelet you're wearing.4`
+\qlook \p4#i\qnecklace\d to examine the fourth necklace in the room.4`
+
+-
+
+AMOUNT PREFIXES: "#m" and "#a"
+
+"#m" allows you to select a number of things out of a group of things with the same name.
+
+Examples:
+\qget \p2#m\qknife\d to pick up the first two knives in your current room.4`
+\qdrop \p3#m\qsword\d to drop your first three swords.4`
+
+-
+
+"#m" can be used to specify an amount of coins.
+
+Examples:
+\qput \p50#m\qgp sack\d to put 50 of your gold pieces in your sack.4`
+\qremove \p50#m\qgp sack\d to remove 50 gold pieces from your sack.4`
+
+-
+
+"#a" allows you to select everything with a given name.
+
+Examples:
+\qshow \p#a\qearring hanako\d to show all of the earrings in your inventory to Hanako.4`
+\qshow \p#a\qnose hanako\d to show all of the nose rings in your inventory to Hanako.4`
+
+-
+
+"#acoin" specifies all coins, irrespective of coin type.
+
+Examples:
+\qget \p#a\qcoin\d to pick up all the coins in the room.4`
+\qdrop \p#a\qcoin\d to drop all coins in your inventory.4`
+
+-
+
+"#a" may be used alone, in which case it specifies everything.
+
+Examples:
+\qready \p#a\d to ready all of the items in your inventory.4`
+\qunready \p#a\d to unready all of your equipment. (You'll be naked!)4`
+
+-
+
+COMBINING PREFIXES
+
+You may combine a location prefix with another prefix. The location prefix must come first.
+
+Examples:
+\qshow \le#l\p#a\qearring hanako\d to show all the earrings you're wearing to Hanako.4`
+\qsmell \li#l\p2#i\qpotion \lr#l\p2#m\qflower\d to smell the second potion in your inventory and the first two flowers in the room.4`
+
+\uSEE ALSO\n
