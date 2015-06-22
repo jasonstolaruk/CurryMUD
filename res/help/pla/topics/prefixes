@@ -33,12 +33,12 @@ AMOUNT PREFIXES: "#m" and "#a"
 "#m" allows you to select a number of things out of a group of things with the same name.
 
 Examples:
-\qget \p2#m\qknife\d to pick up the first two knives in your current room.4`
-\qdrop \p3#m\qsword\d to drop your first three swords.4`
+\qget \p2#m\qknife\d to pick up the first two knives in the room.4`
+\qdrop \p3#m\qsword\d to drop the first three swords in your inventory.4`
 
 -
 
-"#m" can be used to specify an amount of coins.
+"#m" can be used to select a number of coins.
 
 Examples:
 \qput \p50#m\qgp sack\d to put 50 of your gold pieces in your sack.4`
@@ -50,19 +50,19 @@ Examples:
 
 Examples:
 \qshow \p#a\qearring hanako\d to show all of the earrings in your inventory to Hanako.4`
-\qshow \p#a\qnose hanako\d to show all of the nose rings in your inventory to Hanako.4`
+\qintro \p#a\qmdwarf\d to introduce yourself to all of the male dwarves in the room.4`
 
 -
 
-"#acoin" specifies all coins, irrespective of coin type.
+"#acoin" selects all coins, irrespective of coin type.
 
 Examples:
-\qget \p#a\qcoin\d to pick up all the coins in the room.4`
-\qdrop \p#a\qcoin\d to drop all coins in your inventory.4`
+\qget \p#a\qcoin\d to pick up all of the coins in the room.4`
+\qdrop \p#a\qcoin\d to drop all of the coins in your inventory.4`
 
 -
 
-"#a" may be used alone, in which case it specifies everything.
+"#a" may be used alone, in which case it selects everything.
 
 Examples:
 \qready \p#a\d to ready all of the items in your inventory.4`
@@ -75,7 +75,7 @@ COMBINING PREFIXES
 You may combine a location prefix with another prefix. The location prefix must come first.
 
 Examples:
+\qsmell \lr#l\p2#m\qflower\d to smell the first two flowers in the room.4`
 \qshow \le#l\p#a\qearring hanako\d to show all the earrings you're wearing to Hanako.4`
-\qsmell \li#l\p2#i\qpotion \lr#l\p2#m\qflower\d to smell the second potion in your inventory and the first two flowers in the room.4`
 
 \uSEE ALSO\n
