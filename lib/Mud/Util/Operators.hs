@@ -15,7 +15,7 @@ infixl 0 ?
 infixl 1 :?, |!|, |?|
 infixl 8 |#|
 infixl 9 !#, #
-infixr 0 |$|
+infixr 0 |$| -- TODO: The new (&) in base 4.8.0.0 is infixl 1.
 
 
 -- ==================================================
@@ -54,6 +54,5 @@ x |#| f = unless (()# x) . f $ x
 a |?| b = a ? b :? mempty
 
 
--- TODO: GHC 7.10 will have a similar function named "(&)"...
 (|$|) :: a -> (a -> b) -> b
 (|$|) = flip ($)
