@@ -9,7 +9,6 @@ import Mud.Util.Operators
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
 import Control.Lens (at, to, view, views)
-import Data.Functor ((<$>))
 import Data.Monoid (Sum(..))
 import Data.Time (UTCTime)
 import Network (HostName)

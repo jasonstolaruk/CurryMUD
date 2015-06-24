@@ -5,7 +5,7 @@ module Mud.Data.State.MudData where
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 
-import Control.Applicative ((<$>), (<*>), empty, pure)
+import Control.Applicative (empty)
 import Control.Arrow ((***), first)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
@@ -16,7 +16,6 @@ import Control.Monad.Reader (ReaderT)
 import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), object)
 import Data.Aeson.Types (Parser)
 import Data.IORef (IORef)
-import Data.Monoid (Monoid, mappend, mempty)
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
 import Network (HostName)

@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 
@@ -32,7 +32,6 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -45,11 +44,10 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, intercalate)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Sum(..), getSum)
-import Data.Time (TimeZone, UTCTime, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
+import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import System.Directory (doesFileExist)
-import System.Locale (defaultTimeLocale)
 import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)

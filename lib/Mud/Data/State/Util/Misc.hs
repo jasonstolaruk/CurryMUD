@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, TransformListComp, ViewPatterns #-}
 
 -- This module contains state-related functions used by multiple modules.
 

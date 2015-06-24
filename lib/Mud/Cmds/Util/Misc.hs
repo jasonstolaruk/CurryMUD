@@ -36,7 +36,6 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative (pure)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (throwTo)
 import Control.Monad (unless)

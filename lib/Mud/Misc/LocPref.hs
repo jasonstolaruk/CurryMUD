@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Misc.LocPref ( hasLocPref
                         , singleArgInvEqRm
@@ -11,10 +11,8 @@ import Mud.Util.Text
 import qualified Data.Text as T
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative (pure)
 import Control.Lens (_1, _2, _3)
 import Control.Lens.Operators ((%~), (&))
-import Data.Monoid (mempty)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a

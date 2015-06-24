@@ -63,7 +63,7 @@ The code is open source and available here on GitHub under the 3-clause BSD lice
 
 ### How to try it out
 
-If you'd like to try out what I have so far, just clone the repo and build the project. You shouldn't have any issues compiling with GHC 7.8 on Mac OS X or Linux (I do not plan on explicitly supporting Windows). If you do run into issues, please email me and let me know. Once you have the server up and running, just telnet to localhost port 9696 to play.
+If you'd like to try out what I have so far, just clone the repo and build the project. You'll need GHC 7.10 with base 4.8. You shouldn't have any issues compiling on Mac OS X or Linux (I do not plan on explicitly supporting Windows). If you do run into issues, please email me and let me know. Once you have the server up and running, just telnet to localhost port 9696 to play.
 
 ## How to contact me
 

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -41,7 +41,6 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -60,7 +59,7 @@ import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust)
-import Data.Monoid ((<>), All(..), Sum(..), mconcat, mempty)
+import Data.Monoid ((<>), All(..), Sum(..))
 import Data.Time (diffUTCTime, getCurrentTime)
 import Data.Tuple (swap)
 import GHC.Exts (sortWith)
@@ -442,7 +441,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
     mkRight         = Right . mkForNonTargets
     mkForNonTargets = _2 %~ (pure . ForNonTargets)
     hasEnc          = any (`elem` [ enc, enc's ]) as
-    procTarget ms word = let punc = "!\"),./:;?" in
+    procTarget ms word = let punc = "!\"),./:;?" :: String in
         case swap . (both %~ T.reverse) . T.span (`elem` punc) . T.reverse $ word of
           ("",   _) -> Left adviceEtc
           ("'s", _) -> Left adviceEtcEmptyPoss

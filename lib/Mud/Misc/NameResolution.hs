@@ -28,25 +28,22 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Applicative (pure)
 import Control.Arrow (first)
 import Control.Lens (view)
 import Control.Monad (guard)
 import Data.Char (isDigit)
 import Data.List ((\\), foldl')
-import Data.Monoid ((<>), mempty)
+import Data.Monoid ((<>))
 import Data.String (fromString)
-import Data.Text.Internal.Builder (Builder)
 import Data.Text.Read (decimal)
-import Formatting ((%), sformat)
+import Formatting (Format, (%), sformat)
 import Formatting.Formatters (int, stext)
-import Formatting.Holey (Holey)
 import Prelude hiding ((>>))
 import qualified Data.Text as T
 import qualified Prelude ((>>))
 
 
-(>>) :: Holey Builder (T.Text -> a) b -> Holey Builder c a -> Holey Builder c b
+(>>) :: Format (T.Text -> b) a -> Format c b -> Format c a
 a >> b = a % stext % b
 
 

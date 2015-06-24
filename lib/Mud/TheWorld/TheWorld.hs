@@ -16,7 +16,6 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Applicative ((<$>), pure)
 import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Lens.Setter (ASetter)
@@ -25,7 +24,7 @@ import Data.Aeson (FromJSON, eitherDecode)
 import Data.Bits (setBit, zeroBits)
 import Data.IORef (newIORef)
 import Data.List (delete, foldl', sort)
-import Data.Monoid ((<>), mempty)
+import Data.Monoid ((<>))
 import Data.Tuple (swap)
 import System.Clock (Clock(..), getTime)
 import System.Directory (getDirectoryContents)

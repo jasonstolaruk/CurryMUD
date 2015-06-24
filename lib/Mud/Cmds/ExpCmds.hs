@@ -18,7 +18,6 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative (pure)
 import Control.Arrow (first)
 import Control.Lens (each)
 import Control.Lens.Operators ((%~), (&))

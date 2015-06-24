@@ -11,7 +11,6 @@ module Mud.Util.List ( allValues
 import Mud.Util.Misc
 import Mud.Util.Operators
 
-import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))
 import Data.List (foldl', group, sort)
 import qualified Data.Set as S (fromList, toList)

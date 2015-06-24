@@ -18,7 +18,6 @@ import Mud.Util.Text
 
 import Control.Lens (view)
 import Control.Monad (when)
-import Data.Functor ((<$>))
 import Data.List (sort)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T

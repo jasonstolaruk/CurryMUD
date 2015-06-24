@@ -8,7 +8,6 @@ module Mud.Util.Operators ( (!#)
                           , Cond(..) ) where
 
 import Control.Monad (unless)
-import Data.Monoid (Monoid, mempty)
 
 
 infixl 0 ?

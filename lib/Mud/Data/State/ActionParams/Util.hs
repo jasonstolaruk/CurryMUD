@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.ActionParams.Util ( Args
                                         , capitalizeMsg
@@ -33,17 +33,21 @@ capitalizeMsg :: T.Text -> T.Text
 capitalizeMsg x@(T.uncons         -> Just (_, "")) = T.toUpper  x
 capitalizeMsg   (T.break isLetter ->      ("", x)) = capitalize x
 capitalizeMsg   (T.break isLetter ->      (x, "")) = x
-capitalizeMsg x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` "('\"" = c `T.cons` capitalize y
-                                                                    | otherwise       = x
+capitalizeMsg x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` punc = c `T.cons` capitalize y
+                                                                    | otherwise     = x
+  where
+    punc = "('\"" :: String
 capitalizeMsg x = x
 
 
 punctuateMsg :: T.Text -> T.Text
-punctuateMsg ""                                            = ""
-punctuateMsg x@(T.uncons -> Just (c, "")) | c `elem` ".?!" = x
-                                          | otherwise      = c `T.cons` "."
-punctuateMsg x@(T.last   -> c)            | c `elem` ".?!" = x
-                                          | otherwise      = x <> "."
+punctuateMsg = \case "" -> ""
+                     x@(T.uncons -> Just (c, "")) | isPunc c  -> x
+                                                  | otherwise -> c `T.cons` "."
+                     x@(T.last   -> c)            | isPunc c  -> x
+                                                  | otherwise -> x <> "."
+  where
+    isPunc = (`elem` (".?!" :: String))
 
 
 formatMsgWithTargetArgs :: Args -> (T.Text, T.Text)

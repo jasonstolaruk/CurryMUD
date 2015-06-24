@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
@@ -72,7 +72,6 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative ((<$>), pure)
 import Control.Arrow ((***), first)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
@@ -81,7 +80,7 @@ import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub)
 import Data.Maybe (catMaybes, fromJust)
-import Data.Monoid ((<>), Sum(..), mempty)
+import Data.Monoid ((<>), Sum(..))
 import qualified Data.Map.Lazy as M (notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile)

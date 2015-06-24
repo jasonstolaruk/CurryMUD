@@ -30,7 +30,6 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)

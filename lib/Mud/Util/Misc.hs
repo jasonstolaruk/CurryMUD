@@ -31,13 +31,12 @@ module Mud.Util.Misc ( atLst1
 
 import Mud.Util.Quoting
 
-import Control.Applicative ((<$>), (<*>), Applicative, pure)
 import Control.Lens (Lens', lens)
 import Control.Monad (guard)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
-import Data.Monoid ((<>), Monoid, mempty)
+import Data.Monoid ((<>))
 import Data.Time (getZonedTime)
 import qualified Data.IntMap.Lazy as IM (IntMap, insert)
 import qualified Data.Map.Lazy as M (Map, assocs)
@@ -109,7 +108,7 @@ ind k = lens (! k) (flip (IM.insert k))
 
 
 isVowel :: Char -> Bool
-isVowel = (`elem` "aeiou")
+isVowel = (`elem` ("aeiou" :: String))
 
 
 maybeRet :: (Monad m) => m a -> Maybe a -> m a

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, TypeFamilies, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -31,7 +31,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative ((<$>), (<*>), pure)
+import Control.Applicative (Const)
 import Control.Arrow ((***))
 import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
@@ -41,6 +41,7 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (at, both, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
+import Control.Lens.Type (Optical)
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks, runReaderT)
@@ -52,15 +53,14 @@ import Data.Monoid ((<>), Sum(..))
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import Numeric (readInt)
 import Prelude hiding (pi)
-import System.CPUTime (getCPUTime)
 import System.Console.ANSI (Color(..), ColorIntensity(..))
+import System.CPUTime (getCPUTime)
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import qualified Data.IntMap.Lazy as IM (assocs, keys, toList)
+import qualified Data.IntMap.Lazy as IM (IntMap, assocs, keys, toList)
 import qualified Data.Map.Lazy as M (assocs, elems, keys)
 import qualified Data.Text as T
-
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
@@ -249,24 +249,24 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
       | searchId < 0 = sorryWtf mq cols
       | otherwise    = getState >>= \ms -> do
           let f     = commas . map (showText . fst)
-              g     = IM.toList . flip view ms
               mkTxt =
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
                   , [ T.concat [ "Entities with an ", dblQuote "entId", " of ", searchIdTxt, ": " ]
-                    , f . filter ((== searchId) . view entId . snd) . g $ entTbl ]
+                    , f . filter ((== searchId) . view entId . snd) . tblToList entTbl $ ms ]
                   , [ T.concat [ "Equipment maps containing ID ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . M.elems . snd) . g $ eqTbl ]
+                    , f . filter ((searchId `elem`) . M.elems . snd) . tblToList eqTbl $ ms ]
                   , [ T.concat [ "Inventories containing ID ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . snd) . g $ invTbl ]
+                    , f . filter ((searchId `elem`) . snd) . tblToList invTbl $ ms ]
                   , [ T.concat [ "PCs with a ", dblQuote "rmId", " of ", searchIdTxt, ": " ]
-                    , f . filter ((== searchId) . view rmId . snd) . g $ pcTbl ]
+                    , f . filter ((== searchId) . view rmId . snd) . tblToList pcTbl $ ms ]
                   , [ T.concat [ "Players being peeped by ID ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . view peepers . snd) . g $ plaTbl ]
+                    , f . filter ((searchId `elem`) . view peepers . snd) $ plaTblList ]
                   , [ T.concat [ "Players peeping ID ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . view peeping . snd) . g $ plaTbl ]
+                    , f . filter ((searchId `elem`) . view peeping . snd) $ plaTblList ]
                   , [ T.concat [ "Players with a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
-                    , f . filter ((== Just searchId) . view lastRmId . snd) . g $ plaTbl ] ]
+                    , f . filter ((== Just searchId) . view lastRmId . snd) $ plaTblList ] ]
+              plaTblList = tblToList plaTbl ms
           mapM_ (multiWrapSend mq cols) mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
 debugId p = advise p [] advice
@@ -282,24 +282,31 @@ sorryWtf :: MsgQueue -> Cols -> MudStack ()
 sorryWtf mq cols = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
 
 
+tblToList :: Optical (->) (->) (Const [(Id, a)]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [(Id, a)]
+tblToList lens = views lens IM.toList
+
+
 mkTblNameKeysList :: MudState -> [(T.Text, Inv)]
-mkTblNameKeysList ms = let helper = IM.keys . flip view ms
-                       in [ ("Arm",       helper armTbl     )
-                          , ("Cloth",     helper clothTbl   )
-                          , ("Coins",     helper coinsTbl   )
-                          , ("Con",       helper conTbl     )
-                          , ("Ent",       helper entTbl     )
-                          , ("EqMap",     helper eqTbl      )
-                          , ("Inv",       helper invTbl     )
-                          , ("Mob",       helper mobTbl     )
-                          , ("MsgQueue",  helper msgQueueTbl)
-                          , ("Obj",       helper objTbl     )
-                          , ("PC",        helper pcTbl      )
-                          , ("PlaLogTbl", helper plaLogTbl  )
-                          , ("Pla",       helper plaTbl     )
-                          , ("Rm",        helper rmTbl      )
-                          , ("Type",      helper typeTbl    )
-                          , ("Wpn",       helper wpnTbl     ) ]
+mkTblNameKeysList ms = [ ("Arm",       tblKeys armTbl      ms)
+                       , ("Cloth",     tblKeys clothTbl    ms)
+                       , ("Coins",     tblKeys coinsTbl    ms)
+                       , ("Con",       tblKeys conTbl      ms)
+                       , ("Ent",       tblKeys entTbl      ms)
+                       , ("EqMap",     tblKeys eqTbl       ms)
+                       , ("Inv",       tblKeys invTbl      ms)
+                       , ("Mob",       tblKeys mobTbl      ms)
+                       , ("MsgQueue",  tblKeys msgQueueTbl ms)
+                       , ("Obj",       tblKeys objTbl      ms)
+                       , ("PC",        tblKeys pcTbl       ms)
+                       , ("PlaLogTbl", tblKeys plaLogTbl   ms)
+                       , ("Pla",       tblKeys plaTbl      ms)
+                       , ("Rm",        tblKeys rmTbl       ms)
+                       , ("Type",      tblKeys typeTbl     ms)
+                       , ("Wpn",       tblKeys wpnTbl      ms) ]
+
+
+tblKeys :: Optical (->) (->) (Const [Id]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [Id]
+tblKeys lens = views lens IM.keys
 
 
 -----
