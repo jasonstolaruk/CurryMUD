@@ -131,7 +131,7 @@ library
 
 test-suite             test
   default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -Wall -Werror
+  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
