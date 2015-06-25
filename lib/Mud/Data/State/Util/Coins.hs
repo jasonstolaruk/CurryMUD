@@ -13,7 +13,8 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, _2, each)
-import Control.Lens.Operators ((%~), (&), (<>~), (^..))
+import Control.Lens.Operators ((%~), (<>~), (^..))
+import Data.Function ((&))
 import Data.List (foldl')
 import Data.Monoid ((<>))
 import qualified Data.Text as T

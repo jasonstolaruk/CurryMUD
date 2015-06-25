@@ -12,7 +12,8 @@ import qualified Data.Text as T
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, _2, _3)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((%~))
+import Data.Function ((&))
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a

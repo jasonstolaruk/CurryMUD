@@ -9,7 +9,6 @@ import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Char (chr)
-import Data.Functor ((<$>))
 import Test.QuickCheck (Gen, choose)
 import Test.QuickCheck.Monadic (PropertyM, run)
 import qualified Data.Text as T

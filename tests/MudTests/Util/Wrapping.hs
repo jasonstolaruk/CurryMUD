@@ -10,7 +10,6 @@ import Mud.Util.Wrapping
 import MudTests.TestUtil
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative (pure)
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
 import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)

@@ -4,7 +4,6 @@ module MudTests.Util.List where
 
 import Mud.Util.List
 
-import Control.Applicative ((<$>), (<*>))
 import Data.List (elemIndices, group, sort)
 
 

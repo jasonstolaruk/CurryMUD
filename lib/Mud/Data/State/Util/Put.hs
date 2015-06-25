@@ -5,7 +5,8 @@ import Mud.Data.State.Util.Misc
 import Mud.Util.Misc
 
 import Control.Lens (at)
-import Control.Lens.Operators ((&), (.~))
+import Control.Lens.Operators ((.~))
+import Data.Function ((&))
 import qualified Data.Text as T
 
 

@@ -5,8 +5,9 @@ module MudTests.Util.Padding where
 import Mud.Util.Padding
 
 import Control.Lens (both)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((%~))
 import Data.Char (isSpace)
+import Data.Function ((&))
 import Test.QuickCheck.Instances ()
 import Test.QuickCheck.Modifiers (NonNegative(..))
 import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)

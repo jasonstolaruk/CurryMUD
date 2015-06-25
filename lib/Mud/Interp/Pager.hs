@@ -18,7 +18,8 @@ import Mud.Util.Wrapping
 
 import Control.Arrow (second)
 import Control.Lens (both)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((%~))
+import Data.Function ((&))
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 

@@ -17,11 +17,12 @@ import Mud.Util.Quoting
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent.STM.TMVar (newTMVarIO)
-import Control.Lens.Operators ((%~), (&), (.~), (^.))
+import Control.Lens.Operators ((%~), (.~), (^.))
 import Control.Lens.Setter (ASetter)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.Bits (setBit, zeroBits)
+import Data.Function ((&))
 import Data.IORef (newIORef)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))

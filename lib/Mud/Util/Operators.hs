@@ -14,7 +14,7 @@ infixl 0 ?
 infixl 1 :?, |!|, |?|
 infixl 8 |#|
 infixl 9 !#, #
-infixr 0 |$| -- TODO: The new (&) in base 4.8.0.0 is infixl 1.
+infixr 0 |$|
 
 
 -- ==================================================
