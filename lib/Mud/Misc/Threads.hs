@@ -42,12 +42,11 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle, throwTo, try)
 import Control.Lens (view, views)
-import Control.Lens.Operators ((%~), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), forM_, forever, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
-import Data.Function ((&))
 import Data.Int (Int64)
 import Data.List ((\\))
 import Data.Monoid ((<>), getSum)
@@ -304,7 +303,7 @@ inacTimer i mq itq = sequence_ [ setThreadType . InacTimer $ i, loop 0 `catch` p
   where
     loop secs = do
         liftIO . threadDelay $ 1 * 10 ^ 6
-        itq |$| liftIO . atomically . tryReadTMQueue >=> \case
+        itq |&| liftIO . atomically . tryReadTMQueue >=> \case
           Just Nothing | secs >= maxInacSecs -> inacBoot secs
                        | otherwise           -> loop . succ $ secs
           Just (Just ResetTimer)             -> loop 0
@@ -323,7 +322,7 @@ inacTimer i mq itq = sequence_ [ setThreadType . InacTimer $ i, loop 0 `catch` p
 server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 server h i mq itq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThreadExHandler "server" i ]
   where
-    loop = mq |$| liftIO . atomically . readTQueue >=> \case
+    loop = mq |&| liftIO . atomically . readTQueue >=> \case
       Dropped        ->                                  sayonara
       FromClient msg -> handleFromClient i mq itq msg >> loop
       FromServer msg -> handleFromServer i h msg      >> loop
@@ -343,7 +342,7 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getSta
     let p           = getPla i ms
         thruCentral = msg |#| uncurry (interpret p centralDispatch) . headTail . T.words
         thruOther f = uncurry (interpret p f) (()# msg ? ("", []) :? (headTail . T.words $ msg))
-    in p^.interp |$| maybe thruCentral thruOther
+    in p^.interp |&| maybe thruCentral thruOther
   where
     interpret p f cn as = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg

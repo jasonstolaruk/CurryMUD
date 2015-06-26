@@ -157,7 +157,7 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
   | h == allChar = mkGecrMult i ms (maxBound :: Int) t searchIs searchCoins
   | isDigit h
   , (numText, rest) <- T.span isDigit searchName
-  , numInt <- decimal numText |$| either (oops numText) fst
+  , numInt <- decimal numText |&| either (oops numText) fst
   = numText /= "0" ? parse rest numInt :? Sorry searchName
   | otherwise = mkGecrMult i ms 1 searchName searchIs searchCoins
   where
@@ -206,7 +206,7 @@ distributeAmt amt (c:cs) | diff <- amt - c, diff >= 0 = c   : distributeAmt diff
 
 mkGecrMultForEnts :: Id -> MudState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targetId <- is ] in
-    uncurry (Mult a n) $ findFullNameForAbbrev n effNames |$| maybe notFound (found effNames)
+    uncurry (Mult a n) (findFullNameForAbbrev n effNames |&| maybe notFound (found effNames))
   where
     notFound                          = (Nothing, Nothing)
     found (zip is -> zipped) fullName = (Just . takeMatchingEnts zipped $ fullName, Nothing)
@@ -218,7 +218,7 @@ mkGecrIndexed :: Id -> MudState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
 mkGecrIndexed i ms x n is
   | n `elem` allCoinNames = SorryIndexedCoins
   | otherwise             = let effNames = [ getEffName i ms targetId | targetId <- is ]
-                            in Indexed x n $ findFullNameForAbbrev n effNames |$| maybe notFound (found effNames)
+                            in Indexed x n (findFullNameForAbbrev n effNames |&| maybe notFound (found effNames))
   where
     notFound = Left ""
     found effNames fn | matches <- filter ((== fn) . snd) . zip is $ effNames = if length matches < x

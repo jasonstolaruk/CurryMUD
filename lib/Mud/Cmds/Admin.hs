@@ -38,10 +38,9 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, to, views)
-import Control.Lens.Operators ((%~), (.~), (<>~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Data.Function ((&))
 import Data.List (delete, intercalate)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Sum(..), getSum)
@@ -254,7 +253,7 @@ adminBug p = withoutArgs adminBug p
 dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
 dumpLog mq cols logFile (s, p) = send mq =<< helper
   where
-    helper  = liftIO readLog |$| try >=> eitherRet handler
+    helper  = liftIO readLog |&| try >=> eitherRet handler
     readLog = mIf (doesFileExist logFile)
                   (return . multiWrapNl   cols . T.lines =<< T.readFile logFile)
                   (return . wrapUnlinesNl cols $ "No " <> p <> " have been logged.")
@@ -296,7 +295,7 @@ adminHost (LowerNub i mq cols as) = do
         helper target =
             let notFound = [ "There is no PC by the name of " <> dblQuote target <> "." ]
                 found    = uncurry (mkHostReport ms now zone)
-            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |$| maybe notFound found
+            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . g . intercalate [""] . map (helper . capitalize . f) $ as
     logPlaExec (prefixAdminCmd "host") i
   where
@@ -410,7 +409,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                       receivedLogMsg = ( targetId
                                        , T.concat [ "received message from ", s,    ": ", dblQuote msg ] )
                   return [ sentLogMsg, receivedLogMsg ]
-        in (findFullNameForAbbrev strippedTarget . mkPlaIdSingList $ ms) |$| maybe notFound found
+        in (findFullNameForAbbrev strippedTarget . mkPlaIdSingList $ ms) |&| maybe notFound found
 adminMsg p = patternMatchFail "adminMsg" [ showText p ]
 
 
@@ -470,7 +469,7 @@ adminPeep (LowerNub i mq cols as) = do
                                msg     = "You are no longer peeping " <> peepSing <> "."
                                logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
-                in findFullNameForAbbrev target apiss |$| maybe notFound found
+                in findFullNameForAbbrev target apiss |&| maybe notFound found
             res = foldr (peep . capitalize . f) (ms^.plaTbl, [], []) as
         in (ms & plaTbl .~ res^._1, (res^._2.to g, res^._3))
     sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
@@ -525,7 +524,7 @@ adminShutdown p              = patternMatchFail "adminShutdown" [ showText p ]
 shutdownHelper :: Id -> MsgQueue -> Maybe T.Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
-        rest = maybeMsg |$| maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote)
+        rest = maybeMsg |&| maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote)
     in do
         massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg maybeMsg <> dfltColor
         logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
@@ -553,7 +552,7 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
             notFound     = (ms, pure sorryInvalid)
             sorryInvalid = sendFun $ "No PC by the name of " <> dblQuote strippedTarget <> " is currently logged in."
-        in findFullNameForAbbrev strippedTarget idSings |$| maybe notFound found
+        in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
 adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
 
 
@@ -610,7 +609,7 @@ adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
                                                 , dblQuote . prefixAdminCmd $ "telerm"
                                                 , dfltColor
                                                 , " with no arguments to get a list of valid room names." ]
-        in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |$| maybe notFound found
+        in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
 adminTeleRm p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
@@ -647,7 +646,7 @@ adminTypo p                  = withoutArgs adminTypo p
 
 adminUptime :: Action
 adminUptime (NoArgs i mq cols) = do
-    send mq . nl =<< liftIO uptime |$| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . logIOEx "adminUptime")
+    send mq . nl =<< liftIO uptime |&| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . logIOEx "adminUptime")
     logPlaExec (prefixAdminCmd "uptime") i
   where
     uptime = T.pack <$> readProcess "uptime" [] ""

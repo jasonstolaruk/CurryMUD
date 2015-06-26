@@ -116,7 +116,7 @@ fileIOExHandler :: T.Text -> IOException -> MudStack ()
 fileIOExHandler fn e = do
     logIOEx fn e
     let rethrow = throwToListenThread . toException $ e
-    unless (any (e |$|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
+    unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
 
 
 throwToListenThread :: SomeException -> MudStack ()

@@ -40,13 +40,12 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (at, both, view, views)
-import Control.Lens.Operators ((%~), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Lens.Type (Optical)
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks, runReaderT)
 import Data.Char (ord, digitToInt, isDigit, toLower)
-import Data.Function ((&))
 import Data.Ix (inRange)
 import Data.List (delete, intercalate, sort)
 import Data.Maybe (fromJust)
@@ -166,7 +165,7 @@ debugBroad p = withoutArgs debugBroad p
 
 debugBuffCheck :: Action
 debugBuffCheck (NoArgs i mq cols) = do
-    helper |$| try >=> eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
+    helper |&| try >=> eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
     logPlaExec (prefixDebugCmd "buffer") i
   where
     helper = liftIO (flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do

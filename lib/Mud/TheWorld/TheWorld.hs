@@ -17,12 +17,11 @@ import Mud.Util.Quoting
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent.STM.TMVar (newTMVarIO)
-import Control.Lens.Operators ((%~), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Lens.Setter (ASetter)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.Bits (setBit, zeroBits)
-import Data.Function ((&))
 import Data.IORef (newIORef)
 import Data.List (delete, foldl', sort)
 import Data.Monoid ((<>))
@@ -204,7 +203,7 @@ loadWorld :: FilePath -> MudStack Bool
 loadWorld dir@((persistDir </>) -> path) = do
     logNotice "loadWorld" $ "loading the world from the " <> (dblQuote . T.pack $ dir) <> " directory."
     loadEqTblRes <- loadEqTbl path
-    ((loadEqTblRes :) -> res) <- mapM (path |$|) [ loadTbl armTblFile        armTbl
+    ((loadEqTblRes :) -> res) <- mapM (path |&|) [ loadTbl armTblFile        armTbl
                                                  , loadTbl clothTblFile      clothTbl
                                                  , loadTbl coinsTblFile      coinsTbl
                                                  , loadTbl conTblFile        conTbl

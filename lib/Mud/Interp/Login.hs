@@ -30,11 +30,10 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, at, views)
-import Control.Lens.Operators ((%~), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), guard, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
-import Data.Function ((&))
 import Data.Ix (inRange)
 import Data.List (delete, intersperse, partition)
 import Data.Maybe (fromJust)
@@ -68,7 +67,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                       , maxNameLenTxt
                                       , " characters long." ]
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                      = helper |$| modifyState >=> \case
+  | otherwise                      = helper |&| modifyState >=> \case
     (_,  Left  (Just msg)) -> promptRetryName mq msg
     (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn
                                                             , checkIllegalNames    ms mq cn
@@ -168,7 +167,7 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
 
 checkNameHelper :: Maybe FilePath -> T.Text -> MudStack () -> CmdName -> MudStack Any
 checkNameHelper Nothing     _       _     _  = return mempty
-checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |$| try >=> either
+checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |&| try >=> either
                                                    (emptied . fileIOExHandler funName)
                                                    (checkSet cn sorry . S.fromList . T.lines . T.toLower)
 
@@ -179,7 +178,7 @@ checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (retu
 
 logProfanity :: CmdName -> HostName -> MudStack ()
 logProfanity cn (T.pack -> hn) =
-    liftIO (helper =<< mkTimestamp |$| try) >>= eitherRet (fileIOExHandler "logProfanity")
+    liftIO (helper =<< mkTimestamp |&| try) >>= eitherRet (fileIOExHandler "logProfanity")
   where
     helper ts = T.appendFile profanityLogFile . T.concat $ [ ts, " ", hn, " ", cn ]
 
@@ -211,7 +210,7 @@ checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
-  Just True -> helper |$| modifyState >=> \(getPla i -> p, oldSing) -> do
+  Just True -> helper |&| modifyState >=> \(getPla i -> p, oldSing) -> do
       send mq . nl $ ""
       handleLogin params { args = [] }
       logPla    "interpConfirmName" i $ "new character logged in from " <> T.pack (p^.currHostName) <> "."
@@ -246,7 +245,7 @@ handleLogin params@(ActionParams { .. }) = do
     when (getPlaFlag IsAdmin p) . stopInacTimer plaId $ plaMsgQueue
     initPlaLog plaId s
   where
-    showRetainedMsgs = helper |$| modifyState >=> \(ms, msgs, p) -> do
+    showRetainedMsgs = helper |&| modifyState >=> \(ms, msgs, p) -> do
         unless (()# msgs) $ do
             let (fromPpl, others) = first (map T.tail) . partition ((== fromPersonMarker) . T.head) $ msgs
             others  |#| multiWrapSend plaMsgQueue plaCols . intersperse ""

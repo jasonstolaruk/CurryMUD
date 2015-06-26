@@ -50,9 +50,9 @@ logNotice = L.logNotice "Mud.Misc.Persist"
 persist :: MudStack ()
 persist = do
     logNotice "persist" "persisting the world."
-    (mkBindings |$| onEnv >=> liftIO . uncurry persistHelper) `catch` persistExHandler
+    (mkBindings |&| onEnv >=> liftIO . uncurry persistHelper) `catch` persistExHandler
   where
-    mkBindings md = md^.mudStateIORef |$| liftIO . readIORef >=> return . (md^.persisterTMVar, )
+    mkBindings md = md^.mudStateIORef |&| liftIO . readIORef >=> return . (md^.persisterTMVar, )
 
 
 persistHelper :: TMVar PersisterDone -> MudState -> IO ()

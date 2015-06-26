@@ -75,10 +75,9 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***), first)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
-import Control.Lens.Operators ((%~), (.~), (<>~), (?~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
-import Data.Function ((&))
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
@@ -125,7 +124,7 @@ bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getState >>= \ms ->
     let s  = getSing i  ms
         ri = getRmId i  ms
     in do
-        logIt s ri (getRm ri ms ^.rmName) |$| liftIO . try >=> eitherRet (fileIOExHandler "bugTypoLogger")
+        logIt s ri (getRm ri ms ^.rmName) |&| liftIO . try >=> eitherRet (fileIOExHandler "bugTypoLogger")
         send mq . nlnl $ "Thank you."
         bcastAdmins $ s <> " has logged a " <> wl' <> "."
         logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]

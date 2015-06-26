@@ -46,13 +46,13 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, set, to, view, views)
-import Control.Lens.Operators ((%~), (+~), (.~), (<>~), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Char (isDigit)
 import Data.Either (isLeft)
-import Data.Function ((&), on)
+import Data.Function (on)
 import Data.Int (Int64)
 import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
@@ -205,7 +205,7 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 
 about :: Action
 about (NoArgs i mq cols) = do
-    helper |$| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . fileIOExHandler "about")
+    helper |&| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . fileIOExHandler "about")
     logPlaExec "about" i
   where
     helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
@@ -260,7 +260,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                           receivedLogMsg = ( adminId
                                            , T.concat [ "received message from ", s,   ": ", dblQuote msg ] )
                       return [ sentLogMsg, receivedLogMsg ]
-        in (findFullNameForAbbrev strippedTarget . dropRoot . mkAdminIdSingList $ ms) |$| maybe notFound found
+        in (findFullNameForAbbrev strippedTarget . dropRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
 admin p = patternMatchFail "admin" [ showText p ]
 
 
@@ -332,7 +332,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
                       , dblQuote "drop sword"
                       , dfltColor
                       , "." ]
-dropAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+dropAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "drop" i
   where
     helper ms =
@@ -408,7 +408,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                         & _3 %~ (ser <>)
           | otherwise              -> mkRight . dup3 $ x
           where
-            expandEnc = (isHead ? (ser, ser) :? (ser', ser')) |$| uncurry (s, , )
+            expandEnc = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
     in case filter isLeft xformed of
       [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
                 targetIds = nub . foldr extractIds [] $ toTargets
@@ -424,7 +424,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                 consWord xs = const . patternMatchFail "emote consWord" $ [ showText xs ]
                 selectiveCons p targetId isPoss word = IM.mapWithKey helper
                   where
-                    helper k v = let targetSing = getSing k ms |$| (isPoss ? (<> "'s") :? id)
+                    helper k v = let targetSing = getSing k ms |&| (isPoss ? (<> "'s") :? id)
                                  in (: v) $ if k == targetId
                                    then T.concat [ emoteTargetColor, targetSing, dfltColor, p ]
                                    else word
@@ -446,7 +446,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           ("",   _) -> Left adviceEtc
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
-            let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |$|)
+            let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
                 invCoins         = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
             in if ()!# invCoins
               then case singleArgInvEqRm InRm target of
@@ -599,7 +599,7 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dblQuote "remove ring sack"
                                   , dfltColor
                                   , "." ]
-getAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+getAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "get" i
   where
     helper ms =
@@ -637,7 +637,7 @@ goDispatcher p                              = patternMatchFail "goDispatcher" [ 
 
 
 tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> T.Text -> MudStack ()
-tryMove i mq cols p dir = helper |$| modifyState >=> \case
+tryMove i mq cols p dir = helper |&| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
   Right (bs, logMsg) -> look p >> bcastIfNotIncog i bs >> logPla "tryMove" i logMsg
   where
@@ -727,7 +727,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 
 
 help :: Action
-help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |$| try >=> either handler helper
+help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
     handler e = fileIOExHandler "help" e >> wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
     helper rootHelpTxt = (getPlaFlag IsAdmin . getPla i <$> getState) >>= \isAdmin -> do
@@ -755,7 +755,7 @@ help p = patternMatchFail "help" [ showText p ]
 
 
 mkHelpData :: Bool -> IO [Help]
-mkHelpData isAdmin = helpDirs |$| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
+mkHelpData isAdmin = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
                                                                      , plaHelpTopicNames
                                                                      , adminHelpCmdNames
                                                                      , adminHelpTopicNames ] -> do
@@ -789,11 +789,11 @@ parseHelpTxt cols = concat . wrapLines cols . map expandDividers . T.lines . par
 
 
 getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (T.Text, T.Text)
-getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <- hs ] |$| maybe sorry found
+getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <- hs ] |&| maybe sorry found
   where
     sorry                                      = return ("No help is available on " <> dblQuote name <> ".", "")
     found (helpFilePath -> hf, dblQuote -> hn) = (,) <$> readHelpFile hf hn <*> return hn
-    readHelpFile hf hn                         = (liftIO . T.readFile $ hf) |$| try >=> eitherRet handler
+    readHelpFile hf hn                         = (liftIO . T.readFile $ hf) |&| try >=> eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpByName readHelpFile" e
@@ -809,7 +809,7 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
       wrapSend mq cols introsTxt >> (logPlaOut "intro" i . pure $ introsTxt)
   else let introsTxt = commas intros in
       multiWrapSend mq cols [ "You know the following names:", introsTxt ] >> (logPlaOut "intro" i . pure $ introsTxt)
-intro (LowerNub' i as) = helper |$| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
+intro (LowerNub' i as) = helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
     bcastIfNotIncog i bs >> logMsgs |#| logPlaOut "intro" i
   where
     helper ms =
@@ -907,7 +907,7 @@ look (NoArgs i mq cols) = getState >>= \ms ->
         top    = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
         bottom = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
     in send mq . nl . T.concat $ top : bottom
-look (LowerNub i mq cols as) = helper |$| modifyState >=> \(msg, bs, maybeTargetDesigs) -> do
+look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTargetDesigs) -> do
     send mq msg
     bcastIfNotIncog i bs
     let logHelper targetDesigs | targetSings <- [ fromJust . stdPCEntSing $ targetDesig
@@ -1034,7 +1034,7 @@ motd p                  = withoutArgs motd p
 showMotd :: MsgQueue -> Cols -> MudStack ()
 showMotd mq cols = send mq =<< helper
   where
-    helper    = liftIO readMotd |$| try >=> eitherRet handler
+    helper    = liftIO readMotd |&| try >=> eitherRet handler
     readMotd  = [ frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor $ cont
                 | cont <- T.readFile motdFile ]
     handler e = do
@@ -1069,7 +1069,7 @@ putAction p@(AdviseOneArg a) = advise p ["put"] advice
                       , dblQuote $ "put " <> a <> " sack"
                       , dfltColor
                       , "." ]
-putAction (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+putAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "put" i
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
@@ -1145,7 +1145,7 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
 handleEgress :: Id -> MudStack ()
 handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress
-    helper now |$| modifyState >=> \(s, bs, logMsgs) -> do
+    helper now |&| modifyState >=> \(s, bs, logMsgs) -> do
         closePlaLog i
         bcast bs
         bcastAdmins $ s <> " has left CurryMUD."
@@ -1229,7 +1229,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
                       , dblQuote "ready sword"
                       , dfltColor
                       , "." ]
-ready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+ready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "ready" i
   where
     helper ms =
@@ -1268,7 +1268,7 @@ readyDispatcher :: Id
                 -> Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
-    helper |$| maybe (sorry targetSing) (\f -> f i ms d mrol a targetId targetSing)
+    helper |&| maybe (sorry targetSing) (\f -> f i ms d mrol a targetId targetSing)
   where
     helper = case getType targetId ms of
       ClothType -> Just readyCloth
@@ -1291,7 +1291,7 @@ readyCloth :: Id
            -> Sing
            -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyCloth i ms d mrol a@(et, _, _, _) clothId clothSing | em <- et ! i, cloth <- getCloth clothId ms =
-  case mrol |$| maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) of
+  case mrol |&| maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a slot clothId . mkReadyClothMsgs slot $ cloth
   where
@@ -1372,9 +1372,9 @@ getDesigClothSlot ms clothSing cloth em rol
   | isRingRol rol, cloth /= Ring                              = Left sorryCan'tWearThere
   | cloth == Ring, not . isRingRol $ rol                      = Left ringHelp
   | otherwise = case cloth of
-    Earring  -> findSlotFromList rEarringSlots  lEarringSlots  |$| maybe (Left sorryEarring ) Right
-    Bracelet -> findSlotFromList rBraceletSlots lBraceletSlots |$| maybe (Left sorryBracelet) Right
-    Ring     -> M.lookup slotFromRol em |$| maybe (Right slotFromRol) (Left . sorryRing slotFromRol)
+    Earring  -> findSlotFromList rEarringSlots  lEarringSlots  |&| maybe (Left sorryEarring ) Right
+    Bracelet -> findSlotFromList rBraceletSlots lBraceletSlots |&| maybe (Left sorryBracelet) Right
+    Ring     -> M.lookup slotFromRol em |&| maybe (Right slotFromRol) (Left . sorryRing slotFromRol)
     _        -> patternMatchFail "getDesigClothSlot" [ showText cloth ]
   where
     sorryCan'tWearThere    = T.concat [ "You can't wear ", aOrAn clothSing, " on your ", pp rol, "." ]
@@ -1418,7 +1418,7 @@ readyWpn :: Id
 readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
       then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _3 <>~ b
-               else case mrol |$| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
+               else case mrol |&| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
         Left  (mkBroadcast i -> b) -> a & _3 <>~ b
         Right slot  -> case sub of
           OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", wpnSing, " with your ", pp slot, "." ]
@@ -1447,7 +1447,7 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
 
 getAvailWpnSlot :: MudState -> Id -> EqMap -> Either T.Text Slot
 getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
-    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |$| maybe (Left "You're already wielding two weapons.") Right
+    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left "You're already wielding two weapons.") Right
   where
     getSlotForHand h = case h of RHand -> RHandS
                                  LHand -> LHandS
@@ -1457,7 +1457,7 @@ getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
 getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigWpnSlot ms wpnSing em rol
   | isRingRol rol = Left $ "You can't wield " <> aOrAn wpnSing <> " with your finger!"
-  | otherwise     = M.lookup desigSlot em |$| maybe (Right desigSlot) (Left . sorry)
+  | otherwise     = M.lookup desigSlot em |&| maybe (Right desigSlot) (Left . sorry)
   where
     sorry i = let s = getSing i ms in T.concat [ "You're already wielding "
                                                , aOrAn s
@@ -1481,7 +1481,7 @@ readyArm :: Id
          -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
-    case mrol |$| maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere of
+    case mrol |&| maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
   where
@@ -1495,7 +1495,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
 
 
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
-getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |$| maybe (Left sorryFullArmSlot) Right
+getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorryFullArmSlot) Right
   where
     sorryFullArmSlot | i <- em M.! slot, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
 
@@ -1519,7 +1519,7 @@ remove p@(AdviseOneArg a) = advise p ["remove"] advice
                       , dblQuote $ "remove " <> a <> " sack"
                       , dfltColor
                       , "." ]
-remove (Lower' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+remove (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "remove" i
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
@@ -1590,11 +1590,11 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     Left  msg -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
-        then sayTo (Just adverb) (T.tail rest) |$| modifyState >=> bcastAndLog
+        then sayTo (Just adverb) (T.tail rest) |&| modifyState >=> bcastAndLog
         else adviseHelper adviceEmptySayTo
       | otherwise -> simpleSayHelper ms (Just adverb) rest >>= bcastAndLog
   | T.head a == sayToChar, T.length a > 1 -> if length args > 1
-    then sayTo Nothing (T.tail . T.unwords $ args) |$| modifyState >=> bcastAndLog
+    then sayTo Nothing (T.tail . T.unwords $ args) |&| modifyState >=> bcastAndLog
     else adviseHelper adviceEmptySayTo
   | otherwise -> simpleSayHelper ms Nothing (T.unwords args) >>= bcastAndLog
   where
@@ -1642,8 +1642,8 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                                               \a time."
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                           in parseRearAdverb |$| either sorry (sayToHelper d targetId targetDesig)
-                MobType -> parseRearAdverb |$| either sorry (sayToMobHelper d targetSing)
+                           in parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
+                MobType -> parseRearAdverb |&| either sorry (sayToMobHelper d targetSing)
                 _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
               x -> patternMatchFail "say sayTo" [ showText x ]
           else sorry "You don't see anyone here to talk to."
@@ -1713,7 +1713,7 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
     let names  = styleAbbrevs Don'tBracket settingNames
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
-setAction (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+setAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> logMsgs |#| logPlaOut "set" i
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
@@ -1739,7 +1739,7 @@ helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
           f      = any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ])
       in a & _2 %~ f
 helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
-    findFullNameForAbbrev name settingNames |$| maybe notFound found
+    findFullNameForAbbrev name settingNames |&| maybe notFound found
   where
     notFound    = appendMsg $ dblQuote name <> " is not a valid setting name."
     appendMsg m = a & _2 <>~ pure m
@@ -1747,7 +1747,7 @@ helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
                         "lines"   -> procEither (changeSetting minPageLines maxPageLines "lines"   pageLines)
                         t         -> patternMatchFail "helperSettings found" . pure $ t
       where
-        procEither f = parseInt |$| either appendMsg f
+        procEither f = parseInt |&| either appendMsg f
         parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
                                                                              _         -> sorryParse
         sorryParse   = Left . T.concat $ [ dblQuote value
@@ -1832,7 +1832,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkBs
                                                          & _2 <>~ pure mkLog
                  where
-                   mkBs = concatMap (itemIds |$|) $ case theType of
+                   mkBs = concatMap (itemIds |&|) $ case theType of
                      PCType  -> [ mkToSelfInvBs, mkToTargetInvBs, mkToOthersInvBs ]
                      MobType -> [ mkToSelfInvBsMobs, mkToOthersInvBsMobs ]
                      x       -> patternMatchFail "showAction showInv helperEitherInv mkBs" [ showText x ]
@@ -1924,7 +1924,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkBs
                                                          & _2 <>~ pure mkLog
                  where
-                   mkBs = concatMap (itemIds |$|) $ case theType of
+                   mkBs = concatMap (itemIds |&|) $ case theType of
                      PCType  -> [ mkToSelfBs, mkToTargetBs, mkToOthersBs ]
                      MobType -> [ mkToSelfBsMobs, mkToOthersBsMobs ]
                      x       -> patternMatchFail "showAction showEq helperEitherInv mkBs" [ showText x ]
@@ -2059,7 +2059,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
                       , dblQuote "unready sword"
                       , dfltColor
                       , "." ]
-unready (LowerNub' i as) = helper |$| modifyState >=> \(bs, logMsgs) ->
+unready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "unready" i
   where
     helper ms =

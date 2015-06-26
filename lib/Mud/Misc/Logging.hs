@@ -85,10 +85,10 @@ spawnLogger fn p (T.unpack -> ln) f q =
     async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler "spawnLogger")
                   (logRotationFlagger q `catch` loggingThreadExHandler "logRotationFlagger")
   where
-    initLog = p |$| fileHandler fn >=> \gh ->
+    initLog = p |&| fileHandler fn >=> \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
         in updateGlobalLogger ln (setHandlers (pure h) . setLevel p) >> return gh
-    loop gh = q |$| atomically . readTQueue >=> \case
+    loop gh = q |&| atomically . readTQueue >=> \case
       LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
       RotateLog                -> rotateLog gh
       StopLog                  -> close gh

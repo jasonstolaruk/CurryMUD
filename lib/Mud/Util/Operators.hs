@@ -3,18 +3,19 @@ module Mud.Util.Operators ( (!#)
                           , (?)
                           , (|!|)
                           , (|#|)
-                          , (|$|)
+                          , (|&|)
                           , (|?|)
                           , Cond(..) ) where
 
 import Control.Monad (unless)
+import Data.Function ((&))
 
 
 infixl 0 ?
+infixl 0 |&|
 infixl 1 :?, |!|, |?|
 infixl 8 |#|
 infixl 9 !#, #
-infixr 0 |$|
 
 
 -- ==================================================
@@ -53,5 +54,5 @@ x |#| f = unless (()# x) . f $ x
 a |?| b = a ? b :? mempty
 
 
-(|$|) :: a -> (a -> b) -> b
-(|$|) = flip ($)
+(|&|) :: a -> (a -> b) -> b
+(|&|) = (&)
