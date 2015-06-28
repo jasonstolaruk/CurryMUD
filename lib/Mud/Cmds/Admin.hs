@@ -102,6 +102,8 @@ adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
     , mkAdminCmd "admin"     adminAdmin       "Toggle a player's admin status."
+    -- , mkAdminCmd "banhost"   adminBanHost     "Ban one or more hostnames."
+    , mkAdminCmd "banplayer" adminBanPlayer   "Ban a player."
     , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"       adminBug         "Dump the bug log."
@@ -206,6 +208,37 @@ adminAnnounce (Msg i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
     logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
 adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
+
+
+-----
+
+
+adminBanPlayer :: Action
+adminBanPlayer p@AdviseNoArgs = advise p [ prefixAdminCmd "banplayer" ] "Please specify the full PC name of the player \
+                                                                        \you wish to ban."
+adminBanPlayer (OneArgNubbed i mq cols target) = getState >>= helper >>= sequence_
+  where
+    helper ms =
+      let fn                  = "adminBanPlayer helper"
+          SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to ban"
+      in return $ case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
+        []      -> [ sendFun . T.concat $ [ "There is no PC by the name of "
+                                          , dblQuote strippedTarget
+                                          , ". "
+                                          , parensQuote "Note that you must specify the full PC name of the player you \
+                                                        \wish to ban." ] ]
+        [banId] -> let selfSing = getSing i ms in if
+                     | banId == i                             -> [ sendFun "You can't ban yourself." ]
+                     | getPlaFlag IsAdmin . getPla banId $ ms -> [ sendFun "You can't ban an admin." ]
+                     | otherwise ->
+                         [ ok mq
+                         , bcastAdminsExcept [ i, banId ] . T.concat $ [ selfSing, " banned ", strippedTarget, "." ]
+                         , logNotice fn       $ T.concat [ selfSing, " banned ", strippedTarget, "." ]
+                         , logPla    fn i     $ T.concat [           "banned ",  strippedTarget, "." ]
+                         , logPla    fn banId $ T.concat [           "banned by ", selfSing,     "." ] ]
+        xs      -> patternMatchFail "adminBanPlayer helper" [ showText xs ]
+adminBanPlayer (ActionParams { plaMsgQueue, plaCols }) =
+    wrapSend plaMsgQueue plaCols "Sorry, but you can only ban one player at a time."
 
 
 -----
@@ -573,9 +606,9 @@ teleHelper i ms p originId destId name f =
         ms'         = ms & pcTbl .ind i.rmId   .~ destId
                          & invTbl.ind originId %~ (i `delete`)
                          & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
-        msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " suddenly vanishes in a \
-                             \jarring flash of white light."
-        msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " suddenly appears in a \
+        msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " vanishes in a jarring \
+                             \flash of white light."
+        msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " appears in a \
                              \jarring flash of white light."
         desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a brief moment you \
                              \are overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
