@@ -31,7 +31,7 @@ import qualified Data.Text.IO as T (putStrLn)
 main :: IO ()
 main = withSocketsDo $ do
     setCurrentDirectory mudDir
-    mapM_ (createDirectoryIfMissing False) [ logDir, persistDir ]
+    mapM_ (createDirectoryIfMissing False) [ logDir, persistDir ] -- TODO: Also make the help file dirs.
     welcome
     runReaderT listenWrapper =<< initMudData DoLog
 

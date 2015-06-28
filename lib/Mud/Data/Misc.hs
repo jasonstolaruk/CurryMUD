@@ -4,6 +4,8 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Action
                      , Amount
                      , Args
+                     , BanEvent(..)
+                     , BanRecord(..)
                      , Broadcast
                      , ClassifiedBroadcast(..)
                      , Cmd(..)
@@ -64,6 +66,7 @@ import Data.Bits (clearBit, setBit, testBit)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
+import Data.Time (UTCTime)
 import Data.Typeable (Typeable)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
@@ -335,6 +338,17 @@ data ExpCmd = ExpCmd ExpCmdName ExpCmdType deriving (Eq, Ord)
 
 
 data AOrThe = A | The
+
+
+-----
+
+
+-- TODO: Make these types serializable.
+data BanRecord = BanRecord { banName   :: Sing
+                           , banTime   :: UTCTime
+                           , banReason :: T.Text }
+
+data BanEvent = Banned BanRecord | Unbanned BanRecord
 
 
 -----

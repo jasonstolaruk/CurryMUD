@@ -17,16 +17,17 @@ mudDir :: FilePath
 mudDir = let home = unsafePerformIO . getEnv $ "HOME" in home </> "CurryMUD"
 
 
-logDir, resDir :: FilePath
-logDir = mudDir </> "logs"
-resDir = mudDir </> "res"
+logDir, otherDir, persistDir, resDir :: FilePath
+logDir     = mudDir </> "logs"
+otherDir   = mudDir </> "other"
+persistDir = mudDir </> "persist"
+resDir     = mudDir </> "res"
 
 
-helpDir, miscDir, persistDir, titleDir :: FilePath
-helpDir    = resDir </> "help"
-miscDir    = resDir </> "misc"
-persistDir = resDir </> "persist"
-titleDir   = resDir </> "titles"
+helpDir, miscDir, titleDir :: FilePath
+helpDir  = resDir </> "help"
+miscDir  = resDir </> "misc"
+titleDir = resDir </> "titles"
 
 
 adminHelpDir, plaHelpDir :: FilePath
@@ -48,6 +49,7 @@ adminHelpTopicsDir = adminHelpDir </> "topics"
 -- Log files:
 
 
+-- TODO: Admins should be allowed to delete a given line (provide line number) of the bug/typo logs.
 bugLogFile, errorLogFile, loggingExLogFile, noticeLogFile, profanityLogFile, typoLogFile :: FilePath
 bugLogFile       = logDir </> "bug"                      <.> "log"
 errorLogFile     = logDir </> "error"                    <.> "log"
@@ -55,6 +57,16 @@ loggingExLogFile = logDir </> "logging thread exception" <.> "log"
 noticeLogFile    = logDir </> "notice"                   <.> "log"
 profanityLogFile = logDir </> "profanity"                <.> "log"
 typoLogFile      = logDir </> "typo"                     <.> "log"
+
+
+-- ==================================================
+-- Other files:
+
+
+-- TODO: Make sure the "other" directory is created if it doesn't already exist.
+banHostFile , banPlaFile :: FilePath
+banHostFile = otherDir </> "ban host" <.> "json"
+banPlaFile  = otherDir </> "ban pla"  <.> "json"
 
 
 -- ==================================================

@@ -213,10 +213,11 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 -----
 
 
+-- TODO: "banplayer" with no arguments should dump a list.
 adminBanPlayer :: Action
 adminBanPlayer p@AdviseNoArgs = advise p [ prefixAdminCmd "banplayer" ] "Please specify the full PC name of the player \
-                                                                        \you wish to ban."
-adminBanPlayer (OneArgNubbed i mq cols target) = getState >>= helper >>= sequence_
+                                                                        \you wish to ban, followed by a reason."
+adminBanPlayer (MsgWithTarget i mq cols target _ {- TODO: msg -}) = getState >>= helper >>= sequence_
   where
     helper ms =
       let fn                  = "adminBanPlayer helper"
@@ -230,15 +231,14 @@ adminBanPlayer (OneArgNubbed i mq cols target) = getState >>= helper >>= sequenc
         [banId] -> let selfSing = getSing i ms in if
                      | banId == i                             -> [ sendFun "You can't ban yourself." ]
                      | getPlaFlag IsAdmin . getPla banId $ ms -> [ sendFun "You can't ban an admin." ]
-                     | otherwise ->
+                     | otherwise -> --- TODO: Toggle banned status.
                          [ ok mq
                          , bcastAdminsExcept [ i, banId ] . T.concat $ [ selfSing, " banned ", strippedTarget, "." ]
                          , logNotice fn       $ T.concat [ selfSing, " banned ", strippedTarget, "." ]
                          , logPla    fn i     $ T.concat [           "banned ",  strippedTarget, "." ]
                          , logPla    fn banId $ T.concat [           "banned by ", selfSing,     "." ] ]
-        xs      -> patternMatchFail "adminBanPlayer helper" [ showText xs ]
-adminBanPlayer (ActionParams { plaMsgQueue, plaCols }) =
-    wrapSend plaMsgQueue plaCols "Sorry, but you can only ban one player at a time."
+        xs      -> patternMatchFail fn [ showText xs ]
+adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
 
 
 -----
