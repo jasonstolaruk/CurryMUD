@@ -137,7 +137,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         logNotice "listen cleanUp" "closing the socket."
         liftIO . sClose $ sock
         mapM_ (liftIO . throwWait) auxAsyncs
-        onEnv $ liftIO . atomically . void . takeTMVar . view persisterTMVar
+        onEnv $ liftIO . atomically . void . takeTMVar . view (locks.persistLock)
     throwWait a = throwTo (asyncThreadId a) PlsDie >> (void . wait $ a)
     halt        = liftIO . T.putStrLn $ "Oops! There was an error loading the world. Check the error log for details."
 

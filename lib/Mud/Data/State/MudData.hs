@@ -35,9 +35,9 @@ type MudStack = ReaderT MudData IO
 
 data MudData = MudData { _errorLog       :: Maybe LogService
                        , _gen            :: GenIO
+                       , _locks          :: Locks
                        , _mudStateIORef  :: IORef MudState
                        , _noticeLog      :: Maybe LogService
-                       , _persisterTMVar :: TMVar PersisterDone
                        , _startTime      :: TimeSpec }
 
 
@@ -242,6 +242,24 @@ type Inv = [Id]
 -- ==================================================
 
 
+data Locks = Locks { _banHostLock   :: Lock
+                   , _banPlaLock    :: Lock
+                   , _bugLock       :: Lock
+                   , _loggingExLock :: Lock
+                   , _persistLock   :: Lock
+                   , _profanityLock :: Lock
+                   , _typoLock      :: Lock }
+
+
+type Lock = TMVar Done
+
+
+data Done = Done
+
+
+-- ==================================================
+
+
 type LogService = (LogAsync, LogQueue)
 
 
@@ -276,12 +294,6 @@ data Sex = Male
 data Hand = RHand
           | LHand
           | NoHand deriving (Eq, Generic, Show)
-
-
--- ==================================================
-
-
-data PersisterDone = PersisterDone
 
 
 -- ==================================================
@@ -503,6 +515,7 @@ makeLenses ''Arm
 makeLenses ''Con
 makeLenses ''Ent
 makeLenses ''HostRecord
+makeLenses ''Locks
 makeLenses ''Mob
 makeLenses ''MudData
 makeLenses ''MudState

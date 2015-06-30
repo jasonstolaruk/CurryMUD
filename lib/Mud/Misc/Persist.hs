@@ -13,7 +13,7 @@ import qualified Mud.Misc.Logging as L (logExMsg, logNotice)
 
 import Control.Concurrent.Async (wait, withAsync)
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (TMVar, putTMVar, takeTMVar)
+import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Exception (SomeException)
 import Control.Exception.Lifted (catch)
 import Control.Lens (views)
@@ -52,10 +52,10 @@ persist = do
     logNotice "persist" "persisting the world."
     (mkBindings |&| onEnv >=> liftIO . uncurry persistHelper) `catch` persistExHandler
   where
-    mkBindings md = md^.mudStateIORef |&| liftIO . readIORef >=> return . (md^.persisterTMVar, )
+    mkBindings md = md^.mudStateIORef |&| liftIO . readIORef >=> return . (md^.locks.persistLock, )
 
 
-persistHelper :: TMVar PersisterDone -> MudState -> IO ()
+persistHelper :: Lock -> MudState -> IO ()
 persistHelper persistTMVar ms = do
     atomically . void . takeTMVar $ persistTMVar
     path <- getNonExistingPath =<< (persistDir </>) . T.unpack . T.replace ":" "-" <$> mkTimestamp
@@ -78,7 +78,7 @@ persistHelper persistTMVar ms = do
                                              , helper (ms^.rmTeleNameTbl) $ path </> rmTeleNameTblFile
                                              , helper (ms^.typeTbl      ) $ path </> typeTblFile
                                              , helper (ms^.wpnTbl       ) $ path </> wpnTblFile ]
-    atomically . putTMVar persistTMVar $ PersisterDone
+    atomically . putTMVar persistTMVar $ Done
   where
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")

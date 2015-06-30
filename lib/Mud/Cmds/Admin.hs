@@ -98,6 +98,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 -- TODO: Give admins functionality to ban given hostnames and PC names.
 -- TODO: Give admins functionality to message all other logged in admins?
+-- TODO: Consider making a command to grep a given file (ban, bug, typo, certain logs...) for a given regex.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."

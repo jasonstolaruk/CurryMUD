@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.Misc ( AOrThe(..)
                      , Action
@@ -62,12 +62,14 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Exception (Exception)
 import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
+import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
 import Data.Time (UTCTime)
 import Data.Typeable (Typeable)
+import GHC.Generics (Generic)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
 
@@ -343,12 +345,17 @@ data AOrThe = A | The
 -----
 
 
--- TODO: Make these types serializable.
 data BanRecord = BanRecord { banName   :: Sing
                            , banTime   :: UTCTime
-                           , banReason :: T.Text }
+                           , banReason :: T.Text } deriving (Eq, Generic, Show)
 
-data BanEvent = Banned BanRecord | Unbanned BanRecord
+data BanEvent = Banned BanRecord | Unbanned BanRecord deriving (Eq, Generic, Show)
+
+
+instance FromJSON BanEvent
+instance FromJSON BanRecord
+instance ToJSON   BanEvent
+instance ToJSON   BanRecord
 
 
 -----

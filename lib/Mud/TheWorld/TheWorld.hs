@@ -67,13 +67,19 @@ initMudData shouldLog = do
                                  , _threadTbl     =  M.empty
                                  , _typeTbl       = IM.empty
                                  , _wpnTbl        = IM.empty }
-    persistTMVar <- newTMVarIO PersisterDone
-    start        <- getTime Monotonic
+    ls    <- Locks <$> newTMVarIO Done
+                   <*> newTMVarIO Done
+                   <*> newTMVarIO Done
+                   <*> newTMVarIO Done
+                   <*> newTMVarIO Done
+                   <*> newTMVarIO Done
+                   <*> newTMVarIO Done
+    start <- getTime Monotonic
     return MudData { _errorLog       = errorLogService
                    , _gen            = genIO
+                   , _locks          = ls
                    , _mudStateIORef  = msIORef
                    , _noticeLog      = noticeLogService
-                   , _persisterTMVar = persistTMVar
                    , _startTime      = start }
 
 
