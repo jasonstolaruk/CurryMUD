@@ -242,6 +242,7 @@ type Inv = [Id]
 -- ==================================================
 
 
+-- TODO: Use these.
 data Locks = Locks { _banHostLock   :: Lock
                    , _banPlaLock    :: Lock
                    , _bugLock       :: Lock

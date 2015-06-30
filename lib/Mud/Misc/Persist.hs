@@ -56,8 +56,8 @@ persist = do
 
 
 persistHelper :: Lock -> MudState -> IO ()
-persistHelper persistTMVar ms = do
-    atomically . void . takeTMVar $ persistTMVar
+persistHelper l ms = do
+    atomically . void . takeTMVar $ l
     path <- getNonExistingPath =<< (persistDir </>) . T.unpack . T.replace ":" "-" <$> mkTimestamp
     createDirectory path
     cont <- dropIrrelevantFilenames . sort <$> getDirectoryContents persistDir
@@ -78,7 +78,7 @@ persistHelper persistTMVar ms = do
                                              , helper (ms^.rmTeleNameTbl) $ path </> rmTeleNameTblFile
                                              , helper (ms^.typeTbl      ) $ path </> typeTblFile
                                              , helper (ms^.wpnTbl       ) $ path </> wpnTblFile ]
-    atomically . putTMVar persistTMVar $ Done
+    atomically . putTMVar l $ Done
   where
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")
