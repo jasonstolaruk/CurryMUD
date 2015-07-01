@@ -349,6 +349,7 @@ data BanRecord = BanRecord { banName   :: Sing
                            , banTime   :: UTCTime
                            , banReason :: T.Text } deriving (Eq, Generic, Show)
 
+
 data BanEvent = Banned BanRecord | Unbanned BanRecord deriving (Eq, Generic, Show)
 
 

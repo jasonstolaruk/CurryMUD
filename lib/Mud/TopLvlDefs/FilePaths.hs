@@ -63,7 +63,6 @@ typoLogFile      = logDir </> "typo"                     <.> "log"
 -- Other files:
 
 
--- TODO: Make sure the "other" directory is created if it doesn't already exist.
 banHostFile, banPlaFile :: FilePath
 banHostFile = otherDir </> "ban host" <.> "json"
 banPlaFile  = otherDir </> "ban pla"  <.> "json"

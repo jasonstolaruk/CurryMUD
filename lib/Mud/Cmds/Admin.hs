@@ -232,7 +232,23 @@ adminBanPlayer (MsgWithTarget i mq cols target _ {- TODO: msg -}) = getState >>=
         [banId] -> let selfSing = getSing i ms in if
                      | banId == i                             -> [ sendFun "You can't ban yourself." ]
                      | getPlaFlag IsAdmin . getPla banId $ ms -> [ sendFun "You can't ban an admin." ]
-                     | otherwise -> --- TODO: Toggle banned status.
+                     | otherwise -> (view locks |&| onEnv >=> toggleBan `catch` (lockedFileExHandler banHostFile)
+
+toggleBan ls = [ views banPlaLock (atomically . void . takeTMVar) ls
+               , flip withAsync wait . runResourceT $ readBanHostFile
+-- TODO: Restore lock even on exception.
+views banPlaLOck (atomically . flip putTMVar Done) ls
+
+readBanHostFile = 
+eitherDecode <$> (liftIO . B.readFile $ banHostFile) >>= \case
+  Left  err       -> sorryLockedFile banHostFile err
+  Right banEvents ->
+
+
+sorryLockedFile :: FilePath -> String -> MudStack ()
+sorryLockedFile absolute (T.pack -> err) =
+    (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ])
+
                          [ ok mq
                          , bcastAdminsExcept [ i, banId ] . T.concat $ [ selfSing, " banned ", strippedTarget, "." ]
                          , logNotice fn       $ T.concat [ selfSing, " banned ", strippedTarget, "." ]
@@ -240,6 +256,14 @@ adminBanPlayer (MsgWithTarget i mq cols target _ {- TODO: msg -}) = getState >>=
                          , logPla    fn banId $ T.concat [           "banned by ", selfSing,     "." ] ]
         xs      -> patternMatchFail fn [ showText xs ]
 adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
+
+
+lockedFileExHandler :: FilePath -> SomeException -> MudStack ()
+lockedFileExHandler (dblQuote . T.pack -> fp) e = do
+    logExMsg "lockedFileExHandler" () e
+    throwToListenThread e
+  where
+    msg = "exception caught while reading/writing " <> fp <> "; rethrowing to listen thread"
 
 
 -----

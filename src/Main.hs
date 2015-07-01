@@ -6,7 +6,7 @@ Copyright (c) 2015, Jason Stolaruk and Detroit Labs LLC
 currymud (`at` gmail) . com
 @JasonStolaruk
 https://github.com/jasonstolaruk/CurryMUD
-kickButt <$> take maxBound names
+kickButt <$> take maxBound names -- Welcome to the playground!
 -}
 
 module Main (main) where
@@ -31,7 +31,14 @@ import qualified Data.Text.IO as T (putStrLn)
 main :: IO ()
 main = withSocketsDo $ do
     setCurrentDirectory mudDir
-    mapM_ (createDirectoryIfMissing False) [ logDir, persistDir ] -- TODO: Also make the help file dirs.
+    mapM_ (createDirectoryIfMissing False) [ adminHelpCmdsDir -- TODO: Test.
+                                           , adminHelpTopicsDir
+                                           , helpDirs
+                                           , logDir
+                                           , otherDir
+                                           , persistDir
+                                           , plaHelpCmdsDir
+                                           , plaHelpTopicsDir ]
     welcome
     runReaderT listenWrapper =<< initMudData DoLog
 
