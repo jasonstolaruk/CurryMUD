@@ -16,6 +16,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
+import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
@@ -96,7 +97,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Give admins functionality to ban given hostnames and PC names.
 -- TODO: Give admins functionality to message all other logged in admins?
 -- TODO: Consider making a command to grep a given file (ban, bug, typo, certain logs...) for a given regex.
 adminCmds :: [Cmd]
@@ -229,25 +229,27 @@ adminBanPlayer (MsgWithTarget i mq cols target _ {- TODO: msg -}) = getState >>=
                                           , ". "
                                           , parensQuote "Note that you must specify the full PC name of the player you \
                                                         \wish to ban." ] ]
-        [banId] -> let selfSing = getSing i ms in if
+        [banId] -> let _ = getSing i ms in if -- TODO: Was "selfSing".
                      | banId == i                             -> [ sendFun "You can't ban yourself." ]
                      | getPlaFlag IsAdmin . getPla banId $ ms -> [ sendFun "You can't ban an admin." ]
+                     | otherwise -> pure unit
+        xs      -> patternMatchFail fn [ showText xs ]
+adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
+{-
                      | otherwise -> (view locks |&| onEnv >=> toggleBan `catch` (lockedFileExHandler banHostFile)
 
 toggleBan ls = [ views banPlaLock (atomically . void . takeTMVar) ls
-               , flip withAsync wait . runResourceT $ readBanHostFile
+               , eitherDecode <$> (liftIO . B.readFile $ banHostFile) >>= \case
+                   Left  err       -> sorryLockedFile banHostFile err
+                   Right banEvents ->
+
+-- where f is of type Mudstack (), returns Mudstack Async
+runAsync f = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common module.
+
 -- TODO: Restore lock even on exception.
-views banPlaLOck (atomically . flip putTMVar Done) ls
+-- TODO: Wait for the async to complete first.
+views banPlaLock (atomically . flip putTMVar Done) ls
 
-readBanHostFile = 
-eitherDecode <$> (liftIO . B.readFile $ banHostFile) >>= \case
-  Left  err       -> sorryLockedFile banHostFile err
-  Right banEvents ->
-
-
-sorryLockedFile :: FilePath -> String -> MudStack ()
-sorryLockedFile absolute (T.pack -> err) =
-    (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ])
 
                          [ ok mq
                          , bcastAdminsExcept [ i, banId ] . T.concat $ [ selfSing, " banned ", strippedTarget, "." ]
@@ -258,12 +260,18 @@ sorryLockedFile absolute (T.pack -> err) =
 adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
 
 
+sorryLockedFile :: FilePath -> String -> MudStack ()
+sorryLockedFile absolute (T.pack -> err) =
+    (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ])
+
+
 lockedFileExHandler :: FilePath -> SomeException -> MudStack ()
 lockedFileExHandler (dblQuote . T.pack -> fp) e = do
     logExMsg "lockedFileExHandler" () e
     throwToListenThread e
   where
     msg = "exception caught while reading/writing " <> fp <> "; rethrowing to listen thread"
+-}
 
 
 -----
@@ -564,9 +572,11 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 -----
 
 
+-- TODO: Switch to using the database.
 adminProfanity :: Action
-adminProfanity (NoArgs i mq cols) =
-    dumpLog mq cols profanityLogFile ("profanity", "profanities") >> logPlaExec (prefixAdminCmd "profanity") i
+-- adminProfanity (NoArgs i mq cols) =
+    -- dumpLog mq cols profanityLogFile ("profanity", "profanities") >> logPlaExec (prefixAdminCmd "profanity") i
+adminProfanity (NoArgs'' _) = liftIO dumpDbTbl
 adminProfanity p = withoutArgs adminProfanity p
 
 

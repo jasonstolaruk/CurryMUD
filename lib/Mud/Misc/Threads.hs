@@ -118,7 +118,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
         auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
-    runAsync f    = onEnv $ liftIO . async . runReaderT f
+    runAsync f    = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common module.
     logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
         let ifList = commas [ bracketQuote . T.concat $ [ showText . NI.name $ n
                                                         , ": "

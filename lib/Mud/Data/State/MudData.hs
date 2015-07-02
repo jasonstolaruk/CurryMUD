@@ -242,11 +242,11 @@ type Inv = [Id]
 -- ==================================================
 
 
--- TODO: Use these.
+-- TODO: Stop using these?
 data Locks = Locks { _banHostLock   :: Lock
                    , _banPlaLock    :: Lock
                    , _bugLock       :: Lock
-                   , _loggingExLock :: Lock
+                   , _loggingExLock :: Lock -- TODO: Keep this lock? Do not switch to JSON?
                    , _persistLock   :: Lock
                    , _profanityLock :: Lock
                    , _typoLock      :: Lock }

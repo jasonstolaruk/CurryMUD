@@ -31,11 +31,11 @@ import qualified Data.Text.IO as T (putStrLn)
 main :: IO ()
 main = withSocketsDo $ do
     setCurrentDirectory mudDir
-    mapM_ (createDirectoryIfMissing False) [ adminHelpCmdsDir -- TODO: Test.
+    mapM_ (createDirectoryIfMissing False) [ adminHelpCmdsDir
                                            , adminHelpTopicsDir
-                                           , helpDirs
+                                           , databaseDir
+                                           , helpDir
                                            , logDir
-                                           , otherDir
                                            , persistDir
                                            , plaHelpCmdsDir
                                            , plaHelpTopicsDir ]

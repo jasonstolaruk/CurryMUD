@@ -17,11 +17,11 @@ mudDir :: FilePath
 mudDir = let home = unsafePerformIO . getEnv $ "HOME" in home </> "CurryMUD"
 
 
-logDir, otherDir, persistDir, resDir :: FilePath
-logDir     = mudDir </> "logs"
-otherDir   = mudDir </> "other"
-persistDir = mudDir </> "persist"
-resDir     = mudDir </> "res"
+databaseDir, logDir, persistDir, resDir :: FilePath
+databaseDir = mudDir </> "db"
+logDir      = mudDir </> "logs"
+persistDir  = mudDir </> "persist"
+resDir      = mudDir </> "res"
 
 
 helpDir, miscDir, titleDir :: FilePath
@@ -49,23 +49,12 @@ adminHelpTopicsDir = adminHelpDir </> "topics"
 -- Log files:
 
 
--- TODO: Admins should be allowed to delete a given line (provide line number) of the bug/typo logs.
-bugLogFile, errorLogFile, loggingExLogFile, noticeLogFile, profanityLogFile, typoLogFile :: FilePath
+bugLogFile, errorLogFile, loggingExLogFile, noticeLogFile, typoLogFile :: FilePath
 bugLogFile       = logDir </> "bug"                      <.> "log"
 errorLogFile     = logDir </> "error"                    <.> "log"
 loggingExLogFile = logDir </> "logging thread exception" <.> "log"
 noticeLogFile    = logDir </> "notice"                   <.> "log"
-profanityLogFile = logDir </> "profanity"                <.> "log"
 typoLogFile      = logDir </> "typo"                     <.> "log"
-
-
--- ==================================================
--- Other files:
-
-
-banHostFile, banPlaFile :: FilePath
-banHostFile = otherDir </> "ban host" <.> "json"
-banPlaFile  = otherDir </> "ban pla"  <.> "json"
 
 
 -- ==================================================
@@ -89,6 +78,16 @@ rmTblFile         = "rmTbl.json"
 rmTeleNameTblFile = "rmTeleNameTbl.json"
 typeTblFile       = "typeTbl.json"
 wpnTblFile        = "wpnTbl.json"
+
+
+-- ==================================================
+-- Database files:
+
+
+banHostDbFile, banPlaDbFile, profanitiesDbFile :: FilePath
+banHostDbFile     = databaseDir </> "ban host"    <.> "sqlite3"
+banPlaDbFile      = databaseDir </> "ban pla"     <.> "sqlite3"
+profanitiesDbFile = databaseDir </> "profanities" <.> "sqlite3"
 
 
 -- ==================================================

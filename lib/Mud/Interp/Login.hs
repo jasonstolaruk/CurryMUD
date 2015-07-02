@@ -180,7 +180,7 @@ logProfanity :: CmdName -> HostName -> MudStack ()
 logProfanity cn (T.pack -> hn) =
     liftIO (helper =<< mkTimestamp |&| try) >>= eitherRet (fileIOExHandler "logProfanity")
   where
-    helper ts = T.appendFile profanityLogFile . T.concat $ [ ts, " ", hn, " ", cn ]
+    helper ts = T.appendFile profanitiesDbFile . T.concat $ [ ts, " ", hn, " ", cn ]
 
 
 checkIllegalNames :: MudState -> MsgQueue -> CmdName -> MudStack Any
