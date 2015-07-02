@@ -242,14 +242,8 @@ type Inv = [Id]
 -- ==================================================
 
 
--- TODO: Stop using these?
-data Locks = Locks { _banHostLock   :: Lock
-                   , _banPlaLock    :: Lock
-                   , _bugLock       :: Lock
-                   , _loggingExLock :: Lock -- TODO: Keep this lock? Do not switch to JSON?
-                   , _persistLock   :: Lock
-                   , _profanityLock :: Lock
-                   , _typoLock      :: Lock }
+data Locks = Locks { _loggingExLock :: Lock -- TODO: Use this lock.
+                   , _persistLock   :: Lock }
 
 
 type Lock = TMVar Done

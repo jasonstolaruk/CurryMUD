@@ -67,13 +67,7 @@ initMudData shouldLog = do
                                  , _threadTbl     =  M.empty
                                  , _typeTbl       = IM.empty
                                  , _wpnTbl        = IM.empty }
-    ls    <- Locks <$> newTMVarIO Done
-                   <*> newTMVarIO Done
-                   <*> newTMVarIO Done
-                   <*> newTMVarIO Done
-                   <*> newTMVarIO Done
-                   <*> newTMVarIO Done
-                   <*> newTMVarIO Done
+    ls    <- Locks <$> uncurry (<*>) . dup . newTMVarIO $ Done
     start <- getTime Monotonic
     return MudData { _errorLog       = errorLogService
                    , _gen            = genIO

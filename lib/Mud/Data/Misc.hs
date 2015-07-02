@@ -4,8 +4,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Action
                      , Amount
                      , Args
-                     , BanEvent(..)
-                     , BanRecord(..)
                      , Broadcast
                      , ClassifiedBroadcast(..)
                      , Cmd(..)
@@ -340,23 +338,6 @@ data ExpCmd = ExpCmd ExpCmdName ExpCmdType deriving (Eq, Ord)
 
 
 data AOrThe = A | The
-
-
------
-
-
-data BanRecord = BanRecord { banName   :: Sing
-                           , banTime   :: UTCTime
-                           , banReason :: T.Text } deriving (Eq, Generic, Show)
-
-
-data BanEvent = Banned BanRecord | Unbanned BanRecord deriving (Eq, Generic, Show)
-
-
-instance FromJSON BanEvent
-instance FromJSON BanRecord
-instance ToJSON   BanEvent
-instance ToJSON   BanRecord
 
 
 -----

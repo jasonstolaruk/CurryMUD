@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, GADTs, GeneralizedNewtypeDeriving, MultiParamTypeClasses, OverloadedStrings, QuasiQuotes, TemplateHaskell, TypeFamilies #-}
 
-module Mud.Misc.Database ( Profanities
-                         , ProfanitiesId
+module Mud.Misc.Database ( Prof
+                         , ProfId
                          , dumpDbTbl
                          , insertDbTbl
                          , mkDbTbl ) where
@@ -34,8 +34,9 @@ import Mud.TopLvlDefs.FilePaths
 
 import Control.Monad (void)
 import Data.Conduit (($$), (=$))
+import Data.Time (UTCTime)
 import Database.Persist.Sql (insert, rawQuery)
-import Database.Persist.Sqlite (runMigration, runSqlite) -- TODO: Change to runMigrationSilent.
+import Database.Persist.Sqlite (runMigrationSilent, runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
 import Database.Persist.Types (PersistValue(..))
 import qualified Data.Conduit.List as CL (consume, map)
@@ -48,27 +49,48 @@ dbFile = T.pack profanitiesDbFile
 
 -- Creates a "migrateTables" function.
 share [ mkPersist sqlSettings, mkMigrate "migrateTables" ] [persistLowerCase|
-Profanities
-   timestamp T.Text
-   host      T.Text
-   profanity T.Text
-   deriving Show
+BanHost
+  timestamp UTCTime
+  host      T.Text
+  isBanned  Bool
+  reason    T.Text
+BanPla
+  timestamp UTCTime
+  name      T.Text
+  isBanned  Bool
+  reason    T.Text
+Bug
+  timestamp UTCTime
+  name      T.Text
+  loc       T.Text
+  desc      T.Text
+  isClosed  Bool
+Prof
+  timestamp UTCTime
+  host      T.Text
+  profanity T.Text
+  deriving Show -- TODO: Remove.
+Typo
+  timestamp UTCTime
+  name      T.Text
+  loc       T.Text
+  desc      T.Text
+  isClosed  Bool
 |]
 
 
--- This does nothing if the table already exists.
-mkDbTbl :: IO ()
-mkDbTbl = runSqlite dbFile . runMigration $ migrateTables
+-- Has no effect if the tables already exist.
+mkDbTbls :: IO ()
+mkDbTbls = runSqlite dbFile . runMigrationSilent $ migrateTables
 
 
-dumpDbTbl :: IO ()
-dumpDbTbl = runSqlite dbFile helper >>= mapM_ print
+dumpDbTbl tblName fromPersistent = runSqlite dbFile helper
   where
-    helper = rawQuery "select * from Profanities" [] $$ CL.map fromPersistent =$ CL.consume
-    fromPersistent []                                                  = Nothing
-    fromPersistent [ _, PersistText ts, PersistText h, PersistText p ] = Just . Profanities ts h $ p
-    fromPersistent _                                                   = Nothing
+    helper = rawQuery ("select * from " ++ tblName) [] $$ CL.map fromPersistent =$ CL.consume
+    -- fromPersistent []                                                  = Nothing
+    -- fromPersistent [ _, PersistText ts, PersistText h, PersistText p ] = Just . Prof ts h $ p
+    -- fromPersistent _                                                   = Nothing
 
 
-insertDbTbl :: IO ()
-insertDbTbl = runSqlite dbFile . void . insert . Profanities "2015-07-02 19:32:09" "somehost" $ "cunt"
+insertDbTbl :: a -> IO ()
+insertDbTbl = runSqlite dbFile . void . insert
