@@ -186,7 +186,7 @@ instance Pretty Cloth where
 
 
 instance Pretty Prof where
-  pp (Prof { .. }) = T.intercalate " " [ profTimestamp, profHost, profProfanity ]
+  pp Prof { .. } = T.intercalate " " [ profTimestamp, profHost, profProfanity ]
 
 
 instance Pretty Race where

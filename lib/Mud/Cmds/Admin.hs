@@ -575,8 +575,8 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 adminProfanity :: Action
 adminProfanity (NoArgs i mq cols) = do
-    eitherProfs <- liftIO . dumpDbTbl "Prof" $ toProf
-    let profs = filter isRight eitherProfs -- TODO: Handle "Left"s.
+    eitherProfs <- liftIO . dumpDbTbl $ "Prof"
+    let profs = filter isRight (eitherProfs :: [Either T.Text Prof]) -- TODO: Handle "Left"s.
     multiWrapSend mq cols $ case profs of [] -> [ "The profanity database is empty." ]
                                           _  -> map (pp . fromRight) profs
     logPlaExec (prefixAdminCmd "profanity") i

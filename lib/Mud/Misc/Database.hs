@@ -12,23 +12,19 @@ module Mud.Misc.Database ( BanHost(..)
                          , mkDbTbls
                          , Prof(..)
                          , ProfId
-                         , toProf
                          , Typo(..)
                          , TypoId ) where
 
 import Mud.TopLvlDefs.FilePaths
-import Mud.Util.Quoting
-import Mud.Util.Text
 
 import Control.Monad (void)
 import Data.Conduit (($$), (=$))
 import Data.Monoid ((<>))
 import Data.Time (UTCTime)
-import Database.Persist.Class (fromPersistValue)
+import Database.Persist.Class (fromPersistValues)
 import Database.Persist.Sql (insert, rawQuery)
 import Database.Persist.Sqlite (runMigrationSilent, runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
-import Database.Persist.Types (PersistValue)
 import qualified Data.Conduit.List as CL (consume, map)
 import qualified Data.Text as T
 
@@ -36,35 +32,39 @@ import qualified Data.Text as T
 -- ==================================================
 
 
--- Creates a "migrateTables" function.
-share [ mkPersist sqlSettings, mkMigrate "migrateTables" ] [persistLowerCase|
+-- Creates a "migrateAll" function.
+share [ mkPersist sqlSettings, mkMigrate "migrateAll" ] [persistLowerCase|
 BanHost
-  timestamp UTCTime
+  timestamp T.Text
   host      T.Text
   isBanned  Bool
   reason    T.Text
+  deriving Show
 BanPla
-  timestamp UTCTime
+  timestamp T.Text
   name      T.Text
   isBanned  Bool
   reason    T.Text
+  deriving Show
 Bug
-  timestamp UTCTime
+  timestamp T.Text
   name      T.Text
   loc       T.Text
   desc      T.Text
   isClosed  Bool
+  deriving Show
 Prof
   timestamp T.Text
   host      T.Text
   profanity T.Text
   deriving Show
 Typo
-  timestamp UTCTime
+  timestamp T.Text
   name      T.Text
   loc       T.Text
   desc      T.Text
   isClosed  Bool
+  deriving Show
 |]
 
 
@@ -74,22 +74,12 @@ dbFile' = T.pack dbFile
 
 -- Has no effect if the tables already exist.
 mkDbTbls :: IO ()
-mkDbTbls = runSqlite dbFile' . void . runMigrationSilent $ migrateTables
+mkDbTbls = runSqlite dbFile' . void . runMigrationSilent $ migrateAll
 
 
-dumpDbTbl tblName fromPersistent = runSqlite dbFile' helper
+dumpDbTbl tblName = runSqlite dbFile' helper
   where
-    helper = rawQuery ("select * from " <> tblName) [] $$ CL.map fromPersistent =$ CL.consume
-
-
-toProf :: [PersistValue] -> Either T.Text Prof
-toProf [ _, timestampVal, hostVal, profanityVal ] = Prof <$> fromPersistValue timestampVal
-                                                         <*> fromPersistValue hostVal
-                                                         <*> fromPersistValue profanityVal
-toProf vals = Left . T.concat $ [ "Could not convert a "
-                                , dblQuote "Prof"
-                                , " table field: "
-                                , showText vals ]
+    helper = rawQuery ("select * from " <> tblName) [] $$ CL.map fromPersistValues =$ CL.consume
 
 
 insertDbTbl x = runSqlite dbFile' . void . insert $ x
