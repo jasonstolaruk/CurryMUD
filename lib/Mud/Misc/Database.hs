@@ -1,50 +1,39 @@
-{-# LANGUAGE FlexibleContexts, GADTs, GeneralizedNewtypeDeriving, MultiParamTypeClasses, OverloadedStrings, QuasiQuotes, TemplateHaskell, TypeFamilies #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# LANGUAGE FlexibleContexts, GADTs, GeneralizedNewtypeDeriving, MultiParamTypeClasses, OverloadedStrings, QuasiQuotes, TemplateHaskell, TypeFamilies, ViewPatterns #-}
 
-module Mud.Misc.Database ( Prof
-                         , ProfId
+module Mud.Misc.Database ( BanHost(..)
+                         , BanHostId
+                         , BanPla(..)
+                         , BanPlaId
+                         , Bug(..)
+                         , BugId
                          , dumpDbTbl
                          , insertDbTbl
-                         , mkDbTbl ) where
-
--- TODO: Delete.
-{-
-import Mud.Data.State.MudData
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
-import Mud.Util.Operators
-
-import Control.Concurrent.Async (wait, withAsync)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
-import Control.Exception (SomeException)
-import Control.Exception.Lifted (catch)
-import Control.Lens (views)
-import Control.Lens.Operators ((^.))
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Resource (runResourceT)
-import Data.IORef (readIORef)
-import System.Directory (createDirectory, doesDirectoryExist, getDirectoryContents, removeDirectoryRecursive)
-import qualified Data.ByteString.Lazy as B (toStrict)
-import qualified Data.Conduit.Binary as CB (sinkFile)
-import qualified Data.IntMap.Lazy as IM (fromList, map)
-import qualified Data.Map.Lazy as M (toList)
--}
+                         , mkDbTbls
+                         , Prof(..)
+                         , ProfId
+                         , toProf
+                         , Typo(..)
+                         , TypoId ) where
 
 import Mud.TopLvlDefs.FilePaths
+import Mud.Util.Quoting
+import Mud.Util.Text
 
 import Control.Monad (void)
 import Data.Conduit (($$), (=$))
+import Data.Monoid ((<>))
 import Data.Time (UTCTime)
+import Database.Persist.Class (fromPersistValue)
 import Database.Persist.Sql (insert, rawQuery)
 import Database.Persist.Sqlite (runMigrationSilent, runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
-import Database.Persist.Types (PersistValue(..))
+import Database.Persist.Types (PersistValue)
 import qualified Data.Conduit.List as CL (consume, map)
 import qualified Data.Text as T
 
 
-dbFile :: T.Text
-dbFile = T.pack profanitiesDbFile
+-- ==================================================
 
 
 -- Creates a "migrateTables" function.
@@ -66,10 +55,10 @@ Bug
   desc      T.Text
   isClosed  Bool
 Prof
-  timestamp UTCTime
+  timestamp T.Text
   host      T.Text
   profanity T.Text
-  deriving Show -- TODO: Remove.
+  deriving Show
 Typo
   timestamp UTCTime
   name      T.Text
@@ -79,18 +68,28 @@ Typo
 |]
 
 
+dbFile' :: T.Text
+dbFile' = T.pack dbFile
+
+
 -- Has no effect if the tables already exist.
 mkDbTbls :: IO ()
-mkDbTbls = runSqlite dbFile . runMigrationSilent $ migrateTables
+mkDbTbls = runSqlite dbFile' . void . runMigrationSilent $ migrateTables
 
 
-dumpDbTbl tblName fromPersistent = runSqlite dbFile helper
+dumpDbTbl tblName fromPersistent = runSqlite dbFile' helper
   where
-    helper = rawQuery ("select * from " ++ tblName) [] $$ CL.map fromPersistent =$ CL.consume
-    -- fromPersistent []                                                  = Nothing
-    -- fromPersistent [ _, PersistText ts, PersistText h, PersistText p ] = Just . Prof ts h $ p
-    -- fromPersistent _                                                   = Nothing
+    helper = rawQuery ("select * from " <> tblName) [] $$ CL.map fromPersistent =$ CL.consume
 
 
-insertDbTbl :: a -> IO ()
-insertDbTbl = runSqlite dbFile . void . insert
+toProf :: [PersistValue] -> Either T.Text Prof
+toProf [ _, timestampVal, hostVal, profanityVal ] = Prof <$> fromPersistValue timestampVal
+                                                         <*> fromPersistValue hostVal
+                                                         <*> fromPersistValue profanityVal
+toProf vals = Left . T.concat $ [ "Could not convert a "
+                                , dblQuote "Prof"
+                                , " table field: "
+                                , showText vals ]
+
+
+insertDbTbl x = runSqlite dbFile' . void . insert $ x

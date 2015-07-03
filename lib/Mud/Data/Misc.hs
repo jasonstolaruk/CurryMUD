@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.Misc ( AOrThe(..)
                      , Action
@@ -51,6 +51,7 @@ module Mud.Data.Misc ( AOrThe(..)
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MudData
+import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -60,14 +61,11 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Exception (Exception)
 import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
-import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
-import Data.Time (UTCTime)
 import Data.Typeable (Typeable)
-import GHC.Generics (Generic)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
 
@@ -185,6 +183,10 @@ instance Pretty Cloth where
   pp Skirt    = "skirt"
   pp Smock    = "smock"
   pp Trousers = "trousers"
+
+
+instance Pretty Prof where
+  pp (Prof { .. }) = T.intercalate " " [ profTimestamp, profHost, profProfanity ]
 
 
 instance Pretty Race where

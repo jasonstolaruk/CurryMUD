@@ -81,13 +81,11 @@ wpnTblFile        = "wpnTbl.json"
 
 
 -- ==================================================
--- Database files:
+-- The database file:
 
 
-banHostDbFile, banPlaDbFile, profanitiesDbFile :: FilePath
-banHostDbFile     = databaseDir </> "ban host"    <.> "sqlite3"
-banPlaDbFile      = databaseDir </> "ban pla"     <.> "sqlite3"
-profanitiesDbFile = databaseDir </> "profanities" <.> "sqlite3"
+dbFile :: FilePath
+dbFile = databaseDir </> "CurryMud" <.> "sqlite3"
 
 
 -- ==================================================

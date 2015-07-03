@@ -13,6 +13,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
 import Mud.Misc.ANSI
+import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
@@ -44,7 +45,7 @@ import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (foldr, foldrWithKey)
 import qualified Data.Set as S (Set, empty, fromList, insert, member)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (appendFile, readFile)
+import qualified Data.Text.IO as T (readFile)
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
@@ -177,10 +178,13 @@ checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (retu
 
 
 logProfanity :: CmdName -> HostName -> MudStack ()
-logProfanity cn (T.pack -> hn) =
+logProfanity cn (T.pack -> hn) = liftIO (mkTimestamp >>= \ts -> insertDbTbl . Prof ts hn $ cn)
+-- TODO: Delete?
+{-
     liftIO (helper =<< mkTimestamp |&| try) >>= eitherRet (fileIOExHandler "logProfanity")
   where
     helper ts = T.appendFile profanitiesDbFile . T.concat $ [ ts, " ", hn, " ", cn ]
+-}
 
 
 checkIllegalNames :: MudState -> MsgQueue -> CmdName -> MudStack Any

@@ -19,6 +19,7 @@ import Mud.Data.State.Util.Set
 import Mud.Interp.CentralDispatch
 import Mud.Interp.Login
 import Mud.Misc.ANSI
+import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.Misc.Persist
 import Mud.TheWorld.Ids
@@ -112,19 +113,23 @@ listen :: MudStack ()
 listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt
   where
     proceed = do
-        sortAllInvs
-        logInterfaces
+        initialize
         logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
         auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
-    runAsync f    = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common module.
+    initialize = do
+        logNotice "listen initialize" "creating the database tables."
+        liftIO mkDbTbls
+        sortAllInvs
+        logInterfaces
     logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
         let ifList = commas [ bracketQuote . T.concat $ [ showText . NI.name $ n
                                                         , ": "
                                                         , showText . NI.ipv4 $ n ]
                             | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
+    runAsync f    = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common module.
     loop sock = do
         (h, host, localPort) <- liftIO . accept $ sock
         logNotice "listen loop" . T.concat $ [ "connected to "

@@ -42,6 +42,7 @@ import Control.Lens (_1, _2, _3, to, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
+import Data.Either (isRight)
 import Data.List (delete, intercalate)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Sum(..), getSum)
@@ -572,11 +573,13 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 -----
 
 
--- TODO: Switch to using the database.
 adminProfanity :: Action
--- adminProfanity (NoArgs i mq cols) =
-    -- dumpLog mq cols profanityLogFile ("profanity", "profanities") >> logPlaExec (prefixAdminCmd "profanity") i
-adminProfanity (NoArgs'' _) = liftIO dumpDbTbl
+adminProfanity (NoArgs i mq cols) = do
+    eitherProfs <- liftIO . dumpDbTbl "Prof" $ toProf
+    let profs = filter isRight eitherProfs -- TODO: Handle "Left"s.
+    multiWrapSend mq cols $ case profs of [] -> [ "The profanity database is empty." ]
+                                          _  -> map (pp . fromRight) profs
+    logPlaExec (prefixAdminCmd "profanity") i
 adminProfanity p = withoutArgs adminProfanity p
 
 
