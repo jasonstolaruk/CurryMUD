@@ -21,7 +21,6 @@ import Mud.Misc.LocPref
 import Mud.Misc.Logging (logError)
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.List
@@ -49,13 +48,12 @@ import Data.Monoid ((<>), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
-import System.Directory (doesFileExist)
 import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (putStrLn, readFile)
+import qualified Data.Text.IO as T (putStrLn)
 
 
 default (Int)
@@ -312,11 +310,28 @@ adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
 
 adminBug :: Action
-adminBug (NoArgs i mq cols) =
-    dumpLog mq cols bugLogFile ("bug", "bugs") >> logPlaExec (prefixAdminCmd "bug") i
+adminBug (NoArgs i mq cols) = do
+    eithers <- liftIO . dumpDbTbl $ "Bug"
+    dumpDbTblHelper mq cols (eithers :: [Either T.Text Bug])
+    logPlaExec (prefixAdminCmd "bug") i
 adminBug p = withoutArgs adminBug p
 
 
+dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [Either T.Text a] -> MudStack ()
+dumpDbTblHelper mq cols eithers = case foldr helper ([], []) eithers of
+      ([],   []       ) -> sendHelper [ "The database is empty." ]
+      (txts, []       ) -> sendHelper txts
+      ([],   errorMsgs) -> logHelper errorMsgs
+      (txts, errorMsgs) -> sendHelper txts >> logHelper errorMsgs
+  where
+    helper (Left  msg)  = _2 %~ (msg  :)
+    helper (Right p  )  = _1 %~ (pp p :)
+    logHelper errorMsgs = logError $ "error(s) while parsing database table: " <> commas errorMsgs
+    sendHelper = multiWrapSend mq cols
+
+
+-- TODO: Delete.
+{-
 dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
 dumpLog mq cols logFile (s, p) = send mq =<< helper
   where
@@ -327,6 +342,7 @@ dumpLog mq cols logFile (s, p) = send mq =<< helper
     handler e = do
         fileIOExHandler "dumpLog" e
         return . wrapUnlinesNl cols $ "Unfortunately, the " <> s <> " log could not be retrieved."
+-}
 
 
 -----
@@ -575,24 +591,10 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 adminProfanity :: Action
 adminProfanity (NoArgs i mq cols) = do
-    eitherProfs <- liftIO . dumpDbTbl $ "Prof"
-    dumpDbTblHelper mq cols (eitherProfs :: [Either T.Text Prof])
+    eithers <- liftIO . dumpDbTbl $ "Prof"
+    dumpDbTblHelper mq cols (eithers :: [Either T.Text Prof])
     logPlaExec (prefixAdminCmd "profanity") i
 adminProfanity p = withoutArgs adminProfanity p
-
-
--- TODO: Move.
-dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [Either T.Text a] -> MudStack ()
-dumpDbTblHelper mq cols eithers = case foldr helper ([], []) eithers of
-      ([],   []       ) -> sendHelper [ "The database is empty." ]
-      (txts, []       ) -> sendHelper txts
-      ([],   errorMsgs) -> logHelper errorMsgs
-      (txts, errorMsgs) -> sendHelper txts >> logHelper errorMsgs
-  where
-    helper (Left  msg)  = _2 %~ (msg  :)
-    helper (Right p  )  = _1 %~ (pp p :)
-    logHelper errorMsgs = logError $ "error(s) while parsing database table: " <> commas errorMsgs
-    sendHelper = multiWrapSend mq cols
 
 
 -----
@@ -720,8 +722,11 @@ adminTime p = withoutArgs adminTime p
 
 
 adminTypo :: Action
-adminTypo (NoArgs i mq cols) = dumpLog mq cols typoLogFile ("typo", "typos") >> logPlaExec (prefixAdminCmd "typo") i
-adminTypo p                  = withoutArgs adminTypo p
+adminTypo (NoArgs i mq cols) = do
+    eithers <- liftIO . dumpDbTbl $ "Typo"
+    dumpDbTblHelper mq cols (eithers :: [Either T.Text Typo])
+    logPlaExec (prefixAdminCmd "typo") i
+adminTypo p = withoutArgs adminTypo p
 
 
 -----

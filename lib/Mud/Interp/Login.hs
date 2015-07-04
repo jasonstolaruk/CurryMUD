@@ -156,12 +156,15 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
   where
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
-            hn = getCurrHostName i ms
+            hn = T.pack . getCurrHostName i $ ms
         send mq . nlPrefix . nl $ bootMsgColor                                                                     <>
                                   "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
                                   dfltColor
         sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
-        logProfanity cn hn
+        ts <- liftIO mkTimestamp
+        let prof = Prof ts hn cn
+        insertDbTbl prof
+        bcastAdmins $ "Profanity logged: " <> pp prof
         let logMsg = T.concat [ "booting player ", showText i, " ", s, " due to profanity." ]
         logNotice "checkProfanitiesDict sorry" logMsg
 
@@ -177,10 +180,10 @@ checkSet :: CmdName -> MudStack () -> S.Set T.Text -> MudStack Any
 checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (return . Any $ isNG)
 
 
-logProfanity :: CmdName -> HostName -> MudStack ()
-logProfanity cn (T.pack -> hn) = liftIO (mkTimestamp >>= \ts -> insertDbTbl . Prof ts hn $ cn)
 -- TODO: Delete?
 {-
+logProfanity :: CmdName -> HostName -> MudStack ()
+logProfanity cn (T.pack -> hn) = liftIO (mkTimestamp >>= \ts -> insertDbTbl . Prof ts hn $ cn)
     liftIO (helper =<< mkTimestamp |&| try) >>= eitherRet (fileIOExHandler "logProfanity")
   where
     helper ts = T.appendFile profanitiesDbFile . T.concat $ [ ts, " ", hn, " ", cn ]

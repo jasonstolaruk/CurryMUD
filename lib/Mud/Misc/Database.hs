@@ -31,39 +31,33 @@ import qualified Data.Text as T
 -- ==================================================
 
 
--- TODO: Do all these really need "deriving Show"?
 share [ mkPersist sqlSettings, mkMigrate "migrateAll" ] [persistLowerCase|
 BanHost
   timestamp T.Text
   host      T.Text
   isBanned  Bool
   reason    T.Text
-  deriving  Show
 BanPla
   timestamp T.Text
   name      T.Text
   isBanned  Bool
   reason    T.Text
-  deriving Show
 Bug
   timestamp T.Text
   name      T.Text
   loc       T.Text
   desc      T.Text
-  isClosed  Bool
-  deriving Show
+  isOpen    Bool
 Prof
   timestamp T.Text
   host      T.Text
   profanity T.Text
-  deriving Show
 Typo
   timestamp T.Text
   name      T.Text
   loc       T.Text
   desc      T.Text
-  isClosed  Bool
-  deriving Show
+  isOpen    Bool
 |]
 
 

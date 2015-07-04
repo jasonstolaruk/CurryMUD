@@ -169,6 +169,10 @@ instance Pretty AOrThe where
   pp The = "the"
 
 
+instance Pretty Bug where
+  pp Bug { .. } = slashes [ bugTimestamp, bugName, bugLoc, bugDesc, bugIsOpen ? "open" :? "closed" ]
+
+
 instance Pretty Cloth where
   pp Backpack = "backpack"
   pp Bracelet = "bracelet"
@@ -258,6 +262,10 @@ instance Pretty Slot where
   pp RHandS      = "right hand"
   pp LHandS      = "left hand"
   pp BothHandsS  = "both hands"
+
+
+instance Pretty Typo where
+  pp Typo { .. } = slashes [ typoTimestamp, typoName, typoLoc, typoDesc, typoIsOpen ? "open" :? "closed" ]
 
 
 instance Pretty WhichLog where

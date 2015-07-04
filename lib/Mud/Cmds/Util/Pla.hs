@@ -49,7 +49,6 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , sorryIncog ) where
 
 import Mud.Cmds.Util.Abbrev
-import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
@@ -59,8 +58,8 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
+import Mud.Misc.Database
 import Mud.Misc.NameResolution
-import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -73,17 +72,15 @@ import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first)
-import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), guard)
+import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
 import qualified Data.Map.Lazy as M (notMember, toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (appendFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -120,25 +117,19 @@ armSubToSlot = \case Head      -> HeadS
 
 
 bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
-bugTypoLogger (Msg i mq msg) wl@(pp -> wl') = getState >>= \ms ->
-    let s  = getSing i  ms
-        ri = getRmId i  ms
-    in do
-        logIt s ri (getRm ri ms ^.rmName) |&| liftIO . try >=> eitherRet (fileIOExHandler "bugTypoLogger")
+bugTypoLogger (Msg i mq msg) wl = getState >>= \ms ->
+    let s     = getSing i  ms
+        ri    = getRmId i  ms
+        mkLoc = parensQuote (showText ri) <> " " <> getRm ri ms ^.rmName
+    in liftIO mkTimestamp >>= \ts -> do
+        sequence_ $ case wl of BugLog  -> let b = Bug ts s mkLoc msg True
+                                          in [ insertDbTbl b
+                                             , bcastAdmins $ s <> " has logged a bug: "  <> pp b ]
+                               TypoLog -> let t = Typo ts s mkLoc msg True
+                                          in [ insertDbTbl t
+                                             , bcastAdmins $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."
-        bcastAdmins $ s <> " has logged a " <> wl' <> "."
-        logPla "bugTypoLogger" i . T.concat $ [ "logged a ", wl', ": ", msg ]
-  where
-    logIt s (showText -> ri) (dblQuote -> rn) = mkTimestamp >>= \ts ->
-        T.appendFile logFile . nl . T.concat $ [ ts
-                                               , " "
-                                               , s
-                                               , " "
-                                               , parensQuote $ ri <> " " <> rn
-                                               , ": "
-                                               , msg ]
-    logFile = case wl of BugLog  -> bugLogFile
-                         TypoLog -> typoLogFile
+        logPla "bugTypoLogger" i . T.concat $ [ "logged a ", showText wl, ": ", msg ]
 bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
 
 
