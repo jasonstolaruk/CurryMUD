@@ -27,6 +27,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , LoggedInOrOut(..)
                      , PCDesig(..)
                      , PlsDie(..)
+                     , Pretty
                      , PutOrRem(..)
                      , RightOrLeft(..)
                      , Serializable

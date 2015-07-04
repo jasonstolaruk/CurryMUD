@@ -9,7 +9,7 @@ module Mud.Misc.Database ( BanHost(..)
                          , BugId
                          , dumpDbTbl
                          , insertDbTbl
-                         , mkDbTbls
+                         , migrateDbTbls
                          , Prof(..)
                          , ProfId
                          , Typo(..)
@@ -20,7 +20,6 @@ import Mud.TopLvlDefs.FilePaths
 import Control.Monad (void)
 import Data.Conduit (($$), (=$))
 import Data.Monoid ((<>))
-import Data.Time (UTCTime)
 import Database.Persist.Class (fromPersistValues)
 import Database.Persist.Sql (insert, rawQuery)
 import Database.Persist.Sqlite (runMigrationSilent, runSqlite)
@@ -32,14 +31,14 @@ import qualified Data.Text as T
 -- ==================================================
 
 
--- Creates a "migrateAll" function.
+-- TODO: Do all these really need "deriving Show"?
 share [ mkPersist sqlSettings, mkMigrate "migrateAll" ] [persistLowerCase|
 BanHost
   timestamp T.Text
   host      T.Text
   isBanned  Bool
   reason    T.Text
-  deriving Show
+  deriving  Show
 BanPla
   timestamp T.Text
   name      T.Text
@@ -72,14 +71,13 @@ dbFile' :: T.Text
 dbFile' = T.pack dbFile
 
 
--- Has no effect if the tables already exist.
-mkDbTbls :: IO ()
-mkDbTbls = runSqlite dbFile' . void . runMigrationSilent $ migrateAll
+migrateDbTbls :: IO ()
+migrateDbTbls = runSqlite dbFile' . void . runMigrationSilent $ migrateAll
 
 
 dumpDbTbl tblName = runSqlite dbFile' helper
   where
-    helper = rawQuery ("select * from " <> tblName) [] $$ CL.map fromPersistValues =$ CL.consume
+    helper = rawQuery ("select * from " <> tblName) [] $$ CL.map (fromPersistValues . tail) =$ CL.consume
 
 
 insertDbTbl x = runSqlite dbFile' . void . insert $ x

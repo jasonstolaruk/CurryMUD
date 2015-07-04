@@ -120,7 +120,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
         logNotice "listen initialize" "creating the database tables."
-        liftIO mkDbTbls
+        liftIO migrateDbTbls
         sortAllInvs
         logInterfaces
     logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->

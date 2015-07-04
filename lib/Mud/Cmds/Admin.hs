@@ -18,6 +18,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
+import Mud.Misc.Logging (logError)
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -42,7 +43,6 @@ import Control.Lens (_1, _2, _3, to, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Data.Either (isRight)
 import Data.List (delete, intercalate)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Sum(..), getSum)
@@ -576,11 +576,23 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 adminProfanity :: Action
 adminProfanity (NoArgs i mq cols) = do
     eitherProfs <- liftIO . dumpDbTbl $ "Prof"
-    let profs = filter isRight (eitherProfs :: [Either T.Text Prof]) -- TODO: Handle "Left"s.
-    multiWrapSend mq cols $ case profs of [] -> [ "The profanity database is empty." ]
-                                          _  -> map (pp . fromRight) profs
+    dumpDbTblHelper mq cols (eitherProfs :: [Either T.Text Prof])
     logPlaExec (prefixAdminCmd "profanity") i
 adminProfanity p = withoutArgs adminProfanity p
+
+
+-- TODO: Move.
+dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [Either T.Text a] -> MudStack ()
+dumpDbTblHelper mq cols eithers = case foldr helper ([], []) eithers of
+      ([],   []       ) -> sendHelper [ "The database is empty." ]
+      (txts, []       ) -> sendHelper txts
+      ([],   errorMsgs) -> logHelper errorMsgs
+      (txts, errorMsgs) -> sendHelper txts >> logHelper errorMsgs
+  where
+    helper (Left  msg)  = _2 %~ (msg  :)
+    helper (Right p  )  = _1 %~ (pp p :)
+    logHelper errorMsgs = logError $ "error(s) while parsing database table: " <> commas errorMsgs
+    sendHelper = multiWrapSend mq cols
 
 
 -----
