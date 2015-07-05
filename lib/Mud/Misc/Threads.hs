@@ -137,7 +137,9 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                              , " on local port "
                                              , showText localPort
                                              , "." ]
-        setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
+        mIf (isHostBanned . T.toLower . T.pack $ host)
+            (liftIO $ (T.hPutStr h . nlnl $ "You have been banned from CurryMUD!") >> hClose h) -- TODO: Log something?
+            (setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host)))
     cleanUp auxAsyncs sock = do
         logNotice "listen cleanUp" "closing the socket."
         liftIO . sClose $ sock

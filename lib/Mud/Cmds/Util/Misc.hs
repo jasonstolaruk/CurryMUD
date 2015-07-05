@@ -4,6 +4,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
+                          , isHostBanned
                           , isPlaBanned
                           , mkActionParams
                           , mkSingleTarget
@@ -126,6 +127,21 @@ fileIOExHandler fn e = do
 
 throwToListenThread :: SomeException -> MudStack ()
 throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+
+
+-----
+
+
+isHostBanned :: T.Text -> MudStack Bool
+isHostBanned host = do
+    eithers <- liftIO . dumpDbTbl $ "ban_host"
+    let (banHosts, errorMsgs) = sortEithers (eithers :: [Either T.Text BanHost])
+    errorMsgs |#| logDbParseError
+    return . helper . reverse $ banHosts
+  where
+    helper [] = False
+    helper (x:xs) | banHostHost x == host = banHostIsBanned x
+                  | otherwise             = helper xs
 
 
 -----

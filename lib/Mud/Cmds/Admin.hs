@@ -102,7 +102,7 @@ adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
     , mkAdminCmd "admin"     adminAdmin       "Toggle a player's admin status."
-    -- , mkAdminCmd "banhost"   adminBanHost     "Dump the banned hostname database, or ban/unban a host."
+    , mkAdminCmd "banhost"   adminBanHost     "Dump the banned hostname database, or ban/unban a host."
     , mkAdminCmd "banplayer" adminBanPlayer   "Dump the banned player database, or ban/unban a player."
     , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
@@ -214,11 +214,47 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 
 
 -- TODO: Help.
+adminBanHost :: Action
+adminBanHost (NoArgs i mq cols) = do
+    eithers <- liftIO . dumpDbTbl $ "ban_host"
+    dumpDbTblHelper mq cols (eithers :: [Either T.Text BanHost])
+    logPlaExecArgs (prefixAdminCmd "banhost") [] i
+adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] advice
+  where
+    advice = T.concat [ "Please also provide a reason, as in "
+                      , quoteColor
+                      , dblQuote $ prefixAdminCmd "banhost " <> a <> " for harassing hanako"
+                      , dfltColor
+                      , "." ]
+adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms -> do
+    ts        <- liftIO mkTimestamp
+    newStatus <- not <$> isHostBanned target
+    let banHost = BanHost ts target newStatus msg
+    liftIO . insertDbTbl $ banHost
+    notifyBan i mq cols (getSing i ms) target newStatus banHost
+adminBanHost p = patternMatchFail "adminBanHost" [ showText p ]
+
+
+notifyBan :: (Pretty a) => Id -> MsgQueue -> Cols -> Sing -> T.Text -> Bool -> a -> MudStack ()
+notifyBan i mq cols selfSing target newStatus x =
+    let fn          = "notifyBan"
+        (v, suffix) = newStatus ? ("banned", [ ": " <> pp x ]) :? ("unbanned", [ ": " <> pp x ])
+    in do
+        wrapSend mq cols   . T.concat $ [ "You have ",   v, " ",    target ] ++ suffix
+        bcastOtherAdmins i . T.concat $ [ selfSing, " ", v, " ",    target ] ++ suffix
+        logNotice fn       . T.concat $ [ selfSing, " ", v, " ",    target ] ++ suffix
+        logPla    fn i     . T.concat $ [                v, " ",    target ] ++ suffix
+
+
+-----
+
+
+-- TODO: Help.
 adminBanPlayer :: Action
 adminBanPlayer (NoArgs i mq cols) = do
     eithers <- liftIO . dumpDbTbl $ "ban_pla"
     dumpDbTblHelper mq cols (eithers :: [Either T.Text BanPla])
-    logPlaExec (prefixAdminCmd "banplayer") i
+    logPlaExecArgs (prefixAdminCmd "banpla") [] i
 adminBanPlayer p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] advice
   where
     advice = T.concat [ "Please also provide a reason, as in "
@@ -227,7 +263,7 @@ adminBanPlayer p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] advi
                       , dfltColor
                       , "." ]
 adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let fn = "adminBanPlayer helper"
+    let fn = "adminBanPlayer"
         SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to ban"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
       []      -> sendFun . T.concat $ [ "There is no PC by the name of "
@@ -241,17 +277,11 @@ adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                    | banId == i             -> sendFun "You can't ban yourself."
                    | getPlaFlag IsAdmin pla -> sendFun "You can't ban an admin."
                    | otherwise -> do
-                       ts <- liftIO mkTimestamp
+                       ts        <- liftIO mkTimestamp
                        newStatus <- not <$> isPlaBanned strippedTarget
                        let banPla = BanPla ts strippedTarget newStatus msg
                        liftIO . insertDbTbl $ banPla
-                       let v = newStatus ? "banned" :? "unbanned"
-                           suffix = [ ": " <> pp banPla ]
-                       sendFun            . T.concat $ [ "You have ",   v, " ",    strippedTarget ] ++ suffix
-                       bcastOtherAdmins i . T.concat $ [ selfSing, " ", v, " ",    strippedTarget ] ++ suffix
-                       logNotice fn       . T.concat $ [ selfSing, " ", v, " ",    strippedTarget ] ++ suffix
-                       logPla    fn i     . T.concat $ [                v, " ",    strippedTarget ] ++ suffix
-                       logPla    fn banId . T.concat $ [                v, " by ", selfSing       ] ++ suffix
+                       notifyBan i mq cols selfSing strippedTarget newStatus banPla
                        when (newStatus && isLoggedIn pla)
                             (adminBoot p { args = strippedTarget : T.words "You have been banned from CurryMUD!" })
       xs      -> patternMatchFail fn [ showText xs ]
