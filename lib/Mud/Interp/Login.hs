@@ -68,27 +68,31 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                       , maxNameLenTxt
                                       , " characters long." ]
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise                      = helper |&| modifyState >=> \case
-    (_,  Left  (Just msg)) -> promptRetryName mq msg
-    (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkBanned             mq cn
-                                                            , checkProfanitiesDict i  mq cn
-                                                            , checkIllegalNames    ms mq cn
-                                                            , checkPropNamesDict      mq cn
-                                                            , checkWordsDict          mq cn ])
-                                  unit
-                                  nextPrompt
-    (ms, Right (originId, oldSing)) -> let cols = getColumns i ms in do
-        greet cols
-        handleLogin p { args = [] }
-        logPla    "interpName" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
-        logNotice "interpName" . T.concat $ [ dblQuote oldSing
-                                            , " has logged in as "
-                                            , cn'
-                                            , ". Id "
-                                            , showText originId
-                                            , " has been changed to "
-                                            , showText i
-                                            , "." ]
+  | otherwise = mIf (isPlaBanned cn')
+      (sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
+                                          ,  cn'
+                                          , " has been banned from CurryMUD!"
+                                          , dfltColor ])
+      (helper |&| modifyState >=> \case
+        (_,  Left  (Just msg)) -> promptRetryName mq msg
+        (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn
+                                                                , checkIllegalNames    ms mq cn
+                                                                , checkPropNamesDict      mq cn
+                                                                , checkWordsDict          mq cn ])
+                                      unit
+                                      nextPrompt
+        (ms, Right (originId, oldSing)) -> let cols = getColumns i ms in do
+            greet cols
+            handleLogin p { args = [] }
+            logPla    "interpName" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
+            logNotice "interpName" . T.concat $ [ dblQuote oldSing
+                                                , " has logged in as "
+                                                , cn'
+                                                , ". Id "
+                                                , showText originId
+                                                , " has been changed to "
+                                                , showText i
+                                                , "." ])
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
@@ -152,17 +156,6 @@ logIn newId ms newHost newTime originId = let ms' = peepNewId . movePC $ adoptNe
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
 
 
-checkBanned :: MsgQueue -> CmdName -> MudStack Any
-checkBanned mq cn = isPlaBanned cn >>= \case
-  True  -> do
-      sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
-                                         ,  cn
-                                         , " has been banned from CurryMUD."
-                                         , dfltColor ]
-      return . Any $ True
-  False -> return mempty
-
-
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
 checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProfanitiesDict" sorry cn
   where
@@ -190,16 +183,6 @@ checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |&| 
 
 checkSet :: CmdName -> MudStack () -> S.Set T.Text -> MudStack Any
 checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (return . Any $ isNG)
-
-
--- TODO: Delete?
-{-
-logProfanity :: CmdName -> HostName -> MudStack ()
-logProfanity cn (T.pack -> hn) = liftIO (mkTimestamp >>= \ts -> insertDbTbl . Prof ts hn $ cn)
-    liftIO (helper =<< mkTimestamp |&| try) >>= eitherRet (fileIOExHandler "logProfanity")
-  where
-    helper ts = T.appendFile profanitiesDbFile . T.concat $ [ ts, " ", hn, " ", cn ]
--}
 
 
 checkIllegalNames :: MudState -> MsgQueue -> CmdName -> MudStack Any

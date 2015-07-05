@@ -18,7 +18,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.Misc.Logging (logDbParseError)
+import Mud.Misc.Logging hiding (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -238,7 +238,6 @@ adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
-                 -- TODO: What if the target is offline?
                    | banId == i             -> sendFun "You can't ban yourself."
                    | getPlaFlag IsAdmin pla -> sendFun "You can't ban an admin."
                    | otherwise -> do
@@ -306,7 +305,7 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun $ strippedTarget <> " is not logged in."
                     | bootId == i -> sendFun "You can't boot yourself."
                     | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
-                        ok mq
+                        wrapSend mq cols $ "You have booted " <> strippedTarget <> "."
                         sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
                         bcastAdminsExcept [ i, bootId ] . T.concat $ [ selfSing, " booted ", strippedTarget, "." ]
       xs       -> patternMatchFail "adminBoot" [ showText xs ]
@@ -338,21 +337,6 @@ dumpDbTblHelper mq cols eithers = case sortEithers eithers of
       (map pp -> txts, []       ) -> multiWrapSend mq cols txts
       ([],             errorMsgs) -> logDbParseError errorMsgs
       (map pp -> txts, errorMsgs) -> multiWrapSend mq cols txts >> logDbParseError errorMsgs
-
-
--- TODO: Delete.
-{-
-dumpLog :: MsgQueue -> Cols -> FilePath -> BothGramNos -> MudStack ()
-dumpLog mq cols logFile (s, p) = send mq =<< helper
-  where
-    helper  = liftIO readLog |&| try >=> eitherRet handler
-    readLog = mIf (doesFileExist logFile)
-                  (return . multiWrapNl   cols . T.lines =<< T.readFile logFile)
-                  (return . wrapUnlinesNl cols $ "No " <> p <> " have been logged.")
-    handler e = do
-        fileIOExHandler "dumpLog" e
-        return . wrapUnlinesNl cols $ "Unfortunately, the " <> s <> " log could not be retrieved."
--}
 
 
 -----

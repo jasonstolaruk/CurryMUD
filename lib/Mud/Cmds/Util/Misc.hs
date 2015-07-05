@@ -28,7 +28,7 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.Misc.Logging (logDbParseError)
+import Mud.Misc.Logging hiding (logIOEx)
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.Misc hiding (patternMatchFail)
