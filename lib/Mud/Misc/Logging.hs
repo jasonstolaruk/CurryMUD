@@ -6,6 +6,7 @@ module Mud.Misc.Logging ( closeLogs
                         , initLogging
                         , initPlaLog
                         , logAndDispIOEx
+                        , logDbParseError
                         , logError
                         , logExMsg
                         , logIOEx
@@ -200,6 +201,10 @@ logIOEx modName (dblQuote -> funName) (dblQuote . showText -> e) =
 logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> T.Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showText -> e) =
     let msg = T.concat [ modName, " ", funName, ": ", e ] in logError msg >> wrapSend mq cols msg
+
+
+logDbParseError :: [T.Text] -> MudStack ()
+logDbParseError = logError . ("error(s) while parsing database table: " <>) . commas
 
 
 logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()

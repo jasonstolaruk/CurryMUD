@@ -169,6 +169,20 @@ instance Pretty AOrThe where
   pp The = "the"
 
 
+instance Pretty BanHost where
+  pp BanHost { .. } = slashes [ banHostTimestamp
+                              , banHostHost
+                              , banHostIsBanned ? "banned" :? "unbanned"
+                              , banHostReason ]
+
+
+instance Pretty BanPla where
+  pp BanPla { .. } = slashes [ banPlaTimestamp
+                             , banPlaName
+                             , banPlaIsBanned ? "banned" :? "unbanned"
+                             , banPlaReason ] 
+
+
 instance Pretty Bug where
   pp Bug { .. } = slashes [ bugTimestamp, bugName, bugLoc, bugDesc, bugIsOpen ? "open" :? "closed" ]
 

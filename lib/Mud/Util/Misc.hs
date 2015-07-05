@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, RankNTypes, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, RankNTypes, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Misc ( atLst1
                      , blowUp
@@ -23,6 +23,7 @@ module Mud.Util.Misc ( atLst1
                      , mkTimestamp
                      , patternMatchFail
                      , reverseLookup
+                     , sortEithers
                      , toMaybe
                      , unadulterated
                      , uncurry3
@@ -31,7 +32,8 @@ module Mud.Util.Misc ( atLst1
 
 import Mud.Util.Quoting
 
-import Control.Lens (Lens', lens)
+import Control.Lens (_1, _2, lens, Lens')
+import Control.Lens.Operators ((%~), (&))
 import Control.Monad (guard)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -148,6 +150,13 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 
 reverseLookup :: (Eq v) => v -> M.Map k v -> k
 reverseLookup v = fst . head . filter ((== v) . snd) . M.assocs
+
+
+sortEithers :: [Either l r] -> ([r], [l])
+sortEithers = foldr helper ([], [])
+  where
+    helper (Right a) acc = acc & _1 %~ (a :)
+    helper (Left  b) acc = acc & _2 %~ (b :)
 
 
 toMaybe :: Bool -> a -> Maybe a

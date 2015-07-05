@@ -4,6 +4,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
+                          , isPlaBanned
                           , mkActionParams
                           , mkSingleTarget
                           , pager
@@ -25,9 +26,12 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
 import Mud.Interp.Pager
 import Mud.Misc.ANSI
+import Mud.Misc.Database
 import Mud.Misc.LocPref
+import Mud.Misc.Logging (logDbParseError)
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -39,11 +43,12 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (throwTo)
 import Control.Monad (unless)
+import Control.Monad.IO.Class (liftIO)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
-import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 import qualified Data.Text as T
+import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -121,6 +126,21 @@ fileIOExHandler fn e = do
 
 throwToListenThread :: SomeException -> MudStack ()
 throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+
+
+-----
+
+
+isPlaBanned :: Sing -> MudStack Bool
+isPlaBanned banSing = do
+    eithers <- liftIO . dumpDbTbl $ "ban_pla"
+    let (banPlas, errorMsgs) = sortEithers (eithers :: [Either T.Text BanPla])
+    errorMsgs |#| logDbParseError
+    return . helper . reverse $ banPlas
+  where
+    helper [] = False
+    helper (x:xs) | banPlaName x == banSing = banPlaIsBanned x
+                  | otherwise               = helper xs
 
 
 -----

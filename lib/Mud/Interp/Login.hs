@@ -70,7 +70,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise                      = helper |&| modifyState >=> \case
     (_,  Left  (Just msg)) -> promptRetryName mq msg
-    (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn
+    (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkBanned             mq cn
+                                                            , checkProfanitiesDict i  mq cn
                                                             , checkIllegalNames    ms mq cn
                                                             , checkPropNamesDict      mq cn
                                                             , checkWordsDict          mq cn ])
@@ -149,6 +150,17 @@ logIn newId ms newHost newTime originId = let ms' = peepNewId . movePC $ adoptNe
     peepNewId ms'@(getPeepers newId -> peeperIds) =
         let replaceId = (newId :) . (originId `delete`)
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
+
+
+checkBanned :: MsgQueue -> CmdName -> MudStack Any
+checkBanned mq cn = isPlaBanned cn >>= \case
+  True  -> do
+      sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
+                                         ,  cn
+                                         , " has been banned from CurryMUD."
+                                         , dfltColor ]
+      return . Any $ True
+  False -> return mempty
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any

@@ -18,7 +18,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.Misc.Logging (logError)
+import Mud.Misc.Logging (logDbParseError)
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -102,11 +102,11 @@ adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
     , mkAdminCmd "admin"     adminAdmin       "Toggle a player's admin status."
-    -- , mkAdminCmd "banhost"   adminBanHost     "Ban one or more hostnames."
-    , mkAdminCmd "banplayer" adminBanPlayer   "Ban a player."
+    -- , mkAdminCmd "banhost"   adminBanHost     "Dump the banned hostname database, or ban/unban a host."
+    , mkAdminCmd "banplayer" adminBanPlayer   "Dump the banned player database, or ban/unban a player."
     , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
-    , mkAdminCmd "bug"       adminBug         "Dump the bug log."
+    , mkAdminCmd "bug"       adminBug         "Dump the bug database."
     , mkAdminCmd "date"      adminDate        "Display the current system date."
     , mkAdminCmd "host"      adminHost        "Display a report of connection statistics for one or more players."
     , mkAdminCmd "incognito" adminIncognito   "Toggle your incognito status."
@@ -114,13 +114,13 @@ adminCmds =
     , mkAdminCmd "peep"      adminPeep        "Start or stop peeping one or more players."
     , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state to disk)."
     , mkAdminCmd "print"     adminPrint       "Print a message to the server console."
-    , mkAdminCmd "profanity" adminProfanity   "Dump the profanity log."
+    , mkAdminCmd "profanity" adminProfanity   "Dump the profanity database."
     , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
     , mkAdminCmd "telepla"   adminTelePla     "Teleport to a given player."
     , mkAdminCmd "telerm"    adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
                                               \given room."
     , mkAdminCmd "time"      adminTime        "Display the current system time."
-    , mkAdminCmd "typo"      adminTypo        "Dump the typo log."
+    , mkAdminCmd "typo"      adminTypo        "Dump the typo database."
     , mkAdminCmd "uptime"    adminUptime      "Display the system uptime."
     , mkAdminCmd "whoin"     adminWhoIn       "Display or search a list of the characters who are currently logged in."
     , mkAdminCmd "whoout"    adminWhoOut      "Display or search a list of the characters who are currently logged \
@@ -213,27 +213,53 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 -----
 
 
--- TODO: "banplayer" with no arguments should dump a list.
+-- TODO: Help.
 adminBanPlayer :: Action
-adminBanPlayer p@AdviseNoArgs = advise p [ prefixAdminCmd "banplayer" ] "Please specify the full PC name of the player \
-                                                                        \you wish to ban, followed by a reason."
-adminBanPlayer (MsgWithTarget i mq cols target _ {- TODO: msg -}) = getState >>= helper >>= sequence_
+adminBanPlayer (NoArgs i mq cols) = do
+    eithers <- liftIO . dumpDbTbl $ "ban_pla"
+    dumpDbTblHelper mq cols (eithers :: [Either T.Text BanPla])
+    logPlaExec (prefixAdminCmd "banplayer") i
+adminBanPlayer p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] advice
   where
-    helper ms =
-      let fn                  = "adminBanPlayer helper"
-          SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to ban"
-      in return $ case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-        []      -> [ sendFun . T.concat $ [ "There is no PC by the name of "
-                                          , dblQuote strippedTarget
-                                          , ". "
-                                          , parensQuote "Note that you must specify the full PC name of the player you \
-                                                        \wish to ban." ] ]
-        [banId] -> let _ = getSing i ms in if -- TODO: Was "selfSing".
-                     | banId == i                             -> [ sendFun "You can't ban yourself." ]
-                     | getPlaFlag IsAdmin . getPla banId $ ms -> [ sendFun "You can't ban an admin." ]
-                     | otherwise -> pure unit
-        xs      -> patternMatchFail fn [ showText xs ]
+    advice = T.concat [ "Please also provide a reason, as in "
+                      , quoteColor
+                      , dblQuote $ prefixAdminCmd "banplayer " <> a <> " for harassing hanako"
+                      , dfltColor
+                      , "." ]
+adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+    let fn = "adminBanPlayer helper"
+        SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to ban"
+    in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
+      []      -> sendFun . T.concat $ [ "There is no PC by the name of "
+                                      , dblQuote strippedTarget
+                                      , ". "
+                                      , parensQuote "Note that you must specify the full PC name of the player you \
+                                                    \wish to ban." ]
+      [banId] -> let selfSing = getSing i     ms
+                     pla      = getPla  banId ms
+                 in if
+                 -- TODO: What if the target is offline?
+                   | banId == i             -> sendFun "You can't ban yourself."
+                   | getPlaFlag IsAdmin pla -> sendFun "You can't ban an admin."
+                   | otherwise -> do
+                       ts <- liftIO mkTimestamp
+                       newStatus <- not <$> isPlaBanned strippedTarget
+                       let banPla = BanPla ts strippedTarget newStatus msg
+                       liftIO . insertDbTbl $ banPla
+                       let v = newStatus ? "banned" :? "unbanned"
+                           suffix = [ ": " <> pp banPla ]
+                       sendFun            . T.concat $ [ "You have ",   v, " ",    strippedTarget ] ++ suffix
+                       bcastOtherAdmins i . T.concat $ [ selfSing, " ", v, " ",    strippedTarget ] ++ suffix
+                       logNotice fn       . T.concat $ [ selfSing, " ", v, " ",    strippedTarget ] ++ suffix
+                       logPla    fn i     . T.concat $ [                v, " ",    strippedTarget ] ++ suffix
+                       logPla    fn banId . T.concat $ [                v, " by ", selfSing       ] ++ suffix
+                       when (newStatus && isLoggedIn pla)
+                            (adminBoot p { args = strippedTarget : T.words "You have been banned from CurryMUD!" })
+      xs      -> patternMatchFail fn [ showText xs ]
 adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
+
+
+--TODO: Delete.
 {-
                      | otherwise -> (view locks |&| onEnv >=> toggleBan `catch` (lockedFileExHandler banHostFile)
 
@@ -249,20 +275,9 @@ runAsync f = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common mod
 -- TODO: Wait for the async to complete first.
 views banPlaLock (atomically . flip putTMVar Done) ls
 
-
-                         [ ok mq
-                         , bcastAdminsExcept [ i, banId ] . T.concat $ [ selfSing, " banned ", strippedTarget, "." ]
-                         , logNotice fn       $ T.concat [ selfSing, " banned ", strippedTarget, "." ]
-                         , logPla    fn i     $ T.concat [           "banned ",  strippedTarget, "." ]
-                         , logPla    fn banId $ T.concat [           "banned by ", selfSing,     "." ] ]
-        xs      -> patternMatchFail fn [ showText xs ]
-adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
-
-
 sorryLockedFile :: FilePath -> String -> MudStack ()
 sorryLockedFile absolute (T.pack -> err) =
     (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ])
-
 
 lockedFileExHandler :: FilePath -> SomeException -> MudStack ()
 lockedFileExHandler (dblQuote . T.pack -> fp) e = do
@@ -311,23 +326,18 @@ adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
 adminBug :: Action
 adminBug (NoArgs i mq cols) = do
-    eithers <- liftIO . dumpDbTbl $ "Bug"
+    eithers <- liftIO . dumpDbTbl $ "bug"
     dumpDbTblHelper mq cols (eithers :: [Either T.Text Bug])
     logPlaExec (prefixAdminCmd "bug") i
 adminBug p = withoutArgs adminBug p
 
 
 dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [Either T.Text a] -> MudStack ()
-dumpDbTblHelper mq cols eithers = case foldr helper ([], []) eithers of
-      ([],   []       ) -> sendHelper [ "The database is empty." ]
-      (txts, []       ) -> sendHelper txts
-      ([],   errorMsgs) -> logHelper errorMsgs
-      (txts, errorMsgs) -> sendHelper txts >> logHelper errorMsgs
-  where
-    helper (Left  msg)  = _2 %~ (msg  :)
-    helper (Right p  )  = _1 %~ (pp p :)
-    logHelper errorMsgs = logError $ "error(s) while parsing database table: " <> commas errorMsgs
-    sendHelper = multiWrapSend mq cols
+dumpDbTblHelper mq cols eithers = case sortEithers eithers of
+      ([],             []       ) -> wrapSend mq cols "The database is empty."
+      (map pp -> txts, []       ) -> multiWrapSend mq cols txts
+      ([],             errorMsgs) -> logDbParseError errorMsgs
+      (map pp -> txts, errorMsgs) -> multiWrapSend mq cols txts >> logDbParseError errorMsgs
 
 
 -- TODO: Delete.
@@ -591,7 +601,7 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 adminProfanity :: Action
 adminProfanity (NoArgs i mq cols) = do
-    eithers <- liftIO . dumpDbTbl $ "Prof"
+    eithers <- liftIO . dumpDbTbl $ "prof"
     dumpDbTblHelper mq cols (eithers :: [Either T.Text Prof])
     logPlaExec (prefixAdminCmd "profanity") i
 adminProfanity p = withoutArgs adminProfanity p
@@ -723,7 +733,7 @@ adminTime p = withoutArgs adminTime p
 
 adminTypo :: Action
 adminTypo (NoArgs i mq cols) = do
-    eithers <- liftIO . dumpDbTbl $ "Typo"
+    eithers <- liftIO . dumpDbTbl $ "typo"
     dumpDbTblHelper mq cols (eithers :: [Either T.Text Typo])
     logPlaExec (prefixAdminCmd "typo") i
 adminTypo p = withoutArgs adminTypo p

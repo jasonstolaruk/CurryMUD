@@ -124,10 +124,10 @@ bugTypoLogger (Msg i mq msg) wl = getState >>= \ms ->
     in liftIO mkTimestamp >>= \ts -> do
         sequence_ $ case wl of BugLog  -> let b = Bug ts s mkLoc msg True
                                           in [ insertDbTbl b
-                                             , bcastAdmins $ s <> " has logged a bug: "  <> pp b ]
+                                             , bcastOtherAdmins i $ s <> " has logged a bug: "  <> pp b ]
                                TypoLog -> let t = Typo ts s mkLoc msg True
                                           in [ insertDbTbl t
-                                             , bcastAdmins $ s <> " has logged a typo: " <> pp t ]
+                                             , bcastOtherAdmins i $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."
         logPla "bugTypoLogger" i . T.concat $ [ "logged a ", showText wl, ": ", msg ]
 bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
