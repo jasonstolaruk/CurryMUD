@@ -69,10 +69,18 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                       , " characters long." ]
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise = mIf (isPlaBanned cn')
-      (sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
-                                          ,  cn'
-                                          , " has been banned from CurryMUD!"
-                                          , dfltColor ])
+      (do host <- T.pack . getCurrHostName i <$> getState
+          sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
+                                             ,  cn'
+                                             , " has been banned from CurryMUD!"
+                                             , dfltColor ]
+          let msg  = T.concat [ cn'
+                              , " has been booted at login "
+                              , parensQuote "player is banned"
+                              , "." ]
+              hint = " Consider also banning host " <> dblQuote host <> "."
+          bcastAdmins $ msg <> hint
+          logNotice "interpName" msg)
       (helper |&| modifyState >=> \case
         (_,  Left  (Just msg)) -> promptRetryName mq msg
         (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn

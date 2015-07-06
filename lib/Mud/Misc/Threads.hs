@@ -129,16 +129,20 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                                         , showText . NI.ipv4 $ n ]
                             | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
-    runAsync f    = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common module.
-    loop sock = do
-        (h, host, localPort) <- liftIO . accept $ sock
-        logNotice "listen loop" . T.concat $ [ "connected to "
-                                             , showText host
-                                             , " on local port "
-                                             , showText localPort
-                                             , "." ]
+    runAsync f = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common module.
+    loop sock = let fn = "listen loop" in do
+        (h, host@(T.pack -> host'), localPort) <- liftIO . accept $ sock
+        logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
         mIf (isHostBanned . T.toLower . T.pack $ host)
-            (liftIO $ (T.hPutStr h . nlnl $ "You have been banned from CurryMUD!") >> hClose h) -- TODO: Log something?
+            (do liftIO . T.hPutStr h . nlnl $ "You have been banned from CurryMUD!"
+                liftIO . hClose $ h
+                let msg = T.concat [ "Connection from "
+                                   , dblQuote host'
+                                   , " refused "
+                                   , parensQuote "host is banned"
+                                   , "." ]
+                bcastAdmins msg
+                logNotice fn msg)
             (setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host)))
     cleanUp auxAsyncs sock = do
         logNotice "listen cleanUp" "closing the socket."

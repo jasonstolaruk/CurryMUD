@@ -142,6 +142,7 @@ isHostBanned host = do
     helper [] = False
     helper (x:xs) | banHostHost x == host = banHostIsBanned x
                   | otherwise             = helper xs
+                  -- TODO: COnsider making a typeclass for banHost and banPla, defining functions bannedName, isBanned, etc.
 
 
 -----
