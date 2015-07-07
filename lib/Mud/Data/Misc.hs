@@ -4,6 +4,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Action
                      , Amount
                      , Args
+                     , BanRecord(..)
                      , Broadcast
                      , ClassifiedBroadcast(..)
                      , Cmd(..)
@@ -99,6 +100,30 @@ instance FromRol Slot where
   fromRol LR = RingLRS
   fromRol LP = RingLPS
   fromRol s  = patternMatchFail "fromRol" [ showText s ]
+
+
+-----
+
+
+class BanRecord a where
+  recTimestamp :: a -> T.Text
+  recTarget    :: a -> T.Text
+  recIsBanned  :: a -> Bool
+  recReason    :: a -> T.Text
+
+
+instance BanRecord BanHost where
+  recTimestamp = banHostTimestamp
+  recTarget    = banHostHost
+  recIsBanned  = banHostIsBanned
+  recReason    = banHostReason
+
+
+instance BanRecord BanPla where
+  recTimestamp = banPlaTimestamp
+  recTarget    = banPlaName
+  recIsBanned  = banPlaIsBanned
+  recReason    = banPlaReason
 
 
 -----

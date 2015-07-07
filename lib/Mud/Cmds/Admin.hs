@@ -224,7 +224,7 @@ adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] advice
   where
     advice = T.concat [ "Please also provide a reason, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "banhost " <> a <> " for harassing hanako"
+                      , dblQuote $ prefixAdminCmd "banhost " <> a <> " for harassment"
                       , dfltColor
                       , "." ]
 adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms -> do

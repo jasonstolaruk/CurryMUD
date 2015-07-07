@@ -136,13 +136,17 @@ isHostBanned :: T.Text -> MudStack Bool
 isHostBanned host = do
     eithers <- liftIO . dumpDbTbl $ "ban_host"
     let (banHosts, errorMsgs) = sortEithers (eithers :: [Either T.Text BanHost])
+    isBanned host errorMsgs banHosts
+
+
+isBanned :: (BanRecord a) => T.Text -> [T.Text] -> [a] -> MudStack Bool
+isBanned target errorMsgs banRecs = do
     errorMsgs |#| logDbParseError
-    return . helper . reverse $ banHosts
+    return . helper . reverse $ banRecs
   where
     helper [] = False
-    helper (x:xs) | banHostHost x == host = banHostIsBanned x
+    helper (x:xs) | recTarget x == target = recIsBanned x
                   | otherwise             = helper xs
-                  -- TODO: COnsider making a typeclass for banHost and banPla, defining functions bannedName, isBanned, etc.
 
 
 -----
@@ -152,12 +156,7 @@ isPlaBanned :: Sing -> MudStack Bool
 isPlaBanned banSing = do
     eithers <- liftIO . dumpDbTbl $ "ban_pla"
     let (banPlas, errorMsgs) = sortEithers (eithers :: [Either T.Text BanPla])
-    errorMsgs |#| logDbParseError
-    return . helper . reverse $ banPlas
-  where
-    helper [] = False
-    helper (x:xs) | banPlaName x == banSing = banPlaIsBanned x
-                  | otherwise               = helper xs
+    isBanned banSing errorMsgs banPlas
 
 
 -----
