@@ -36,10 +36,9 @@ import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
-import Control.Exception.Lifted (bracket, catch, handle, throwIO)
+import Control.Exception.Lifted (catch, handle, throwIO)
 import Control.Lens (both, over, view, views)
 import Control.Monad ((>=>), forM_, forever, guard, when)
 import Control.Monad.IO.Class (liftIO)
@@ -128,9 +127,7 @@ loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKill
                        , parensQuote $ "inside " <> dblQuote n
                        , ". "
                        , dblQuote . showText $ e ]
-    in handle (handler msg) $ bracket (atomically . takeTMVar $ logExLock)
-                                      (\Done -> atomically . putTMVar logExLock $ Done)
-                                      (\Done -> T.appendFile loggingExLogFile . nl $ msg)
+    in handle (handler msg) . withLock logExLock . T.appendFile loggingExLogFile . nl $ msg
   where
     handler msg ex | isAlreadyInUseError ex = showIt
                    | isPermissionError   ex = showIt

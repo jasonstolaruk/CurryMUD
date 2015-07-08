@@ -12,13 +12,11 @@ import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice)
 
 import Control.Concurrent.Async (wait, withAsync)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Exception (SomeException)
 import Control.Exception.Lifted (catch)
 import Control.Lens (views)
 import Control.Lens.Operators ((^.))
-import Control.Monad ((>=>), void, when)
+import Control.Monad ((>=>), when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (encode, toJSON)
@@ -56,36 +54,34 @@ persist = do
 
 
 persistHelper :: Lock -> MudState -> IO ()
-persistHelper l ms = do
-    atomically . void . takeTMVar $ l
+persistHelper l ms = withLock l $ do
     path <- getNonExistingPath =<< (persistDir </>) . T.unpack . T.replace ":" "-" <$> mkTimestamp
     createDirectory path
     cont <- dropIrrelevantFilenames . sort <$> getDirectoryContents persistDir
     when (length cont > noOfPersistedWorlds) . removeDirectoryRecursive . (persistDir </>) . head $ cont
-    flip withAsync wait $ mapM_ runResourceT [ helper (ms^.armTbl       ) $ path </> armTblFile
-                                             , helper (ms^.clothTbl     ) $ path </> clothTblFile
-                                             , helper (ms^.coinsTbl     ) $ path </> coinsTblFile
-                                             , helper (ms^.conTbl       ) $ path </> conTblFile
-                                             , helper (ms^.entTbl       ) $ path </> entTblFile
-                                             , helper (eqTblHelper ms   ) $ path </> eqTblFile
-                                             , helper (ms^.hostTbl      ) $ path </> hostTblFile
-                                             , helper (ms^.invTbl       ) $ path </> invTblFile
-                                             , helper (ms^.mobTbl       ) $ path </> mobTblFile
-                                             , helper (ms^.objTbl       ) $ path </> objTblFile
-                                             , helper (ms^.pcTbl        ) $ path </> pcTblFile
-                                             , helper (ms^.plaTbl       ) $ path </> plaTblFile
-                                             , helper (ms^.rmTbl        ) $ path </> rmTblFile
-                                             , helper (ms^.rmTeleNameTbl) $ path </> rmTeleNameTblFile
-                                             , helper (ms^.typeTbl      ) $ path </> typeTblFile
-                                             , helper (ms^.wpnTbl       ) $ path </> wpnTblFile ]
-    atomically . putTMVar l $ Done -- TODO: What if an exception is thrown?
+    flip withAsync wait $ mapM_ runResourceT [ write (ms^.armTbl       ) $ path </> armTblFile
+                                             , write (ms^.clothTbl     ) $ path </> clothTblFile
+                                             , write (ms^.coinsTbl     ) $ path </> coinsTblFile
+                                             , write (ms^.conTbl       ) $ path </> conTblFile
+                                             , write (ms^.entTbl       ) $ path </> entTblFile
+                                             , write (eqTblHelper ms   ) $ path </> eqTblFile
+                                             , write (ms^.hostTbl      ) $ path </> hostTblFile
+                                             , write (ms^.invTbl       ) $ path </> invTblFile
+                                             , write (ms^.mobTbl       ) $ path </> mobTblFile
+                                             , write (ms^.objTbl       ) $ path </> objTblFile
+                                             , write (ms^.pcTbl        ) $ path </> pcTblFile
+                                             , write (ms^.plaTbl       ) $ path </> plaTblFile
+                                             , write (ms^.rmTbl        ) $ path </> rmTblFile
+                                             , write (ms^.rmTeleNameTbl) $ path </> rmTeleNameTblFile
+                                             , write (ms^.typeTbl      ) $ path </> typeTblFile
+                                             , write (ms^.wpnTbl       ) $ path </> wpnTblFile ]
   where
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")
                                   (return path)
-    helper tbl file = yield (toJSON tbl) $$ CL.map (B.toStrict . encode) =$ CB.sinkFile file
-    eqTblHelper     = views eqTbl convertEqMaps
-    convertEqMaps   = IM.map (IM.fromList . map swap . M.toList)
+    write tbl file = yield (toJSON tbl) $$ CL.map (B.toStrict . encode) =$ CB.sinkFile file
+    eqTblHelper    = views eqTbl convertEqMaps
+    convertEqMaps  = IM.map (IM.fromList . map swap . M.toList)
 
 
 persistExHandler :: SomeException -> MudStack ()

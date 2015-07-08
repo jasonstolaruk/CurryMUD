@@ -19,7 +19,8 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , modifyState
                                 , onEnv
                                 , removeAdHoc
-                                , sortInv ) where
+                                , sortInv 
+                                , withLock ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -33,6 +34,9 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Control.Arrow ((***))
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
+import Control.Exception.Lifted (bracket)
 import Control.Lens (_1, _2, at, both)
 import Control.Lens.Getter (view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
@@ -46,6 +50,7 @@ import Data.Monoid ((<>))
 import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
+
 
 
 findPCIds :: MudState -> [Id] -> [Id]
@@ -207,3 +212,12 @@ sortInv ms is = let (foldr helper ([], []) -> (pcIs, nonPCIs)) = [ (i, getType i
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped nonPCIs                     = [ (i, views entName fromJust e, e^.sing) | i <- nonPCIs
                                                                                   , let e = getEnt i ms ]
+
+
+-----
+
+
+withLock :: Lock -> IO () -> IO ()
+withLock l f = bracket (atomically . takeTMVar $ l)
+                       (\Done -> atomically . putTMVar l $ Done)
+                       (\Done -> f)

@@ -129,7 +129,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                                         , showText . NI.ipv4 $ n ]
                             | n <- ns ]
         in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
-    runAsync f = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common module.
+    runAsync f = onEnv $ liftIO . async . runReaderT f
     loop sock = let fn = "listen loop" in do
         (h, host@(T.pack -> host'), localPort) <- liftIO . accept $ sock
         logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
