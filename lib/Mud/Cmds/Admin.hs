@@ -289,34 +289,6 @@ adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
 adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
 
 
---TODO: Delete.
-{-
-                     | otherwise -> (view locks |&| onEnv >=> toggleBan `catch` (lockedFileExHandler banHostFile)
-
-toggleBan ls = [ views banPlaLock (atomically . void . takeTMVar) ls
-               , eitherDecode <$> (liftIO . B.readFile $ banHostFile) >>= \case
-                   Left  err       -> sorryLockedFile banHostFile err
-                   Right banEvents ->
-
--- where f is of type Mudstack (), returns Mudstack Async
-runAsync f = onEnv $ liftIO . async . runReaderT f -- TODO: Move to a common module.
-
--- TODO: Restore lock even on exception.
--- TODO: Wait for the async to complete first.
-views banPlaLock (atomically . flip putTMVar Done) ls
-
-sorryLockedFile :: FilePath -> String -> MudStack ()
-sorryLockedFile absolute (T.pack -> err) =
-    (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ])
-
-lockedFileExHandler :: FilePath -> SomeException -> MudStack ()
-lockedFileExHandler (dblQuote . T.pack -> fp) e = do
-    logExMsg "lockedFileExHandler" () e
-    throwToListenThread e
-  where
-    msg = "exception caught while reading/writing " <> fp <> "; rethrowing to listen thread"
--}
-
 
 -----
 

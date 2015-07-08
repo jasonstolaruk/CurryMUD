@@ -26,18 +26,20 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
-import Control.Exception.Lifted (catch, throwIO)
+import Control.Exception.Lifted (bracket, catch, handle, throwIO)
 import Control.Lens (both, over, view, views)
 import Control.Monad ((>=>), forM_, forever, guard, when)
 import Control.Monad.IO.Class (liftIO)
@@ -45,6 +47,9 @@ import Control.Monad.Reader (asks)
 import Data.List (sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
+import qualified Data.IntMap.Lazy as IM (elems, lookup)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T (appendFile, hPutStrLn)
 import System.Directory (doesFileExist, getDirectoryContents, removeFile, renameFile)
 import System.FilePath ((<.>), (</>), replaceExtension, takeBaseName)
 import System.IO (stderr)
@@ -55,36 +60,41 @@ import System.Log.Handler (close, setFormatter)
 import System.Log.Handler.Simple (fileHandler)
 import System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandler, rootLoggerName, setHandlers, setLevel, updateGlobalLogger)
 import System.Posix.Files (fileSize, getFileStatus)
-import qualified Data.IntMap.Lazy as IM (elems, lookup)
-import qualified Data.Text as T
-import qualified Data.Text.IO as T (appendFile, hPutStrLn)
 
 
 default (Int)
+
+
+-----
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Misc.Logging"
 
 
 -- ==================================================
 -- Starting logs:
 
 
-initLogging :: ShouldLog -> IO (Maybe LogService, Maybe LogService)
-initLogging Don'tLog = return (Nothing, Nothing)
-initLogging DoLog    = do
+initLogging :: ShouldLog -> Maybe Lock -> IO (Maybe LogService, Maybe LogService)
+initLogging Don'tLog _                = return (Nothing, Nothing)
+initLogging DoLog    (Just logExLock) = do
     updateGlobalLogger rootLoggerName removeHandler
     (eq, nq) <- (,) <$> newTQueueIO <*> newTQueueIO
-    (ea, na) <- (,) <$> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq
-                    <*> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq
+    (ea, na) <- (,) <$> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq logExLock
+                    <*> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq logExLock
     return (Just (ea, eq), Just (na, nq))
+initLogging DoLog Nothing = patternMatchFail "initLogging" [ showText DoLog, "Nothing" ]
 
 
 type LogName    = T.Text
 type LoggingFun = String -> String -> IO ()
 
 
-spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> IO LogAsync
-spawnLogger fn p (T.unpack -> ln) f q =
-    async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler "spawnLogger")
-                  (logRotationFlagger q `catch` loggingThreadExHandler "logRotationFlagger")
+spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> Lock -> IO LogAsync
+spawnLogger fn p (T.unpack -> ln) f q logExLock =
+    async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler logExLock "spawnLogger")
+                  (logRotationFlagger q `catch` loggingThreadExHandler logExLock "logRotationFlagger")
   where
     initLog = p |&| fileHandler fn >=> \gh ->
         let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
@@ -110,15 +120,17 @@ spawnLogger fn p (T.unpack -> ln) f q =
             loop =<< initLog
 
 
-loggingThreadExHandler :: T.Text -> SomeException -> IO ()
-loggingThreadExHandler n e = guard (fromException e /= Just ThreadKilled) >> mkTimestamp >>= \ts ->
+loggingThreadExHandler :: Lock -> T.Text -> SomeException -> IO ()
+loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKilled) >> mkTimestamp >>= \ts ->
     let msg = T.concat [ ts
                        , " "
                        , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
                        , parensQuote $ "inside " <> dblQuote n
                        , ". "
                        , dblQuote . showText $ e ]
-    in (T.appendFile loggingExLogFile . nl $ msg) `catch` handler msg
+    in handle (handler msg) $ bracket (atomically . takeTMVar $ logExLock)
+                                      (\Done -> atomically . putTMVar logExLock $ Done)
+                                      (\Done -> T.appendFile loggingExLogFile . nl $ msg)
   where
     handler msg ex | isAlreadyInUseError ex = showIt
                    | isPermissionError   ex = showIt
@@ -137,8 +149,9 @@ logRotationFlagger q = forever loop
 
 initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
-    q <- liftIO newTQueueIO
-    a <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM $ q
+    logExLock <- onEnv $ views (locks.loggingExLock) return
+    q         <- liftIO newTQueueIO
+    a         <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM q $ logExLock
     setLogService i (a, q)
 
 

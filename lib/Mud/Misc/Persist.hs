@@ -78,7 +78,7 @@ persistHelper l ms = do
                                              , helper (ms^.rmTeleNameTbl) $ path </> rmTeleNameTblFile
                                              , helper (ms^.typeTbl      ) $ path </> typeTblFile
                                              , helper (ms^.wpnTbl       ) $ path </> wpnTblFile ]
-    atomically . putTMVar l $ Done
+    atomically . putTMVar l $ Done -- TODO: What if an exception is thrown?
   where
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")

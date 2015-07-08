@@ -33,12 +33,12 @@ type MudStack = ReaderT MudData IO
 -- ==================================================
 
 
-data MudData = MudData { _errorLog       :: Maybe LogService
-                       , _gen            :: GenIO
-                       , _locks          :: Locks
-                       , _mudStateIORef  :: IORef MudState
-                       , _noticeLog      :: Maybe LogService
-                       , _startTime      :: TimeSpec }
+data MudData = MudData { _errorLog      :: Maybe LogService
+                       , _gen           :: GenIO
+                       , _locks         :: Locks
+                       , _mudStateIORef :: IORef MudState
+                       , _noticeLog     :: Maybe LogService
+                       , _startTime     :: TimeSpec }
 
 
 data MudState = MudState { _armTbl        :: ArmTbl
@@ -242,7 +242,7 @@ type Inv = [Id]
 -- ==================================================
 
 
-data Locks = Locks { _loggingExLock :: Lock -- TODO: Use this lock.
+data Locks = Locks { _loggingExLock :: Lock
                    , _persistLock   :: Lock }
 
 

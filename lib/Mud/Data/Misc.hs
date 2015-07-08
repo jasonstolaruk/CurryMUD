@@ -560,7 +560,7 @@ data ShouldBracketQuote = DoBracket | Don'tBracket
 -----
 
 
-data ShouldLog = DoLog | Don'tLog
+data ShouldLog = DoLog | Don'tLog deriving (Show)
 
 
 -----

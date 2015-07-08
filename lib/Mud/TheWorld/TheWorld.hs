@@ -45,7 +45,8 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 initMudData :: ShouldLog -> IO MudData
 initMudData shouldLog = do
-    (errorLogService, noticeLogService) <- initLogging shouldLog
+    (logExLock, perLock) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
+    (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
     genIO   <- createSystemRandom
     msIORef <- newIORef MudState { _armTbl        = IM.empty
                                  , _clothTbl      = IM.empty
@@ -67,11 +68,10 @@ initMudData shouldLog = do
                                  , _threadTbl     =  M.empty
                                  , _typeTbl       = IM.empty
                                  , _wpnTbl        = IM.empty }
-    ls    <- Locks <$> newTMVarIO Done <*> newTMVarIO Done
     start <- getTime Monotonic
     return MudData { _errorLog       = errorLogService
                    , _gen            = genIO
-                   , _locks          = ls
+                   , _locks          = Locks logExLock perLock
                    , _mudStateIORef  = msIORef
                    , _noticeLog      = noticeLogService
                    , _startTime      = start }

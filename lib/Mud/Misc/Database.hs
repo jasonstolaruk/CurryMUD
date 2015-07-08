@@ -28,6 +28,9 @@ import qualified Data.Conduit.List as CL (consume, map)
 import qualified Data.Text as T
 
 
+--TODO: What about exceptions?
+
+
 -- ==================================================
 
 
