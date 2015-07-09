@@ -229,7 +229,7 @@ adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] advice
                       , "." ]
 adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
     isHostBanned target >>= \case
-      Nothing -> undefined -- TODO: What should we really do here?
+      Nothing -> sorryDbEx mq cols
       Just b  -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
           let banHost = BanHost ts target newStatus msg
           (liftIO . insertDbTbl $ banHost) `catch` dbExHandler "adminBanHost"
@@ -287,7 +287,7 @@ adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                    | banId == i             -> sendFun "You can't ban yourself."
                    | getPlaFlag IsAdmin pla -> sendFun "You can't ban an admin."
                    | otherwise -> isPlaBanned strippedTarget >>= \case
-                     Nothing -> undefined -- TODO: What should we really do here?
+                     Nothing -> sorryDbEx mq cols
                      Just b  -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
                          let banPla = BanPla ts strippedTarget newStatus msg
                          (liftIO . insertDbTbl $ banPla) `catch` dbExHandler "adminBanPlayer"

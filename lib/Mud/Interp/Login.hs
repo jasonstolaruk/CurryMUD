@@ -60,7 +60,7 @@ logPla = L.logPla "Mud.Interp.Login"
 
 
 interpName :: Interp
-interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
+interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn =
       promptRetryName mq . T.concat $ [ "Your name must be between "
                                       , minNameLenTxt
@@ -69,7 +69,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                       , " characters long." ]
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise = isPlaBanned cn' >>= \case
-    Nothing    -> undefined -- TODO: What should we really do here?
+    Nothing    -> sorryDbEx mq cols
     Just True  -> handleBanned
     Just False -> handleNotBanned
   where
@@ -93,8 +93,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                                                 , checkWordsDict          mq cn ])
                                       unit
                                       nextPrompt
-        (ms, Right (originId, oldSing)) -> let cols = getColumns i ms in do
-            greet cols
+        (ms, Right (originId, oldSing)) -> do
+            greet
             handleLogin p { args = [] }
             logPla    "interpName" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
             logNotice "interpName" . T.concat $ [ dblQuote oldSing
@@ -121,7 +121,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
-    greet cols = wrapSend mq cols . nlPrefix $ if cn' == "Root"
+    greet = wrapSend mq cols . nlPrefix $ if cn' == "Root"
       then let sudoLecture = "HELLO, ROOT! We trust you have received the usual lecture from the local System \
                              \Administrator..."
            in zingColor <> sudoLecture <> dfltColor

@@ -13,6 +13,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , pager
                           , prefixCmd
                           , sendGenericErrorMsg
+                          , sorryDbEx
                           , sorryIgnoreLocPref
                           , sorryIgnoreLocPrefPlur
                           , throwToListenThread
@@ -232,6 +233,13 @@ prefixCmd (T.singleton -> prefix) cn = prefix <> cn
 
 sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
+
+
+-----
+
+
+sorryDbEx :: MsgQueue -> Cols -> MudStack ()
+sorryDbEx mq cols = wrapSend mq cols "There was an error when reading the database."
 
 
 -----

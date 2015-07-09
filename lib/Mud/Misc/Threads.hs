@@ -134,8 +134,8 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         (h, host@(T.pack -> host'), localPort) <- liftIO . accept $ sock
         logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
         (isHostBanned . T.toLower . T.pack $ host) >>= \case
-          Nothing   -> undefined -- TODO: What should we really do here?
-          Just True -> do
+          Just False -> setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
+          _          -> do
               liftIO . T.hPutStr h . nlnl $ "You have been banned from CurryMUD!"
               liftIO . hClose $ h
               let msg = T.concat [ "Connection from "
@@ -145,7 +145,6 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                  , "." ]
               bcastAdmins msg
               logNotice fn msg
-          Just False -> setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
     cleanUp auxAsyncs sock = do
         logNotice "listen cleanUp" "closing the socket."
         liftIO . sClose $ sock
