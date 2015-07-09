@@ -120,7 +120,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
         logNotice "listen initialize" "creating the database tables."
-        liftIO migrateDbTbls
+        liftIO migrateDbTbls `catch` dbExHandler "listen"
         sortAllInvs
         logInterfaces
     logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
@@ -133,17 +133,19 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     loop sock = let fn = "listen loop" in do
         (h, host@(T.pack -> host'), localPort) <- liftIO . accept $ sock
         logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
-        mIf (isHostBanned . T.toLower . T.pack $ host)
-            (do liftIO . T.hPutStr h . nlnl $ "You have been banned from CurryMUD!"
-                liftIO . hClose $ h
-                let msg = T.concat [ "Connection from "
-                                   , dblQuote host'
-                                   , " refused "
-                                   , parensQuote "host is banned"
-                                   , "." ]
-                bcastAdmins msg
-                logNotice fn msg)
-            (setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host)))
+        (isHostBanned . T.toLower . T.pack $ host) >>= \case
+          Nothing   -> undefined -- TODO: What should we really do here?
+          Just True -> do
+              liftIO . T.hPutStr h . nlnl $ "You have been banned from CurryMUD!"
+              liftIO . hClose $ h
+              let msg = T.concat [ "Connection from "
+                                 , dblQuote host'
+                                 , " refused "
+                                 , parensQuote "host is banned"
+                                 , "." ]
+              bcastAdmins msg
+              logNotice fn msg
+          Just False -> setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
     cleanUp auxAsyncs sock = do
         logNotice "listen cleanUp" "closing the socket."
         liftIO . sClose $ sock

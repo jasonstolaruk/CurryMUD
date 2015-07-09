@@ -19,7 +19,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , modifyState
                                 , onEnv
                                 , removeAdHoc
-                                , sortInv 
+                                , sortInv
                                 , withLock ) where
 
 import Mud.Data.Misc

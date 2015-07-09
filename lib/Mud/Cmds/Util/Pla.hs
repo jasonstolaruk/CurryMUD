@@ -49,6 +49,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , sorryIncog ) where
 
 import Mud.Cmds.Util.Abbrev
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
@@ -72,6 +73,7 @@ import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first)
+import Control.Exception.Lifted (catch)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad (guard)
@@ -123,10 +125,10 @@ bugTypoLogger (Msg i mq msg) wl = getState >>= \ms ->
         mkLoc = parensQuote (showText ri) <> " " <> getRm ri ms ^.rmName
     in liftIO mkTimestamp >>= \ts -> do
         sequence_ $ case wl of BugLog  -> let b = Bug ts s mkLoc msg True
-                                          in [ insertDbTbl b
+                                          in [ insertDbTbl b `catch` dbExHandler "bugTypoLogger"
                                              , bcastOtherAdmins i $ s <> " has logged a bug: "  <> pp b ]
                                TypoLog -> let t = Typo ts s mkLoc msg True
-                                          in [ insertDbTbl t
+                                          in [ insertDbTbl t `catch` dbExHandler "bugTypoLogger"
                                              , bcastOtherAdmins i $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."
         logPla "bugTypoLogger" i . T.concat $ [ "logged a ", showText wl, ": ", msg ]

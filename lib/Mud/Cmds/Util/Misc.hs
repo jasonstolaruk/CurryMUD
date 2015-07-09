@@ -1,8 +1,10 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( advise
+                          , dbExHandler
                           , dispCmdList
                           , dispMatches
+                          , dumpDbTblWithHandler
                           , fileIOExHandler
                           , isHostBanned
                           , isPlaBanned
@@ -29,7 +31,7 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.Misc.Logging hiding (logIOEx)
+import Mud.Misc.Logging hiding (logExMsg, logIOEx)
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -38,16 +40,17 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logIOEx)
+import qualified Mud.Misc.Logging as L (logExMsg, logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Exception (IOException, SomeException, toException)
-import Control.Exception.Lifted (throwTo)
+import Control.Exception.Lifted (catch, throwTo)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
+import Database.Persist.Class (PersistEntity)
 import qualified Data.Text as T
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
@@ -57,6 +60,10 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Misc"
 
 
 -----
+
+
+logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
+logExMsg = L.logExMsg "Mud.Cmds.Util.Misc"
 
 
 logIOEx :: T.Text -> IOException -> MudStack ()
@@ -76,6 +83,18 @@ advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
+
+
+-----
+
+
+dbExHandler :: T.Text -> SomeException -> MudStack ()
+dbExHandler fn e = let msg = T.concat [ "exception caught in "
+                                      , dblQuote fn
+                                      , " "
+                                      , parensQuote "likely during a database operation"
+                                      , "; rethrowing to listen thread" ]
+                   in logExMsg "dbExHandler" msg e >> throwToListenThread e
 
 
 -----
@@ -132,11 +151,16 @@ throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 -----
 
 
-isHostBanned :: T.Text -> MudStack Bool
-isHostBanned host = do
-    eithers <- liftIO . dumpDbTbl $ "ban_host"
+isHostBanned :: T.Text -> MudStack (Maybe Bool)
+isHostBanned host = dumpDbTblWithHandler "isHostBanned" "ban_host" >>= \eithers ->
     let (banHosts, errorMsgs) = sortEithers (eithers :: [Either T.Text BanHost])
-    isBanned host errorMsgs banHosts
+    in Just <$> isBanned host errorMsgs banHosts
+
+
+dumpDbTblWithHandler :: (PersistEntity a) => T.Text -> T.Text -> MudStack [Either T.Text a]
+dumpDbTblWithHandler fn tn = (liftIO . dumpDbTbl $ tn) `catch` handler
+  where
+    handler e = emptied . dbExHandler fn $ (e :: SomeException)
 
 
 isBanned :: (BanRecord a) => T.Text -> [T.Text] -> [a] -> MudStack Bool
@@ -152,11 +176,10 @@ isBanned target errorMsgs banRecs = do
 -----
 
 
-isPlaBanned :: Sing -> MudStack Bool
-isPlaBanned banSing = do
-    eithers <- liftIO . dumpDbTbl $ "ban_pla"
+isPlaBanned :: Sing -> MudStack (Maybe Bool)
+isPlaBanned banSing = dumpDbTblWithHandler "isPlaBanned" "ban_pla" >>= \eithers ->
     let (banPlas, errorMsgs) = sortEithers (eithers :: [Either T.Text BanPla])
-    isBanned banSing errorMsgs banPlas
+    in Just <$> isBanned banSing errorMsgs banPlas
 
 
 -----

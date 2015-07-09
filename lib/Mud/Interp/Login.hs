@@ -29,7 +29,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Arrow (first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Exception.Lifted (try)
+import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, at, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), guard, unless, when)
@@ -68,20 +68,24 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                       , maxNameLenTxt
                                       , " characters long." ]
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise = mIf (isPlaBanned cn')
-      (do host <- T.pack . getCurrHostName i <$> getState
-          sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
-                                             ,  cn'
-                                             , " has been banned from CurryMUD!"
-                                             , dfltColor ]
-          let msg  = T.concat [ cn'
-                              , " has been booted at login "
-                              , parensQuote "player is banned"
-                              , "." ]
-              hint = " Consider also banning host " <> dblQuote host <> "."
-          bcastAdmins $ msg <> hint
-          logNotice "interpName" msg)
-      (helper |&| modifyState >=> \case
+  | otherwise = isPlaBanned cn' >>= \case
+    Nothing    -> undefined -- TODO: What should we really do here?
+    Just True  -> handleBanned
+    Just False -> handleNotBanned
+  where
+    handleBanned = (T.pack . getCurrHostName i <$> getState) >>= \host -> do
+        sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
+                                           ,  cn'
+                                           , " has been banned from CurryMUD!"
+                                           , dfltColor ]
+        let msg  = T.concat [ cn'
+                            , " has been booted at login "
+                            , parensQuote "player is banned"
+                            , "." ]
+            hint = " Consider also banning host " <> dblQuote host <> "."
+        bcastAdmins $ msg <> hint
+        logNotice "interpName" msg
+    handleNotBanned = helper |&| modifyState >=> \case
         (_,  Left  (Just msg)) -> promptRetryName mq msg
         (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn
                                                                 , checkIllegalNames    ms mq cn
@@ -100,8 +104,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs' i mq)
                                                 , showText originId
                                                 , " has been changed to "
                                                 , showText i
-                                                , "." ])
-  where
+                                                , "." ]
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
         let newPla  = getPla i ms
@@ -176,7 +179,7 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
         sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
         ts <- liftIO mkTimestamp
         let prof = Prof ts hn cn
-        insertDbTbl prof
+        insertDbTbl prof `catch` dbExHandler "checkProfanitiesDict"
         bcastAdmins $ "Profanity logged: " <> pp prof
         let logMsg = T.concat [ "booting player ", showText i, " ", s, " due to profanity." ]
         logNotice "checkProfanitiesDict sorry" logMsg
