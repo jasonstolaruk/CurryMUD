@@ -1,0 +1,15 @@
+\h #dBANHOST \d
+
+\uUSAGE\n
+#dbanhost \s[\dhostname reason\s]\d
+
+\uDESCRIPTION\n
+Dump the banned hostname database, or ban/unban a host.
+When no arguments are provided, the contents of every record in the database are displayed.
+To add a new record to the database (effectively toggling between banned/unbanned status), provide the hostname you wish to ban/unban, followed by a description of the reason.
+
+\uEXAMPLES\n
+\q#dbanhost\d to dump the database.4`
+\q#dbanhost 127.0.1.1 used by Taro\d to ban/unban host "127.0.1.1".4`
+
+\uSEE ALSO\n

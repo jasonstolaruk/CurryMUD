@@ -214,7 +214,6 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 -----
 
 
--- TODO: Help.
 adminBanHost :: Action
 adminBanHost (NoArgs i mq cols) = do
     eithers <- dumpDbTblWithHandler "adminBanHost" "ban_host"
@@ -259,7 +258,6 @@ notifyBan i mq cols selfSing target newStatus x =
 -----
 
 
--- TODO: Help.
 adminBanPlayer :: Action
 adminBanPlayer (NoArgs i mq cols) = do
     eithers <- dumpDbTblWithHandler "adminBanPlayer" "ban_pla"
