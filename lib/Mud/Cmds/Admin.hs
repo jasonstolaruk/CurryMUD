@@ -48,12 +48,12 @@ import Data.Monoid ((<>), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
-import System.Process (readProcess)
-import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
+import System.Process (readProcess)
+import System.Time.Utils (renderSecs)
 
 
 default (Int)
@@ -97,8 +97,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
 -- TODO: Give admins functionality to message all other logged in admins?
--- TODO: Consider making a command to grep a given file (ban, bug, typo, certain logs...) for a given regex.
--- TODO: Make an admin command that dumps server information, such as NW interfaces and port.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
@@ -111,6 +109,7 @@ adminCmds =
     , mkAdminCmd "date"      adminDate        "Display the current system date."
     , mkAdminCmd "host"      adminHost        "Display a report of connection statistics for one or more players."
     , mkAdminCmd "incognito" adminIncognito   "Toggle your incognito status."
+    , mkAdminCmd "ip"        adminIp          "Display the server's IP addresses and listening port."
     , mkAdminCmd "message"   adminMsg         "Send a message to a regular player."
     , mkAdminCmd "peep"      adminPeep        "Start or stop peeping one or more players."
     , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state to disk)."
@@ -429,6 +428,18 @@ adminIncognito (NoArgs i mq cols) = modifyState helper >>= sequence_
                                        , logPla "adminIncognito helper fs" i "went incognito." ]
                 in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncognito), fs)
 adminIncognito p = withoutArgs adminIncognito p
+
+
+-----
+
+
+-- TODO: Help.
+adminIp :: Action
+adminIp (NoArgs i mq cols) = do
+    ifList <- liftIO mkInterfaceList
+    multiWrapSend mq cols [ "Interfaces: " <> ifList <> ".", "Listening on port " <> showText port <> "." ]
+    logPlaExec (prefixAdminCmd "ip") i
+adminIp p = withoutArgs adminIp p
 
 
 -----

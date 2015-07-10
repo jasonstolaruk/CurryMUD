@@ -9,6 +9,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , isHostBanned
                           , isPlaBanned
                           , mkActionParams
+                          , mkInterfaceList
                           , mkSingleTarget
                           , pager
                           , prefixCmd
@@ -53,6 +54,7 @@ import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Database.Persist.Class (PersistEntity)
 import qualified Data.Text as T
+import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
 
@@ -181,6 +183,16 @@ isPlaBanned :: Sing -> MudStack (Maybe Bool)
 isPlaBanned banSing = dumpDbTblWithHandler "isPlaBanned" "ban_pla" >>= \eithers ->
     let (banPlas, errorMsgs) = sortEithers (eithers :: [Either T.Text BanPla])
     in Just <$> isBanned banSing errorMsgs banPlas
+
+
+-----
+
+
+mkInterfaceList :: IO T.Text
+mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.concat [ showText . NI.name $ n
+                                                                                  , ": "
+                                                                                  , showText . NI.ipv4 $ n ]
+                                                                       | n <- ns ]
 
 
 -----

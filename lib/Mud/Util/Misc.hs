@@ -14,13 +14,13 @@ module Mud.Util.Misc ( atLst1
                      , ifThenElse
                      , ind
                      , isVowel
-                     , mIf
-                     , mUnless
-                     , mWhen
                      , maybeRet
                      , maybeVoid
+                     , mIf
                      , mkDateTimeTxt
                      , mkTimestamp
+                     , mUnless
+                     , mWhen
                      , patternMatchFail
                      , reverseLookup
                      , sortEithers

@@ -62,7 +62,6 @@ import qualified Data.IntMap.Lazy as IM (keys, map)
 import qualified Data.Map.Lazy as M (elems, empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, putStrLn, readFile)
-import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
 default (Int)
@@ -123,12 +122,8 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         liftIO migrateDbTbls `catch` dbExHandler "listen"
         sortAllInvs
         logInterfaces
-    logInterfaces = liftIO NI.getNetworkInterfaces >>= \ns ->
-        let ifList = commas [ bracketQuote . T.concat $ [ showText . NI.name $ n
-                                                        , ": "
-                                                        , showText . NI.ipv4 $ n ]
-                            | n <- ns ]
-        in logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
+    logInterfaces = liftIO mkInterfaceList >>= \ifList ->
+        logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
     runAsync f = onEnv $ liftIO . async . runReaderT f
     loop sock = let fn = "listen loop" in do
         (h, host@(T.pack -> host'), localPort) <- liftIO . accept $ sock
