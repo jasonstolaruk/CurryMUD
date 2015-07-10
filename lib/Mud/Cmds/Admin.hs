@@ -433,7 +433,6 @@ adminIncognito p = withoutArgs adminIncognito p
 -----
 
 
--- TODO: Help.
 adminIp :: Action
 adminIp (NoArgs i mq cols) = do
     ifList <- liftIO mkInterfaceList

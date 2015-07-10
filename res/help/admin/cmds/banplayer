@@ -11,7 +11,7 @@ If you ban a player who is currently logged in, he/she will be booted immediatel
 
 \uEXAMPLES\n
 \q#dbanplayer\d to dump the database.4`
-\q#dbanplayer taro for harassment\d to ban Taro.`4
-\q#dbanplayer taro the team decided to give him another chance\d to unban Taro.`4
+\q#dbanplayer taro for harassment\d to ban Taro.4`
+\q#dbanplayer taro the team decided to give him another chance\d to unban Taro.4`
 
 \uSEE ALSO\n

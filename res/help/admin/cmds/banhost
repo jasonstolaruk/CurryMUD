@@ -10,6 +10,6 @@ To add a new record to the database (effectively toggling between banned/unbanne
 
 \uEXAMPLES\n
 \q#dbanhost\d to dump the database.4`
-\q#dbanhost 127.0.1.1 used by Taro\d to ban/unban host "127.0.1.1".4`
+\q#dbanhost 127.0.0.1 used by Taro\d to ban/unban host "127.0.0.1".4`
 
 \uSEE ALSO\n
