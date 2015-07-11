@@ -18,7 +18,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.Misc.Logging hiding (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
+import Mud.Misc.Logging hiding (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -30,7 +30,7 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, massLogPla)
+import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***))
@@ -89,6 +89,10 @@ logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Admin"
 
 
+logPlaOut :: CmdName -> Id -> [T.Text] -> MudStack ()
+logPlaOut = L.logPlaOut "Mud.Cmds.Admin"
+
+
 massLogPla :: T.Text -> T.Text -> MudStack ()
 massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
@@ -96,11 +100,10 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Give admins functionality to message all other logged in admins?
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
-    , mkAdminCmd "admin"     adminAdmin       "Toggle a player's admin status."
+    , mkAdminCmd "admin"     adminAdmin       "Tune the admin channel in/out, or send a message on the admin channel."
     , mkAdminCmd "banhost"   adminBanHost     "Dump the banned hostname database, or ban/unban a host."
     , mkAdminCmd "banplayer" adminBanPlayer   "Dump the banned player database, or ban/unban a player."
     , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."
@@ -116,6 +119,7 @@ adminCmds =
     , mkAdminCmd "print"     adminPrint       "Print a message to the server console."
     , mkAdminCmd "profanity" adminProfanity   "Dump the profanity database."
     , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
+    , mkAdminCmd "sudoer"    adminSudoer      "Toggle a player's admin status."
     , mkAdminCmd "telepla"   adminTelePla     "Teleport to a given player."
     , mkAdminCmd "telerm"    adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
                                               \given room."
@@ -142,52 +146,43 @@ prefixAdminCmd = prefixCmd adminCmdChar
 -----
 
 
+-- TODO: Help.
+-- TODO: Emotes and exp cmds.
 adminAdmin :: Action
-adminAdmin p@AdviseNoArgs = advise p [ prefixAdminCmd "admin" ] "Please specify the full PC name of the player you \
-                                                                \wish to promote/demote."
-adminAdmin (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+adminAdmin (NoArgs i mq cols) = modifyState helper >>= sequence_
   where
-    helper ms =
-      let fn                  = "adminAdmin helper"
-          SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
-      in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-        [] -> (ms, [ let msg = T.concat [ "There is no PC by the name of "
-                                        , dblQuote strippedTarget
-                                        , ". "
-                                        , parensQuote "Note that you must specify the full PC name of the player you  \
-                                                      \wish to promote/demote." ]
-                             in sendFun msg ])
-        [targetId]
-          | selfSing       <- getSing i ms
-          , targetSing     <- getSing targetId ms
-          , isAdmin        <- getPlaFlag IsAdmin . getPla targetId $ ms
-          , (verb, toFrom) <- isAdmin ? ("demoted", "from") :? ("promoted", "to")
-          , handleIncog    <- let act = adminIncognito . mkActionParams targetId ms $ []
-                              in when (getPlaFlag IsIncognito . getPla targetId $ ms) act
-          , handlePeep     <- let peepingIds = getPeeping targetId ms
-                                  act        = adminPeep . mkActionParams targetId ms . map (`getSing` ms) $ peepingIds
-                              in unless (()# peepingIds) act
-          , fs <- [ retainedMsg targetId ms           . T.concat $ [ promoteDemoteColor
-                                                                   , selfSing
-                                                                   , " has "
-                                                                   , verb
-                                                                   , " you "
-                                                                   , toFrom
-                                                                   , " admin status."
-                                                                   , dfltColor ]
-                  , sendFun                           . T.concat $ [ "You have ",       verb, " ", targetSing, "." ]
-                  , bcastAdminsExcept [ i, targetId ] . T.concat $ [ selfSing, " has ", verb, " ", targetSing, "." ]
-                  , logNotice fn                      . T.concat $ [ selfSing, " ",     verb, " ", targetSing, "." ]
-                  , logPla    fn i                    . T.concat $ [ verb, " ",    targetSing, "." ]
-                  , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
-                  , handleIncog
-                  , handlePeep ]
-          -> if | targetId   == i      -> (ms, [ sendFun "You can't demote yourself." ])
-                | targetSing == "Root" -> (ms, [ sendFun "You can't demote Root."     ])
-                | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin (not isAdmin), fs)
-        xs -> patternMatchFail "adminAdmin helper" [ showText xs ]
-adminAdmin (ActionParams { plaMsgQueue, plaCols }) =
-    wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
+    helper ms = let (not -> isTuned) = getPlaFlag IsTunedAdmin . getPla i $ ms
+                in (ms & plaTbl.ind i %~ setPlaFlag IsTunedAdmin isTuned, [ notify isTuned ])
+    notify isTuned = wrapSend mq cols $ "You have tuned " <> inOut <> " the admin channel."
+      where
+        inOut | isTuned   = "in"
+              | otherwise = "out"
+adminAdmin (Msg i mq cols msg) = getState >>= \ms -> if getPlaFlag IsTunedAdmin . getPla i $ ms
+  then case getTunedAdminIds ms of
+    [_]      -> sorryNoOneListening
+    tunedIds ->  let fm = formattedMsg ms in do
+        bcastNl [(fm, tunedIds)]
+        logPlaOut (prefixAdminCmd "admin") i . pure . dropANSI $ fm
+        ts <- liftIO mkTimestamp
+        let adminChan = AdminChan ts (getSing i ms) msg
+        insertDbTbl adminChan `catch` dbExHandler "adminAdmin"
+        -- TODO: We need some way to notify admins when the db tbl has gotten huge.
+  else sorryNotTuned
+  where
+    formattedMsg ms = T.concat [ parensQuote "Admin"
+                               , " "
+                               , underlineANSI
+                               , getSing i ms
+                               , noUnderlineANSI
+                               , ": "
+                               , msg ]
+    getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
+    sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the admin channel."
+    sorryNotTuned       =
+        wrapSend mq cols $ "You have tuned out the admin channel. You first must tune it in by typing " <>
+                           (dblQuote . prefixAdminCmd $ "admin")                                        <>
+                           "."
+adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
 -----
@@ -202,7 +197,7 @@ adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
                                                   \minutes"
                       , dfltColor
                       , "." ]
-adminAnnounce (Msg i mq msg) = getState >>= \ms -> let s = getSing i ms in do
+adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     ok mq
     massSend $ announceColor <> msg <> dfltColor
     logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
@@ -584,7 +579,7 @@ adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
                       , dblQuote $ prefixAdminCmd "print" <> " is anybody home?"
                       , dfltColor
                       , "." ]
-adminPrint (Msg i mq msg) = getState >>= \ms -> let s = getSing i ms in do
+adminPrint (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
     ok mq
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
@@ -607,9 +602,9 @@ adminProfanity p = withoutArgs adminProfanity p
 
 
 adminShutdown :: Action
-adminShutdown (NoArgs' i mq) = shutdownHelper i mq Nothing
-adminShutdown (Msg i mq msg) = shutdownHelper i mq . Just $ msg
-adminShutdown p              = patternMatchFail "adminShutdown" [ showText p ]
+adminShutdown (NoArgs' i mq    ) = shutdownHelper i mq Nothing
+adminShutdown (Msg'    i mq msg) = shutdownHelper i mq . Just $ msg
+adminShutdown p                  = patternMatchFail "adminShutdown" [ showText p ]
 
 
 shutdownHelper :: Id -> MsgQueue -> Maybe T.Text -> MudStack ()
@@ -622,6 +617,58 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
         massLogPla "shutdownHelper"   $ "closing connection due to server shutdown initiated by " <> s <> rest
         logNotice  "shutdownHelper"   $ "server shutdown initiated by "                           <> s <> rest
         liftIO . atomically . writeTQueue mq $ Shutdown
+
+
+-----
+
+
+adminSudoer :: Action
+adminSudoer p@AdviseNoArgs = advise p [ prefixAdminCmd "sudoer" ] "Please specify the full PC name of the player you \
+                                                                  \wish to promote/demote."
+adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+  where
+    helper ms =
+      let fn                  = "adminSudoer helper"
+          SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
+      in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
+        [] -> (ms, [ let msg = T.concat [ "There is no PC by the name of "
+                                        , dblQuote strippedTarget
+                                        , ". "
+                                        , parensQuote "Note that you must specify the full PC name of the player you  \
+                                                      \wish to promote/demote." ]
+                             in sendFun msg ])
+        [targetId]
+          | selfSing       <- getSing i ms
+          , targetSing     <- getSing targetId ms
+          , isAdmin        <- getPlaFlag IsAdmin . getPla targetId $ ms
+          , (verb, toFrom) <- isAdmin ? ("demoted", "from") :? ("promoted", "to")
+          , handleIncog    <- let act = adminIncognito . mkActionParams targetId ms $ []
+                              in when (getPlaFlag IsIncognito . getPla targetId $ ms) act
+          , handlePeep     <- let peepingIds = getPeeping targetId ms
+                                  act        = adminPeep . mkActionParams targetId ms . map (`getSing` ms) $ peepingIds
+                              in unless (()# peepingIds) act
+          , fs <- [ retainedMsg targetId ms           . T.concat $ [ promoteDemoteColor
+                                                                   , selfSing
+                                                                   , " has "
+                                                                   , verb
+                                                                   , " you "
+                                                                   , toFrom
+                                                                   , " admin status."
+                                                                   , dfltColor ]
+                  , sendFun                           . T.concat $ [ "You have ",       verb, " ", targetSing, "." ]
+                  , bcastAdminsExcept [ i, targetId ] . T.concat $ [ selfSing, " has ", verb, " ", targetSing, "." ]
+                  , logNotice fn                      . T.concat $ [ selfSing, " ",     verb, " ", targetSing, "." ]
+                  , logPla    fn i                    . T.concat $ [ verb, " ",    targetSing, "." ]
+                  , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
+                  , handleIncog
+                  , handlePeep ]
+          -> if | targetId   == i      -> (ms, [ sendFun "You can't demote yourself." ])
+                | targetSing == "Root" -> (ms, [ sendFun "You can't demote Root."     ])
+                | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not isAdmin)
+                                              & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not isAdmin), fs)
+        xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
+adminSudoer (ActionParams { plaMsgQueue, plaCols }) =
+    wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
 
 
 -----

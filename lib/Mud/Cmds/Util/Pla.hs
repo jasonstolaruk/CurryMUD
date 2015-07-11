@@ -119,7 +119,7 @@ armSubToSlot = \case Head      -> HeadS
 
 
 bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
-bugTypoLogger (Msg i mq msg) wl = getState >>= \ms ->
+bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
     let s     = getSing i  ms
         ri    = getRmId i  ms
         mkLoc = parensQuote (showText ri) <> " " <> getRm ri ms ^.rmName

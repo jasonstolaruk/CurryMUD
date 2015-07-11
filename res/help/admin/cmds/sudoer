@@ -1,7 +1,7 @@
-\h #dADMIN \d
+\h #dSUDOER \d
 
 \uUSAGE\n
-#dadmin name
+#dsudoer name
 
 \uDESCRIPTION\n
 Toggle a player's admin status. That is, promote an ordinary player, or demote an administrator.

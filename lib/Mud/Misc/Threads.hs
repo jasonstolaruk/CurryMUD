@@ -115,7 +115,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         initialize
         logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-        auxAsyncs <- mapM runAsync [ worldPersister, threadTblPurger ]
+        auxAsyncs <- mapM runAsync [ chanDbTblsRecCounter, threadTblPurger, worldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
         logNotice "listen initialize" "creating the database tables."
@@ -162,26 +162,28 @@ sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState 
     helper ms = (ms & invTbl %~ IM.map (sortInv ms), ())
 
 
--- ==================================================
--- The "world persister" thread:
+-- ============================================================
+-- The "channel database tables record counter" thread:
 
 
-worldPersister :: MudStack ()
-worldPersister = handle (threadExHandler "world persister") $ do
-    setThreadType WorldPersister
-    logNotice "worldPersister" "world persister started."
-    let loop = (liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6) >> persist
-    forever loop `catch` die "world persister"
-
-
-die :: T.Text -> PlsDie -> MudStack ()
-die threadName _ = logNotice "die" $ "the " <> threadName <> " thread is dying."
+chanDbTblsRecCounter :: MudStack ()
+chanDbTblsRecCounter = handle (threadExHandler "world persister") $ do
+    setThreadType ChanDbTblsRecCounter
+    logNotice "chanDbTblsCounter" "channel database tables record counter started."
+    let loop = (liftIO . threadDelay $ chanDbTblsRecCounterDelay * 10 ^ 6) >> count
+    forever loop `catch` die "channel database tables record counter"
+  where
+    count = unit -- TODO: Figure out how to get the number of records in a db tbl.
 
 
 threadExHandler :: T.Text -> SomeException -> MudStack ()
 threadExHandler threadName e = do
     logExMsg "threadExHandler" ("exception caught on " <> threadName <> " thread; rethrowing to listen thread") e
     throwToListenThread e
+
+
+die :: T.Text -> PlsDie -> MudStack ()
+die threadName _ = logNotice "die" $ "the " <> threadName <> " thread is dying."
 
 
 -- ==================================================
@@ -194,6 +196,18 @@ threadTblPurger = handle (threadExHandler "thread table purger") $ do
     logNotice "threadTblPurger" "thread table purger started."
     let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
     forever loop `catch` die "thread table purger"
+
+
+-- ==================================================
+-- The "world persister" thread:
+
+
+worldPersister :: MudStack ()
+worldPersister = handle (threadExHandler "world persister") $ do
+    setThreadType WorldPersister
+    logNotice "worldPersister" "world persister started."
+    let loop = (liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6) >> persist
+    forever loop `catch` die "world persister"
 
 
 -- ==================================================

@@ -196,7 +196,11 @@ createWorld = do
 
 
 adminFlags :: Int
-adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin, IsNotFirstAdminMsg, IsNotFirstLook, IsNotFirstMobSay ]
+adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
+                                                     , IsNotFirstAdminMsg
+                                                     , IsNotFirstLook
+                                                     , IsNotFirstMobSay
+                                                     , IsTunedAdmin ]
 
 
 loadWorld :: FilePath -> MudStack Bool

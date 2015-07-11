@@ -12,6 +12,7 @@ module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
                                                 , pattern LowerNub
                                                 , pattern LowerNub'
                                                 , pattern Msg
+                                                , pattern Msg'
                                                 , pattern MsgWithTarget
                                                 , pattern NoArgs
                                                 , pattern NoArgs'
@@ -83,7 +84,10 @@ pattern LowerNub i mq cols as <- WithArgs i mq cols (nub . map T.toLower -> as)
 pattern LowerNub' i as <- LowerNub i _ _ as
 
 
-pattern Msg i mq msg <- WithArgs i mq _ (formatMsgArgs -> msg)
+pattern Msg i mq cols msg <- WithArgs i mq cols (formatMsgArgs -> msg)
+
+
+pattern Msg' i mq msg <- Msg i mq _ msg
 
 
 pattern MsgWithTarget i mq cols target msg <- WithArgs i mq cols (formatMsgWithTargetArgs -> (target, msg))

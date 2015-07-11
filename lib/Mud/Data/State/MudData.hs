@@ -344,7 +344,8 @@ data PlaFlags = IsAdmin
               | IsNotFirstAdminMsg
               | IsNotFirstLook
               | IsNotFirstMobSay
-              | IsSeeingInvis deriving Enum
+              | IsSeeingInvis 
+              | IsTunedAdmin deriving Enum
 
 
 type Interp  = CmdName -> ActionParams -> MudStack ()
@@ -420,7 +421,8 @@ type LinkName = T.Text
 -- ==================================================
 
 
-data ThreadType = Error
+data ThreadType = ChanDbTblsRecCounter
+                | Error
                 | InacTimer Id
                 | Listen
                 | Notice

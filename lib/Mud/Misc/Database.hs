@@ -1,7 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE FlexibleContexts, GADTs, GeneralizedNewtypeDeriving, MultiParamTypeClasses, OverloadedStrings, QuasiQuotes, TemplateHaskell, TypeFamilies, ViewPatterns #-}
 
-module Mud.Misc.Database ( BanHost(..)
+module Mud.Misc.Database ( AdminChan(..)
+                         , AdminChanId
+                         , BanHost(..)
                          , BanHostId
                          , BanPla(..)
                          , BanPlaId
@@ -32,6 +34,10 @@ import qualified Data.Text as T
 
 
 share [ mkPersist sqlSettings, mkMigrate "migrateAll" ] [persistLowerCase|
+AdminChan
+  timestamp T.Text
+  name      T.Text
+  msg       T.Text
 BanHost
   timestamp T.Text
   host      T.Text
@@ -61,17 +67,23 @@ Typo
 |]
 
 
+-- ==================================================
+
+
 dbFile' :: T.Text
 dbFile' = T.pack dbFile
+
+
+dumpDbTbl tblName = runRawQuery $ "select * from " <> tblName
+
+
+insertDbTbl x = runSqlite dbFile' . void . insert $ x
 
 
 migrateDbTbls :: IO ()
 migrateDbTbls = runSqlite dbFile' . void . runMigrationSilent $ migrateAll
 
 
-dumpDbTbl tblName = runSqlite dbFile' helper
+runRawQuery query = runSqlite dbFile' helper
   where
-    helper = rawQuery ("select * from " <> tblName) [] $$ CL.map (fromPersistValues . tail) =$ CL.consume
-
-
-insertDbTbl x = runSqlite dbFile' . void . insert $ x
+    helper = rawQuery query [] $$ CL.map (fromPersistValues . tail) =$ CL.consume
