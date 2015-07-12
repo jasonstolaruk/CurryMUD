@@ -166,7 +166,6 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms -> if getPlaFlag IsTunedAdmin 
         ts <- liftIO mkTimestamp
         let adminChan = AdminChan ts (getSing i ms) msg
         insertDbTbl adminChan `catch` dbExHandler "adminAdmin"
-        -- TODO: We need some way to notify admins when the db tbl has gotten huge.
   else sorryNotTuned
   where
     formattedMsg ms = T.concat [ parensQuote "Admin"

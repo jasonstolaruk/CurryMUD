@@ -10,6 +10,7 @@ module Mud.Misc.Database ( AdminChan(..)
                          , Bug(..)
                          , BugId
                          , dumpDbTbl
+                         , dumpDbTbl' -- TODO
                          , insertDbTbl
                          , migrateDbTbls
                          , Prof(..)
@@ -22,9 +23,8 @@ import Mud.TopLvlDefs.FilePaths
 import Control.Monad (void)
 import Data.Conduit (($$), (=$))
 import Data.Monoid ((<>))
-import Database.Persist.Class (fromPersistValues)
-import Database.Persist.Sql (insert, rawQuery)
-import Database.Persist.Sqlite (runMigrationSilent, runSqlite)
+import Database.Esqueleto -- TODO
+import Database.Persist.Sqlite (runSqlite)
 import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
 import qualified Data.Conduit.List as CL (consume, map)
 import qualified Data.Text as T
@@ -75,6 +75,11 @@ dbFile' = T.pack dbFile
 
 
 dumpDbTbl tblName = runRawQuery $ "select * from " <> tblName
+
+
+-- TODO: How can I get the AdminChans out of the stack?
+dumpDbTbl' :: SqlPersistT IO [AdminChan]
+dumpDbTbl' = map entityVal <$> (select . from $ return)
 
 
 insertDbTbl x = runSqlite dbFile' . void . insert $ x
