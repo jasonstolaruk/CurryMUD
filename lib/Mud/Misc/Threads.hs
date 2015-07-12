@@ -169,7 +169,7 @@ sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState 
 chanDbTblsRecCounter :: MudStack ()
 chanDbTblsRecCounter = handle (threadExHandler "world persister") $ do
     setThreadType ChanDbTblsRecCounter
-    logNotice "chanDbTblsCounter" "channel database tables record counter started."
+    logNotice "chanDbTblsRecCounter" "channel database tables record counter started."
     let loop = (liftIO . threadDelay $ chanDbTblsRecCounterDelay * 10 ^ 6) >> count
     forever loop `catch` die "channel database tables record counter"
   where

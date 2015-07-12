@@ -181,6 +181,13 @@ getLastRmId i = view lastRmId . getPla i
 -----
 
 
+getLinked :: Id -> MudState -> [Sing]
+getLinked i = view linked . getPC i
+
+
+-----
+
+
 getListenThreadId :: MudState -> ThreadId
 getListenThreadId = reverseLookup Listen . view threadTbl
 

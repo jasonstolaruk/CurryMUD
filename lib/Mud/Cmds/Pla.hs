@@ -168,8 +168,8 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("inventory",  "i",  inv,        "Display your inventory, or examine one or more items in your inventory.")
     , ("look",       "l",  look,       "Display a description of your current room, or examine one or more items in \
                                        \your current room.")
-    -- , ("link",       "li", undefined,  "Display a list of the people with whom you have established a telepathic link, \
-    --                                    \or established a telepathic link with one or more people.") -- TODO: The list should indicate who is logged in and who is logged out.
+    , ("link",       "li", link,       "Display a list of the people with whom you have established a telepathic link, \
+                                       \or established a telepathic link with one or more people.")
     , ("motd",       "m",  motd,       "Display the message of the day.")
     , ("put",        "p",  putAction,  "Put one or more items into a container.")
     , ("ready",      "r",  ready,      "Ready one or more items.")
@@ -1021,6 +1021,83 @@ extractPCIdsFromEiss ms = foldl' helper []
   where
     helper acc (Left  {})  = acc
     helper acc (Right is)  = acc ++ findPCIds ms is
+
+
+-----
+
+
+-- TODO: The list should indicate who is logged in and who is logged out.
+link :: Action
+link (NoArgs i mq cols) = getState >>= \ms -> let links = getLinked i ms in if ()# links
+  then let txt = "No one has introduced themselves to you yet." in
+      wrapSend mq cols txt >> (logPlaOut "link" i . pure $ txt)
+  else let txt = commas links in
+      -- TODO: Distinguish between one-way and two-way links.
+      multiWrapSend mq cols [ "Your links:", txt ] >> (logPlaOut "link" i . pure $ txt)
+{-
+link (LowerNub' i as) = helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
+    bcastIfNotIncog i bs >> logMsgs |#| logPlaOut "link" i
+  where
+    helper ms =
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+            sorryInInv = inInvs |!| mkNTB "You can't introduce yourself to an item in your inventory."
+            sorryInEq  = inEqs  |!| mkNTB "You can't introduce yourself to an item in your readied equipment."
+            invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
+            (eiss, ecs)          = uncurry (resolveRmInvCoins i ms inRms) invCoins'
+            (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms (fst invCoins)) (ms^.pcTbl, [],  []     ) eiss
+            (    cbs', logMsgs') = foldl' helperIntroEitherCoins                   (           cbs, logMsgs) ecs
+        in if ()!# invCoins'
+          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs'))
+          else (ms, (mkNTB "You don't see anyone here to introduce yourself to.", []))
+    mkNTB                                           = mkNTBroadcast i . nlnl
+    helperIntroEitherInv _  _   a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
+    helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
+      where
+        tryIntro a'@(pt, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
+          PCType -> let s           = getSing i ms
+                        targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                        msg         = "You introduce yourself to " <> targetDesig <> "."
+                        logMsg      = "Introduced to " <> targetSing <> "."
+                        srcMsg      = nlnl msg
+                        pis         = findPCIds ms ris
+                        srcDesig    = StdDesig { stdPCEntSing = Nothing
+                                               , shouldCap    = DoCap
+                                               , pcEntName    = mkUnknownPCEntName i ms
+                                               , pcId         = i
+                                               , pcIds        = pis }
+                        himHerself  = mkReflexPro . getSex i $ ms
+                        targetMsg   = nlnl . T.concat $ [ serialize srcDesig
+                                                        , " introduces "
+                                                        , himHerself
+                                                        , " to you as "
+                                                        , knownNameColor
+                                                        , s
+                                                        , dfltColor
+                                                        , "." ]
+                        othersMsg   = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
+                                                        , " introduces "
+                                                        , himHerself
+                                                        , " to "
+                                                        , targetDesig
+                                                        , "." ]
+                        cbs         = [ NonTargetBroadcast (srcMsg,    pure i                )
+                                      , TargetBroadcast    (targetMsg, pure targetId         )
+                                      , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
+                    in if s `elem` pt^.ind targetId.introduced
+                      then let sorry = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
+                           in a' & _2 <>~ mkNTBroadcast i sorry
+                      else a' & _1.ind targetId.introduced %~ (sort . (s :)) & _2 <>~ cbs & _3 <>~ pure logMsg
+          _      -> let msg = "You can't introduce yourself to " <> theOnLower targetSing <> "."
+                        b   = head . mkNTB $ msg
+                    in a' & _2 %~ (`appendIfUnique` b)
+    helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
+    helperIntroEitherCoins a (Right {}  ) =
+        let cb = head . mkNTB $ "You can't introduce yourself to a coin."
+        in first (`appendIfUnique` cb) a
+    fromClassifiedBroadcast (TargetBroadcast    b) = b
+    fromClassifiedBroadcast (NonTargetBroadcast b) = b
+-}
+link p = patternMatchFail "link" [ showText p ]
 
 
 -----

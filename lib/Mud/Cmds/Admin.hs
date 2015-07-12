@@ -147,7 +147,7 @@ prefixAdminCmd = prefixCmd adminCmdChar
 
 
 -- TODO: Help.
--- TODO: Emotes and exp cmds.
+-- TODO: Emotes and exp cmds. <-- Build this functionality into telepathic messages first.
 adminAdmin :: Action
 adminAdmin (NoArgs i mq cols) = modifyState helper >>= sequence_
   where
@@ -157,30 +157,31 @@ adminAdmin (NoArgs i mq cols) = modifyState helper >>= sequence_
       where
         inOut | isTuned   = "in"
               | otherwise = "out"
-adminAdmin (Msg i mq cols msg) = getState >>= \ms -> if getPlaFlag IsTunedAdmin . getPla i $ ms
-  then case getTunedAdminIds ms of
-    [_]      -> sorryNoOneListening
-    tunedIds ->  let fm = formattedMsg ms in do
-        bcastNl [(fm, tunedIds)]
-        logPlaOut (prefixAdminCmd "admin") i . pure . dropANSI $ fm
-        ts <- liftIO mkTimestamp
-        let adminChan = AdminChan ts (getSing i ms) msg
-        insertDbTbl adminChan `catch` dbExHandler "adminAdmin"
-  else sorryNotTuned
-  where
-    formattedMsg ms = T.concat [ parensQuote "Admin"
-                               , " "
-                               , underlineANSI
-                               , getSing i ms
-                               , noUnderlineANSI
-                               , ": "
-                               , msg ]
-    getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
-    sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the admin channel."
-    sorryNotTuned       =
-        wrapSend mq cols $ "You have tuned out the admin channel. You first must tune it in by typing " <>
-                           (dblQuote . prefixAdminCmd $ "admin")                                        <>
-                           "."
+adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
+    if getPlaFlag IsTunedAdmin . getPla i $ ms
+      then case getTunedAdminIds ms of
+        [_]      -> sorryNoOneListening
+        tunedIds -> let fm = formatMsg ms in do
+            bcastNl [(fm, tunedIds)]
+            logPlaOut (prefixAdminCmd "admin") i . pure . dropANSI $ fm
+            ts <- liftIO mkTimestamp
+            let adminChan = AdminChan ts (getSing i ms) msg
+            insertDbTbl adminChan `catch` dbExHandler "adminAdmin"
+      else sorryNotTuned
+      where
+        formatMsg ms = T.concat [ parensQuote "Admin"
+                                , " "
+                                , underlineANSI
+                                , getSing i ms
+                                , noUnderlineANSI
+                                , ": "
+                                , msg ]
+        getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
+        sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the admin channel."
+        sorryNotTuned       =
+            wrapSend mq cols $ "You have tuned out the admin channel. You first must tune it in by typing " <>
+                               (dblQuote . prefixAdminCmd $ "admin")                                        <>
+                               "."
 adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
