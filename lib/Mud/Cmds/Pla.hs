@@ -1033,7 +1033,7 @@ link (NoArgs i mq cols) = getState >>= \ms -> let links = getLinked i ms in if (
       wrapSend mq cols txt >> (logPlaOut "link" i . pure $ txt)
   else let txt = commas links in
       -- TODO: Distinguish between one-way and two-way links.
-      multiWrapSend mq cols [ "Your links:", txt ] >> (logPlaOut "link" i . pure $ txt)
+      multiWrapSend mq cols [ "Your links: ", txt ] >> (logPlaOut "link" i . pure $ txt)
 {-
 link (LowerNub' i as) = helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
     bcastIfNotIncog i bs >> logMsgs |#| logPlaOut "link" i

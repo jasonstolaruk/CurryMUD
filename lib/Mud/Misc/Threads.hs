@@ -173,7 +173,7 @@ chanDbTblsRecCounter = handle (threadExHandler "world persister") $ do
     let loop = (liftIO . threadDelay $ chanDbTblsRecCounterDelay * 10 ^ 6) >> count
     forever loop `catch` die "channel database tables record counter"
   where
-    count = unit -- TODO: Figure out how to get the number of records in a db tbl.
+    count = unit -- TODO
 
 
 threadExHandler :: T.Text -> SomeException -> MudStack ()

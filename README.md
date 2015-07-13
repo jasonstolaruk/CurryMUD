@@ -44,7 +44,6 @@ The code is open source and available here on GitHub under the 3-clause BSD lice
 
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
-* Using `aeson` and `persistent` with `esqueleto` for persistence.
 * Heavy use of the `lens` library.
 * Heavy use of GHC extensions, including:
   * `LambdaCase`

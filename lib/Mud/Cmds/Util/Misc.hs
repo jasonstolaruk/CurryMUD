@@ -163,7 +163,7 @@ isHostBanned host = dumpDbTblWithHandler "isHostBanned" "ban_host" >>= \eithers 
 dumpDbTblWithHandler :: (PersistEntity a) => T.Text -> T.Text -> MudStack [Either T.Text a]
 dumpDbTblWithHandler fn tn = (liftIO . dumpDbTbl $ tn) `catch` handler
   where
-    handler e = emptied . dbExHandler fn $ (e :: SomeException)
+    handler e = emptied . dbExHandler fn $ (e :: SomeException) -- TODO: Why is this emptied?
 
 
 isBanned :: (BanRecord a) => T.Text -> [T.Text] -> [a] -> MudStack Bool
