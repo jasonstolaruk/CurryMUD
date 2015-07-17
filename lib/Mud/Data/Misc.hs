@@ -112,14 +112,14 @@ class BanRecord a where
   recReason    :: a -> T.Text
 
 
-instance BanRecord BanHost where
+instance BanRecord BanHostRec where
   recTimestamp = banHostTimestamp
   recTarget    = banHostHost
   recIsBanned  = banHostIsBanned
   recReason    = banHostReason
 
 
-instance BanRecord BanPla where
+instance BanRecord BanPlaRec where
   recTimestamp = banPlaTimestamp
   recTarget    = banPlaName
   recIsBanned  = banPlaIsBanned
@@ -194,22 +194,26 @@ instance Pretty AOrThe where
   pp The = "the"
 
 
-instance Pretty BanHost where
-  pp BanHost { .. } = slashes [ banHostTimestamp
-                              , banHostHost
-                              , banHostIsBanned ? "banned" :? "unbanned"
-                              , banHostReason ]
+instance Pretty BanHostRec where
+  pp (BanHostRec { .. }) = slashes [ banHostTimestamp
+                                   , banHostHost
+                                   , banHostIsBanned ? "banned" :? "unbanned"
+                                   , banHostReason ]
 
 
-instance Pretty BanPla where
-  pp BanPla { .. } = slashes [ banPlaTimestamp
-                             , banPlaName
-                             , banPlaIsBanned ? "banned" :? "unbanned"
-                             , banPlaReason ] 
+instance Pretty BanPlaRec where
+  pp (BanPlaRec { .. }) = slashes [ banPlaTimestamp
+                                  , banPlaName
+                                  , banPlaIsBanned ? "banned" :? "unbanned"
+                                  , banPlaReason ]
 
 
-instance Pretty Bug where
-  pp Bug { .. } = slashes [ bugTimestamp, bugName, bugLoc, bugDesc, bugIsOpen ? "open" :? "closed" ]
+instance Pretty BugRec where
+  pp (BugRec { .. }) = slashes [ bugTimestamp
+                               , bugName
+                               , bugLoc
+                               , bugDesc
+                               , bugIsOpen ? "open" :? "closed" ]
 
 
 instance Pretty Cloth where
@@ -229,8 +233,10 @@ instance Pretty Cloth where
   pp Trousers = "trousers"
 
 
-instance Pretty Prof where
-  pp Prof { .. } = T.intercalate " " [ profTimestamp, profHost, profProfanity ]
+instance Pretty ProfRec where
+  pp (ProfRec { .. }) = T.intercalate " " [ profTimestamp
+                                          , profHost
+                                          , profProfanity ]
 
 
 instance Pretty Race where
@@ -303,8 +309,12 @@ instance Pretty Slot where
   pp BothHandsS  = "both hands"
 
 
-instance Pretty Typo where
-  pp Typo { .. } = slashes [ typoTimestamp, typoName, typoLoc, typoDesc, typoIsOpen ? "open" :? "closed" ]
+instance Pretty TypoRec where
+  pp (TypoRec { .. }) = slashes [ typoTimestamp
+                                , typoName
+                                , typoLoc
+                                , typoDesc
+                                , typoIsOpen ? "open" :? "closed" ]
 
 
 instance Pretty WhichLog where

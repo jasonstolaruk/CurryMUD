@@ -50,7 +50,7 @@ import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
 import Data.Int (Int64)
 import Data.List ((\\))
-import Data.Monoid ((<>), getSum)
+import Data.Monoid ((<>), Any(..), getSum)
 import Data.Time (getCurrentTime)
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
@@ -119,7 +119,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
         logNotice "listen initialize" "creating the database tables."
-        liftIO migrateDbTbls `catch` dbExHandler "listen"
+        liftIO createDbTbls `catch` dbExHandler "listen initialize"
         sortAllInvs
         logInterfaces
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
@@ -128,9 +128,9 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     loop sock = let fn = "listen loop" in do
         (h, host@(T.pack -> host'), localPort) <- liftIO . accept $ sock
         logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
-        (isHostBanned . T.toLower . T.pack $ host) >>= \case
-          Just False -> setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
-          _          -> do
+        (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
+          Just (Any False) -> setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
+          _                -> do
               liftIO . T.hPutStr h . nlnl $ "You have been banned from CurryMUD!"
               liftIO . hClose $ h
               let msg = T.concat [ "Connection from "
@@ -173,7 +173,7 @@ chanDbTblsRecCounter = handle (threadExHandler "world persister") $ do
     let loop = (liftIO . threadDelay $ chanDbTblsRecCounterDelay * 10 ^ 6) >> count
     forever loop `catch` die "channel database tables record counter"
   where
-    count = unit -- TODO
+    count = unit -- TODO: Write a sql query that deletes x number of records when > y number of records exist.
 
 
 threadExHandler :: T.Text -> SomeException -> MudStack ()

@@ -18,7 +18,6 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.Misc.Logging hiding (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -37,14 +36,14 @@ import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
-import Control.Exception.Lifted (catch, try)
+import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, to, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, intercalate)
 import Data.Maybe (fromJust, fromMaybe)
-import Data.Monoid ((<>), Sum(..), getSum)
+import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
@@ -165,8 +164,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
             bcastNl [(fm, tunedIds)]
             logPlaOut (prefixAdminCmd "admin") i . pure . dropANSI $ fm
             ts <- liftIO mkTimestamp
-            let adminChan = AdminChan ts (getSing i ms) msg
-            insertDbTbl adminChan `catch` dbExHandler "adminAdmin"
+            withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts (getSing i ms) $ msg
       else sorryNotTuned
       where
         formatMsg ms = T.concat [ parensQuote "Admin"
@@ -209,33 +207,29 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 
 
 adminBanHost :: Action
-adminBanHost (NoArgs i mq cols) = do
-    eithers <- dumpDbTblWithHandler "adminBanHost" "ban_host"
-    dumpDbTblHelper mq cols (eithers :: [Either T.Text BanHost])
-    logPlaExecArgs (prefixAdminCmd "banhost") [] i
+adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs $ "ban_host") >>= \case
+  Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
+  Nothing -> sorryDbEx mq cols
 adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] advice
   where
     advice = T.concat [ "Please also provide a reason, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "banhost " <> a <> " for harassment"
+                      , dblQuote $ prefixAdminCmd "banhost " <> a <> " used by Taro"
                       , dfltColor
                       , "." ]
 adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
-    isHostBanned target >>= \case
-      Nothing -> sorryDbEx mq cols
-      Just b  -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
-          let banHost = BanHost ts target newStatus msg
-          (liftIO . insertDbTbl $ banHost) `catch` dbExHandler "adminBanHost"
+    (withDbExHandler "adminBanHost" . isHostBanned $ target) >>= \case
+      Nothing      -> sorryDbEx mq cols
+      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
+          let banHost = BanHostRec ts target newStatus msg
+          withDbExHandler_ "adminBanHost" . insertDbTblBanHost $ banHost
           notifyBan i mq cols (getSing i ms) target newStatus banHost
 adminBanHost p = patternMatchFail "adminBanHost" [ showText p ]
 
 
-dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [Either T.Text a] -> MudStack ()
-dumpDbTblHelper mq cols eithers = case sortEithers eithers of
-      ([],             []       ) -> wrapSend mq cols "The database is empty."
-      (map pp -> txts, []       ) -> multiWrapSend mq cols txts
-      ([],             errorMsgs) -> logDbParseError errorMsgs
-      (map pp -> txts, errorMsgs) -> multiWrapSend mq cols txts >> logDbParseError errorMsgs
+dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [a] -> MudStack ()
+dumpDbTblHelper mq cols [] = wrapSend mq cols "The database is empty."
+dumpDbTblHelper mq cols xs = multiWrapSend mq cols . map pp $ xs
 
 
 notifyBan :: (Pretty a) => Id -> MsgQueue -> Cols -> Sing -> T.Text -> Bool -> a -> MudStack ()
@@ -253,10 +247,9 @@ notifyBan i mq cols selfSing target newStatus x =
 
 
 adminBanPlayer :: Action
-adminBanPlayer (NoArgs i mq cols) = do
-    eithers <- dumpDbTblWithHandler "adminBanPlayer" "ban_pla"
-    dumpDbTblHelper mq cols (eithers :: [Either T.Text BanPla])
-    logPlaExecArgs (prefixAdminCmd "banpla") [] i
+adminBanPlayer (NoArgs i mq cols) = (withDbExHandler "adminBanPlayer" . getDbTblRecs $ "ban_pla") >>= \case
+  Just xs -> dumpDbTblHelper mq cols (xs :: [BanPlaRec]) >> logPlaExecArgs (prefixAdminCmd "banpla") [] i
+  Nothing -> sorryDbEx mq cols
 adminBanPlayer p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] advice
   where
     advice = T.concat [ "Please also provide a reason, as in "
@@ -278,17 +271,16 @@ adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                  in if
                    | banId == i             -> sendFun "You can't ban yourself."
                    | getPlaFlag IsAdmin pla -> sendFun "You can't ban an admin."
-                   | otherwise -> isPlaBanned strippedTarget >>= \case
-                     Nothing -> sorryDbEx mq cols
-                     Just b  -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
-                         let banPla = BanPla ts strippedTarget newStatus msg
-                         (liftIO . insertDbTbl $ banPla) `catch` dbExHandler "adminBanPlayer"
+                   | otherwise -> (withDbExHandler "adminBanPlayer" . isPlaBanned $ strippedTarget) >>= \case
+                     Nothing      -> sorryDbEx mq cols
+                     Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
+                         let banPla = BanPlaRec ts strippedTarget newStatus msg
+                         withDbExHandler_ "adminBanPlayer" . insertDbTblBanPla $ banPla
                          notifyBan i mq cols selfSing strippedTarget newStatus banPla
                          when (newStatus && isLoggedIn pla)
                               (adminBoot p { args = strippedTarget : T.words "You have been banned from CurryMUD!" })
       xs      -> patternMatchFail fn [ showText xs ]
 adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
-
 
 
 -----
@@ -328,10 +320,9 @@ adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
 
 adminBug :: Action
-adminBug (NoArgs i mq cols) = do
-    eithers <- dumpDbTblWithHandler "adminBug" "bug"
-    dumpDbTblHelper mq cols (eithers :: [Either T.Text Bug])
-    logPlaExec (prefixAdminCmd "bug") i
+adminBug (NoArgs i mq cols) = (withDbExHandler "adminBug" . getDbTblRecs $ "bug") >>= \case
+  Just xs -> dumpDbTblHelper mq cols (xs :: [BugRec]) >> logPlaExec (prefixAdminCmd "bug") i
+  Nothing -> sorryDbEx mq cols
 adminBug p = withoutArgs adminBug p
 
 
@@ -591,10 +582,9 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 
 adminProfanity :: Action
-adminProfanity (NoArgs i mq cols) = do
-    eithers <- dumpDbTblWithHandler "adminProfanity" "prof"
-    dumpDbTblHelper mq cols (eithers :: [Either T.Text Prof])
-    logPlaExec (prefixAdminCmd "profanity") i
+adminProfanity (NoArgs i mq cols) = (withDbExHandler "adminProfanity" . getDbTblRecs $ "profanity") >>= \case
+  Just xs -> dumpDbTblHelper mq cols (xs :: [ProfRec]) >> logPlaExec (prefixAdminCmd "profanity") i
+  Nothing -> sorryDbEx mq cols
 adminProfanity p = withoutArgs adminProfanity p
 
 
@@ -775,10 +765,9 @@ adminTime p = withoutArgs adminTime p
 
 
 adminTypo :: Action
-adminTypo (NoArgs i mq cols) = do
-    eithers <- dumpDbTblWithHandler "adminTypo" "typo"
-    dumpDbTblHelper mq cols (eithers :: [Either T.Text Typo])
-    logPlaExec (prefixAdminCmd "typo") i
+adminTypo (NoArgs i mq cols) = (withDbExHandler "adminTypo" . getDbTblRecs $ "typo") >>= \case
+  Just xs -> dumpDbTblHelper mq cols (xs :: [TypoRec]) >> logPlaExec (prefixAdminCmd "typo") i
+  Nothing -> sorryDbEx mq cols
 adminTypo p = withoutArgs adminTypo p
 
 

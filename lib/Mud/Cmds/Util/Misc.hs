@@ -4,7 +4,6 @@ module Mud.Cmds.Util.Misc ( advise
                           , dbExHandler
                           , dispCmdList
                           , dispMatches
-                          , dumpDbTblWithHandler
                           , fileIOExHandler
                           , isHostBanned
                           , isPlaBanned
@@ -18,6 +17,8 @@ module Mud.Cmds.Util.Misc ( advise
                           , sorryIgnoreLocPref
                           , sorryIgnoreLocPrefPlur
                           , throwToListenThread
+                          , withDbExHandler
+                          , withDbExHandler_
                           , withoutArgs ) where
 
 import Mud.Cmds.Util.Abbrev
@@ -33,7 +34,6 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.Misc.Logging hiding (logExMsg, logIOEx)
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -51,8 +51,7 @@ import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
-import Data.Monoid ((<>))
-import Database.Persist.Class (PersistEntity)
+import Data.Monoid ((<>), Any(..))
 import qualified Data.Text as T
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
@@ -92,10 +91,8 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 
 dbExHandler :: T.Text -> SomeException -> MudStack ()
-dbExHandler fn e = let msg = T.concat [ "exception caught in "
+dbExHandler fn e = let msg = T.concat [ "exception caught during a database operation in "
                                       , dblQuote fn
-                                      , " "
-                                      , parensQuote "likely during a database operation"
                                       , "; rethrowing to listen thread" ]
                    in logExMsg "dbExHandler" msg e >> throwToListenThread e
 
@@ -154,35 +151,23 @@ throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 -----
 
 
-isHostBanned :: T.Text -> MudStack (Maybe Bool)
-isHostBanned host = dumpDbTblWithHandler "isHostBanned" "ban_host" >>= \eithers ->
-    let (banHosts, errorMsgs) = sortEithers (eithers :: [Either T.Text BanHost])
-    in Just <$> isBanned host errorMsgs banHosts
+isHostBanned :: T.Text -> IO Any
+isHostBanned host = isBanned host <$> (getDbTblRecs "ban_host" :: IO [BanHostRec])
 
 
-dumpDbTblWithHandler :: (PersistEntity a) => T.Text -> T.Text -> MudStack [Either T.Text a]
-dumpDbTblWithHandler fn tn = (liftIO . dumpDbTbl $ tn) `catch` handler
+isBanned :: (BanRecord a) => T.Text -> [a] -> Any
+isBanned target banRecs = helper . reverse $ banRecs
   where
-    handler e = emptied . dbExHandler fn $ (e :: SomeException) -- TODO: Why is this emptied?
-
-
-isBanned :: (BanRecord a) => T.Text -> [T.Text] -> [a] -> MudStack Bool
-isBanned target errorMsgs banRecs = do
-    errorMsgs |#| logDbParseError
-    return . helper . reverse $ banRecs
-  where
-    helper [] = False
-    helper (x:xs) | recTarget x == target = recIsBanned x
+    helper [] = Any False
+    helper (x:xs) | recTarget x == target = Any . recIsBanned $ x
                   | otherwise             = helper xs
 
 
 -----
 
 
-isPlaBanned :: Sing -> MudStack (Maybe Bool)
-isPlaBanned banSing = dumpDbTblWithHandler "isPlaBanned" "ban_pla" >>= \eithers ->
-    let (banPlas, errorMsgs) = sortEithers (eithers :: [Either T.Text BanPla])
-    in Just <$> isBanned banSing errorMsgs banPlas
+isPlaBanned :: Sing -> IO Any
+isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPlaRec])
 
 
 -----
@@ -265,6 +250,17 @@ sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location pre
 sorryIgnoreLocPrefPlur :: T.Text -> T.Text
 sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
                                                   \provided will be ignored."
+
+
+-----
+
+
+withDbExHandler :: (Monoid a) => T.Text -> IO a -> MudStack (Maybe a)
+withDbExHandler fn f = liftIO (Just <$> f) `catch` (emptied . dbExHandler fn)
+
+
+withDbExHandler_ :: T.Text -> IO () -> MudStack ()
+withDbExHandler_ fn f = liftIO f `catch` dbExHandler fn
 
 
 -----

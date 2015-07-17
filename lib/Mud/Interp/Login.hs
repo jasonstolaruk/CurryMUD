@@ -29,7 +29,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Arrow (first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Exception.Lifted (catch, try)
+import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, at, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), guard, unless, when)
@@ -68,10 +68,10 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
                                       , maxNameLenTxt
                                       , " characters long." ]
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
-  | otherwise = isPlaBanned cn' >>= \case
-    Nothing    -> sorryDbEx mq cols
-    Just True  -> handleBanned
-    Just False -> handleNotBanned
+  | otherwise = (withDbExHandler "interpName" . isPlaBanned $ cn') >>= \case
+    Nothing          -> sorryDbEx mq cols
+    Just (Any True ) -> handleBanned
+    Just (Any False) -> handleNotBanned
   where
     handleBanned = (T.pack . getCurrHostName i <$> getState) >>= \host -> do
         sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
@@ -178,8 +178,8 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
                                   dfltColor
         sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
         ts <- liftIO mkTimestamp
-        let prof = Prof ts hn cn
-        insertDbTbl prof `catch` dbExHandler "checkProfanitiesDict"
+        let prof = ProfRec ts hn cn
+        withDbExHandler_ "checkProfanitiesDict sorry" . insertDbTblProf $ prof
         bcastAdmins $ "Profanity logged: " <> pp prof
         let logMsg = T.concat [ "booting player ", showText i, " ", s, " due to profanity." ]
         logNotice "checkProfanitiesDict sorry" logMsg

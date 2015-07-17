@@ -5,7 +5,7 @@
 
 \uDESCRIPTION\n
 Dump the banned hostname database, or ban/unban a host.
-When no arguments are provided, the contents of every record in the database are displayed.
+When no arguments are provided, every record in the database is displayed.
 To add a new record to the database (effectively toggling between banned/unbanned status), provide the hostname you wish to ban/unban, followed by a description of the reason.
 
 \uEXAMPLES\n

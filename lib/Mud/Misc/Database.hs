@@ -1,163 +1,145 @@
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-# LANGUAGE FlexibleContexts, GADTs, GeneralizedNewtypeDeriving, MultiParamTypeClasses, OverloadedStrings, QuasiQuotes, TemplateHaskell, TypeFamilies, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Misc.Database ( AdminChan(..)
-                         , AdminChanId
-                         , BanHost(..)
-                         , BanHostId
-                         , BanPla(..)
-                         , BanPlaId
-                         , Bug(..)
-                         , BugId
-                         , dumpDbTbl
-                         , dumpDbTblAdmniChan
-                         , dumpDbTblBanHost
-                         , dumpDbTblBanPla
-                         , dumpDbTblBug
-                         , dumpDbTblProf
-                         , dumpDbTblTypo
-                         , insertDbTbl
-                         , migrateDbTbls
-                         , Prof(..)
-                         , ProfId
-                         , Typo(..)
-                         , TypoId ) where
+module Mud.Misc.Database ( AdminChanRec(..)
+                         , BanHostRec(..)
+                         , BanPlaRec(..)
+                         , BugRec(..)
+                         , ProfRec(..)
+                         , TypoRec(..)
+                         , createDbTbls
+                         , getDbTblRecs
+                         , insertDbTblAdminChan
+                         , insertDbTblBanHost
+                         , insertDbTblBanPla
+                         , insertDbTblBug
+                         , insertDbTblProf
+                         , insertDbTblTypo ) where
 
-import Mud.Data.State.MudData
 import Mud.TopLvlDefs.FilePaths
 
-import Control.Exception (SomeException)
-import Control.Exception.Lifted (catch)
-import Control.Monad (void)
-import Data.Conduit (($$), (=$))
+import Control.Monad (forM_)
 import Data.Monoid ((<>))
-import Database.Esqueleto -- TODO
-import Database.Persist.Sqlite (runSqlite)
-import Database.Persist.TH (mkMigrate, mkPersist, persistLowerCase, share, sqlSettings)
-import qualified Data.Conduit.List as CL (consume, map)
+import Database.SQLite.Simple (FromRow, Query(..), ToRow, execute, execute_, field, fromRow, query_, toRow, withConnection)
+import Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.Text as T
 
 
-share [ mkPersist sqlSettings, mkMigrate "migrateAll" ] [persistLowerCase|
-AdminChan
-  timestamp T.Text
-  name      T.Text
-  msg       T.Text
-BanHost
-  timestamp T.Text
-  host      T.Text
-  isBanned  Bool
-  reason    T.Text
-BanPla
-  timestamp T.Text
-  name      T.Text
-  isBanned  Bool
-  reason    T.Text
-Bug
-  timestamp T.Text
-  name      T.Text
-  loc       T.Text
-  desc      T.Text
-  isOpen    Bool
-Prof
-  timestamp T.Text
-  host      T.Text
-  profanity T.Text
-Typo
-  timestamp T.Text
-  name      T.Text
-  loc       T.Text
-  desc      T.Text
-  isOpen    Bool
-|]
+data AdminChanRec = AdminChanRec { adminChanTimestamp :: T.Text
+                                 , adminChanName      :: T.Text
+                                 , adminChanMsg       :: T.Text }
+data BanHostRec   = BanHostRec   { banHostTimestamp   :: T.Text
+                                 , banHostHost        :: T.Text
+                                 , banHostIsBanned    :: Bool
+                                 , banHostReason      :: T.Text }
+data BanPlaRec    = BanPlaRec    { banPlaTimestamp    :: T.Text
+                                 , banPlaName         :: T.Text
+                                 , banPlaIsBanned     :: Bool
+                                 , banPlaReason       :: T.Text }
+data BugRec       = BugRec       { bugTimestamp       :: T.Text
+                                 , bugName            :: T.Text
+                                 , bugLoc             :: T.Text
+                                 , bugDesc            :: T.Text
+                                 , bugIsOpen          :: Bool   }
+data ProfRec      = ProfRec      { profTimestamp      :: T.Text
+                                 , profHost           :: T.Text
+                                 , profProfanity      :: T.Text }
+data TypoRec      = TypoRec      { typoTimestamp      :: T.Text
+                                 , typoName           :: T.Text
+                                 , typoLoc            :: T.Text
+                                 , typoDesc           :: T.Text
+                                 , typoIsOpen         :: Bool   }
 
 
--- ==================================================
+instance FromRow AdminChanRec where
+  fromRow = AdminChanRec <$ (field :: RowParser Int) <*> field <*> field <*> field
 
 
-dbFile' :: T.Text
-dbFile' = T.pack dbFile
+instance FromRow BanHostRec where
+  fromRow = BanHostRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
-migrateDbTbls :: IO ()
-migrateDbTbls = runSqlite dbFile' . void . runMigrationSilent $ migrateAll
+instance FromRow BanPlaRec where
+  fromRow = BanPlaRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
-dumpDbTbl tblName = runRawQuery $ "select * from " <> tblName
+instance FromRow BugRec where
+  fromRow = BugRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
 
-runRawQuery query = runSqlite dbFile' helper
+instance FromRow ProfRec where
+  fromRow = ProfRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+
+
+instance FromRow TypoRec where
+  fromRow = TypoRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+
+
+instance ToRow AdminChanRec where
+  toRow (AdminChanRec a b c) = toRow (a, b, c)
+
+
+instance ToRow BanHostRec where
+  toRow (BanHostRec a b c d) = toRow (a, b, c, d)
+
+
+instance ToRow BanPlaRec where
+  toRow (BanPlaRec a b c d) = toRow (a, b, c, d)
+
+
+instance ToRow BugRec where
+  toRow (BugRec a b c d e) = toRow (a, b, c, d, e)
+
+
+instance ToRow ProfRec where
+  toRow (ProfRec a b c) = toRow (a, b, c)
+
+
+instance ToRow TypoRec where
+  toRow (TypoRec a b c d e) = toRow (a, b, c, d, e)
+
+
+createDbTbls :: IO ()
+createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
   where
-    helper = rawQuery query [] $$ CL.map (fromPersistValues . tail) =$ CL.consume
+    qs = [ "CREATE TABLE IF NOT EXISTS admin_chan (id INTEGER PRIMARY KEY, timestamp TEXT, name TEXT, msg TEXT)"
+         , "CREATE TABLE IF NOT EXISTS ban_host   (id INTEGER PRIMARY KEY, timestamp TEXT, host TEXT, is_banned INTEGER, reason TEXT)"
+         , "CREATE TABLE IF NOT EXISTS ban_pla    (id INTEGER PRIMARY KEY, timestamp TEXT, name TEXT, is_banned INTEGER, reason TEXT)"
+         , "CREATE TABLE IF NOT EXISTS bug        (id INTEGER PRIMARY KEY, timestamp TEXT, name TEXT, loc TEXT, desc TEXT, is_open INTEGER)"
+         , "CREATE TABLE IF NOT EXISTS profanity  (id INTEGER PRIMARY KEY, timestamp TEXT, host TEXT, prof TEXT)"
+         , "CREATE TABLE IF NOT EXISTS typo       (id INTEGER PRIMARY KEY, timestamp TEXT, name TEXT, loc TEXT, desc TEXT, is_open INTEGER)" ]
 
 
-insertDbTbl x = runSqlite dbFile' . void . insert $ x
-
-
--- ==================================================
-
-
-dumpDbTblAdmniChan :: MudStack (Either SomeException [AdminChan])
-dumpDbTblAdmniChan = (Right <$> runSqlite dbFile' helper) `catch` (return . Left)
+getDbTblRecs :: (FromRow a) => T.Text -> IO [a]
+getDbTblRecs tblName = withConnection dbFile helper
   where
-    helper = do
-        xs <- select $
-              from $ \x -> do
-              return x
-        let xs' = map entityVal xs
-        return xs'
+    helper conn = query_ conn . Query $ "SELECT * FROM " <> tblName
 
 
-dumpDbTblBanHost :: MudStack [BanHost]
-dumpDbTblBanHost = runSqlite dbFile' helper
+insertDbTblHelper :: (ToRow a) => Query -> a -> IO ()
+insertDbTblHelper q x = withConnection dbFile f
   where
-    helper = do
-        xs <- select $
-              from $ \x -> do
-              return x
-        let xs' = map entityVal xs
-        return xs'
+    f conn = execute conn q x
 
 
-dumpDbTblBanPla :: MudStack [BanPla]
-dumpDbTblBanPla = runSqlite dbFile' helper
-  where
-    helper = do
-        xs <- select $
-              from $ \x -> do
-              return x
-        let xs' = map entityVal xs
-        return xs'
+insertDbTblAdminChan :: AdminChanRec -> IO ()
+insertDbTblAdminChan = insertDbTblHelper "INSERT INTO admin_chan (timestamp, name, msg) VALUES (?, ?, ?)"
 
 
-dumpDbTblBug :: MudStack [Bug]
-dumpDbTblBug = runSqlite dbFile' helper
-  where
-    helper = do
-        xs <- select $
-              from $ \x -> do
-              return x
-        let xs' = map entityVal xs
-        return xs'
+insertDbTblBanHost :: BanHostRec -> IO ()
+insertDbTblBanHost = insertDbTblHelper "INSERT INTO ban_host (timestamp, host, is_banned, reason) VALUES (?, ?, ?, ?)"
 
 
-dumpDbTblProf :: MudStack [Prof]
-dumpDbTblProf = runSqlite dbFile' helper
-  where
-    helper = do
-        xs <- select $
-              from $ \x -> do
-              return x
-        let xs' = map entityVal xs
-        return xs'
+insertDbTblBanPla :: BanPlaRec -> IO ()
+insertDbTblBanPla = insertDbTblHelper "INSERT INTO ban_pla (timestamp, name, is_banned, reason) VALUES (?, ?, ?, ?)"
 
 
-dumpDbTblTypo :: MudStack [Typo]
-dumpDbTblTypo = runSqlite dbFile' helper
-  where
-    helper = do
-        xs <- select $
-              from $ \x -> do
-              return x
-        let xs' = map entityVal xs
-        return xs'
+insertDbTblBug :: BugRec -> IO ()
+insertDbTblBug = insertDbTblHelper "INSERT INTO bug (timestamp, name, loc, desc, is_open) VALUES (?, ?, ?, ?, ?)"
+
+
+insertDbTblProf :: ProfRec -> IO ()
+insertDbTblProf = insertDbTblHelper "INSERT INTO profanity (timestamp, host, prof) VALUES (?, ?, ?)"
+
+
+insertDbTblTypo :: TypoRec -> IO ()
+insertDbTblTypo = insertDbTblHelper "INSERT INTO typo (timestamp, name, loc, desc, is_open) VALUES (?, ?, ?, ?, ?)"
