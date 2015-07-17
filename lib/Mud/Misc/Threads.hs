@@ -115,7 +115,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         initialize
         logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-        auxAsyncs <- mapM runAsync [ chanDbTblsRecCounter, threadTblPurger, worldPersister ]
+        auxAsyncs <- mapM runAsync [ dbTblPurger, threadTblPurger, worldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
         logNotice "listen initialize" "creating the database tables."
@@ -163,17 +163,17 @@ sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState 
 
 
 -- ============================================================
--- The "channel database tables record counter" thread:
+-- The "database table purger" thread:
 
 
-chanDbTblsRecCounter :: MudStack ()
-chanDbTblsRecCounter = handle (threadExHandler "world persister") $ do
-    setThreadType ChanDbTblsRecCounter
-    logNotice "chanDbTblsRecCounter" "channel database tables record counter started."
-    let loop = (liftIO . threadDelay $ chanDbTblsRecCounterDelay * 10 ^ 6) >> count
-    forever loop `catch` die "channel database tables record counter"
+dbTblPurger :: MudStack ()
+dbTblPurger = handle (threadExHandler "dbTblPurger") $ do
+    setThreadType DbTblPurger
+    logNotice "dbTblPurger" "database table purger started."
+    let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
+    forever loop `catch` die "dbTblPurger"
   where
-    count = unit -- TODO: Write a sql query that deletes x number of records when > y number of records exist.
+    helper = unit -- TODO: Write a sql query that deletes x number of records when > y number of records exist.
 
 
 threadExHandler :: T.Text -> SomeException -> MudStack ()

@@ -421,7 +421,7 @@ type LinkName = T.Text
 -- ==================================================
 
 
-data ThreadType = ChanDbTblsRecCounter
+data ThreadType = DbTblPurger
                 | Error
                 | InacTimer Id
                 | Listen

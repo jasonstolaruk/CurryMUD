@@ -17,16 +17,16 @@ allCoinNames :: [T.Text]
 allCoinNames = coinNames ++ aggregateCoinNames
 
 
-chanDbTblsRecCounterDelay :: Int
-chanDbTblsRecCounterDelay = 10
-
-
 coinNames :: [T.Text]
 coinNames = [ "cp", "sp", "gp" ]
 
 
 coinFullNames :: [T.Text]
 coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
+
+
+dbTblPurgerDelay :: Int
+dbTblPurgerDelay = 10 -- TODO
 
 
 dfltPrompt :: T.Text
