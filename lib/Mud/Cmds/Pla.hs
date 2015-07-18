@@ -1031,31 +1031,31 @@ link :: Action
 link (NoArgs i mq cols) = getState >>= \ms ->
   let othersLinkedToMe = getLinked i ms
       meLinkedToOthers = undefined -- TODO: Fold over all PCs.
-  in if all (()#) $ [ othersLinkedToMe, meLinkedToOthers ]
-    then let txt = "You haven't established a telepathic link with anyone yet."
-         in wrapSend mq cols txt >> (logPlaOut "link" i . pure $ txt) -- TODO: Why is this (and others) "logPlaOut" and not "logPla"? If necessary, fix "intro" as well.
+  in if all (()#) [ othersLinkedToMe, meLinkedToOthers ]
+    then let txt = nlnl "You haven't established a telepathic link with anyone yet."
+         in (wrapSend mq cols . nlnl $ txt) >> logPla "link" i txt
     -- TODO: Two lists: one-way and two-way links.
     -- TODO: Both lists should indicate who is logged in and who is logged out.
     else undefined -- TODO
--- TODO: Below needs to use ordinal numbers to describe targets(?) and will probably need to accept a list of functions to be passed to a "sequence_" outside the STM monad.
+-- TODO: Below will probably need to accept a list of functions to be passed to a "sequence_" outside the STM monad.
 link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     -- TODO: Don't allow incognito admins to attempt to establish a link. "bcastIfNotIncog" not needed?
-    bcastIfNotIncog i bs >> logMsgs |#| logPlaOut "link" i
+    bcastIfNotIncog i bs >> logMsgs |#| (logPla "link" i . slashes)
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv = inInvs |!| mkBroadcast i "You can't establish a telepathic link with an item in your \
-                                                  \inventory."
-            sorryInEq  = inEqs  |!| mkBroadcast i "You can't establish a telepathic link with an item in your readied \
-                                                  \equipment."
+            sorryInInv = inInvs |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
+                                                            \your inventory.")
+            sorryInEq  = inEqs  |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
+                                                            \your readied equipment.")
             invCoins   = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
             (eiss, ecs)         = uncurry (resolveRmInvCoins i ms inRms) invCoins
             (pt, bs,  logMsgs ) = foldl' (helperLinkEitherInv ms) (ms^.pcTbl, [], []     ) eiss
             (    bs', logMsgs') = foldl' helperLinkEitherCoins    (           bs, logMsgs)  ecs
         in if ()!# invCoins
           then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ bs', logMsgs'))
-          else (ms, (mkBroadcast i "You don't see anyone here to link with.", []))
-    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _2 <>~ mkBroadcast i sorryMsg)
+          else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to link with.", []))
+    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _2 <>~ (mkBroadcast i . nlnl $ sorryMsg))
     helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
       where
         tryLink a' targetId = let targetSing = getSing targetId ms in case getType targetId ms of
@@ -1084,12 +1084,11 @@ link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
                                               , mkPossPro . getSex i $ ms
                                               , " mind to yours."
                                               , twoWayMsg ]
-                bs        = [ (srcMsg,    pure i        )
-                            , (targetMsg, pure targetId ) ]
+                bs        = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
             in if
               -- TODO: Pull out a helper function for the below if cases.
               | targetSing `notElem` srcIntros ->
-                let msg = nlnl $ "You don't know the " <> targetDesig <> "'s name." -- TODO: We need ordinal numbers here, no?
+                let msg = nlnl $ "You don't know the " <> targetDesig <> "'s name."
                 in a' & _2 <>~ mkBroadcast i msg
               | s `notElem` targetIntros ->
                 let msg = nlnl $ "You must first introduce yourself to " <> targetSing <> "."
@@ -1103,12 +1102,12 @@ link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
                 in a' & _2 <>~ mkBroadcast i msg
               -- TODO: There should be a chance that the target flinches via the "flinch" exp cmd. Reference how you handle teleport puking.
               | otherwise -> a' & _1.ind targetId.linked %~ (sort . (s :)) & _2 <>~ bs & _3 <>~ pure logMsg
-          _  -> let msg = "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
+          _  -> let msg = nlnl $ "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
                     b   = (msg, pure i)
                 in a' & _2 %~ (`appendIfUnique` b)
     helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a (Right {}  ) =
-        let b = ("You can't establish a telepathic link with a coin.", pure i)
+        let b = (nlnl "You can't establish a telepathic link with a coin.", pure i)
         in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" [ showText p ]
 
