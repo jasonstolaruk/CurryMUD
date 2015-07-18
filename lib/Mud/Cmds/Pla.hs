@@ -1026,77 +1026,90 @@ extractPCIdsFromEiss ms = foldl' helper []
 -----
 
 
--- TODO: The list should indicate who is logged in and who is logged out.
+-- TODO: Establishing a link should cost psionic points.
 link :: Action
-link (NoArgs i mq cols) = getState >>= \ms -> let links = getLinked i ms in if ()# links
-  then let txt = "No one has introduced themselves to you yet." in
-      wrapSend mq cols txt >> (logPlaOut "link" i . pure $ txt)
-  else let txt = commas links in
-      -- TODO: Distinguish between one-way and two-way links.
-      multiWrapSend mq cols [ "Your links: ", txt ] >> (logPlaOut "link" i . pure $ txt)
-{-
-link (LowerNub' i as) = helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
+link (NoArgs i mq cols) = getState >>= \ms ->
+  let othersLinkedToMe = getLinked i ms
+      meLinkedToOthers = undefined -- TODO: Fold over all PCs.
+  in if all (()#) $ [ othersLinkedToMe, meLinkedToOthers ]
+    then let txt = "You haven't established a telepathic link with anyone yet."
+         in wrapSend mq cols txt >> (logPlaOut "link" i . pure $ txt) -- TODO: Why is this (and others) "logPlaOut" and not "logPla"? If necessary, fix "intro" as well.
+    -- TODO: Two lists: one-way and two-way links.
+    -- TODO: Both lists should indicate who is logged in and who is logged out.
+    else undefined -- TODO
+-- TODO: Below needs to use ordinal numbers to describe targets(?) and will probably need to accept a list of functions to be passed to a "sequence_" outside the STM monad.
+link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
+    -- TODO: Don't allow incognito admins to attempt to establish a link. "bcastIfNotIncog" not needed?
     bcastIfNotIncog i bs >> logMsgs |#| logPlaOut "link" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv = inInvs |!| mkNTB "You can't introduce yourself to an item in your inventory."
-            sorryInEq  = inEqs  |!| mkNTB "You can't introduce yourself to an item in your readied equipment."
-            invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
-            (eiss, ecs)          = uncurry (resolveRmInvCoins i ms inRms) invCoins'
-            (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms (fst invCoins)) (ms^.pcTbl, [],  []     ) eiss
-            (    cbs', logMsgs') = foldl' helperIntroEitherCoins                   (           cbs, logMsgs) ecs
-        in if ()!# invCoins'
-          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs'))
-          else (ms, (mkNTB "You don't see anyone here to introduce yourself to.", []))
-    mkNTB                                           = mkNTBroadcast i . nlnl
-    helperIntroEitherInv _  _   a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
-    helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
+            sorryInInv = inInvs |!| mkBroadcast i "You can't establish a telepathic link with an item in your \
+                                                  \inventory."
+            sorryInEq  = inEqs  |!| mkBroadcast i "You can't establish a telepathic link with an item in your readied \
+                                                  \equipment."
+            invCoins   = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+            (eiss, ecs)         = uncurry (resolveRmInvCoins i ms inRms) invCoins
+            (pt, bs,  logMsgs ) = foldl' (helperLinkEitherInv ms) (ms^.pcTbl, [], []     ) eiss
+            (    bs', logMsgs') = foldl' helperLinkEitherCoins    (           bs, logMsgs)  ecs
+        in if ()!# invCoins
+          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ bs', logMsgs'))
+          else (ms, (mkBroadcast i "You don't see anyone here to link with.", []))
+    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _2 <>~ mkBroadcast i sorryMsg)
+    helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
       where
-        tryIntro a'@(pt, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
-          PCType -> let s           = getSing i ms
-                        targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                        msg         = "You introduce yourself to " <> targetDesig <> "."
-                        logMsg      = "Introduced to " <> targetSing <> "."
-                        srcMsg      = nlnl msg
-                        pis         = findPCIds ms ris
-                        srcDesig    = StdDesig { stdPCEntSing = Nothing
-                                               , shouldCap    = DoCap
-                                               , pcEntName    = mkUnknownPCEntName i ms
-                                               , pcId         = i
-                                               , pcIds        = pis }
-                        himHerself  = mkReflexPro . getSex i $ ms
-                        targetMsg   = nlnl . T.concat $ [ serialize srcDesig
-                                                        , " introduces "
-                                                        , himHerself
-                                                        , " to you as "
-                                                        , knownNameColor
-                                                        , s
-                                                        , dfltColor
-                                                        , "." ]
-                        othersMsg   = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
-                                                        , " introduces "
-                                                        , himHerself
-                                                        , " to "
-                                                        , targetDesig
-                                                        , "." ]
-                        cbs         = [ NonTargetBroadcast (srcMsg,    pure i                )
-                                      , TargetBroadcast    (targetMsg, pure targetId         )
-                                      , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
-                    in if s `elem` pt^.ind targetId.introduced
-                      then let sorry = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
-                           in a' & _2 <>~ mkNTBroadcast i sorry
-                      else a' & _1.ind targetId.introduced %~ (sort . (s :)) & _2 <>~ cbs & _3 <>~ pure logMsg
-          _      -> let msg = "You can't introduce yourself to " <> theOnLower targetSing <> "."
-                        b   = head . mkNTB $ msg
-                    in a' & _2 %~ (`appendIfUnique` b)
-    helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
-    helperIntroEitherCoins a (Right {}  ) =
-        let cb = head . mkNTB $ "You can't introduce yourself to a coin."
-        in first (`appendIfUnique` cb) a
-    fromClassifiedBroadcast (TargetBroadcast    b) = b
-    fromClassifiedBroadcast (NonTargetBroadcast b) = b
--}
+        tryLink a' targetId = let targetSing = getSing targetId ms in case getType targetId ms of
+          PCType -> -- TODO: Reorder the below let block?
+            let s                         = getSing i ms
+                targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
+                f g                       = ((i |&|) *** (targetId |&|)) (dup $ uncurry g . (, ms))
+                (srcIntros, targetIntros) = f getIntroduced
+                (srcLinks,  targetLinks ) = f getLinked
+                srcMsg    = nlnl . T.concat $ [ "Focusing your innate psionic energy for a brief moment, you establish \
+                                                \a telepathic connection from your mind to "
+                                              , targetSing
+                                              , "'s mind."
+                                              , twoWayMsg ]
+                twoWayMsg = isTwoWay |?| " This completes the psionic circuit and you may now communicate with each \
+                                         \other telepathically."
+                isTwoWay  = targetSing `elem` srcLinks
+                oneTwoWay | isTwoWay  = "two-way"
+                          | otherwise = "one-way"
+                logMsg    = T.concat [ "Established a ", oneTwoWay, " link with ", targetSing, "." ]
+                targetMsg = nlnl . T.concat $ [ "You sense an ephemeral blip in your psionic energy field as "
+                                              , knownNameColor
+                                              , s
+                                              , dfltColor
+                                              , " establishes a telepathic connection from "
+                                              , mkPossPro . getSex i $ ms
+                                              , " mind to yours."
+                                              , twoWayMsg ]
+                bs        = [ (srcMsg,    pure i        )
+                            , (targetMsg, pure targetId ) ]
+            in if
+              -- TODO: Pull out a helper function for the below if cases.
+              | targetSing `notElem` srcIntros ->
+                let msg = nlnl $ "You don't know the " <> targetDesig <> "'s name." -- TODO: We need ordinal numbers here, no?
+                in a' & _2 <>~ mkBroadcast i msg
+              | s `notElem` targetIntros ->
+                let msg = nlnl $ "You must first introduce yourself to " <> targetSing <> "."
+                in a' & _2 <>~ mkBroadcast i msg
+              | s `elem` targetLinks ->
+                let msg = nlnl . T.concat $ [ "You've already established a "
+                                            , oneTwoWay
+                                            , " link with "
+                                            , targetDesig
+                                            , "." ]
+                in a' & _2 <>~ mkBroadcast i msg
+              -- TODO: There should be a chance that the target flinches via the "flinch" exp cmd. Reference how you handle teleport puking.
+              | otherwise -> a' & _1.ind targetId.linked %~ (sort . (s :)) & _2 <>~ bs & _3 <>~ pure logMsg
+          _  -> let msg = "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
+                    b   = (msg, pure i)
+                in a' & _2 %~ (`appendIfUnique` b)
+    helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
+    helperLinkEitherCoins a (Right {}  ) =
+        let b = ("You can't establish a telepathic link with a coin.", pure i)
+        in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" [ showText p ]
 
 

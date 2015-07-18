@@ -226,6 +226,8 @@ expCmdSet = S.fromList
                                       "You flex your muscles at @."
                                       "% flexes & muscles at you."
                                       "% flexes & muscles at @.")
+    , ExpCmd "flinch"      (NoTarget  "You flinch."
+                                      "% flinches.")
     , ExpCmd "flop"        (NoTarget  "You flop down on the ground."
                                       "% flops down on the ground.")
     , ExpCmd "frown"       (Versatile "You frown."
