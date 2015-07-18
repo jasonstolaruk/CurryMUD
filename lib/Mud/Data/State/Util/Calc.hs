@@ -38,8 +38,12 @@ calcMaxEnc i ms = getSt i ms ^ 2 `quot` 13 * 100
 -----
 
 
+calcProbLinkFlinch :: Id -> MudState -> Int
+calcProbLinkFlinch i ms = (getHt i ms - 100) ^ 2 `quot` 125
+
+
 calcProbTeleShudder :: Id -> MudState -> Int
-calcProbTeleShudder i ms = (getHt i ms - 100) ^ 2 `quot` 125
+calcProbTeleShudder = calcProbLinkFlinch
 
 
 calcProbTeleVomit :: Id -> MudState -> Int

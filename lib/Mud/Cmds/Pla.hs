@@ -18,10 +18,12 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
@@ -1038,9 +1040,9 @@ link (NoArgs i mq cols) = getState >>= \ms ->
     -- TODO: Both lists should indicate who is logged in and who is logged out.
     else undefined -- TODO
 -- TODO: Below will probably need to accept a list of functions to be passed to a "sequence_" outside the STM monad.
-link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
+link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs, fs) ->
     -- TODO: Don't allow incognito admins to attempt to establish a link. "bcastIfNotIncog" not needed?
-    bcastIfNotIncog i bs >> logMsgs |#| (logPla "link" i . slashes)
+    bcastIfNotIncog i bs >> sequence_ fs >> logMsgs |#| (logPla "link" i . slashes)
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -1049,12 +1051,12 @@ link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
             sorryInEq  = inEqs  |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
                                                             \your readied equipment.")
             invCoins   = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
-            (eiss, ecs)         = uncurry (resolveRmInvCoins i ms inRms) invCoins
-            (pt, bs,  logMsgs ) = foldl' (helperLinkEitherInv ms) (ms^.pcTbl, [], []     ) eiss
-            (    bs', logMsgs') = foldl' helperLinkEitherCoins    (           bs, logMsgs)  ecs
+            (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
+            (pt, bs,  logMsgs, fs) = foldl' (helperLinkEitherInv ms) (ms^.pcTbl, [], [],      []) eiss
+            (    bs', logMsgs'   ) = foldl' helperLinkEitherCoins    (           bs, logMsgs    ) ecs
         in if ()!# invCoins
-          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ bs', logMsgs'))
-          else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to link with.", []))
+          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ bs', logMsgs', fs))
+          else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to link with.", [], []))
     helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _2 <>~ (mkBroadcast i . nlnl $ sorryMsg))
     helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
       where
@@ -1100,8 +1102,8 @@ link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
                                             , targetDesig
                                             , "." ]
                 in a' & _2 <>~ mkBroadcast i msg
-              -- TODO: There should be a chance that the target flinches via the "flinch" exp cmd. Reference how you handle teleport puking.
-              | otherwise -> a' & _1.ind targetId.linked %~ (sort . (s :)) & _2 <>~ bs & _3 <>~ pure logMsg
+              | act <- rndmDo (calcProbLinkFlinch i ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
+                a' & _1.ind targetId.linked %~ (sort . (s :)) & _2 <>~ bs & _3 <>~ pure logMsg & _4 <>~ pure act
           _  -> let msg = nlnl $ "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
                     b   = (msg, pure i)
                 in a' & _2 %~ (`appendIfUnique` b)
