@@ -4,8 +4,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , BanHostRec(..)
                          , BanPlaRec(..)
                          , BugRec(..)
-                         , ProfRec(..)
-                         , TypoRec(..)
+                         , countDbTblRecsAdminChan
                          , createDbTbls
                          , getDbTblRecs
                          , insertDbTblAdminChan
@@ -13,13 +12,17 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblBanPla
                          , insertDbTblBug
                          , insertDbTblProf
-                         , insertDbTblTypo ) where
+                         , insertDbTblTypo
+                         , ProfRec(..)
+                         , purgeDbTblAdminChan
+                         , TypoRec(..)) where
 
 import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 
 import Control.Monad (forM_)
 import Data.Monoid ((<>))
-import Database.SQLite.Simple (FromRow, Query(..), ToRow, execute, execute_, field, fromRow, query_, toRow, withConnection)
+import Database.SQLite.Simple (FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query_, toRow, withConnection)
 import Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.Text as T
 
@@ -101,45 +104,59 @@ instance ToRow TypoRec where
 createDbTbls :: IO ()
 createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
   where
-    qs = [ "CREATE TABLE IF NOT EXISTS admin_chan (id INTEGER PRIMARY KEY, timestamp TEXT, name TEXT, msg TEXT)"
-         , "CREATE TABLE IF NOT EXISTS ban_host   (id INTEGER PRIMARY KEY, timestamp TEXT, host TEXT, is_banned INTEGER, reason TEXT)"
-         , "CREATE TABLE IF NOT EXISTS ban_pla    (id INTEGER PRIMARY KEY, timestamp TEXT, name TEXT, is_banned INTEGER, reason TEXT)"
-         , "CREATE TABLE IF NOT EXISTS bug        (id INTEGER PRIMARY KEY, timestamp TEXT, name TEXT, loc TEXT, desc TEXT, is_open INTEGER)"
-         , "CREATE TABLE IF NOT EXISTS profanity  (id INTEGER PRIMARY KEY, timestamp TEXT, host TEXT, prof TEXT)"
-         , "CREATE TABLE IF NOT EXISTS typo       (id INTEGER PRIMARY KEY, timestamp TEXT, name TEXT, loc TEXT, desc TEXT, is_open INTEGER)" ]
+    qs = [ "create table if not exists admin_chan (id integer primary key, timestamp text, name text, msg text)"
+         , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned integer, reason text)"
+         , "create table if not exists ban_pla    (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
+         , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
+         , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
+         , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)" ]
 
 
 getDbTblRecs :: (FromRow a) => T.Text -> IO [a]
 getDbTblRecs tblName = withConnection dbFile helper
   where
-    helper conn = query_ conn . Query $ "SELECT * FROM " <> tblName
+    helper conn = query_ conn . Query $ "select * from " <> tblName
 
 
 insertDbTblHelper :: (ToRow a) => Query -> a -> IO ()
-insertDbTblHelper q x = withConnection dbFile f
+insertDbTblHelper q x = withConnection dbFile helper
   where
-    f conn = execute conn q x
+    helper conn = execute conn q x
 
 
 insertDbTblAdminChan :: AdminChanRec -> IO ()
-insertDbTblAdminChan = insertDbTblHelper "INSERT INTO admin_chan (timestamp, name, msg) VALUES (?, ?, ?)"
+insertDbTblAdminChan = insertDbTblHelper "insert into admin_chan (timestamp, name, msg) values (?, ?, ?)"
 
 
 insertDbTblBanHost :: BanHostRec -> IO ()
-insertDbTblBanHost = insertDbTblHelper "INSERT INTO ban_host (timestamp, host, is_banned, reason) VALUES (?, ?, ?, ?)"
+insertDbTblBanHost = insertDbTblHelper "insert into ban_host (timestamp, host, is_banned, reason) values (?, ?, ?, ?)"
 
 
 insertDbTblBanPla :: BanPlaRec -> IO ()
-insertDbTblBanPla = insertDbTblHelper "INSERT INTO ban_pla (timestamp, name, is_banned, reason) VALUES (?, ?, ?, ?)"
+insertDbTblBanPla = insertDbTblHelper "insert into ban_pla (timestamp, name, is_banned, reason) values (?, ?, ?, ?)"
 
 
 insertDbTblBug :: BugRec -> IO ()
-insertDbTblBug = insertDbTblHelper "INSERT INTO bug (timestamp, name, loc, desc, is_open) VALUES (?, ?, ?, ?, ?)"
+insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
 
 
 insertDbTblProf :: ProfRec -> IO ()
-insertDbTblProf = insertDbTblHelper "INSERT INTO profanity (timestamp, host, prof) VALUES (?, ?, ?)"
+insertDbTblProf = insertDbTblHelper "insert into profanity (timestamp, host, prof) values (?, ?, ?)"
 
 
 insertDbTblTypo :: TypoRec -> IO ()
-insertDbTblTypo = insertDbTblHelper "INSERT INTO typo (timestamp, name, loc, desc, is_open) VALUES (?, ?, ?, ?, ?)"
+insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
+
+
+countDbTblRecsAdminChan :: IO [Only Int]
+countDbTblRecsAdminChan = withConnection dbFile helper
+  where
+    helper conn = query_ conn "select count(*) from admin_chan"
+
+
+purgeDbTblAdminChan :: IO ()
+purgeDbTblAdminChan = withConnection dbFile helper
+  where
+    helper conn = execute conn q x
+    q           = "delete from admin_chan where id in (select id from admin_chan limit ?)"
+    x           = Only noOfDbTblRecsToPurge

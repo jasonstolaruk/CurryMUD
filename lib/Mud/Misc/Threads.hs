@@ -52,16 +52,17 @@ import Data.Int (Int64)
 import Data.List ((\\))
 import Data.Monoid ((<>), Any(..), getSum)
 import Data.Time (getCurrentTime)
+import Database.SQLite.Simple (Only(..))
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
-import System.FilePath ((</>))
-import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
-import System.Random (randomIO, randomRIO)
-import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys, map)
 import qualified Data.Map.Lazy as M (elems, empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, putStrLn, readFile)
+import System.FilePath ((</>))
+import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
+import System.Random (randomIO, randomRIO)
+import System.Time.Utils (renderSecs)
 
 
 default (Int)
@@ -173,7 +174,15 @@ dbTblPurger = handle (threadExHandler "dbTblPurger") $ do
     let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
     forever loop `catch` die "dbTblPurger"
   where
-    helper = unit -- TODO: Write a sql query that deletes x number of records when > y number of records exist.
+    helper = let fn = "dbTblPurger helper" in withDbExHandler fn countDbTblRecsAdminChan >>= \case
+        Just [Only count] -> if count > maxDbTblRecs
+          then do
+              withDbExHandler_ fn purgeDbTblAdminChan
+              logNotice fn $ "The admin channel database has been purged of " <>
+                             showText noOfDbTblRecsToPurge                    <>
+                             " records."
+          else logNotice fn $ "The admin channel database presently contains " <> showText count <> " records."
+        _ -> unit
 
 
 threadExHandler :: T.Text -> SomeException -> MudStack ()

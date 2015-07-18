@@ -26,7 +26,7 @@ coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
 
 
 dbTblPurgerDelay :: Int
-dbTblPurgerDelay = 10 -- TODO
+dbTblPurgerDelay = 24 * 60 * 60 -- one day
 
 
 dfltPrompt :: T.Text
@@ -38,7 +38,7 @@ isDebug = True
 
 
 logRotationDelay :: Int
-logRotationDelay = 5 * 60
+logRotationDelay = 60 * 60 -- one hr
 
 
 maxCmdLen :: Int
@@ -50,12 +50,16 @@ maxCols = 200
 minCols = 30
 
 
+maxDbTblRecs :: Int
+maxDbTblRecs = 10000
+
+
 maxHelpTopicLen :: Int
 maxHelpTopicLen = 12
 
 
 maxInacSecs :: Integer
-maxInacSecs = 10 * 60
+maxInacSecs = 10 * 60 -- ten mins
 
 
 maxNameLen,    minNameLen    :: Int
@@ -73,6 +77,10 @@ minPageLines = 8
 
 maxLogSize :: FileOffset
 maxLogSize = 100000
+
+
+noOfDbTblRecsToPurge :: Int
+noOfDbTblRecsToPurge = 1000
 
 
 noOfLogFiles :: Int
@@ -96,7 +104,7 @@ stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
 threadTblPurgerDelay :: Int
-threadTblPurgerDelay = 60 * 60
+threadTblPurgerDelay = 60 * 60 -- one hr
 
 
 ver :: T.Text
@@ -104,4 +112,4 @@ ver = "0.1.0.0 (in development since 2013-10)"
 
 
 worldPersisterDelay :: Int
-worldPersisterDelay = 10 * 60
+worldPersisterDelay = 10 * 60 -- ten mins
