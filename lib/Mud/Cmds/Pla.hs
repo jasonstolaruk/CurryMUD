@@ -805,7 +805,6 @@ getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <-
 -----
 
 
--- TODO: Incognito admins shouldn't be allowed to intro.
 intro :: Action
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet." in
@@ -1032,6 +1031,7 @@ extractPCIdsFromEiss ms = foldl' helper []
 
 
 -- TODO: Establishing a link should cost psionic points.
+-- TODO: Linking should award exp.
 link :: Action
 link (NoArgs i mq cols) = getState >>= \ms ->
   let othersLinkedToMe = getLinked i ms
@@ -1064,12 +1064,12 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
     helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
       where
         tryLink a' targetId = let targetSing = getSing targetId ms in case getType targetId ms of
-          PCType -> -- TODO: Reorder the below let block?
-            let s                         = getSing i ms
-                targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
-                f g                       = ((i |&|) *** (targetId |&|)) (dup $ uncurry g . (, ms))
-                (srcIntros, targetIntros) = f getIntroduced
+          PCType ->
+            let (srcIntros, targetIntros) = f getIntroduced
                 (srcLinks,  targetLinks ) = f getLinked
+                f g                       = ((i |&|) *** (targetId |&|)) (dup $ uncurry g . (, ms))
+                s                         = getSing i ms
+                targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
                 srcMsg    = nlnl . T.concat $ [ "Focusing your innate psionic energy for a brief moment, you establish \
                                                 \a telepathic connection from your mind to "
                                               , targetSing
@@ -1078,9 +1078,9 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
                 twoWayMsg = isTwoWay |?| " This completes the psionic circuit and you may now communicate with each \
                                          \other telepathically."
                 isTwoWay  = targetSing `elem` srcLinks
+                logMsg    = T.concat [ "Established a ", oneTwoWay, " link with ", targetSing, "." ]
                 oneTwoWay | isTwoWay  = "two-way"
                           | otherwise = "one-way"
-                logMsg    = T.concat [ "Established a ", oneTwoWay, " link with ", targetSing, "." ]
                 targetMsg = nlnl . T.concat $ [ "You sense an ephemeral blip in your psionic energy field as "
                                               , knownNameColor
                                               , s
@@ -1089,22 +1089,20 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
                                               , mkPossPro . getSex i $ ms
                                               , " mind to yours."
                                               , twoWayMsg ]
-                bs        = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
+                bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
+                msgHelper txt = a' & _2 <>~ (mkBroadcast i . nlnl $ txt)
             in if
-              -- TODO: Pull out a helper function for the below if cases.
-              | targetSing `notElem` srcIntros ->
-                let msg = nlnl $ "You don't know the " <> targetDesig <> "'s name."
-                in a' & _2 <>~ mkBroadcast i msg
-              | s `notElem` targetIntros ->
-                let msg = nlnl $ "You must first introduce yourself to " <> targetSing <> "."
-                in a' & _2 <>~ mkBroadcast i msg
-              | s `elem` targetLinks ->
-                let msg = nlnl . T.concat $ [ "You've already established a "
-                                            , oneTwoWay
-                                            , " link with "
-                                            , targetDesig
-                                            , "." ]
-                in a' & _2 <>~ mkBroadcast i msg
+              | targetSing `notElem` srcIntros    -> msgHelper $ "You don't know the "                   <>
+                                                                 targetDesig                             <>
+                                                                 "'s name."
+              | s          `notElem` targetIntros -> msgHelper $ "You must first introduce yourself to " <>
+                                                                 targetSing                              <>
+                                                                 "."
+              | s             `elem` targetLinks  -> msgHelper . T.concat $ [ "You've already established a "
+                                                                            , oneTwoWay
+                                                                            , " link with "
+                                                                            , targetDesig
+                                                                            , "." ]
               | act <- rndmDo (calcProbLinkFlinch i ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
                 a' & _1.ind targetId.linked %~ (sort . (s :)) & _2 <>~ bs & _3 <>~ pure logMsg & _4 <>~ pure act
           _  -> let msg = nlnl $ "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
