@@ -805,13 +805,16 @@ getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <-
 -----
 
 
+-- TODO: Incognito admins shouldn't be allowed to intro.
 intro :: Action
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet." in
       wrapSend mq cols introsTxt >> (logPlaOut "intro" i . pure $ introsTxt)
   else let introsTxt = commas intros in
       multiWrapSend mq cols [ "You know the following names:", introsTxt ] >> (logPlaOut "intro" i . pure $ introsTxt)
-intro (LowerNub' i as) = helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
+intro (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
+  then wrapSend mq cols . sorryIncog $ "intro"
+  else helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
     bcastIfNotIncog i bs >> logMsgs |#| logPlaOut "intro" i
   where
     helper ms =
@@ -1039,10 +1042,10 @@ link (NoArgs i mq cols) = getState >>= \ms ->
     -- TODO: Two lists: one-way and two-way links.
     -- TODO: Both lists should indicate who is logged in and who is logged out.
     else undefined -- TODO
--- TODO: Below will probably need to accept a list of functions to be passed to a "sequence_" outside the STM monad.
-link (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs, fs) ->
-    -- TODO: Don't allow incognito admins to attempt to establish a link. "bcastIfNotIncog" not needed?
-    bcastIfNotIncog i bs >> sequence_ fs >> logMsgs |#| (logPla "link" i . slashes)
+link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
+  then wrapSend mq cols . sorryIncog $ "link"
+  else helper |&| modifyState >=> \(bs, logMsgs, fs) ->
+    bcast bs >> sequence_ fs >> logMsgs |#| (logPla "link" i . slashes)
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
