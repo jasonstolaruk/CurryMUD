@@ -71,7 +71,7 @@ import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', map, mapWithKey)
+import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', keys, map, mapWithKey)
 import qualified Data.Map.Lazy as M ((!), elems, filter, lookup, singleton)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -79,6 +79,7 @@ import qualified Data.Text.IO as T (readFile)
 
 
 {-# ANN helperSettings ("HLint: ignore Use ||"        :: String) #-}
+{-# ANN link           ("HLint: ignore Use &&"        :: String) #-}
 {-# ANN module         ("HLint: ignore Use camelCase" :: String) #-}
 
 
@@ -178,8 +179,11 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("say",        "sa", say,        "Say something out loud.")
     , ("show",       "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
                                        \person.")
+    -- TODO: If no message is provided, tune in/out the link.
+    -- TODO: Also provide a means to tune all links in/out.
+    -- TODO: Emotes and exp cmds.
     -- , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
-    --                                    \telepathic link.") -- TODO: Emotes and exp cmds.
+    --                                    \telepathic link.")
     , ("unready",    "un", unready,    "Unready one or more items.") ]
     -- , ("who",        "wh", undefined,  "Display or search a list of the people who are currently logged in.") ] -- TODO: Only display the names of characters with whom the player has established a link; otherwise, just display sex and race. Display each PC's level. Display the total number of logged in players.
 
@@ -1030,18 +1034,45 @@ extractPCIdsFromEiss ms = foldl' helper []
 -----
 
 
--- TODO: Establishing a link should cost psionic points.
+-- TODO: Help.
+-- TODO: Linking should cost psionic points.
 -- TODO: Linking should award exp.
 link :: Action
 link (NoArgs i mq cols) = getState >>= \ms ->
-  let othersLinkedToMe = getLinked i ms
-      meLinkedToOthers = undefined -- TODO: Fold over all PCs.
+  let s                = getSing i ms
+      pcIds            = ms^.pcTbl.to IM.keys
+      othersLinkedToMe = getLinked i ms
+      meLinkedToOthers = foldr helper [] $ i `delete` pcIds
+      helper pcId acc  | s `elem` getLinked pcId ms = getSing pcId ms : acc
+                       | otherwise                  = acc
   in if all (()#) [ othersLinkedToMe, meLinkedToOthers ]
-    then let txt = nlnl "You haven't established a telepathic link with anyone yet."
-         in (wrapSend mq cols . nlnl $ txt) >> logPla "link" i txt
-    -- TODO: Two lists: one-way and two-way links.
-    -- TODO: Both lists should indicate who is logged in and who is logged out.
-    else undefined -- TODO
+    then wrapSend mq cols "You haven't established a telepathic link with anyone yet."
+    else let msgs             = intercalate [""] . dropEmpties $ [ twoWays       |!| twoWayMsgs
+                                                                 , oneWaysFromMe |!| oneWayFromMeMsgs
+                                                                 , oneWaysToMe   |!| oneWayToMeMsgs ]
+             twoWays          = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
+             oneWaysFromMe    = meLinkedToOthers \\ twoWays
+             oneWaysToMe      = othersLinkedToMe \\ twoWays
+             twoWayMsgs       = [ "Two-way links:",                mkSingsList True  twoWays       ]
+             oneWayFromMeMsgs = [ "One-way links from your mind:", mkSingsList False oneWaysFromMe ]
+             oneWayToMeMsgs   = [ "One-way links to your mind:",   mkSingsList False oneWaysToMe   ]
+             mkSingsList doStyle ss = let (awakes, asleeps) = sortAwakesAsleeps ss
+                                          f                 = doStyle ? styleAbbrevs Don'tBracket :? id
+                                      in commas $ f awakes ++ asleeps
+             sortAwakesAsleeps      = foldr sorter ([], [])
+             -- TODO: Append "(tuned out)" to the names of two-way links.
+             sorter linkSing acc    = let linkId    = head . filter ((== linkSing) . flip getSing ms) $ pcIds
+                                          linkPla   = getPla linkId ms
+                                          f lens x  = acc & lens %~ (x :)
+                                          mark   x  = T.concat [ x, asteriskColor, "*", dfltColor ]
+                                      in if and [ isLoggedIn linkPla, not . getPlaFlag IsIncognito $ linkPla ]
+                                        then f _1 . mark $ linkSing
+                                        else f _2          linkSing
+         in do
+            multiWrapSend mq cols msgs
+            logPla "link" i . slashes . dropEmpties $ [ twoWays       |!| "Two-way: "         <> commas twoWays
+                                                      , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
+                                                      , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
 link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
   then wrapSend mq cols . sorryIncog $ "link"
   else helper |&| modifyState >=> \(bs, logMsgs, fs) ->

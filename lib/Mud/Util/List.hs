@@ -2,6 +2,7 @@ module Mud.Util.List ( allValues
                      , appendIfUnique
                      , countOcc
                      , countOccs
+                     , dropEmpties
                      , fstList
                      , headLast
                      , headTail
@@ -31,6 +32,10 @@ countOcc needle = foldl' (\acc x -> x == needle ? succ acc :? acc) 0
 
 countOccs :: (Eq a, Ord a) => [a] -> [(a, Int)]
 countOccs = map ((head *** length) . dup) . group . sort
+
+
+dropEmpties :: (Eq a, Monoid a) => [a] -> [a] -- TODO: Use this.
+dropEmpties = filter (()!#)
 
 
 fstList :: (a -> a) -> [a] -> [a]
