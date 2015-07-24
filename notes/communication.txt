@@ -6,7 +6,7 @@ telepathic - send a msg to a linked person / [Taro] Greetings.
 :admin - the admin channel / (Admin) Root: Hi hi. -- "Root" is underlined. On the admin channel, PC names are always given.
 :message - msg a regular player / __Jason__ Ello?
 
-Players should be prohibited from sending a message enclosed in square brackets.
+Players should be prohibited from sending a message enclosed in square brackets (so as to fake an emote).
 
 =====
 
@@ -40,17 +40,25 @@ channel hunt hi
 
 Forms of "you" are only legal in telepathic emotes.
 
+-----
+
+Implementation details:
+
+Every channel has a unique Int id. This way, channels with the same name may exist. However, a player cannot be simultaneously connected to more than one channel with the same name.
+
+Channels are effectively deleted when the last connected person leaves the channel.
+
 =====
 
 Tuning in/out:
 
 Either "in"/"out" or "on"/"off".
-tune taro=in admin=out hunt=in
+tune taro=in hunt=in
 tune all=in
 
-"tune" with no args will dump the status of every communication channel.
+"tune" with no args will dump the status of every telepathic connection.
 
-"tune" can be used to tune the admin channel. The functionality of tuning the channel in/out needs to be moved from the ":admin" command.
+"tune" cannot be used to tune the admin channel.
 
 =====
 

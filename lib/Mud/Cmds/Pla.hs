@@ -141,6 +141,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("set",        setAction,       "View or change settings.")
     , ("sw",         go "sw",         "Go southwest.")
     , ("take",       getAction,       "Pick up one or more items.")
+    , ("tune",       tune,            "Tune in/out a telepathic connection.")
     , ("typo",       typo,            "Report a typo.")
     , ("u",          go "u",          "Go up.")
     , ("uptime",     uptime,          "Display how long CurryMUD has been running.")
@@ -1035,6 +1036,7 @@ extractPCIdsFromEiss ms = foldl' helper []
 -- TODO: Help.
 -- TODO: Linking should cost psionic points.
 -- TODO: Linking should award exp.
+-- TODO: We need an "unlink" command.
 link :: Action
 link (NoArgs i mq cols) = getState >>= \ms ->
   let s                = getSing i ms
@@ -2153,6 +2155,69 @@ mkSlotDesc i ms s = case s of
     wornOn = T.concat [ "worn on ", hisHer, " ", pp s ]
     wornAs = "worn as " <> (aOrAn . pp $ s)
     heldIn = "held in " <> hisHer <> pp s
+
+
+-----
+
+
+-- TODO: Help.
+tune :: Action
+tune = undefined
+{-
+tune (NoArgs i mq cols) = getState >>= \ms ->
+    let names  = styleAbbrevs Don'tBracket connNames
+    in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
+setAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
+    bcastNl bs >> logMsgs |#| logPlaOut "set" i
+  where
+    helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
+                in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
+setAction p = patternMatchFail "setAction" [ showText p ]
+
+
+settingNames :: [T.Text]
+settingNames = [ "columns", "lines" ]
+
+
+helperSettings :: (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
+helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
+  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
+      let msg    = dblQuote arg <> " is not a valid argument."
+          advice = T.concat [ " Please specify the setting you want to change, followed immediately by "
+                            , dblQuote "="
+                            , ", followed immediately by the new value you want to assign, as in "
+                            , quoteColor
+                            , dblQuote "set columns=80"
+                            , dfltColor
+                            , "." ]
+          f      = any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ])
+      in a & _2 %~ f
+helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
+    findFullNameForAbbrev name settingNames |&| maybe notFound found
+  where
+    notFound    = appendMsg $ dblQuote name <> " is not a valid setting name."
+    appendMsg m = a & _2 <>~ pure m
+    found       = \case "columns" -> procEither (changeSetting minCols      maxCols      "columns" columns  )
+                        "lines"   -> procEither (changeSetting minPageLines maxPageLines "lines"   pageLines)
+                        t         -> patternMatchFail "helperSettings found" . pure $ t
+      where
+        procEither f = parseInt |&| either appendMsg f
+        parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
+                                                                             _         -> sorryParse
+        sorryParse   = Left . T.concat $ [ dblQuote value
+                                         , " is not a valid value for the "
+                                         , dblQuote name
+                                         , " setting." ]
+    changeSetting minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x
+      | not . inRange (minVal, maxVal) $ x = appendMsg . T.concat $ [ capitalize settingName
+                                                                    , " must be between "
+                                                                    , minValTxt
+                                                                    , " and "
+                                                                    , maxValTxt
+                                                                    , "." ]
+      | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ] in
+          appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
+-}
 
 
 -----

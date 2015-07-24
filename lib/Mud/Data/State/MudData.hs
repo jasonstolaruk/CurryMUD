@@ -41,48 +41,54 @@ data MudData = MudData { _errorLog      :: Maybe LogService
                        , _startTime     :: TimeSpec }
 
 
-data MudState = MudState { _armTbl        :: ArmTbl
-                         , _clothTbl      :: ClothTbl
-                         , _coinsTbl      :: CoinsTbl
-                         , _conTbl        :: ConTbl
-                         , _entTbl        :: EntTbl
-                         , _eqTbl         :: EqTbl
-                         , _hostTbl       :: HostTbl
-                         , _invTbl        :: InvTbl
-                         , _mobTbl        :: MobTbl
-                         , _msgQueueTbl   :: MsgQueueTbl
-                         , _objTbl        :: ObjTbl
-                         , _pcTbl         :: PCTbl
-                         , _plaLogTbl     :: PlaLogTbl
-                         , _plaTbl        :: PlaTbl
-                         , _rmTbl         :: RmTbl
-                         , _rmTeleNameTbl :: RmTeleNameTbl
-                         , _talkAsyncTbl  :: TalkAsyncTbl
-                         , _threadTbl     :: ThreadTbl
-                         , _typeTbl       :: TypeTbl
-                         , _wpnTbl        :: WpnTbl }
+data MudState = MudState { _armTbl           :: ArmTbl
+                         , _chanTbl          :: ChanTbl
+                         , _clothTbl         :: ClothTbl
+                         , _coinsTbl         :: CoinsTbl
+                         , _conTbl           :: ConTbl
+                         , _entTbl           :: EntTbl
+                         , _eqTbl            :: EqTbl
+                         , _hostTbl          :: HostTbl
+                         , _invTbl           :: InvTbl
+                         , _mobTbl           :: MobTbl
+                         , _msgQueueTbl      :: MsgQueueTbl
+                         , _objTbl           :: ObjTbl
+                         , _pcTbl            :: PCTbl
+                         , _plaLogTbl        :: PlaLogTbl
+                         , _plaTbl           :: PlaTbl
+                         , _rmTbl            :: RmTbl
+                         , _rmTeleNameTbl    :: RmTeleNameTbl
+                         , _rndmNamesMstrTbl :: RndmNamesMstrTbl
+                         , _talkAsyncTbl     :: TalkAsyncTbl
+                         , _teleLinkMstrTbl  :: TeleLinkMstrTbl
+                         , _threadTbl        :: ThreadTbl
+                         , _typeTbl          :: TypeTbl
+                         , _wpnTbl           :: WpnTbl }
 
 
-type ArmTbl        = IM.IntMap Arm
-type ClothTbl      = IM.IntMap Cloth
-type CoinsTbl      = IM.IntMap Coins
-type ConTbl        = IM.IntMap Con
-type EntTbl        = IM.IntMap Ent
-type EqTbl         = IM.IntMap EqMap
-type HostTbl       = M.Map Sing HostMap
-type InvTbl        = IM.IntMap Inv
-type MobTbl        = IM.IntMap Mob
-type MsgQueueTbl   = IM.IntMap MsgQueue
-type ObjTbl        = IM.IntMap Obj
-type PCTbl         = IM.IntMap PC
-type PlaLogTbl     = IM.IntMap LogService
-type PlaTbl        = IM.IntMap Pla
-type RmTbl         = IM.IntMap Rm
-type RmTeleNameTbl = IM.IntMap T.Text
-type TalkAsyncTbl  = M.Map ThreadId (Async ())
-type ThreadTbl     = M.Map ThreadId ThreadType
-type TypeTbl       = IM.IntMap Type
-type WpnTbl        = IM.IntMap Wpn
+type ArmTbl           = IM.IntMap Arm
+type ChanTbl          = IM.IntMap Chan
+type ClothTbl         = IM.IntMap Cloth
+type CoinsTbl         = IM.IntMap Coins
+type ConTbl           = IM.IntMap Con
+type EntTbl           = IM.IntMap Ent
+type EqTbl            = IM.IntMap EqMap
+type HostTbl          = M.Map Sing HostMap
+type InvTbl           = IM.IntMap Inv
+type MobTbl           = IM.IntMap Mob
+type MsgQueueTbl      = IM.IntMap MsgQueue
+type ObjTbl           = IM.IntMap Obj
+type PCTbl            = IM.IntMap PC
+type PlaLogTbl        = IM.IntMap LogService
+type PlaTbl           = IM.IntMap Pla
+type RmTbl            = IM.IntMap Rm
+type RmTeleNameTbl    = IM.IntMap T.Text
+type RndmNamesMstrTbl = IM.IntMap RndmNamesTbl
+type TalkAsyncTbl     = M.Map ThreadId (Async ())
+type TeleLinkMstrTbl  = IM.IntMap TeleLinkTbl
+type ThreadTbl        = M.Map ThreadId ThreadType
+type TypeTbl          = IM.IntMap Type
+type WpnTbl           = IM.IntMap Wpn
 
 
 -- ==================================================
@@ -103,6 +109,20 @@ data ArmSub = Head
 
 
 type AC = Int
+
+
+-- ==================================================
+
+
+data Chan = Chan { _chanId      :: Int
+                 , _chanName    :: T.Text
+                 , _chanConnTbl :: ChanConnTbl } deriving (Eq, Generic, Show)
+
+
+type ChanConnTbl = IM.IntMap IsTuned
+
+
+type IsTuned = Bool
 
 
 -- ==================================================
@@ -385,6 +405,12 @@ jsonToPla _          = empty
 -- ======================================================================
 
 
+type RndmNamesTbl = IM.IntMap Sing
+
+
+-- ======================================================================
+
+
 -- Has an inventory and coins.
 data Rm = Rm { _rmName   :: T.Text
              , _rmDesc   :: T.Text
@@ -416,6 +442,12 @@ data LinkDir = North
 
 
 type LinkName = T.Text
+
+
+-- ==================================================
+
+
+type TeleLinkTbl = M.Map Sing IsTuned
 
 
 -- ==================================================
@@ -465,6 +497,7 @@ data WpnSub = OneHanded
 
 instance FromJSON Arm
 instance FromJSON ArmSub
+instance FromJSON Chan
 instance FromJSON Cloth
 instance FromJSON Coins
 instance FromJSON Con
@@ -485,6 +518,7 @@ instance FromJSON Wpn
 instance FromJSON WpnSub
 instance ToJSON   Arm
 instance ToJSON   ArmSub
+instance ToJSON   Chan
 instance ToJSON   Cloth
 instance ToJSON   Coins
 instance ToJSON   Con
@@ -509,6 +543,7 @@ instance ToJSON   WpnSub
 
 
 makeLenses ''Arm
+makeLenses ''Chan
 makeLenses ''Con
 makeLenses ''Ent
 makeLenses ''HostRecord

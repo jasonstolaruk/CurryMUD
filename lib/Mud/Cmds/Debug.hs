@@ -97,8 +97,8 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
-    , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
-    , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
+    , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID." -- TODO: This cmd will need updating.
+    , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys." -- TODO: This cmd will need updating.
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."

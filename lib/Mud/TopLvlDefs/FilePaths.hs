@@ -61,23 +61,26 @@ typoLogFile      = logDir </> "typo"                     <.> "log"
 -- Persistence files:
 
 
-armTblFile, clothTblFile, coinsTblFile, conTblFile, entTblFile, eqTblFile, hostTblFile, invTblFile, mobTblFile, objTblFile, pcTblFile, plaTblFile, rmTblFile, rmTeleNameTblFile, typeTblFile, wpnTblFile :: FilePath
-armTblFile        = "armTbl.json"
-clothTblFile      = "clothTbl.json"
-coinsTblFile      = "coinsTbl.json"
-conTblFile        = "conTbl.json"
-entTblFile        = "entTbl.json"
-eqTblFile         = "eqTbl.json"
-hostTblFile       = "hostTbl.json"
-invTblFile        = "invTbl.json"
-mobTblFile        = "mobTbl.json"
-objTblFile        = "objTbl.json"
-pcTblFile         = "pcTbl.json"
-plaTblFile        = "plaTbl.json"
-rmTblFile         = "rmTbl.json"
-rmTeleNameTblFile = "rmTeleNameTbl.json"
-typeTblFile       = "typeTbl.json"
-wpnTblFile        = "wpnTbl.json"
+armTblFile, chanTblFile, clothTblFile, coinsTblFile, conTblFile, entTblFile, eqTblFile, hostTblFile, invTblFile, mobTblFile, objTblFile, pcTblFile, plaTblFile, rmTblFile, rmTeleNameTblFile, rndmNamesMstrTblFile, teleLinkMstrTblFile, typeTblFile, wpnTblFile :: FilePath
+armTblFile           = "armTbl.json"
+chanTblFile          = "chanTbl.json"
+clothTblFile         = "clothTbl.json"
+coinsTblFile         = "coinsTbl.json"
+conTblFile           = "conTbl.json"
+entTblFile           = "entTbl.json"
+eqTblFile            = "eqTbl.json"
+hostTblFile          = "hostTbl.json"
+invTblFile           = "invTbl.json"
+mobTblFile           = "mobTbl.json"
+objTblFile           = "objTbl.json"
+pcTblFile            = "pcTbl.json"
+plaTblFile           = "plaTbl.json"
+rmTblFile            = "rmTbl.json"
+rmTeleNameTblFile    = "rmTeleNameTbl.json"
+rndmNamesMstrTblFile = "rndmNamesMstrTbl.json"
+teleLinkMstrTblFile  = "teleLinkMstrTbl.json"
+typeTblFile          = "typeTbl.json"
+wpnTblFile           = "wpnTbl.json"
 
 
 -- ==================================================
@@ -92,11 +95,12 @@ dbFile = databaseDir </> "CurryMud" <.> "sqlite3"
 -- Misc. files:
 
 
-aboutFile, cowbyeFile, motdFile, uptimeFile :: FilePath
-aboutFile   = miscDir </> "about"
-cowbyeFile  = miscDir </> "cowbye"
-motdFile    = miscDir </> "motd"
-uptimeFile  = mudDir  </> "uptime"
+aboutFile, cowbyeFile, motdFile, rndmNamesFile, uptimeFile :: FilePath
+aboutFile     = miscDir </> "about"
+cowbyeFile    = miscDir </> "cowbye"
+motdFile      = miscDir </> "motd"
+rndmNamesFile = miscDir </> "randomnames"
+uptimeFile    = mudDir  </> "uptime"
 
 
 -- ==================================================

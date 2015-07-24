@@ -48,26 +48,29 @@ initMudData shouldLog = do
     (logExLock, perLock) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
     (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
     genIO   <- createSystemRandom
-    msIORef <- newIORef MudState { _armTbl        = IM.empty
-                                 , _clothTbl      = IM.empty
-                                 , _coinsTbl      = IM.empty
-                                 , _conTbl        = IM.empty
-                                 , _entTbl        = IM.empty
-                                 , _eqTbl         = IM.empty
-                                 , _hostTbl       =  M.empty
-                                 , _invTbl        = IM.empty
-                                 , _mobTbl        = IM.empty
-                                 , _msgQueueTbl   = IM.empty
-                                 , _objTbl        = IM.empty
-                                 , _pcTbl         = IM.empty
-                                 , _plaLogTbl     = IM.empty
-                                 , _plaTbl        = IM.empty
-                                 , _rmTbl         = IM.empty
-                                 , _rmTeleNameTbl = IM.empty
-                                 , _talkAsyncTbl  =  M.empty
-                                 , _threadTbl     =  M.empty
-                                 , _typeTbl       = IM.empty
-                                 , _wpnTbl        = IM.empty }
+    msIORef <- newIORef MudState { _armTbl           = IM.empty
+                                 , _chanTbl          = IM.empty
+                                 , _clothTbl         = IM.empty
+                                 , _coinsTbl         = IM.empty
+                                 , _conTbl           = IM.empty
+                                 , _entTbl           = IM.empty
+                                 , _eqTbl            = IM.empty
+                                 , _hostTbl          =  M.empty
+                                 , _invTbl           = IM.empty
+                                 , _mobTbl           = IM.empty
+                                 , _msgQueueTbl      = IM.empty
+                                 , _objTbl           = IM.empty
+                                 , _pcTbl            = IM.empty
+                                 , _plaLogTbl        = IM.empty
+                                 , _plaTbl           = IM.empty
+                                 , _rmTbl            = IM.empty
+                                 , _rmTeleNameTbl    = IM.empty
+                                 , _rndmNamesMstrTbl = IM.empty
+                                 , _talkAsyncTbl     =  M.empty
+                                 , _teleLinkMstrTbl  = IM.empty
+                                 , _threadTbl        =  M.empty
+                                 , _typeTbl          = IM.empty
+                                 , _wpnTbl           = IM.empty }
     start <- getTime Monotonic
     return MudData { _errorLog       = errorLogService
                    , _gen            = genIO
@@ -207,21 +210,24 @@ loadWorld :: FilePath -> MudStack Bool
 loadWorld dir@((persistDir </>) -> path) = do
     logNotice "loadWorld" $ "loading the world from the " <> (dblQuote . T.pack $ dir) <> " directory."
     loadEqTblRes <- loadEqTbl path
-    ((loadEqTblRes :) -> res) <- mapM (path |&|) [ loadTbl armTblFile        armTbl
-                                                 , loadTbl clothTblFile      clothTbl
-                                                 , loadTbl coinsTblFile      coinsTbl
-                                                 , loadTbl conTblFile        conTbl
-                                                 , loadTbl entTblFile        entTbl
-                                                 , loadTbl hostTblFile       hostTbl
-                                                 , loadTbl invTblFile        invTbl
-                                                 , loadTbl mobTblFile        mobTbl
-                                                 , loadTbl objTblFile        objTbl
-                                                 , loadTbl pcTblFile         pcTbl
-                                                 , loadTbl plaTblFile        plaTbl
-                                                 , loadTbl rmTblFile         rmTbl
-                                                 , loadTbl rmTeleNameTblFile rmTeleNameTbl
-                                                 , loadTbl typeTblFile       typeTbl
-                                                 , loadTbl wpnTblFile        wpnTbl ]
+    ((loadEqTblRes :) -> res) <- mapM (path |&|) [ loadTbl armTblFile           armTbl
+                                                 , loadTbl chanTblFile          chanTbl
+                                                 , loadTbl clothTblFile         clothTbl
+                                                 , loadTbl coinsTblFile         coinsTbl
+                                                 , loadTbl conTblFile           conTbl
+                                                 , loadTbl entTblFile           entTbl
+                                                 , loadTbl hostTblFile          hostTbl
+                                                 , loadTbl invTblFile           invTbl
+                                                 , loadTbl mobTblFile           mobTbl
+                                                 , loadTbl objTblFile           objTbl
+                                                 , loadTbl pcTblFile            pcTbl
+                                                 , loadTbl plaTblFile           plaTbl
+                                                 , loadTbl rmTblFile            rmTbl
+                                                 , loadTbl rmTeleNameTblFile    rmTeleNameTbl
+                                                 , loadTbl rndmNamesMstrTblFile rndmNamesMstrTbl
+                                                 , loadTbl teleLinkMstrTblFile  teleLinkMstrTbl
+                                                 , loadTbl typeTblFile          typeTbl
+                                                 , loadTbl wpnTblFile           wpnTbl ]
     modifyState $ \ms -> (foldr removeAdHoc ms . getInv iWelcome $ ms, ())
     movePCs
     return . and $ res
