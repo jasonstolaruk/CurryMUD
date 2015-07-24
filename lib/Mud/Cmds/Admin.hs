@@ -146,7 +146,6 @@ prefixAdminCmd = prefixCmd adminCmdChar
 
 
 -- TODO: Help.
--- TODO: Emotes and exp cmds. <-- Build this functionality into telepathic messages first.
 adminAdmin :: Action
 adminAdmin (NoArgs i mq cols) = modifyState helper >>= sequence_
   where

@@ -36,6 +36,7 @@ import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
+import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
@@ -124,7 +125,7 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
 
 
 dispMatches :: ActionParams -> Int -> [T.Text] -> MudStack ()
-dispMatches (LowerNub i mq cols needles) indent haystack = let (filter (()!#) -> matches) = map grep needles in
+dispMatches (LowerNub i mq cols needles) indent haystack = let (dropEmpties -> matches) = map grep needles in
     if ()# matches
       then wrapSend mq cols "No matches found."
       else pager i mq . concatMap (wrapIndent indent cols) . intercalate [""] $ matches

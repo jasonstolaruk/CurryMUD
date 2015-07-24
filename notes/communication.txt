@@ -1,0 +1,146 @@
+Communication commands:
+
+admin - send a msg to an admin / __Zaa__ Hello.
+telepathic - send a msg to a linked person / [Taro] Greetings.
+
+:admin - the admin channel / (Admin) Root: Hi hi. -- "Root" is underlined. On the admin channel, PC names are always given.
+:message - msg a regular player / __Jason__ Ello?
+
+Players should be prohibited from sending a message enclosed in square brackets.
+
+=====
+
+Ad-hoc channels:
+
+Taro creates a channel simply by naming it. (Channel names are known IC.)
+He then has Hanako join by connecting her to the channel. (He is already linked with Hanako. You can't connect a person who has tuned you out.)
+Hanako can now connect anyone she is linked with.
+Anyone is free to leave the channel at any time.
+Anyone is free to boot someone from a channel at any time.
+Channels may be tuned in and out at will.
+
+newchannel hunt
+connect hanako hunt
+channel hunt hi
+
+leave hunt
+
+disconnect hanako hunt -- Must provide full name?
+
+channel hunt
+With no arguments, you'll get a list of who is currently tuned in to the channel. Names should be abbreviation-styled. (You must be tuned in to the channel yourself.)
+
+-----
+
+The names of the people you don't know on an ad-hoc channel are not given away. Instead, your PC's mind picks, by random association, something to symbolize the owner of the telepathic thoughts.
+
+channel hunt hi
+(Hunt) Taro: Hi.
+(Hunt) apple: Hi. -- "apple" will be colorized or formatted in some way so as to indicate it is a random name.
+
+Forms of "you" are only legal in telepathic emotes.
+
+=====
+
+Tuning in/out:
+
+Either "in"/"out" or "on"/"off".
+tune taro=in admin=out hunt=in
+tune all=in
+
+"tune" with no args will dump the status of every communication channel.
+
+"tune" can be used to tune the admin channel. The functionality of tuning the channel in/out needs to be moved from the ":admin" command.
+
+=====
+
+Emotes and exp cmds:
+
+telepathic hanako ;runs away crying
+[Taro] [Taro runs away crying.]
+
+telepathic hanako ;shielding his eyes from the sun, @ looks out across the plains
+[Taro] [Shielding his eyes from the sun, Taro looks out across the plains.]
+
+telepathic hanako ;@'s leg twitches involuntarily as he laughs with gusto
+[Taro] [Taro's leg twitches involuntarily as he laughs with gusto.]
+
+(There is no use of ">" due to the fact the sole recipient is the only possible target, and the use of "you," etc. in an emote is legal here.)
+
+telepathic hanako =cry -- no target
+[Taro] [Taro cries.]
+
+telepathic hanako =beam -- versatile
+[Taro] [Taro beams cheerfully.]
+
+telepathic hanako =beam hanako -- versatile
+[Taro] [Taro beams cheerfully at you.]
+
+telepathic hanako =comfort -- has target, target is Hanako by default
+[Taro] [Taro comforts you.]
+
+telepathic hanako =comfort hanako -- of course, this is also legal
+[Taro] [Taro comforts you.]
+
+-----
+
+:admin ;runs away crying
+(Admin) [Jason runs away crying.]
+
+:admin ;shielding his eyes from the sun, @ looks out across the plains
+(Admin) [Shielding his eyes from the sun, Jason looks out across the plains.]
+
+:admin ;@'s leg twitches involuntarily as he laughs with gusto
+(Admin) [Jason's leg twitches involuntarily as he laughs with gusto.]
+
+:admin ;slowly turns his head to look directly at >taro
+Illegal. Names are given on the admin channel. Advise the admin to just use the target's name, like this:
+:admin ;slowly turns his head to look directly at Taro
+(Admin) [Jason slowly turns his head to look directly at Taro.]
+
+:admin =cry -- no target
+(Admin) [Jason cries.]
+
+:admin =beam -- versatile
+(Admin) [Jason beams cheerfully.]
+
+:admin =beam taro -- versatile
+(Admin) [Jason beams cheerfully at you.]
+(Admin) [Jason beams cheerfully at Taro.]
+
+:admin =comfort -- has target
+Illegal.
+
+-----
+
+channel hunt ;runs away crying
+(Hunt) [Taro runs away crying.]
+(Hunt) [pear runs away crying.]
+
+channel hunt ;shielding his eyes from the sun, @ looks out across the plains
+(Hunt) [Shielding his eyes from the sun, Taro looks out across the plains.]
+
+channel hunt ;@'s leg twitches involuntarily as he laughs with gusto
+(Hunt) [Taro's leg twitches involuntarily as he laughs with gusto.]
+
+channel hunt ;slowly turns his head to look directly at >hanako
+(Hunt) [Taro slowly turns his head to look directly at Hanako.]
+(Hunt) [Taro slowly turns his head to look directly at peach.]
+
+channel hunt =cry -- no target
+(Hunt) [Taro cries.]
+
+channel hunt =beam -- versatile
+(Hunt) [Taro beams cheerfully.]
+
+channel hunt =beam hanako -- versatile
+(Hunt) [Taro beams cheerfully at you.]
+(Hunt) [Taro beams cheerfully at Hanako.]
+(Hunt) [Taro beams cheerfully at peach.]
+
+channel hunt =comfort -- has target
+Illegal.
+
+channel hunt hi
+(Hunt) Taro: Hi.
+(Hunt) apple: Hi.

@@ -34,7 +34,7 @@ countOccs :: (Eq a, Ord a) => [a] -> [(a, Int)]
 countOccs = map ((head *** length) . dup) . group . sort
 
 
-dropEmpties :: (Eq a, Monoid a) => [a] -> [a] -- TODO: Use this.
+dropEmpties :: (Eq a, Monoid a) => [a] -> [a]
 dropEmpties = filter (()!#)
 
 

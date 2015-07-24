@@ -145,7 +145,7 @@ mkPlurFromBoth (_, p ) = p
 
 
 mkRetainedMsgFromPerson :: Sing -> T.Text -> T.Text
-mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` T.concat [ bracketQuote s
+mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` T.concat [ quoteWith "__" s
                                                                    , " "
                                                                    , retainedMsgColor
                                                                    , msg

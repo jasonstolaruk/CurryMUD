@@ -344,7 +344,7 @@ data PlaFlags = IsAdmin
               | IsNotFirstAdminMsg
               | IsNotFirstLook
               | IsNotFirstMobSay
-              | IsSeeingInvis 
+              | IsSeeingInvis
               | IsTunedAdmin deriving Enum
 
 

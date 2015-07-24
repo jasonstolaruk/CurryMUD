@@ -548,9 +548,9 @@ mkPutRemoveBindings i ms as = let d              = mkStdDesig  i ms DoCap
 
 mkCoinsDesc :: Cols -> Coins -> T.Text
 mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
-    T.unlines . intercalate [""] . map (wrap cols) . filter (()!#) $ [ cop |!| copDesc
-                                                                     , sil |!| silDesc
-                                                                     , gol |!| golDesc ]
+    T.unlines . intercalate [""] . map (wrap cols) . dropEmpties $ [ cop |!| copDesc
+                                                                   , sil |!| silDesc
+                                                                   , gol |!| golDesc ]
   where
     copDesc = "The copper piece is round and shiny."
     silDesc = "The silver piece is round and shiny."

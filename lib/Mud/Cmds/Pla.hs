@@ -179,9 +179,6 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("say",        "sa", say,        "Say something out loud.")
     , ("show",       "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
                                        \person.")
-    -- TODO: If no message is provided, tune in/out the link.
-    -- TODO: Also provide a means to tune all links in/out.
-    -- TODO: Emotes and exp cmds.
     -- , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
     --                                    \telepathic link.")
     , ("unready",    "un", unready,    "Unready one or more items.") ]
@@ -732,6 +729,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 -----
 
 
+-- TODO: Consider making a "cheatsheet" topic.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
