@@ -9,10 +9,11 @@ import Mud.Util.Operators
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
 import Control.Lens (at, to, view, views)
+import Control.Lens.Operators ((^.))
 import Data.Monoid (Sum(..))
 import Data.Time (UTCTime)
 import Network (HostName)
-import qualified Data.IntMap.Lazy as IM (filter, keys)
+import qualified Data.IntMap.Lazy as IM (filter, foldr, keys)
 import qualified Data.Text as T
 
 
@@ -36,6 +37,13 @@ getArm i = view (armTbl.ind i)
 
 getArmSub :: Id -> MudState -> ArmSub
 getArmSub i = view armSub . getArm i
+
+
+-----
+
+
+getChan :: Id -> MudState -> Chan
+getChan i = view (chanTbl.ind i)
 
 
 -----
@@ -266,6 +274,15 @@ getPC i = view (pcTbl.ind i)
 -----
 
 
+getPCChans :: Id -> MudState -> [Chan]
+getPCChans i = views chanTbl (IM.foldr helper [])
+  where
+    helper chan acc = i `elem` (chan^.chanConnTbl.to IM.keys) ? (chan : acc) :? acc
+
+
+-----
+
+
 getPCRm :: Id -> MudState -> Rm
 getPCRm i ms = let ri = getRmId i ms in getRm ri ms
 
@@ -380,6 +397,13 @@ getSing i = view sing . getEnt i
 
 getSt :: Id -> MudState -> Int
 getSt i = view st . getMob i
+
+
+-----
+
+
+getTeleLinkTbl :: Id -> MudState -> TeleLinkTbl
+getTeleLinkTbl i = view (teleLinkMstrTbl.ind i)
 
 
 -----

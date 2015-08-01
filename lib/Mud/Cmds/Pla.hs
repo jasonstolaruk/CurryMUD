@@ -72,7 +72,7 @@ import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', keys, map, mapWithKey)
-import qualified Data.Map.Lazy as M ((!), elems, filter, lookup, singleton)
+import qualified Data.Map.Lazy as M ((!), elems, filter, keys, lookup, singleton, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -2162,16 +2162,28 @@ mkSlotDesc i ms s = case s of
 
 -- TODO: Help.
 tune :: Action
-tune = undefined
-{-
 tune (NoArgs i mq cols) = getState >>= \ms ->
-    let names  = styleAbbrevs Don'tBracket connNames
-    in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
-setAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> logMsgs |#| logPlaOut "set" i
-  where
-    helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
-                in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
+    let linkTbl                    = getTeleLinkTbl i ms
+        linkSings                  = styleAbbrevs Don'tBracket . M.keys $ linkTbl
+        linkTunings                = map snd . sortBy (compare `on` fst) . M.toList $ linkTbl
+        (chanNames, chanTunings)   = unzip . sortBy (compare `on` fst) . map mkChanNameTunings . getPCChans i $ ms
+        mkChanNameTunings          = (view chanName *** view (chanConnTbl.ind i)) . dup
+        helper title names tunings = let connTxts = mkConnTxts
+                                     in [ title, ()!# connTxts ? commas connTxts :? "None." ]
+          where
+            mkConnTxts = [ n <> "=" <> (t ? "in" :? "out") | n <- names | t <- tunings ]
+    in do
+        multiWrapSend mq cols . concat $ [ helper "Telepathic links:" linkSings linkTunings
+                                         , pure ""
+                                         , helper "Channels:" (styleAbbrevs Don'tBracket chanNames) chanTunings ]
+        logPlaExecArgs "tune" [] i
+tune _ = undefined
+{-
+        setAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
+            bcastNl bs >> logMsgs |#| logPlaOut "set" i
+          where
+            helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
+                        in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 

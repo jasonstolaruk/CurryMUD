@@ -34,7 +34,7 @@ With no arguments, you'll get a list of who is currently tuned in to the channel
 
 -----
 
-The names of the people you don't know on an ad-hoc channel are not given away. Instead, your PC's mind picks, by random association, something to symbolize the owner of the telepathic thoughts. (We need to make sure that for a given PC, the same random name is not chosen for more than one PC. This applies accross all channels that the PC is connected to, regardless of tuning.)
+The names of the people you don't know on an ad-hoc channel are not given away. Instead, your PC's mind picks, by random association, something to symbolize the owner of the telepathic thoughts. (We need to make sure that for a given PC, the same random name is not chosen for more than one PC. This applies across all channels that the PC is connected to, regardless of tuning.)
 
 channel hunt hi
 (Hunt) Taro: Hi.
@@ -76,7 +76,7 @@ telepathic hanako ;shielding his eyes from the sun, @ looks out across the plain
 telepathic hanako ;@'s leg twitches involuntarily as he laughs with gusto
 [Taro] [Taro's leg twitches involuntarily as he laughs with gusto.]
 
-(There is no use of ">" due to the fact the sole recipient is the only possible target, and the use of "you," etc. in an emote is legal here.)
+(There is no use of ">" due to the fact that the sole recipient is the only possible target, and the use of "you," etc. in an emote is legal here.)
 
 telepathic hanako =cry -- no target
 [Taro] [Taro cries.]
