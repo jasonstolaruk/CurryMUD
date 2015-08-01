@@ -139,23 +139,25 @@ logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudSta
 logIn newId ms newHost newTime originId = let ms' = peepNewId . movePC $ adoptNewId
                                           in (ms', (ms', Right (originId, getSing newId ms')))
   where
-    adoptNewId  =    ms  & coinsTbl.ind newId          .~ getCoins   originId ms
-                         & coinsTbl.at  originId       .~ Nothing
-                         & entTbl  .ind newId          .~ (getEnt    originId ms & entId .~ newId)
-                         & entTbl  .at  originId       .~ Nothing
-                         & eqTbl   .ind newId          .~ getEqMap   originId ms
-                         & eqTbl   .at  originId       .~ Nothing
-                         & invTbl  .ind newId          .~ getInv     originId ms
-                         & invTbl  .at  originId       .~ Nothing
-                         & mobTbl  .ind newId          .~ getMob     originId ms
-                         & mobTbl  .at  originId       .~ Nothing
-                         & pcTbl   .ind newId          .~ getPC      originId ms
-                         & pcTbl   .at  originId       .~ Nothing
-                         & plaTbl  .ind newId          .~ (getPla    originId ms & currHostName .~ newHost
-                                                                                 & connectTime  .~ newTime)
-                         & plaTbl  .ind newId.peepers  .~ getPeepers originId ms
-                         & plaTbl  .at  originId       .~ Nothing
-                         & typeTbl .at  originId       .~ Nothing
+    adoptNewId  =    ms  & coinsTbl       .ind newId         .~ getCoins       originId ms
+                         & coinsTbl       .at  originId      .~ Nothing
+                         & entTbl         .ind newId         .~ (getEnt        originId ms & entId .~ newId)
+                         & entTbl         .at  originId      .~ Nothing
+                         & eqTbl          .ind newId         .~ getEqMap       originId ms
+                         & eqTbl          .at  originId      .~ Nothing
+                         & invTbl         .ind newId         .~ getInv         originId ms
+                         & invTbl         .at  originId      .~ Nothing
+                         & mobTbl         .ind newId         .~ getMob         originId ms
+                         & mobTbl         .at  originId      .~ Nothing
+                         & pcTbl          .ind newId         .~ getPC          originId ms
+                         & pcTbl          .at  originId      .~ Nothing
+                         & plaTbl         .ind newId         .~ (getPla        originId ms & currHostName .~ newHost
+                                                                                           & connectTime  .~ newTime)
+                         & plaTbl         .ind newId.peepers .~ getPeepers     originId ms
+                         & plaTbl         .at  originId      .~ Nothing
+                         & teleLinkMstrTbl.ind newId         .~ getTeleLinkTbl originId ms
+                         & teleLinkMstrTbl.at  originId      .~ Nothing
+                         & typeTbl        .at  originId      .~ Nothing
     movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
                          & invTbl  .ind iLoggedOut     %~ (originId `delete`)

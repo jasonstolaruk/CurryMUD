@@ -2167,7 +2167,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
         linkSings                  = styleAbbrevs Don'tBracket . M.keys $ linkTbl
         linkTunings                = map snd . sortBy (compare `on` fst) . M.toList $ linkTbl
         (chanNames, chanTunings)   = unzip . sortBy (compare `on` fst) . map mkChanNameTunings . getPCChans i $ ms
-        mkChanNameTunings          = (view chanName *** view (chanConnTbl.ind i)) . dup
+        mkChanNameTunings          = (view chanName *** views chanConnTbl (M.! getSing i ms)) . dup
         helper title names tunings = let connTxts = mkConnTxts
                                      in [ title, ()!# connTxts ? commas connTxts :? "None." ]
           where

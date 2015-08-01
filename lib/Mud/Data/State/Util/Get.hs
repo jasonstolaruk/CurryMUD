@@ -14,6 +14,7 @@ import Data.Monoid (Sum(..))
 import Data.Time (UTCTime)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (filter, foldr, keys)
+import qualified Data.Map.Lazy as M (keys)
 import qualified Data.Text as T
 
 
@@ -275,9 +276,9 @@ getPC i = view (pcTbl.ind i)
 
 
 getPCChans :: Id -> MudState -> [Chan]
-getPCChans i = views chanTbl (IM.foldr helper [])
+getPCChans i ms = views chanTbl (IM.foldr helper []) ms
   where
-    helper chan acc = i `elem` (chan^.chanConnTbl.to IM.keys) ? (chan : acc) :? acc
+    helper chan acc = getSing i ms `elem` (chan^.chanConnTbl.to M.keys) ? (chan : acc) :? acc
 
 
 -----

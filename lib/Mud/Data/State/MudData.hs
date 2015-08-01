@@ -114,12 +114,12 @@ type AC = Int
 -- ==================================================
 
 
-data Chan = Chan { _chanId      :: Int
+data Chan = Chan { _chanId      :: Int -- TODO: Needed?
                  , _chanName    :: T.Text
                  , _chanConnTbl :: ChanConnTbl } deriving (Eq, Generic, Show)
 
 
-type ChanConnTbl = IM.IntMap IsTuned
+type ChanConnTbl = M.Map Sing IsTuned
 
 
 type IsTuned = Bool
@@ -322,7 +322,7 @@ data Obj = Obj { _weight :: Int
 -- ==================================================
 
 
--- Has a mob (and an entity and an inventory and coins and equipment).
+-- Has a mob (and an entity and an inventory and coins and equipment) and a telepathic link table.
 data PC = PC { _rmId       :: Id
              , _race       :: Race
              , _introduced :: [Sing]

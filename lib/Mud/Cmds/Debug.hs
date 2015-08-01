@@ -97,7 +97,7 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
-    , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID." -- TODO: This cmd will need updating.
+    , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys." -- TODO: This cmd will need updating.
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
@@ -252,6 +252,8 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
               mkTxt =
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
+                  , [ T.concat [ "Channels with an ", dblQuote "chanId", " of ", searchIdTxt, ": " ]
+                    , f . filter ((== searchId) . view chanId . snd) . tblToList chanTbl $ ms ]
                   , [ T.concat [ "Entities with an ", dblQuote "entId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view entId . snd) . tblToList entTbl $ ms ]
                   , [ T.concat [ "Equipment maps containing ID ", searchIdTxt, ": " ]
@@ -287,22 +289,24 @@ tblToList lens = views lens IM.toList
 
 
 mkTblNameKeysList :: MudState -> [(T.Text, Inv)]
-mkTblNameKeysList ms = [ ("Arm",       tblKeys armTbl      ms)
-                       , ("Cloth",     tblKeys clothTbl    ms)
-                       , ("Coins",     tblKeys coinsTbl    ms)
-                       , ("Con",       tblKeys conTbl      ms)
-                       , ("Ent",       tblKeys entTbl      ms)
-                       , ("EqMap",     tblKeys eqTbl       ms)
-                       , ("Inv",       tblKeys invTbl      ms)
-                       , ("Mob",       tblKeys mobTbl      ms)
-                       , ("MsgQueue",  tblKeys msgQueueTbl ms)
-                       , ("Obj",       tblKeys objTbl      ms)
-                       , ("PC",        tblKeys pcTbl       ms)
-                       , ("PlaLogTbl", tblKeys plaLogTbl   ms)
-                       , ("Pla",       tblKeys plaTbl      ms)
-                       , ("Rm",        tblKeys rmTbl       ms)
-                       , ("Type",      tblKeys typeTbl     ms)
-                       , ("Wpn",       tblKeys wpnTbl      ms) ]
+mkTblNameKeysList ms = [ ("Arm",         tblKeys armTbl          ms)
+                       , ("Chan",        tblKeys chanTbl         ms)
+                       , ("Cloth",       tblKeys clothTbl        ms)
+                       , ("Coins",       tblKeys coinsTbl        ms)
+                       , ("Con",         tblKeys conTbl          ms)
+                       , ("Ent",         tblKeys entTbl          ms)
+                       , ("EqMap",       tblKeys eqTbl           ms)
+                       , ("Inv",         tblKeys invTbl          ms)
+                       , ("Mob",         tblKeys mobTbl          ms)
+                       , ("MsgQueue",    tblKeys msgQueueTbl     ms)
+                       , ("Obj",         tblKeys objTbl          ms)
+                       , ("PC",          tblKeys pcTbl           ms)
+                       , ("PlaLogTbl",   tblKeys plaLogTbl       ms)
+                       , ("Pla",         tblKeys plaTbl          ms)
+                       , ("Rm",          tblKeys rmTbl           ms)
+                       , ("TeleLinkTbl", tblKeys teleLinkMstrTbl ms)
+                       , ("Type",        tblKeys typeTbl         ms)
+                       , ("Wpn",         tblKeys wpnTbl          ms) ]
 
 
 tblKeys :: Optical (->) (->) (Const [Id]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [Id]
