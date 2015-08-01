@@ -166,11 +166,11 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
             withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts (getSing i ms) $ msg
       else sorryNotTuned
       where
-        formatMsg ms = T.concat [ parensQuote "Admin"
-                                , " "
-                                , underlineANSI
-                                , getSing i ms
+        formatMsg ms = T.concat [ underlineANSI
+                                , parensQuote "Admin"
                                 , noUnderlineANSI
+                                , " "
+                                , getSing i ms
                                 , ": "
                                 , msg ]
         getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]

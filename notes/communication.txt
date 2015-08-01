@@ -3,40 +3,43 @@ Communication commands:
 admin - send a msg to an admin / __Zaa__ Hello.
 telepathic - send a msg to a linked person / [Taro] Greetings.
 
-:admin - the admin channel / (Admin) Root: Hi hi. -- "Root" is underlined. On the admin channel, PC names are always given.
+:admin - the admin channel / (Admin) Root: Hi hi. -- On the admin channel, PC names are always given.
 :message - msg a regular player / __Jason__ Ello?
 
 Players should be prohibited from sending a message enclosed in square brackets (so as to fake an emote).
+
+For all communication commands, the names that appear in messages (identifying from whom the message was sent) should be abbreviation-styled.
 
 =====
 
 Ad-hoc channels:
 
-Taro creates a channel simply by naming it. (Channel names are known IC.)
+Taro creates a channel simply by naming it. (Channel names are known IC - this should be explicitly mentioned in the help file.)
 He then has Hanako join by connecting her to the channel. (He is already linked with Hanako. You can't connect a person who has tuned you out.)
 Hanako can now connect anyone she is linked with.
 Anyone is free to leave the channel at any time.
 Anyone is free to boot someone from a channel at any time.
-Channels may be tuned in and out at will.
+Channels (like telepathic links) may be tuned in and out at will.
 
 newchannel hunt
 connect hanako hunt
 channel hunt hi
 
-leave hunt
+leave hunt -- "sever the telepathic connection" to a channel
 
-disconnect hanako hunt -- Must provide full name?
+disconnect hanako hunt -- Must provide full PC name?
 
 channel hunt
 With no arguments, you'll get a list of who is currently tuned in to the channel. Names should be abbreviation-styled. (You must be tuned in to the channel yourself.)
 
 -----
 
-The names of the people you don't know on an ad-hoc channel are not given away. Instead, your PC's mind picks, by random association, something to symbolize the owner of the telepathic thoughts.
+The names of the people you don't know on an ad-hoc channel are not given away. Instead, your PC's mind picks, by random association, something to symbolize the owner of the telepathic thoughts. (We need to make sure that for a given PC, the same random name is not chosen for more than one PC. This applies accross all channels that the PC is connected to, regardless of tuning.)
 
 channel hunt hi
 (Hunt) Taro: Hi.
-(Hunt) apple: Hi. -- "apple" will be colorized or formatted in some way so as to indicate it is a random name.
+(Hunt) apple: Hi. -- "apple" should be underlined so as to indicate it is a random name.
+       ^ Names should be abbreviation-styled.
 
 Forms of "you" are only legal in telepathic emotes.
 
@@ -56,9 +59,9 @@ Either "in"/"out" or "on"/"off".
 tune taro=in hunt=in
 tune all=in
 
-"tune" with no args will dump the status of every telepathic connection.
+"tune" with no args will dump the status of every telepathic connection. Ideally, connection names should be abbreviation-styled.
 
-"tune" cannot be used to tune the admin channel.
+"tune" cannot be used to tune the admin channel. (This is already handled with the ":admin" command.)
 
 =====
 
