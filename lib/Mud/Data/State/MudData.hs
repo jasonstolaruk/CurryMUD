@@ -114,7 +114,7 @@ type AC = Int
 -- ==================================================
 
 
-data Chan = Chan { _chanId      :: Int -- TODO: Needed?
+data Chan = Chan { _chanId      :: Int
                  , _chanName    :: T.Text
                  , _chanConnTbl :: ChanConnTbl } deriving (Eq, Generic, Show)
 

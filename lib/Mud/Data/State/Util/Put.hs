@@ -19,6 +19,13 @@ putArm i e o a = modifyState $ \ms -> (ms & armTbl .ind i .~ a
 -----
 
 
+putChan :: Id -> Chan -> MudStack ()
+putChan i c = modifyState $ \ms -> (ms & chanTbl.ind i .~ c, ())
+
+
+-----
+
+
 putCloth :: Id -> Ent -> Obj -> Cloth -> MudStack ()
 putCloth i e o c = modifyState $ \ms -> (ms & clothTbl.ind i .~ c
                                             & entTbl  .ind i .~ e

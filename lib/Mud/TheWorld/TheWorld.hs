@@ -92,6 +92,8 @@ createWorld = do
     putPla iRoot (Ent iRoot Nothing "Root" "" "This is the root admin." zeroBits) [] mempty M.empty (Mob Male 50 50 50 50 10 10 0 RHand) M.empty (M.fromList [("Jason", True)]) (PC iLoggedOut Human ["Jason"] ["Jason"]) (Pla "" Nothing adminFlags 80 24 Nothing [] [] [] (Just iLounge))
     putPla iJason (Ent iJason Nothing "Jason" "" "Jason is the creator of CurryMUD." zeroBits) [] mempty M.empty (Mob Male 50 50 50 50 10 10 0 LHand) M.empty (M.fromList [("Root", True)]) (PC iLoggedOut Human ["Root"] ["Root"]) (Pla "" Nothing adminFlags 80 24 Nothing [] [] [] (Just iLounge))
 
+    putChan 0 (Chan 0 "curry" (M.fromList [ ("Root", True), ("Jason", True) ]))
+
     putRm iLoggedOut (pure iRoot) mempty (Rm "Logged out room" "PCs are placed here when their players log out." zeroBits [])
     putRm iWelcome [] mempty (Rm "Welcome room" "Ad-hoc PCs created for new connections are placed here." zeroBits [])
     putRm iCentral [] mempty (Rm "Central control room" "Welcome to the heart of the machine." zeroBits [ StdLink Northeast iObjCloset, StdLink East iClothCloset, StdLink Southeast iCoinsCloset, StdLink South iConCloset, StdLink Southwest iWpnCloset, StdLink West iArmCloset, StdLink Northwest iMobCloset, StdLink Up iWeightRm, StdLink Down iVoid ])

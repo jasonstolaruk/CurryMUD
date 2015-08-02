@@ -78,9 +78,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
-{-# ANN helperSettings ("HLint: ignore Use ||"        :: String) #-}
-{-# ANN link           ("HLint: ignore Use &&"        :: String) #-}
-{-# ANN module         ("HLint: ignore Use camelCase" :: String) #-}
+{-# ANN link   ("HLint: ignore Use &&"        :: String) #-}
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+{-# ANN module ("HLint: ignore Use ||"        :: String) #-}
 
 
 -----
@@ -1064,7 +1064,7 @@ link (NoArgs i mq cols) = getState >>= \ms ->
                                           f                 = doStyle ? styleAbbrevs Don'tBracket :? id
                                       in commas $ f awakes ++ asleeps
              sortAwakesAsleeps      = foldr sorter ([], [])
-             -- TODO: Append "(tuned out)" to the names of two-way links.
+             -- TODO: Append "(tuned out)" to the names of two-way links?
              sorter linkSing acc    = let linkId    = head . filter ((== linkSing) . flip getSing ms) $ pcIds
                                           linkPla   = getPla linkId ms
                                           f lens x  = acc & lens %~ (x :)
@@ -1841,7 +1841,7 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
 setAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> logMsgs |#| logPlaOut "set" i -- TODO: Is "logPlaOut" correct?
+    bcastNl bs >> logMsgs |#| logPlaOut "set" i
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
                 in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
@@ -2182,15 +2182,15 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
                                          , helper "Channels:" (styleAbbrevs Don'tBracket chanNames) chanTunings ]
         logPlaExecArgs "tune" [] i
 tune (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> logMsgs |#| logPlaOut "tune" i -- TODO: Is "logPlaOut" correct?
+    bcastNl bs >> logMsgs |#| logPlaOut "tune" i
   where
-    helper ms =
-        let linkTbl = getTeleLinkTbl i ms
-            chans   = getPCChans i ms
-            (linkTbl', chans', msgs, logMsgs) = foldl' (helperTune (getSing i ms)) (linkTbl, chans, [], []) as
-        in ( ms & teleLinkMstrTbl.ind i .~ linkTbl'
-                & chanTbl %~ flip (foldr (\c ct -> ct & ind (c^.chanId) .~ c)) chans'
-           , (mkBroadcast i . T.unlines $ msgs, logMsgs) )
+    helper ms = let s       = getSing i ms
+                    linkTbl = getTeleLinkTbl i ms
+                    chans   = getPCChans     i ms
+                    (linkTbl', chans', msgs, logMsgs) = foldl' (helperTune s) (linkTbl, chans, [], []) as
+                in ( ms & teleLinkMstrTbl.ind i .~ linkTbl'
+                        & chanTbl %~ flip (foldr (\c -> ind (c^.chanId) .~ c)) chans'
+                   , (mkBroadcast i . T.unlines $ msgs, logMsgs) )
 tune p = patternMatchFail "tune" [ showText p ]
 
 
@@ -2202,28 +2202,25 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
   Just val -> let connNames = "all" : linkNames ++ chanNames
               in findFullNameForAbbrev name connNames |&| maybe notFound (found val)
   where
-    linkNames   = M.keys linkTbl
+    linkNames   = map uncapitalize . M.keys $ linkTbl
     chanNames   = map (view chanName) chans
     notFound    = a & _3 <>~ [ "You don't have a connection by the name of " <> dblQuote name <> "." ]
-    found val n = let n'  = n == "all" ? "all telepathic connections" :? n
-                      msg = T.concat [ "Tuning ", n', " ", val ? "in" :? "out", "." ]
-                      f g = let a' = a & _3 <>~ pure msg
-                                       & _4 <>~ pure msg
-                            in g a'
-                  in if n == "all"
-                    then let g a' = a' & _1 %~ M.map (const val)
-                                       & _2 %~ map (chanConnTbl.at s .~ Just val)
-                         in f g
-                    else f foundHelper
+    found val n = if n == "all"
+                    then appendMsg "all telepathic connections" & _1 %~ M.map (const val)
+                                                                & _2 %~ map (chanConnTbl.at s .~ Just val)
+                    else foundHelper
       where
-        foundHelper a'
+        appendMsg connName = let msg = T.concat [ "You tune ", connName, " ", val ? "in" :? "out", "." ]
+                             in a & _3 <>~ pure msg
+                                  & _4 <>~ pure msg
+        foundHelper
           | n `elem` linkNames = foundLink
           | n `elem` chanNames = foundChan
           | otherwise          = blowUp "helperTune found foundHelper" "connection name not found" . pure $ n
           where
-            foundLink = a' & _1.at n .~ Just val
+            foundLink = let n' = capitalize n in appendMsg n' & _1.at n' .~ Just val
             foundChan = let ([match], others) = partition (views chanName (== n)) chans
-                        in a' & _2 .~ (match & chanConnTbl.at n .~ Just val) : others
+                        in appendMsg n & _2 .~ (match & chanConnTbl.at s .~ Just val) : others
 
 
 valuePairs :: [(T.Text, Bool)]
