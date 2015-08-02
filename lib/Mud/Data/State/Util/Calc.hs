@@ -1,7 +1,13 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Data.State.Util.Calc where
+module Mud.Data.State.Util.Calc ( calcEncPer
+                                , calcMaxEnc
+                                , calcProbLinkFlinch
+                                , calcProbTeleShudder
+                                , calcProbTeleVomit
+                                , calcWeight
+                                , coinWeight ) where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins

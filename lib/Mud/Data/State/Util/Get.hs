@@ -375,6 +375,13 @@ getRmId i = view rmId . getPC i
 -----
 
 
+getRndmNamesTbl :: Id -> MudState -> RndmNamesTbl
+getRndmNamesTbl i = view (rndmNamesMstrTbl.ind i)
+
+
+-----
+
+
 getSex :: Id -> MudState -> Sex
 getSex i = view sex . getMob i
 

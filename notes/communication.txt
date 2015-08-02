@@ -14,7 +14,7 @@ For all communication commands, the names that appear in messages (identifying f
 
 Ad-hoc channels:
 
-Taro creates a channel simply by naming it. (Channel names are known IC - this should be explicitly mentioned in the help file.)
+Taro creates a channel simply by naming it. (Channel names are known IC - this should be explicitly mentioned in the help file. A channel cannot share a name with any PC.)
 He then has Hanako join by connecting her to the channel. (He is already linked with Hanako. You can't connect a person who has tuned you out.)
 Hanako can now connect anyone she is linked with.
 Anyone is free to leave the channel at any time.

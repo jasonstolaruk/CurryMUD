@@ -33,7 +33,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -41,7 +41,7 @@ import Mud.Util.Text
 import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
@@ -72,7 +72,7 @@ import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', keys, map, mapWithKey)
-import qualified Data.Map.Lazy as M ((!), elems, filter, keys, lookup, singleton, toList)
+import qualified Data.Map.Lazy as M ((!), elems, filter, keys, lookup, map, singleton, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -84,6 +84,10 @@ import qualified Data.Text.IO as T (readFile)
 
 
 -----
+
+
+blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp = U.blowUp "Mud.Cmds.Pla"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -1837,7 +1841,7 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
 setAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> logMsgs |#| logPlaOut "set" i
+    bcastNl bs >> logMsgs |#| logPlaOut "set" i -- TODO: Is "logPlaOut" correct?
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
                 in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
@@ -2177,59 +2181,74 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
                                          , pure ""
                                          , helper "Channels:" (styleAbbrevs Don'tBracket chanNames) chanTunings ]
         logPlaExecArgs "tune" [] i
-tune _ = undefined
-{-
-        setAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-            bcastNl bs >> logMsgs |#| logPlaOut "set" i
-          where
-            helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
-                        in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
-setAction p = patternMatchFail "setAction" [ showText p ]
-
-
-settingNames :: [T.Text]
-settingNames = [ "columns", "lines" ]
-
-
-helperSettings :: (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
-helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
-  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
-      let msg    = dblQuote arg <> " is not a valid argument."
-          advice = T.concat [ " Please specify the setting you want to change, followed immediately by "
-                            , dblQuote "="
-                            , ", followed immediately by the new value you want to assign, as in "
-                            , quoteColor
-                            , dblQuote "set columns=80"
-                            , dfltColor
-                            , "." ]
-          f      = any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ])
-      in a & _2 %~ f
-helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
-    findFullNameForAbbrev name settingNames |&| maybe notFound found
+tune (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
+    bcastNl bs >> logMsgs |#| logPlaOut "tune" i -- TODO: Is "logPlaOut" correct?
   where
-    notFound    = appendMsg $ dblQuote name <> " is not a valid setting name."
-    appendMsg m = a & _2 <>~ pure m
-    found       = \case "columns" -> procEither (changeSetting minCols      maxCols      "columns" columns  )
-                        "lines"   -> procEither (changeSetting minPageLines maxPageLines "lines"   pageLines)
-                        t         -> patternMatchFail "helperSettings found" . pure $ t
+    helper ms =
+        let linkTbl = getTeleLinkTbl i ms
+            chans   = getPCChans i ms
+            (linkTbl', chans', msgs, logMsgs) = foldl' (helperTune (getSing i ms)) (linkTbl, chans, [], []) as
+        in ( ms & teleLinkMstrTbl.ind i .~ linkTbl'
+                & chanTbl %~ flip (foldr (\c ct -> ct & ind (c^.chanId) .~ c)) chans'
+           , (mkBroadcast i . T.unlines $ msgs, logMsgs) )
+tune p = patternMatchFail "tune" [ showText p ]
+
+
+helperTune :: Sing -> (TeleLinkTbl, [Chan], [T.Text], [T.Text]) -> T.Text -> (TeleLinkTbl, [Chan], [T.Text], [T.Text])
+helperTune _ a arg@(T.length . T.filter (== '=') -> noOfEqs)
+  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ sorryTune arg
+helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> value)) = case lookup value valuePairs of
+  Nothing  -> a & _3 %~ sorryTune arg
+  Just val -> let connNames = "all" : linkNames ++ chanNames
+              in findFullNameForAbbrev name connNames |&| maybe notFound (found val)
+  where
+    linkNames   = M.keys linkTbl
+    chanNames   = map (view chanName) chans
+    notFound    = a & _3 <>~ [ "You don't have a connection by the name of " <> dblQuote name <> "." ]
+    found val n = let n'  = n == "all" ? "all telepathic connections" :? n
+                      msg = T.concat [ "Tuning ", n', " ", val ? "in" :? "out", "." ]
+                      f g = let a' = a & _3 <>~ pure msg
+                                       & _4 <>~ pure msg
+                            in g a'
+                  in if n == "all"
+                    then let g a' = a' & _1 %~ M.map (const val)
+                                       & _2 %~ map (chanConnTbl.at s .~ Just val)
+                         in f g
+                    else f foundHelper
       where
-        procEither f = parseInt |&| either appendMsg f
-        parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
-                                                                             _         -> sorryParse
-        sorryParse   = Left . T.concat $ [ dblQuote value
-                                         , " is not a valid value for the "
-                                         , dblQuote name
-                                         , " setting." ]
-    changeSetting minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x
-      | not . inRange (minVal, maxVal) $ x = appendMsg . T.concat $ [ capitalize settingName
-                                                                    , " must be between "
-                                                                    , minValTxt
-                                                                    , " and "
-                                                                    , maxValTxt
-                                                                    , "." ]
-      | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ] in
-          appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
--}
+        foundHelper a'
+          | n `elem` linkNames = foundLink
+          | n `elem` chanNames = foundChan
+          | otherwise          = blowUp "helperTune found foundHelper" "connection name not found" . pure $ n
+          where
+            foundLink = a' & _1.at n .~ Just val
+            foundChan = let ([match], others) = partition (views chanName (== n)) chans
+                        in a' & _2 .~ (match & chanConnTbl.at n .~ Just val) : others
+
+
+valuePairs :: [(T.Text, Bool)]
+valuePairs = [ ("i", True), ("in", True), ("ou", False), ("out", False), ("on", True), ("of", False), ("off", False) ]
+
+
+sorryTune :: T.Text -> [T.Text] -> [T.Text]
+sorryTune arg msgs =
+    let msg    = dblQuote arg <> " is not a valid argument."
+        advice = T.concat [ " Please specify the name of the connection you want to tune, followed immediately by "
+                          , dblQuote "="
+                          , ", followed immediately by "
+                          , dblQuote "in"
+                          , "/"
+                          , dblQuote "out"
+                          , " or "
+                          , dblQuote "on"
+                          , "/"
+                          , dblQuote "off"
+                          , ", as in "
+                          , quoteColor
+                          , dblQuote "tune taro=in"
+                          , dfltColor
+                          , "." ]
+    in msgs |&| (any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ]))
 
 
 -----
