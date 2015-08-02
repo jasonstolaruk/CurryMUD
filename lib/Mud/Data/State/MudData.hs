@@ -322,7 +322,7 @@ data Obj = Obj { _weight :: Int
 -- ==================================================
 
 
--- Has a mob (and an entity and an inventory and coins and equipment) and a telepathic link table.
+-- Has a mob (and an entity and an inventory and coins and equipment) and a random names table and a telepathic link table.
 data PC = PC { _rmId       :: Id
              , _race       :: Race
              , _introduced :: [Sing]
@@ -405,7 +405,7 @@ jsonToPla _          = empty
 -- ======================================================================
 
 
-type RndmNamesTbl = IM.IntMap Sing
+type RndmNamesTbl = M.Map Sing Sing
 
 
 -- ======================================================================

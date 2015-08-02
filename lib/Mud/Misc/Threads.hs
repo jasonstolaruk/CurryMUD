@@ -280,17 +280,18 @@ adHoc mq host = do
                        , _peeping      = []
                        , _retainedMsgs = []
                        , _lastRmId     = Nothing }
-            ms'  = ms  & coinsTbl       .ind i        .~ mempty
-                       & entTbl         .ind i        .~ e
-                       & eqTbl          .ind i        .~ M.empty
-                       & invTbl         .ind i        .~ []
-                       & invTbl         .ind iWelcome .~ getInv iWelcome ms ++ pure i
-                       & mobTbl         .ind i        .~ m
-                       & msgQueueTbl    .ind i        .~ mq
-                       & pcTbl          .ind i        .~ pc
-                       & plaTbl         .ind i        .~ pla
-                       & teleLinkMstrTbl.ind i        .~ M.empty
-                       & typeTbl        .ind i        .~ PCType
+            ms'  = ms  & coinsTbl        .ind i        .~ mempty
+                       & entTbl          .ind i        .~ e
+                       & eqTbl           .ind i        .~ M.empty
+                       & invTbl          .ind i        .~ []
+                       & invTbl          .ind iWelcome .~ getInv iWelcome ms ++ pure i
+                       & mobTbl          .ind i        .~ m
+                       & msgQueueTbl     .ind i        .~ mq
+                       & pcTbl           .ind i        .~ pc
+                       & plaTbl          .ind i        .~ pla
+                       & rndmNamesMstrTbl.ind i        .~ M.empty
+                       & teleLinkMstrTbl .ind i        .~ M.empty
+                       & typeTbl         .ind i        .~ PCType
         in (ms', (i, s))
 
 

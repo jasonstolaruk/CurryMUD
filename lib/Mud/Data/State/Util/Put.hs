@@ -63,30 +63,32 @@ putObj i e o = modifyState $ \ms -> (ms & entTbl .ind i .~ e
 -----
 
 
-putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> TeleLinkTbl -> PC -> MudStack ()
-putPC i e is c em m t p = modifyState $ \ms -> (ms & coinsTbl       .ind i .~ c
-                                                   & entTbl         .ind i .~ e
-                                                   & eqTbl          .ind i .~ em
-                                                   & invTbl         .ind i .~ is
-                                                   & mobTbl         .ind i .~ m
-                                                   & pcTbl          .ind i .~ p
-                                                   & teleLinkMstrTbl.ind i .~ t
-                                                   & typeTbl        .ind i .~ PCType, ())
+putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> RndmNamesTbl -> TeleLinkTbl -> PC -> MudStack ()
+putPC i e is c em m r t p = modifyState $ \ms -> (ms & coinsTbl        .ind i .~ c
+                                                     & entTbl          .ind i .~ e
+                                                     & eqTbl           .ind i .~ em
+                                                     & invTbl          .ind i .~ is
+                                                     & mobTbl          .ind i .~ m
+                                                     & pcTbl           .ind i .~ p
+                                                     & rndmNamesMstrTbl.ind i .~ r
+                                                     & teleLinkMstrTbl .ind i .~ t
+                                                     & typeTbl         .ind i .~ PCType, ())
 
 
 -----
 
 
-putPla :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> PC -> TeleLinkTbl -> Pla -> MudStack ()
-putPla i e is c em m pc t pla = modifyState $ \ms -> (ms & coinsTbl       .ind i .~ c
-                                                         & entTbl         .ind i .~ e
-                                                         & eqTbl          .ind i .~ em
-                                                         & invTbl         .ind i .~ is
-                                                         & mobTbl         .ind i .~ m
-                                                         & pcTbl          .ind i .~ pc
-                                                         & plaTbl         .ind i .~ pla
-                                                         & teleLinkMstrTbl.ind i .~ t
-                                                         & typeTbl        .ind i .~ PCType, ())
+putPla :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> RndmNamesTbl -> TeleLinkTbl -> PC -> Pla -> MudStack ()
+putPla i e is c em m r t pc pla = modifyState $ \ms -> (ms & coinsTbl        .ind i .~ c
+                                                           & entTbl          .ind i .~ e
+                                                           & eqTbl           .ind i .~ em
+                                                           & invTbl          .ind i .~ is
+                                                           & mobTbl          .ind i .~ m
+                                                           & pcTbl           .ind i .~ pc
+                                                           & plaTbl          .ind i .~ pla
+                                                           & rndmNamesMstrTbl.ind i .~ r
+                                                           & teleLinkMstrTbl .ind i .~ t
+                                                           & typeTbl         .ind i .~ PCType, ())
 
 
 -----
