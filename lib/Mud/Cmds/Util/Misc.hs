@@ -7,6 +7,7 @@ module Mud.Cmds.Util.Misc ( advise
                           , fileIOExHandler
                           , isHostBanned
                           , isPlaBanned
+                          , maxRaceLen
                           , mkActionParams
                           , mkInterfaceList
                           , mkSingleTarget
@@ -169,6 +170,13 @@ isBanned target banRecs = helper . reverse $ banRecs
 
 isPlaBanned :: Sing -> IO Any
 isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPlaRec])
+
+
+-----
+
+
+maxRaceLen :: Int
+maxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 
 
 -----

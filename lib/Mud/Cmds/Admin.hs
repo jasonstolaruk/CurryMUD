@@ -804,7 +804,7 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
                                ias              = zip is' . styleAbbrevs Don'tBracket $ ss
                                mkCharTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
                                                       name                  = mkAnnotatedName i a
-                                                  in T.concat [ pad (maxNameLen + 3) name
+                                                  in T.concat [ pad (maxNameLen + 3) name -- TODO: Make top level defs for padding amnts.
                                                               , pad 7 s
                                                               , pad (succ maxRaceLen) r ]
                            in map mkCharTxt ias ++ [ T.concat [ mkNumOfCharsTxt is, " ", showText inOrOut, "." ] ]
@@ -819,10 +819,6 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
                           in a <> admin <> incog
     mkNumOfCharsTxt (length -> nop) | nop == 1  = "1 character"
                                     | otherwise = showText nop <> " characters"
-
-
-maxRaceLen :: Int
-maxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 
 
 -----

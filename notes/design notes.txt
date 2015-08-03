@@ -138,6 +138,8 @@ Consider giving players the functionality to create their own ad-hoc channels.
 
 Make ASCII art maps available in game. New players should start with a map, along with a short welcome letter (obtainable in the tutorial). Other maps may be available for purchase.
 
+Give players badges for achievements.
+
 Have an in-game newspaper. There should be a way for players to read old newspapers. The newspaper could be produced automatically (as opposed to being written by players).
 
 Have an in-game calendar.

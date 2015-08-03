@@ -222,6 +222,26 @@ isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 -----
 
 
+getLoggedInPlaIds :: MudState ->  Inv
+getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter predicate)
+  where
+    predicate p = isLoggedIn p && (not . getPlaFlag IsAdmin $ p)
+
+
+-----
+
+
+-- TODO: Move.
+type Lvl = Int
+
+
+getLvl :: Id -> MudState -> Lvl
+getLvl _ _ = 0 -- TODO
+
+
+-----
+
+
 getMob :: Id -> MudState -> Mob
 getMob i = view (mobTbl.ind i)
 
@@ -391,6 +411,13 @@ getSex i = view sex . getMob i
 
 getSexRace :: Id -> MudState -> (Sex, Race)
 getSexRace i = (getSex i *** getRace i) . dup
+
+
+-----
+
+
+getSexRaceLvl :: Id -> MudState -> (Sex, Race, Lvl)
+getSexRaceLvl i ms | (s, r) <- getSexRace i ms = (s, r, getLvl i ms)
 
 
 -----

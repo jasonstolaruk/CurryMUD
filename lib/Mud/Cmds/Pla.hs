@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeFamilies, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -47,7 +47,7 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, _4, at, both, each, set, to, view, views)
+import Control.Lens (_1, _2, _3, _4, _5, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -60,7 +60,7 @@ import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), All(..), Sum(..))
 import Data.Time (diffUTCTime, getCurrentTime)
 import Data.Tuple (swap)
@@ -186,8 +186,8 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
                                        \person.")
     -- , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
     --                                    \telepathic link.")
-    , ("unready",    "un", unready,    "Unready one or more items.") ]
-    -- , ("who",        "wh", undefined,  "Display or search a list of the people who are currently logged in.") ] -- TODO: Only display the names of characters with whom the player has established a link; otherwise, just display sex and race. Display each PC's level. Display the total number of logged in players.
+    , ("unready",    "un", unready,    "Unready one or more items.")
+    , ("who",        "wh", who,        "Display or search a list of who is currently logged in.") ]
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> [Cmd]
@@ -1064,11 +1064,14 @@ link (NoArgs i mq cols) = getState >>= \ms ->
                                           f                 = doStyle ? styleAbbrevs Don'tBracket :? id
                                       in commas $ f awakes ++ asleeps
              sortAwakesAsleeps      = foldr sorter ([], [])
-             -- TODO: Append "(tuned out)" to the names of two-way links?
-             sorter linkSing acc    = let linkId    = head . filter ((== linkSing) . flip getSing ms) $ pcIds
-                                          linkPla   = getPla linkId ms
-                                          f lens x  = acc & lens %~ (x :)
-                                          mark   x  = T.concat [ x, asteriskColor, "*", dfltColor ]
+             sorter linkSing acc    = let linkId   = head . filter ((== linkSing) . flip getSing ms) $ pcIds
+                                          linkPla  = getPla linkId ms
+                                          f lens x = acc & lens %~ (x' :)
+                                            where
+                                              x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
+                                                Nothing    -> x
+                                                (Just val) -> val ? x :? x <> " (tuned out)"
+                                          mark x = T.concat [ x, asteriskColor, "*", dfltColor ]
                                       in if and [ isLoggedIn linkPla, not . getPlaFlag IsIncognito $ linkPla ]
                                         then f _1 . mark $ linkSing
                                         else f _2          linkSing
@@ -1084,18 +1087,22 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv = inInvs |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
-                                                            \your inventory.")
-            sorryInEq  = inEqs  |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
-                                                            \your readied equipment.")
-            invCoins   = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
-            (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
-            (pt, bs,  logMsgs, fs) = foldl' (helperLinkEitherInv ms) (ms^.pcTbl, [], [],      []) eiss
-            (    bs', logMsgs'   ) = foldl' helperLinkEitherCoins    (           bs, logMsgs    ) ecs
+            sorryInInv  = inInvs |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
+                                                             \your inventory.")
+            sorryInEq   = inEqs  |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
+                                                             \your readied equipment.")
+            invCoins    = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+            (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
+            pt          = ms^.pcTbl
+            tlmt        = ms^.teleLinkMstrTbl
+            (pt', tlmt', bs,  logMsgs, fs) = foldl' (helperLinkEitherInv ms) (pt, tlmt, [], [],      []) eiss
+            (            bs', logMsgs'   ) = foldl' helperLinkEitherCoins    (          bs, logMsgs    ) ecs
         in if ()!# invCoins
-          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ bs', logMsgs', fs))
+          then ( ms & pcTbl           .~ pt'
+                    & teleLinkMstrTbl .~ tlmt'
+               , (sorryInInv ++ sorryInEq ++ bs', logMsgs', fs) )
           else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to link with.", [], []))
-    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _2 <>~ (mkBroadcast i . nlnl $ sorryMsg))
+    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _3 <>~ (mkBroadcast i . nlnl $ sorryMsg))
     helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
       where
         tryLink a' targetId = let targetSing = getSing targetId ms in case getType targetId ms of
@@ -1125,7 +1132,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
                                               , " mind to yours."
                                               , twoWayMsg ]
                 bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
-                msgHelper txt = a' & _2 <>~ (mkBroadcast i . nlnl $ txt)
+                msgHelper txt = a' & _3 <>~ (mkBroadcast i . nlnl $ txt)
             in if
               | targetSing `notElem` srcIntros    -> msgHelper $ "You don't know the "                   <>
                                                                  targetDesig                             <>
@@ -1139,10 +1146,15 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
                                                                             , targetDesig
                                                                             , "." ]
               | act <- rndmDo (calcProbLinkFlinch i ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
-                a' & _1.ind targetId.linked %~ (sort . (s :)) & _2 <>~ bs & _3 <>~ pure logMsg & _4 <>~ pure act
+                a' & _1.ind targetId.linked %~ (sort . (s :))
+                   & _2.ind i       .at targetSing .~ Just True
+                   & _2.ind targetId.at s          .~ Just True
+                   & _3 <>~ bs
+                   & _4 <>~ pure logMsg
+                   & _5 <>~ pure act
           _  -> let msg = nlnl $ "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
                     b   = (msg, pure i)
-                in a' & _2 %~ (`appendIfUnique` b)
+                in a' & _3 %~ (`appendIfUnique` b)
     helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a (Right {}  ) =
         let b = (nlnl "You can't establish a telepathic link with a coin.", pure i)
@@ -1840,7 +1852,7 @@ setAction (NoArgs i mq cols) = getState >>= \ms ->
     let names  = styleAbbrevs Don'tBracket settingNames
         values = map showText [ cols, getPageLines i ms ]
     in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
-setAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
+setAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> logMsgs |#| logPlaOut "set" i
   where
     helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
@@ -2181,7 +2193,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
                                          , pure ""
                                          , helper "Channels:" (styleAbbrevs Don'tBracket chanNames) chanTunings ]
         logPlaExecArgs "tune" [] i
-tune (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
+tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> logMsgs |#| logPlaOut "tune" i
   where
     helper ms = let s       = getSing i ms
@@ -2404,6 +2416,100 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
                       (return Nothing)
   where
     readUptime = Just . Sum . read <$> readFile uptimeFile
+
+
+-----
+
+
+-- TODO: Help.
+-- TODO: "who" and the admin who commands should be in parity (to a sensible extent).
+who :: Action
+who (NoArgs i mq cols) = getState >>= \ms ->
+    (pager i mq . concatMap (wrapIndent (maxNameLen + 3) cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
+who p@(ActionParams { plaId, args }) = getState >>= \ms ->
+    (dispMatches p (maxNameLen + 3) . mkWhoTxt plaId $ ms) >> logPlaExecArgs "who" args plaId
+
+
+mkWhoTxt :: Id -> MudState -> [T.Text]
+mkWhoTxt i ms = let txts   = mkCharList i ms
+                    header = T.concat [ pad (maxNameLen + 3) "Name"
+                                      , pad 7 "Sex"
+                                      , pad (succ maxRaceLen) "Race"
+                                      , "Level" ] : [ T.replicate (maxNameLen + 3 + 7 + succ maxRaceLen + 5) "=" ]
+                in (++ [ mkFooter ms ]) $ txts |!| header ++ txts
+
+
+mkCharList :: Id -> MudState -> [T.Text]
+mkCharList i ms =
+    let plaIds                = i `delete` getLoggedInPlaIds ms
+        (linkeds, others)     = partition (isDblLinked ms . (i, )) plaIds
+        (tunedIns, tunedOuts) = partition (isTunedIn ms . (i, )) linkeds
+        -----
+        tunedIns'          = mkSingSexRaceLvls tunedIns
+        mkSingSexRaceLvls  = sortBy (compare `on` view _1) . map helper
+        helper plaId       = let (prettify -> (s, r, l)) = getSexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
+        prettify (s, r, l) = (pp s, pp r, showText l)
+        styleds            = styleAbbrevs Don'tBracket . map (view _1) $ tunedIns'
+        -----
+        tunedOuts' = mkSingSexRaceLvls tunedOuts
+        -----
+        others' = sortBy raceLvlSex . map (prettify . flip getSexRaceLvl ms) $ others
+          where
+            raceLvlSex (s, r, l) (s', r', l') = (r `compare` r') <> (l `compare` l') <> (s `compare` s')
+        -----
+        descTunedIns = zipWith (curry descThem) styleds tunedIns'
+          where
+            descThem (styled, (_, s, r, l)) = T.concat [ pad (maxNameLen + 3) styled
+                                                       , pad 7 s
+                                                       , pad (succ maxRaceLen) r
+                                                       , l ]
+        descTunedOuts = map descThem tunedOuts'
+          where
+            descThem (s, s', r, l) = T.concat [ pad (maxNameLen + 3) s
+                                              , pad 7 s'
+                                              , pad (succ maxRaceLen) r
+                                              , l ]
+        descOthers = map descThem others'
+          where
+            descThem (s, r, l) = T.concat [ pad (maxNameLen + 3) "?"
+                                          , pad 7 s
+                                          , pad (succ maxRaceLen) r
+                                          , l ]
+    in concat [ descTunedIns, descTunedOuts, descOthers ]
+
+
+isDblLinked :: MudState -> (Id, Id) -> Bool
+isDblLinked ms (i, i') = let s                = getSing i  ms
+                             s'               = getSing i' ms
+                             targetLinkedToMe = s' `elem` getLinked i  ms
+                             meLinkedToTarget = s  `elem` getLinked i' ms
+                         in targetLinkedToMe && meLinkedToTarget
+
+
+isTunedIn :: MudState -> (Id, Id) -> Bool
+isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTeleLinkTbl i $ ms)
+
+
+mkFooter :: MudState -> T.Text
+mkFooter ms = let x = length . getLoggedInPlaIds $ ms
+                  y = length . filter (== True) $ maruBatsus
+              in T.concat [ showText x
+                          , " "
+                          , handlePlur ("person", "people") x
+                          , " logged in"
+                          , y /= 0 |?| (" " <> (parensQuote . T.concat $ [ "excluding "
+                                                                         , showText y
+                                                                         , " administrator"
+                                                                         , handlePlur ("", "s") y ]))
+                          , "." ]
+  where
+    maruBatsus = map (uncurry (&&) . (isLoggedIn *** not . getPlaFlag IsIncognito) . dup . (`getPla` ms)) ais
+    ais        = getLoggedInAdminIds ms
+
+
+-- TODO: Move to a util module and use elsewhere.
+handlePlur :: (Sing, Plur) -> Int -> T.Text
+handlePlur (s, p) x = x == 1 ? s :? p
 
 
 -----
