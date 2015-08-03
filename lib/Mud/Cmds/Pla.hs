@@ -280,8 +280,8 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
                                          , let suffix = " " <> "logged " <> mkSuffix ai
                                          , then sortWith by s ]
             mkSuffix ai
-              | uncurry (&&) . (isLoggedIn *** not . getPlaFlag IsIncognito) . dup . getPla ai $ ms = "in"
-              | uncurry (&&) . (getPlaFlag IsAdmin *** getPlaFlag IsIncognito) $ (i, ai) & both %~ (`getPla` ms) =
+              | uncurry (&&) . (isLoggedIn         *** not . getPlaFlag IsIncognito) . dup . getPla ai $ ms = "in"
+              | uncurry (&&) . (getPlaFlag IsAdmin ***       getPlaFlag IsIncognito) $ (i, ai) & both %~ (`getPla` ms) =
                   "in " <> parensQuote "incognito"
               | otherwise = "out"
             combineds = [ pad (succ maxNameLen) abbrev <> suffix
@@ -2443,7 +2443,7 @@ mkCharList :: Id -> MudState -> [T.Text]
 mkCharList i ms =
     let plaIds                = i `delete` getLoggedInPlaIds ms
         (linkeds, others)     = partition (isDblLinked ms . (i, )) plaIds
-        (tunedIns, tunedOuts) = partition (isTunedIn ms . (i, )) linkeds
+        (tunedIns, tunedOuts) = partition (isTunedIn   ms . (i, )) linkeds
         -----
         tunedIns'          = mkSingSexRaceLvls tunedIns
         mkSingSexRaceLvls  = sortBy (compare `on` view _1) . map helper
@@ -2508,7 +2508,7 @@ mkFooter ms = let x = length . getLoggedInPlaIds $ ms
 
 
 -- TODO: Move to a util module and use elsewhere.
-handlePlur :: (Sing, Plur) -> Int -> T.Text
+handlePlur :: BothGramNos -> Int -> T.Text
 handlePlur (s, p) x = x == 1 ? s :? p
 
 

@@ -223,9 +223,7 @@ isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 
 
 getLoggedInPlaIds :: MudState ->  Inv
-getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter predicate)
-  where
-    predicate p = isLoggedIn p && (not . getPlaFlag IsAdmin $ p)
+getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn *** not . getPlaFlag IsAdmin) . dup))
 
 
 -----
