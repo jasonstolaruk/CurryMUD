@@ -7,7 +7,6 @@ module Mud.Cmds.Util.Misc ( advise
                           , fileIOExHandler
                           , isHostBanned
                           , isPlaBanned
-                          , maxRaceLen
                           , mkActionParams
                           , mkInterfaceList
                           , mkPrettifiedSexRaceLvl
@@ -37,8 +36,8 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
+import Mud.TopLvlDefs.Padding
 import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
@@ -105,13 +104,13 @@ dbExHandler fn e = let msg = T.concat [ "exception caught during a database oper
 
 
 dispCmdList :: [Cmd] -> Action
-dispCmdList cmds (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) . mkCmdListText $ cmds
-dispCmdList cmds p                  = dispMatches p (succ maxCmdLen) . mkCmdListText $ cmds
+dispCmdList cmds (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ cmds
+dispCmdList cmds p                  = dispMatches p cmdNamePadding . mkCmdListText $ cmds
 
 
 mkCmdListText :: [Cmd] -> [T.Text]
 mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
-                     in [ pad (succ maxCmdLen) n <> d | (n, d) <- zipped, ()!# d ]
+                     in [ padCmdName n <> d | (n, d) <- zipped, ()!# d ]
 
 
 styleCmdAbbrevs :: [Cmd] -> [T.Text]
@@ -177,13 +176,6 @@ isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPla
 -----
 
 
-maxRaceLen :: Int
-maxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
-
-
------
-
-
 mkInterfaceList :: IO T.Text
 mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.concat [ showText . NI.name $ n
                                                                                   , ": "
@@ -229,10 +221,10 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
 
 
 mkWhoHeader :: [T.Text]
-mkWhoHeader = T.concat [ pad (maxNameLen + 3) "Name"
-                       , pad 7 "Sex"
-                       , pad (succ maxRaceLen) "Race"
-                       , "Level" ] : [ T.replicate (maxNameLen + 3 + 7 + succ maxRaceLen + 5) "=" ]
+mkWhoHeader = T.concat [ padName "Name"
+                       , padSex  "Sex"
+                       , padRace "Race"
+                       , "Level" ] : [ T.replicate (namePadding + sexPadding + racePadding + lvlPadding) "=" ]
 
 
 -----

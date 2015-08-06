@@ -7,6 +7,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , getEffBothGramNos
                                 , getEffName
                                 , getState
+                                , maxRaceLen
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
                                 , mkCapsFun
@@ -17,6 +18,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , mkStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
+                                , pluralize
                                 , onEnv
                                 , removeAdHoc
                                 , sortInv
@@ -28,6 +30,7 @@ import Mud.Data.State.Util.Get
 import Mud.Misc.ANSI
 import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
+import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -68,12 +71,12 @@ getEffBothGramNos i ms targetId =
       Nothing -> let (pp *** pp -> (targetSexy, targetRace)) = getSexRace targetId ms
                  in if targetSing `elem` getIntroduced i ms
                    then (targetSing, "")
-                   else (targetRace, pluralize targetRace) & both %~ ((targetSexy <>) . (" " <>))
+                   else (targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . (" " <>))
       Just {} -> (targetSing, targetEnt^.plur)
   where
-    pluralize "dwarf" = "dwarves"
-    pluralize "elf"   = "elves"
-    pluralize r       = r <> "s"
+    plurRace "dwarf" = "dwarves"
+    plurRace "elf"   = "elves"
+    plurRace r       = r <> "s"
 
 
 -----
@@ -100,6 +103,13 @@ getState = onEnv $ liftIO . readIORef . view mudStateIORef
 
 onEnv :: (MudData -> MudStack a) -> MudStack a
 onEnv = (ask >>=)
+
+
+-----
+
+
+maxRaceLen :: Int
+maxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 
 
 -----
@@ -181,6 +191,13 @@ mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
+
+
+-----
+
+
+pluralize :: BothGramNos -> Int -> T.Text
+pluralize (s, p) x = x == 1 ? s :? p
 
 
 -----

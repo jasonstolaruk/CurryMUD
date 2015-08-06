@@ -32,6 +32,7 @@ import Mud.TheWorld.Ids
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Padding
 import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
@@ -284,7 +285,7 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
               | uncurry (&&) . (getPlaFlag IsAdmin ***       getPlaFlag IsIncognito) $ (i, ai) & both %~ (`getPla` ms) =
                   "in " <> parensQuote "incognito"
               | otherwise = "out"
-            combineds = [ pad (succ maxNameLen) abbrev <> suffix
+            combineds = [ padName abbrev <> suffix
                         | (_, suffix) <- singSuffixes
                         | abbrev      <- styleAbbrevs Don'tBracket . map fst $ singSuffixes ]
         in ()!# combineds ? return combineds :? unadulterated "No administrators exist!"
@@ -323,7 +324,7 @@ color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
           | fgc <- colors, bgc <- colors, fgc /= bgc
           , let fg = (Dull, fgc), let bg = (Dull, bgc), let ansi = mkColorANSI fg bg ] ++ other
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
-    mkColorName                                         = pad 8 . showText . snd
+    mkColorName                                         = padColorName . showText . snd
     other = [ nl . T.concat $ [ pad 19 "Blinking",   blinkANSI,     " CurryMUD ", noBlinkANSI     ]
             , nl . T.concat $ [ pad 19 "Underlined", underlineANSI, " CurryMUD ", noUnderlineANSI ] ]
 color p = withoutArgs color p
@@ -551,9 +552,9 @@ exits p = withoutArgs exits p
 
 expCmdList :: Action
 expCmdList (NoArgs i mq cols) =
-    (pager i mq . concatMap (wrapIndent (succ maxCmdLen) cols) $ mkExpCmdListTxt) >> logPlaExecArgs "expressive" [] i
+    (pager i mq . concatMap (wrapIndent cmdNamePadding cols) $ mkExpCmdListTxt) >> logPlaExecArgs "expressive" [] i
 expCmdList p@(ActionParams { plaId, args }) =
-    dispMatches p (succ maxCmdLen) mkExpCmdListTxt >> logPlaExecArgs "expressive" args plaId
+    dispMatches p cmdNamePadding mkExpCmdListTxt >> logPlaExecArgs "expressive" args plaId
 
 
 mkExpCmdListTxt :: [T.Text]
@@ -569,11 +570,11 @@ mkExpCmdListTxt =
       (NoTarget  toSelf _  ) -> [ paddedName <> mkInitialTxt  ecn <> toSelf ]
       (HasTarget toSelf _ _) -> [ paddedName <> mkInitialTxt (ecn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
       (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt ecn <> toSelf
-                                                   , T.replicate (succ maxCmdLen) (T.singleton indentFiller) <>
-                                                     mkInitialTxt (ecn <> " hanako")                         <>
+                                                   , T.replicate cmdNamePadding (T.singleton indentFiller) <>
+                                                     mkInitialTxt (ecn <> " hanako")                       <>
                                                      T.replace "@" "Hanako" toSelfWithTarget ]
       where
-        paddedName         = pad (succ maxCmdLen) styled
+        paddedName         = padCmdName styled
         mkInitialTxt input = T.concat [ quoteColor
                                       , dblQuote input
                                       , dfltColor
@@ -750,10 +751,9 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
                                               , topicNames
                                               , isAdmin |?| footnote ]
         (pager i mq . parseHelpTxt cols $ helpTxt) >> logPla "help" i "read root help file."
-    mkHelpNames zipped    = [ pad padding . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
-    padding               = maxHelpTopicLen + 2
+    mkHelpNames zipped    = [ padHelpTopic . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     asterisk              = asteriskColor <> "*" <> dfltColor
-    formatHelpNames names = let wordsPerLine = cols `div` padding
+    formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
 help (LowerNub i mq cols as) = (getPlaFlag IsAdmin . getPla i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
@@ -1851,7 +1851,7 @@ setAction :: Action
 setAction (NoArgs i mq cols) = getState >>= \ms ->
     let names  = styleAbbrevs Don'tBracket settingNames
         values = map showText [ cols, getPageLines i ms ]
-    in multiWrapSend mq cols [ pad 9 (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
+    in multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
 setAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> logMsgs |#| logPlaOut "set" i
   where
@@ -2424,9 +2424,9 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 -- TODO: Help.
 who :: Action
 who (NoArgs i mq cols) = getState >>= \ms ->
-    (pager i mq . concatMap (wrapIndent (maxNameLen + 3) cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
+    (pager i mq . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
 who p@(ActionParams { plaId, args }) = getState >>= \ms ->
-    (dispMatches p (maxNameLen + 3) . mkWhoTxt plaId $ ms) >> logPlaExecArgs "who" args plaId
+    (dispMatches p namePadding . mkWhoTxt plaId $ ms) >> logPlaExecArgs "who" args plaId
 
 
 mkWhoTxt :: Id -> MudState -> [T.Text]
@@ -2453,21 +2453,21 @@ mkCharList i ms =
         -----
         descTunedIns = zipWith (curry descThem) styleds tunedIns'
           where
-            descThem (styled, (_, s, r, l)) = T.concat [ pad (maxNameLen + 3) styled
-                                                       , pad 7 s
-                                                       , pad (succ maxRaceLen) r
+            descThem (styled, (_, s, r, l)) = T.concat [ padName styled
+                                                       , padSex  s
+                                                       , padRace r
                                                        , l ]
         descTunedOuts = map descThem tunedOuts'
           where
-            descThem (s, s', r, l) = T.concat [ pad (maxNameLen + 3) s
-                                              , pad 7 s'
-                                              , pad (succ maxRaceLen) r
+            descThem (s, s', r, l) = T.concat [ padName s
+                                              , padSex  s'
+                                              , padRace r
                                               , l ]
         descOthers = map descThem others'
           where
-            descThem (s, r, l) = T.concat [ pad (maxNameLen + 3) "?"
-                                          , pad 7 s
-                                          , pad (succ maxRaceLen) r
+            descThem (s, r, l) = T.concat [ padName "?"
+                                          , padSex  s
+                                          , padRace r
                                           , l ]
     in concat [ descTunedIns, descTunedOuts, descOthers ]
 
@@ -2489,21 +2489,16 @@ mkFooter ms = let x = length . getLoggedInPlaIds $ ms
                   y = length . filter (== True) $ maruBatsus
               in T.concat [ showText x
                           , " "
-                          , handlePlur ("person", "people") x
+                          , pluralize ("person", "people") x
                           , " logged in"
                           , y /= 0 |?| (" " <> (parensQuote . T.concat $ [ "excluding "
                                                                          , showText y
                                                                          , " administrator"
-                                                                         , handlePlur ("", "s") y ]))
+                                                                         , pluralize ("", "s") y ]))
                           , "." ]
   where
     maruBatsus = map (uncurry (&&) . (isLoggedIn *** not . getPlaFlag IsIncognito) . dup . (`getPla` ms)) ais
     ais        = getLoggedInAdminIds ms
-
-
--- TODO: Move to a util module and use elsewhere.
-handlePlur :: BothGramNos -> Int -> T.Text
-handlePlur (s, p) x = x == 1 ? s :? p
 
 
 -----

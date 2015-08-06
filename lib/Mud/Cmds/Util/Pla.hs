@@ -62,6 +62,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.NameResolution
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Padding
 import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
@@ -593,11 +594,10 @@ dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> T.Text
 mkEntsInInvDesc i cols ms =
-    T.unlines . concatMap (wrapIndent indent cols . helper) . mkStyledName_Count_BothList i ms
+    T.unlines . concatMap (wrapIndent entNamePadding cols . helper) . mkStyledName_Count_BothList i ms
   where
-    helper (pad indent -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
-    helper (pad indent -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
-    indent = 11
+    helper (padEntName -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
+    helper (padEntName -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
 
 
 mkStyledName_Count_BothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]

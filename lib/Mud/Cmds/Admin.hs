@@ -803,11 +803,17 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
                                ias              = zip is' . styleAbbrevs Don'tBracket $ ss
                                mkCharTxt (i, a) = let (s, r, l) = mkPrettifiedSexRaceLvl i ms
                                                       name      = mkAnnotatedName i a
-                                                  in T.concat [ pad (maxNameLen + 3) name -- TODO: Make top level defs for padding amnts.
-                                                              , pad 7 s
-                                                              , pad (succ maxRaceLen) r
+                                                  in T.concat [ padName name
+                                                              , padSex  s
+                                                              , padRace r
                                                               , l ]
-                           in mkWhoHeader ++ map mkCharTxt ias ++ [ T.concat [ mkNumOfCharsTxt is, " ", showText inOrOut, "." ] ]
+                               nop              = length is
+                           in mkWhoHeader ++ map mkCharTxt ias ++ [ T.concat [ showText nop
+                                                                             , " "
+                                                                             , pluralize ("person", "people") nop
+                                                                             , " "
+                                                                             , showText inOrOut
+                                                                             , "." ] ]
   where
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn
                                           LoggedOut -> not . isLoggedIn
@@ -817,8 +823,6 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
                               incog | getPlaFlag IsIncognito p = asteriskColor <> "@" <> dfltColor
                                     | otherwise                = ""
                           in a <> admin <> incog
-    mkNumOfCharsTxt (length -> nop) | nop == 1  = "1 person"
-                                    | otherwise = showText nop <> " people"
 
 
 -----

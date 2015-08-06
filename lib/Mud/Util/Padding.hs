@@ -3,6 +3,7 @@
 module Mud.Util.Padding where
 
 import Mud.Misc.ANSI
+import Mud.TopLvlDefs.Padding
 import Mud.Util.Quoting
 
 import Data.Monoid ((<>))
@@ -24,6 +25,38 @@ pad :: Int -> T.Text -> T.Text
 pad x t@(T.length . dropANSI -> l)
   | l >= x    = t
   | otherwise = t <> T.replicate (x - l) " "
+
+
+padCmdName :: T.Text -> T.Text
+padCmdName = pad cmdNamePadding
+
+
+padColorName :: T.Text -> T.Text
+padColorName = pad colorNamePadding
+
+
+padEntName :: T.Text -> T.Text
+padEntName = pad entNamePadding
+
+
+padHelpTopic :: T.Text -> T.Text
+padHelpTopic = pad helpTopicPadding
+
+
+padName :: T.Text -> T.Text
+padName = pad namePadding
+
+
+padRace :: T.Text -> T.Text
+padRace = pad racePadding
+
+
+padSettingName :: T.Text -> T.Text
+padSettingName = pad settingNamePadding
+
+
+padSex :: T.Text -> T.Text
+padSex = pad sexPadding
 
 
 parensPad :: Int -> T.Text -> T.Text

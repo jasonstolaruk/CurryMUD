@@ -187,7 +187,7 @@ debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefi
           | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
-    mkColorName = uncurry (<>) . (pad 6 . showText *** pad 8 . showText)
+    mkColorName = uncurry (<>) . (pad 6 . showText *** padColorName . showText)
 debugColor p = withoutArgs debugColor p
 
 
