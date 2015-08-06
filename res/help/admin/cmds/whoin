@@ -4,12 +4,12 @@
 #dwhoin \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
-Display a list of the characters who are currently logged in. Optionally, search the list for one or more terms.
-* denotes an administrator.
+Display a list of all the people that are currently logged in. Optionally, search the list for one or more terms.
+* denotes an admin.
 @@ denotes an incognito.
 
 \uEXAMPLES\n
-\q#dwhoin\d to display the full character list.4`
+\q#dwhoin\d to display the full list.4`
 \q#dwhoin male\d to display a list of all the male characters who are logged in.4`
 
 \uSEE ALSO\n

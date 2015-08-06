@@ -10,7 +10,9 @@ module Mud.Cmds.Util.Misc ( advise
                           , maxRaceLen
                           , mkActionParams
                           , mkInterfaceList
+                          , mkPrettifiedSexRaceLvl
                           , mkSingleTarget
+                          , mkWhoHeader
                           , pager
                           , prefixCmd
                           , sendGenericErrorMsg
@@ -202,6 +204,14 @@ mkActionParams i ms as = ActionParams { plaId       = i
 -----
 
 
+mkPrettifiedSexRaceLvl :: Id -> MudState -> (T.Text, T.Text, T.Text)
+mkPrettifiedSexRaceLvl i ms = let (s, r, l) = getSexRaceLvl i ms
+                              in (pp s, pp r, showText l)
+
+
+-----
+
+
 mkSingleTarget :: MsgQueue -> Cols -> T.Text -> T.Text -> SingleTarget
 mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
     SingleTarget { strippedTarget     = capitalize   t
@@ -213,6 +223,16 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
     hlp = hasLocPref . uncapitalize $ target
     t   = hlp ? (T.tail . T.tail $ target) :? target
     f i = ((sorryMsg, pure i) :)
+
+
+-----
+
+
+mkWhoHeader :: [T.Text]
+mkWhoHeader = T.concat [ pad (maxNameLen + 3) "Name"
+                       , pad 7 "Sex"
+                       , pad (succ maxRaceLen) "Race"
+                       , "Level" ] : [ T.replicate (maxNameLen + 3 + 7 + succ maxRaceLen + 5) "=" ]
 
 
 -----

@@ -4,7 +4,7 @@
 #d? \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
-Display a list of available administrator commands and their descriptions. Optionally, search the list for one or more terms.
+Display a list of available admin commands and their descriptions. Optionally, search the list for one or more terms.
 
 \uEXAMPLES\n
 \q#d?\d to display the full command list.4`

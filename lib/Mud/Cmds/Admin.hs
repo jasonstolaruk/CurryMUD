@@ -32,7 +32,6 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
@@ -125,8 +124,8 @@ adminCmds =
     , mkAdminCmd "time"      adminTime        "Display the current system time."
     , mkAdminCmd "typo"      adminTypo        "Dump the typo database."
     , mkAdminCmd "uptime"    adminUptime      "Display the system uptime."
-    , mkAdminCmd "whoin"     adminWhoIn       "Display or search a list of the characters who are currently logged in."
-    , mkAdminCmd "whoout"    adminWhoOut      "Display or search a list of the characters who are currently logged \
+    , mkAdminCmd "whoin"     adminWhoIn       "Display or search a list of all the people that are currently logged in."
+    , mkAdminCmd "whoout"    adminWhoOut      "Display or search a list of all the people that are currently logged \
                                               \out." ]
 
 
@@ -802,12 +801,13 @@ mkCharListTxt :: LoggedInOrOut -> MudState -> [T.Text]
 mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate $ ms^.plaTbl
                                (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
                                ias              = zip is' . styleAbbrevs Don'tBracket $ ss
-                               mkCharTxt (i, a) = let (pp *** pp -> (s, r)) = getSexRace i ms
-                                                      name                  = mkAnnotatedName i a
+                               mkCharTxt (i, a) = let (s, r, l) = mkPrettifiedSexRaceLvl i ms
+                                                      name      = mkAnnotatedName i a
                                                   in T.concat [ pad (maxNameLen + 3) name -- TODO: Make top level defs for padding amnts.
                                                               , pad 7 s
-                                                              , pad (succ maxRaceLen) r ]
-                           in map mkCharTxt ias ++ [ T.concat [ mkNumOfCharsTxt is, " ", showText inOrOut, "." ] ]
+                                                              , pad (succ maxRaceLen) r
+                                                              , l ]
+                           in mkWhoHeader ++ map mkCharTxt ias ++ [ T.concat [ mkNumOfCharsTxt is, " ", showText inOrOut, "." ] ]
   where
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn
                                           LoggedOut -> not . isLoggedIn
@@ -817,8 +817,8 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
                               incog | getPlaFlag IsIncognito p = asteriskColor <> "@" <> dfltColor
                                     | otherwise                = ""
                           in a <> admin <> incog
-    mkNumOfCharsTxt (length -> nop) | nop == 1  = "1 character"
-                                    | otherwise = showText nop <> " characters"
+    mkNumOfCharsTxt (length -> nop) | nop == 1  = "1 person"
+                                    | otherwise = showText nop <> " people"
 
 
 -----

@@ -5,7 +5,7 @@
 
 \uDESCRIPTION\n
 Print a message to the server console (along with your PC name).
-This functionality is offered as a way to attempt to get in touch with the server administrator.
+This functionality is offered as a way to attempt to get in touch with the server admin.
 
 \uEXAMPLES\n
 \q#dprint is anybody home?\d to print "[Taro] Is anybody home?" to the server console (assuming your PC name is Taro.)4`

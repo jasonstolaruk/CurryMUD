@@ -2422,7 +2422,6 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 
 
 -- TODO: Help.
--- TODO: "who" and the admin who commands should be in parity (to a sensible extent).
 who :: Action
 who (NoArgs i mq cols) = getState >>= \ms ->
     (pager i mq . concatMap (wrapIndent (maxNameLen + 3) cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
@@ -2431,12 +2430,8 @@ who p@(ActionParams { plaId, args }) = getState >>= \ms ->
 
 
 mkWhoTxt :: Id -> MudState -> [T.Text]
-mkWhoTxt i ms = let txts   = mkCharList i ms
-                    header = T.concat [ pad (maxNameLen + 3) "Name"
-                                      , pad 7 "Sex"
-                                      , pad (succ maxRaceLen) "Race"
-                                      , "Level" ] : [ T.replicate (maxNameLen + 3 + 7 + succ maxRaceLen + 5) "=" ]
-                in (++ [ mkFooter ms ]) $ txts |!| header ++ txts
+mkWhoTxt i ms = let txts = mkCharList i ms
+                in (++ [ mkFooter ms ]) $ txts |!| mkWhoHeader ++ txts
 
 
 mkCharList :: Id -> MudState -> [T.Text]
@@ -2447,13 +2442,12 @@ mkCharList i ms =
         -----
         tunedIns'          = mkSingSexRaceLvls tunedIns
         mkSingSexRaceLvls  = sortBy (compare `on` view _1) . map helper
-        helper plaId       = let (prettify -> (s, r, l)) = getSexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
-        prettify (s, r, l) = (pp s, pp r, showText l)
+        helper plaId       = let (s, r, l) = mkPrettifiedSexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
         styleds            = styleAbbrevs Don'tBracket . map (view _1) $ tunedIns'
         -----
         tunedOuts' = mkSingSexRaceLvls tunedOuts
         -----
-        others' = sortBy raceLvlSex . map (prettify . flip getSexRaceLvl ms) $ others
+        others' = sortBy raceLvlSex . map (`mkPrettifiedSexRaceLvl` ms) $ others
           where
             raceLvlSex (s, r, l) (s', r', l') = (r `compare` r') <> (l `compare` l') <> (s `compare` s')
         -----
