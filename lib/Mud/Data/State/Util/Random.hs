@@ -1,6 +1,7 @@
 module Mud.Data.State.Util.Random ( percent
                                   , rndmDo
                                   , rndmDos
+                                  , rndmElem
                                   , rndmR
                                   , rndmRs ) where
 
@@ -41,6 +42,10 @@ rndmDo prob = mWhen (isSuccess prob)
 rndmDos :: [(Int, MudStack ())] -> MudStack ()
 rndmDos []               = unit
 rndmDos ((prob, act):xs) = mIf (isSuccess prob) act . rndmDos $ xs
+
+
+rndmElem :: [a] -> MudStack a
+rndmElem xs = (xs !!) <$> rndmR (0, length xs - 1)
 
 
 rndmPer :: MudStack Int

@@ -13,7 +13,7 @@ import Control.Lens.Operators ((^.))
 import Data.Monoid (Sum(..))
 import Data.Time (UTCTime)
 import Network (HostName)
-import qualified Data.IntMap.Lazy as IM (filter, foldr, keys)
+import qualified Data.IntMap.Lazy as IM (filter, foldr, keys, toList)
 import qualified Data.Map.Lazy as M (keys)
 import qualified Data.Text as T
 
@@ -171,6 +171,13 @@ getInvCoins i = (getInv i *** getCoins i) . dup
 
 getIsCloth :: Id -> MudState -> Bool
 getIsCloth i = view isCloth . getCon i
+
+
+-----
+
+
+getIdForPCSing :: Sing -> MudState -> Id
+getIdForPCSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
 
 
 -----
