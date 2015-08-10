@@ -2170,7 +2170,6 @@ mkSlotDesc i ms s = case s of
 -----
 
 
--- TODO: Help.
 tune :: Action
 tune (NoArgs i mq cols) = getState >>= \ms ->
     let linkTbl                    = getTeleLinkTbl i ms
@@ -2183,7 +2182,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
           where
             mkConnTxts = [ n <> "=" <> (t ? "in" :? "out") | n <- names | t <- tunings ]
     in do
-        multiWrapSend mq cols . concat $ [ helper "Telepathic links:" linkSings linkTunings
+        multiWrapSend mq cols . concat $ [ helper "Two-way telepathic links:" linkSings linkTunings
                                          , pure ""
                                          , helper "Channels:" (styleAbbrevs Don'tBracket chanNames) chanTunings ]
         logPlaExecArgs "tune" [] i
@@ -2316,13 +2315,15 @@ unlink (LowerNub i mq cols as) = do
                                              , " as you sense that your link with "
                                              , s
                                              , " has been severed." ]
+                        targetBs  = let bs = mkBroadcast targetId . nlnl . colorize $ targetMsg
+                                    in (isLoggedIn . getPla targetId $ ms') |?| bs
                         colorize  = quoteWith' (unlinkColor, dfltColor)
                         ms''      = ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
                                         & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
                                         & pcTbl.ind i       .linked %~ (targetSing `delete`)
                                         & pcTbl.ind targetId.linked %~ (s          `delete`)
                     in a & _1 .~  ms''
-                         & _2 <>~ [ (nlnl srcMsg, pure i), (nlnl . colorize $ targetMsg, pure targetId) ]
+                         & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                          & _3 <>~ pure targetSing
         in helper |&| modifyState >=> \(bs, logMsgs) -> bcast bs >> logMsgs |#| (logPla "unlink" i . slashes)
 unlink p = patternMatchFail "unlink" [ showText p ]
