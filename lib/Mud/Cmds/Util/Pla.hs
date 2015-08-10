@@ -3,9 +3,7 @@
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
 
-module Mud.Cmds.Util.Pla ( InvWithCon
-                         , IsConInRm
-                         , armSubToSlot
+module Mud.Cmds.Util.Pla ( armSubToSlot
                          , bugTypoLogger
                          , clothToSlot
                          , donMsgs
@@ -17,8 +15,11 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
+                         , helperLinkUnlink
                          , helperPutRemEitherCoins
                          , helperPutRemEitherInv
+                         , InvWithCon
+                         , IsConInRm
                          , isNonStdLink
                          , isRingRol
                          , isSlotAvail
@@ -52,6 +53,7 @@ import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
@@ -70,7 +72,8 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logPla)
+import Prelude hiding (pi)
+import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first)
@@ -81,6 +84,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (notMember, toList)
 import qualified Data.Text as T
 
@@ -100,6 +104,10 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Pla"
 
 logPla :: T.Text -> Id -> T.Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Util.Pla"
+
+
+logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
+logPlaOut = L.logPlaOut "Mud.Cmds.Util.Pla"
 
 
 -- ==================================================
@@ -349,6 +357,23 @@ mkCan'tGetInvDesc i ms = concatMap helper . mkNameCountBothList i ms
     helper (_, c, b@(s, _)) = let rest | c == 1    = " the " <> s <> "."
                                        | otherwise = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
                               in mkBroadcast i $ sorryEnc <> rest
+
+
+-----
+
+
+helperLinkUnlink :: MudState -> Id -> MsgQueue -> Cols -> MudStack (Maybe ([T.Text], [T.Text], [T.Text]))
+helperLinkUnlink ms i mq cols =
+    let s                = getSing   i ms
+        othersLinkedToMe = getLinked i ms
+        meLinkedToOthers = foldr buildSingList [] $ i `delete` (ms^.pcTbl.to IM.keys)
+        buildSingList pi acc | s `elem` getLinked pi ms = getSing pi ms : acc
+                             | otherwise                = acc
+        twoWays = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
+    in if all (()#) [ othersLinkedToMe, meLinkedToOthers ]
+      then let msg = "You haven't established a telepathic link with anyone."
+           in emptied (wrapSend mq cols msg >> logPlaOut "helperLinkUnlink" i [msg])
+      else unadulterated (meLinkedToOthers, othersLinkedToMe, twoWays)
 
 
 -----

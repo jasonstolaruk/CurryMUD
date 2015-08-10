@@ -44,6 +44,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , toPeepedColor
                      , underlineANSI
                      , unknownNameColor
+                     , unlinkColor
                      , wtfColor
                      , zingColor ) where
 
@@ -244,6 +245,10 @@ underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
 
 unknownNameColor :: T.Text
 unknownNameColor = yellow
+
+
+unlinkColor :: T.Text
+unlinkColor = magenta
 
 
 wtfColor :: T.Text
