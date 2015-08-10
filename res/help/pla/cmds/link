@@ -5,7 +5,7 @@ link \s[\dperson \s...]\d
 
 \uDESCRIPTION\n
 Establish a telepathic link with one or more people.
-When no arguments are provided, you'll get a list of the people with whom you have established a telepathic link. * denotes that the given person is currently "awake" (that is, they are currently online).
+When no arguments are provided, you'll get a list of the people with whom you have established a telepathic link. * denotes that the given person is currently "awake" (that is, they are currently logged in).
 
 The following illustration explains how linking works:
 * Taro and Hanako are in the same room. They have already introduced themselves to each other via the "intro" command. (Both of these are prerequisites of linking).2`

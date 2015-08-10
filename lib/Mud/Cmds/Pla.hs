@@ -190,7 +190,7 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     -- , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
     --                                    \telepathic link.")
     , ("unready",    "un", unready,    "Unready one or more items.")
-    , ("who",        "wh", who,        "Display or search a list of who is currently logged in.") ]
+    , ("who",        "wh", who,        "Display or search a list of who is currently awake.") ]
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> [Cmd]
@@ -2313,7 +2313,7 @@ unlink (LowerNub i mq cols as) = do
                                     "."
                         targetMsg = T.concat [ "You suddenly feel a slight tingle "
                                              , tingleLoc
-                                             , " as you sense that your link with "
+                                             , "; you sense that your link with "
                                              , s
                                              , " has been severed." ]
                         targetBs  = let bs = mkBroadcast targetId . nlnl . colorize $ targetMsg
@@ -2477,7 +2477,6 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 -----
 
 
--- TODO: Help.
 who :: Action
 who (NoArgs i mq cols) = getState >>= \ms ->
     (pager i mq . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
@@ -2487,21 +2486,22 @@ who p@(ActionParams { plaId, args }) = getState >>= \ms ->
 
 mkWhoTxt :: Id -> MudState -> [T.Text]
 mkWhoTxt i ms = let txts = mkCharList i ms
-                in (++ [ mkFooter ms ]) $ txts |!| mkWhoHeader ++ txts
+                in (++ [ mkFooter i ms ]) $ txts |!| mkWhoHeader ++ txts
 
 
 mkCharList :: Id -> MudState -> [T.Text]
 mkCharList i ms =
     let plaIds                = i `delete` getLoggedInPlaIds ms
-        (linkeds, others)     = partition (isDblLinked ms . (i, )) plaIds
-        (tunedIns, tunedOuts) = partition (isTunedIn   ms . (i, )) linkeds
+        (linkeds,  others   ) = partition (isLinked    ms . (i, )) plaIds
+        (twoWays,  oneWays  ) = partition (isDblLinked ms . (i, )) linkeds
+        (tunedIns, tunedOuts) = partition (isTunedIn   ms . (i, )) twoWays
         -----
-        tunedIns'          = mkSingSexRaceLvls tunedIns
-        mkSingSexRaceLvls  = sortBy (compare `on` view _1) . map helper
-        helper plaId       = let (s, r, l) = mkPrettifiedSexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
-        styleds            = styleAbbrevs Don'tBracket . map (view _1) $ tunedIns'
+        tunedIns'         = mkSingSexRaceLvls tunedIns
+        mkSingSexRaceLvls = sortBy (compare `on` view _1) . map helper
+        helper plaId      = let (s, r, l) = mkPrettifiedSexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
+        styleds           = styleAbbrevs Don'tBracket . map (view _1) $ tunedIns'
         -----
-        tunedOuts' = mkSingSexRaceLvls tunedOuts
+        tunedOuts' = mkSingSexRaceLvls (tunedOuts ++ oneWays)
         -----
         others' = sortBy raceLvlSex . map (`mkPrettifiedSexRaceLvl` ms) $ others
           where
@@ -2528,30 +2528,23 @@ mkCharList i ms =
     in concat [ descTunedIns, descTunedOuts, descOthers ]
 
 
-isDblLinked :: MudState -> (Id, Id) -> Bool
-isDblLinked ms (i, i') = let s                = getSing i  ms
-                             s'               = getSing i' ms
-                             targetLinkedToMe = s' `elem` getLinked i  ms
-                             meLinkedToTarget = s  `elem` getLinked i' ms
-                         in targetLinkedToMe && meLinkedToTarget
-
-
 isTunedIn :: MudState -> (Id, Id) -> Bool
 isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTeleLinkTbl i $ ms)
 
 
-mkFooter :: MudState -> T.Text
-mkFooter ms = let x = length . getLoggedInPlaIds $ ms
-                  y = length . filter (== True) $ maruBatsus
-              in T.concat [ showText x
-                          , " "
-                          , pluralize ("person", "people") x
-                          , " logged in"
-                          , y /= 0 |?| (" " <> (parensQuote . T.concat $ [ "excluding "
-                                                                         , showText y
-                                                                         , " administrator"
-                                                                         , pluralize ("", "s") y ]))
-                          , "." ]
+mkFooter :: Id -> MudState -> T.Text
+mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
+                    y                    = length . filter (== True) $ maruBatsus
+                in T.concat [ showText x
+                            , " "
+                            , pluralize ("person", "people") x
+                            , " awake"
+                            , plaIds == pure i |?| ": you"
+                            , y /= 0 |?| (" " <> (parensQuote . T.concat $ [ "excluding "
+                                                                          , showText y
+                                                                          , " administrator"
+                                                                          , pluralize ("", "s") y ]))
+                            , "." ]
   where
     maruBatsus = map (uncurry (&&) . (isLoggedIn *** not . getPlaFlag IsIncognito) . dup . (`getPla` ms)) ais
     ais        = getLoggedInAdminIds ms

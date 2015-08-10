@@ -1,0 +1,18 @@
+\h WHO \d
+
+\uUSAGE\n
+who \s[\dterm \s...]\d
+
+\uDESCRIPTION\n
+Display a list of all the people that are currently "awake" (logged in). Optionally, search the list for one or more terms.
+
+In the list you will see the names of those people with whom you have established a telepathic link; the names of all others are displayed as "?".
+Your name will not appear in the list, though you are included in the number of people awake as indicated at the bottom.
+
+Note: use the "admin" command to get a list of CurryMUD administrators, indicating whether they are currently logged in or out.
+
+\uEXAMPLES\n
+\qwho\d to display the full list.4`
+\qwho male\d to display a list of all the male characters who are awake.4`
+
+\uSEE ALSO\n

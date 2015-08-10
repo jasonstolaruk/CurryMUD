@@ -1,7 +1,13 @@
 \h GLOSSARY \d
 
+Asleep
+This is an IC ("In-Character") term for the state of being logged out.
+
+Awake
+This is an IC ("In-Character") term for the state of being logged in.
+
 In-Character
-Something said or done as a character, in the context of role-playing.
+Something said or done as a character, in the context of role-playing. Or, in the context of the virtual world.
 
 Interactive Non-Player Character
 A character that is usually controlled by the server, and sometimes controlled, or otherwise actively managed, by the administrators.
@@ -16,12 +22,13 @@ Multi-User Dungeon
 This generally refers to a (usually text-based) virtual world in its totality.
 
 Newbie
+A player who is new to CurryMUD.
 
 Non-Player Character
-A character controlled by the server. A mobile.
+A character controlled by the server. A "mobile."
 
 Out-Of-Character
-Something said or done as a player, outside the context of role-playing.
+Something said or done as a player, outside the context of role-playing. Or, outside the context of the virtual world.
 
 Permadeath
 When a player character dies, it is truly dead; a deceased player character cannot return to the virtual world in any way, shape, or form.
