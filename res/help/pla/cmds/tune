@@ -1,0 +1,21 @@
+\h TUNE \d
+
+\uUSAGE\n
+tune \s[\dname=\s{\din\s|\dout\s|\don\s|\doff\s} ...]\d
+
+\uDESCRIPTION\n
+Tune in/out one or more telepathic connections, including both two-way links and channels. (When you tune a connection out, you temporarily close your mind to the telepathic thoughts originating from it.)
+When no arguments are provided, you'll get a list of your telepathic connections, indicating whether each connection is presently tuned in or out.
+To tune a connection in/out, provide arguments in the form of "name=value", where "name" is the name of a connection, and "value" is one of the following: "in" / "out", or the equivalent "on" / "off".
+To tune in/out all your connections, specify "all=", as in "tune all=out".
+
+\uEXAMPLES\n
+\qtune\d to get a list of your telepathic connections.4`
+\qtune all=out\d to tune out all of your telepathic connections.4`
+\qtune all=in\d to tune in all of your telepathic connections.4`
+\qtune taro=in\d to tune in Taro.4`
+\qtune taro=in hanako=out\d to tune Taro in and Hanako out.4`
+\qtune hunt=out\d to tune out the "hunt" channel.4`
+\qtune all=out taro=in\d to tune everyone out except Taro.4`
+
+\uSEE ALSO\n
