@@ -179,7 +179,7 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("look",       "l",  look,       "Display a description of your current room, or examine one or more items in \
                                        \your current room.")
     , ("link",       "li", link,       "Display a list of the people with whom you have established a telepathic link, \
-                                       \or established a telepathic link with one or more people.")
+                                       \or establish a telepathic link with one or more people.")
     , ("motd",       "m",  motd,       "Display the message of the day.")
     , ("put",        "p",  putAction,  "Put one or more items into a container.")
     , ("ready",      "r",  ready,      "Ready one or more items.")
@@ -1038,7 +1038,6 @@ extractPCIdsFromEiss ms = foldl' helper []
 -----
 
 
--- TODO: Help.
 -- TODO: Linking should cost psionic points.
 -- TODO: Linking should award exp.
 link :: Action
@@ -2272,7 +2271,6 @@ typo p = bugTypoLogger p TypoLog
 -----
 
 
--- TODO: Help.
 -- TODO: Unlinking should cost psionic points.
 unlink :: Action
 unlink p@AdviseNoArgs = advise p ["unlink"] advice
@@ -2284,43 +2282,48 @@ unlink p@AdviseNoArgs = advise p ["unlink"] advice
                       , "." ]
 unlink (LowerNub i mq cols as) = do
     tingleLoc <- rndmElem [ "behind your eyes"
-                          , "in your lower back"
+                          , "deep in your lower back"
                           , "in your scalp"
                           , "on the back of your neck"
                           , "somewhere in your ears" ]
     ms        <- getState
     res       <- helperLinkUnlink ms i mq cols
-    flip maybeVoid res $ \(_, _, twoWays) ->
+    flip maybeVoid res $ \(each %~ map uncapitalize -> (meLinkedToOthers, othersLinkedToMe, twoWays)) ->
         let helper ms' = let (ms'', bs, logMsgs) = foldl' procArgs (ms', [], []) as
                          in (ms'', (bs, logMsgs))
-            procArgs a@(ms', _, _) arg = case filter (== arg) (map uncapitalize twoWays) of
-              [] -> let msg = T.concat [ "You don't have a two-way link with "
-                                       , dblQuote . capitalize $ arg
-                                       , ". "
-                                       , parensQuote "Note that you must specify the full name of the person with \
-                                                     \whom you would like to unlink." ]
-                    in a & _2 <>~ (mkBroadcast i . nlnl $ msg)
-              [capitalize -> targetSing] ->
-                let s         = getSing i ms
-                    targetId  = getIdForPCSing targetSing ms'
-                    srcMsg    = "Focusing your innate psionic energy for a brief moment, you sever the telepathic \
-                                \connection between " <>
-                                targetSing            <>
-                                "'s mind and yours."
-                    targetMsg = T.concat [ "You suddenly feel a slight tingle "
-                                         , tingleLoc
-                                         , ". You sense that your link with "
-                                         , s
-                                         , " has been severed." ]
-                    colorize  = quoteWith' (unlinkColor, dfltColor)
-                    ms''      = ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
-                                    & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
-                                    & pcTbl.ind i       .linked %~ (targetSing `delete`)
-                                    & pcTbl.ind targetId.linked %~ (s          `delete`)
-                in a & _1 .~  ms''
-                     & _2 <>~ [ (nlnl srcMsg, pure i), (nlnl . colorize $ targetMsg, pure targetId) ]
-                     & _3 <>~ pure targetSing
-              xs -> patternMatchFail "unlink procArgs" xs
+            procArgs a@(ms', _, _) arg = if
+              | arg `elem` twoWays          -> f twoWays
+              | arg `elem` meLinkedToOthers -> f meLinkedToOthers
+              | arg `elem` othersLinkedToMe -> f othersLinkedToMe
+              | otherwise ->
+                let msg = T.concat [ "You don't have a link with "
+                                   , dblQuote . capitalize $ arg
+                                   , ". "
+                                   , parensQuote "Note that you must specify the full name of the person with whom you \
+                                                 \would like to unlink." ]
+                in a & _2 <>~ (mkBroadcast i . nlnl $ msg)
+              where
+                f singList =
+                    let [capitalize -> targetSing] = filter (== arg) singList
+                        targetId  = getIdForPCSing targetSing ms'
+                        s         = getSing i ms
+                        srcMsg    = "Focusing your innate psionic energy for a brief moment, you sever your link \
+                                    \with "    <>
+                                    targetSing <>
+                                    "."
+                        targetMsg = T.concat [ "You suddenly feel a slight tingle "
+                                             , tingleLoc
+                                             , " as you sense that your link with "
+                                             , s
+                                             , " has been severed." ]
+                        colorize  = quoteWith' (unlinkColor, dfltColor)
+                        ms''      = ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
+                                        & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
+                                        & pcTbl.ind i       .linked %~ (targetSing `delete`)
+                                        & pcTbl.ind targetId.linked %~ (s          `delete`)
+                    in a & _1 .~  ms''
+                         & _2 <>~ [ (nlnl srcMsg, pure i), (nlnl . colorize $ targetMsg, pure targetId) ]
+                         & _3 <>~ pure targetSing
         in helper |&| modifyState >=> \(bs, logMsgs) -> bcast bs >> logMsgs |#| (logPla "unlink" i . slashes)
 unlink p = patternMatchFail "unlink" [ showText p ]
 

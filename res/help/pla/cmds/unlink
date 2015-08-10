@@ -1,0 +1,14 @@
+\h UNLINK \d
+
+\uUSAGE\n
+unlink \s[\dperson \s...]\d
+
+\uDESCRIPTION\n
+Sever one or more telepathic links.
+Each argument must be the full name of a person with whom you have established a telepathic link.
+
+\uEXAMPLES\n
+\qunlink taro\d to sever your link with Taro's.4`
+\qunlink taro hanako\d to sever your links with Taro and Hanako.4`
+
+\uSEE ALSO\n

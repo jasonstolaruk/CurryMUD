@@ -1,0 +1,21 @@
+\h LINK \d
+
+\uUSAGE\n
+link \s[\dperson \s...]\d
+
+\uDESCRIPTION\n
+Establish a telepathic link with one or more people.
+When no arguments are provided, you'll get a list of the people with whom you have established a telepathic link. * denotes that the given person is currently "awake" (that is, they are currently online).
+
+The following illustration explains how linking works:
+* Taro and Hanako are in the same room. They have already introduced themselves to each other via the "intro" command. (Both of these are prerequisites of linking).2`
+* Taro links with Hanako. There is now a one-way link from Taro's mind to Hanako's mind. Each can now sense when the other is awake/asleep.2`
+* Hanako links with Taro. There is now a two-way link between them. They can now communicate with each other telepathically via the "telepathic" command.2`
+
+\uEXAMPLES\n
+\qlink\d to get a list of the people who have links to/from your mind.4`
+\qlink taro\d to link your mind to Taro's.4`
+\qlink taro hanako\d to link your mind to Taro's and Hanako's.4`
+\qlink \p#a\d to link with everybody in the room.4`
+
+\uSEE ALSO\n
