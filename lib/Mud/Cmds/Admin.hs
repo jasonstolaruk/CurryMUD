@@ -158,27 +158,66 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
     if getPlaFlag IsTunedAdmin . getPla i $ ms
       then case getTunedAdminIds ms of
         [_]      -> sorryNoOneListening
-        tunedIds -> let fm = formatMsg ms in do
-            bcastNl [(fm, tunedIds)]
-            logPlaOut (prefixAdminCmd "admin") i . pure . dropANSI $ fm
-            ts <- liftIO mkTimestamp
-            withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts (getSing i ms) $ msg
+        tunedIds ->
+          let tunedSings = map (`getSing` ms) tunedIds
+              f targetId = let styleds = styleAbbrevs Don'tBracket $ getSing targetId ms `delete` tunedSings
+                               styled  = head . filter ((== s) . dropANSI) $ styleds
+                           in (format styled, pure targetId)
+              s          = getSing i ms
+              format sourceSing = T.concat [ underlineANSI
+                                           , parensQuote "Admin"
+                                           , noUnderlineANSI
+                                           , " "
+                                           , sourceSing
+                                           , ": "
+                                           , msg ]
+              sourceMsg = format s
+              bs        = (sourceMsg, pure i) : map f (i `delete` tunedIds)
+           in do
+              bcastNl bs
+              logPlaOut (prefixAdminCmd "admin") i . pure . dropANSI $ sourceMsg
+              ts <- liftIO mkTimestamp
+              withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts (getSing i ms) $ msg
       else sorryNotTuned
-      where
-        formatMsg ms = T.concat [ underlineANSI
-                                , parensQuote "Admin"
-                                , noUnderlineANSI
-                                , " "
-                                , getSing i ms
-                                , ": "
-                                , msg ]
-        getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
-        sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the admin channel."
-        sorryNotTuned       =
-            wrapSend mq cols $ "You have tuned out the admin channel. You first must tune it in by typing " <>
-                               (dblQuote . prefixAdminCmd $ "admin")                                        <>
-                               "."
+  where
+    getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
+    sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the admin channel."
+    sorryNotTuned       =
+        wrapSend mq cols $ "You have tuned out the admin channel. You first must tune it in by typing " <>
+                           (dblQuote . prefixAdminCmd $ "admin")                                        <>
+                           "."
 adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
+
+
+{-
+procEmote s msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | c == emoteChar, ()# rest ? length ws > 1 :? otherwise =
+      let ws' = ()# rest ? tail ws :? (rest : tail ws)
+
+  where
+    expandNameChar w@(T.uncons . T.toLower -> Just (x, (T.toLower -> xs)))
+      | enc `T.isInfixOf` xs = sorry
+      | x /= emoteNameChar   = Right w
+      | ()# xs               = Right s
+      | xs == "'s"           = Right $ s <> "'s"
+      | otherwise            = sorry
+      where
+        sorry = sorryHelper adviceEnc
+    handleTargetChar w@(T.uncons . T.toLower -> Just (x, (T.toLower -> xs)))
+      | etc `T.isInfixOf` xs = sorry
+      | x /= emoteTargetChar = Right w
+      | ()# xs               = sorry
+      | otherwise =
+      where
+        sorry = sorryHelper adviceEtc
+    sorryHelper f = Left . f $ prefixAdminCmd "admin" <> " " <> ec
+
+    enc = T.singleton emoteNameChar
+    etc = T.singleton emoteTargetChar
+    ec  = T.singleton emoteChar
+
+  | otherwise = msg
+-}
 
 
 -----

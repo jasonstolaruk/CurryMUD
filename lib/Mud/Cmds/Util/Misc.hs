@@ -1,6 +1,10 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
-module Mud.Cmds.Util.Misc ( advise
+module Mud.Cmds.Util.Misc ( adviceEnc
+                          , adviceEtc
+                          , adviceEtcEmptyPoss
+                          , adviceEtcHead
+                          , advise
                           , dbExHandler
                           , dispCmdList
                           , dispMatches
@@ -36,6 +40,7 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
+import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Msgs
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List
@@ -76,6 +81,67 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
 -- ==================================================
+
+
+enc, etc :: T.Text
+enc = T.singleton emoteNameChar
+etc = T.singleton emoteTargetChar
+
+
+adviceEnc :: T.Text -> T.Text
+adviceEnc cn = T.concat [ dblQuote enc
+                        , " must either be used alone, or with a "
+                        , dblQuote "'s"
+                        , " suffix "
+                        , parensQuote "to create a possessive noun"
+                        , ", as in "
+                        , quoteColor
+                        , dblQuote . T.concat $ [ cn
+                                                , "shielding her eyes from the sun, "
+                                                , enc
+                                                , " looks out across the plains" ]
+                        , dfltColor
+                        , ", or "
+                        , quoteColor
+                        , dblQuote $ cn <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
+                        , dfltColor
+                        , "." ]
+
+
+adviceEtc :: T.Text -> T.Text
+adviceEtc cn = T.concat [ dblQuote etc
+                        , " must be immediately followed by the name of the person you wish to target, as in "
+                        , quoteColor
+                        , dblQuote . T.concat $ [ cn
+                                                , "slowly turns her head to look directly at "
+                                                , etc
+                                                , "taro" ]
+                        , dfltColor
+                        , ". To create a possessive noun, append "
+                        , dblQuote "'s"
+                        , " to the target name, as in "
+                        , quoteColor
+                        , dblQuote . T.concat $ [ cn
+                                                , "places her hand firmly on "
+                                                , etc
+                                                , "taro's shoulder" ]
+                        , dfltColor
+                        , "." ]
+
+
+adviceEtcEmptyPoss :: T.Text
+adviceEtcEmptyPoss = T.concat [ "You must specify the name of the person you want to target between "
+                              , dblQuote etc
+                              , " and "
+                              , dblQuote "'s"
+                              , "." ]
+
+
+adviceEtcHead :: T.Text
+adviceEtcHead = "You can't begin an emote with a target."
+
+
+-----
 
 
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()

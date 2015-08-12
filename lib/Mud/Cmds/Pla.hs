@@ -138,6 +138,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("n",          go "n",          "Go north.")
     , ("ne",         go "ne",         "Go northeast.")
     , ("nw",         go "nw",         "Go northwest.")
+    -- TODO: , ("question"    question         "Ask/answer newbie questions.")
     , ("qui",        quitCan'tAbbrev, "")
     , ("quit",       quit,            "Quit playing CurryMUD.")
     , ("remove",     remove,          "Remove one or more items from a container.")
@@ -188,7 +189,7 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("show",       "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
                                        \person.")
     -- , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
-    --                                    \telepathic link.")
+    --                                    \two-way telepathic link.")
     , ("unready",    "un", unready,    "Unready one or more items.")
     , ("who",        "wh", who,        "Display or search a list of who is currently awake.") ]
 
@@ -409,10 +410,10 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
         xformArgs isHead (x:xs)    = (: xformArgs False xs) $ if
           | x == enc               -> mkRight   expandEnc
           | x == enc's             -> mkRight $ expandEnc & each %~ (<> "'s")
-          | enc `T.isInfixOf` x    -> Left adviceInfixEnc
-          | x == etc               -> Left adviceEtc
+          | enc `T.isInfixOf` x    -> Left . adviceEnc $ "emote "
+          | x == etc               -> Left . adviceEtc $ "emote "
           | T.take 1 x == etc      -> isHead ? Left adviceEtcHead :? (procTarget ms . T.tail $ x)
-          | etc `T.isInfixOf` x    -> Left adviceEtc
+          | etc `T.isInfixOf` x    -> Left . adviceEtc $ "emote "
           | isHead, hasEnc         -> mkRight $ dup3 x  & each %~ capitalizeMsg
           | isHead, x' <- " " <> x -> mkRight $ dup3 x' & _1 %~ (s   <>)
                                                         & _2 %~ (ser <>)
@@ -454,7 +455,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
     hasEnc          = any (`elem` [ enc, enc's ]) as
     procTarget ms word = let punc = "!\"),./:;?" :: String in
         case swap . (both %~ T.reverse) . T.span (`elem` punc) . T.reverse $ word of
-          ("",   _) -> Left adviceEtc
+          ("",   _) -> Left . adviceEtc $ "emote "
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
@@ -476,45 +477,12 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                             , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
                                             , targetDesig )
                         MobType -> mkRight . dup3 . addSuffix isPoss p . theOnLower $ targetSing
-                        _       -> sorry $ "You can't target " <> aOrAn targetSing <> "."
+                        _       -> sorry ("You can't target " <> aOrAn targetSing <> ".")
                   x -> patternMatchFail "emote procTarget" [ showText x ]
               else Left "You don't see anyone here."
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
-    sorry          = Left . (<> " You can only target a person in your current room.")
-    adviceInfixEnc = T.concat [ dblQuote enc
-                              , " must either be used alone, or with a "
-                              , dblQuote "'s"
-                              , " suffix "
-                              , parensQuote "to create a possessive noun"
-                              , ", as in "
-                              , quoteColor
-                              , dblQuote $ "emote shielding her eyes from the sun, " <> enc <> " looks out across the \
-                                           \plains"
-                              , dfltColor
-                              , ", or "
-                              , quoteColor
-                              , dblQuote $ "emote " <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
-                              , dfltColor
-                              , "." ]
-    adviceEtc = T.concat [ dblQuote etc
-                         , " must be immediately followed by the name of the person you wish to target, as in "
-                         , quoteColor
-                         , dblQuote $ "emote slowly turns her head to look directly at " <> etc <> "taro"
-                         , dfltColor
-                         , ". To create a possesive noun, append "
-                         , dblQuote "'s"
-                         , " to the target name, as in "
-                         , quoteColor
-                         , dblQuote $ "emote places her hand firmly on " <> etc <> "taro's shoulder"
-                         , dfltColor
-                         , "." ]
-    adviceEtcHead      = "You can't begin an emote with a target."
-    adviceEtcEmptyPoss = T.concat [ "You must specity the name of the person you want to target between "
-                                  , dblQuote etc
-                                  , " and "
-                                  , dblQuote "'s"
-                                  , "." ]
+    sorry t              = Left $ t <> " You can only target a person in your current room."
 emote p = patternMatchFail "emote" [ showText p ]
 
 
@@ -738,6 +706,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 
 
 -- TODO: Consider making a "cheatsheet" topic.
+-- TODO: Consider making a "communication" topic.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where

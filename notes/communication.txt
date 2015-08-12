@@ -105,8 +105,6 @@ telepathic hanako =comfort hanako -- of course, this is also legal
 (Admin) [Jason's leg twitches involuntarily as he laughs with gusto.]
 
 :admin ;slowly turns his head to look directly at >taro
-Illegal. Names are given on the admin channel. Advise the admin to just use the target's name, like this:
-:admin ;slowly turns his head to look directly at Taro
 (Admin) [Jason slowly turns his head to look directly at Taro.]
 
 :admin =cry -- no target

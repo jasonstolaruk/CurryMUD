@@ -9,8 +9,8 @@ When no arguments are provided, you'll get a list of the people with whom you ha
 
 The following illustration explains how linking works:
 * Taro and Hanako are in the same room. They have already introduced themselves to each other via the "intro" command. (Both of these are prerequisites of linking).2`
-* Taro links with Hanako. There is now a one-way link from Taro's mind to Hanako's mind. Each can now sense when the other is awake/asleep.2`
-* Hanako links with Taro. There is now a two-way link between them. They can now communicate with each other telepathically via the "telepathic" command.2`
+* Taro links with Hanako. There is now a \uone-way\n link from Taro's mind to Hanako's mind. Each can now sense when the other is awake/asleep.2`
+* Hanako links with Taro. There is now a \utwo-way\n link between them. They can now communicate with each other telepathically via the "telepathic" command, and connect each other to channels via the "connect" command.2`
 
 \uEXAMPLES\n
 \qlink\d to get a list of the people who have links to/from your mind.4`
