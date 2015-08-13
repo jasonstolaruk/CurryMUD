@@ -30,7 +30,7 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, {- TODO: logPlaOut, -} massLogPla)
+import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***))
@@ -92,9 +92,8 @@ logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Admin"
 
 
--- TODO: Uncomment.
---logPlaOut :: CmdName -> Id -> [T.Text] -> MudStack ()
---logPlaOut = L.logPlaOut "Mud.Cmds.Admin"
+logPlaOut :: CmdName -> Id -> [T.Text] -> MudStack ()
+logPlaOut = L.logPlaOut "Mud.Cmds.Admin"
 
 
 massLogPla :: T.Text -> T.Text -> MudStack ()
@@ -156,7 +155,7 @@ adminAdmin (NoArgs i mq cols) = modifyState helper >>= sequence_
   where
     helper ms = let (not -> isTuned) = getPlaFlag IsTunedAdmin . getPla i $ ms
                 in (ms & plaTbl.ind i %~ setPlaFlag IsTunedAdmin isTuned, [ notify isTuned ])
-    notify isTuned = wrapSend mq cols $ "You have tuned " <> inOut <> " the admin channel."
+    notify isTuned = wrapSend mq cols $ "You have tuned " <> inOut <> " the admin channel." -- TODO: Log this.
       where
         inOut | isTuned   = "in"
               | otherwise = "out"
@@ -184,10 +183,12 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
           in case emotify i ms tunedIds tunedSings msg of
               Left  errorMsgs -> multiWrapSend mq cols errorMsgs
               Right bs        -> do
-                  bcastNl . concatMap format $ bs
-                  -- TODO: logPlaOut (prefixAdminCmd "admin") i . pure . dropANSI $ sourceMsg
+                  let bs'                                 = concatMap format bs
+                      (map (dropANSI . fst) -> toSources) = filter ((== pure i) . snd) bs'
+                  bcastNl bs'
+                  logPlaOut (prefixAdminCmd "admin") i toSources
                   ts <- liftIO mkTimestamp
-                  withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts (getSing i ms) $ msg
+                  withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s . slashes $ toSources -- TODO: Drop the first 2 words?
       else sorryNotTuned
   where
     getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
