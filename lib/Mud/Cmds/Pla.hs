@@ -379,17 +379,6 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
                       , "." ]
 emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] advice
   where
-    yous = [ "you"
-           , "you'd"
-           , "you'll"
-           , "you're"
-           , "you's"
-           , "you've"
-           , "your"
-           , "yours"
-           , "yourself"
-           , "yourselves"
-           , "yous" ]
     advice = T.concat [ "Sorry, but you can't use a form of the word "
                       , dblQuote "you"
                       , " in an emote. Instead, you must specify who you wish to target using "

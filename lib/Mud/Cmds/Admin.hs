@@ -194,23 +194,24 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
                                                 , ": "
                                                 , txt ]
           in case emotify i ms tunedIds tunedSings msg of
-              Left  errorMsgs -> multiWrapSend mq cols errorMsgs
-              Right bs        -> do
-                  let bs'       = concatMap format bs
-                      toSource  = head . filter ((== pure i) . snd) $ bs'
-                      toSource' = T.unwords . drop 2 . T.words . dropANSI . fst $ toSource
-                  bcastNl bs'
-                  logPlaOut (prefixAdminCmd "admin") i . pure $ toSource'
-                  ts <- liftIO mkTimestamp
-                  withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s $ toSource'
+            Left  errorMsgs -> multiWrapSend mq cols errorMsgs
+            Right bs        ->
+                let bs'       = concatMap format bs
+                    toSource  = head . filter ((== pure i) . snd) $ bs'
+                    toSource' = T.unwords . drop 2 . T.words . dropANSI . fst $ toSource
+                in do
+                    bcastNl bs'
+                    logPlaOut (prefixAdminCmd "admin") i . pure $ toSource'
+                    ts <- liftIO mkTimestamp
+                    withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s $ toSource'
       else sorryNotTuned
   where
     getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
     sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the admin channel."
     sorryNotTuned       =
-        wrapSend mq cols $ "You have tuned out the admin channel. You first must tune it in by typing " <>
-                           (dblQuote . prefixAdminCmd $ "admin")                                        <>
-                           "."
+        wrapSend mq cols $ "You have tuned out the admin channel. Type " <>
+                           (dblQuote . prefixAdminCmd $ "admin")         <>
+                           " to tune it back in."
 adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
@@ -230,17 +231,6 @@ emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest
 procEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
 procEmote _ _ _ _ as | any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower) $ as = Left . pure $ advice
   where
-    yous = [ "you"
-           , "you'd"
-           , "you'll"
-           , "you're"
-           , "you's"
-           , "you've"
-           , "your"
-           , "yours"
-           , "yourself"
-           , "yourselves"
-           , "yous" ]
     advice = T.concat [ "Sorry, but you can't use a form of the word "
                       , dblQuote "you"
                       , " in an emote. Instead, you must specify who you wish to target using "

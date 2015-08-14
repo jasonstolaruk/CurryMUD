@@ -113,3 +113,16 @@ ver = "0.1.0.0 (in development since 2013-10)"
 
 worldPersisterDelay :: Int
 worldPersisterDelay = 10 * 60 -- ten mins
+
+yous :: [T.Text]
+yous = [ "you"
+       , "you'd"
+       , "you'll"
+       , "you're"
+       , "you's"
+       , "you've"
+       , "your"
+       , "yours"
+       , "yourself"
+       , "yourselves"
+       , "yous" ]
