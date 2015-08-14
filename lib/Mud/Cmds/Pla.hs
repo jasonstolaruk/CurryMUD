@@ -2172,7 +2172,7 @@ tune p = patternMatchFail "tune" [ showText p ]
 helperTune :: Sing -> (TeleLinkTbl, [Chan], [T.Text], [T.Text]) -> T.Text -> (TeleLinkTbl, [Chan], [T.Text], [T.Text])
 helperTune _ a arg@(T.length . T.filter (== '=') -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ sorryTune arg
-helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> value)) = case lookup value valuePairs of
+helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> value)) = case lookup value inOutOnOffs of
   Nothing  -> a & _3 %~ sorryTune arg
   Just val -> let connNames = "all" : linkNames ++ chanNames
               in findFullNameForAbbrev name connNames |&| maybe notFound (found val)
@@ -2196,10 +2196,6 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
             foundLink = let n' = capitalize n in appendMsg n' & _1.at n' .~ Just val
             foundChan = let ([match], others) = partition (views chanName (== n)) chans
                         in appendMsg n & _2 .~ (match & chanConnTbl.at s .~ Just val) : others
-
-
-valuePairs :: [(T.Text, Bool)]
-valuePairs = [ ("i", True), ("in", True), ("ou", False), ("out", False), ("on", True), ("of", False), ("off", False) ]
 
 
 sorryTune :: T.Text -> [T.Text] -> [T.Text]

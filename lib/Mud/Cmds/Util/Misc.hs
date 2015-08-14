@@ -9,6 +9,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
+                          , inOutOnOffs
                           , isHostBanned
                           , isPlaBanned
                           , mkActionParams
@@ -215,6 +216,20 @@ fileIOExHandler fn e = do
 
 throwToListenThread :: SomeException -> MudStack ()
 throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+
+
+-----
+
+
+inOutOnOffs :: [(T.Text, Bool)]
+inOutOnOffs = [ ("i",   True )
+              , ("in",  True )
+              , ("o",   False)
+              , ("of",  False)
+              , ("off", False)
+              , ("on",  True )
+              , ("ou",  False)
+              , ("out", False) ]
 
 
 -----

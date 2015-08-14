@@ -151,11 +151,17 @@ prefixAdminCmd = prefixCmd adminCmdChar
 
 -- TODO: Help.
 adminAdmin :: Action
-adminAdmin (NoArgs i mq cols) = modifyState helper >>= sequence_
+adminAdmin (NoArgs i mq cols) = getState >>= \ms -> do
+    multiWrapSend mq cols [ (padName . getSing ai $ ms) <> (isTuned ? "tuned in" :? "tuned out")
+                          | ai <- getLoggedInAdminIds ms
+                          , let isTuned = getPlaFlag IsTunedAdmin . getPla ai $ ms ]
+    logPlaExecArgs (prefixAdminCmd "admin") [] i
+adminAdmin (OneArg i mq cols a)
+  | [snd -> val] <- filter ((== a) . fst) inOutOnOffs = modifyState (helper val) >>= sequence_
   where
-    helper ms = let (not -> isTuned) = getPlaFlag IsTunedAdmin . getPla i $ ms
-                in (ms & plaTbl.ind i %~ setPlaFlag IsTunedAdmin isTuned, [ notify isTuned ])
-    notify isTuned = wrapSend mq cols $ "You have tuned " <> inOut <> " the admin channel." -- TODO: Log this.
+    helper val ms  = (ms & plaTbl.ind i %~ setPlaFlag IsTunedAdmin val, [ notify val ])
+    notify isTuned = let msg = "You have tuned " <> inOut <> " the admin channel."
+                     in wrapSend mq cols msg >> (logPlaOut (prefixAdminCmd "admin") i . pure $ msg)
       where
         inOut | isTuned   = "in"
               | otherwise = "out"
@@ -183,12 +189,13 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
           in case emotify i ms tunedIds tunedSings msg of
               Left  errorMsgs -> multiWrapSend mq cols errorMsgs
               Right bs        -> do
-                  let bs'                                 = concatMap format bs
-                      (map (dropANSI . fst) -> toSources) = filter ((== pure i) . snd) bs'
+                  let bs'       = concatMap format bs
+                      toSource  = head . filter ((== pure i) . snd) $ bs'
+                      toSource' = T.unwords . drop 2 . T.words . dropANSI . fst $ toSource
                   bcastNl bs'
-                  logPlaOut (prefixAdminCmd "admin") i toSources
+                  logPlaOut (prefixAdminCmd "admin") i . pure $ toSource'
                   ts <- liftIO mkTimestamp
-                  withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s . slashes $ toSources -- TODO: Drop the first 2 words?
+                  withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s $ toSource'
       else sorryNotTuned
   where
     getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
@@ -206,6 +213,10 @@ emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest
   | c == emoteChar                      = procEmote i ms tunedIds tunedSings $ if ()# rest
                                             then tail ws
                                             else rest : tail ws
+  | (T.head . head $ ws) == '[' || "]." `T.isSuffixOf` last ws =
+      Left . pure $ "Sorry, but you can't open or close your message with square brackets " <>
+                    parensQuote (dblQuote "[" <> " and " <> dblQuote "]")                   <>
+                    "."
   | otherwise = Right . pure $ (msg, tunedIds)
 
 
@@ -275,7 +286,7 @@ procEmote i ms tunedIds tunedSings as =
                     helper acc k = (: acc) . (formatMsg *** pure) . (, k)
                 formatMsg = bracketQuote . punctuateMsg . T.unwords
             in Right $ (formatMsg toSelf, pure i) : (formatMsg toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
-      advices -> Left . intersperse "" . map fromLeft . nub $ advices -- TODO: Is there a clever way to do this?
+      advices -> Left . intersperse "" . map fromLeft . nub $ advices
   where
     cn              = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar
     enc             = T.singleton emoteNameChar

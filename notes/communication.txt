@@ -27,10 +27,10 @@ channel hunt hi
 
 leave hunt -- "sever the telepathic connection" to a channel
 
-disconnect hanako hunt -- Must provide full PC name?
+disconnect hanako hunt -- Must provide full PC name.
 
 channel hunt
-With no arguments, you'll get a list of who is currently tuned in to the channel. Names should be abbreviation-styled. (You must be tuned in to the channel yourself.)
+You'll get a list of who is currently tuned in to the channel. Names should be abbreviation-styled. (You must be tuned in to the channel yourself.)
 
 -----
 
