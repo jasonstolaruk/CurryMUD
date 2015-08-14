@@ -54,6 +54,7 @@ import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, empty, filter, foldlWithKey', keys, map, mapWithKey, toList)
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
+import qualified Data.Set as S (filter, map, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Process (readProcess)
@@ -182,28 +183,16 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
                                    in head . filter ((== s) . dropANSI) $ styleds
               s                  = getSing i ms
               format (txt, is)   = if i `elem` is
-                then (helper s, pure i) : mkBsWithStyled (i `delete` is)
-                else                      mkBsWithStyled is
+                then (formatAdminChanMsg s txt, pure i) : mkBsWithStyled (i `delete` is)
+                else mkBsWithStyled is
                 where
-                  mkBsWithStyled is' = [ (helper . getStyled $ i', pure i') | i' <- is' ]
-                  helper sourceSing  = T.concat [ underlineANSI
-                                                , parensQuote "Admin"
-                                                , noUnderlineANSI
-                                                , " "
-                                                , sourceSing
-                                                , ": "
-                                                , txt ]
+                  mkBsWithStyled is' = [ (formatAdminChanMsg (getStyled i') txt, pure i') | i' <- is' ]
           in case emotify i ms tunedIds tunedSings msg of
-            Left  errorMsgs -> multiWrapSend mq cols errorMsgs
-            Right bs        ->
-                let bs'       = concatMap format bs
-                    toSource  = head . filter ((== pure i) . snd) $ bs'
-                    toSource' = T.unwords . drop 2 . T.words . dropANSI . fst $ toSource
-                in do
-                    bcastNl bs'
-                    logPlaOut (prefixAdminCmd "admin") i . pure $ toSource'
-                    ts <- liftIO mkTimestamp
-                    withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s $ toSource'
+            Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
+            Right (Right bs) ->
+                let logMsg = dropANSI . fst . head . filter ((== pure i) . snd) $ bs
+                in ioHelper s (concatMap format bs) . Just $ logMsg
+            Right (Left ()) -> uncurry (ioHelper s) . expCmdify i ms tunedIds tunedSings $ msg
       else sorryNotTuned
   where
     getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
@@ -212,20 +201,27 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
         wrapSend mq cols $ "You have tuned out the admin channel. Type " <>
                            (dblQuote . prefixAdminCmd $ "admin")         <>
                            " to tune it back in."
+    ioHelper s bs maybeLogMsg = bcastNl bs >> maybeVoid logHelper maybeLogMsg
+      where
+        logHelper logMsg = do
+            logPlaOut (prefixAdminCmd "admin") i . pure $ logMsg
+            ts <- liftIO mkTimestamp
+            withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s $ logMsg
 adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
-emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] [Broadcast]
+emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | or [ (T.head . head $ ws) == '['
+       , "]." `T.isSuffixOf` last ws ] = Left . pure $ "Sorry, but you can't open or close your message with square \
+                                                       \brackets "                                           <>
+                                                       parensQuote (dblQuote "[" <> " and " <> dblQuote "]") <>
+                                                       "."
   | msg == T.singleton emoteChar <> "." = Left . pure $ "He don't."
-  | c == emoteChar                      = procEmote i ms tunedIds tunedSings $ if ()# rest
-                                            then tail ws
-                                            else rest : tail ws
-  | (T.head . head $ ws) == '[' || "]." `T.isSuffixOf` last ws =
-      Left . pure $ "Sorry, but you can't open or close your message with square brackets " <>
-                    parensQuote (dblQuote "[" <> " and " <> dblQuote "]")                   <>
-                    "."
-  | otherwise = Right . pure $ (msg, tunedIds)
+  | c == emoteChar = either Left (Right . Right) . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right . Left $ ()
 
 
 procEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
@@ -256,7 +252,7 @@ procEmote i ms tunedIds tunedSings as =
           | x == etc            -> Left . adviceEtc $ cn
           | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
           | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
-          | isHead, hasEnc      -> mkRight . dup3 $ capitalizeMsg x
+          | isHead, hasEnc      -> mkRight . dup3 . capitalizeMsg $ x
           | isHead              -> mkRight . dup3 $ s <> " " <> x
           | otherwise           -> mkRight . dup3 $ x
     in case filter isLeft xformed of
@@ -271,7 +267,7 @@ procEmote i ms tunedIds tunedSings as =
                 consWord [ ForNonTargets word                           ] = IM.map (word :)
                 consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
                 consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-                consWord xs = const . patternMatchFail "emote consWord" $ [ showText xs ]
+                consWord xs = const . patternMatchFail "procEmote consWord" $ [ showText xs ]
                 selectiveCons p targetId isPoss word = IM.mapWithKey helper
                   where
                     helper k v = let targetSing = getSing k ms |&| (isPoss ? (<> "'s") :? id)
@@ -298,8 +294,7 @@ procEmote i ms tunedIds tunedSings as =
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                notFound = Left $ "There is no admin by the name of " <> dblQuote target <> " currently tuned in to \
-                                  \the admin channel."
+                notFound = Left . sorryAdminName $ target
                 found targetSing@(addSuffix isPoss p -> targetSing') =
                     let targetId = head . filter ((== targetSing) . (`getSing` ms)) $ tunedIds
                     in Right ( targetSing'
@@ -308,6 +303,58 @@ procEmote i ms tunedIds tunedSings as =
             in findFullNameForAbbrev (capitalize target) (getSing i ms `delete` tunedSings) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
+
+
+sorryAdminName :: T.Text -> T.Text
+sorryAdminName n = "There is no admin by the name of " <> dblQuote n <> " currently tuned in to the admin channel."
+
+
+formatAdminChanMsg :: T.Text -> T.Text -> T.Text
+formatAdminChanMsg n msg = T.concat [ underlineANSI
+                                    , parensQuote "Admin"
+                                    , noUnderlineANSI
+                                    , " "
+                                    , n
+                                    , ": "
+                                    , msg ]
+
+
+expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> ([Broadcast], Maybe T.Text)
+expCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | msg == T.singleton expCmdChar <> "." = (mkBroadcast i "He don't.", Nothing)
+  | c == expCmdChar = procExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = (pure (msg, tunedIds), Just msg)
+
+
+procExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> ([Broadcast], Maybe T.Text)
+procExpCmd i _ _ _ (_:_:_:_) =
+    (mkBroadcast i "An expressive command sequence may not be more than 2 words long.", Nothing)
+procExpCmd i ms tunedIds tunedSings [ cn, target ] = let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
+                                                     in findFullNameForAbbrev cn cns |&| maybe notFound found
+  where
+    found match =
+        let [ExpCmd _ ct] = S.toList . S.filter (\(ExpCmd cn' _) -> cn' == match) $ expCmdSet
+        in case ct of
+          NoTarget toSelf toOthers -> if ()# target
+            then undefined
+            else ( mkBroadcast i $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
+                 , Nothing )
+          HasTarget toSelf toTarget toOthers -> if ()# target
+            then ( mkBroadcast i $ "The " <> dblQuote match <> " expressive command requires a single target."
+                 , Nothing )
+            else case findTarget of
+              Nothing -> (mkBroadcast i . sorryAdminName $ target, Nothing)
+              Just n  -> undefined
+          Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
+            then undefined
+            else case findTarget of
+              Nothing -> (mkBroadcast i . sorryAdminName $ target, Nothing)
+              Just n  -> undefined
+    notFound = (mkBroadcast i $ "There is no expressive command by the name of " <> dblQuote cn <> ".", Nothing)
+    findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
+procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
 
 
 -----
