@@ -38,13 +38,14 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, at, both, to, views)
+import Control.Lens (_1, _2, _3, at, both, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLetter)
 import Data.Either (isLeft)
-import Data.List ((\\), delete, intercalate, intersperse, nub)
+import Data.Function (on)
+import Data.List ((\\), delete, intercalate, intersperse, nub, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
@@ -151,11 +152,17 @@ prefixAdminCmd = prefixCmd adminCmdChar
 
 -- TODO: Help.
 adminAdmin :: Action
-adminAdmin (NoArgs i mq cols) = getState >>= \ms -> do
-    multiWrapSend mq cols [ (padName . getSing ai $ ms) <> (isTuned ? "tuned in" :? "tuned out")
-                          | ai <- getLoggedInAdminIds ms
-                          , let isTuned = getPlaFlag IsTunedAdmin . getPla ai $ ms ]
-    logPlaExecArgs (prefixAdminCmd "admin") [] i
+adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
+    let triples = sortBy (compare `on` view _2) [ (ai, as, isTuned) | ai <- getLoggedInAdminIds ms
+                                                                    , let as      = getSing ai ms
+                                                                    , let ap      = getPla  ai ms
+                                                                    , let isTuned = getPlaFlag IsTunedAdmin ap ]
+        ([self], others) = partition (\x -> x^._1.to (== i)) triples
+        styleds          = styleAbbrevs Don'tBracket . map (view _2) $ others
+        others'          = zipWith (\(ai, _, isTuned) styled -> (ai, styled, isTuned)) others styleds
+        mkDesc (_, n, isTuned) = padName n <> (isTuned ? "tuned in" :? "tuned out")
+        descs                  = mkDesc self : map mkDesc others'
+    in multiWrapSend mq cols descs >> logPlaExecArgs (prefixAdminCmd "admin") [] i
 adminAdmin (OneArg i mq cols a)
   | [snd -> val] <- filter ((== a) . fst) inOutOnOffs = modifyState (helper val) >>= sequence_
   where
