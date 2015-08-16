@@ -67,6 +67,12 @@ default (Int)
 -----
 
 
+{-# ANN module ("HLint: ignore Use ||" :: String) #-}
+
+
+-----
+
+
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Admin"
 
@@ -191,8 +197,10 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
             Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
             Right (Right bs) ->
                 let logMsg = dropANSI . fst . head . filter ((== pure i) . snd) $ bs
-                in ioHelper s (concatMap format bs) . Just $ logMsg
-            Right (Left ()) -> uncurry (ioHelper s) . expCmdify i ms tunedIds tunedSings $ msg
+                in ioHelper s (concatMap format bs) logMsg
+            Right (Left ()) -> case expCmdify i ms tunedIds tunedSings msg of
+              Left  errorMsg     -> wrapSend mq cols errorMsg
+              Right (bs, logMsg) -> ioHelper s (concatMap format bs) logMsg
       else sorryNotTuned
   where
     getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
@@ -201,9 +209,9 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
         wrapSend mq cols $ "You have tuned out the admin channel. Type " <>
                            (dblQuote . prefixAdminCmd $ "admin")         <>
                            " to tune it back in."
-    ioHelper s bs maybeLogMsg = bcastNl bs >> maybeVoid logHelper maybeLogMsg
+    ioHelper s bs logMsg = bcastNl bs >> logHelper
       where
-        logHelper logMsg = do
+        logHelper = do
             logPlaOut (prefixAdminCmd "admin") i . pure $ logMsg
             ts <- liftIO mkTimestamp
             withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s $ logMsg
@@ -218,7 +226,7 @@ emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest
                                                        parensQuote (dblQuote "[" <> " and " <> dblQuote "]") <>
                                                        "."
   | msg == T.singleton emoteChar <> "." = Left . pure $ "He don't."
-  | c == emoteChar = either Left (Right . Right) . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+  | c == emoteChar = fmap Right . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
   | otherwise = Right . Left $ ()
@@ -319,42 +327,59 @@ formatAdminChanMsg n msg = T.concat [ underlineANSI
                                     , msg ]
 
 
-expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> ([Broadcast], Maybe T.Text)
+expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)
 expCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | msg == T.singleton expCmdChar <> "." = (mkBroadcast i "He don't.", Nothing)
-  | c == expCmdChar = procExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+  | msg == T.singleton expCmdChar <> "." = Left "He don't."
+  | c == expCmdChar = fmap format . procExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
-  | otherwise = (pure (msg, tunedIds), Just msg)
+  | otherwise = Right (pure (msg, tunedIds), msg)
+  where
+    format xs = xs & _1 %~ map (_1 %~ bracketQuote)
+                   & _2 %~ bracketQuote
 
 
-procExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> ([Broadcast], Maybe T.Text)
-procExpCmd i _ _ _ (_:_:_:_) =
-    (mkBroadcast i "An expressive command sequence may not be more than 2 words long.", Nothing)
-procExpCmd i ms tunedIds tunedSings [ cn, target ] = let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
-                                                     in findFullNameForAbbrev cn cns |&| maybe notFound found
+procExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either T.Text ([Broadcast], T.Text)
+procExpCmd _ _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
+procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
+    let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
+    in findFullNameForAbbrev cn cns |&| maybe notFound found
   where
     found match =
         let [ExpCmd _ ct] = S.toList . S.filter (\(ExpCmd cn' _) -> cn' == match) $ expCmdSet
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
-            then undefined
-            else ( mkBroadcast i $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
-                 , Nothing )
+            then Right ( (toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
+                       , toSelf )
+            else Left $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
           HasTarget toSelf toTarget toOthers -> if ()# target
-            then ( mkBroadcast i $ "The " <> dblQuote match <> " expressive command requires a single target."
-                 , Nothing )
+            then Left $ "The " <> dblQuote match <> " expressive command requires a single target."
             else case findTarget of
-              Nothing -> (mkBroadcast i . sorryAdminName $ target, Nothing)
-              Just n  -> undefined
+              Nothing -> Left . sorryAdminName $ target
+              Just n  -> let targetId = getIdForPCSing n ms
+                         in Right ( (toTarget, pure targetId)               :
+                                    (toOthers, tunedIds \\ [ i, targetId ]) :
+                                    mkBroadcast i toSelf
+                                  , toSelf )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then undefined
+            then Right ( (toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
+                       , toSelf )
             else case findTarget of
-              Nothing -> (mkBroadcast i . sorryAdminName $ target, Nothing)
-              Just n  -> undefined
-    notFound = (mkBroadcast i $ "There is no expressive command by the name of " <> dblQuote cn <> ".", Nothing)
+              Nothing -> Left . sorryAdminName $ target
+              Just n  -> let targetId = getIdForPCSing n ms
+                         in Right ( (toTarget, pure targetId)                         :
+                                    (toOthersWithTarget, tunedIds \\ [ i, targetId ]) :
+                                    mkBroadcast i toSelfWithTarget
+                                  , toSelfWithTarget )
+    notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
 procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
+
+
+unmsg :: [T.Text] -> [T.Text]
+unmsg [ cn         ] = [ T.init cn, ""            ]
+unmsg [ cn, target ] = [ cn,        T.init target ]
+unmsg xs             = patternMatchFail "unmsg" xs
 
 
 -----

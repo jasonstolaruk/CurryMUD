@@ -62,7 +62,7 @@ expCmdSet = S.fromList
                                       "% averts & eyes from you."
                                       "% averts & eyes from @.")
     , ExpCmd "bawl"        (NoTarget  "You bawl like a baby."
-                                      "% bawl like a baby.")
+                                      "% bawls like a baby.")
     , ExpCmd "beam"        (Versatile "You beam cheerfully."
                                       "% beams cheerfully."
                                       "You beam cheerfully at @."
