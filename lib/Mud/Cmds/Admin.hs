@@ -348,7 +348,7 @@ procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
         let [ExpCmd _ ct] = S.toList . S.filter (\(ExpCmd cn' _) -> cn' == match) $ expCmdSet
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
-            then Right ( (format_selfSing_hisHer toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
+            then Right ( (format_selfSing_hisHer_hisHerself toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else Left $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
           HasTarget toSelf toTarget toOthers -> if ()# target
@@ -356,29 +356,37 @@ procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
             else case findTarget of
               Nothing -> Left . sorryAdminName $ target
               Just n  -> let targetId = getIdForPCSing n ms
-                         in Right ( (format_selfSing toTarget,              pure targetId              ) :
-                                    (format_selfSing_targetSing n toOthers, tunedIds \\ [ i, targetId ]) :
+                         in Right ( (colorizeYous . format_selfSing $ toTarget, pure targetId            ) :
+                                    (format_selfSing_targetSing n toOthers,   tunedIds \\ [ i, targetId ]) :
                                     (mkBroadcast i . format_targetSing n $ toSelf)
                                   , toSelf )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right ( (format_selfSing_hisHer toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
+            then Right ( (format_selfSing_hisHer_hisHerself toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else case findTarget of
               Nothing -> Left . sorryAdminName $ target
               Just n  -> let targetId = getIdForPCSing n ms
-                         in Right ( (format_selfSing toTarget,                        pure targetId              ) :
+                         in Right ( (colorizeYous . format_selfSing $ toTarget,       pure targetId              ) :
                                     (format_selfSing_targetSing n toOthersWithTarget, tunedIds \\ [ i, targetId ]) :
                                     (mkBroadcast i . format_targetSing n $ toSelfWithTarget)
                                   , toSelfWithTarget )
     notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
-    -- TODO: "*"
     format_targetSing          targetSing = replace . pure $ ("@", targetSing)
-    format_selfSing_hisHer                = replace [ ("%", s), ("&", hisHer) ]
+    format_selfSing_hisHer_hisHerself     = replace [ ("%", s), ("&", hisHer), ("*", hisHerself) ]
     format_selfSing                       = replace . pure $ ("%", s)
     format_selfSing_targetSing targetSing = replace [ ("%", s), ("@", targetSing) ]
-    s      = getSing i ms
-    hisHer = mkPossPro . getSex i $ ms
+    s            = getSing i ms
+    hisHer       = mkPossPro   sexy
+    hisHerself   = mkReflexPro sexy
+    sexy         = getSex i ms
+    colorizeYous = T.unwords . map helper . T.words
+      where
+        helper w = let (a, b) = T.break isLetter w
+                       (c, d) = T.span  isLetter b
+                   in if T.toLower c `elem` yous
+                     then a <> quoteWith' (emoteTargetColor, dfltColor) c <> d
+                     else w
 procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
 
 

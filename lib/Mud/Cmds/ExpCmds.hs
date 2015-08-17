@@ -743,7 +743,6 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
               ([ Right (_:_:_)    ], _                   ) -> sendHelper "Sorry, but you can only target one person at \
                                                                          \a time with expressive commands."
               ([ Right [targetId] ], _                   ) ->
-                -- TODO: What about "*"?
                 let onPC targetDesigTxt =
                         let (toSelf', toSelfBroadcast, serialized, hisHer, toOthers') = mkBindings targetDesigTxt
                             toOthersBroadcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
@@ -762,8 +761,11 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                         let toSelf'         = replace [("@", targetTxt)] toSelf
                             toSelfBroadcast = mkBroadcast i . nlnl $ toSelf'
                             serialized      = mkSerializedDesig d toOthers
-                            (_, hisHer, _)  = mkPros . getSex i $ ms
-                            toOthers'       = replace [ ("@", targetTxt), ("%", serialized), ("&", hisHer) ] toOthers
+                            (_, hisHer, hisHerself) = mkPros . getSex i $ ms
+                            toOthers'               = replace [ ("@", targetTxt)
+                                                              , ("%", serialized)
+                                                              , ("&", hisHer)
+                                                              , ("*", hisHerself) ] toOthers
                         in (toSelf', toSelfBroadcast, serialized, hisHer, toOthers')
                 in case getType targetId ms of
                   PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
