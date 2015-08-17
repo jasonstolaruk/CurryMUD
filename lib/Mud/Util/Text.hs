@@ -16,6 +16,7 @@ module Mud.Util.Text ( aOrAn
                      , nlnl
                      , nlnlPrefix
                      , notInfixOf
+                     , replace
                      , showText
                      , slashes
                      , stripControl
@@ -142,6 +143,13 @@ nlPrefix = ("\n" <>)
 
 nlnlPrefix :: T.Text -> T.Text
 nlnlPrefix = nlPrefix . nlPrefix
+
+
+-----
+
+
+replace :: [(T.Text, T.Text)] -> T.Text -> T.Text
+replace = foldr ((.) . uncurry T.replace) id
 
 
 -----

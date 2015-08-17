@@ -21,6 +21,10 @@ dblQuote :: T.Text -> T.Text
 dblQuote = quoteWith "\""
 
 
+angleBracketQuote :: T.Text -> T.Text
+angleBracketQuote = quoteWith' ("<", ">")
+
+
 bracketQuote :: T.Text -> T.Text
 bracketQuote = quoteWith' ("[", "]")
 

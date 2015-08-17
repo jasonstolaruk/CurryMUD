@@ -4,6 +4,7 @@ module Mud.Cmds.ExpCmds ( expCmdSet
                         , expCmds
                         , mkExpAction ) where
 
+import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -742,6 +743,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
               ([ Right (_:_:_)    ], _                   ) -> sendHelper "Sorry, but you can only target one person at \
                                                                          \a time with expressive commands."
               ([ Right [targetId] ], _                   ) ->
+                -- TODO: What about "*"?
                 let onPC targetDesigTxt =
                         let (toSelf', toSelfBroadcast, serialized, hisHer, toOthers') = mkBindings targetDesigTxt
                             toOthersBroadcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
@@ -786,10 +788,6 @@ mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { shou
 
 mkPros :: Sex -> (T.Text, T.Text, T.Text)
 mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |&|)
-
-
-replace :: [(T.Text, T.Text)] -> T.Text -> T.Text
-replace = foldr ((.) . uncurry T.replace) id
 
 
 -----

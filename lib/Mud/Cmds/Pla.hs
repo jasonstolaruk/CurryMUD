@@ -1800,6 +1800,7 @@ firstMobSay i pt = if pt^.ind i.to (getPlaFlag IsNotFirstMobSay)
 -----
 
 
+-- TODO: Tune the question and admin channels.
 setAction :: Action
 setAction (NoArgs i mq cols) = getState >>= \ms ->
     let names  = styleAbbrevs Don'tBracket settingNames

@@ -14,8 +14,11 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , isPlaBanned
                           , mkActionParams
                           , mkInterfaceList
+                          , mkPossPro
                           , mkPrettifiedSexRaceLvl
+                          , mkReflexPro
                           , mkSingleTarget
+                          , mkThrPerPro
                           , mkWhoHeader
                           , pager
                           , prefixCmd
@@ -277,9 +280,27 @@ mkActionParams i ms as = ActionParams { plaId       = i
 -----
 
 
+mkPossPro :: Sex -> T.Text
+mkPossPro Male   = "his"
+mkPossPro Female = "her"
+mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
+
+
+-----
+
+
 mkPrettifiedSexRaceLvl :: Id -> MudState -> (T.Text, T.Text, T.Text)
 mkPrettifiedSexRaceLvl i ms = let (s, r, l) = getSexRaceLvl i ms
                               in (pp s, pp r, showText l)
+
+
+-----
+
+
+mkReflexPro :: Sex -> T.Text
+mkReflexPro Male   = "himself"
+mkReflexPro Female = "herself"
+mkReflexPro s      = patternMatchFail "mkReflexPro" [ showText s ]
 
 
 -----
@@ -296,6 +317,15 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
     hlp = hasLocPref . uncapitalize $ target
     t   = hlp ? (T.tail . T.tail $ target) :? target
     f i = ((sorryMsg, pure i) :)
+
+
+-----
+
+
+mkThrPerPro :: Sex -> T.Text
+mkThrPerPro Male   = "he"
+mkThrPerPro Female = "she"
+mkThrPerPro s      = patternMatchFail "mkThrPerPro" [ showText s ]
 
 
 -----

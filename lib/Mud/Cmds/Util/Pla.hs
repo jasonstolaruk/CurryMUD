@@ -34,11 +34,8 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , mkExitsSummary
                          , mkInvCoinsDesc
                          , mkMaybeNthOfM
-                         , mkPossPro
                          , mkPutRemoveBindings
                          , mkReadyMsgs
-                         , mkReflexPro
-                         , mkThrPerPro
                          , moveReadiedItem
                          , noCoinsInEq
                          , noContainersHere
@@ -733,33 +730,6 @@ mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
   where
     helper  = (succ . fromJust . elemIndex conId *** length) . dup $ matches
     matches = filter ((== conSing) . flip getSing ms) invWithCon
-
-
------
-
-
-mkPossPro :: Sex -> T.Text
-mkPossPro Male   = "his"
-mkPossPro Female = "her"
-mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
-
-
------
-
-
-mkReflexPro :: Sex -> T.Text
-mkReflexPro Male   = "himself"
-mkReflexPro Female = "herself"
-mkReflexPro s      = patternMatchFail "mkReflexPro" [ showText s ]
-
-
------
-
-
-mkThrPerPro :: Sex -> T.Text
-mkThrPerPro Male   = "he"
-mkThrPerPro Female = "she"
-mkThrPerPro s      = patternMatchFail "mkThrPerPro" [ showText s ]
 
 
 -----
