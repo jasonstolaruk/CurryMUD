@@ -1880,7 +1880,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
                                    , "/"
                                    , dblQuote "off"
                                    , "." ]
-      xs -> patternMatchFail "helperSettings alterTuning" . map showText $ xs
+      xs -> patternMatchFail "helperSettings alterTuning" [ showText xs ]
 
 
 -----

@@ -9,12 +9,14 @@ When no arguments are provided, you'll get a list of all available settings and 
 To change one or more settings, provide arguments in the form of "setting=value".
 
 The following settings are available:
-columns This setting corresponds to the horizontal width of your screen, and impacts line wrapping. (Default value: 80.)8`
-lines   This setting corresponds to the vertical length of your screen, and impacts paging (when reading help files, etc.). (Default value: 24.)8`
+columns  The horizontal width of your screen. Impacts line wrapping. (Default value: 80.)9`
+lines    The vertical length of your screen. Impacts paging when reading help files, etc. (Default value: 24.)9`
+question Whether you have tuned the question channel in or out (tune the channel out to ignore it). (Possible values: "in"/"out" or "on"/"off". Default value: "in".)9`
 
 \uEXAMPLES\n
 \qset\d to get a list of all available settings and their current values.4`
 \qset columns=40\d to change your columns setting to 40.4`
 \qset columns=40 lines=20\d to change your columns setting to 40 and your lines setting to 20.4`
+\qset question=out\d to tune out the question channel.4`
 
 \uSEE ALSO\n
