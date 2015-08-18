@@ -170,15 +170,6 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
         mkDesc (_, n, isTuned) = padName n <> (isTuned ? "tuned in" :? "tuned out")
         descs                  = mkDesc self : map mkDesc others'
     in multiWrapSend mq cols descs >> logPlaExecArgs (prefixAdminCmd "admin") [] i
-adminAdmin (OneArg i mq cols a) -- TODO: Use the "set" command to tune the admin and question channels.
-  | [snd -> val] <- filter ((== a) . fst) inOutOnOffs = modifyState (helper val) >>= sequence_
-  where
-    helper val ms  = (ms & plaTbl.ind i %~ setPlaFlag IsTunedAdmin val, [ notify val ])
-    notify isTuned = let msg = "You have tuned " <> inOut <> " the admin channel."
-                     in wrapSend mq cols msg >> (logPlaOut (prefixAdminCmd "admin") i . pure $ msg)
-      where
-        inOut | isTuned   = "in"
-              | otherwise = "out"
 adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
     if getPlaFlag IsTunedAdmin . getPla i $ ms
       then case getTunedAdminIds ms of
@@ -356,8 +347,8 @@ procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
             else case findTarget of
               Nothing -> Left . sorryAdminName $ target
               Just n  -> let targetId = getIdForPCSing n ms
-                         in Right ( (colorizeYous . format_selfSing $ toTarget, pure targetId            ) :
-                                    (format_selfSing_targetSing n toOthers,   tunedIds \\ [ i, targetId ]) :
+                         in Right ( (colorizeYous . format_selfSing $ toTarget, pure targetId              ) :
+                                    (format_selfSing_targetSing n toOthers,     tunedIds \\ [ i, targetId ]) :
                                     (mkBroadcast i . format_targetSing n $ toSelf)
                                   , toSelf )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
@@ -384,9 +375,7 @@ procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
       where
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
-                   in if T.toLower c `elem` yous
-                     then a <> quoteWith' (emoteTargetColor, dfltColor) c <> d
-                     else w
+                   in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
 procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
 
 

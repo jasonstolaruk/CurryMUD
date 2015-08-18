@@ -205,7 +205,8 @@ adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
                                                      , IsNotFirstAdminMsg
                                                      , IsNotFirstLook
                                                      , IsNotFirstMobSay
-                                                     , IsTunedAdmin ]
+                                                     , IsTunedAdmin
+                                                     , IsTunedQuestion ]
 
 
 loadWorld :: FilePath -> MudStack Bool

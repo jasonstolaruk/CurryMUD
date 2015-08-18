@@ -1800,26 +1800,32 @@ firstMobSay i pt = if pt^.ind i.to (getPlaFlag IsNotFirstMobSay)
 -----
 
 
--- TODO: Tune the question and admin channels.
 setAction :: Action
 setAction (NoArgs i mq cols) = getState >>= \ms ->
-    let names  = styleAbbrevs Don'tBracket settingNames
-        values = map showText [ cols, getPageLines i ms ]
+    let (styleAbbrevs Don'tBracket -> names, values) = unzip . mkSettingPairs i $ ms
     in multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
 setAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> logMsgs |#| logPlaOut "set" i
   where
-    helper ms = let (p, msgs, logMsgs) = foldl' helperSettings (getPla i ms, [], []) as
+    helper ms = let (p, msgs, logMsgs) = foldl' (helperSettings i ms) (getPla i ms, [], []) as
                 in (ms & plaTbl.ind i .~ p, (mkBroadcast i . T.unlines $ msgs, logMsgs))
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
-settingNames :: [T.Text]
-settingNames = [ "columns", "lines" ]
+mkSettingPairs :: Id -> MudState -> [(T.Text, T.Text)]
+mkSettingPairs i ms = let p = getPla i ms
+                      in pairs p |&| (getPlaFlag IsAdmin p ? (adminPair p :) :? id)
+  where
+    pairs p = [ ("columns",  showText   . getColumns   i $ ms           )
+              , ("lines",    showText   . getPageLines i $ ms           )
+              , ("question", descTuning . getPlaFlag IsTunedQuestion $ p) ]
+    descTuning True  = "in"
+    descTuning False = "out"
+    adminPair        = ("admin", ) . descTuning . getPlaFlag IsTunedAdmin
 
 
-helperSettings :: (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
-helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
+helperSettings :: Id -> MudState -> (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
+helperSettings _ _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
       let msg    = dblQuote arg <> " is not a valid argument."
           advice = T.concat [ " Please specify the setting you want to change, followed immediately by "
@@ -1831,14 +1837,16 @@ helperSettings a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
                             , "." ]
           f      = any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ])
       in a & _2 %~ f
-helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
-    findFullNameForAbbrev name settingNames |&| maybe notFound found
+helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
+    findFullNameForAbbrev name (map fst . mkSettingPairs i $ ms) |&| maybe notFound found
   where
     notFound    = appendMsg $ dblQuote name <> " is not a valid setting name."
     appendMsg m = a & _2 <>~ pure m
-    found       = \case "columns" -> procEither (changeSetting minCols      maxCols      "columns" columns  )
-                        "lines"   -> procEither (changeSetting minPageLines maxPageLines "lines"   pageLines)
-                        t         -> patternMatchFail "helperSettings found" . pure $ t
+    found       = \case "admin"    -> alterTuning "admin" IsTunedAdmin
+                        "columns"  -> procEither . alterNumeric minCols      maxCols      "columns" $ columns
+                        "lines"    -> procEither . alterNumeric minPageLines maxPageLines "lines"   $ pageLines
+                        "question" -> alterTuning "question" IsTunedQuestion
+                        t          -> patternMatchFail "helperSettings found" . pure $ t
       where
         procEither f = parseInt |&| either appendMsg f
         parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
@@ -1847,15 +1855,32 @@ helperSettings a (T.breakOn "=" -> (name, T.tail -> value)) =
                                          , " is not a valid value for the "
                                          , dblQuote name
                                          , " setting." ]
-    changeSetting minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x
+    alterNumeric minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x
       | not . inRange (minVal, maxVal) $ x = appendMsg . T.concat $ [ capitalize settingName
                                                                     , " must be between "
                                                                     , minValTxt
                                                                     , " and "
                                                                     , maxValTxt
                                                                     , "." ]
-      | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ] in
-          appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
+      | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ]
+                    in appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
+    alterTuning n flag = case filter ((== value) . fst) inOutOnOffs of
+      [(_, newBool)] -> let msg   = T.concat [ "Tuned ", inOut, " the ", n, " channel." ]
+                            inOut = newBool ? "in" :? "out"
+                        in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
+      [] -> appendMsg . T.concat $ [ dblQuote value
+                                   , " is not a valid value for the "
+                                   , dblQuote n
+                                   , " setting. Please specify one of the following: "
+                                   , dblQuote "in"
+                                   , "/"
+                                   , dblQuote "out"
+                                   , " or "
+                                   , dblQuote "on"
+                                   , "/"
+                                   , dblQuote "off"
+                                   , "." ]
+      xs -> patternMatchFail "helperSettings alterTuning" . map showText $ xs
 
 
 -----

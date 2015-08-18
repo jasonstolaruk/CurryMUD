@@ -365,7 +365,8 @@ data PlaFlags = IsAdmin
               | IsNotFirstLook
               | IsNotFirstMobSay
               | IsSeeingInvis
-              | IsTunedAdmin deriving Enum
+              | IsTunedAdmin
+              | IsTunedQuestion deriving Enum
 
 
 type Interp  = CmdName -> ActionParams -> MudStack ()

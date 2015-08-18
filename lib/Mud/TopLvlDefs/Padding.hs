@@ -33,7 +33,7 @@ racePadding = succ maxRaceLen
 
 
 settingNamePadding :: Int
-settingNamePadding = 9
+settingNamePadding = 10
 
 
 sexPadding :: Int
