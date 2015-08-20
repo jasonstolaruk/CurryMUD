@@ -16,6 +16,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , mkInterfaceList
                           , mkPossPro
                           , mkPrettifiedSexRaceLvl
+                          , mkPros
                           , mkReflexPro
                           , mkSingleTarget
                           , mkThrPerPro
@@ -59,6 +60,8 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo)
+import Control.Lens (each)
+import Control.Lens.Operators ((%~), (&))
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (intercalate)
@@ -292,6 +295,13 @@ mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
 mkPrettifiedSexRaceLvl :: Id -> MudState -> (T.Text, T.Text, T.Text)
 mkPrettifiedSexRaceLvl i ms = let (s, r, l) = getSexRaceLvl i ms
                               in (pp s, pp r, showText l)
+
+
+-----
+
+
+mkPros :: Sex -> (T.Text, T.Text, T.Text)
+mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |&|)
 
 
 -----

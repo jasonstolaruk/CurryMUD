@@ -20,8 +20,6 @@ import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow (first)
-import Control.Lens (each)
-import Control.Lens.Operators ((%~), (&))
 import Data.List ((\\), delete)
 import Data.Monoid ((<>))
 import qualified Data.Set as S (Set, filter, foldr, fromList, toList)
@@ -721,7 +719,7 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-            toOthersBroadcast           = [(nlnl . replace substitutions $ toOthers, i `delete` pcIds d)]
+            toOthersBroadcast           = pure (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
         in bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast >> (logPlaOut ecn i . pure $ toSelf)
 expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_) ) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
                                                                               \command cannot be used with a target."
@@ -744,29 +742,31 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                                                                          \a time with expressive commands."
               ([ Right [targetId] ], _                   ) ->
                 let onPC targetDesigTxt =
-                        let (toSelf', toSelfBroadcast, serialized, hisHer, toOthers') = mkBindings targetDesigTxt
+                        let (toSelf', toSelfBroadcast, toOthers', substitutions) = mkBindings targetDesigTxt
                             toOthersBroadcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
-                            toTarget'         = replace [ ("%", serialized), ("&", hisHer) ] toTarget
+                            toTarget'         = replace substitutions toTarget
                             toTargetBroadcast = (nlnl toTarget', pure targetId)
                         in do
                             bcastSelfOthers i ms toSelfBroadcast [ toTargetBroadcast, toOthersBroadcast ]
-                            logPlaOut ecn i [ parsePCDesig i ms toSelf' ]
+                            logPlaOut ecn i . pure . parsePCDesig i ms $ toSelf'
                     onMob targetNoun =
-                        let (toSelf', toSelfBroadcast, _, _, toOthers') = mkBindings targetNoun
-                            toOthersBroadcast                           = [(nlnl toOthers', i `delete` pcIds d)]
+                        let (toSelf', toSelfBroadcast, toOthers', _) = mkBindings targetNoun
+                            toOthersBroadcast                        = pure (nlnl toOthers', i `delete` pcIds d)
                         in do
                             bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast
-                            logPlaOut ecn i [toSelf']
+                            logPlaOut ecn i . pure $ toSelf'
                     mkBindings targetTxt =
-                        let toSelf'         = replace [("@", targetTxt)] toSelf
+                        let toSelf'         = replace (pure ("@", targetTxt)) toSelf
                             toSelfBroadcast = mkBroadcast i . nlnl $ toSelf'
                             serialized      = mkSerializedDesig d toOthers
-                            (_, hisHer, hisHerself) = mkPros . getSex i $ ms
-                            toOthers'               = replace [ ("@", targetTxt)
-                                                              , ("%", serialized)
-                                                              , ("&", hisHer)
-                                                              , ("*", hisHerself) ] toOthers
-                        in (toSelf', toSelfBroadcast, serialized, hisHer, toOthers')
+                            (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
+                            toOthers'                   = replace substitutions toOthers
+                            substitutions               = [ ("@", targetTxt)
+                                                          , ("%", serialized)
+                                                          , ("^", heShe)
+                                                          , ("&", hisHer)
+                                                          , ("*", himHerself) ]
+                        in (toSelf', toSelfBroadcast, toOthers', substitutions)
                 in case getType targetId ms of
                   PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
                   MobType -> onMob . theOnLower . getSing targetId $ ms
@@ -786,10 +786,6 @@ expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
 
 mkSerializedDesig :: PCDesig -> T.Text -> T.Text
 mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { shouldCap = Don'tCap })
-
-
-mkPros :: Sex -> (T.Text, T.Text, T.Text)
-mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |&|)
 
 
 -----
