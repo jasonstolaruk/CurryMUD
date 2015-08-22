@@ -48,7 +48,7 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, _4, _5, at, both, each, set, to, view, views)
+import Control.Lens (_1, _2, _3, _4, _5, _6, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -1048,14 +1048,18 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
             (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
             pt          = ms^.pcTbl
             tlmt        = ms^.teleLinkMstrTbl
-            (pt', tlmt', bs,  logMsgs, fs) = foldl' (helperLinkEitherInv ms) (pt, tlmt, [], [],      []) eiss
-            (            bs', logMsgs'   ) = foldl' helperLinkEitherCoins    (          bs, logMsgs    ) ecs
+            rnmt        = ms^.rndmNamesMstrTbl
+            (pt', tlmt', rnmt', bs,  logMsgs, fs) = foldl' (helperLinkEitherInv ms)
+                                                           (pt, tlmt, rnmt, [], [], [])
+                                                           eiss
+            (                   bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs) ecs
         in if ()!# invCoins
-          then ( ms & pcTbl           .~ pt'
-                    & teleLinkMstrTbl .~ tlmt'
+          then ( ms & pcTbl            .~ pt'
+                    & teleLinkMstrTbl  .~ tlmt'
+                    & rndmNamesMstrTbl .~ rnmt'
                , (sorryInInv ++ sorryInEq ++ bs', logMsgs', fs) )
           else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to link with.", [], []))
-    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _3 <>~ (mkBroadcast i . nlnl $ sorryMsg))
+    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _4 <>~ (mkBroadcast i . nlnl $ sorryMsg))
     helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
       where
         tryLink a' targetId = let targetSing = getSing targetId ms in case getType targetId ms of
@@ -1085,7 +1089,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
                                               , " mind to yours."
                                               , twoWayMsg ]
                 bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
-                msgHelper txt = a' & _3 <>~ (mkBroadcast i . nlnl $ txt)
+                msgHelper txt = a' & _4 <>~ (mkBroadcast i . nlnl $ txt)
             in if
               | targetSing `notElem` srcIntros    -> msgHelper $ "You don't know the "                   <>
                                                                  targetDesig                             <>
@@ -1099,15 +1103,18 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
                                                                             , targetDesig
                                                                             , "." ]
               | act <- rndmDo (calcProbLinkFlinch i ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
-                a' & _1.ind targetId.linked %~ (sort . (s :))
-                   & _2.ind i       .at targetSing .~ Just True
-                   & _2.ind targetId.at s          .~ Just True
-                   & _3 <>~ bs
-                   & _4 <>~ pure logMsg
-                   & _5 <>~ pure act
+                  let g a'' | isTwoWay  = a''
+                            | otherwise = a'' & _3.ind i       .at targetSing .~ Nothing
+                                              & _3.ind targetId.at s          .~ Nothing
+                  in g $ a' & _1.ind targetId.linked %~ (sort . (s :))
+                            & _2.ind i       .at targetSing .~ Just True
+                            & _2.ind targetId.at s          .~ Just True
+                            & _4 <>~ bs
+                            & _5 <>~ pure logMsg
+                            & _6 <>~ pure act
           _  -> let msg = nlnl $ "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
                     b   = (msg, pure i)
-                in a' & _3 %~ (`appendIfUnique` b)
+                in a' & _4 %~ (`appendIfUnique` b)
     helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a (Right {}  ) =
         let b = (nlnl "You can't establish a telepathic link with a coin.", pure i)

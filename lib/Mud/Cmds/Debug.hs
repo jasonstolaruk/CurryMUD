@@ -59,7 +59,7 @@ import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
 import qualified Data.IntMap.Lazy as IM (IntMap, assocs, keys, toList)
-import qualified Data.Map.Lazy as M (assocs, elems, keys)
+import qualified Data.Map.Lazy as M (assocs, elems, keys, toList)
 import qualified Data.Text as T
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -105,6 +105,7 @@ debugCmds =
     , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
+    , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
@@ -464,6 +465,24 @@ purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
     modifyState $ \ms -> let tt = foldr purger (ms^.threadTbl) zipped in (ms & threadTbl .~ tt, ())
   where
     purger (ti, status) tbl = status == ThreadFinished ? tbl & at ti .~ Nothing :? tbl
+
+
+-----
+
+
+debugRnt :: Action
+debugRnt (NoArgs i mq cols) = wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
+debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
+    let notFound    = wrapSend mq cols $ "There is no PC by the name of " <> a <> "."
+        found match = (getRndmName i ms . getIdForPCSing match $ ms) >>= \rndmName ->
+            wrapSend mq cols . T.concat $ [ dblQuote rndmName
+                                          , " has been randomly generated for "
+                                          , match
+                                          , "." ]
+        pcSings = [ ms^.entTbl.ind pcId.sing | pcId <- views pcTbl IM.keys ms ]
+    in findFullNameForAbbrev a pcSings |&| maybe notFound found
+debugRnt ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols "Sorry, but you can only generate a \
+                                                                              \random name for one PC at a time."
 
 
 -----

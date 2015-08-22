@@ -9,6 +9,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
+                          , getRndmName
                           , inOutOnOffs
                           , isHostBanned
                           , isPlaBanned
@@ -40,12 +41,15 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
 import Mud.Data.State.Util.Set
 import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List
@@ -59,15 +63,18 @@ import qualified Mud.Misc.Logging as L (logExMsg, logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Exception (IOException, SomeException, toException)
-import Control.Exception.Lifted (catch, throwTo)
-import Control.Lens (each)
-import Control.Lens.Operators ((%~), (&))
-import Control.Monad (unless)
+import Control.Exception.Lifted (catch, throwTo, try)
+import Control.Lens (at, each)
+import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (intercalate)
+import Data.Char (isDigit)
+import Data.List (intercalate, sortBy)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
+import qualified Data.Map.Lazy as M (elems, lookup)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T (readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
@@ -222,6 +229,34 @@ fileIOExHandler fn e = do
 
 throwToListenThread :: SomeException -> MudStack ()
 throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+
+
+-----
+
+
+getRndmName :: Id -> MudState -> Id -> MudStack Sing
+getRndmName i ms targetId =
+    let targetSing = getSing targetId ms
+        rnt        = getRndmNamesTbl i ms
+        notFound   = T.lines <$> readRndmNames >>= \rndmNames -> do
+            rndmName <- ()# rndmNames ? return "curry" :? rndmElem rndmNames
+            let helper ms' = let existing = M.elems . getRndmNamesTbl i $ ms'
+                                 checkLength n | T.length n > maxNameLen = mkUniqueName "curry" existing
+                                               | otherwise               = n
+                                 rndmName' = checkLength . mkUniqueName rndmName $ existing
+                             in ( ms' & rndmNamesMstrTbl.ind i.at targetSing .~ Just rndmName'
+                                , rndmName' )
+            modifyState helper
+    in maybeRet notFound . M.lookup targetSing $ rnt
+  where
+    readRndmNames = (liftIO . T.readFile $ rndmNamesFile) |&| try >=> eitherRet
+      (emptied . fileIOExHandler "getRndmName")
+    mkUniqueName rndmName existing
+      | rndmName `notElem` existing = rndmName
+      | otherwise = case sortBy (flip compare) . filter (rndmName `T.isPrefixOf`) $ existing of
+        [_]             -> rndmName <> "2"
+        (head -> match) -> let (name, readNum -> num) = T.break isDigit match
+                           in name <> (showText . succ $ num)
 
 
 -----

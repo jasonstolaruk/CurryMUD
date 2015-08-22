@@ -12,7 +12,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , dudeYou'reScrewed
                          , dudeYourHandsAreEmpty
                          , findAvailSlot
-                         , getRndmName
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
@@ -60,11 +59,9 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.NameResolution
-import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List
@@ -79,19 +76,16 @@ import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first)
-import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), guard, when)
+import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
-import Data.Char (isDigit)
-import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sort)
+import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
 import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M (elems, lookup, notMember, toList)
+import qualified Data.Map.Lazy as M (notMember, toList)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (readFile)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -192,28 +186,6 @@ dropRoot = filter ((/= "Root") . snd)
 
 dudeYou'reScrewed :: T.Text
 dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything readied. You're naked!"
-
-
------
-
-
-getRndmName :: Id -> MudState -> Id -> MudStack Sing
-getRndmName i ms targetId =
-    let rnt        = getRndmNamesTbl i ms
-        targetSing = getSing targetId ms
-        notFound   = T.lines <$> readRndmNames >>= \rndmNames -> do
-            -- TODO: <-- Make a random string here.
-            when (()# rndmNames) undefined -- TODO: The random name will be the random string.
-            when ((filter (not . isDigit . T.head) . sort . M.elems $ rnt) == rndmNames) undefined -- TODO: The random name will be a random number.
-            rndmName <- rndmElem $ rndmNames \\ M.elems rnt
-            -- TODO: If when we get inside "helper" and the random name is already an elem in the table, the random name will be a random number.
-            let helper ms' = let ms'' = ms' & rndmNamesMstrTbl.ind i.at targetSing .~ Just rndmName
-                             in (ms'', rndmName)
-            modifyState helper
-    in maybeRet notFound . M.lookup targetSing $ rnt
-  where
-    readRndmNames = (liftIO . T.readFile $ rndmNamesFile) |&| try >=> eitherRet
-      (emptied . fileIOExHandler "getRndmName")
 
 
 -----

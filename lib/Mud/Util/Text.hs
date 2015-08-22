@@ -16,6 +16,7 @@ module Mud.Util.Text ( aOrAn
                      , nlnl
                      , nlnlPrefix
                      , notInfixOf
+                     , readNum
                      , replace
                      , showText
                      , slashes
@@ -26,8 +27,9 @@ module Mud.Util.Text ( aOrAn
                      , uncapitalize ) where
 
 import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
+import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow ((***))
 import Control.Monad (guard)
@@ -37,6 +39,13 @@ import Data.Ix (inRange)
 import Data.List (sortBy)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+
+
+blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp = U.blowUp "Mud.Util.Text"
+
+
+-- ==================================================
 
 
 aOrAn :: T.Text -> T.Text
@@ -143,6 +152,15 @@ nlPrefix = ("\n" <>)
 
 nlnlPrefix :: T.Text -> T.Text
 nlnlPrefix = nlPrefix . nlPrefix
+
+
+-----
+
+
+readNum :: T.Text -> Int
+readNum txt = case reads . T.unpack $ txt :: [(Int, String)] of
+  [(x, "")] -> x
+  _         -> blowUp "readNum" "parse failed" . pure $ txt
 
 
 -----
