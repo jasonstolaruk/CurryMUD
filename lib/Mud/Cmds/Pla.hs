@@ -44,7 +44,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first, second)
+import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
@@ -712,7 +712,6 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
                                               , isAdmin |?| footnote ]
         (pager i mq . parseHelpTxt cols $ helpTxt) >> logPla "help" i "read root help file."
     mkHelpNames zipped    = [ padHelpTopic . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
-    asterisk              = asteriskColor <> "*" <> dfltColor
     formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
@@ -1024,7 +1023,7 @@ link (NoArgs i mq cols) = do
                         x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
                           Nothing    -> x
                           (Just val) -> val ? x :? x <> " (tuned out)"
-                    mark x = T.concat [ x, asteriskColor, "*", dfltColor ]
+                    mark x = x <> asterisk
                 in if and [ isLoggedIn linkPla, not . getPlaFlag IsIncognito $ linkPla ]
                   then f _1 . mark $ linkSing
                   else f _2          linkSing
@@ -1232,24 +1231,27 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 
 -- TODO: Help.
 question :: Action
-question (NoArgs i mq cols) = getState >>= \ms ->
-    let (plaIds, adminIds)    = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
+question (NoArgs' i mq) = getState >>= \ms ->
+    let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
         (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
     in mapM (updateRndmName i) otherIds >>= \rndmNames ->
-           let rndms   = zip otherIds rndmNames
-               linkeds = [ second (`getSing` ms) . dup $ li | li <- linkedIds ]
-               combo   = let xs = rndms ++ nubSort (linkeds ++ [ (ai, getSing ai ms) | ai <- adminIds ])
-                         in sortBy (compare `on` snd) xs
-               styleds = styleAbbrevs Don'tBracket . map snd $ combo
+           let isAdmin = getPlaFlag IsAdmin . (`getPla` ms)
+               rndms   = zip3 otherIds rndmNames . repeat $ False
+               linkeds = [ (li, getSing li ms, isAdmin i) | li <- linkedIds ]
+               admins  = [ (ai, getSing ai ms, True     ) | ai <- adminIds  ]
+               combo   = let xs = rndms ++ nubSort (linkeds ++ admins)
+                         in sortBy (compare `on` view _2) xs
+               styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
                combo'  = zipWith f combo styleds
                  where
-                  f (i', n) styled | isLower . T.head $ n = (i', underlineANSI <> styled <> noUnderlineANSI)
-                                   | otherwise            = (i', styled)
-               mkDesc (i', n) = padName n <> (isTuned ? "tuned in" :? "tuned out")
+                  f (i', n, ia) styled | ia                   = (i', styled <> asterisk                        )
+                                       | isLower . T.head $ n = (i', underlineANSI <> styled <> noUnderlineANSI)
+                                       | otherwise            = (i', styled                                    )
+               mkDesc (i', n) = pad (succ namePadding) n <> (isTuned ? "tuned in" :? "tuned out")
                  where
                   isTuned = getPlaFlag IsTunedQuestion . getPla i' $ ms
-               descs = mkDesc (i, getSing i ms) : map mkDesc combo'
-           in multiWrapSend mq cols descs >> logPlaExecArgs "question" [] i
+               descs = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo'
+           in pager i mq descs >> logPlaExecArgs "question" [] i
 question _ = undefined
 {-
 question (Msg i mq cols msg) = getState >>= \ms ->

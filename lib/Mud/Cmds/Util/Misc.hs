@@ -5,6 +5,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , adviceEtcEmptyPoss
                           , adviceEtcHead
                           , advise
+                          , asterisk
                           , dbExHandler
                           , dispCmdList
                           , dispMatches
@@ -168,6 +169,13 @@ advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
+
+
+-----
+
+
+asterisk :: T.Text
+asterisk = asteriskColor <> "*" <> dfltColor
 
 
 -----

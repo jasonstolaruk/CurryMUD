@@ -1018,11 +1018,9 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
   where
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn
                                           LoggedOut -> not . isLoggedIn
-    mkAnnotatedName i a = let p = getPla i ms
-                              admin | getPlaFlag IsAdmin     p = asteriskColor <> "*" <> dfltColor
-                                    | otherwise                = ""
-                              incog | getPlaFlag IsIncognito p = asteriskColor <> "@" <> dfltColor
-                                    | otherwise                = ""
+    mkAnnotatedName i a = let p     = getPla i ms
+                              admin = getPlaFlag IsAdmin     p |?| asterisk
+                              incog = getPlaFlag IsIncognito p |?| (asteriskColor <> "@" <> dfltColor)
                           in a <> admin <> incog
 
 
