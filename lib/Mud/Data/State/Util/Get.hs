@@ -268,6 +268,15 @@ getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
 -----
 
 
+getNonIncogLoggedInAdminIds :: MudState -> Inv
+getNonIncogLoggedInAdminIds ms =
+    let adminIds = getLoggedInAdminIds ms
+    in [ adminId | adminId <- adminIds, not . getPlaFlag IsIncognito . getPla adminId $ ms ]
+
+
+-----
+
+
 getNonIncogInv :: Id -> MudState -> Inv
 getNonIncogInv i ms = filter notIncog . getInv i $ ms
   where

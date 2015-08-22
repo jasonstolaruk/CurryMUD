@@ -9,7 +9,6 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , dispCmdList
                           , dispMatches
                           , fileIOExHandler
-                          , getRndmName
                           , inOutOnOffs
                           , isHostBanned
                           , isPlaBanned
@@ -29,6 +28,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , sorryIgnoreLocPref
                           , sorryIgnoreLocPrefPlur
                           , throwToListenThread
+                          , updateRndmName
                           , withDbExHandler
                           , withDbExHandler_
                           , withoutArgs ) where
@@ -234,34 +234,6 @@ throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 -----
 
 
-getRndmName :: Id -> MudState -> Id -> MudStack Sing
-getRndmName i ms targetId =
-    let targetSing = getSing targetId ms
-        rnt        = getRndmNamesTbl i ms
-        notFound   = T.lines <$> readRndmNames >>= \rndmNames -> do
-            rndmName <- ()# rndmNames ? return "curry" :? rndmElem rndmNames
-            let helper ms' = let existing = M.elems . getRndmNamesTbl i $ ms'
-                                 checkLength n | T.length n > maxNameLen = mkUniqueName "curry" existing
-                                               | otherwise               = n
-                                 rndmName' = checkLength . mkUniqueName rndmName $ existing
-                             in ( ms' & rndmNamesMstrTbl.ind i.at targetSing .~ Just rndmName'
-                                , rndmName' )
-            modifyState helper
-    in maybeRet notFound . M.lookup targetSing $ rnt
-  where
-    readRndmNames = (liftIO . T.readFile $ rndmNamesFile) |&| try >=> eitherRet
-      (emptied . fileIOExHandler "getRndmName")
-    mkUniqueName rndmName existing
-      | rndmName `notElem` existing = rndmName
-      | otherwise = case sortBy (flip compare) . filter (rndmName `T.isPrefixOf`) $ existing of
-        [_]             -> rndmName <> "2"
-        (head -> match) -> let (name, readNum -> num) = T.break isDigit match
-                           in name <> (showText . succ $ num)
-
-
------
-
-
 inOutOnOffs :: [(T.Text, Bool)]
 inOutOnOffs = [ ("i",   True )
               , ("in",  True )
@@ -427,6 +399,35 @@ sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location pre
 sorryIgnoreLocPrefPlur :: T.Text -> T.Text
 sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
                                                   \provided will be ignored."
+
+
+-----
+
+
+updateRndmName :: Id -> Id -> MudStack Sing
+updateRndmName i targetId = do
+    rndmNames <- T.lines <$> readRndmNames
+    rndmName  <- ()# rndmNames ? return "curry" :? rndmElem rndmNames
+    let helper ms = let targetSing = getSing targetId ms
+                        rnt        = getRndmNamesTbl i ms
+                        notFound   = let existing = M.elems rnt
+                                         checkLength n | T.length n > maxNameLen = mkUniqueName "curry" existing
+                                                       | otherwise               = n
+                                         rndmName' = checkLength . mkUniqueName rndmName $ existing
+                                     in ( ms & rndmNamesMstrTbl.ind i.at targetSing .~ Just rndmName'
+                                        , rndmName' )
+                        found match = (ms, match)
+                    in maybe notFound found . M.lookup targetSing $ rnt
+    modifyState helper
+  where
+    readRndmNames = (liftIO . T.readFile $ rndmNamesFile) |&| try >=> eitherRet
+      (emptied . fileIOExHandler "updateRndmName")
+    mkUniqueName rndmName existing
+      | rndmName `notElem` existing = rndmName
+      | otherwise = case sortBy (flip compare) . filter (rndmName `T.isPrefixOf`) $ existing of
+        [_]             -> rndmName <> "2"
+        (head -> match) -> let (name, readNum -> num) = T.break isDigit match
+                           in name <> (showText . succ $ num)
 
 
 -----

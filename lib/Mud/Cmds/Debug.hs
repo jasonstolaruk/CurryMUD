@@ -474,7 +474,7 @@ debugRnt :: Action
 debugRnt (NoArgs i mq cols) = wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
 debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
     let notFound    = wrapSend mq cols $ "There is no PC by the name of " <> a <> "."
-        found match = (getRndmName i ms . getIdForPCSing match $ ms) >>= \rndmName ->
+        found match = (updateRndmName i . getIdForPCSing match $ ms) >>= \rndmName ->
             wrapSend mq cols . T.concat $ [ dblQuote rndmName
                                           , " has been randomly generated for "
                                           , match
