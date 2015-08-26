@@ -115,7 +115,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         initialize
         logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-        auxAsyncs <- mapM runAsync [ dbTblPurger, threadTblPurger, worldPersister ]
+        auxAsyncs <- mapM runAsync [ adminChanTblPurger, questionChanTblPurger, threadTblPurger, worldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
         logNotice "listen initialize" "creating the database tables."
@@ -163,24 +163,39 @@ sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState 
 
 
 -- ============================================================
--- The "database table purger" thread:
+-- "Database table purger" threads:
 
 
-dbTblPurger :: MudStack ()
-dbTblPurger = handle (threadExHandler "dbTblPurger") $ do
+adminChanTblPurger :: MudStack ()
+adminChanTblPurger = dbTblPurger "admin channel" countDbTblRecsAdminChan purgeDbTblAdminChan
+
+
+-- TODO: Check.
+questionChanTblPurger :: MudStack ()
+questionChanTblPurger = dbTblPurger "question" countDbTblRecsQuestion purgeDbTblQuestion
+
+
+dbTblPurger :: T.Text -> IO [Only Int] -> IO () -> MudStack ()
+dbTblPurger tblName countFun purgeFun = handle (threadExHandler "dbTblPurger") $ do
     setThreadType DbTblPurger
     logNotice "dbTblPurger" "database table purger started."
     let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
     forever loop `catch` die "dbTblPurger"
   where
-    helper = let fn = "dbTblPurger helper" in withDbExHandler fn countDbTblRecsAdminChan >>= \case
+    helper = let fn = "dbTblPurger helper" in withDbExHandler fn countFun >>= \case
         Just [Only count] -> if count > maxDbTblRecs
           then do
-              withDbExHandler_ fn purgeDbTblAdminChan
-              logNotice fn $ "The admin channel database has been purged of " <>
-                             showText noOfDbTblRecsToPurge                    <>
-                             " records."
-          else logNotice fn $ "The admin channel database presently contains " <> showText count <> " records."
+              withDbExHandler_ fn purgeFun
+              logNotice fn . T.concat $ [ "The "
+                                        , tblName
+                                        , " table has been purged of "
+                                        , showText noOfDbTblRecsToPurge
+                                        , " records." ]
+          else logNotice fn . T.concat $ [ "The "
+                                         , tblName
+                                         , " table presently contains "
+                                         , showText count
+                                         , " records." ]
         _ -> unit
 
 

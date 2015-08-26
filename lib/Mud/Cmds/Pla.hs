@@ -25,6 +25,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
+import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.Misc.NameResolution
@@ -33,7 +34,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
-import Mud.Util.List
+import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
@@ -44,7 +45,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first)
+import Control.Arrow ((***), first, second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
@@ -53,7 +54,7 @@ import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
-import Data.Char (isDigit, isLower)
+import Data.Char (isDigit, isLetter, isLower)
 import Data.Either (isLeft)
 import Data.Function (on)
 import Data.Int (Int64)
@@ -74,7 +75,7 @@ import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', keys, map, mapWithKey)
 import qualified Data.Map.Lazy as M ((!), elems, filter, keys, lookup, map, singleton, toList)
-import qualified Data.Set as S (filter, toList)
+import qualified Data.Set as S (filter, map, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
@@ -272,7 +273,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                           receivedLogMsg = ( adminId
                                            , T.concat [ "received message from ", s,   ": ", dblQuote msg ] )
                       return [ sentLogMsg, receivedLogMsg ]
-        in (findFullNameForAbbrev strippedTarget . dropRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
+        in (findFullNameForAbbrev strippedTarget . mkAdminIdSingList $ ms) |&| maybe notFound found -- TODO: Deleted "dropRoot"... ok?
 admin p = patternMatchFail "admin" [ showText p ]
 
 
@@ -280,17 +281,25 @@ adminList :: Action
 adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExecArgs "admin" [] i
   where
     helper ms =
-        let singSuffixes = [ (s, suffix) | (ai, s) <- dropRoot . mkAdminIdSingList $ ms
-                                         , let suffix = " " <> "logged " <> mkSuffix ai
+        let p            = getPla i ms
+            isAdmin      = getPlaFlag IsAdmin p
+            singSuffixes = [ (s, suffix) | (ai, s) <- mkAdminIdSingList ms
+                                         , let suffix = " logged " <> mkSuffix ai
                                          , then sortWith by s ]
-            mkSuffix ai
-              | uncurry (&&) . (isLoggedIn         *** not . getPlaFlag IsIncognito) . dup . getPla ai $ ms = "in"
-              | uncurry (&&) . (getPlaFlag IsAdmin ***       getPlaFlag IsIncognito) $ (i, ai) & both %~ (`getPla` ms) =
-                  "in " <> parensQuote "incognito"
-              | otherwise = "out"
+            mkSuffix ai =
+                let ap      = getPla ai ms
+                    isIncog = getPlaFlag IsIncognito ap
+                in if
+                  | isLoggedIn ap && not isIncog -> "in"
+                  | isAdmin && isIncog           -> (isLoggedIn ap ? "in " :? "out ") <> parensQuote "incognito"
+                  | otherwise                    -> "out"
+            singSuffixes' = singSuffixes |&| (isAdmin ? id :? filter f)
+              where
+                f (a, b) | a == "Root" = b == " logged in"
+                         | otherwise   = True
             combineds = [ padName abbrev <> suffix
-                        | (_, suffix) <- singSuffixes
-                        | abbrev      <- styleAbbrevs Don'tBracket . map fst $ singSuffixes ]
+                        | (_, suffix) <- singSuffixes'
+                        | abbrev      <- styleAbbrevs Don'tBracket . map fst $ singSuffixes' ]
         in ()!# combineds ? return combineds :? unadulterated "No administrators exist!"
 adminList p = patternMatchFail "adminList" [ showText p ]
 
@@ -1230,6 +1239,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 
 
 -- TODO: Help.
+-- TODO: Continue testing and fixing.
 question :: Action
 question (NoArgs' i mq) = getState >>= \ms ->
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
@@ -1237,8 +1247,8 @@ question (NoArgs' i mq) = getState >>= \ms ->
     in mapM (updateRndmName i) otherIds >>= \rndmNames ->
            let isAdmin = getPlaFlag IsAdmin . (`getPla` ms)
                rndms   = zip3 otherIds rndmNames . repeat $ False
-               linkeds = [ (li, getSing li ms, isAdmin i) | li <- linkedIds ]
-               admins  = [ (ai, getSing ai ms, True     ) | ai <- adminIds  ]
+               linkeds = [ (li, getSing li ms, isAdmin li) | li <- linkedIds ]
+               admins  = [ (ai, getSing ai ms, True      ) | ai <- adminIds  ]
                combo   = let xs = rndms ++ nubSort (linkeds ++ admins)
                          in sortBy (compare `on` view _2) xs
                styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
@@ -1247,65 +1257,86 @@ question (NoArgs' i mq) = getState >>= \ms ->
                   f (i', n, ia) styled | ia                   = (i', styled <> asterisk                        )
                                        | isLower . T.head $ n = (i', underlineANSI <> styled <> noUnderlineANSI)
                                        | otherwise            = (i', styled                                    )
-               mkDesc (i', n) = pad (succ namePadding) n <> (isTuned ? "tuned in" :? "tuned out")
-                 where
-                  isTuned = getPlaFlag IsTunedQuestion . getPla i' $ ms
-               descs = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo'
+               mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestion i' ms ? "tuned in" :? "tuned out")
+               descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo'
            in pager i mq descs >> logPlaExecArgs "question" [] i
-question _ = undefined
-{-
-question (Msg i mq cols msg) = getState >>= \ms ->
-    if getPlaFlag IsTunedAdmin . getPla i $ ms
-      then case getTunedAdminIds ms of
-        [_]      -> sorryNoOneListening
-        tunedIds ->
-          let tunedSings         = map (`getSing` ms) tunedIds
-              getStyled targetId = let styleds = styleAbbrevs Don'tBracket $ getSing targetId ms `delete` tunedSings
-                                   in head . filter ((== s) . dropANSI) $ styleds
-              s                  = getSing i ms
-              format (txt, is)   = if i `elem` is
-                then (formatAdminChanMsg s txt, pure i) : mkBsWithStyled (i `delete` is)
-                else mkBsWithStyled is
-                where
-                  mkBsWithStyled is' = [ (formatAdminChanMsg (getStyled i') txt, pure i') | i' <- is' ]
-          in case emotify i ms tunedIds tunedSings msg of
+question (Msg i mq cols msg) = getState >>= \ms -> if
+  | not . isTunedQuestion i $ ms           -> sorryNotTuned
+  | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogMsg
+  | otherwise                              -> getQuestionStyleds i ms >>= \triples -> if ()# triples
+    then sorryNoOneListening
+    else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
+             format (txt, is)   = if i `elem` is
+               then ((formatQuestionMsg s txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
+               else mkBsWithStyled is
+               where
+                 mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
+                     return [ (formatQuestionMsg styled txt, pure i') | i' <- is' | styled <- styleds ]
+             s = getSing i ms
+          in case emotify i ms triples msg of
             Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
             Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
-                                in ioHelper s (concatMap format bs) logMsg
-            Right (Left ()) -> case expCmdify i ms tunedIds tunedSings msg of
+                                in ioHelper s logMsg . concat =<< mapM format bs
+            Right (Left  ()) -> case expCmdify i ms triples msg of
               Left  errorMsg     -> wrapSend mq cols errorMsg
-              Right (bs, logMsg) -> ioHelper s (concatMap format bs) logMsg
-      else sorryNotTuned
+              Right (bs, logMsg) -> ioHelper s logMsg . concat =<< mapM format bs
   where
-    getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
-    sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the admin channel."
+    sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the question channel."
     sorryNotTuned       =
-        wrapSend mq cols $ "You have tuned out the admin channel. Type " <>
-                           dblQuote "set admin=in"                       <>
+        wrapSend mq cols $ "You have tuned out the question channel. Type " <>
+                           dblQuote "set question=in"                       <>
                            " to tune it back in."
-    ioHelper s bs logMsg = bcastNl bs >> logHelper
+    sorryIncogMsg        = wrapSend mq cols "You can't send a message on the question channel while incognito."
+    ioHelper s logMsg bs = bcastNl bs >> logHelper
       where
         logHelper = do
-            logPlaOut (prefixAdminCmd "admin") i . pure $ logMsg
+            logPlaOut "question" i . pure $ logMsg
             ts <- liftIO mkTimestamp
-            withDbExHandler_ "question" . insertDbTblAdminChan . AdminChanRec ts s $ logMsg
+            withDbExHandler_ "question" . insertDbTblQuestion . QuestionRec ts s $ logMsg
 question p = patternMatchFail "question" [ showText p ]
 
 
-emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
-emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
+isTunedQuestion :: Id -> MudState -> Bool
+isTunedQuestion i = getPlaFlag IsTunedQuestion . getPla i
+
+
+getQuestionStyleds :: Id -> MudState -> MudStack [(Id, T.Text, T.Text)]
+getQuestionStyleds i ms =
+    let (plaIds,    adminIds) = getTunedQuestionIds i ms
+        (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
+    in mapM (updateRndmName i) otherIds >>= \rndmNames ->
+        let rndms   = zip otherIds rndmNames
+            f       = map (second (`getSing` ms) . dup)
+            linkeds = f linkedIds
+            admins  = f adminIds
+            combo   = sortBy (compare `on` view _2) $ rndms ++ nubSort (linkeds ++ admins)
+            styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
+            helper (x, y) styled | x `elem` otherIds = a & _3 %~ quoteWith' (underlineANSI, noUnderlineANSI)
+                                 | otherwise         = a
+              where
+                a = (x, y, styled)
+        in return . zipWith helper combo $ styleds
+
+
+getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
+getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms)
+                           in pair & both %~ filter (`isTunedQuestion` ms) . (i `delete`)
+
+
+emotify :: Id -> MudState -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
+emotify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | or [ (T.head . head $ ws) `elem` ("[<" :: String)
        , "]." `T.isSuffixOf` last ws
        , ">." `T.isSuffixOf` last ws ]  = Left . pure $ "Sorry, but you can't open or close your message with brackets."
   | msg == T.singleton emoteChar <> "." = Left . pure $ "He don't."
-  | c == emoteChar = fmap Right . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+  | c == emoteChar = fmap Right . procEmote i ms triples . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
   | otherwise = Right . Left $ ()
 
 
-procEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
-procEmote _ _ _ _ as | any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower) $ as = Left . pure $ advice
+procEmote :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either [T.Text] [Broadcast]
+procEmote _ _ _ as | any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower) $ as = Left . pure $ advice
   where
     advice = T.concat [ "Sorry, but you can't use a form of the word "
                       , dblQuote "you"
@@ -1319,9 +1350,9 @@ procEmote _ _ _ _ as | any (`elem` yous) . map (T.dropAround (not . isLetter) . 
                                               , "taro" ]
                       , dfltColor
                       , "." ]
-    cn  = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar
+    cn  = "question " <> T.singleton emoteChar
     etc = T.singleton emoteTargetChar
-procEmote i ms tunedIds tunedSings as =
+procEmote i ms triples as =
     let s                       = getSing i ms
         xformed                 = xformArgs True as
         xformArgs _      []     = []
@@ -1358,10 +1389,10 @@ procEmote i ms tunedIds tunedSings as =
                   where
                     helper acc k = (: acc) . (formatMsg *** pure) . (, k)
                 formatMsg = bracketQuote . punctuateMsg . T.unwords
-            in Right $ (formatMsg toSelf, pure i) : (formatMsg toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
+            in Right $ (formatMsg toSelf, pure i) : (formatMsg toOthers, tunedIds \\ targetIds) : toTargetBs
       advices -> Left . intersperse "" . map fromLeft . nub $ advices
   where
-    cn              = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar
+    cn              = "question " <> T.singleton emoteChar
     enc             = T.singleton emoteNameChar
     enc's           = enc <> "'s"
     etc             = T.singleton emoteTargetChar
@@ -1374,79 +1405,81 @@ procEmote i ms tunedIds tunedSings as =
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                notFound = Left . sorryAdminName $ target
-                found targetSing@(addSuffix isPoss p -> targetSing') =
-                    let targetId = head . filter ((== targetSing) . (`getSing` ms)) $ tunedIds
-                    in Right ( targetSing'
-                             , [ mkEmoteWord isPoss p targetId, ForNonTargets targetSing' ]
-                             , targetSing' )
-            in findFullNameForAbbrev (capitalize target) (getSing i ms `delete` tunedSings) |&| maybe notFound found
+                notFound = Left . sorryQuestionName $ target
+                found match@(addSuffix isPoss p -> match') =
+                    let targetId = head . filter ((== match) . (`getSing` ms)) $ tunedIds
+                    in Right ( match' -- TODO: Change to correct values.
+                             , [ mkEmoteWord isPoss p targetId, ForNonTargets match' ]
+                             , match' )
+            in findFullNameForAbbrev target (map (views _2 T.toLower) triples) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
+    tunedIds             = map (view _1) triples
 
 
-sorryAdminName :: T.Text -> T.Text
-sorryAdminName n = "There is no admin by the name of " <>
-                   (dblQuote . capitalize $ n)         <>
-                   " currently tuned in to the admin channel."
+sorryQuestionName :: T.Text -> T.Text
+sorryQuestionName n =
+    "There is no one by the name of " <> (dblQuote . capitalize $ n) <> " currently tuned in to the question channel."
 
 
-formatAdminChanMsg :: T.Text -> T.Text -> T.Text
-formatAdminChanMsg n msg = T.concat [ underlineANSI
-                                    , parensQuote "Admin"
-                                    , noUnderlineANSI
-                                    , " "
-                                    , n
-                                    , ": "
-                                    , msg ]
+formatQuestionMsg :: T.Text -> T.Text -> T.Text
+formatQuestionMsg n msg = T.concat [ underlineANSI
+                                   , parensQuote "Question"
+                                   , noUnderlineANSI
+                                   , " "
+                                   , n
+                                   , ": "
+                                   , msg ]
 
 
-expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)
-expCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
+expCmdify :: Id -> MudState -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
+expCmdify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | msg == T.singleton expCmdChar <> "." = Left "He don't."
-  | c == expCmdChar = fmap format . procExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+  | c == expCmdChar = fmap format . procExpCmd i ms triples . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
-  | otherwise = Right (pure (msg, tunedIds), msg)
+  | otherwise = Right (pure (msg, i : map (view _1) triples), msg)
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
                    & _2 %~ angleBracketQuote
 
 
-procExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either T.Text ([Broadcast], T.Text)
-procExpCmd _ _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
-procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
+procExpCmd :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
+procExpCmd _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
+procExpCmd i ms triples (unmsg -> [ cn, target ]) =
     let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
     in findFullNameForAbbrev cn cns |&| maybe notFound found
   where
     found match =
         let [ExpCmd _ ct] = S.toList . S.filter (\(ExpCmd cn' _) -> cn' == match) $ expCmdSet
+            tunedIds      = map (view _1) triples
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
-            then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
+            then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else Left $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
           HasTarget toSelf toTarget toOthers -> if ()# target
             then Left $ "The " <> dblQuote match <> " expressive command requires a single target."
             else case findTarget of
-              Nothing -> Left . sorryAdminName $ target
-              Just n  -> let targetId = getIdForPCSing n ms
-                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
-                                    (format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :
+              Nothing -> Left . sorryQuestionName $ target
+              Just n  -> let targetId = getIdForMatch n
+                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
+                                    (format (Just n) toOthers,                 targetId `delete` tunedIds) :
                                     (mkBroadcast i . format (Just n) $ toSelf)
                                   , toSelf )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
+            then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else case findTarget of
-              Nothing -> Left . sorryAdminName $ target
-              Just n  -> let targetId = getIdForPCSing n ms
-                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
-                                    (format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :
+              Nothing -> Left . sorryQuestionName $ target
+              Just n  -> let targetId = getIdForMatch n
+                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
+                                    (format (Just n) toOthersWithTarget,       targetId `delete` tunedIds) :
                                     (mkBroadcast i . format (Just n) $ toSelfWithTarget)
                                   , toSelfWithTarget )
     notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
-    findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
+    findTarget = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
+    getIdForMatch match    = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
     format maybeTargetSing =
         let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
         in replace (substitutions ++ maybe [] (pure . ("@", )) maybeTargetSing)
@@ -1457,14 +1490,14 @@ procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
                    in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
-procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
+procExpCmd _ _ _ as = patternMatchFail "procExpCmd" as
 
 
+-- TODO: This really needs to be put in a utils module.
 unmsg :: [T.Text] -> [T.Text]
 unmsg [ cn         ] = [ T.init cn, ""            ]
 unmsg [ cn, target ] = [ cn,        T.init target ]
 unmsg xs             = patternMatchFail "unmsg" xs
--}
 
 
 -----

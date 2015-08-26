@@ -7,7 +7,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , bugTypoLogger
                          , clothToSlot
                          , donMsgs
-                         , dropRoot
                          , dudeYou'reNaked
                          , dudeYou'reScrewed
                          , dudeYourHandsAreEmpty
@@ -172,13 +171,6 @@ type ThrPerVerb = T.Text
 mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> PCDesig -> Sing -> (T.Text, Broadcast)
 mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
                             , (T.concat [ serialize d, " ", tpv, " ", aOrAn s, "." ], i `delete` pcIds d) )
-
-
------
-
-
-dropRoot :: [(Id, Sing)] -> [(Id, Sing)]
-dropRoot = filter ((/= "Root") . snd)
 
 
 -----

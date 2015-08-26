@@ -422,8 +422,8 @@ updateRndmName i targetId = do
                                          checkLength n | T.length n > maxNameLen = mkUniqueName "curry" existing
                                                        | otherwise               = n
                                          rndmName' = checkLength . mkUniqueName rndmName $ existing
-                                     in ( ms & rndmNamesMstrTbl.ind i.at targetSing .~ Just rndmName'
-                                        , rndmName' )
+                                         ms'       = ms & rndmNamesMstrTbl.ind i.at targetSing .~ Just rndmName'
+                                     in (ms', rndmName')
                         found match = (ms, match)
                     in maybe notFound found . M.lookup targetSing $ rnt
     modifyState helper

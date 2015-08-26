@@ -5,6 +5,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , BanPlaRec(..)
                          , BugRec(..)
                          , countDbTblRecsAdminChan
+                         , countDbTblRecsQuestion
                          , createDbTbls
                          , getDbTblRecs
                          , insertDbTblAdminChan
@@ -12,9 +13,12 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblBanPla
                          , insertDbTblBug
                          , insertDbTblProf
+                         , insertDbTblQuestion
                          , insertDbTblTypo
                          , ProfRec(..)
                          , purgeDbTblAdminChan
+                         , purgeDbTblQuestion
+                         , QuestionRec(..)
                          , TypoRec(..)) where
 
 import Mud.TopLvlDefs.FilePaths
@@ -46,6 +50,9 @@ data BugRec       = BugRec       { bugTimestamp       :: T.Text
 data ProfRec      = ProfRec      { profTimestamp      :: T.Text
                                  , profHost           :: T.Text
                                  , profProfanity      :: T.Text }
+data QuestionRec  = QuestionRec  { questionTimestamp  :: T.Text
+                                 , questionName       :: T.Text
+                                 , questionMsg        :: T.Text }
 data TypoRec      = TypoRec      { typoTimestamp      :: T.Text
                                  , typoName           :: T.Text
                                  , typoLoc            :: T.Text
@@ -73,6 +80,10 @@ instance FromRow ProfRec where
   fromRow = ProfRec <$ (field :: RowParser Int) <*> field <*> field <*> field
 
 
+instance FromRow QuestionRec where
+  fromRow = QuestionRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+
+
 instance FromRow TypoRec where
   fromRow = TypoRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
@@ -97,6 +108,10 @@ instance ToRow ProfRec where
   toRow (ProfRec a b c) = toRow (a, b, c)
 
 
+instance ToRow QuestionRec where
+  toRow (QuestionRec a b c) = toRow (a, b, c)
+
+
 instance ToRow TypoRec where
   toRow (TypoRec a b c d e) = toRow (a, b, c, d, e)
 
@@ -109,6 +124,7 @@ createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
          , "create table if not exists ban_pla    (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
+         , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)" ]
 
 
@@ -144,19 +160,43 @@ insertDbTblProf :: ProfRec -> IO ()
 insertDbTblProf = insertDbTblHelper "insert into profanity (timestamp, host, prof) values (?, ?, ?)"
 
 
+insertDbTblQuestion :: QuestionRec -> IO ()
+insertDbTblQuestion = insertDbTblHelper "insert into question (timestamp, name, msg) values (?, ?, ?)"
+
+
 insertDbTblTypo :: TypoRec -> IO ()
 insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
 
 
 countDbTblRecsAdminChan :: IO [Only Int]
-countDbTblRecsAdminChan = withConnection dbFile helper
+countDbTblRecsAdminChan = countHelper "admin_chan"
+
+
+countDbTblRecsQuestion :: IO [Only Int]
+countDbTblRecsQuestion = countHelper "question"
+
+
+countHelper :: T.Text -> IO [Only Int]
+countHelper tblName = withConnection dbFile helper
   where
-    helper conn = query_ conn "select count(*) from admin_chan"
+    helper conn = query_ conn . Query $ "select count(*) from " <> tblName
 
 
 purgeDbTblAdminChan :: IO ()
-purgeDbTblAdminChan = withConnection dbFile helper
+purgeDbTblAdminChan = purgeHelper "admin_chan"
+
+
+purgeDbTblQuestion :: IO ()
+purgeDbTblQuestion = purgeHelper "question"
+
+
+purgeHelper :: T.Text -> IO ()
+purgeHelper tblName = withConnection dbFile helper
   where
     helper conn = execute conn q x
-    q           = "delete from admin_chan where id in (select id from admin_chan limit ?)"
+    q           = Query . T.concat $ [ "delete from "
+                                     , tblName
+                                     , " where id in (select id from "
+                                     , tblName
+                                     , " limit ?)" ]
     x           = Only noOfDbTblRecsToPurge
