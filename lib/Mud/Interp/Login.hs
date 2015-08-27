@@ -35,6 +35,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), guard, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
+import Data.Bits (setBit, zeroBits)
 import Data.Ix (inRange)
 import Data.List (delete, intersperse, partition)
 import Data.Maybe (fromJust)
@@ -235,11 +236,12 @@ interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
-    helper ms = let ms'  = ms  & entTbl.ind i.sing   .~ s
-                               & invTbl.ind iWelcome %~ (i `delete`)
-                               & pcTbl .ind i.rmId   .~ iCentral
-                               & plaTbl.ind i.interp .~ Nothing
-                    ms'' = ms' & invTbl.ind iCentral %~ (sortInv ms' . (++ pure i))
+    helper ms = let ms'  = ms  & entTbl.ind i.sing     .~ s
+                               & invTbl.ind iWelcome   %~ (i `delete`)
+                               & pcTbl .ind i.rmId     .~ iCentral
+                               & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
+                               & plaTbl.ind i.interp   .~ Nothing
+                    ms'' = ms' & invTbl.ind iCentral   %~ (sortInv ms' . (++ pure i))
                 in (ms'', (ms'', getSing i ms))
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
 

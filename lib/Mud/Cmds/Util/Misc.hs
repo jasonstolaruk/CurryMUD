@@ -28,7 +28,10 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , sorryDbEx
                           , sorryIgnoreLocPref
                           , sorryIgnoreLocPrefPlur
+                          , sorryNoOneListening
+                          , sorryNotTuned
                           , throwToListenThread
+                          , unmsg
                           , updateRndmName
                           , withDbExHandler
                           , withDbExHandler_
@@ -407,6 +410,36 @@ sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location pre
 sorryIgnoreLocPrefPlur :: T.Text -> T.Text
 sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
                                                   \provided will be ignored."
+
+
+-----
+
+
+sorryNoOneListening :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tuned in to the " <> n <> " channel."
+
+
+-----
+
+
+sorryNotTuned :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryNotTuned mq cols n =
+    wrapSend mq cols . T.concat $ [ "You have tuned out the "
+                                  , n
+                                  , " channel. Type "
+                                  , quoteColor
+                                  , dblQuote $ "set " <> n <> "=in"
+                                  , dfltColor
+                                  , " to tune it back in." ]
+
+
+-----
+
+
+unmsg :: [T.Text] -> [T.Text]
+unmsg [ cn         ] = [ T.init cn, ""            ]
+unmsg [ cn, target ] = [ cn,        T.init target ]
+unmsg xs             = patternMatchFail "unmsg" xs
 
 
 -----

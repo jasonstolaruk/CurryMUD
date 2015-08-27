@@ -173,7 +173,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
 adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
     if getPlaFlag IsTunedAdmin . getPla i $ ms
       then case getTunedAdminIds ms of
-        [_]      -> sorryNoOneListening
+        [_]      -> sorryNoOneListening mq cols "admin"
         tunedIds ->
           let tunedSings         = map (`getSing` ms) tunedIds
               getStyled targetId = let styleds = styleAbbrevs Don'tBracket $ getSing targetId ms `delete` tunedSings
@@ -191,14 +191,9 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
             Right (Left ()) -> case expCmdify i ms tunedIds tunedSings msg of
               Left  errorMsg     -> wrapSend mq cols errorMsg
               Right (bs, logMsg) -> ioHelper s (concatMap format bs) logMsg
-      else sorryNotTuned
+      else sorryNotTuned mq cols "admin"
   where
     getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
-    sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the admin channel."
-    sorryNotTuned       =
-        wrapSend mq cols $ "You have tuned out the admin channel. Type " <>
-                           dblQuote "set admin=in"                       <>
-                           " to tune it back in."
     ioHelper s bs logMsg = bcastNl bs >> logHelper
       where
         logHelper = do
@@ -374,12 +369,6 @@ procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
                        (c, d) = T.span  isLetter b
                    in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
 procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
-
-
-unmsg :: [T.Text] -> [T.Text]
-unmsg [ cn         ] = [ T.init cn, ""            ]
-unmsg [ cn, target ] = [ cn,        T.init target ]
-unmsg xs             = patternMatchFail "unmsg" xs
 
 
 -----

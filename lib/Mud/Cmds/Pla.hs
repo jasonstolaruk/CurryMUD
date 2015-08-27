@@ -228,6 +228,7 @@ about p = withoutArgs about p
 -----
 
 
+-- TODO: Should this cmd and the corresponding ":message" command accept emotes and exp cmds?
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] advice
@@ -273,7 +274,14 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                           receivedLogMsg = ( adminId
                                            , T.concat [ "received message from ", s,   ": ", dblQuote msg ] )
                       return [ sentLogMsg, receivedLogMsg ]
-        in (findFullNameForAbbrev strippedTarget . mkAdminIdSingList $ ms) |&| maybe notFound found -- TODO: Deleted "dropRoot"... ok?
+            filterRoot idSings
+              | isAdmin   = idSings
+              | otherwise =
+                  let ([((`getPla` ms) -> rootPla, _)], others) = partition ((== "Root") . snd) idSings
+                  in if isLoggedIn rootPla && (not . getPlaFlag IsIncognito $ rootPla)
+                                   then idSings
+                                   else others
+        in (findFullNameForAbbrev strippedTarget . filterRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
 admin p = patternMatchFail "admin" [ showText p ]
 
 
@@ -1261,10 +1269,10 @@ question (NoArgs' i mq) = getState >>= \ms ->
                descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo'
            in pager i mq descs >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
-  | not . isTunedQuestion i $ ms           -> sorryNotTuned
+  | not . isTunedQuestion i $ ms           -> sorryNotTuned mq cols "question"
   | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogMsg
   | otherwise                              -> getQuestionStyleds i ms >>= \triples -> if ()# triples
-    then sorryNoOneListening
+    then sorryNoOneListening mq cols "question"
     else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
              format (txt, is)   = if i `elem` is
                then ((formatQuestionMsg s txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
@@ -1281,11 +1289,6 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
               Left  errorMsg     -> wrapSend mq cols errorMsg
               Right (bs, logMsg) -> ioHelper s logMsg . concat =<< mapM format bs
   where
-    sorryNoOneListening = wrapSend mq cols "You are the only person tuned in to the question channel."
-    sorryNotTuned       =
-        wrapSend mq cols $ "You have tuned out the question channel. Type " <>
-                           dblQuote "set question=in"                       <>
-                           " to tune it back in."
     sorryIncogMsg        = wrapSend mq cols "You can't send a message on the question channel while incognito."
     ioHelper s logMsg bs = bcastNl bs >> logHelper
       where
@@ -1491,13 +1494,6 @@ procExpCmd i ms triples (unmsg -> [ cn, target ]) =
                        (c, d) = T.span  isLetter b
                    in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
 procExpCmd _ _ _ as = patternMatchFail "procExpCmd" as
-
-
--- TODO: This really needs to be put in a utils module.
-unmsg :: [T.Text] -> [T.Text]
-unmsg [ cn         ] = [ T.init cn, ""            ]
-unmsg [ cn, target ] = [ cn,        T.init target ]
-unmsg xs             = patternMatchFail "unmsg" xs
 
 
 -----

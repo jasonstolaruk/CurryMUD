@@ -61,7 +61,7 @@ tune all=in
 
 "tune" with no args will dump the status of every telepathic connection. Ideally, connection names should be abbreviation-styled.
 
-"tune" cannot be used to tune the admin channel. (This is already handled with the ":admin" command.)
+"tune" cannot be used to tune the admin channel. (This is already handled with the "set" command.)
 
 =====
 

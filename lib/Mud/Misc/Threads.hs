@@ -46,7 +46,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), forM_, forever, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
-import Data.Bits (setBit, zeroBits)
+import Data.Bits (zeroBits)
 import Data.Int (Int64)
 import Data.List ((\\))
 import Data.Monoid ((<>), Any(..), getSum)
@@ -170,7 +170,6 @@ adminChanTblPurger :: MudStack ()
 adminChanTblPurger = dbTblPurger "admin channel" countDbTblRecsAdminChan purgeDbTblAdminChan
 
 
--- TODO: Check.
 questionChanTblPurger :: MudStack ()
 questionChanTblPurger = dbTblPurger "question" countDbTblRecsQuestion purgeDbTblQuestion
 
@@ -286,7 +285,7 @@ adHoc mq host = do
                        , _linked     = [] }
             pla  = Pla { _currHostName = host
                        , _connectTime  = Just ct
-                       , _plaFlags     = setBit zeroBits . fromEnum $ IsTunedQuestion
+                       , _plaFlags     = zeroBits
                        , _columns      = 80
                        , _pageLines    = 24
                        , _interp       = Just interpName
