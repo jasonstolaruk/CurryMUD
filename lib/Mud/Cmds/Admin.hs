@@ -342,20 +342,22 @@ procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
             else case findTarget of
               Nothing -> Left . sorryAdminName $ target
               Just n  -> let targetId = getIdForPCSing n ms
+                             toSelf'  = format (Just n) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
                                     (format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :
-                                    (mkBroadcast i . format (Just n) $ toSelf)
-                                  , toSelf )
+                                    mkBroadcast i toSelf'
+                                  , toSelf' )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
             then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else case findTarget of
               Nothing -> Left . sorryAdminName $ target
-              Just n  -> let targetId = getIdForPCSing n ms
+              Just n  -> let targetId          = getIdForPCSing n ms
+                             toSelfWithTarget' = format (Just n) toSelfWithTarget
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
                                     (format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :
-                                    (mkBroadcast i . format (Just n) $ toSelfWithTarget)
-                                  , toSelfWithTarget )
+                                    mkBroadcast i toSelfWithTarget'
+                                  , toSelfWithTarget' )
     notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
     format maybeTargetSing =

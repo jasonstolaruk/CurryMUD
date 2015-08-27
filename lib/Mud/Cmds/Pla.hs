@@ -1447,6 +1447,7 @@ expCmdify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
                    & _2 %~ angleBracketQuote
 
 
+-- TODO: Target sings need to be capitalized.
 procExpCmd :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
 procExpCmd _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
 procExpCmd i ms triples (unmsg -> [ cn, target ]) =
@@ -1466,20 +1467,22 @@ procExpCmd i ms triples (unmsg -> [ cn, target ]) =
             else case findTarget of
               Nothing -> Left . sorryQuestionName $ target
               Just n  -> let targetId = getIdForMatch n
+                             toSelf'  = format (Just n) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
                                     (format (Just n) toOthers,                 targetId `delete` tunedIds) :
-                                    (mkBroadcast i . format (Just n) $ toSelf)
-                                  , toSelf )
+                                    mkBroadcast i toSelf'
+                                  , toSelf' )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
             then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else case findTarget of
               Nothing -> Left . sorryQuestionName $ target
-              Just n  -> let targetId = getIdForMatch n
+              Just n  -> let targetId          = getIdForMatch n
+                             toSelfWithTarget' = format (Just n) toSelfWithTarget
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
                                     (format (Just n) toOthersWithTarget,       targetId `delete` tunedIds) :
-                                    (mkBroadcast i . format (Just n) $ toSelfWithTarget)
-                                  , toSelfWithTarget )
+                                    mkBroadcast i toSelfWithTarget'
+                                  , toSelfWithTarget' )
     notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
     findTarget = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
     getIdForMatch match    = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
