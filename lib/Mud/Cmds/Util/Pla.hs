@@ -19,8 +19,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , helperPutRemEitherInv
                          , InvWithCon
                          , IsConInRm
-                         , isDblLinked
-                         , isLinked
                          , isNonStdLink
                          , isRingRol
                          , isSlotAvail
@@ -517,25 +515,6 @@ mkPutRemInvDesc i ms d por mnom is ts =
                     , rest ], otherPCIds) ]
     rest       = onTheGround mnom <> "."
     otherPCIds = i `delete` pcIds d
-
-
------
-
-
-isLinked :: MudState -> (Id, Id) -> Bool
-isLinked = helperIsLinked (||)
-
-
-helperIsLinked :: (Bool -> Bool -> Bool) -> MudState -> (Id, Id) -> Bool
-helperIsLinked f ms (i, i') = let s                = getSing i  ms
-                                  s'               = getSing i' ms
-                                  targetLinkedToMe = s' `elem` getLinked i  ms
-                                  meLinkedToTarget = s  `elem` getLinked i' ms
-                              in targetLinkedToMe `f` meLinkedToTarget
-
-
-isDblLinked :: MudState -> (Id, Id) -> Bool
-isDblLinked = helperIsLinked (&&)
 
 
 -----

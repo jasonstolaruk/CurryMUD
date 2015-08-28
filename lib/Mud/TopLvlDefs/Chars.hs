@@ -87,3 +87,7 @@ styleTokenDelimiter = '\\'
 
 fromPersonMarker :: Char
 fromPersonMarker = '\133'
+
+
+plaIdDelimiter :: Char
+plaIdDelimiter = '\134'

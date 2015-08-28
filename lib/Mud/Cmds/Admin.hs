@@ -303,9 +303,7 @@ sorryAdminName n = "There is no admin by the name of " <>
 
 
 formatAdminChanMsg :: T.Text -> T.Text -> T.Text
-formatAdminChanMsg n msg = T.concat [ underlineANSI
-                                    , parensQuote "Admin"
-                                    , noUnderlineANSI
+formatAdminChanMsg n msg = T.concat [ underline . parensQuote $ "Admin"
                                     , " "
                                     , n
                                     , ": "

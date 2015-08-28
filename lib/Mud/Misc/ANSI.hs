@@ -5,6 +5,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , announceColor
                      , arrowColor
                      , asteriskColor
+                     , blink
                      , blinkANSI
                      , bootMsgColor
                      , colorizeFileTxt
@@ -42,6 +43,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , shutdownMsgColor
                      , syntaxSymbolColor
                      , toPeepedColor
+                     , underline
                      , underlineANSI
                      , unknownNameColor
                      , unlinkColor
@@ -50,6 +52,7 @@ module Mud.Misc.ANSI ( abbrevColor
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -92,6 +95,14 @@ mkBgColorANSI bg = T.pack . setSGRCode $ [ uncurry (SetColor Background) bg ]
 
 mkColorANSI :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> T.Text
 mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
+
+
+blink :: T.Text -> T.Text
+blink = quoteWith' (blinkANSI, noBlinkANSI)
+
+
+underline :: T.Text -> T.Text
+underline = quoteWith' (underlineANSI, noUnderlineANSI)
 
 
 -- ==================================================

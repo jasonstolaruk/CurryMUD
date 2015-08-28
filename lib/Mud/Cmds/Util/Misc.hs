@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( adviceEnc
                           , adviceEtc
@@ -9,9 +9,13 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , dbExHandler
                           , dispCmdList
                           , dispMatches
+                          , embedId
+                          , expandEmbeddedIds
                           , fileIOExHandler
                           , inOutOnOffs
+                          , isDblLinked
                           , isHostBanned
+                          , isLinked
                           , isPlaBanned
                           , mkActionParams
                           , mkInterfaceList
@@ -231,6 +235,30 @@ dispMatches p indent haystack = patternMatchFail "dispMatches" [ showText p, sho
 -----
 
 
+embedId :: Id -> T.Text
+embedId = quoteWith (T.singleton plaIdDelimiter) . showText
+
+
+-----
+
+
+expandEmbeddedIds :: MudState -> [Broadcast] -> MudStack [Broadcast]
+expandEmbeddedIds ms = concatMapM helper
+  where
+    helper a@(msg, is) = case breakIt msg of
+      (_, "")                                        -> unadulterated a
+      (x, breakIt . T.tail -> (numTxt, T.tail -> y)) ->
+          let embeddedId                        = read . T.unpack $ numTxt :: Int
+              f i | isLinked ms (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
+                  | otherwise                   = ((, pure i) . rebuild . underline) <$> updateRndmName i embeddedId
+              rebuild                           = quoteWith' (x, y)
+          in mapM f is >>= concatMapM helper
+    breakIt = T.break (== plaIdDelimiter)
+
+
+-----
+
+
 fileIOExHandler :: T.Text -> IOException -> MudStack ()
 fileIOExHandler fn e = do
     logIOEx fn e
@@ -269,6 +297,25 @@ isBanned target banRecs = helper . reverse $ banRecs
     helper [] = Any False
     helper (x:xs) | recTarget x == target = Any . recIsBanned $ x
                   | otherwise             = helper xs
+
+
+-----
+
+
+isLinked :: MudState -> (Id, Id) -> Bool
+isLinked = helperIsLinked (||)
+
+
+helperIsLinked :: (Bool -> Bool -> Bool) -> MudState -> (Id, Id) -> Bool
+helperIsLinked f ms (i, i') = let s                = getSing i  ms
+                                  s'               = getSing i' ms
+                                  targetLinkedToMe = s' `elem` getLinked i  ms
+                                  meLinkedToTarget = s  `elem` getLinked i' ms
+                              in targetLinkedToMe `f` meLinkedToTarget
+
+
+isDblLinked :: MudState -> (Id, Id) -> Bool
+isDblLinked = helperIsLinked (&&)
 
 
 -----

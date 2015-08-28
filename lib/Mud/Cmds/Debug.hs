@@ -627,11 +627,7 @@ debugToken p = withoutArgs debugToken p
 
 debugUnderline :: Action
 debugUnderline (NoArgs i mq cols) = do
-    wrapSend mq cols . T.concat $ [ showText underlineANSI
-                                  , underlineANSI
-                                  , " This text is underlined. "
-                                  , noUnderlineANSI
-                                  , showText noUnderlineANSI ]
+    wrapSend mq cols $ showText underlineANSI <> underline " This text is underlined. " <> showText noUnderlineANSI
     logPlaExec (prefixDebugCmd "underline") i
 debugUnderline p = withoutArgs debugUnderline p
 

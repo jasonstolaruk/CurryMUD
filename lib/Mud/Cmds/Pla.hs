@@ -345,8 +345,8 @@ color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
           , let fg = (Dull, fgc), let bg = (Dull, bgc), let ansi = mkColorANSI fg bg ] ++ other
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName                                         = padColorName . showText . snd
-    other = [ nl . T.concat $ [ pad 19 "Blinking",   blinkANSI,     " CurryMUD ", noBlinkANSI     ]
-            , nl . T.concat $ [ pad 19 "Underlined", underlineANSI, " CurryMUD ", noUnderlineANSI ] ]
+    other = [ nl . T.concat $ [ pad 19 "Blinking",   blink     " CurryMUD " ]
+            , nl . T.concat $ [ pad 19 "Underlined", underline " CurryMUD " ] ]
 color p = withoutArgs color p
 
 
@@ -891,7 +891,7 @@ look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri     = getRmId i  ms
         r      = getRm   ri ms
-        top    = multiWrap cols [ T.concat [ underlineANSI, " ", r^.rmName, " ", noUnderlineANSI ], r^.rmDesc ]
+        top    = multiWrap cols [ underline $ " " <> r^.rmName <> " ", r^.rmDesc ]
         bottom = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
     in send mq . nl . T.concat $ top : bottom
 look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTargetDesigs) -> do
@@ -1262,9 +1262,9 @@ question (NoArgs' i mq) = getState >>= \ms ->
                styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
                combo'  = zipWith f combo styleds
                  where
-                  f (i', n, ia) styled | ia                   = (i', styled <> asterisk                        )
-                                       | isLower . T.head $ n = (i', underlineANSI <> styled <> noUnderlineANSI)
-                                       | otherwise            = (i', styled                                    )
+                  f (i', n, ia) styled | ia                   = (i', styled <> asterisk)
+                                       | isLower . T.head $ n = (i', underline styled  )
+                                       | otherwise            = (i', styled            )
                mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestion i' ms ? "tuned in" :? "tuned out")
                descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo'
            in pager i mq descs >> logPlaExecArgs "question" [] i
@@ -1284,13 +1284,13 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
           in case emotify i ms triples msg of
             Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
             Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
-                                in ioHelper s logMsg . concat =<< mapM format bs
+                                in ioHelper ms s logMsg =<< concatMapM format bs
             Right (Left  ()) -> case expCmdify i ms triples msg of
               Left  errorMsg     -> wrapSend mq cols errorMsg
-              Right (bs, logMsg) -> ioHelper s logMsg . concat =<< mapM format bs
+              Right (bs, logMsg) -> ioHelper ms s logMsg =<< concatMapM format bs
   where
-    sorryIncogMsg        = wrapSend mq cols "You can't send a message on the question channel while incognito."
-    ioHelper s logMsg bs = bcastNl bs >> logHelper
+    sorryIncogMsg           = wrapSend mq cols "You can't send a message on the question channel while incognito."
+    ioHelper ms s logMsg bs = (bcastNl =<< expandEmbeddedIds ms bs) >> logHelper
       where
         logHelper = do
             logPlaOut "question" i . pure $ logMsg
@@ -1314,7 +1314,7 @@ getQuestionStyleds i ms =
             admins  = f adminIds
             combo   = sortBy (compare `on` view _2) $ rndms ++ nubSort (linkeds ++ admins)
             styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
-            helper (x, y) styled | x `elem` otherIds = a & _3 %~ quoteWith' (underlineANSI, noUnderlineANSI)
+            helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
                                  | otherwise         = a
               where
                 a = (x, y, styled)
@@ -1410,7 +1410,7 @@ procEmote i ms triples as =
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
                 notFound = Left . sorryQuestionName $ target
                 found match@(addSuffix isPoss p -> match') =
-                    let targetId = head . filter ((== match) . (`getSing` ms)) $ tunedIds
+                    let targetId = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
                     in Right ( match' -- TODO: Change to correct values.
                              , [ mkEmoteWord isPoss p targetId, ForNonTargets match' ]
                              , match' )
@@ -1426,9 +1426,7 @@ sorryQuestionName n =
 
 
 formatQuestionMsg :: T.Text -> T.Text -> T.Text
-formatQuestionMsg n msg = T.concat [ underlineANSI
-                                   , parensQuote "Question"
-                                   , noUnderlineANSI
+formatQuestionMsg n msg = T.concat [ underline . parensQuote $ "Question"
                                    , " "
                                    , n
                                    , ": "
@@ -1447,7 +1445,6 @@ expCmdify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
                    & _2 %~ angleBracketQuote
 
 
--- TODO: Target sings need to be capitalized.
 procExpCmd :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
 procExpCmd _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
 procExpCmd i ms triples (unmsg -> [ cn, target ]) =
@@ -1467,9 +1464,9 @@ procExpCmd i ms triples (unmsg -> [ cn, target ]) =
             else case findTarget of
               Nothing -> Left . sorryQuestionName $ target
               Just n  -> let targetId = getIdForMatch n
-                             toSelf'  = format (Just n) toSelf
+                             toSelf'  = format (Just targetId) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
-                                    (format (Just n) toOthers,                 targetId `delete` tunedIds) :
+                                    (format (Just targetId) toOthers,          targetId `delete` tunedIds) :
                                     mkBroadcast i toSelf'
                                   , toSelf' )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
@@ -1478,18 +1475,17 @@ procExpCmd i ms triples (unmsg -> [ cn, target ]) =
             else case findTarget of
               Nothing -> Left . sorryQuestionName $ target
               Just n  -> let targetId          = getIdForMatch n
-                             toSelfWithTarget' = format (Just n) toSelfWithTarget
-                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
-                                    (format (Just n) toOthersWithTarget,       targetId `delete` tunedIds) :
+                             toSelfWithTarget' = format (Just targetId) toSelfWithTarget
+                         in Right ( (colorizeYous . format Nothing $ toTarget,  pure targetId             ) :
+                                    (format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :
                                     mkBroadcast i toSelfWithTarget'
                                   , toSelfWithTarget' )
     notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
     findTarget = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
     getIdForMatch match    = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
-    format maybeTargetSing =
-        let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-        in replace (substitutions ++ maybe [] (pure . ("@", )) maybeTargetSing)
-    s                           = getSing i ms
+    format maybeTargetId =
+        let substitutions = [ ("%", embedId i), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
+        in replace (substitutions ++ maybe [] (pure . ("@", ) . embedId) maybeTargetId)
     (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
     colorizeYous                = T.unwords . map helper . T.words
       where
@@ -2250,9 +2246,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                              | itemId <- itemIds ]
                mkToTargetInvBs     itemIds = [ ( T.concat [ serialize d
                                                           , " shows you "
-                                                          , underlineANSI
-                                                          , aOrAn . getSing itemId $ ms
-                                                          , noUnderlineANSI
+                                                          , underline . aOrAn . getSing itemId $ ms
                                                           , nl ":"
                                                           , getEntDesc itemId ms ]
                                                , pure theId )
@@ -2293,9 +2287,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                                                                   , "." ]
                mkToTargetCoinsBs     = coinTxt |!| mkBroadcast theId . T.concat $ [ serialize d
                                                                                   , " shows you "
-                                                                                  , underlineANSI
-                                                                                  , coinTxt
-                                                                                  , noUnderlineANSI
+                                                                                  , underline coinTxt
                                                                                   , "." ]
                mkToOthersCoinsBs     = coinTxt |!| [(T.concat [ serialize d
                                                               , " shows "
@@ -2342,9 +2334,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                           | itemId <- itemIds ]
                mkToTargetBs     itemIds = [ ( T.concat [ serialize d
                                                        , " shows you "
-                                                       , underlineANSI
-                                                       , aOrAn . getSing itemId $ ms
-                                                       , noUnderlineANSI
+                                                       , underline . aOrAn . getSing itemId $ ms
                                                        , " "
                                                        , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
                                                        , nl ":"

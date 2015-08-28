@@ -2,6 +2,7 @@
 
 module Mud.Util.Misc ( atLst1
                      , blowUp
+                     , concatMapM
                      , divide
                      , dropFst
                      , dropIrrelevantFilenames
@@ -55,6 +56,10 @@ atLst1 :: (Eq a, Num a) => a -> a
 atLst1 x = case signum x of -1 -> 1
                             0  -> 1
                             _  -> x
+
+
+concatMapM  :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
+concatMapM f = fmap concat . mapM f
 
 
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
