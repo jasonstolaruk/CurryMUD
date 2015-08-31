@@ -164,9 +164,10 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
                                                                     , let as      = getSing ai ms
                                                                     , let ap      = getPla  ai ms
                                                                     , let isTuned = getPlaFlag IsTunedAdmin ap ]
-        ([self], others) = partition (\x -> x^._1.to (== i)) triples
-        styleds          = styleAbbrevs Don'tBracket . map (view _2) $ others
-        others'          = zipWith (\triple styled -> triple & _2 .~ styled) others styleds
+        ([self],   others   )  = partition (\x -> x^._1.to (== i)) triples
+        (tunedIns, tunedOuts)  = partition (view _3) others
+        styleds                = styleAbbrevs Don'tBracket . map (view _2) $ tunedIns
+        others'                = zipWith (\triple styled -> triple & _2 .~ styled) tunedIns styleds ++ tunedOuts
         mkDesc (_, n, isTuned) = padName n <> (isTuned ? "tuned in" :? "tuned out")
         descs                  = mkDesc self : map mkDesc others'
     in multiWrapSend mq cols descs >> logPlaExecArgs (prefixAdminCmd "admin") [] i

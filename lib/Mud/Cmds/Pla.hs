@@ -1250,6 +1250,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 -- TODO: Continue testing and fixing.
 question :: Action
 question (NoArgs' i mq) = getState >>= \ms ->
+    -- TODO: The names of those who are tuned out should not be abbrev styled.
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
         (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
     in mapM (updateRndmName i) otherIds >>= \rndmNames ->
