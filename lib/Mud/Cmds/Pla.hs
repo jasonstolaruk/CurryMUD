@@ -1247,7 +1247,6 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 
 
 -- TODO: Help.
--- TODO: Continue testing and fixing.
 question :: Action
 question (NoArgs' i mq) = getState >>= \ms ->
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
@@ -1263,9 +1262,9 @@ question (NoArgs' i mq) = getState >>= \ms ->
                styleds = styleAbbrevs Don'tBracket . map (view _2) $ tunedIns
                combo   = map f $ zipWith (\styled -> _2 .~ styled) styleds tunedIns ++ tunedOuts
                  where
-                  f (i', n, ia) | ia                   = (i', n <> asterisk)
-                                | isLower . T.head $ n = (i', underline n  )
-                                | otherwise            = (i', n            )
+                  f (i', n, ia) | ia                              = (i', n <> asterisk)
+                                | isLower . T.head . dropANSI $ n = (i', underline n  )
+                                | otherwise                       = (i', n            )
                mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestion i' ms ? "tuned in" :? "tuned out")
                descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo
            in pager i mq descs >> logPlaExecArgs "question" [] i
@@ -1276,7 +1275,7 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
     then sorryNoOneListening mq cols "question"
     else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
              format (txt, is)   = if i `elem` is
-               then ((formatQuestionMsg s txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
+               then ((formatQuestionMsg (getSing i ms) txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
                else mkBsWithStyled is
                where
                  mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
@@ -1290,8 +1289,8 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
               Left  errorMsg     -> wrapSend mq cols errorMsg
               Right (bs, logMsg) -> ioHelper ms s logMsg =<< concatMapM format bs
   where
-    sorryIncogMsg           = wrapSend mq cols "You can't send a message on the question channel while incognito."
-    ioHelper ms s logMsg bs = (bcastNl =<< expandEmbeddedIds ms bs) >> logHelper
+    sorryIncogMsg = wrapSend mq cols "You can't send a message on the question channel while incognito."
+    ioHelper ms s (expandEmbeddedIdsToSings ms -> logMsg) bs = (bcastNl =<< expandEmbeddedIds ms bs) >> logHelper
       where
         logHelper = do
             logPlaOut "question" i . pure $ logMsg
@@ -1339,36 +1338,22 @@ emotify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | otherwise = Right . Left $ ()
 
 
+-- TODO: "@" and "@'s" at the end of an emote don't work because a period has been tacked on.
 procEmote :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either [T.Text] [Broadcast]
-procEmote _ _ _ as | any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower) $ as = Left . pure $ advice
-  where
-    advice = T.concat [ "Sorry, but you can't use a form of the word "
-                      , dblQuote "you"
-                      , " in an emote. Instead, you must specify who you wish to target using "
-                      , dblQuote etc
-                      , ", as in "
-                      , quoteColor
-                      , dblQuote . T.concat $ [ cn
-                                              , "slowly turns her head to look directly at "
-                                              , etc
-                                              , "taro" ]
-                      , dfltColor
-                      , "." ]
-    cn  = "question " <> T.singleton emoteChar
-    etc = T.singleton emoteTargetChar
+procEmote _ _ _ as | hasYou as = Left . pure . adviceYouEmote $ "question"
 procEmote i ms triples as =
-    let s                       = getSing i ms
+    let me                      = (getSing i ms, embedId i, embedId i)
         xformed                 = xformArgs True as
         xformArgs _      []     = []
         xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
-          | x == enc            -> mkRight . dup3 $ s
-          | x == enc's          -> mkRight . dup3 $ s <> "'s"
+          | x == enc            -> mkRight me
+          | x == enc's          -> mkRight (me & each <>~ "'s")
           | enc `T.isInfixOf` x -> Left . adviceEnc $ cn
           | x == etc            -> Left . adviceEtc $ cn
           | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
           | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
           | isHead, hasEnc      -> mkRight . dup3 . capitalizeMsg $ x
-          | isHead              -> mkRight . dup3 $ s <> " " <> x
+          | isHead              -> mkRight (me & each <>~ (" " <> x))
           | otherwise           -> mkRight . dup3 $ x
     in case filter isLeft xformed of
       [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
@@ -1409,12 +1394,13 @@ procEmote i ms triples as =
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                notFound = Left . sorryQuestionName $ target
-                found match@(addSuffix isPoss p -> match') =
+                notFound    = Left . sorryQuestionName $ target
+                found match =
                     let targetId = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
-                    in Right ( match' -- TODO: Change to correct values.
-                             , [ mkEmoteWord isPoss p targetId, ForNonTargets match' ]
-                             , match' )
+                        txt      = addSuffix isPoss p . embedId $ targetId
+                    in Right ( txt
+                             , [ mkEmoteWord isPoss p targetId, ForNonTargets txt ]
+                             , txt )
             in findFullNameForAbbrev target (map (views _2 T.toLower) triples) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget

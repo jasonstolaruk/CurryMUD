@@ -216,23 +216,9 @@ emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest
   | otherwise = Right . Left $ ()
 
 
+-- TODO: "@" and "@'s" at the end of an emote don't work because a period has been tacked on.
 procEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
-procEmote _ _ _ _ as | any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower) $ as = Left . pure $ advice
-  where
-    advice = T.concat [ "Sorry, but you can't use a form of the word "
-                      , dblQuote "you"
-                      , " in an emote. Instead, you must specify who you wish to target using "
-                      , dblQuote etc
-                      , ", as in "
-                      , quoteColor
-                      , dblQuote . T.concat $ [ cn
-                                              , "slowly turns her head to look directly at "
-                                              , etc
-                                              , "taro" ]
-                      , dfltColor
-                      , "." ]
-    cn  = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar
-    etc = T.singleton emoteTargetChar
+procEmote _ _ _ _ as | hasYou as = Left . pure . adviceYouEmote . prefixAdminCmd $ "admin"
 procEmote i ms tunedIds tunedSings as =
     let s                       = getSing i ms
         xformed                 = xformArgs True as

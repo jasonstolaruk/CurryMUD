@@ -4,6 +4,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , adviceEtc
                           , adviceEtcEmptyPoss
                           , adviceEtcHead
+                          , adviceYouEmote
                           , advise
                           , asterisk
                           , dbExHandler
@@ -11,7 +12,9 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , dispMatches
                           , embedId
                           , expandEmbeddedIds
+                          , expandEmbeddedIdsToSings
                           , fileIOExHandler
+                          , hasYou
                           , inOutOnOffs
                           , isDblLinked
                           , isHostBanned
@@ -76,7 +79,7 @@ import Control.Lens (at, each)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.Char (isDigit)
+import Data.Char (isDigit, isLetter)
 import Data.List (intercalate, sortBy)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
@@ -161,6 +164,23 @@ adviceEtcEmptyPoss = T.concat [ "You must specify the name of the person you wan
 
 adviceEtcHead :: T.Text
 adviceEtcHead = "You can't begin an emote with a target."
+
+
+adviceYouEmote :: T.Text -> T.Text
+adviceYouEmote cn = T.concat [ "Sorry, but you can't use a form of the word "
+                             , dblQuote "you"
+                             , " in an emote. Instead, you must specify who you wish to target using "
+                             , dblQuote etc
+                             , ", as in "
+                             , quoteColor
+                             , dblQuote . T.concat $ [ cn
+                                                     , " "
+                                                     , T.singleton emoteChar
+                                                     , "slowly turns her head to look directly at "
+                                                     , etc
+                                                     , "taro" ]
+                             , dfltColor
+                             , "." ]
 
 
 -----
@@ -248,12 +268,25 @@ expandEmbeddedIds ms = concatMapM helper
     helper a@(msg, is) = case breakIt msg of
       (_, "")                                        -> unadulterated a
       (x, breakIt . T.tail -> (numTxt, T.tail -> y)) ->
-          let embeddedId                        = read . T.unpack $ numTxt :: Int
-              f i | isLinked ms (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
-                  | otherwise                   = ((, pure i) . rebuild . underline) <$> updateRndmName i embeddedId
-              rebuild                           = quoteWith' (x, y)
+          let embeddedId = read . T.unpack $ numTxt :: Int
+              isAdmin    = getPlaFlag IsAdmin . getPla embeddedId $ ms
+              f i | isAdmin || isLinked ms (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
+                  | otherwise = ((, pure i) . rebuild . underline) <$> updateRndmName i embeddedId
+              rebuild = quoteWith' (x, y)
           in mapM f is >>= concatMapM helper
-    breakIt = T.break (== plaIdDelimiter)
+
+
+breakIt :: T.Text -> (T.Text, T.Text)
+breakIt = T.break (== plaIdDelimiter)
+
+
+expandEmbeddedIdsToSings :: MudState -> T.Text -> T.Text
+expandEmbeddedIdsToSings ms = helper
+  where
+    helper msg = case breakIt msg of
+      (_, "")                                        -> msg
+      (x, breakIt . T.tail -> (numTxt, T.tail -> y)) -> let embeddedId = read . T.unpack $ numTxt :: Int
+                                                        in helper . quoteWith' (x, y) . getSing embeddedId $ ms
 
 
 -----
@@ -268,6 +301,13 @@ fileIOExHandler fn e = do
 
 throwToListenThread :: SomeException -> MudStack ()
 throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+
+
+-----
+
+
+hasYou :: [T.Text] -> Bool
+hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 
 
 -----
