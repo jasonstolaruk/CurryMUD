@@ -1250,7 +1250,6 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 -- TODO: Continue testing and fixing.
 question :: Action
 question (NoArgs' i mq) = getState >>= \ms ->
-    -- TODO: The names of those who are tuned out should not be abbrev styled.
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
         (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
     in mapM (updateRndmName i) otherIds >>= \rndmNames ->
@@ -1258,16 +1257,17 @@ question (NoArgs' i mq) = getState >>= \ms ->
                rndms   = zip3 otherIds rndmNames . repeat $ False
                linkeds = [ (li, getSing li ms, isAdmin li) | li <- linkedIds ]
                admins  = [ (ai, getSing ai ms, True      ) | ai <- adminIds  ]
-               combo   = let xs = rndms ++ nubSort (linkeds ++ admins)
-                         in sortBy (compare `on` view _2) xs
-               styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
-               combo'  = zipWith f combo styleds
+               (tunedIns, tunedOuts) =
+                 let xs = rndms ++ nubSort (linkeds ++ admins)
+                 in partition (views _1 (`isTunedQuestion` ms)) . sortBy (compare `on` view _2) $ xs
+               styleds = styleAbbrevs Don'tBracket . map (view _2) $ tunedIns
+               combo   = map f $ zipWith (\styled -> _2 .~ styled) styleds tunedIns ++ tunedOuts
                  where
-                  f (i', n, ia) styled | ia                   = (i', styled <> asterisk)
-                                       | isLower . T.head $ n = (i', underline styled  )
-                                       | otherwise            = (i', styled            )
+                  f (i', n, ia) | ia                   = (i', n <> asterisk)
+                                | isLower . T.head $ n = (i', underline n  )
+                                | otherwise            = (i', n            )
                mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestion i' ms ? "tuned in" :? "tuned out")
-               descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo'
+               descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo
            in pager i mq descs >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
   | not . isTunedQuestion i $ ms           -> sorryNotTuned mq cols "question"
