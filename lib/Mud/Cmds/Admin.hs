@@ -276,13 +276,14 @@ procEmote i ms tunedIds tunedSings as =
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
+                target'          = capitalize . T.toLower $ target
                 notFound         = Left . sorryAdminName $ target
                 found targetSing@(addSuffix isPoss p -> targetSing') =
                     let targetId = head . filter ((== targetSing) . (`getSing` ms)) $ tunedIds
                     in Right ( targetSing'
                              , [ mkEmoteWord isPoss p targetId, ForNonTargets targetSing' ]
                              , targetSing' )
-            in findFullNameForAbbrev (capitalize target) (getSing i ms `delete` tunedSings) |&| maybe notFound found
+            in findFullNameForAbbrev target' (getSing i ms `delete` tunedSings) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
 
@@ -315,7 +316,7 @@ expCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, re
 
 procExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either T.Text ([Broadcast], T.Text)
 procExpCmd _ _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
-procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, target ]) =
+procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, T.toLower -> target ]) =
     let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
     in findFullNameForAbbrev cn cns |&| maybe notFound found
   where

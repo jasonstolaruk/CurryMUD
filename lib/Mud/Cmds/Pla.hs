@@ -1402,14 +1402,14 @@ procEmote i ms triples as =
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                notFound    = Left . sorryQuestionName $ target
-                found match =
+                notFound         = Left . sorryQuestionName $ target
+                found match      =
                     let targetId = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
                         txt      = addSuffix isPoss p . embedId $ targetId
                     in Right ( txt
                              , [ mkEmoteWord isPoss p targetId, ForNonTargets txt ]
                              , txt )
-            in findFullNameForAbbrev target (map (views _2 T.toLower) triples) |&| maybe notFound found
+            in findFullNameForAbbrev (T.toLower target) (map (views _2 T.toLower) triples) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
     tunedIds             = map (view _1) triples
@@ -1442,7 +1442,7 @@ expCmdify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
 
 procExpCmd :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
 procExpCmd _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
-procExpCmd i ms triples (unmsg -> [ cn, target ]) =
+procExpCmd i ms triples (unmsg -> [ cn, T.toLower -> target ]) =
     let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
     in findFullNameForAbbrev cn cns |&| maybe notFound found
   where
