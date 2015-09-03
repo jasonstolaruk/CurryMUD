@@ -1,0 +1,29 @@
+\h QUESTION \d
+
+\uUSAGE\n
+question \s[\dmessage\s]\d
+
+\uDESCRIPTION\n
+Send a message on the question channel.
+When no arguments are provided, you'll get a list of all the people who are currently logged in, indicating whether they have tuned the channel in or out. * denotes an administrator.
+
+The question channel is a "party line" strictly for the purpose of asking and answering newbie questions related to game play. Discussions on the question channel are Out-Of-Character (OOC); In-Character (IC) knowledge that can and should be discovered in game may not be disclosed. Appropriate topics of discussion are how to use a command, how to configure client software, how to contact an administrator, etc. "Which weapon does more damage, x or y" is an example of an inappropriate question.
+
+Random names are automatically assigned to people with whom you have not established a telepathic link. Random names will appear underlined, and will never start with an uppercase character. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name):
+(Question) \udog\n: How do I wield a weapon?
+
+Use the "set" command to tune the question channel (the "tune" command is for tuning IC channels based on telepathic connections).
+
+\uEMOTES\n
+You can emote on the question channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \qquestion #xsuggests that #rdog use the "help" command\d will produce a message similar to the following (assuming your name is Taro):
+(Question) Taro: [Taro suggests that \udog\n use the "help" command.]
+
+\uEXPRESSIVE COMMANDS\n
+You can use expressive commands on the question channel. Expressive commands must begin with a \l#p\d. For example, \qquestion #pcomfort hanako\d will produce a message similar to the following (assuming your name is Taro):
+(Question) Taro: <Taro comforts Hanako.>
+
+\uEXAMPLES\n
+\qquestion\d to see who is tuned in and who is tuned out.4`
+\qquestion how can I see which administrators are currently logged in?\d to ask a question on the channel.4`
+
+\uSEE ALSO\n

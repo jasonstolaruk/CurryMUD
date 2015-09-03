@@ -14,6 +14,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , expandEmbeddedIds
                           , expandEmbeddedIdsToSings
                           , fileIOExHandler
+                          , formatChanMsg
                           , hasYou
                           , inOutOnOffs
                           , isDblLinked
@@ -303,6 +304,17 @@ fileIOExHandler fn e = do
 
 throwToListenThread :: SomeException -> MudStack ()
 throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+
+
+-----
+
+
+formatChanMsg :: T.Text -> T.Text -> T.Text -> T.Text
+formatChanMsg cn n msg = T.concat [ parensQuote cn
+                                  , " "
+                                  , n
+                                  , ": "
+                                  , msg ]
 
 
 -----

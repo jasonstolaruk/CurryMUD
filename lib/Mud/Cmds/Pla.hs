@@ -1279,11 +1279,11 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
     then sorryNoOneListening mq cols "question"
     else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
              format (txt, is)   = if i `elem` is
-               then ((formatQuestionMsg (getSing i ms) txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
+               then ((formatChanMsg "Question" (getSing i ms) txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
                else mkBsWithStyled is
                where
                  mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
-                     return [ (formatQuestionMsg styled txt, pure i') | i' <- is' | styled <- styleds ]
+                     return [ (formatChanMsg "Question" styled txt, pure i') | i' <- is' | styled <- styleds ]
              s = getSing i ms
           in case emotify i ms triples msg of
             Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
@@ -1418,14 +1418,6 @@ procEmote i ms triples as =
 sorryQuestionName :: T.Text -> T.Text
 sorryQuestionName n =
     "There is no one by the name of " <> (dblQuote . capitalize $ n) <> " currently tuned in to the question channel."
-
-
-formatQuestionMsg :: T.Text -> T.Text -> T.Text
-formatQuestionMsg n msg = T.concat [ underline . parensQuote $ "Question"
-                                   , " "
-                                   , n
-                                   , ": "
-                                   , msg ]
 
 
 expCmdify :: Id -> MudState -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)

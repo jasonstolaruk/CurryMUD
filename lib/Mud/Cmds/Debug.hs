@@ -105,9 +105,9 @@ debugCmds =
     , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
-    , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
+    , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "talk"       debugTalk        "Dump the talk async table."
     , mkDebugCmd "thread"     debugThread      "Dump the thread table."
@@ -599,9 +599,11 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"
+                , charTokenDelimiter  `T.cons` "p expCmdChar"
                 , charTokenDelimiter  `T.cons` "r emoteTargetChar"
                 , charTokenDelimiter  `T.cons` "s slotChar"
                 , charTokenDelimiter  `T.cons` "t sayToChar"
+                , charTokenDelimiter  `T.cons` "x emoteChar"
                 , styleTokenDelimiter `T.cons` styleTokenDelimiter `T.cons` " literal styleTokenDelimiter"
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken  )
                 , styleTokenDelimiter `T.cons` ("ddfltColor"         <> dfltColorStyleToken  )

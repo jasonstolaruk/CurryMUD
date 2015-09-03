@@ -181,10 +181,10 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
                                    in head . filter ((== s) . dropANSI) $ styleds
               s                  = getSing i ms
               format (txt, is)   = if i `elem` is
-                then (formatAdminChanMsg s txt, pure i) : mkBsWithStyled (i `delete` is)
+                then (formatChanMsg "Admin" s txt, pure i) : mkBsWithStyled (i `delete` is)
                 else mkBsWithStyled is
                 where
-                  mkBsWithStyled is' = [ (formatAdminChanMsg (getStyled i') txt, pure i') | i' <- is' ]
+                  mkBsWithStyled is' = [ (formatChanMsg "Admin" (getStyled i') txt, pure i') | i' <- is' ]
           in case emotify i ms tunedIds tunedSings msg of
             Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
             Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
@@ -292,14 +292,6 @@ sorryAdminName :: T.Text -> T.Text
 sorryAdminName n = "There is no admin by the name of " <>
                    (dblQuote . capitalize $ n)         <>
                    " currently tuned in to the admin channel."
-
-
-formatAdminChanMsg :: T.Text -> T.Text -> T.Text
-formatAdminChanMsg n msg = T.concat [ underline . parensQuote $ "Admin"
-                                    , " "
-                                    , n
-                                    , ": "
-                                    , msg ]
 
 
 expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)
