@@ -20,6 +20,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , isHostBanned
                           , isLinked
                           , isPlaBanned
+                          , isPunc
                           , mkActionParams
                           , mkInterfaceList
                           , mkPossPro
@@ -31,6 +32,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , mkWhoHeader
                           , pager
                           , prefixCmd
+                          , punc
                           , sendGenericErrorMsg
                           , sorryDbEx
                           , sorryIgnoreLocPref
@@ -470,6 +472,17 @@ pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i 
 
 prefixCmd :: Char -> CmdName -> T.Text
 prefixCmd (T.singleton -> prefix) cn = prefix <> cn
+
+
+-----
+
+
+punc :: String
+punc = "!\"),./:;?"
+
+
+isPunc :: Char -> Bool
+isPunc = (`elem` punc)
 
 
 -----

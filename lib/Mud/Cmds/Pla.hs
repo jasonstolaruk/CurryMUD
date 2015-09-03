@@ -413,9 +413,14 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
         ser'                       = serialize d'
         xformed                    = xformArgs True as
         xformArgs _      []        = []
+        xformArgs isHead [x]
+          | (h, t) <- headTail x
+          , h == emoteNameChar
+          , all isPunc . T.unpack $ t
+          = pure . mkRight $ expandEnc isHead & each <>~ t
         xformArgs isHead (x:xs)    = (: xformArgs False xs) $ if
-          | x == enc               -> mkRight   expandEnc
-          | x == enc's             -> mkRight $ expandEnc & each %~ (<> "'s")
+          | x == enc               -> mkRight . expandEnc $ isHead
+          | x == enc's             -> mkRight $ expandEnc isHead & each <>~ "'s"
           | enc `T.isInfixOf` x    -> Left . adviceEnc $ "emote "
           | x == etc               -> Left . adviceEtc $ "emote "
           | T.take 1 x == etc      -> isHead ? Left adviceEtcHead :? (procTarget ms . T.tail $ x)
@@ -425,8 +430,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                         & _2 %~ (ser <>)
                                                         & _3 %~ (ser <>)
           | otherwise              -> mkRight . dup3 $ x
-          where
-            expandEnc = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
+        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
     in case filter isLeft xformed of
       [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
                 targetIds = nub . foldr extractIds [] $ toTargets
@@ -459,8 +463,8 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
     mkRight         = Right . mkForNonTargets
     mkForNonTargets = _2 %~ (pure . ForNonTargets)
     hasEnc          = any (`elem` [ enc, enc's ]) as
-    procTarget ms word = let punc = "!\"),./:;?" :: String in
-        case swap . (both %~ T.reverse) . T.span (`elem` punc) . T.reverse $ word of
+    procTarget ms word =
+        case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ "emote "
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
@@ -1338,13 +1342,17 @@ emotify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | otherwise = Right . Left $ ()
 
 
--- TODO: "@" and "@'s" at the end of an emote don't work because a period has been tacked on.
 procEmote :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either [T.Text] [Broadcast]
 procEmote _ _ _ as | hasYou as = Left . pure . adviceYouEmote $ "question"
 procEmote i ms triples as =
     let me                      = (getSing i ms, embedId i, embedId i)
         xformed                 = xformArgs True as
         xformArgs _      []     = []
+        xformArgs _      [x]
+          | (h, t) <- headTail x
+          , h == emoteNameChar
+          , all isPunc . T.unpack $ t
+          = pure . mkRight $ me & each <>~ t
         xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
           | x == enc            -> mkRight me
           | x == enc's          -> mkRight (me & each <>~ "'s")
@@ -1388,8 +1396,8 @@ procEmote i ms triples as =
     mkRight         = Right . mkForNonTargets
     mkForNonTargets = _2 %~ (pure . ForNonTargets)
     hasEnc          = any (`elem` [ enc, enc's ]) as
-    procTarget word = let punc = "!\"),./:;?" :: String in
-        case swap . (both %~ T.reverse) . T.span (`elem` punc) . T.reverse $ word of
+    procTarget word =
+        case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ cn
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->

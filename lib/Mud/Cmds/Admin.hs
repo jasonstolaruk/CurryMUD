@@ -216,13 +216,17 @@ emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest
   | otherwise = Right . Left $ ()
 
 
--- TODO: "@" and "@'s" at the end of an emote don't work because a period has been tacked on.
 procEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
 procEmote _ _ _ _ as | hasYou as = Left . pure . adviceYouEmote . prefixAdminCmd $ "admin"
 procEmote i ms tunedIds tunedSings as =
     let s                       = getSing i ms
         xformed                 = xformArgs True as
         xformArgs _      []     = []
+        xformArgs _      [x]
+          | (h, t) <- headTail x
+          , h == emoteNameChar
+          , all isPunc . T.unpack $ t
+          = pure . mkRight . dup3 $ s <> t
         xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
           | x == enc            -> mkRight . dup3 $ s
           | x == enc's          -> mkRight . dup3 $ s <> "'s"
@@ -266,13 +270,13 @@ procEmote i ms tunedIds tunedSings as =
     mkRight         = Right . mkForNonTargets
     mkForNonTargets = _2 %~ (pure . ForNonTargets)
     hasEnc          = any (`elem` [ enc, enc's ]) as
-    procTarget word = let punc = "!\"),./:;?" :: String in
-        case swap . (both %~ T.reverse) . T.span (`elem` punc) . T.reverse $ word of
+    procTarget word =
+        case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ cn
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                notFound = Left . sorryAdminName $ target
+                notFound         = Left . sorryAdminName $ target
                 found targetSing@(addSuffix isPoss p -> targetSing') =
                     let targetId = head . filter ((== targetSing) . (`getSing` ms)) $ tunedIds
                     in Right ( targetSing'
