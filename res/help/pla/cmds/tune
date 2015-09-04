@@ -4,7 +4,7 @@
 tune \s[\dname=\s{\din\s|\dout\s|\don\s|\doff\s} ...]\d
 
 \uDESCRIPTION\n
-Tune in/out one or more telepathic connections, including both two-way links and channels. (When you tune a connection out, you temporarily close your mind to the telepathic thoughts originating from it.)
+Tune in/out one or more telepathic connections, including both two-way links and In-Character (IC) channels. (When you tune a connection out, you temporarily close your mind to the telepathic thoughts originating from it.)
 When no arguments are provided, you'll get a list of your telepathic connections, indicating whether each connection is presently tuned in or out.
 To tune a connection in/out, provide arguments in the form of "name=value", where "name" is the name of a connection, and "value" is one of the following: "in" / "out", or the equivalent "on" / "off".
 To tune in/out all your connections, specify "all=", as in "tune all=out".

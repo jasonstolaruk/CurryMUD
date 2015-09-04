@@ -157,7 +157,6 @@ prefixAdminCmd = prefixCmd adminCmdChar
 -----
 
 
--- TODO: Help.
 adminAdmin :: Action
 adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
     let triples = sortBy (compare `on` view _2) [ (ai, as, isTuned) | ai <- getLoggedInAdminIds ms

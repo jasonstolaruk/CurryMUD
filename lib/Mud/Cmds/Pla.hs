@@ -717,6 +717,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 
 -- TODO: Consider making a "cheatsheet" topic.
 -- TODO: Consider making a "communication" topic.
+-- TODO: Consider making a "randomNames" topic.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
@@ -1250,7 +1251,6 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 -----
 
 
--- TODO: Help.
 question :: Action
 question (NoArgs' i mq) = getState >>= \ms ->
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
