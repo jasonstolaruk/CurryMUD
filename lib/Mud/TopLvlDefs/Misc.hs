@@ -41,6 +41,10 @@ logRotationDelay :: Int
 logRotationDelay = 60 * 60 -- one hr
 
 
+maxChanNameLen :: Int
+maxChanNameLen = 12
+
+
 maxCmdLen :: Int
 maxCmdLen = 11
 

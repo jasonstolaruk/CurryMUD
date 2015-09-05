@@ -362,8 +362,8 @@ adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
   where
     advice = T.concat [ "You must provide a message to send, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "announce" <> " CurryMUD will be shutting down for maintenance in 30 \
-                                                  \minutes"
+                      , prefixAdminCmd "announce"
+                      , " CurryMUD will be shutting down for maintenance in 30 minutes"
                       , dfltColor
                       , "." ]
 adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
@@ -385,7 +385,9 @@ adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] advice
   where
     advice = T.concat [ "Please also provide a reason, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "banhost " <> a <> " used by Taro"
+                      , prefixAdminCmd "banhost "
+                      , a
+                      , " used by Taro"
                       , dfltColor
                       , "." ]
 adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
@@ -425,7 +427,9 @@ adminBanPlayer p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] advi
   where
     advice = T.concat [ "Please also provide a reason, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "banplayer " <> a <> " for harassing hanako"
+                      , prefixAdminCmd "banplayer "
+                      , a
+                      , " for harassing hanako"
                       , dfltColor
                       , "." ]
 adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
@@ -606,14 +610,17 @@ adminMsg p@AdviseNoArgs = advise p [ prefixAdminCmd "message" ] advice
   where
     advice = T.concat [ "Please specify the PC name of a regular player followed by a message, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "message" <> " taro thank you for reporting the bug you found"
+                      , prefixAdminCmd "message"
+                      , " taro thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
 adminMsg p@(AdviseOneArg a) = advise p [ prefixAdminCmd "message" ] advice
   where
     advice = T.concat [ "Please also provide a message to send, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "message " <> a <> " thank you for reporting the bug you found"
+                      , prefixAdminCmd "message "
+                      , a
+                      , " thank you for reporting the bug you found"
                       , dfltColor
                       , "." ]
 adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
@@ -669,12 +676,12 @@ firstAdminMsg i adminSing = modifyState $ (, msg) . (plaTbl.ind i %~ setPlaFlag 
                          , adminSing
                          , ", a CurryMUD administrator. To reply, type "
                          , quoteColor
-                         , dblQuote $ "admin " <> uncapitalize adminSing <> " msg"
+                         , "admin "
+                         , uncapitalize adminSing
+                         , " msg"
                          , dfltColor
                          , ", where "
-                         , quoteColor
                          , dblQuote "msg"
-                         , dfltColor
                          , " is the message you want to send to "
                          , adminSing
                          , "." ] ]
@@ -738,7 +745,8 @@ adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
   where
     advice = T.concat [ "You must provide a message to print to the server console, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "print" <> " is anybody home?"
+                      , prefixAdminCmd "print"
+                      , " is anybody home?"
                       , dfltColor
                       , "." ]
 adminPrint (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
@@ -905,7 +913,7 @@ adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
             sorryInvalid = sendFun . T.concat $ [ dblQuote strippedTarget'
                                                 , " is not a valid room name. Type "
                                                 , quoteColor
-                                                , dblQuote . prefixAdminCmd $ "telerm"
+                                                , prefixAdminCmd "telerm"
                                                 , dfltColor
                                                 , " with no arguments to get a list of valid room names." ]
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
@@ -913,7 +921,8 @@ adminTeleRm p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
                       , quoteColor
-                      , dblQuote $ prefixAdminCmd "telerm" <> " lounge"
+                      , prefixAdminCmd "telerm"
+                      , " lounge"
                       , dfltColor
                       , "." ]
 

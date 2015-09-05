@@ -74,7 +74,7 @@ import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', keys, map, mapWithKey)
-import qualified Data.Map.Lazy as M ((!), elems, filter, keys, lookup, map, singleton, toList)
+import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup, map, singleton, toList)
 import qualified Data.Set as S (filter, map, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -138,6 +138,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("expressive", expCmdList,      "Display or search a list of available expressive commands and their results.")
     , ("n",          go "n",          "Go north.")
     , ("ne",         go "ne",         "Go northeast.")
+    , ("newchannel", newChan,         "Create a new telepathic channel.")
     , ("nw",         go "nw",         "Go northwest.")
     , ("question",   question,        "Ask/answer newbie questions.")
     , ("qui",        quitCan'tAbbrev, "")
@@ -235,7 +236,9 @@ admin p@(AdviseOneArg a) = advise p ["admin"] advice
   where
     advice = T.concat [ "Please also provide a message to send, as in "
                       , quoteColor
-                      , dblQuote $ "admin " <> a <> " are you available? I need your assistance"
+                      , "admin "
+                      , a
+                      , " are you available? I need your assistance"
                       , dfltColor
                       , "." ]
 admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
@@ -320,7 +323,7 @@ bug p@AdviseNoArgs = advise p ["bug"] advice
   where
     advice = T.concat [ "Please describe the bug you've found, as in "
                       , quoteColor
-                      , dblQuote "bug i've fallen and I can't get up!"
+                      , "bug i've fallen and I can't get up!"
                       , dfltColor
                       , "." ]
 bug p = bugTypoLogger p BugLog
@@ -358,7 +361,7 @@ dropAction p@AdviseNoArgs = advise p ["drop"] advice
   where
     advice = T.concat [ "Please specify one or more items to drop, as in "
                       , quoteColor
-                      , dblQuote "drop sword"
+                      , "drop sword"
                       , dfltColor
                       , "." ]
 dropAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -391,7 +394,7 @@ emote p@AdviseNoArgs = advise p ["emote"] advice
   where
     advice = T.concat [ "Please provide a description of an action, as in "
                       , quoteColor
-                      , dblQuote "emote laughs with relief as tears roll down her face"
+                      , "emote laughs with relief as tears roll down her face"
                       , dfltColor
                       , "." ]
 emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] advice
@@ -402,7 +405,9 @@ emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = adv
                       , dblQuote etc
                       , ", as in "
                       , quoteColor
-                      , dblQuote $ "emote slowly turns her head to look directly at " <> etc <> "taro"
+                      , "emote slowly turns her head to look directly at "
+                      , etc
+                      , "taro"
                       , dfltColor
                       , "." ]
     etc = T.singleton emoteTargetChar
@@ -555,9 +560,7 @@ mkExpCmdListTxt =
                                                      T.replace "@" "Hanako" toSelfWithTarget ]
       where
         paddedName         = padCmdName styled
-        mkInitialTxt input = T.concat [ quoteColor
-                                      , dblQuote input
-                                      , dfltColor
+        mkInitialTxt input = T.concat [ quoteWith' (quoteColor, dfltColor) input
                                       , " "
                                       , arrowColor
                                       , "->"
@@ -573,7 +576,7 @@ getAction p@AdviseNoArgs = advise p ["get"] advice
   where
     advice = T.concat [ "Please specify one or more items to pick up, as in "
                       , quoteColor
-                      , dblQuote "get sword"
+                      , "get sword"
                       , dfltColor
                       , "." ]
 getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == "from" =
@@ -585,7 +588,7 @@ getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == 
                                   , dblQuote "remove"
                                   , " command. For example, to remove a ring from your sack, type "
                                   , quoteColor
-                                  , dblQuote "remove ring sack"
+                                  , "remove ring sack"
                                   , dfltColor
                                   , "." ]
 getAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -985,18 +988,18 @@ firstLook i cols a@(pt, _) = if pt^.ind i.to (getPlaFlag IsNotFirstLook)
                             \inventory, use the "
                           , dblQuote "inventory"
                           , " command "
-                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "inventory bread" <> dfltColor
+                          , parensQuote $ "for example: " <> quoteWith' (quoteColor, dfltColor) "inventory bread"
                           , ". To examine items in your readied equipment, use the "
                           , dblQuote "equipment"
                           , " command "
-                          , parensQuote $ "for example: " <> quoteColor <> dblQuote "equipment sword" <> dfltColor
+                          , parensQuote $ "for example: " <> quoteWith' (quoteColor, dfltColor) "equipment sword"
                           , ". "
                           , quoteColor
-                          , dblQuote "inventory"
+                          , "inventory"
                           , dfltColor
                           , " and "
                           , quoteColor
-                          , dblQuote "equipment"
+                          , "equipment"
                           , dfltColor
                           , " alone will list the items in your inventory and readied equipment, respectively." ]
        in a & _1.ind i %~ setPlaFlag IsNotFirstLook True & _2 <>~ wrapUnlinesNl cols msg
@@ -1165,6 +1168,66 @@ showMotd mq cols = send mq =<< helper
 -----
 
 
+-- TODO: Creating a new channel should cost psionic points.
+newChan :: Action
+newChan p@AdviseNoArgs = advise p ["newchannel"] advice
+  where
+    advice = T.concat [ "Please provide one or more new channel names, as in "
+                      , quoteColor
+                      , "newchannel hunt"
+                      , dfltColor
+                      , "." ]
+newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(newChanNames, sorryMsgs) ->
+    let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
+        msgs                    = ()# sorryMsgs' ? otherMsgs :? sorryMsgs' ++ (otherMsgs |!| "" : otherMsgs)
+    in multiWrapSend mq cols msgs >> newChanNames |#| logPla "newChan" i . commas
+  where
+    helper ms = let s                              = getSing i ms
+                    (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
+                in (ms', (newChanNames, sorryMsgs))
+      where
+        f s triple a@(T.toLower -> a')
+          | T.length a > maxChanNameLen = triple & _3 <>~ mkSorryMsg a ("a channel name may not be more than " <>
+                                                                        showText maxChanNameLen                <>
+                                                                        " characters long")
+          | T.any isNG a = triple & _3 <>~ mkSorryMsg a "a channel name may only contain alphabetic letters and digits"
+          | a' `elem` illegalNames = triple & _3 <>~ mkSorryMsg a "this name is reserved or already in use"
+          | a' `elem` map T.toLower myChanNames
+          , match <- head . filter ((== a') . T.toLower) $ myChanNames
+          = triple & _3 <>~ [ "You are already connected to a channel named " <> dblQuote match <> "." ]
+          | otherwise = let ci = views chanTbl (head . ([0..] \\) . IM.keys) $ triple^._1
+                            c  = Chan ci a . M.fromList . pure $ (s, True)
+                        in triple & _1.chanTbl.at ci .~ Just c
+                                  & _2 <>~ pure a
+        mkSorryMsg a msg = pure . T.concat $ [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
+        isNG c           = not $ isLetter c || isDigit c
+        illegalNames     = [ "admin", "all", "question" ] ++ pcNames
+        pcNames          = map (uncapitalize . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
+        myChanNames          = map (view chanName) . getPCChans i $ ms
+    mkNewChanMsg []     = []
+    mkNewChanMsg ns@[_] = pure . mkMsgHelper False $ ns
+    mkNewChanMsg ns     = T.lines . mkMsgHelper True $ ns
+    mkMsgHelper isPlur (map dblQuote -> ns) =
+        T.concat [ "Focusing your innate psionic energy for a brief moment, you create a "
+                 , isPlur |?| "group of "
+                 , "shared abstract energy space"
+                 , theLetterS
+                 , " to which others may be connected. To "
+                 , isPlur ? "these " :? "this "
+                 , dblQuote . ("channel" <>) $ theLetterS
+                 , " you assign the "
+                 , isPlur |?| "following "
+                 , "name"
+                 , isPlur ? "s:\n" <> commas ns :? " " <> head ns
+                 , "." ]
+      where
+        theLetterS = isPlur |?| "s"
+newChan p = patternMatchFail "newChan" [ showText p ]
+
+
+-----
+
+
 plaDispCmdList :: Action
 plaDispCmdList p@(LowerNub' i as) = dispCmdList plaCmds p >> logPlaExecArgs "?" as i
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
@@ -1179,14 +1242,16 @@ putAction p@AdviseNoArgs = advise p ["put"] advice
     advice = T.concat [ "Please specify one or more items you want to put followed by where you want to put them, as \
                         \in "
                       , quoteColor
-                      , dblQuote "put doll sack"
+                      , "put doll sack"
                       , dfltColor
                       , "." ]
 putAction p@(AdviseOneArg a) = advise p ["put"] advice
   where
     advice = T.concat [ "Please also specify where you want to put it, as in "
                       , quoteColor
-                      , dblQuote $ "put " <> a <> " sack"
+                      , "put "
+                      , a
+                      , " sack"
                       , dfltColor
                       , "." ]
 putAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -1491,7 +1556,7 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
   where
     msg = T.concat [ "Type "
                    , quoteColor
-                   , dblQuote "quit"
+                   , "quit"
                    , dfltColor
                    , " with no arguments to quit CurryMUD." ]
 
@@ -1580,7 +1645,7 @@ ready p@AdviseNoArgs = advise p ["ready"] advice
   where
     advice = T.concat [ "Please specify one or more items to ready, as in "
                       , quoteColor
-                      , dblQuote "ready sword"
+                      , "ready sword"
                       , dfltColor
                       , "." ]
 ready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -1863,14 +1928,16 @@ remove p@AdviseNoArgs = advise p ["remove"] advice
     advice = T.concat [ "Please specify one or more items to remove followed by the container you want to remove \
                         \them from, as in "
                       , quoteColor
-                      , dblQuote "remove doll sack"
+                      , "remove doll sack"
                       , dfltColor
                       , "." ]
 remove p@(AdviseOneArg a) = advise p ["remove"] advice
   where
     advice = T.concat [ "Please also specify the container you want to remove it from, as in "
                       , quoteColor
-                      , dblQuote $ "remove " <> a <> " sack"
+                      , "remove "
+                      , a
+                      , " sack"
                       , dfltColor
                       , "." ]
 remove (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -1935,7 +2002,7 @@ say p@AdviseNoArgs = advise p ["say"] advice
   where
     advice = T.concat [ "Please specify what you'd like to say, as in "
                       , quoteColor
-                      , dblQuote "say nice to meet you, too"
+                      , "say nice to meet you, too"
                       , dfltColor
                       , "." ]
 say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
@@ -1963,8 +2030,9 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     adviceCloseChar   = "An adverbial phrase must be terminated with a " <> dblQuote acc <> example
     example           = T.concat [ ", as in "
                                  , quoteColor
-                                 , dblQuote $ "say " <> quoteWith' (aoc, acc) "enthusiastically" <> " nice to meet \
-                                              \you, too"
+                                 , "say "
+                                 , quoteWith' (aoc, acc) "enthusiastically"
+                                 , " nice to meet you, too"
                                  , dfltColor
                                  , "." ]
     adviceEmptyAdverb = T.concat [ "Please provide an adverbial phrase between "
@@ -1975,7 +2043,9 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     adviceEmptySay    = "Please also specify what you'd like to say" <> example
     adviceEmptySayTo  = T.concat [ "Please also specify what you'd like to say, as in "
                                  , quoteColor
-                                 , dblQuote $ "say " <> T.singleton sayToChar <> "taro nice to meet you, too"
+                                 , "say "
+                                 , T.singleton sayToChar
+                                 , "taro nice to meet you, too"
                                  , dfltColor
                                  , "." ]
     adviseHelper      = advise p ["say"]
@@ -2053,7 +2123,7 @@ firstMobSay i pt = if pt^.ind i.to (getPlaFlag IsNotFirstMobSay)
                           , dblQuote "ask"
                           , " command. For example, to ask a city guard about crime, type "
                           , quoteColor
-                          , dblQuote "ask guard crime"
+                          , "ask guard crime"
                           , dfltColor
                           , "." ]
        in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlnlPrefix msg)
@@ -2094,7 +2164,7 @@ helperSettings _ _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
                             , dblQuote "="
                             , ", followed immediately by the new value you want to assign, as in "
                             , quoteColor
-                            , dblQuote "set columns=80"
+                            , "set columns=80"
                             , dfltColor
                             , "." ]
           f      = any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ])
@@ -2153,14 +2223,16 @@ showAction p@AdviseNoArgs = advise p ["show"] advice
   where
     advice = T.concat [ "Please specify one or more items to show followed by the name of a person, as in "
                       , quoteColor
-                      , dblQuote "show ring taro"
+                      , "show ring taro"
                       , dfltColor
                       , "." ]
 showAction p@(AdviseOneArg a) = advise p ["show"] advice
   where
     advice = T.concat [ "Please also provide the name of a person, as in "
                       , quoteColor
-                      , dblQuote $ "show " <> a <> " taro"
+                      , "show "
+                      , a
+                      , " taro"
                       , dfltColor
                       , "." ]
 showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
@@ -2449,7 +2521,7 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
               in findFullNameForAbbrev name connNames |&| maybe notFound (found val)
   where
     linkNames   = map uncapitalize . M.keys $ linkTbl
-    chanNames   = map (view chanName) chans
+    chanNames   = map (views chanName T.toLower) chans
     notFound    = a & _3 <>~ [ "You don't have a connection by the name of " <> dblQuote name <> "." ]
     found val n = if n == "all"
                     then appendMsg "all telepathic connections" & _1 %~ M.map (const val)
@@ -2465,8 +2537,8 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
           | otherwise          = blowUp "helperTune found foundHelper" "connection name not found" . pure $ n
           where
             foundLink = let n' = capitalize n in appendMsg n' & _1.at n' .~ Just val
-            foundChan = let ([match], others) = partition (views chanName (== n)) chans
-                        in appendMsg n & _2 .~ (match & chanConnTbl.at s .~ Just val) : others
+            foundChan = let ([match], others) = partition (views chanName ((== n) . T.toLower)) chans
+                        in appendMsg (match^.chanName) & _2 .~ (match & chanConnTbl.at s .~ Just val) : others
 
 
 sorryTune :: T.Text -> [T.Text] -> [T.Text]
@@ -2484,7 +2556,7 @@ sorryTune arg msgs =
                           , dblQuote "off"
                           , ", as in "
                           , quoteColor
-                          , dblQuote "tune taro=in"
+                          , "tune taro=in"
                           , dfltColor
                           , "." ]
     in msgs |&| (any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ]))
@@ -2498,7 +2570,7 @@ typo p@AdviseNoArgs = advise p ["typo"] advice
   where
     advice = T.concat [ "Please describe the typo you've found, as in "
                       , quoteColor
-                      , dblQuote "typo 'accross from the fireplace' should be 'across from the fireplace'"
+                      , "typo 'accross from the fireplace' should be 'across from the fireplace'"
                       , dfltColor
                       , "." ]
 typo p = bugTypoLogger p TypoLog
@@ -2513,7 +2585,7 @@ unlink p@AdviseNoArgs = advise p ["unlink"] advice
   where
     advice = T.concat [ "Please provide the full name of the person with whom you would like to unlink, as in "
                       , quoteColor
-                      , dblQuote "unlink taro"
+                      , "unlink taro"
                       , dfltColor
                       , "." ]
 unlink (LowerNub i mq cols as) = do
@@ -2574,7 +2646,7 @@ unready p@AdviseNoArgs = advise p ["unready"] advice
   where
     advice = T.concat [ "Please specify one or more items to unready, as in "
                       , quoteColor
-                      , dblQuote "unready sword"
+                      , "unready sword"
                       , dfltColor
                       , "." ]
 unready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->

@@ -238,7 +238,8 @@ debugId p@AdviseNoArgs = advise p [] advice
   where
     advice = T.concat [ "Please specify an ID to search for, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "id" <> " 100"
+                      , prefixDebugCmd "id"
+                      , " 100"
                       , dfltColor
                       , "." ]
 debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
@@ -276,7 +277,8 @@ debugId p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the ID to search for, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "id" <> " 100"
+                      , prefixDebugCmd "id"
+                      , " 100"
                       , dfltColor
                       , "." ]
 
@@ -349,14 +351,16 @@ debugNumber p@AdviseNoArgs = advise p [] advice
   where
     advice = T.concat [ "Please specify a number followed by its base, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "number" <> " a 16"
+                      , prefixDebugCmd "number"
+                      , " a 16"
                       , dfltColor
                       , "." ]
 debugNumber p@(AdviseOneArg _) = advise p [] advice
   where
     advice = T.concat [ "Please also specify base, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "number" <> " a 16"
+                      , prefixDebugCmd "number"
+                      , " a 16"
                       , dfltColor
                       , "." ]
 debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
@@ -378,7 +382,8 @@ debugNumber p = advise p [] advice
   where
     advice = T.concat [ "Please provide two arguments: a number and its base, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "number" <> " a 16"
+                      , prefixDebugCmd "number"
+                      , " a 16"
                       , dfltColor
                       , "." ]
 
@@ -642,7 +647,8 @@ debugWeight p@AdviseNoArgs = advise p [] advice
   where
     advice = T.concat [ "Please specify an ID for which you would like to calculate weight, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "weight" <> " 100"
+                      , prefixDebugCmd "weight"
+                      , " 100"
                       , dfltColor
                       , "." ]
 debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
@@ -658,7 +664,8 @@ debugWeight p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: the ID for which you would like to calculate weight, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "weight" <> " 100"
+                      , prefixDebugCmd "weight"
+                      , " 100"
                       , dfltColor
                       , "." ]
 
@@ -671,7 +678,8 @@ debugWrap p@AdviseNoArgs = advise p [] advice
   where
     advice = T.concat [ "Please specify line length, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "wrap" <> " 40"
+                      , prefixDebugCmd "wrap"
+                      , " 40"
                       , dfltColor
                       , "." ]
 debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
@@ -688,7 +696,8 @@ debugWrap p = advise p [] advice
   where
     advice = T.concat [ "Please provide one argument: line length, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "wrap" <> " 40"
+                      , prefixDebugCmd "wrap"
+                      , " 40"
                       , dfltColor
                       , "." ]
 
@@ -720,14 +729,16 @@ debugWrapIndent p@AdviseNoArgs = advise p [] advice
   where
     advice = T.concat [ "Please specify line length followed by indent amount, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "wrapindent" <> " 40 4"
+                      , prefixDebugCmd "wrapindent"
+                      , " 40 4"
                       , dfltColor
                       , "." ]
 debugWrapIndent p@(AdviseOneArg _) = advise p [] advice
   where
     advice = T.concat [ "Please also specify indent amount, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "wrapindent" <> " 40 4"
+                      , prefixDebugCmd "wrapindent"
+                      , " 40 4"
                       , dfltColor
                       , "." ]
 debugWrapIndent (WithArgs i mq cols [a, b]) = do
@@ -750,6 +761,7 @@ debugWrapIndent p = advise p [] advice
   where
     advice = T.concat [ "Please provide two arguments: line length and indent amount, as in "
                       , quoteColor
-                      , dblQuote $ prefixDebugCmd "wrapindent" <> " 40 4"
+                      , prefixDebugCmd "wrapindent"
+                      , " 40 4"
                       , dfltColor
                       , "." ]

@@ -124,14 +124,16 @@ adviceEnc cn = T.concat [ dblQuote enc
                         , parensQuote "to create a possessive noun"
                         , ", as in "
                         , quoteColor
-                        , dblQuote . T.concat $ [ cn
-                                                , "shielding her eyes from the sun, "
-                                                , enc
-                                                , " looks out across the plains" ]
+                        , cn
+                        , "shielding her eyes from the sun, "
+                        , enc
+                        , " looks out across the plains"
                         , dfltColor
                         , ", or "
                         , quoteColor
-                        , dblQuote $ cn <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
+                        , cn
+                        , enc
+                        , "'s leg twitches involuntarily as she laughs with gusto"
                         , dfltColor
                         , "." ]
 
@@ -140,19 +142,19 @@ adviceEtc :: T.Text -> T.Text
 adviceEtc cn = T.concat [ dblQuote etc
                         , " must be immediately followed by the name of the person you wish to target, as in "
                         , quoteColor
-                        , dblQuote . T.concat $ [ cn
-                                                , "slowly turns her head to look directly at "
-                                                , etc
-                                                , "taro" ]
+                        , cn
+                        , "slowly turns her head to look directly at "
+                        , etc
+                        , "taro"
                         , dfltColor
                         , ". To create a possessive noun, append "
                         , dblQuote "'s"
                         , " to the target name, as in "
                         , quoteColor
-                        , dblQuote . T.concat $ [ cn
-                                                , "places her hand firmly on "
-                                                , etc
-                                                , "taro's shoulder" ]
+                        , cn
+                        , "places her hand firmly on "
+                        , etc
+                        , "taro's shoulder"
                         , dfltColor
                         , "." ]
 
@@ -176,12 +178,12 @@ adviceYouEmote cn = T.concat [ "Sorry, but you can't use a form of the word "
                              , dblQuote etc
                              , ", as in "
                              , quoteColor
-                             , dblQuote . T.concat $ [ cn
-                                                     , " "
-                                                     , T.singleton emoteChar
-                                                     , "slowly turns her head to look directly at "
-                                                     , etc
-                                                     , "taro" ]
+                             , cn
+                             , " "
+                             , T.singleton emoteChar
+                             , "slowly turns her head to look directly at "
+                             , etc
+                             , "taro"
                              , dfltColor
                              , "." ]
 
@@ -192,10 +194,11 @@ adviceYouEmote cn = T.concat [ "Sorry, but you can't use a form of the word "
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
 advise (Advising mq cols) []  msg = wrapSend mq cols msg
 advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For more information, type "
-                                                          , quoteColor
-                                                          , dblQuote $ "help " <> h
-                                                          , dfltColor
-                                                          , "." ] ]
+                                                                          , quoteColor
+                                                                          , "help "
+                                                                          , h
+                                                                          , dfltColor
+                                                                          , "." ] ]
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
@@ -540,7 +543,9 @@ sorryNotTuned mq cols n =
                                   , n
                                   , " channel. Type "
                                   , quoteColor
-                                  , dblQuote $ "set " <> n <> "=in"
+                                  , "set "
+                                  , n
+                                  , "=in"
                                   , dfltColor
                                   , " to tune it back in." ]
 
