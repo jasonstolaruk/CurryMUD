@@ -495,7 +495,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 
 
 adminHost :: Action
-adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify the PC name(s) of one or more players \
+adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify the PC names of one or more players \
                                                               \whose host statistics you would like to see."
 adminHost (LowerNub i mq cols as) = do
     ms          <- getState
@@ -663,8 +663,8 @@ firstAdminMsg i adminSing = modifyState $ (, msg) . (plaTbl.ind i %~ setPlaFlag 
 
 
 adminPeep :: Action
-adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify the PC name(s) of one or more players \
-                                                              \you wish to start or stop peeping."
+adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify the PC names of one or more players you \
+                                                              \wish to start or stop peeping."
 adminPeep (LowerNub i mq cols as) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
     multiWrapSend mq cols msgs

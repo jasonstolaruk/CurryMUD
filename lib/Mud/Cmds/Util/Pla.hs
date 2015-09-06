@@ -43,7 +43,8 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , resolveRmInvCoins
                          , sorryConInEq
                          , sorryEquipInvLook
-                         , sorryIncog ) where
+                         , sorryIncog
+                         , theLetterS ) where
 
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
@@ -822,3 +823,10 @@ sorryEquipInvLook cols eilcA eilcB = wrapUnlinesNl cols . T.concat $ helper
 
 sorryIncog :: T.Text -> T.Text
 sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito."
+
+
+-----
+
+
+theLetterS :: Bool -> T.Text
+theLetterS = (|?| "s")

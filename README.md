@@ -31,7 +31,7 @@ CurryMUD will have the following features:
 * Logging.
 * ANSI color.
 * Systems for reporting bugs and typos.
-* Functionality for various levels of communication.
+* Functionality for various methods of communication.
 * Weight and encumbrance.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.

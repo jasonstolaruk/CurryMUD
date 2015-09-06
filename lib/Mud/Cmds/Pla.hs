@@ -180,10 +180,11 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("intro",      "in", intro,      "Display a list of the people who have introduced themselves to you, or \
                                        \introduce yourself to one or more people.")
     , ("inventory",  "i",  inv,        "Display your inventory, or examine one or more items in your inventory.")
-    , ("look",       "l",  look,       "Display a description of your current room, or examine one or more items in \
-                                       \your current room.")
+    , ("leave",      "le", leave,      "Sever your telepathic connection to a channel.")
     , ("link",       "li", link,       "Display a list of the people with whom you have established a telepathic link, \
                                        \or establish a telepathic link with one or more people.")
+    , ("look",       "l",  look,       "Display a description of your current room, or examine one or more items in \
+                                       \your current room.")
     , ("motd",       "m",  motd,       "Display the message of the day.")
     , ("put",        "p",  putAction,  "Put one or more items into a container.")
     , ("ready",      "r",  ready,      "Ready one or more items.")
@@ -867,6 +868,51 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
+-- TODO: Help.
+-- TODO: Those tuned to the channels in question should be informed.
+-- TODO: Leaving a channel should cost psionic points.
+leave :: Action
+leave p@AdviseNoArgs = advise p ["leave"] advice
+  where
+    advice = T.concat [ "Please specify the names of one or more channels to leave, as in "
+                      , quoteColor
+                      , "leave hunt"
+                      , dfltColor
+                      , "." ]
+leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(chanNames, sorryMsgs) ->
+    let otherMsgs = mkLeaveMsg chanNames
+        msgs      = ()# sorryMsgs ? otherMsgs :? sorryMsgs ++ (otherMsgs |!| "" : otherMsgs)
+    in multiWrapSend mq cols msgs >> chanNames |#| logPla "leave" i . commas
+  where
+    helper ms = let s                           = getSing i ms
+                    (ms', chanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
+                in (ms', (chanNames, sorryMsgs))
+      where
+        f s triple a@(T.toLower -> a') =
+            let notFound    = triple & _3 <>~ [ "You are not connected to a channel named " <> dblQuote a <> "." ]
+                found match = let cn = head . filter ((== match) . T.toLower) $ cns
+                                  c  = head . filter (views chanName (== cn)) $ cs
+                                  ci = c^.chanId
+                              in triple & _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
+                                        & _2 <>~ pure cn
+                cs  = getPCChans i ms
+                cns = map (view chanName) cs
+            in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
+    mkLeaveMsg []     = []
+    mkLeaveMsg ns@[_] = pure    . mkMsgHelper False $ ns
+    mkLeaveMsg ns     = T.lines . mkMsgHelper True  $ ns
+    mkMsgHelper isPlur (map dblQuote -> ns) =
+        T.concat [ "Focusing your innate psionic energy for a brief moment, you sever your telepathic connection"
+                 , theLetterS isPlur
+                 , " to the "
+                 , isPlur ? "following channels:\n" <> commas ns :? head ns <> " channel"
+                 , "." ]
+leave p = patternMatchFail "leave" [ showText p ]
+
+
+-----
+
+
 look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri     = getRmId i  ms
@@ -1145,7 +1191,7 @@ showMotd mq cols = send mq =<< helper
 newChan :: Action
 newChan p@AdviseNoArgs = advise p ["newchannel"] advice
   where
-    advice = T.concat [ "Please provide one or more new channel names, as in "
+    advice = T.concat [ "Please specify one or more new channel names, as in "
                       , quoteColor
                       , "newchannel hunt"
                       , dfltColor
@@ -1178,23 +1224,21 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(newChanN
         pcNames          = map (uncapitalize . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
         myChanNames          = map (view chanName) . getPCChans i $ ms
     mkNewChanMsg []     = []
-    mkNewChanMsg ns@[_] = pure . mkMsgHelper False $ ns
-    mkNewChanMsg ns     = T.lines . mkMsgHelper True $ ns
+    mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
+    mkNewChanMsg ns     = T.lines . mkMsgHelper True  $ ns
     mkMsgHelper isPlur (map dblQuote -> ns) =
         T.concat [ "Focusing your innate psionic energy for a brief moment, you create a "
                  , isPlur |?| "group of "
                  , "shared abstract energy space"
-                 , theLetterS
+                 , theLetterS isPlur
                  , " to which others may be connected. To "
                  , isPlur ? "these " :? "this "
-                 , dblQuote . ("channel" <>) $ theLetterS
+                 , dblQuote . ("channel" <>) . theLetterS $ isPlur
                  , " you assign the "
                  , isPlur |?| "following "
                  , "name"
                  , isPlur ? "s:\n" <> commas ns :? " " <> head ns
                  , "." ]
-      where
-        theLetterS = isPlur |?| "s"
 newChan p = patternMatchFail "newChan" [ showText p ]
 
 
