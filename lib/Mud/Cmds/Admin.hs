@@ -33,12 +33,11 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, at, both, to, view, views)
+import Control.Lens (_1, _2, _3, both, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
@@ -52,7 +51,7 @@ import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime,
 import Data.Tuple (swap)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (elems, empty, filter, foldlWithKey', keys, map, mapWithKey, toList)
+import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
 import qualified Data.Set as S (filter, map, toList)
 import qualified Data.Text as T
@@ -237,29 +236,8 @@ procEmote i ms tunedIds tunedSings as =
           | isHead              -> mkRight . dup3 $ s <> " " <> x
           | otherwise           -> mkRight . dup3 $ x
     in case filter isLeft xformed of
-      [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
-                targetIds = nub . foldr extractIds [] $ toTargets
-                extractIds [ForNonTargets _           ] acc = acc
-                extractIds (ForTarget     _ targetId:_) acc = targetId : acc
-                extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
-                extractIds xs                           _   = patternMatchFail "procEmote extractIds" [ showText xs ]
-                msgMap  = foldr (\targetId -> at targetId .~ Just []) IM.empty targetIds
-                msgMap' = foldr consWord msgMap toTargets
-                consWord [ ForNonTargets word                           ] = IM.map (word :)
-                consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
-                consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-                consWord xs = const . patternMatchFail "procEmote consWord" $ [ showText xs ]
-                selectiveCons p targetId isPoss word = IM.mapWithKey helper
-                  where
-                    helper k v = let targetSing = getSing k ms |&| (isPoss ? (<> "'s") :? id)
-                                 in (: v) $ if k == targetId
-                                   then T.concat [ emoteTargetColor, targetSing, dfltColor, p ]
-                                   else word
-                toTargetBs = IM.foldlWithKey' helper [] msgMap'
-                  where
-                    helper acc k = (: acc) . (formatMsg *** pure) . (, k)
-                formatMsg = bracketQuote . punctuateMsg . T.unwords
-            in Right $ (formatMsg toSelf, pure i) : (formatMsg toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
+      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+            in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
       advices -> Left . intersperse "" . map fromLeft . nub $ advices
   where
     cn              = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar

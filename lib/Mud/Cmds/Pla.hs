@@ -73,7 +73,7 @@ import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', keys, map, mapWithKey)
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup, map, singleton, toList)
 import qualified Data.Set as S (filter, map, toList)
 import qualified Data.Text as T
@@ -437,29 +437,8 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | otherwise              -> mkRight . dup3 $ x
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
     in case filter isLeft xformed of
-      [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
-                targetIds = nub . foldr extractIds [] $ toTargets
-                extractIds [ForNonTargets _           ] acc = acc
-                extractIds (ForTarget     _ targetId:_) acc = targetId : acc
-                extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
-                extractIds xs                           _   = patternMatchFail "emote extractIds" [ showText xs ]
-                msgMap  = foldr (\targetId -> at targetId .~ Just []) IM.empty targetIds
-                msgMap' = foldr consWord msgMap toTargets
-                consWord [ ForNonTargets word                           ] = IM.map (word :)
-                consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
-                consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-                consWord xs = const . patternMatchFail "emote consWord" $ [ showText xs ]
-                selectiveCons p targetId isPoss word = IM.mapWithKey helper
-                  where
-                    helper k v = let targetSing = getSing k ms |&| (isPoss ? (<> "'s") :? id)
-                                 in (: v) $ if k == targetId
-                                   then T.concat [ emoteTargetColor, targetSing, dfltColor, p ]
-                                   else word
-                toTargetBs = IM.foldlWithKey' helper [] msgMap'
-                  where
-                    helper acc k = (: acc) . (formatMsg *** pure) . (, k)
-                formatMsg = bracketQuote . punctuateMsg . T.unwords
-            in bcastNl $ (formatMsg toSelf, pure i) : (formatMsg toOthers, pcIds d \\ (i : targetIds)) : toTargetBs
+      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+            in bcastNl $ (toSelf, pure i) : (toOthers, pcIds d \\ (i : targetIds)) : toTargetBs
       advices -> multiWrapSend mq cols . map fromLeft . nub $ advices
   where
     enc             = T.singleton emoteNameChar
@@ -1168,6 +1147,7 @@ showMotd mq cols = send mq =<< helper
 -----
 
 
+-- TODO: Help.
 -- TODO: Creating a new channel should cost psionic points.
 newChan :: Action
 newChan p@AdviseNoArgs = advise p ["newchannel"] advice
@@ -1429,29 +1409,8 @@ procEmote i ms triples as =
           | isHead              -> mkRight (me & each <>~ (" " <> x))
           | otherwise           -> mkRight . dup3 $ x
     in case filter isLeft xformed of
-      [] -> let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
-                targetIds = nub . foldr extractIds [] $ toTargets
-                extractIds [ForNonTargets _           ] acc = acc
-                extractIds (ForTarget     _ targetId:_) acc = targetId : acc
-                extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
-                extractIds xs                           _   = patternMatchFail "procEmote extractIds" [ showText xs ]
-                msgMap  = foldr (\targetId -> at targetId .~ Just []) IM.empty targetIds
-                msgMap' = foldr consWord msgMap toTargets
-                consWord [ ForNonTargets word                           ] = IM.map (word :)
-                consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
-                consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-                consWord xs = const . patternMatchFail "procEmote consWord" $ [ showText xs ]
-                selectiveCons p targetId isPoss word = IM.mapWithKey helper
-                  where
-                    helper k v = let targetSing = getSing k ms |&| (isPoss ? (<> "'s") :? id)
-                                 in (: v) $ if k == targetId
-                                   then T.concat [ emoteTargetColor, targetSing, dfltColor, p ]
-                                   else word
-                toTargetBs = IM.foldlWithKey' helper [] msgMap'
-                  where
-                    helper acc k = (: acc) . (formatMsg *** pure) . (, k)
-                formatMsg = bracketQuote . punctuateMsg . T.unwords
-            in Right $ (formatMsg toSelf, pure i) : (formatMsg toOthers, tunedIds \\ targetIds) : toTargetBs
+      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+            in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
       advices -> Left . intersperse "" . map fromLeft . nub $ advices
   where
     cn              = "question " <> T.singleton emoteChar

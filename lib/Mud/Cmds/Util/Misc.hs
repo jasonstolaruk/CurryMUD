@@ -15,6 +15,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , expandEmbeddedIdsToSings
                           , fileIOExHandler
                           , formatChanMsg
+                          , happy
                           , hasYou
                           , inOutOnOffs
                           , isDblLinked
@@ -50,6 +51,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
 import Mud.Cmds.Util.Abbrev
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
@@ -76,6 +78,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Arrow ((***))
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
 import Control.Lens (at, each)
@@ -83,9 +86,10 @@ import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
-import Data.List (intercalate, sortBy)
+import Data.List (intercalate, nub, sortBy)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
+import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', map, mapWithKey)
 import qualified Data.Map.Lazy as M (elems, lookup)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -318,6 +322,36 @@ formatChanMsg cn n msg = T.concat [ parensQuote cn
                                   , n
                                   , ": "
                                   , msg ]
+
+
+-----
+
+
+happy :: MudState -> [Either T.Text (T.Text, [EmoteWord], T.Text)] -> (T.Text, T.Text, [Id], [Broadcast])
+happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
+                       targetIds = nub . foldr extractIds [] $ toTargets
+                       extractIds [ForNonTargets _           ] acc = acc
+                       extractIds (ForTarget     _ targetId:_) acc = targetId : acc
+                       extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
+                       extractIds xs                           _   = patternMatchFail "happy extractIds" [ showText xs ]
+                       msgMap  = foldr (\targetId -> at targetId .~ Just []) IM.empty targetIds
+                       msgMap' = foldr consWord msgMap toTargets
+                       consWord [ ForNonTargets word                           ] = IM.map (word :)
+                       consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
+                       consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
+                       consWord xs = const . patternMatchFail "happy consWord" $ [ showText xs ]
+                       selectiveCons p targetId isPoss word = IM.mapWithKey helper
+                         where
+                           helper k v = let targetSing = getSing k ms |&| (isPoss ? (<> "'s") :? id)
+                                        in (: v) $ if k == targetId
+                                          then T.concat [ emoteTargetColor, targetSing, dfltColor, p ]
+                                          else word
+                       toTargetBs = IM.foldlWithKey' helper [] msgMap'
+                         where
+                           helper acc k = (: acc) . (formatMsg *** pure) . (, k)
+                       formatMsg = bracketQuote . punctuateMsg . T.unwords
+                       _ = ()
+                   in (formatMsg toSelf, formatMsg toOthers, targetIds, toTargetBs)
 
 
 -----
