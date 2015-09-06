@@ -410,7 +410,6 @@ emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = adv
                       , "taro"
                       , dfltColor
                       , "." ]
-    etc = T.singleton emoteTargetChar
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d@(stdPCEntSing -> Just s) = mkStdDesig i ms DoCap
         ser                        = serialize d
@@ -422,31 +421,25 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | (h, t) <- headTail x
           , h == emoteNameChar
           , all isPunc . T.unpack $ t
-          = pure . mkRight $ expandEnc isHead & each <>~ t
+          = pure . mkRightForNonTargets $ expandEnc isHead & each <>~ t
         xformArgs isHead (x:xs)    = (: xformArgs False xs) $ if
-          | x == enc               -> mkRight . expandEnc $ isHead
-          | x == enc's             -> mkRight $ expandEnc isHead & each <>~ "'s"
+          | x == enc               -> mkRightForNonTargets . expandEnc $ isHead
+          | x == enc's             -> mkRightForNonTargets $ expandEnc isHead & each <>~ "'s"
           | enc `T.isInfixOf` x    -> Left . adviceEnc $ "emote "
           | x == etc               -> Left . adviceEtc $ "emote "
           | T.take 1 x == etc      -> isHead ? Left adviceEtcHead :? (procTarget ms . T.tail $ x)
           | etc `T.isInfixOf` x    -> Left . adviceEtc $ "emote "
-          | isHead, hasEnc         -> mkRight $ dup3 x  & each %~ capitalizeMsg
-          | isHead, x' <- " " <> x -> mkRight $ dup3 x' & _1 %~ (s   <>)
-                                                        & _2 %~ (ser <>)
-                                                        & _3 %~ (ser <>)
-          | otherwise              -> mkRight . dup3 $ x
+          | isHead, hasEnc as      -> mkRightForNonTargets $ dup3 x  & each %~ capitalizeMsg
+          | isHead, x' <- " " <> x -> mkRightForNonTargets $ dup3 x' & _1 %~ (s   <>)
+                                                                     & _2 %~ (ser <>)
+                                                                     & _3 %~ (ser <>)
+          | otherwise              -> mkRightForNonTargets . dup3 $ x
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
     in case filter isLeft xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in bcastNl $ (toSelf, pure i) : (toOthers, pcIds d \\ (i : targetIds)) : toTargetBs
       advices -> multiWrapSend mq cols . map fromLeft . nub $ advices
   where
-    enc             = T.singleton emoteNameChar
-    enc's           = enc <> "'s"
-    etc             = T.singleton emoteTargetChar
-    mkRight         = Right . mkForNonTargets
-    mkForNonTargets = _2 %~ (pure . ForNonTargets)
-    hasEnc          = any (`elem` [ enc, enc's ]) as
     procTarget ms word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ "emote "
@@ -470,7 +463,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                    in Right ( targetDesig
                                             , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
                                             , targetDesig )
-                        MobType -> mkRight . dup3 . addSuffix isPoss p . theOnLower $ targetSing
+                        MobType -> mkRightForNonTargets . dup3 . addSuffix isPoss p . theOnLower $ targetSing
                         _       -> sorry ("You can't target " <> aOrAn targetSing <> ".")
                   x -> patternMatchFail "emote procTarget" [ showText x ]
               else Left "You don't see anyone here."
@@ -1397,29 +1390,23 @@ procEmote i ms triples as =
           | (h, t) <- headTail x
           , h == emoteNameChar
           , all isPunc . T.unpack $ t
-          = pure . mkRight $ me & each <>~ t
+          = pure . mkRightForNonTargets $ me & each <>~ t
         xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
-          | x == enc            -> mkRight me
-          | x == enc's          -> mkRight (me & each <>~ "'s")
+          | x == enc            -> mkRightForNonTargets me
+          | x == enc's          -> mkRightForNonTargets (me & each <>~ "'s")
           | enc `T.isInfixOf` x -> Left . adviceEnc $ cn
           | x == etc            -> Left . adviceEtc $ cn
           | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
           | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
-          | isHead, hasEnc      -> mkRight . dup3 . capitalizeMsg $ x
-          | isHead              -> mkRight (me & each <>~ (" " <> x))
-          | otherwise           -> mkRight . dup3 $ x
+          | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
+          | isHead              -> mkRightForNonTargets (me & each <>~ (" " <> x))
+          | otherwise           -> mkRightForNonTargets . dup3 $ x
     in case filter isLeft xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
       advices -> Left . intersperse "" . map fromLeft . nub $ advices
   where
     cn              = "question " <> T.singleton emoteChar
-    enc             = T.singleton emoteNameChar
-    enc's           = enc <> "'s"
-    etc             = T.singleton emoteTargetChar
-    mkRight         = Right . mkForNonTargets
-    mkForNonTargets = _2 %~ (pure . ForNonTargets)
-    hasEnc          = any (`elem` [ enc, enc's ]) as
     procTarget word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ cn

@@ -3,10 +3,17 @@
 module Mud.TopLvlDefs.Misc where
 
 import Mud.Misc.ANSI
+import Mud.TopLvlDefs.Chars
 
 import Data.Monoid ((<>))
 import System.Posix.Types (FileOffset)
 import qualified Data.Text as T
+
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-- ==================================================
 
 
 aggregateCoinNames :: [T.Text]
@@ -31,6 +38,12 @@ dbTblPurgerDelay = 24 * 60 * 60 -- one day
 
 dfltPrompt :: T.Text
 dfltPrompt = promptColor <> "->" <> dfltColor
+
+
+enc, enc's, etc :: T.Text
+enc   = T.singleton emoteNameChar
+enc's = enc <> "'s"
+etc   = T.singleton emoteTargetChar
 
 
 isDebug :: Bool

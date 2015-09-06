@@ -224,29 +224,23 @@ procEmote i ms tunedIds tunedSings as =
           | (h, t) <- headTail x
           , h == emoteNameChar
           , all isPunc . T.unpack $ t
-          = pure . mkRight . dup3 $ s <> t
+          = pure . mkRightForNonTargets . dup3 $ s <> t
         xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
-          | x == enc            -> mkRight . dup3 $ s
-          | x == enc's          -> mkRight . dup3 $ s <> "'s"
+          | x == enc            -> mkRightForNonTargets . dup3 $ s
+          | x == enc's          -> mkRightForNonTargets . dup3 $ s <> "'s"
           | enc `T.isInfixOf` x -> Left . adviceEnc $ cn
           | x == etc            -> Left . adviceEtc $ cn
           | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
           | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
-          | isHead, hasEnc      -> mkRight . dup3 . capitalizeMsg $ x
-          | isHead              -> mkRight . dup3 $ s <> " " <> x
-          | otherwise           -> mkRight . dup3 $ x
+          | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
+          | isHead              -> mkRightForNonTargets . dup3 $ s <> " " <> x
+          | otherwise           -> mkRightForNonTargets . dup3 $ x
     in case filter isLeft xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
       advices -> Left . intersperse "" . map fromLeft . nub $ advices
   where
     cn              = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar
-    enc             = T.singleton emoteNameChar
-    enc's           = enc <> "'s"
-    etc             = T.singleton emoteTargetChar
-    mkRight         = Right . mkForNonTargets
-    mkForNonTargets = _2 %~ (pure . ForNonTargets)
-    hasEnc          = any (`elem` [ enc, enc's ]) as
     procTarget word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ cn

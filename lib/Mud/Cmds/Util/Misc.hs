@@ -16,6 +16,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , fileIOExHandler
                           , formatChanMsg
                           , happy
+                          , hasEnc
                           , hasYou
                           , inOutOnOffs
                           , isDblLinked
@@ -29,6 +30,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , mkPrettifiedSexRaceLvl
                           , mkPros
                           , mkReflexPro
+                          , mkRightForNonTargets
                           , mkSingleTarget
                           , mkThrPerPro
                           , mkWhoHeader
@@ -81,7 +83,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***))
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
-import Control.Lens (at, each)
+import Control.Lens (_2, at, each)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
@@ -113,11 +115,6 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
 -- ==================================================
-
-
-enc, etc :: T.Text
-enc = T.singleton emoteNameChar
-etc = T.singleton emoteTargetChar
 
 
 adviceEnc :: T.Text -> T.Text
@@ -357,6 +354,13 @@ happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ 
 -----
 
 
+hasEnc :: Args -> Bool
+hasEnc = any (`elem` [ enc, enc's ])
+
+
+-----
+
+
 hasYou :: [T.Text] -> Bool
 hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 
@@ -467,6 +471,15 @@ mkReflexPro :: Sex -> T.Text
 mkReflexPro Male   = "himself"
 mkReflexPro Female = "herself"
 mkReflexPro s      = patternMatchFail "mkReflexPro" [ showText s ]
+
+
+-----
+
+
+mkRightForNonTargets :: (T.Text, T.Text, T.Text) -> Either T.Text (T.Text, [EmoteWord], T.Text)
+mkRightForNonTargets = Right . mkForNonTargets
+  where
+    mkForNonTargets = _2 %~ (pure . ForNonTargets)
 
 
 -----
