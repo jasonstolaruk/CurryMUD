@@ -35,6 +35,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , mkThrPerPro
                           , mkWhoHeader
                           , pager
+                          , plusRelated
                           , prefixCmd
                           , punc
                           , sendGenericErrorMsg
@@ -527,6 +528,13 @@ pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i 
       send mq . T.unlines $ page
       sendPagerPrompt mq (pl - 2) txtLen
       setInterp i . Just $ interpPager pl txtLen (page, rest)
+
+
+-----
+
+
+plusRelated :: T.Text -> T.Text
+plusRelated = (<> ".") . (<> parensQuote "plus related functionality") . (<> " ")
 
 
 -----

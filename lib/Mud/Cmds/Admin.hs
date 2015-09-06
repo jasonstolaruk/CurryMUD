@@ -113,7 +113,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
-    , mkAdminCmd "admin"     adminAdmin       "Tune the admin channel in/out, or send a message on the admin channel."
+    , mkAdminCmd "admin"     adminAdmin       . plusRelated $ "Send a message on the admin channel"
     , mkAdminCmd "banhost"   adminBanHost     "Dump the banned hostname database, or ban/unban a host."
     , mkAdminCmd "banplayer" adminBanPlayer   "Dump the banned player database, or ban/unban a player."
     , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."

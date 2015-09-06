@@ -32,6 +32,9 @@ disconnect hanako hunt -- Must provide full PC name.
 channel hunt
 You'll get a list of who is currently tuned in to the channel. Names should be abbreviation-styled. (You must be tuned in to the channel yourself.)
 
+channel
+You'll get a list of the channels to which you are connected, indicating whether you are tuned in or out.
+
 -----
 
 The names of the people you don't know on an ad-hoc channel are not given away. Instead, your PC's mind picks, by random association, something to symbolize the owner of the telepathic thoughts. (We need to make sure that for a given PC, the same random name is not chosen for more than one PC. This applies across all channels that the PC is connected to, regardless of tuning.)

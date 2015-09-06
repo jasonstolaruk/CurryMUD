@@ -126,11 +126,13 @@ plaCmds :: [Cmd]
 plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
 
 
+-- TODO: Make a "give" command.
 regularCmds :: [Cmd]
 regularCmds = map (uncurry3 mkRegularCmd)
     [ ("?",          plaDispCmdList,  "Display or search this command list.")
     , ("about",      about,           "About CurryMUD.")
     , ("admin",      admin,           "Display a list of administrators, or send a message to an administrator.")
+    , ("channel",    chan,            plusRelated "Send a message on a telepathic channel")
     , ("d",          go "d",          "Go down.")
     , ("e",          go "e",          "Go east.")
     , ("equipment",  equip,           "Display your readied equipment, or examine one or more items in your readied \
@@ -140,7 +142,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("ne",         go "ne",         "Go northeast.")
     , ("newchannel", newChan,         "Create a new telepathic channel.")
     , ("nw",         go "nw",         "Go northwest.")
-    , ("question",   question,        "Ask/answer newbie questions.")
+    , ("question",   question,        plusRelated "Ask/answer newbie questions")
     , ("qui",        quitCan'tAbbrev, "")
     , ("quit",       quit,            "Quit playing CurryMUD.")
     , ("remove",     remove,          "Remove one or more items from a container.")
@@ -328,6 +330,15 @@ bug p@AdviseNoArgs = advise p ["bug"] advice
                       , dfltColor
                       , "." ]
 bug p = bugTypoLogger p BugLog
+
+
+-----
+
+
+-- TODO: Help.
+chan :: Action
+-- chan (NoArgs i mq cols) = undefined
+chan p = patternMatchFail "chan" [ showText p ]
 
 
 -----
