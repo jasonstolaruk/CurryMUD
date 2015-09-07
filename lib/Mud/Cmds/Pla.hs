@@ -172,7 +172,7 @@ mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
 priorityAbbrevCmds :: [Cmd]
 priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     [ ("bug",        "b",  bug,        "Report a bug.")
-    , ("clear",      "c",  clear,      "Clear the screen.")
+    , ("clear",      "cl", clear,      "Clear the screen.")
     , ("color",      "co", color,      "Perform a color test.")
     , ("drop",       "dr", dropAction, "Drop one or more items.")
     , ("emote",      "em", emote,      "Freely describe an action.")
@@ -336,8 +336,37 @@ bug p = bugTypoLogger p BugLog
 
 
 -- TODO: Help.
+-- TODO: Log chan msgs.
 chan :: Action
--- chan (NoArgs i mq cols) = undefined
+chan (NoArgs i mq cols) = getState >>= \ms ->
+    let (chanNames, chanTunings) = mkChanNamesTunings i ms
+        helper names tunings = let txts = mkChanTxts
+                               in (()!# txts ? txts :? pure "None.") |&| ("Telepathic connections:" :)
+          where
+            mkChanTxts = [ padChanName n <> (t ? "tuned in" :? "tuned out") | n <- names | t <- tunings ]
+    in do
+        multiWrapSend mq cols . helper (styleAbbrevs Don'tBracket chanNames) $ chanTunings
+        logPlaExecArgs "chan" [] i
+chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
+    let notFound    = wrapSend mq cols $ "You are not connected to a channel named " <> dblQuote a <> "."
+        found match =
+            let cn = head . filter ((== match) . T.toLower) $ cns
+                c  = head . filter (views chanName (== cn)) $ cs
+                ([(_, isTuned)], others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
+                (linkeds, nonLinkeds)    = partition (views _1 (isLinked ms . (i, ))) . filter f . map mkTriple $ others
+                f (x, _, _)              = let p = getPla x ms in isLoggedIn p && (not . getPlaFlag IsIncognito $ p)
+            in mapM (updateRndmName i . view _1) nonLinkeds >>= \rndmNames ->
+                let combo    = map dropFst linkeds ++ zipWith (\rndmName -> (rndmName, ) . view _3) rndmNames nonLinkeds
+                    combo'   = sortBy (compare `on` fst) combo
+                    styleds  = styleAbbrevs Don'tBracket . map fst $ combo'
+                    combo''  = zipWith (\styled -> _1 .~ styled) styleds combo'
+                    g (x, y) = padName x <> (y ? "tuned in" :? "tuned out")
+                in multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : g (s, isTuned) : map g combo''
+        cs              = getPCChans i ms
+        cns             = map (view chanName) cs
+        s               = getSing i ms
+        mkTriple (x, y) = (getIdForPCSing x ms, x, y)
+    in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan p = patternMatchFail "chan" [ showText p ]
 
 
@@ -2489,16 +2518,16 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
     let linkTbl                    = getTeleLinkTbl i ms
         linkSings                  = styleAbbrevs Don'tBracket . M.keys $ linkTbl
         linkTunings                = map snd . sortBy (compare `on` fst) . M.toList $ linkTbl
-        (chanNames, chanTunings)   = unzip . sortBy (compare `on` fst) . map mkChanNameTunings . getPCChans i $ ms
-        mkChanNameTunings          = (view chanName *** views chanConnTbl (M.! getSing i ms)) . dup
-        helper title names tunings = let connTxts = mkConnTxts
-                                     in [ title, ()!# connTxts ? commas connTxts :? "None." ]
+        (chanNames, chanTunings)   = mkChanNamesTunings i ms
+        helper title names tunings = let txts = mkConnTxts
+                                     in [ title, ()!# txts ? commas txts :? "None." ]
           where
             mkConnTxts = [ n <> "=" <> (t ? "in" :? "out") | n <- names | t <- tunings ]
     in do
-        multiWrapSend mq cols . concat $ [ helper "Two-way telepathic links:" linkSings linkTunings
-                                         , pure ""
-                                         , helper "Channels:" (styleAbbrevs Don'tBracket chanNames) chanTunings ]
+        let msgs = [ helper "Two-way telepathic links:" linkSings linkTunings
+                   , pure ""
+                   , helper "Telepathic channels:" (styleAbbrevs Don'tBracket chanNames) chanTunings ]
+        multiWrapSend mq cols . concat $ msgs
         logPlaExecArgs "tune" [] i
 tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastNl bs >> logMsgs |#| logPlaOut "tune" i

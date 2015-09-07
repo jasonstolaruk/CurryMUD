@@ -4,6 +4,10 @@ import Mud.Data.State.Util.Misc
 import Mud.TopLvlDefs.Misc
 
 
+chanNamePadding :: Int
+chanNamePadding = succ maxChanNameLen
+
+
 cmdNamePadding :: Int
 cmdNamePadding = succ maxCmdLen
 

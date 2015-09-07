@@ -24,6 +24,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , isSlotAvail
                          , linkDirToCmdName
                          , maybeSingleSlot
+                         , mkChanNamesTunings
                          , mkCoinsDesc
                          , mkCoinsSummary
                          , mkEntDescs
@@ -78,11 +79,12 @@ import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
-import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub)
+import Data.Function (on)
+import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
 import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M (notMember, toList)
+import qualified Data.Map.Lazy as M ((!), notMember, toList)
 import qualified Data.Text as T
 
 
@@ -548,15 +550,10 @@ maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
 -----
 
 
-mkPutRemoveBindings :: Id -> MudState -> Args -> (PCDesig, (Inv, Coins), (Inv, Coins), ConName, Args)
-mkPutRemoveBindings i ms as = let d              = mkStdDesig  i ms DoCap
-                                  pcInvCoins     = getInvCoins i ms
-                                  rmInvCoins     = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
-                                  conName        = last as
-                                  argsWithoutCon = init $ case as of
-                                                     [_, _] -> as
-                                                     _      -> (++ pure conName) . nub . init $ as
-                              in (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon)
+mkChanNamesTunings :: Id -> MudState -> ([T.Text], [Bool])
+mkChanNamesTunings i ms = unzip . sortBy (compare `on` fst) . map helper . getPCChans i $ ms
+  where
+    helper = (view chanName *** views chanConnTbl (M.! getSing i ms)) . dup
 
 
 -----
@@ -702,6 +699,20 @@ mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
   where
     helper  = (succ . fromJust . elemIndex conId *** length) . dup $ matches
     matches = filter ((== conSing) . flip getSing ms) invWithCon
+
+
+-----
+
+
+mkPutRemoveBindings :: Id -> MudState -> Args -> (PCDesig, (Inv, Coins), (Inv, Coins), ConName, Args)
+mkPutRemoveBindings i ms as = let d              = mkStdDesig  i ms DoCap
+                                  pcInvCoins     = getInvCoins i ms
+                                  rmInvCoins     = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+                                  conName        = last as
+                                  argsWithoutCon = init $ case as of
+                                                     [_, _] -> as
+                                                     _      -> (++ pure conName) . nub . init $ as
+                              in (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon)
 
 
 -----

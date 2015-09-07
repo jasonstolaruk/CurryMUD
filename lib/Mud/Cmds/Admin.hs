@@ -110,6 +110,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
+-- TODO: Make a command to listen in on a channel.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
@@ -873,7 +874,7 @@ adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExec
   where
     mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tBracket . IM.elems) <$> getState
     header = "You may teleport to the following rooms:"
-adminTeleRm p@(OneArg i mq cols target) = modifyState helper >>= sequence_
+adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the room to which you want to teleport"

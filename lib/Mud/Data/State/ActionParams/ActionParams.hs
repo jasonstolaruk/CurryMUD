@@ -19,6 +19,8 @@ module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
                                                 , pattern NoArgs''
                                                 , pattern OneArg
                                                 , pattern OneArg'
+                                                , pattern OneArgLower
+                                                , pattern OneArgLower'
                                                 , pattern OneArgNubbed
                                                 , pattern WithArgs ) where
 
@@ -102,10 +104,16 @@ pattern NoArgs' i mq <- NoArgs i mq _
 pattern NoArgs'' i <- NoArgs' i _
 
 
-pattern OneArg i mq cols a <- WithArgs i mq cols [T.toLower -> a]
+pattern OneArg i mq cols a <- WithArgs i mq cols [a]
 
 
 pattern OneArg' i a <- OneArg i _ _ a
+
+
+pattern OneArgLower i mq cols a <- OneArg i mq cols (T.toLower -> a)
+
+
+pattern OneArgLower' i a <- OneArgLower i _ _ a
 
 
 pattern OneArgNubbed i mq cols a <- WithArgs i mq cols (nub . map T.toLower -> [a])

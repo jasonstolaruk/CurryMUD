@@ -27,6 +27,10 @@ pad x t@(T.length . dropANSI -> l)
   | otherwise = t <> T.replicate (x - l) " "
 
 
+padChanName :: T.Text -> T.Text
+padChanName = pad chanNamePadding
+
+
 padCmdName :: T.Text -> T.Text
 padCmdName = pad cmdNamePadding
 
