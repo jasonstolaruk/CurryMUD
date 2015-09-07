@@ -31,6 +31,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , mkEqDesc
                          , mkExitsSummary
                          , mkInvCoinsDesc
+                         , mkLastArgWithNubbedOthers
                          , mkMaybeNthOfM
                          , mkPutRemoveBindings
                          , mkReadyMsgs
@@ -704,15 +705,23 @@ mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
 -----
 
 
+mkLastArgWithNubbedOthers :: Args -> (T.Text, Args)
+mkLastArgWithNubbedOthers as = let lastArg = last as
+                                   otherArgs = init $ case as of
+                                     [_, _] -> as
+                                     _      -> (++ pure lastArg) . nub . init $ as
+                               in (lastArg, otherArgs)
+
+
+-----
+
+
 mkPutRemoveBindings :: Id -> MudState -> Args -> (PCDesig, (Inv, Coins), (Inv, Coins), ConName, Args)
-mkPutRemoveBindings i ms as = let d              = mkStdDesig  i ms DoCap
-                                  pcInvCoins     = getInvCoins i ms
-                                  rmInvCoins     = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
-                                  conName        = last as
-                                  argsWithoutCon = init $ case as of
-                                                     [_, _] -> as
-                                                     _      -> (++ pure conName) . nub . init $ as
-                              in (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon)
+mkPutRemoveBindings i ms as = let d                 = mkStdDesig  i ms DoCap
+                                  pcInvCoins        = getInvCoins i ms
+                                  rmInvCoins        = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+                                  (conName, others) = mkLastArgWithNubbedOthers as
+                              in (d, pcInvCoins, rmInvCoins, conName, others)
 
 
 -----

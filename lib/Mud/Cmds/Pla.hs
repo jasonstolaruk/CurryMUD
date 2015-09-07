@@ -80,7 +80,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
-{-# ANN link   ("HLint: ignore Use &&"        :: String) #-}
+{-# ANN module ("HLint: ignore Use &&"        :: String) #-}
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 {-# ANN module ("HLint: ignore Use ||"        :: String) #-}
 
@@ -171,32 +171,32 @@ mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
 
 priorityAbbrevCmds :: [Cmd]
 priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
-    [ ("bug",        "b",  bug,        "Report a bug.")
-    , ("clear",      "cl", clear,      "Clear the screen.")
-    , ("color",      "co", color,      "Perform a color test.")
-    , ("drop",       "dr", dropAction, "Drop one or more items.")
-    , ("emote",      "em", emote,      "Freely describe an action.")
-    , ("exits",      "ex", exits,      "Display obvious exits.")
-    , ("get",        "g",  getAction,  "Pick up one or more items.")
-    , ("help",       "h",  help,       "Get help on one or more commands or topics.")
-    , ("intro",      "in", intro,      "Display a list of the people who have introduced themselves to you, or \
-                                       \introduce yourself to one or more people.")
-    , ("inventory",  "i",  inv,        "Display your inventory, or examine one or more items in your inventory.")
-    , ("leave",      "le", leave,      "Sever your telepathic connection to a channel.")
-    , ("link",       "li", link,       "Display a list of the people with whom you have established a telepathic link, \
-                                       \or establish a telepathic link with one or more people.")
-    , ("look",       "l",  look,       "Display a description of your current room, or examine one or more items in \
-                                       \your current room.")
-    , ("motd",       "m",  motd,       "Display the message of the day.")
-    , ("put",        "p",  putAction,  "Put one or more items into a container.")
-    , ("ready",      "r",  ready,      "Ready one or more items.")
-    , ("say",        "sa", say,        "Say something out loud.")
-    , ("show",       "sh", showAction, "Show one or more items in your inventory and/or readied equipment to another \
-                                       \person.")
-    -- , ("telepathic", "t",  undefined,  "Send a telepathic message to a person with whom you have established a \
-    --                                    \two-way telepathic link.")
-    , ("unready",    "un", unready,    "Unready one or more items.")
-    , ("who",        "wh", who,        "Display or search a list of who is currently awake.") ]
+    [ ("bug",        "b",   bug,        "Report a bug.")
+    , ("clear",      "cl",  clear,      "Clear the screen.")
+    , ("color",      "col", color,      "Perform a color test.")
+    , ("connect",    "co",  connect,    "Connect one or more people to a telepathic channel.")
+    , ("drop",       "dr",  dropAction, "Drop one or more items.")
+    , ("emote",      "em",  emote,      "Freely describe an action.")
+    , ("exits",      "ex",  exits,      "Display obvious exits.")
+    , ("get",        "g",   getAction,  "Pick up one or more items.")
+    , ("help",       "h",   help,       "Get help on one or more commands or topics.")
+    , ("intro",      "in",  intro,      "Display a list of the people who have introduced themselves to you, or \
+                                        \introduce yourself to one or more people.")
+    , ("inventory",  "i",   inv,        "Display your inventory, or examine one or more items in your inventory.")
+    , ("leave",      "le",  leave,      "Sever your telepathic connection to a channel.")
+    , ("link",       "li",  link,       "Display a list of the people with whom you have established a telepathic link, \
+                                        \or establish a telepathic link with one or more people.")
+    , ("look",       "l",   look,       "Display a description of your current room, or examine one or more items in \
+                                        \your current room.")
+    , ("motd",       "m",   motd,       "Display the message of the day.")
+    , ("put",        "p",   putAction,  "Put one or more items into a container.")
+    , ("ready",      "r",   ready,      "Ready one or more items.")
+    , ("say",        "sa",  say,        "Say something out loud.")
+    , ("show",       "sh",  showAction, "Show one or more items in your inventory and/or readied equipment to another \
+                                        \person.")
+    -- , ("telepathic", "t", undefined, "Send a telepathic message to a person with whom you have established a two-way telepathic link.")
+    , ("unready",    "un",  unready,    "Unready one or more items.")
+    , ("who",        "wh",  who,        "Display or search a list of who is currently awake.") ]
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> [Cmd]
@@ -340,8 +340,8 @@ bug p = bugTypoLogger p BugLog
 chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
     let (chanNames, chanTunings) = mkChanNamesTunings i ms
-        helper names tunings = let txts = mkChanTxts
-                               in (()!# txts ? txts :? pure "None.") |&| ("Telepathic connections:" :)
+        helper names tunings     = let txts = mkChanTxts
+                                   in (()!# txts ? txts :? pure "None.") |&| ("Telepathic connections:" :)
           where
             mkChanTxts = [ padChanName n <> (t ? "tuned in" :? "tuned out") | n <- names | t <- tunings ]
     in do
@@ -370,6 +370,191 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
 chan p = patternMatchFail "chan" [ showText p ]
 
 
+{-
+question (Msg i mq cols msg) = getState >>= \ms -> if
+  | not . isTunedQuestion i $ ms           -> sorryNotTuned mq cols "question"
+  | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogMsg
+  | otherwise                              -> getQuestionStyleds i ms >>= \triples -> if ()# triples
+    then sorryNoOneListening mq cols "question"
+    else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
+             format (txt, is)   = if i `elem` is
+               then ((formatChanMsg "Question" (getSing i ms) txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
+               else mkBsWithStyled is
+               where
+                 mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
+                     return [ (formatChanMsg "Question" styled txt, pure i') | i' <- is' | styled <- styleds ]
+             s = getSing i ms
+          in case emotify i ms triples msg of
+            Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
+            Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
+                                in ioHelper ms s logMsg =<< concatMapM format bs
+            Right (Left  ()) -> case expCmdify i ms triples msg of
+              Left  errorMsg     -> wrapSend mq cols errorMsg
+              Right (bs, logMsg) -> ioHelper ms s logMsg =<< concatMapM format bs
+  where
+    sorryIncogMsg = wrapSend mq cols "You can't send a message on the question channel while incognito."
+    ioHelper ms s (expandEmbeddedIdsToSings ms -> logMsg) bs = (bcastNl =<< expandEmbeddedIds ms bs) >> logHelper
+      where
+        logHelper = do
+            logPlaOut "question" i . pure $ logMsg
+            ts <- liftIO mkTimestamp
+            withDbExHandler_ "question" . insertDbTblQuestion . QuestionRec ts s $ logMsg
+question p = patternMatchFail "question" [ showText p ]
+
+
+isTunedQuestion :: Id -> MudState -> Bool
+isTunedQuestion i = getPlaFlag IsTunedQuestion . getPla i
+
+
+getQuestionStyleds :: Id -> MudState -> MudStack [(Id, T.Text, T.Text)]
+getQuestionStyleds i ms =
+    let (plaIds,    adminIds) = getTunedQuestionIds i ms
+        (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
+    in mapM (updateRndmName i) otherIds >>= \rndmNames ->
+        let rndms   = zip otherIds rndmNames
+            f       = map (second (`getSing` ms) . dup)
+            linkeds = f linkedIds
+            admins  = f adminIds
+            combo   = sortBy (compare `on` view _2) $ rndms ++ nubSort (linkeds ++ admins)
+            styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
+            helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
+                                 | otherwise         = a
+              where
+                a = (x, y, styled)
+        in return . zipWith helper combo $ styleds
+
+
+getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
+getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms)
+                           in pair & both %~ filter (`isTunedQuestion` ms) . (i `delete`)
+
+
+emotify :: Id -> MudState -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
+emotify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | or [ (T.head . head $ ws) `elem` ("[<" :: String)
+       , "]." `T.isSuffixOf` last ws
+       , ">." `T.isSuffixOf` last ws ]  = Left . pure $ "Sorry, but you can't open or close your message with brackets."
+  | msg == T.singleton emoteChar <> "." = Left . pure $ "He don't."
+  | c == emoteChar = fmap Right . procEmote i ms triples . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right . Left $ ()
+
+
+procEmote :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either [T.Text] [Broadcast]
+procEmote _ _ _ as | hasYou as = Left . pure . adviceYouEmote $ "question"
+procEmote i ms triples as =
+    let me                      = (getSing i ms, embedId i, embedId i)
+        xformed                 = xformArgs True as
+        xformArgs _      []     = []
+        xformArgs _      [x]
+          | (h, t) <- headTail x
+          , h == emoteNameChar
+          , all isPunc . T.unpack $ t
+          = pure . mkRightForNonTargets $ me & each <>~ t
+        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
+          | x == enc            -> mkRightForNonTargets me
+          | x == enc's          -> mkRightForNonTargets (me & each <>~ "'s")
+          | enc `T.isInfixOf` x -> Left . adviceEnc $ cn
+          | x == etc            -> Left . adviceEtc $ cn
+          | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
+          | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
+          | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
+          | isHead              -> mkRightForNonTargets (me & each <>~ (" " <> x))
+          | otherwise           -> mkRightForNonTargets . dup3 $ x
+    in case filter isLeft xformed of
+      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+            in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
+      advices -> Left . intersperse "" . map fromLeft . nub $ advices
+  where
+    cn              = "question " <> T.singleton emoteChar
+    procTarget word =
+        case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
+          ("",   _) -> Left . adviceEtc $ cn
+          ("'s", _) -> Left adviceEtcEmptyPoss
+          (w,    p) ->
+            let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
+                notFound         = Left . sorryQuestionName $ target
+                found match      =
+                    let targetId = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
+                        txt      = addSuffix isPoss p . embedId $ targetId
+                    in Right ( txt
+                             , [ mkEmoteWord isPoss p targetId, ForNonTargets txt ]
+                             , txt )
+            in findFullNameForAbbrev (T.toLower target) (map (views _2 T.toLower) triples) |&| maybe notFound found
+    addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
+    mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
+    tunedIds             = map (view _1) triples
+
+
+sorryQuestionName :: T.Text -> T.Text
+sorryQuestionName n =
+    "There is no one by the name of " <> (dblQuote . capitalize $ n) <> " currently tuned in to the question channel."
+
+
+expCmdify :: Id -> MudState -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
+expCmdify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | msg == T.singleton expCmdChar <> "." = Left "He don't."
+  | c == expCmdChar = fmap format . procExpCmd i ms triples . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right (pure (msg, i : map (view _1) triples), msg)
+  where
+    format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
+                   & _2 %~ angleBracketQuote
+
+
+procExpCmd :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
+procExpCmd _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
+procExpCmd i ms triples (unmsg -> [ cn, T.toLower -> target ]) =
+    let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
+    in findFullNameForAbbrev cn cns |&| maybe notFound found
+  where
+    found match =
+        let [ExpCmd _ ct] = S.toList . S.filter (\(ExpCmd cn' _) -> cn' == match) $ expCmdSet
+            tunedIds      = map (view _1) triples
+        in case ct of
+          NoTarget toSelf toOthers -> if ()# target
+            then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
+                       , toSelf )
+            else Left $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
+          HasTarget toSelf toTarget toOthers -> if ()# target
+            then Left $ "The " <> dblQuote match <> " expressive command requires a single target."
+            else case findTarget of
+              Nothing -> Left . sorryQuestionName $ target
+              Just n  -> let targetId = getIdForMatch n
+                             toSelf'  = format (Just targetId) toSelf
+                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
+                                    (format (Just targetId) toOthers,          targetId `delete` tunedIds) :
+                                    mkBroadcast i toSelf'
+                                  , toSelf' )
+          Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
+            then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
+                       , toSelf )
+            else case findTarget of
+              Nothing -> Left . sorryQuestionName $ target
+              Just n  -> let targetId          = getIdForMatch n
+                             toSelfWithTarget' = format (Just targetId) toSelfWithTarget
+                         in Right ( (colorizeYous . format Nothing $ toTarget,  pure targetId             ) :
+                                    (format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :
+                                    mkBroadcast i toSelfWithTarget'
+                                  , toSelfWithTarget' )
+    notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
+    findTarget = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
+    getIdForMatch match    = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
+    format maybeTargetId =
+        let substitutions = [ ("%", embedId i), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
+        in replace (substitutions ++ maybe [] (pure . ("@", ) . embedId) maybeTargetId)
+    (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
+    colorizeYous                = T.unwords . map helper . T.words
+      where
+        helper w = let (a, b) = T.break isLetter w
+                       (c, d) = T.span  isLetter b
+                   in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
+procExpCmd _ _ _ as = patternMatchFail "procExpCmd" as
+-}
+
+
 -----
 
 
@@ -392,6 +577,73 @@ color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
     other = [ nl . T.concat $ [ pad 19 "Blinking",   blink     " CurryMUD " ]
             , nl . T.concat $ [ pad 19 "Underlined", underline " CurryMUD " ] ]
 color p = withoutArgs color p
+
+
+-----
+
+
+-- TODO: Help.
+-- TODO: Continue testing.
+connect :: Action
+connect p@AdviseNoArgs = advise p ["connect"] advice
+  where
+    advice = T.concat [ "Please specify the names of one or more people followed by the name of the telepathic channel \
+                        \to connect them to, as in "
+                      , quoteColor
+                      , "connect taro hunt"
+                      , dfltColor
+                      , "." ]
+connect p@(AdviseOneArg a) = advise p ["connect"] advice
+  where
+    advice = T.concat [ "Please also specify the name of a telepathic channel, as in "
+                      , quoteColor
+                      , "connect "
+                      , a
+                      , " hunt"
+                      , dfltColor
+                      , "." ]
+connect (Lower i mq cols (mkLastArgWithNubbedOthers -> (target, as))) = getState >>= \ms ->
+    if getPlaFlag IsIncognito . getPla i $ ms
+      then wrapSend mq cols . sorryIncog $ "connect"
+      else helper |&| modifyState >=> \(bs, logMsgs) ->
+          bcastNl bs >> logMsgs |#| logPla "connect" i . slashes
+  where
+    helper ms =
+        let notFound    = sorry $ "You are not connected to a channel named " <> dblQuote target <> "."
+            found match =
+                let cn = head . filter ((== match) . T.toLower) $ cns
+                    c  = head . filter (views chanName (== cn)) $ cs
+                    ci = c^.chanId
+                in if views chanConnTbl (M.! s) c
+                  then let f triple a =
+                               let notFoundSing = triple & _2 <>~ mkBroadcast i
+                                       ("You haven't established a two-way telepathic link with anyone named " <>
+                                       dblQuote a                                                              <>
+                                       ".") -- TODO: Or they aren't logged in...
+                                   foundSing singMatch =
+                                       let targetSing = head . filter ((== singMatch) . T.toLower) $ targetSings
+                                       in case c^.chanConnTbl.at targetSing of
+                                         Just _  -> triple & _2 <>~ (mkBroadcast i . T.concat $
+                                                        [ targetSing
+                                                        , " is already connected to the "
+                                                        , dblQuote cn
+                                                        , " channel." ])
+                                         Nothing -> triple & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
+                                                           & _2 <>~ mkBroadcast i "OK."
+                               in findFullNameForAbbrev a (map T.toLower targetSings) |&| maybe notFoundSing foundSing
+                           targetSings  = map (`getSing` ms) pool
+                           pool         = filter isG $ ms^.pcTbl.to IM.keys
+                           isG i' = let p = getPla i' ms
+                                    in and [ isDblLinked ms (i, i'), isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
+                           (ms', bs, logMsgs) = foldl' f (ms, [], []) as
+                       in (ms', (bs, logMsgs))
+                  else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
+            cs           = getPCChans i ms
+            cns          = map (view chanName) cs
+            s            = getSing i ms
+            sorry msg    = (ms, (mkBroadcast i msg, []))
+        in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
+connect p = patternMatchFail "connect" [ showText p ]
 
 
 -----
