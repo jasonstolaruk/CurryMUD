@@ -583,11 +583,11 @@ color p = withoutArgs color p
 
 
 -- TODO: Help.
--- TODO: Continue testing.
+-- TODO: Those tuned to the channel in question should be informed.
 connect :: Action
 connect p@AdviseNoArgs = advise p ["connect"] advice
   where
-    advice = T.concat [ "Please specify the names of one or more people followed by the name of the telepathic channel \
+    advice = T.concat [ "Please specify the names of one or more people followed by the name of a telepathic channel \
                         \to connect them to, as in "
                       , quoteColor
                       , "connect taro hunt"
@@ -621,7 +621,7 @@ connect (Lower i mq cols (mkLastArgWithNubbedOthers -> (target, as))) = getState
                                        dblQuote a                                                              <>
                                        ".") -- TODO: Or they aren't logged in...
                                    foundSing singMatch =
-                                       let targetSing = head . filter ((== singMatch) . T.toLower) $ targetSings
+                                       let targetSing = head . filter ((== singMatch) . uncapitalize) $ targetSings
                                        in case c^.chanConnTbl.at targetSing of
                                          Just _  -> triple & _2 <>~ (mkBroadcast i . T.concat $
                                                         [ targetSing
@@ -629,19 +629,20 @@ connect (Lower i mq cols (mkLastArgWithNubbedOthers -> (target, as))) = getState
                                                         , dblQuote cn
                                                         , " channel." ])
                                          Nothing -> triple & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
-                                                           & _2 <>~ mkBroadcast i "OK."
-                               in findFullNameForAbbrev a (map T.toLower targetSings) |&| maybe notFoundSing foundSing
+                                                           & _2 <>~ mkBroadcast i "OK." -- TODO
+                               in findFullNameForAbbrev a targetSings' |&| maybe notFoundSing foundSing
                            targetSings  = map (`getSing` ms) pool
+                           targetSings' = map uncapitalize targetSings
                            pool         = filter isG $ ms^.pcTbl.to IM.keys
                            isG i' = let p = getPla i' ms
                                     in and [ isDblLinked ms (i, i'), isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
                            (ms', bs, logMsgs) = foldl' f (ms, [], []) as
                        in (ms', (bs, logMsgs))
                   else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
-            cs           = getPCChans i ms
-            cns          = map (view chanName) cs
-            s            = getSing i ms
-            sorry msg    = (ms, (mkBroadcast i msg, []))
+            cs        = getPCChans i ms
+            cns       = map (view chanName) cs
+            s         = getSing i ms
+            sorry msg = (ms, (mkBroadcast i msg, []))
         in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 connect p = patternMatchFail "connect" [ showText p ]
 
