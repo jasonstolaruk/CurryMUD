@@ -584,6 +584,7 @@ color p = withoutArgs color p
 
 -- TODO: Help.
 -- TODO: Those tuned to the channel in question should be informed.
+-- TODO: Connecting someone to a channel should cost psionic points.
 connect :: Action
 connect p@AdviseNoArgs = advise p ["connect"] advice
   where
@@ -619,10 +620,17 @@ connectHelper i (target, as) ms =
                 ci = c^.chanId
             in if views chanConnTbl (M.! s) c
               then let f triple a =
-                           let notFoundSing = oops $
-                                   "You haven't established a two-way telepathic link with anyone named " <>
-                                   dblQuote a                                                             <>
-                                   "." -- TODO: Or they aren't logged in...
+                           let notFoundSing = oops $ case findFullNameForAbbrev a (map uncapitalize asleepSings) of
+                                 Just asleepTarget@(capitalize -> asleepTarget') ->
+                                     let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget' ms) $ ms
+                                         guess = a /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget' <> "? ")
+                                     in T.concat [ guess
+                                                 , "Unfortunately, "
+                                                 , ()# guess ? asleepTarget' :? heShe
+                                                 , " is sleeping at the moment..." ]
+                                 Nothing -> "You haven't established a two-way telepathic link with anyone named " <>
+                                            dblQuote a                                                             <>
+                                            "."
                                foundSing singMatch =
                                    let targetSing = head . filter ((== singMatch) . uncapitalize) $ targetSings
                                    in case c^.chanConnTbl.at targetSing of
@@ -645,17 +653,18 @@ connectHelper i (target, as) ms =
                                oops    msg = triple & _2 <>~ mkBroadcast i msg
                                blocked msg = oops $ "Your efforts are blocked; " <> msg
                            in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
-                       targetSings = map (`getSing` ms) pool
-                       pool        = filter isG $ ms^.pcTbl.to IM.keys
-                       isG i' = let p = getPla i' ms
-                                in and [ isDblLinked ms (i, i'), isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
+                       dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
+                       pair                       = partition isG dblLinkeds
+                       (targetSings, asleepSings) = pair & both %~ map (`getSing` ms)
+                       isG i'                     = let p = getPla i' ms
+                                                    in and [ isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
                        areMutuallyTuned targetSing | targetId <- getIdForPCSing targetSing ms
                                                    , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
                                                    , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
                                                    = (a, b, targetId)
-                       hasChanOfSameName targetId | targetCs  <- getPCChans targetId ms
-                                                  , targetCns <- map (views chanName T.toLower) targetCs
-                                                  = T.toLower cn `elem` targetCns
+                       hasChanOfSameName targetId  | targetCs  <- getPCChans targetId ms
+                                                   , targetCns <- map (views chanName T.toLower) targetCs
+                                                   = T.toLower cn `elem` targetCns
                        (ms', bs, logMsgs) = foldl' f (ms, [], []) as
                    in (ms', (bs, logMsgs))
               else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
@@ -1214,7 +1223,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(chanNames,
     mkLeaveMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkLeaveMsg ns     = T.lines . mkMsgHelper True  $ ns
     mkMsgHelper isPlur (map dblQuote -> ns) =
-        T.concat [ "Focusing your innate psionic energy for a brief moment, you sever your telepathic connection"
+        T.concat [ focusingInnate "you sever your telepathic connection"
                  , theLetterS isPlur
                  , " to the "
                  , isPlur ? "following channels:\n" <> commas ns :? head ns <> " channel"
@@ -1423,8 +1432,8 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
                 f g                       = ((i |&|) *** (targetId |&|)) (dup $ uncurry g . (, ms))
                 s                         = getSing i ms
                 targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
-                srcMsg    = nlnl . T.concat $ [ "Focusing your innate psionic energy for a brief moment, you establish \
-                                                \a telepathic connection from your mind to "
+                srcMsg    = nlnl . T.concat $ [ focusingInnate "you establish a telepathic connection from your mind \
+                                                               \to "
                                               , targetSing
                                               , "'s mind."
                                               , twoWayMsg ]
@@ -1539,7 +1548,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(newChanN
     mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkNewChanMsg ns     = T.lines . mkMsgHelper True  $ ns
     mkMsgHelper isPlur (map dblQuote -> ns) =
-        T.concat [ "Focusing your innate psionic energy for a brief moment, you create a "
+        T.concat [ focusingInnate "you create a "
                  , isPlur |?| "group of "
                  , "shared abstract energy space"
                  , theLetterS isPlur
@@ -2917,10 +2926,7 @@ unlink (LowerNub i mq cols as) = do
                     let [capitalize -> targetSing] = filter (== arg) singList
                         targetId  = getIdForPCSing targetSing ms'
                         s         = getSing i ms
-                        srcMsg    = "Focusing your innate psionic energy for a brief moment, you sever your link \
-                                    \with "    <>
-                                    targetSing <>
-                                    "."
+                        srcMsg    = focusingInnate "you sever your link with " <> targetSing <> "."
                         targetMsg = T.concat [ "You suddenly feel a slight tingle "
                                              , tingleLoc
                                              , "; you sense that your link with "

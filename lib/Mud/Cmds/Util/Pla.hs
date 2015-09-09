@@ -11,6 +11,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , dudeYou'reScrewed
                          , dudeYourHandsAreEmpty
                          , findAvailSlot
+                         , focusingInnate
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
@@ -180,6 +181,13 @@ mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
 
 dudeYou'reScrewed :: T.Text
 dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything readied. You're naked!"
+
+
+-----
+
+
+focusingInnate :: T.Text -> T.Text
+focusingInnate = ("Focusing your innate psionic energy for a brief moment, " <>)
 
 
 -----
