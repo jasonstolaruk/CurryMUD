@@ -341,7 +341,7 @@ chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
     let (chanNames, chanTunings) = mkChanNamesTunings i ms
         helper names tunings     = let txts = mkChanTxts
-                                   in (()!# txts ? txts :? pure "None.") |&| ("Telepathic connections:" :)
+                                   in (()!# txts ? txts :? pure "None.") |&| ("Telepathic channels:" :)
           where
             mkChanTxts = [ padChanName n <> (t ? "tuned in" :? "tuned out") | n <- names | t <- tunings ]
     in do
@@ -602,49 +602,68 @@ connect p@(AdviseOneArg a) = advise p ["connect"] advice
                       , " hunt"
                       , dfltColor
                       , "." ]
-connect (Lower i mq cols (mkLastArgWithNubbedOthers -> (target, as))) = getState >>= \ms ->
+connect (Lower i mq cols as) = getState >>= \ms ->
     if getPlaFlag IsIncognito . getPla i $ ms
       then wrapSend mq cols . sorryIncog $ "connect"
-      else helper |&| modifyState >=> \(bs, logMsgs) ->
+      else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \(bs, logMsgs) ->
           bcastNl bs >> logMsgs |#| logPla "connect" i . slashes
-  where
-    helper ms =
-        let notFound    = sorry $ "You are not connected to a channel named " <> dblQuote target <> "."
-            found match =
-                let cn = head . filter ((== match) . T.toLower) $ cns
-                    c  = head . filter (views chanName (== cn)) $ cs
-                    ci = c^.chanId
-                in if views chanConnTbl (M.! s) c
-                  then let f triple a =
-                               let notFoundSing = triple & _2 <>~ mkBroadcast i
-                                       ("You haven't established a two-way telepathic link with anyone named " <>
-                                       dblQuote a                                                              <>
-                                       ".") -- TODO: Or they aren't logged in...
-                                   foundSing singMatch =
-                                       let targetSing = head . filter ((== singMatch) . uncapitalize) $ targetSings
-                                       in case c^.chanConnTbl.at targetSing of
-                                         Just _  -> triple & _2 <>~ (mkBroadcast i . T.concat $
-                                                        [ targetSing
-                                                        , " is already connected to the "
-                                                        , dblQuote cn
-                                                        , " channel." ])
-                                         Nothing -> triple & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
-                                                           & _2 <>~ mkBroadcast i "OK." -- TODO
-                               in findFullNameForAbbrev a targetSings' |&| maybe notFoundSing foundSing
-                           targetSings  = map (`getSing` ms) pool
-                           targetSings' = map uncapitalize targetSings
-                           pool         = filter isG $ ms^.pcTbl.to IM.keys
-                           isG i' = let p = getPla i' ms
-                                    in and [ isDblLinked ms (i, i'), isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
-                           (ms', bs, logMsgs) = foldl' f (ms, [], []) as
-                       in (ms', (bs, logMsgs))
-                  else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
-            cs        = getPCChans i ms
-            cns       = map (view chanName) cs
-            s         = getSing i ms
-            sorry msg = (ms, (mkBroadcast i msg, []))
-        in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 connect p = patternMatchFail "connect" [ showText p ]
+
+
+connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Broadcast], [T.Text]))
+connectHelper i (target, as) ms =
+    let notFound    = sorry $ "You are not connected to a channel named " <> dblQuote target <> "."
+        found match =
+            let cn = head . filter ((== match) . T.toLower) $ cns
+                c  = head . filter (views chanName (== cn)) $ cs
+                ci = c^.chanId
+            in if views chanConnTbl (M.! s) c
+              then let f triple a =
+                           let notFoundSing = oops $
+                                   "You haven't established a two-way telepathic link with anyone named " <>
+                                   dblQuote a                                                             <>
+                                   "." -- TODO: Or they aren't logged in...
+                               foundSing singMatch =
+                                   let targetSing = head . filter ((== singMatch) . uncapitalize) $ targetSings
+                                   in case c^.chanConnTbl.at targetSing of
+                                     Just _  -> oops . T.concat $ [ targetSing
+                                                                  , " is already connected to the "
+                                                                  , dblQuote cn
+                                                                  , " channel." ]
+                                     Nothing -> case areMutuallyTuned targetSing of
+                                       (False, _,    _      ) -> oops $ "You have tuned out your link with " <>
+                                                                        targetSing                           <>
+                                                                        "."
+                                       (True, False, _      ) -> blocked $ targetSing <> " has tuned out your link."
+                                       (True, True, targetId) -> if hasChanOfSameName targetId
+                                         then blocked . T.concat $ [ targetSing
+                                                                   , " is already connected to a channel named "
+                                                                   , dblQuote cn
+                                                                   , "." ]
+                                         else triple & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
+                                                     & _2 <>~ mkBroadcast i "OK." -- TODO
+                               oops    msg = triple & _2 <>~ mkBroadcast i msg
+                               blocked msg = oops $ "Your efforts are blocked; " <> msg
+                           in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
+                       targetSings = map (`getSing` ms) pool
+                       pool        = filter isG $ ms^.pcTbl.to IM.keys
+                       isG i' = let p = getPla i' ms
+                                in and [ isDblLinked ms (i, i'), isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
+                       areMutuallyTuned targetSing | targetId <- getIdForPCSing targetSing ms
+                                                   , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
+                                                   , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
+                                                   = (a, b, targetId)
+                       hasChanOfSameName targetId | targetCs  <- getPCChans targetId ms
+                                                  , targetCns <- map (views chanName T.toLower) targetCs
+                                                  = T.toLower cn `elem` targetCns
+                       (ms', bs, logMsgs) = foldl' f (ms, [], []) as
+                   in (ms', (bs, logMsgs))
+              else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
+        cs        = getPCChans i ms
+        cns       = map (view chanName) cs
+        s         = getSing i ms
+        sorry msg = (ms, (mkBroadcast i msg, []))
+    in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 
 
 -----
