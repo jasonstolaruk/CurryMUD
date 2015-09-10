@@ -115,8 +115,11 @@ type AC = Int
 
 
 data Chan = Chan { _chanId      :: Int
-                 , _chanName    :: T.Text
+                 , _chanName    :: ChanName
                  , _chanConnTbl :: ChanConnTbl } deriving (Eq, Generic, Show)
+
+
+type ChanName = T.Text
 
 
 type ChanConnTbl = M.Map Sing IsTuned

@@ -606,12 +606,28 @@ connect p@(AdviseOneArg a) = advise p ["connect"] advice
 connect (Lower i mq cols as) = getState >>= \ms ->
     if getPlaFlag IsIncognito . getPla i $ ms
       then wrapSend mq cols . sorryIncog $ "connect"
-      else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \(bs, logMsgs) ->
-          bcastNl bs >> logMsgs |#| logPla "connect" i . slashes
+      else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
+        ([Left b], Nothing) -> bcastNl . pure $ b
+        (res,      Just cn)
+          | (map fromLeft -> bs, map fromRight -> targetSings) <- partition isLeft res
+          , targetIds <- map (`getIdForPCSing` ms) targetSings
+          , toOthers  <- (T.concat [ getSing i ms, " has connected you to the ", dblQuote cn, " channel." ], targetIds)
+          , toSelf    <- mkBroadcast i . focusingInnate . T.concat $ [ "you connect the following people to the "
+                                                                     , dblQuote cn
+                                                                     , " channel: "
+                                                                     , commas targetSings
+                                                                     , "." ] -> do
+              bcastNl $ toOthers : bs ++ toSelf
+              connectBlink targetIds ms
+              logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
+        xs -> patternMatchFail "connect" [ showText xs ]
+  where
+    connectBlink targetIds ms = forM_ targetIds $ \targetId ->
+        rndmDo (calcProbConnectBlink targetId ms) . mkExpAction "blink" . mkActionParams targetId ms $ []
 connect p = patternMatchFail "connect" [ showText p ]
 
 
-connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Broadcast], [T.Text]))
+connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either Broadcast Sing], Maybe ChanName))
 connectHelper i (target, as) ms =
     let notFound    = sorry $ "You are not connected to a channel named " <> dblQuote target <> "."
         found match =
@@ -619,7 +635,7 @@ connectHelper i (target, as) ms =
                 c  = head . filter (views chanName (== cn)) $ cs
                 ci = c^.chanId
             in if views chanConnTbl (M.! s) c
-              then let f triple a =
+              then let f pair a =
                            let notFoundSing = oops $ case findFullNameForAbbrev a (map uncapitalize asleepSings) of
                                  Just asleepTarget@(capitalize -> asleepTarget') ->
                                      let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget' ms) $ ms
@@ -648,14 +664,14 @@ connectHelper i (target, as) ms =
                                                                    , " is already connected to a channel named "
                                                                    , dblQuote cn
                                                                    , "." ]
-                                         else triple & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
-                                                     & _2 <>~ mkBroadcast i "OK." -- TODO
-                               oops    msg = triple & _2 <>~ mkBroadcast i msg
+                                         else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
+                                                   & _2 <>~ (pure . Right $ targetSing)
+                               oops    msg = pair & _2 <>~ (pure . Left $ (msg, pure i))
                                blocked msg = oops $ "Your efforts are blocked; " <> msg
                            in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
                        dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
-                       pair                       = partition isG dblLinkeds
-                       (targetSings, asleepSings) = pair & both %~ map (`getSing` ms)
+                       dblLinkedsPair             = partition isG dblLinkeds
+                       (targetSings, asleepSings) = dblLinkedsPair & both %~ map (`getSing` ms)
                        isG i'                     = let p = getPla i' ms
                                                     in and [ isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
                        areMutuallyTuned targetSing | targetId <- getIdForPCSing targetSing ms
@@ -665,13 +681,13 @@ connectHelper i (target, as) ms =
                        hasChanOfSameName targetId  | targetCs  <- getPCChans targetId ms
                                                    , targetCns <- map (views chanName T.toLower) targetCs
                                                    = T.toLower cn `elem` targetCns
-                       (ms', bs, logMsgs) = foldl' f (ms, [], []) as
-                   in (ms', (bs, logMsgs))
+                       (ms', res)                  = foldl' f (ms, []) as
+                   in (ms', (res, Just cn))
               else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
         cs        = getPCChans i ms
         cns       = map (view chanName) cs
         s         = getSing i ms
-        sorry msg = (ms, (mkBroadcast i msg, []))
+        sorry msg = (ms, (pure . Left $ (msg, pure i), Nothing))
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 
 
@@ -1387,10 +1403,9 @@ link (NoArgs i mq cols) = do
                         x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
                           Nothing    -> x
                           (Just val) -> val ? x :? x <> " (tuned out)"
-                    mark x = x <> asterisk
-                in if and [ isLoggedIn linkPla, not . getPlaFlag IsIncognito $ linkPla ]
-                  then f _1 . mark $ linkSing
-                  else f _2          linkSing
+                in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . getPlaFlag IsIncognito $ linkPla ]
+                  then f _1
+                  else f _2
         in do
            multiWrapSend mq cols msgs
            logPla "link" i . slashes . dropEmpties $ [ twoWays       |!| "Two-way: "         <> commas twoWays
@@ -1465,7 +1480,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . g
                                                                             , " link with "
                                                                             , targetDesig
                                                                             , "." ]
-              | act <- rndmDo (calcProbLinkFlinch i ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
+              | act <- rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
                   let g a'' | isTwoWay  = a''
                             | otherwise = a'' & _3.ind i       .at targetSing .~ Nothing
                                               & _3.ind targetId.at s          .~ Nothing

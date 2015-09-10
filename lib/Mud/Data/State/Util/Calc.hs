@@ -3,6 +3,7 @@
 
 module Mud.Data.State.Util.Calc ( calcEncPer
                                 , calcMaxEnc
+                                , calcProbConnectBlink
                                 , calcProbLinkFlinch
                                 , calcProbTeleShudder
                                 , calcProbTeleVomit
@@ -46,6 +47,10 @@ calcMaxEnc i ms = getSt i ms ^ 2 `quot` 13 * 100
 
 calcProbLinkFlinch :: Id -> MudState -> Int
 calcProbLinkFlinch i ms = (getHt i ms - 100) ^ 2 `quot` 125
+
+
+calcProbConnectBlink :: Id -> MudState -> Int
+calcProbConnectBlink = calcProbLinkFlinch
 
 
 calcProbTeleShudder :: Id -> MudState -> Int
