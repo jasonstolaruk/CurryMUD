@@ -12,6 +12,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , dudeYourHandsAreEmpty
                          , findAvailSlot
                          , focusingInnate
+                         , getRelativePCName
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
@@ -188,6 +189,15 @@ dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything r
 
 focusingInnate :: T.Text -> T.Text
 focusingInnate = ("Focusing your innate psionic energy for a brief moment, " <>)
+
+
+-----
+
+
+getRelativePCName :: MudState -> (Id, Id) -> MudStack T.Text
+getRelativePCName ms pair@(_, y)
+  | isDblLinked ms pair = return . getSing y $ ms
+  | otherwise           = underline <$> uncurry updateRndmName pair
 
 
 -----

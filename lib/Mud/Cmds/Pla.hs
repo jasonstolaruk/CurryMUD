@@ -583,7 +583,6 @@ color p = withoutArgs color p
 
 
 -- TODO: Help.
--- TODO: Those tuned to the channel in question should be informed.
 -- TODO: Connecting someone to a channel should cost psionic points.
 connect :: Action
 connect p@AdviseNoArgs = advise p ["connect"] advice
@@ -603,31 +602,44 @@ connect p@(AdviseOneArg a) = advise p ["connect"] advice
                       , " hunt"
                       , dfltColor
                       , "." ]
-connect (Lower i mq cols as) = getState >>= \ms ->
+connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
     if getPlaFlag IsIncognito . getPla i $ ms
       then wrapSend mq cols . sorryIncog $ "connect"
       else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
         ([Left b], Nothing) -> bcastNl . pure $ b
-        (res,      Just cn)
-          | (map fromLeft -> bs, map fromRight -> targetSings) <- partition isLeft res
-          , targetIds <- map (`getIdForPCSing` ms) targetSings
-          , toOthers  <- (T.concat [ getSing i ms, " has connected you to the ", dblQuote cn, " channel." ], targetIds)
-          , toSelf    <- mkBroadcast i . focusingInnate . T.concat $ [ "you connect the following people to the "
-                                                                     , dblQuote cn
-                                                                     , " channel: "
-                                                                     , commas targetSings
-                                                                     , "." ] -> do
-              bcastNl $ toOthers : bs ++ toSelf
+        (res,      Just ci)
+          | (map fromLeft -> sorryBs, map fromRight -> targetSings) <- partition isLeft res
+          , targetIds <- getIds targetSings
+          , c         <- getChan ci ms
+          , cn        <- c^.chanName
+          , otherIds  <- views chanConnTbl ((\\ (i : targetIds)) . getIds . M.keys . M.filter id) c
+          , toTargets <- (T.concat [ getSing i ms, " has connected you to the ", dblQuote cn, " channel." ], targetIds)
+          , toSelf    <- focusingInnate $ case targetSings of
+            [one] -> T.concat [ "you connect ", one, " to the ", dblQuote cn, " channel." ]
+            _     -> T.concat [ "you connect the following people to the "
+                              , dblQuote cn
+                              , " channel: "
+                              , commas targetSings
+                              , "." ] -> do
+              toOthers <- mkToOthers ms otherIds targetIds cn
+              bcastNl $ toTargets : toOthers ++ sorryBs ++ (()!# targetSings |?| mkBroadcast i toSelf)
               connectBlink targetIds ms
               logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
         xs -> patternMatchFail "connect" [ showText xs ]
   where
+    mkToOthers ms otherIds targetIds cn = do
+        namesForMe      <- mapM (getRelativePCName ms . (, i)) otherIds
+        namesForTargets <- mapM (\otherId -> mapM (getRelativePCName ms . (otherId, )) targetIds) otherIds
+        let f i' me = map g
+              where
+                g n = (T.concat [ me, " has connected ", n, " to the ", dblQuote cn, " channel." ], pure i')
+        return . concat . zipWith3 f otherIds namesForMe $ namesForTargets
     connectBlink targetIds ms = forM_ targetIds $ \targetId ->
         rndmDo (calcProbConnectBlink targetId ms) . mkExpAction "blink" . mkActionParams targetId ms $ []
 connect p = patternMatchFail "connect" [ showText p ]
 
 
-connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either Broadcast Sing], Maybe ChanName))
+connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either Broadcast Sing], Maybe Id))
 connectHelper i (target, as) ms =
     let notFound    = sorry $ "You are not connected to a channel named " <> dblQuote target <> "."
         found match =
@@ -670,9 +682,9 @@ connectHelper i (target, as) ms =
                                blocked msg = oops $ "Your efforts are blocked; " <> msg
                            in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
                        dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
-                       dblLinkedsPair             = partition isG dblLinkeds
+                       dblLinkedsPair             = partition isAwake dblLinkeds
                        (targetSings, asleepSings) = dblLinkedsPair & both %~ map (`getSing` ms)
-                       isG i'                     = let p = getPla i' ms
+                       isAwake i'                 = let p = getPla i' ms
                                                     in and [ isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
                        areMutuallyTuned targetSing | targetId <- getIdForPCSing targetSing ms
                                                    , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
@@ -682,7 +694,7 @@ connectHelper i (target, as) ms =
                                                    , targetCns <- map (views chanName T.toLower) targetCs
                                                    = T.toLower cn `elem` targetCns
                        (ms', res)                  = foldl' f (ms, []) as
-                   in (ms', (res, Just cn))
+                   in (ms', (res, Just ci))
               else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
         cs        = getPCChans i ms
         cns       = map (view chanName) cs
