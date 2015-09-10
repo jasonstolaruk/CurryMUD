@@ -606,9 +606,10 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPC
     if getPlaFlag IsIncognito . getPla i $ ms
       then wrapSend mq cols . sorryIncog $ "connect"
       else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
-        ([Left b], Nothing) -> bcastNl . pure $ b
-        (res,      Just ci)
-          | (map fromLeft -> sorryBs, map fromRight -> targetSings) <- partition isLeft res
+        ([Left msg], Nothing) -> bcastNl . mkBroadcast i $ msg
+        (res,        Just ci)
+          | (map fromLeft -> sorryMsgs, map fromRight -> targetSings) <- partition isLeft res
+          , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
           , targetIds <- getIds targetSings
           , c         <- getChan ci ms
           , cn        <- c^.chanName
@@ -639,7 +640,7 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPC
 connect p = patternMatchFail "connect" [ showText p ]
 
 
-connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either Broadcast Sing], Maybe Id))
+connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
 connectHelper i (target, as) ms =
     let notFound    = sorry $ "You are not connected to a channel named " <> dblQuote target <> "."
         found match =
@@ -678,7 +679,7 @@ connectHelper i (target, as) ms =
                                                                    , "." ]
                                          else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
                                                    & _2 <>~ (pure . Right $ targetSing)
-                               oops    msg = pair & _2 <>~ (pure . Left $ (msg, pure i))
+                               oops    msg = pair & _2 <>~ (pure . Left $ msg)
                                blocked msg = oops $ "Your efforts are blocked; " <> msg
                            in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
                        dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
@@ -699,7 +700,7 @@ connectHelper i (target, as) ms =
         cs        = getPCChans i ms
         cns       = map (view chanName) cs
         s         = getSing i ms
-        sorry msg = (ms, (pure . Left $ (msg, pure i), Nothing))
+        sorry msg = (ms, (pure . Left $ msg, Nothing))
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 
 
@@ -2823,16 +2824,18 @@ mkSlotDesc i ms s = case s of
 
 tune :: Action
 tune (NoArgs i mq cols) = getState >>= \ms ->
-    let linkTbl                    = getTeleLinkTbl i ms
-        linkSings                  = styleAbbrevs Don'tBracket . M.keys $ linkTbl
-        linkTunings                = map snd . sortBy (compare `on` fst) . M.toList $ linkTbl
+    let linkPairs   = map (first (`getIdForPCSing` ms) . dup) . getLinked i $ ms
+        linkSings   = sort . map snd . filter (isDblLinked ms . (i, ) . fst) $ linkPairs
+        styleds     = styleAbbrevs Don'tBracket linkSings
+        linkTunings = foldr (\s -> (linkTbl M.! s :)) [] linkSings
+        linkTbl     = getTeleLinkTbl i ms
         (chanNames, chanTunings)   = mkChanNamesTunings i ms
         helper title names tunings = let txts = mkConnTxts
                                      in [ title, ()!# txts ? commas txts :? "None." ]
           where
             mkConnTxts = [ n <> "=" <> (t ? "in" :? "out") | n <- names | t <- tunings ]
     in do
-        let msgs = [ helper "Two-way telepathic links:" linkSings linkTunings
+        let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
                    , pure ""
                    , helper "Telepathic channels:" (styleAbbrevs Don'tBracket chanNames) chanTunings ]
         multiWrapSend mq cols . concat $ msgs
