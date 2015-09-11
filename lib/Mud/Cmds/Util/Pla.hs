@@ -20,9 +20,11 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , helperPutRemEitherCoins
                          , helperPutRemEitherInv
                          , InvWithCon
+                         , isAwake
                          , IsConInRm
                          , isNonStdLink
                          , isRingRol
+                         , isRndmName
                          , isSlotAvail
                          , linkDirToCmdName
                          , maybeSingleSlot
@@ -82,6 +84,7 @@ import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
+import Data.Char (isLower)
 import Data.Function (on)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
 import Data.Maybe (catMaybes, fromJust)
@@ -196,8 +199,8 @@ focusingInnate = ("Focusing your innate psionic energy for a brief moment, " <>)
 
 getRelativePCName :: MudState -> (Id, Id) -> MudStack T.Text
 getRelativePCName ms pair@(_, y)
-  | isDblLinked ms pair = return . getSing y $ ms
-  | otherwise           = underline <$> uncurry updateRndmName pair
+  | isLinked ms pair = return . getSing y $ ms
+  | otherwise        = underline <$> uncurry updateRndmName pair
 
 
 -----
@@ -542,10 +545,24 @@ mkPutRemInvDesc i ms d por mnom is ts =
 -----
 
 
+isAwake :: Id -> MudState -> Bool
+isAwake i ms = let p = getPla i ms in isLoggedIn p && (not . getPlaFlag IsIncognito $ p)
+
+
+-----
+
+
 isRingRol :: RightOrLeft -> Bool
 isRingRol = \case R -> False
                   L -> False
                   _ -> True
+
+
+-----
+
+
+isRndmName :: T.Text -> Bool
+isRndmName = isLower . T.head . dropANSI
 
 
 -----

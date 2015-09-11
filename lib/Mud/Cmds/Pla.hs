@@ -54,7 +54,7 @@ import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
-import Data.Char (isDigit, isLetter, isLower)
+import Data.Char (isDigit, isLetter)
 import Data.Either (isLeft)
 import Data.Function (on)
 import Data.Int (Int64)
@@ -360,7 +360,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                     combo'   = sortBy (compare `on` fst) combo
                     styleds  = styleAbbrevs Don'tBracket . map fst $ combo'
                     combo''  = zipWith (\styled -> _1 .~ styled) styleds combo'
-                    g (x, y) = padName x <> (y ? "tuned in" :? "tuned out")
+                    g (x, y) = let x' = isRndmName x ? underline x :? x in padName x' <> (y ? "tuned in" :? "tuned out")
                 in multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : g (s, isTuned) : map g combo''
         cs              = getPCChans i ms
         cns             = map (view chanName) cs
@@ -613,7 +613,8 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPC
           , targetIds <- getIds targetSings
           , c         <- getChan ci ms
           , cn        <- c^.chanName
-          , otherIds  <- views chanConnTbl ((\\ (i : targetIds)) . getIds . M.keys . M.filter id) c
+          , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms) . getIds . M.keys . M.filter id
+                         in views chanConnTbl f c
           , toTargets <- (T.concat [ getSing i ms, " has connected you to the ", dblQuote cn, " channel." ], targetIds)
           , toSelf    <- focusingInnate $ case targetSings of
             [one] -> T.concat [ "you connect ", one, " to the ", dblQuote cn, " channel." ]
@@ -683,10 +684,8 @@ connectHelper i (target, as) ms =
                                blocked msg = oops $ "Your efforts are blocked; " <> msg
                            in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
                        dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
-                       dblLinkedsPair             = partition isAwake dblLinkeds
+                       dblLinkedsPair             = partition (`isAwake` ms) dblLinkeds
                        (targetSings, asleepSings) = dblLinkedsPair & both %~ map (`getSing` ms)
-                       isAwake i'                 = let p = getPla i' ms
-                                                    in and [ isLoggedIn p, not . getPlaFlag IsIncognito $ p ]
                        areMutuallyTuned targetSing | targetId <- getIdForPCSing targetSing ms
                                                    , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
                                                    , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
@@ -1123,12 +1122,13 @@ intro :: Action
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet." in
       wrapSend mq cols introsTxt >> (logPlaOut "intro" i . pure $ introsTxt)
-  else let introsTxt = commas intros in
-      multiWrapSend mq cols [ "You know the following names:", introsTxt ] >> (logPlaOut "intro" i . pure $ introsTxt)
+  else let introsTxt = commas intros in do
+      multiWrapSend mq cols [ "You know the following names:", introsTxt ]
+      logPla "intro" i $ "known names: " <> introsTxt
 intro (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
   then wrapSend mq cols . sorryIncog $ "intro"
   else helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
-    bcastIfNotIncog i bs >> logMsgs |#| logPlaOut "intro" i
+    bcastIfNotIncog i bs >> logMsgs |#| logPla "intro" i . slashes
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -1219,7 +1219,7 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 -- TODO: Help.
--- TODO: Those tuned to the channels in question should be informed.
+-- TODO: Those awake and tuned to the channels in question should be informed.
 -- TODO: Leaving a channel should cost psionic points.
 leave :: Action
 leave p@AdviseNoArgs = advise p ["leave"] advice
@@ -1697,9 +1697,9 @@ question (NoArgs' i mq) = getState >>= \ms ->
                styleds = styleAbbrevs Don'tBracket . map (view _2) $ tunedIns
                combo   = map f $ zipWith (\styled -> _2 .~ styled) styleds tunedIns ++ tunedOuts
                  where
-                  f (i', n, ia) | ia                              = (i', n <> asterisk)
-                                | isLower . T.head . dropANSI $ n = (i', underline n  )
-                                | otherwise                       = (i', n            )
+                  f (i', n, ia) | ia           = (i', n <> asterisk)
+                                | isRndmName n = (i', underline n  )
+                                | otherwise    = (i', n            )
                mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestion i' ms ? "tuned in" :? "tuned out")
                descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo
            in pager i mq descs >> logPlaExecArgs "question" [] i
