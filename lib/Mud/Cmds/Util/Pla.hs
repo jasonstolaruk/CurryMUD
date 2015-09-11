@@ -12,6 +12,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , dudeYourHandsAreEmpty
                          , findAvailSlot
                          , focusingInnate
+                         , getMatchingChanWithName
                          , getRelativePCName
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
@@ -28,6 +29,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , isSlotAvail
                          , linkDirToCmdName
                          , maybeSingleSlot
+                         , mkChanBindings
                          , mkChanNamesTunings
                          , mkCoinsDesc
                          , mkCoinsSummary
@@ -192,6 +194,15 @@ dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything r
 
 focusingInnate :: T.Text -> T.Text
 focusingInnate = ("Focusing your innate psionic energy for a brief moment, " <>)
+
+
+-----
+
+
+getMatchingChanWithName :: T.Text -> [ChanName] -> [Chan] -> (ChanName, Chan)
+getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.toLower) $ cns
+                                           c   = head . filter (views chanName (== cn)) $ cs
+                                       in (cn, c)
 
 
 -----
@@ -581,6 +592,16 @@ findAvailSlot em = find (isSlotAvail em)
 
 maybeSingleSlot :: EqMap -> Slot -> Maybe Slot
 maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
+
+
+-----
+
+
+mkChanBindings :: Id -> MudState -> ([Chan], [ChanName], Sing)
+mkChanBindings i ms = let cs  = getPCChans i ms
+                          cns = map (view chanName) cs
+                          s   = getSing i ms
+                      in (cs, cns, s)
 
 
 -----

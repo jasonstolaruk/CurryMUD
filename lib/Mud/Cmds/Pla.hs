@@ -350,8 +350,7 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols $ "You are not connected to a channel named " <> dblQuote a <> "."
         found match =
-            let cn = head . filter ((== match) . T.toLower) $ cns
-                c  = head . filter (views chanName (== cn)) $ cs
+            let (cn, c)                  = getMatchingChanWithName match cns cs
                 ([(_, isTuned)], others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
                 (linkeds, nonLinkeds)    = partition (views _1 (isLinked ms . (i, ))) . filter f . map mkTriple $ others
                 f (x, _, _)              = let p = getPla x ms in isLoggedIn p && (not . getPlaFlag IsIncognito $ p)
@@ -362,197 +361,10 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                     combo''  = zipWith (\styled -> _1 .~ styled) styleds combo'
                     g (x, y) = let x' = isRndmName x ? underline x :? x in padName x' <> (y ? "tuned in" :? "tuned out")
                 in multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : g (s, isTuned) : map g combo''
-        cs              = getPCChans i ms
-        cns             = map (view chanName) cs
-        s               = getSing i ms
+        (cs, cns, s)    = mkChanBindings i ms
         mkTriple (x, y) = (getIdForPCSing x ms, x, y)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan p = patternMatchFail "chan" [ showText p ]
-
-
-{-
-question (Msg i mq cols msg) = getState >>= \ms -> if
-  | not . isTunedQuestion i $ ms           -> sorryNotTuned mq cols "question"
-  | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogMsg
-  | otherwise                              -> getQuestionStyleds i ms >>= \triples -> if ()# triples
-    then sorryNoOneListening mq cols "question"
-    else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
-             format (txt, is)   = if i `elem` is
-               then ((formatChanMsg "Question" (getSing i ms) txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
-               else mkBsWithStyled is
-               where
-                 mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
-                     return [ (formatChanMsg "Question" styled txt, pure i') | i' <- is' | styled <- styleds ]
-             s = getSing i ms
-          in case emotify i ms triples msg of
-            Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
-            Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
-                                in ioHelper ms s logMsg =<< concatMapM format bs
-            Right (Left  ()) -> case expCmdify i ms triples msg of
-              Left  errorMsg     -> wrapSend mq cols errorMsg
-              Right (bs, logMsg) -> ioHelper ms s logMsg =<< concatMapM format bs
-  where
-    sorryIncogMsg = wrapSend mq cols "You can't send a message on the question channel while incognito."
-    ioHelper ms s (expandEmbeddedIdsToSings ms -> logMsg) bs = (bcastNl =<< expandEmbeddedIds ms bs) >> logHelper
-      where
-        logHelper = do
-            logPlaOut "question" i . pure $ logMsg
-            ts <- liftIO mkTimestamp
-            withDbExHandler_ "question" . insertDbTblQuestion . QuestionRec ts s $ logMsg
-question p = patternMatchFail "question" [ showText p ]
-
-
-isTunedQuestion :: Id -> MudState -> Bool
-isTunedQuestion i = getPlaFlag IsTunedQuestion . getPla i
-
-
-getQuestionStyleds :: Id -> MudState -> MudStack [(Id, T.Text, T.Text)]
-getQuestionStyleds i ms =
-    let (plaIds,    adminIds) = getTunedQuestionIds i ms
-        (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
-    in mapM (updateRndmName i) otherIds >>= \rndmNames ->
-        let rndms   = zip otherIds rndmNames
-            f       = map (second (`getSing` ms) . dup)
-            linkeds = f linkedIds
-            admins  = f adminIds
-            combo   = sortBy (compare `on` view _2) $ rndms ++ nubSort (linkeds ++ admins)
-            styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
-            helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
-                                 | otherwise         = a
-              where
-                a = (x, y, styled)
-        in return . zipWith helper combo $ styleds
-
-
-getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
-getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms)
-                           in pair & both %~ filter (`isTunedQuestion` ms) . (i `delete`)
-
-
-emotify :: Id -> MudState -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
-emotify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | or [ (T.head . head $ ws) `elem` ("[<" :: String)
-       , "]." `T.isSuffixOf` last ws
-       , ">." `T.isSuffixOf` last ws ]  = Left . pure $ "Sorry, but you can't open or close your message with brackets."
-  | msg == T.singleton emoteChar <> "." = Left . pure $ "He don't."
-  | c == emoteChar = fmap Right . procEmote i ms triples . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
-  | otherwise = Right . Left $ ()
-
-
-procEmote :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either [T.Text] [Broadcast]
-procEmote _ _ _ as | hasYou as = Left . pure . adviceYouEmote $ "question"
-procEmote i ms triples as =
-    let me                      = (getSing i ms, embedId i, embedId i)
-        xformed                 = xformArgs True as
-        xformArgs _      []     = []
-        xformArgs _      [x]
-          | (h, t) <- headTail x
-          , h == emoteNameChar
-          , all isPunc . T.unpack $ t
-          = pure . mkRightForNonTargets $ me & each <>~ t
-        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
-          | x == enc            -> mkRightForNonTargets me
-          | x == enc's          -> mkRightForNonTargets (me & each <>~ "'s")
-          | enc `T.isInfixOf` x -> Left . adviceEnc $ cn
-          | x == etc            -> Left . adviceEtc $ cn
-          | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
-          | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
-          | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
-          | isHead              -> mkRightForNonTargets (me & each <>~ (" " <> x))
-          | otherwise           -> mkRightForNonTargets . dup3 $ x
-    in case filter isLeft xformed of
-      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
-            in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
-      advices -> Left . intersperse "" . map fromLeft . nub $ advices
-  where
-    cn              = "question " <> T.singleton emoteChar
-    procTarget word =
-        case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
-          ("",   _) -> Left . adviceEtc $ cn
-          ("'s", _) -> Left adviceEtcEmptyPoss
-          (w,    p) ->
-            let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                notFound         = Left . sorryQuestionName $ target
-                found match      =
-                    let targetId = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
-                        txt      = addSuffix isPoss p . embedId $ targetId
-                    in Right ( txt
-                             , [ mkEmoteWord isPoss p targetId, ForNonTargets txt ]
-                             , txt )
-            in findFullNameForAbbrev (T.toLower target) (map (views _2 T.toLower) triples) |&| maybe notFound found
-    addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
-    mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
-    tunedIds             = map (view _1) triples
-
-
-sorryQuestionName :: T.Text -> T.Text
-sorryQuestionName n =
-    "There is no one by the name of " <> (dblQuote . capitalize $ n) <> " currently tuned in to the question channel."
-
-
-expCmdify :: Id -> MudState -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
-expCmdify i ms triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | msg == T.singleton expCmdChar <> "." = Left "He don't."
-  | c == expCmdChar = fmap format . procExpCmd i ms triples . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
-  | otherwise = Right (pure (msg, i : map (view _1) triples), msg)
-  where
-    format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
-                   & _2 %~ angleBracketQuote
-
-
-procExpCmd :: Id -> MudState -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
-procExpCmd _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
-procExpCmd i ms triples (unmsg -> [ cn, T.toLower -> target ]) =
-    let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
-    in findFullNameForAbbrev cn cns |&| maybe notFound found
-  where
-    found match =
-        let [ExpCmd _ ct] = S.toList . S.filter (\(ExpCmd cn' _) -> cn' == match) $ expCmdSet
-            tunedIds      = map (view _1) triples
-        in case ct of
-          NoTarget toSelf toOthers -> if ()# target
-            then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
-                       , toSelf )
-            else Left $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
-          HasTarget toSelf toTarget toOthers -> if ()# target
-            then Left $ "The " <> dblQuote match <> " expressive command requires a single target."
-            else case findTarget of
-              Nothing -> Left . sorryQuestionName $ target
-              Just n  -> let targetId = getIdForMatch n
-                             toSelf'  = format (Just targetId) toSelf
-                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
-                                    (format (Just targetId) toOthers,          targetId `delete` tunedIds) :
-                                    mkBroadcast i toSelf'
-                                  , toSelf' )
-          Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
-                       , toSelf )
-            else case findTarget of
-              Nothing -> Left . sorryQuestionName $ target
-              Just n  -> let targetId          = getIdForMatch n
-                             toSelfWithTarget' = format (Just targetId) toSelfWithTarget
-                         in Right ( (colorizeYous . format Nothing $ toTarget,  pure targetId             ) :
-                                    (format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :
-                                    mkBroadcast i toSelfWithTarget'
-                                  , toSelfWithTarget' )
-    notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
-    findTarget = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
-    getIdForMatch match    = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
-    format maybeTargetId =
-        let substitutions = [ ("%", embedId i), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-        in replace (substitutions ++ maybe [] (pure . ("@", ) . embedId) maybeTargetId)
-    (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
-    colorizeYous                = T.unwords . map helper . T.words
-      where
-        helper w = let (a, b) = T.break isLetter w
-                       (c, d) = T.span  isLetter b
-                   in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
-procExpCmd _ _ _ as = patternMatchFail "procExpCmd" as
--}
 
 
 -----
@@ -644,62 +456,57 @@ connect p = patternMatchFail "connect" [ showText p ]
 connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
 connectHelper i (target, as) ms =
     let notFound    = sorry $ "You are not connected to a channel named " <> dblQuote target <> "."
-        found match =
-            let cn = head . filter ((== match) . T.toLower) $ cns
-                c  = head . filter (views chanName (== cn)) $ cs
-                ci = c^.chanId
-            in if views chanConnTbl (M.! s) c
-              then let f pair a =
-                           let notFoundSing = oops $ case findFullNameForAbbrev a (map uncapitalize asleepSings) of
-                                 Just asleepTarget@(capitalize -> asleepTarget') ->
-                                     let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget' ms) $ ms
-                                         guess = a /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget' <> "? ")
-                                     in T.concat [ guess
-                                                 , "Unfortunately, "
-                                                 , ()# guess ? asleepTarget' :? heShe
-                                                 , " is sleeping at the moment..." ]
-                                 Nothing -> "You haven't established a two-way telepathic link with anyone named " <>
-                                            dblQuote a                                                             <>
-                                            "."
-                               foundSing singMatch =
-                                   let targetSing = head . filter ((== singMatch) . uncapitalize) $ targetSings
-                                   in case c^.chanConnTbl.at targetSing of
-                                     Just _  -> oops . T.concat $ [ targetSing
-                                                                  , " is already connected to the "
-                                                                  , dblQuote cn
-                                                                  , " channel." ]
-                                     Nothing -> case areMutuallyTuned targetSing of
-                                       (False, _,    _      ) -> oops $ "You have tuned out your link with " <>
-                                                                        targetSing                           <>
-                                                                        "."
-                                       (True, False, _      ) -> blocked $ targetSing <> " has tuned out your link."
-                                       (True, True, targetId) -> if hasChanOfSameName targetId
-                                         then blocked . T.concat $ [ targetSing
-                                                                   , " is already connected to a channel named "
-                                                                   , dblQuote cn
-                                                                   , "." ]
-                                         else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
-                                                   & _2 <>~ (pure . Right $ targetSing)
-                               oops    msg = pair & _2 <>~ (pure . Left $ msg)
-                               blocked msg = oops $ "Your efforts are blocked; " <> msg
-                           in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
-                       dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
-                       dblLinkedsPair             = partition (`isAwake` ms) dblLinkeds
-                       (targetSings, asleepSings) = dblLinkedsPair & both %~ map (`getSing` ms)
-                       areMutuallyTuned targetSing | targetId <- getIdForPCSing targetSing ms
-                                                   , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
-                                                   , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
-                                                   = (a, b, targetId)
-                       hasChanOfSameName targetId  | targetCs  <- getPCChans targetId ms
-                                                   , targetCns <- map (views chanName T.toLower) targetCs
-                                                   = T.toLower cn `elem` targetCns
-                       (ms', res)                  = foldl' f (ms, []) as
-                   in (ms', (res, Just ci))
-              else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
-        cs        = getPCChans i ms
-        cns       = map (view chanName) cs
-        s         = getSing i ms
-        sorry msg = (ms, (pure . Left $ msg, Nothing))
+        found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
+          then let f pair a =
+                       let notFoundSing = oops $ case findFullNameForAbbrev a (map uncapitalize asleepSings) of
+                             Just asleepTarget@(capitalize -> asleepTarget') ->
+                                 let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget' ms) $ ms
+                                     guess = a /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget' <> "? ")
+                                 in T.concat [ guess
+                                             , "Unfortunately, "
+                                             , ()# guess ? asleepTarget' :? heShe
+                                             , " is sleeping at the moment..." ]
+                             Nothing -> "You haven't established a two-way telepathic link with anyone named " <>
+                                        dblQuote a                                                             <>
+                                        "."
+                           foundSing singMatch =
+                               let targetSing = head . filter ((== singMatch) . uncapitalize) $ targetSings
+                               in case c^.chanConnTbl.at targetSing of
+                                 Just _  -> oops . T.concat $ [ targetSing
+                                                              , " is already connected to the "
+                                                              , dblQuote cn
+                                                              , " channel." ]
+                                 Nothing -> case areMutuallyTuned targetSing of
+                                   (False, _,    _      ) -> oops $ "You have tuned out your link with " <>
+                                                                    targetSing                           <>
+                                                                    "."
+                                   (True, False, _      ) -> blocked $ targetSing <> " has tuned out your link."
+                                   (True, True, targetId) -> if hasChanOfSameName targetId
+                                     then blocked . T.concat $ [ targetSing
+                                                               , " is already connected to a channel named "
+                                                               , dblQuote cn
+                                                               , "." ]
+                                     else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
+                                               & _2 <>~ (pure . Right $ targetSing)
+                           oops    msg = pair & _2 <>~ (pure . Left $ msg)
+                           blocked msg = oops $ "Your efforts are blocked; " <> msg
+                       in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
+                   ci                         = c^.chanId
+                   dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
+                   dblLinkedsPair             = partition (`isAwake` ms) dblLinkeds
+                   (targetSings, asleepSings) = dblLinkedsPair & both %~ map (`getSing` ms)
+                   areMutuallyTuned targetSing | targetId <- getIdForPCSing targetSing ms
+                                               , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
+                                               , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
+                                               = (a, b, targetId)
+                   hasChanOfSameName targetId  | targetCs  <- getPCChans targetId ms
+                                               , targetCns <- map (views chanName T.toLower) targetCs
+                                               = T.toLower cn `elem` targetCns
+                   (ms', res)                  = foldl' f (ms, []) as
+               in (ms', (res, Just ci))
+          else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
+        (cs, cns, s) = mkChanBindings i ms
+        sorry msg    = (ms, (pure . Left $ msg, Nothing))
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 
 
