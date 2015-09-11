@@ -1037,23 +1037,20 @@ leave p@AdviseNoArgs = advise p ["leave"] advice
                       , dfltColor
                       , "." ]
 leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(chanNames, sorryMsgs) ->
-    let otherMsgs = mkLeaveMsg chanNames
-        msgs      = ()# sorryMsgs ? otherMsgs :? sorryMsgs ++ (otherMsgs |!| "" : otherMsgs)
+    let toSelfMsgs = mkLeaveMsg chanNames
+        msgs       = ()# sorryMsgs ? toSelfMsgs :? sorryMsgs ++ (toSelfMsgs |!| "" : toSelfMsgs)
     in multiWrapSend mq cols msgs >> chanNames |#| logPla "leave" i . commas
   where
-    helper ms = let s                           = getSing i ms
-                    (ms', chanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
+    helper ms = let (ms', chanNames, sorryMsgs) = foldl' f (ms, [], []) as
                 in (ms', (chanNames, sorryMsgs))
       where
-        f s triple a@(T.toLower -> a') =
+        f triple a@(T.toLower -> a') =
             let notFound    = triple & _3 <>~ [ "You are not connected to a channel named " <> dblQuote a <> "." ]
-                found match = let cn = head . filter ((== match) . T.toLower) $ cns
-                                  c  = head . filter (views chanName (== cn)) $ cs
-                                  ci = c^.chanId
+                found match = let (cn, c) = getMatchingChanWithName match cns cs
+                                  ci      = c^.chanId
                               in triple & _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
                                         & _2 <>~ pure cn
-                cs  = getPCChans i ms
-                cns = map (view chanName) cs
+                (cs, cns, s) = mkChanBindings i ms
             in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
     mkLeaveMsg []     = []
     mkLeaveMsg ns@[_] = pure    . mkMsgHelper False $ ns
