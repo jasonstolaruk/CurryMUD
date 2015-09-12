@@ -4,7 +4,9 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , BanHostRec(..)
                          , BanPlaRec(..)
                          , BugRec(..)
+                         , ChanRec(..)
                          , countDbTblRecsAdminChan
+                         , countDbTblRecsChan
                          , countDbTblRecsQuestion
                          , createDbTbls
                          , getDbTblRecs
@@ -12,11 +14,13 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblBanHost
                          , insertDbTblBanPla
                          , insertDbTblBug
+                         , insertDbTblChan
                          , insertDbTblProf
                          , insertDbTblQuestion
                          , insertDbTblTypo
                          , ProfRec(..)
                          , purgeDbTblAdminChan
+                         , purgeDbTblChan
                          , purgeDbTblQuestion
                          , QuestionRec(..)
                          , TypoRec(..)) where
@@ -47,6 +51,11 @@ data BugRec       = BugRec       { bugTimestamp       :: T.Text
                                  , bugLoc             :: T.Text
                                  , bugDesc            :: T.Text
                                  , bugIsOpen          :: Bool   }
+data ChanRec      = ChanRec      { chanTimestamp      :: T.Text
+                                 , chanChanId         :: Int
+                                 , chanChanName       :: T.Text
+                                 , chanPCName         :: T.Text
+                                 , chanMsg            :: T.Text }
 data ProfRec      = ProfRec      { profTimestamp      :: T.Text
                                  , profHost           :: T.Text
                                  , profProfanity      :: T.Text }
@@ -74,6 +83,10 @@ instance FromRow BanPlaRec where
 
 instance FromRow BugRec where
   fromRow = BugRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+
+
+instance FromRow ChanRec where
+  fromRow = ChanRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow ProfRec where
@@ -104,6 +117,10 @@ instance ToRow BugRec where
   toRow (BugRec a b c d e) = toRow (a, b, c, d, e)
 
 
+instance ToRow ChanRec where
+  toRow (ChanRec a b c d e) = toRow (a, b, c, d, e)
+
+
 instance ToRow ProfRec where
   toRow (ProfRec a b c) = toRow (a, b, c)
 
@@ -123,6 +140,7 @@ createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
          , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned integer, reason text)"
          , "create table if not exists ban_pla    (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
+         , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)" ]
@@ -156,6 +174,10 @@ insertDbTblBug :: BugRec -> IO ()
 insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
 
 
+insertDbTblChan :: ChanRec -> IO ()
+insertDbTblChan = insertDbTblHelper "insert into chan (timestamp, chan_id, chan_name, name, msg) values (?, ?, ?, ?, ?)"
+
+
 insertDbTblProf :: ProfRec -> IO ()
 insertDbTblProf = insertDbTblHelper "insert into profanity (timestamp, host, prof) values (?, ?, ?)"
 
@@ -172,6 +194,10 @@ countDbTblRecsAdminChan :: IO [Only Int]
 countDbTblRecsAdminChan = countHelper "admin_chan"
 
 
+countDbTblRecsChan :: IO [Only Int]
+countDbTblRecsChan = countHelper "chan"
+
+
 countDbTblRecsQuestion :: IO [Only Int]
 countDbTblRecsQuestion = countHelper "question"
 
@@ -184,6 +210,10 @@ countHelper tblName = withConnection dbFile helper
 
 purgeDbTblAdminChan :: IO ()
 purgeDbTblAdminChan = purgeHelper "admin_chan"
+
+
+purgeDbTblChan :: IO ()
+purgeDbTblChan = purgeHelper "chan"
 
 
 purgeDbTblQuestion :: IO ()

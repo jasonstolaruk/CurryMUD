@@ -115,7 +115,11 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         initialize
         logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-        auxAsyncs <- mapM runAsync [ adminChanTblPurger, questionChanTblPurger, threadTblPurger, worldPersister ]
+        auxAsyncs <- mapM runAsync [ adminChanTblPurger
+                                   , chanTblPurger
+                                   , questionChanTblPurger
+                                   , threadTblPurger
+                                   , worldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
         logNotice "listen initialize" "creating the database tables."
@@ -167,7 +171,11 @@ sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState 
 
 
 adminChanTblPurger :: MudStack ()
-adminChanTblPurger = dbTblPurger "admin channel" countDbTblRecsAdminChan purgeDbTblAdminChan
+adminChanTblPurger = dbTblPurger "admin_chan" countDbTblRecsAdminChan purgeDbTblAdminChan
+
+
+chanTblPurger :: MudStack ()
+chanTblPurger = dbTblPurger "chan" countDbTblRecsChan purgeDbTblChan
 
 
 questionChanTblPurger :: MudStack ()
