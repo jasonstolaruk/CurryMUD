@@ -2,7 +2,7 @@
 
 A textual Multi-User Dungeon ("MUD") server in Haskell. (If you are unfamiliar with the term "MUD," please refer to [this Wikipedia article](http://en.wikipedia.org/wiki/MUD).)
 
-CurryMUD is essentially the hobby project and brainchild of a single developer (me). It's been in active development for well over a year, but is still very much a work in progress.
+CurryMUD is essentially the hobby project and brainchild of a single developer (me). It's been in active development for about 2 years, but is still very much a work in progress.
 
 ## My goals
 
@@ -10,7 +10,7 @@ I hope to create a new MUD from the ground up, _written entirely in the Haskell 
 
 CurryMUD will have the following features:
 * Players will be offered an immersive virtual world environment.
-* Content will be created and development will proceed with the aim of supporting a small community of players.
+* Content will be created, and development will proceed, with the aim of supporting a small community of players.
 * Role-playing will be strictly enforced.
 * Classless/skill-based.
 * Permadeath. (When player characters die, they really die.)
@@ -24,14 +24,19 @@ CurryMUD will have the following features:
 * Incoming connections are accepted and players are prompted for their character name.
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated.
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
-* About 40 player commands and 20 administrator commands.
+* About 50 player commands and 25 administrator commands.
 * About 180 built-in emotes.
-* Help files for all existing non-debug commands.
+* PCs can introduce themselves to each other.
+* PCs can "link" with each other so as to enable "tells."
+* PCs can create their own ad-hoc channels.
+* Question channel for OOC newbie Q&A.
+* Free-form emotes and built-in emotes may be used in channel communications.
+* Functionality enabling one-on-one communication between players and admins.
+* Help files for (almost) all existing non-debug commands.
 * The virtual world is automatically persisted at regular intervals and at shutdown.
 * Logging.
 * ANSI color.
 * Systems for reporting bugs and typos.
-* Functionality for various methods of communication.
 * Weight and encumbrance.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
@@ -59,7 +64,7 @@ The code is open source and available here on GitHub under the 3-clause BSD lice
   * `TemplateHaskell`
   * `TupleSections`
   * `ViewPatterns`
-* Over 40 modules.
+* Over 45 modules.
 * A handful of unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 
 ### How to try it out
