@@ -45,6 +45,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , noCoinsInEq
                          , noContainersHere
                          , noOneHere
+                         , notConnectedChan
                          , otherHand
                          , putOnMsgs
                          , resolvePCInvCoins
@@ -52,6 +53,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , sorryConInEq
                          , sorryEquipInvLook
                          , sorryIncog
+                         , sorryIncogChan
                          , theLetterS ) where
 
 import Mud.Cmds.Util.Abbrev
@@ -819,6 +821,13 @@ noOneHere = "You don't see anyone here."
 -----
 
 
+notConnectedChan :: T.Text -> T.Text
+notConnectedChan cn = "You are not connected to a channel named " <> dblQuote cn <> "."
+
+
+-----
+
+
 otherHand :: Hand -> Hand
 otherHand RHand  = LHand
 otherHand LHand  = RHand
@@ -899,6 +908,13 @@ sorryEquipInvLook cols eilcA eilcB = wrapUnlinesNl cols . T.concat $ helper
 
 sorryIncog :: T.Text -> T.Text
 sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito."
+
+
+-----
+
+
+sorryIncogChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
 
 
 -----

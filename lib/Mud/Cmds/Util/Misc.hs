@@ -43,7 +43,8 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , sorryIgnoreLocPref
                           , sorryIgnoreLocPrefPlur
                           , sorryNoOneListening
-                          , sorryNotTuned
+                          , sorryNotTunedICChan
+                          , sorryNotTunedOOCChan
                           , throwToListenThread
                           , unmsg
                           , updateRndmName
@@ -592,17 +593,25 @@ sorryNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tune
 -----
 
 
-sorryNotTuned :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryNotTuned mq cols n =
-    wrapSend mq cols . T.concat $ [ "You have tuned out the "
-                                  , n
-                                  , " channel. Type "
-                                  , quoteColor
-                                  , "set "
-                                  , n
-                                  , "=in"
-                                  , dfltColor
-                                  , " to tune it back in." ]
+sorryNotTunedICChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryNotTunedICChan = sorryNotTunedChan "tune"
+
+
+sorryNotTunedChan :: T.Text -> MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryNotTunedChan x mq cols y = wrapSend mq cols . T.concat $ [ "You have tuned out the "
+                                                              , dblQuote y
+                                                              , " channel. Type "
+                                                              , quoteColor
+                                                              , x
+                                                              , " "
+                                                              , y
+                                                              , "=in"
+                                                              , dfltColor
+                                                              , " to tune it back in." ]
+
+
+sorryNotTunedOOCChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryNotTunedOOCChan = sorryNotTunedChan "set"
 
 
 -----

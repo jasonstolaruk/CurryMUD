@@ -6,6 +6,7 @@ module Mud.Util.Misc ( atLst1
                      , divide
                      , dropFst
                      , dropIrrelevantFilenames
+                     , dropThr
                      , dup
                      , dup3
                      , eitherRet
@@ -77,6 +78,10 @@ dropFst (_, x, y) = (x, y)
 
 dropIrrelevantFilenames :: [FilePath] -> [FilePath]
 dropIrrelevantFilenames = foldr ((.) . delete) id [ ".", "..", ".DS_Store" ]
+
+
+dropThr :: (a, b, c) -> (a, b)
+dropThr (a, b, _) = (a, b)
 
 
 dup :: a -> (a, a)

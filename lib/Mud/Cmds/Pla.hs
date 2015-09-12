@@ -336,7 +336,7 @@ bug p = bugTypoLogger p BugLog
 
 
 -- TODO: Help.
--- TODO: Log chan msgs.
+-- TODO: Sending a msg should cost psionic points.
 chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
     let (chanNames, chanTunings) = mkChanNamesTunings i ms
@@ -348,12 +348,12 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
         multiWrapSend mq cols . helper (styleAbbrevs Don'tBracket chanNames) $ chanTunings
         logPlaExecArgs "chan" [] i
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
-    let notFound    = wrapSend mq cols $ "You are not connected to a channel named " <> dblQuote a <> "."
+    let notFound    = wrapSend mq cols . notConnectedChan $ a
         found match =
             let (cn, c)                  = getMatchingChanWithName match cns cs
                 ([(_, isTuned)], others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
                 (linkeds, nonLinkeds)    = partition (views _1 (isLinked ms . (i, ))) . filter f . map mkTriple $ others
-                f (x, _, _)              = let p = getPla x ms in isLoggedIn p && (not . getPlaFlag IsIncognito $ p)
+                f                        = views _1 (`isAwake` ms)
             in mapM (updateRndmName i . view _1) nonLinkeds >>= \rndmNames ->
                 let combo    = map dropFst linkeds ++ zipWith (\rndmName -> (rndmName, ) . view _3) rndmNames nonLinkeds
                     combo'   = sortBy (compare `on` fst) combo
@@ -364,7 +364,57 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
         (cs, cns, s)    = mkChanBindings i ms
         mkTriple (x, y) = (getIdForPCSing x ms, x, y)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
+chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+    let notFound    = wrapSend mq cols . notConnectedChan $ target
+        found match = let (cn, c) = getMatchingChanWithName match cns cs in if
+          | views chanConnTbl (not . (M.! s)) c    -> sorryNotTunedICChan mq cols cn
+          | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "a telepathic"
+          | otherwise                              -> getChanStyleds i c ms >>= \triples -> if ()# triples
+            then sorryNoOneListening mq cols . dblQuote $ cn
+            else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getChanStyleds targetId c ms
+                     format (txt, is)   = if i `elem` is
+                                            then ((formatChanMsg cn s txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
+                                            else mkBsWithStyled is
+                       where
+                         mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
+                             return [ (formatChanMsg cn styled txt, pure i') | i' <- is' | styled <- styleds ]
+                 in case emotify i ms triples msg of
+                   Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
+                   Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
+                                       in ioHelper ms s logMsg =<< concatMapM format bs
+                   Right (Left  ()) -> case expCmdify i ms triples msg of
+                     Left  errorMsg     -> wrapSend mq cols errorMsg
+                     Right (bs, logMsg) -> ioHelper ms s logMsg =<< concatMapM format bs
+        (cs, cns, s) = mkChanBindings i ms
+    in findFullNameForAbbrev (T.toLower target) (map T.toLower cns) |&| maybe notFound found
+  where
+    ioHelper ms _ (expandEmbeddedIdsToSings ms -> logMsg) bs = (bcastNl =<< expandEmbeddedIds ms bs) >> logHelper
+      where
+        logHelper = logPlaOut "chan" i . pure $ logMsg
+            -- TODO: Write to DB.
+            --ts <- liftIO mkTimestamp
+            --withDbExHandler_ "question" . insertDbTblQuestion . QuestionRec ts s $ logMsg
 chan p = patternMatchFail "chan" [ showText p ]
+
+
+getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, T.Text, T.Text)]
+getChanStyleds i c ms =
+    let s                     = getSing i ms
+        others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
+        f (s', isTuned)       = s' /= s && isTuned
+        g (s', _      )       = (getIdForPCSing s' ms, s')
+        h                     = (`isAwake` ms) . fst
+        (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
+        nonLinkedIds          = map fst nonLinkeds
+    in mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
+        let nonLinkeds' = zip nonLinkedIds rndmNames
+            combo       = sortBy (compare `on` snd) $ linkeds ++ nonLinkeds'
+            styleds     = styleAbbrevs Don'tBracket . map snd $ combo
+            helper (x, y) styled | x `elem` nonLinkedIds = a & _3 %~ underline
+                                 | otherwise             = a
+              where
+                a = (x, y, styled)
+        in return . zipWith helper combo $ styleds
 
 
 -----
@@ -455,7 +505,7 @@ connect p = patternMatchFail "connect" [ showText p ]
 
 connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
 connectHelper i (target, as) ms =
-    let notFound    = sorry $ "You are not connected to a channel named " <> dblQuote target <> "."
+    let notFound    = sorry . notConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let f pair a =
                        let notFoundSing = oops $ case findFullNameForAbbrev a (map uncapitalize asleepSings) of
@@ -477,10 +527,8 @@ connectHelper i (target, as) ms =
                                                               , dblQuote cn
                                                               , " channel." ]
                                  Nothing -> case areMutuallyTuned targetSing of
-                                   (False, _,    _      ) -> oops $ "You have tuned out your link with " <>
-                                                                    targetSing                           <>
-                                                                    "."
-                                   (True, False, _      ) -> blocked $ targetSing <> " has tuned out your link."
+                                   (False, _,    _      ) -> oops $ "You have tuned out " <> targetSing <> "."
+                                   (True, False, _      ) -> blocked $ targetSing <> " has tuned you out."
                                    (True, True, targetId) -> if hasChanOfSameName targetId
                                      then blocked . T.concat $ [ targetSing
                                                                , " is already connected to a channel named "
@@ -1026,7 +1074,6 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 -- TODO: Help.
--- TODO: Leaving a channel should cost psionic points.
 leave :: Action
 leave p@AdviseNoArgs = advise p ["leave"] advice
   where
@@ -1041,12 +1088,12 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, unzip 
         f bs ci    = let c        = getChan ci ms
                          otherIds = views chanConnTbl g c
                          g        = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
-                     in (bs ++) <$> (forM otherIds $ \i' -> [ ( T.concat [ "You sense that "
-                                                                         , n
-                                                                         , " has left the "
-                                                                         , views chanName dblQuote c
-                                                                         , " channel." ]
-                                                              , pure i' ) | n <- getRelativePCName ms (i', i) ])
+                     in (bs ++) <$> forM otherIds (\i' -> [ ( T.concat [ "You sense that "
+                                                                       , n
+                                                                       , " has left the "
+                                                                       , views chanName dblQuote c
+                                                                       , " channel." ]
+                                                            , pure i' ) | n <- getRelativePCName ms (i', i) ])
     in do
         multiWrapSend mq cols msgs
         bcastNl =<< foldM f [] chanIds
@@ -1056,7 +1103,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, unzip 
                 in (ms', (ms', chanIdNames, sorryMsgs))
       where
         f triple a@(T.toLower -> a') =
-            let notFound     = triple & _3 <>~ [ "You are not connected to a channel named " <> dblQuote a <> "." ]
+            let notFound     = triple & _3 <>~ (pure . notConnectedChan $ a)
                 found match  = let (cn, c) = getMatchingChanWithName match cns cs
                                    ci      = c^.chanId
                                in triple & _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
@@ -1519,13 +1566,13 @@ question (NoArgs' i mq) = getState >>= \ms ->
                descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo
            in pager i mq descs >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
-  | not . isTunedQuestion i $ ms           -> sorryNotTuned mq cols "question"
-  | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogMsg
+  | not . isTunedQuestion i $ ms           -> sorryNotTunedOOCChan mq cols "question"
+  | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "the question"
   | otherwise                              -> getQuestionStyleds i ms >>= \triples -> if ()# triples
     then sorryNoOneListening mq cols "question"
     else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
              format (txt, is)   = if i `elem` is
-               then ((formatChanMsg "Question" (getSing i ms) txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
+               then ((formatChanMsg "Question" s txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
                else mkBsWithStyled is
                where
                  mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
@@ -1539,7 +1586,6 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
               Left  errorMsg     -> wrapSend mq cols errorMsg
               Right (bs, logMsg) -> ioHelper ms s logMsg =<< concatMapM format bs
   where
-    sorryIncogMsg = wrapSend mq cols "You can't send a message on the question channel while incognito."
     ioHelper ms s (expandEmbeddedIdsToSings ms -> logMsg) bs = (bcastNl =<< expandEmbeddedIds ms bs) >> logHelper
       where
         logHelper = do
@@ -1562,8 +1608,8 @@ getQuestionStyleds i ms =
             f       = map (second (`getSing` ms) . dup)
             linkeds = f linkedIds
             admins  = f adminIds
-            combo   = sortBy (compare `on` view _2) $ rndms ++ nubSort (linkeds ++ admins)
-            styleds = styleAbbrevs Don'tBracket . map (view _2) $ combo
+            combo   = sortBy (compare `on` snd) $ rndms ++ nubSort (linkeds ++ admins)
+            styleds = styleAbbrevs Don'tBracket . map snd $ combo
             helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
                                  | otherwise         = a
               where

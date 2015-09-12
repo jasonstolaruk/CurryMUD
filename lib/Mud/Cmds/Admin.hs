@@ -191,7 +191,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
             Right (Left ()) -> case expCmdify i ms tunedIds tunedSings msg of
               Left  errorMsg     -> wrapSend mq cols errorMsg
               Right (bs, logMsg) -> ioHelper s (concatMap format bs) logMsg
-      else sorryNotTuned mq cols "admin"
+      else sorryNotTunedOOCChan mq cols "admin"
   where
     getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
     ioHelper s bs logMsg = bcastNl bs >> logHelper
