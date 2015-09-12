@@ -51,7 +51,7 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, _6, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (^.))
-import Control.Monad ((>=>), forM, forM_, guard, mplus, unless)
+import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Char (isDigit, isLetter)
@@ -1026,7 +1026,6 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 -- TODO: Help.
--- TODO: Those awake and tuned to the channels in question should be informed.
 -- TODO: Leaving a channel should cost psionic points.
 leave :: Action
 leave p@AdviseNoArgs = advise p ["leave"] advice
@@ -1036,20 +1035,32 @@ leave p@AdviseNoArgs = advise p ["leave"] advice
                       , "leave hunt"
                       , dfltColor
                       , "." ]
-leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(chanNames, sorryMsgs) ->
+leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, unzip -> (chanIds, chanNames), sorryMsgs) ->
     let toSelfMsgs = mkLeaveMsg chanNames
         msgs       = ()# sorryMsgs ? toSelfMsgs :? sorryMsgs ++ (toSelfMsgs |!| "" : toSelfMsgs)
-    in multiWrapSend mq cols msgs >> chanNames |#| logPla "leave" i . commas
+        f bs ci    = let c        = getChan ci ms
+                         otherIds = views chanConnTbl g c
+                         g        = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
+                     in (bs ++) <$> (forM otherIds $ \i' -> [ ( T.concat [ "You sense that "
+                                                                         , n
+                                                                         , " has left the "
+                                                                         , views chanName dblQuote c
+                                                                         , " channel." ]
+                                                              , pure i' ) | n <- getRelativePCName ms (i', i) ])
+    in do
+        multiWrapSend mq cols msgs
+        bcastNl =<< foldM f [] chanIds
+        chanNames |#| logPla "leave" i . commas
   where
-    helper ms = let (ms', chanNames, sorryMsgs) = foldl' f (ms, [], []) as
-                in (ms', (chanNames, sorryMsgs))
+    helper ms = let (ms', chanIdNames, sorryMsgs) = foldl' f (ms, [], []) as
+                in (ms', (ms', chanIdNames, sorryMsgs))
       where
         f triple a@(T.toLower -> a') =
-            let notFound    = triple & _3 <>~ [ "You are not connected to a channel named " <> dblQuote a <> "." ]
-                found match = let (cn, c) = getMatchingChanWithName match cns cs
-                                  ci      = c^.chanId
-                              in triple & _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
-                                        & _2 <>~ pure cn
+            let notFound     = triple & _3 <>~ [ "You are not connected to a channel named " <> dblQuote a <> "." ]
+                found match  = let (cn, c) = getMatchingChanWithName match cns cs
+                                   ci      = c^.chanId
+                               in triple & _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
+                                         & _2 <>~ pure (ci, cn)
                 (cs, cns, s) = mkChanBindings i ms
             in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
     mkLeaveMsg []     = []
