@@ -5,6 +5,7 @@ leave name \s...\d
 
 \uDESCRIPTION\n
 Sever your connections to (disconnect from) one or more telepathic channels.
+When the last person connected to a channel leaves that channel, the channel will cease to exist.
 
 \uEXAMPLES\n
 \qleave hunt\d to leave the "hunt" channel.4`

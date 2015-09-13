@@ -9,7 +9,7 @@ When no arguments are provided, you'll get a list of your telepathic connections
 To tune a connection in/out, provide arguments in the form of "name=value", where "name" is the name of a connection, and "value" is one of the following: "in" / "out", or the equivalent "on" / "off".
 To tune in/out all your connections, specify "all=", as in "tune all=out".
 
-Note: use the "set" command to tune the question channel (the "tune" command is for tuning IC channels based on telepathic connections).
+Note: use the "set" command to tune the question channel (the "tune" command is for tuning IC telepathic connections).
 
 \uEXAMPLES\n
 \qtune\d to get a list of your telepathic connections.4`

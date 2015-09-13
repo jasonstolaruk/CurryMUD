@@ -15,7 +15,7 @@ For all channels, the names that appear in messages (identifying from whom the m
 Ad-hoc channels:
 
 Taro creates a channel simply by naming it. (Channel names are known IC - this should be explicitly mentioned in the help file. A channel cannot share a name with any PC. "question" and "admin" are illegal channel names.)
-He then has Hanako join by connecting her to the channel. (He is already linked with Hanako. You can't connect a person who has tuned you out.)
+He then has Hanako join by connecting her to the channel. (He is already two-way linked with Hanako. You can't connect a person who has tuned you out.)
 Hanako can now connect anyone she is linked with.
 Anyone is free to leave the channel at any time.
 Anyone is free to boot someone from a channel at any time.
@@ -25,7 +25,7 @@ newchannel hunt
 connect hanako hunt
 channel hunt hi
 
-leave hunt -- "sever the telepathic connection" to a channel
+leave hunt
 
 disconnect hanako hunt -- Must provide full PC name.
 

@@ -335,7 +335,7 @@ bug p = bugTypoLogger p BugLog
 -----
 
 
--- TODO: Help.
+-- TODO: Review the help file once more.
 -- TODO: Sending a msg should cost psionic points.
 chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
@@ -361,10 +361,12 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                     combo''  = (s, isTuned) : zipWith (\styled -> _1 .~ styled) styleds combo'
                     g (x, y) = let x' = isRndmName x ? underline x :? x in padName x' <> inOut y
                     inOut x  = x ? "tuned in" :? "tuned out"
-                in do
-                    multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : map g combo''
-                    let affixChanName msg = parensQuote cn <> " " <> msg
-                    logPla "chan" i . affixChanName . commas $ [ dropANSI x <> " is " <> inOut y | (x, y) <- combo'' ]
+                in if isTuned
+                  then do
+                      multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : map g combo''
+                      let affixChanName msg = parensQuote cn <> " " <> msg
+                      logPla "chan" i . affixChanName . commas $ [ dropANSI x <> " is " <> inOut y | (x, y) <- combo'' ]
+                  else sorryNotTunedICChan mq cols cn
         (cs, cns, s)    = mkChanBindings i ms
         mkTriple (x, y) = (getIdForPCSing x ms, x, y)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
@@ -579,7 +581,6 @@ color p = withoutArgs color p
 -----
 
 
--- TODO: Help.
 -- TODO: Connecting someone to a channel should cost psionic points.
 connect :: Action
 connect p@AdviseNoArgs = advise p ["connect"] advice
@@ -1713,7 +1714,8 @@ question (NoArgs' i mq) = getState >>= \ms ->
                                 | otherwise    = (i', n            )
                mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestion i' ms ? "tuned in" :? "tuned out")
                descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo
-           in pager i mq descs >> logPlaExecArgs "question" [] i
+               descs'         = "Question channel:" : descs
+           in pager i mq descs' >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
   | not . isTunedQuestion i $ ms           -> sorryNotTunedOOCChan mq cols "question"
   | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "the question"

@@ -594,7 +594,7 @@ sorryNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tune
 -----
 
 
-sorryNotTunedICChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryNotTunedICChan :: MsgQueue -> Cols -> ChanName -> MudStack ()
 sorryNotTunedICChan = sorryNotTunedChan "tune"
 
 
