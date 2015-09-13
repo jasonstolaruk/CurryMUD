@@ -358,9 +358,12 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                 let combo    = map dropFst linkeds ++ zipWith (\rndmName -> (rndmName, ) . view _3) rndmNames nonLinkeds
                     combo'   = sortBy (compare `on` fst) combo
                     styleds  = styleAbbrevs Don'tBracket . map fst $ combo'
-                    combo''  = zipWith (\styled -> _1 .~ styled) styleds combo'
-                    g (x, y) = let x' = isRndmName x ? underline x :? x in padName x' <> (y ? "tuned in" :? "tuned out")
-                in multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : g (s, isTuned) : map g combo'' -- TODO: Log.
+                    combo''  = (s, isTuned) : zipWith (\styled -> _1 .~ styled) styleds combo'
+                    g (x, y) = let x' = isRndmName x ? underline x :? x in padName x' <> inOut y
+                    inOut x  = x ? "tuned in" :? "tuned out"
+                in do
+                    multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : map g combo''
+                    logPla "chan" i . commas $ [ dropANSI x <> " = " <> inOut y | (x, y) <- combo'' ]
         (cs, cns, s)    = mkChanBindings i ms
         mkTriple (x, y) = (getIdForPCSing x ms, x, y)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
@@ -1207,8 +1210,8 @@ leave p@AdviseNoArgs = advise p ["leave"] advice
                       , "." ]
 leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanIdNameIsDels, sorryMsgs) ->
     let s                              = getSing i ms
-        (chanIds, chanNames, chanRecs) = foldr unzipper ([], [], []) chanIdNameIsDels
-        unzipper (ci, cn, isDel) acc
+        (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanIdNameIsDels
+        unzipper acc (ci, cn, isDel)
           | isDel     = acc & _2 <>~ pure cn
                             & _3 <>~ (pure . ChanRec "" ci cn s . parensQuote $ "Channel deleted.")
           | otherwise = acc & _1 <>~ pure ci
@@ -1251,7 +1254,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
         T.concat [ focusingInnate "you sever your telepathic connection"
                  , theLetterS isPlur
                  , " to the "
-                 , isPlur ? "following channels:\n" <> commas ns :? head ns <> " channel" -- TODO: Channel list should be reversed.
+                 , isPlur ? "following channels:\n" <> commas ns :? head ns <> " channel"
                  , "." ]
 leave p = patternMatchFail "leave" [ showText p ]
 
