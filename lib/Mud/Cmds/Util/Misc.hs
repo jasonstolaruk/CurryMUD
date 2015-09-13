@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( adviceEnc
                           , adviceEtc
@@ -271,16 +271,17 @@ embedId = quoteWith (T.singleton plaIdDelimiter) . showText
 -----
 
 
-expandEmbeddedIds :: MudState -> [Broadcast] -> MudStack [Broadcast]
-expandEmbeddedIds ms = concatMapM helper
+expandEmbeddedIds :: MudState -> ChanContext -> [Broadcast] -> MudStack [Broadcast]
+expandEmbeddedIds ms (ChanContext { revealAdminNames }) = concatMapM helper
   where
     helper a@(msg, is) = case breakIt msg of
       (_, "")                                        -> unadulterated a
       (x, breakIt . T.tail -> (numTxt, T.tail -> y)) ->
           let embeddedId = read . T.unpack $ numTxt :: Int
-              isAdmin    = getPlaFlag IsAdmin . getPla embeddedId $ ms
-              f i | isAdmin || isLinked ms (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
+              f i | g . isLinked ms $ (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
                   | otherwise = ((, pure i) . rebuild . underline) <$> updateRndmName i embeddedId
+              g       = revealAdminNames ? (isAdmin || ) :? id
+              isAdmin = getPlaFlag IsAdmin . getPla embeddedId $ ms
               rebuild = quoteWith' (x, y)
           in mapM f is >>= concatMapM helper
 

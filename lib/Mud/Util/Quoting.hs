@@ -25,6 +25,10 @@ angleBracketQuote :: T.Text -> T.Text
 angleBracketQuote = quoteWith' ("<", ">")
 
 
+asteriskQuote :: T.Text -> T.Text
+asteriskQuote = quoteWith' ("*** ", " ***")
+
+
 bracketQuote :: T.Text -> T.Text
 bracketQuote = quoteWith' ("[", "]")
 

@@ -6,6 +6,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Args
                      , BanRecord(..)
                      , Broadcast
+                     , ChanContext(..)
                      , ClassifiedBroadcast(..)
                      , Cmd(..)
                      , CmdDesc
@@ -216,6 +217,10 @@ instance Pretty BugRec where
                                , bugIsOpen ? "open" :? "closed" ]
 
 
+instance Pretty ChanContext where
+  pp (ChanContext { .. }) = someCmdName <> maybe "" (" " <>) someChanName
+
+
 instance Pretty Cloth where
   pp Backpack = "backpack"
   pp Bracelet = "bracelet"
@@ -398,6 +403,14 @@ data ExpCmd = ExpCmd ExpCmdName ExpCmdType deriving (Eq, Ord)
 
 
 data AOrThe = A | The
+
+
+-----
+
+
+data ChanContext = ChanContext { someCmdName      :: T.Text
+                               , someChanName     :: Maybe ChanName
+                               , revealAdminNames :: Bool }
 
 
 -----
