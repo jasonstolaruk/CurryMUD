@@ -109,8 +109,7 @@ underline = quoteWith' (underlineANSI, noUnderlineANSI)
 -- ANSI color codes by color name:
 
 
-blue, cyan, green, magenta, red, yellow :: T.Text
-blue    = mkFgColorANSI (Dull, Blue)
+cyan, green, magenta, red, yellow :: T.Text
 cyan    = mkFgColorANSI (Dull, Cyan)
 green   = mkFgColorANSI (Dull, Green)
 magenta = mkFgColorANSI (Dull, Magenta)
@@ -243,7 +242,7 @@ shutdownMsgColor = red
 
 
 syntaxSymbolColor :: T.Text
-syntaxSymbolColor = blue
+syntaxSymbolColor = yellow
 
 
 toPeepedColor :: T.Text

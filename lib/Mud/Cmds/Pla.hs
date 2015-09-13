@@ -140,7 +140,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("expressive", expCmdList,      "Display or search a list of available expressive commands and their results.")
     , ("n",          go "n",          "Go north.")
     , ("ne",         go "ne",         "Go northeast.")
-    , ("newchannel", newChan,         "Create a new telepathic channel.")
+    , ("newchannel", newChan,         "Create one or more new telepathic channels.")
     , ("nw",         go "nw",         "Go northwest.")
     , ("question",   question,        plusRelated "Ask/answer newbie questions")
     , ("qui",        quitCan'tAbbrev, "")
@@ -183,7 +183,7 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("intro",      "in",  intro,      "Display a list of the people who have introduced themselves to you, or \
                                         \introduce yourself to one or more people.")
     , ("inventory",  "i",   inv,        "Display your inventory, or examine one or more items in your inventory.")
-    , ("leave",      "le",  leave,      "Sever your telepathic connection to a channel.")
+    , ("leave",      "le",  leave,      "Sever your connections to one or more telepathic channels.")
     , ("link",       "li",  link,       "Display a list of the people with whom you have established a telepathic link, \
                                         \or establish a telepathic link with one or more people.")
     , ("look",       "l",   look,       "Display a description of your current room, or examine one or more items in \
@@ -420,10 +420,6 @@ getChanStyleds i c ms =
         in return . zipWith helper combo $ styleds
 
 
-mkEffChanName :: ChanContext -> T.Text
-mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
-
-
 emotify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | or [ (T.head . head $ ws) `elem` ("[<" :: String)
@@ -488,6 +484,10 @@ sorryChanTargetName cc n = T.concat [ "There is no one by the name of "
                                     , " currently tuned in to the "
                                     , mkEffChanName cc
                                     , " channel." ]
+
+
+mkEffChanName :: ChanContext -> T.Text
+mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
 
 
 expCmdify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
@@ -1208,7 +1208,6 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
--- TODO: Help.
 leave :: Action
 leave p@AdviseNoArgs = advise p ["leave"] advice
   where
@@ -1543,7 +1542,6 @@ showMotd mq cols = send mq =<< helper
 -----
 
 
--- TODO: Help.
 -- TODO: Creating a new channel should cost psionic points.
 newChan :: Action
 newChan p@AdviseNoArgs = advise p ["newchannel"] advice
