@@ -1,0 +1,13 @@
+\h LEAVE \d
+
+\uUSAGE\n
+leave name \s...\d
+
+\uDESCRIPTION\n
+Sever your connections to (disconnect from) one or more telepathic channels.
+
+\uEXAMPLES\n
+\qleave hunt\d to leave the "hunt" channel.4`
+\qleave friends lovers\d to leave two channels.4`
+
+\uSEE ALSO\n

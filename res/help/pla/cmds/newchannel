@@ -1,0 +1,17 @@
+\h NEWCHANNEL \d
+
+\uUSAGE\n
+newchannel name \s...\d
+
+\uDESCRIPTION\n
+Create one or more new telepathic channels.
+
+Telepathic channels provide a means for three or more people to communicate with each other telepathically. Telepathic channels are strictly for In-Character (IC) communication only.
+
+Using this command, you may create a new channel simply by naming it (note that channel names are considered to be IC knowledge). Having created a new channel, you may then connect others to it using the "connect" command.
+
+\uEXAMPLES\n
+\qnewchannel hunt\d to create a new channel named "hunt".4`
+\qnewchannel friends lovers\d to create two new channels.4`
+
+\uSEE ALSO\n
