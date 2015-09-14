@@ -1030,8 +1030,6 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 -----
 
 
--- TODO: Consider making a "cheatsheet" topic.
--- TODO: Consider making a "communication" topic.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
