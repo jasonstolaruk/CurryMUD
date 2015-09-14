@@ -1690,6 +1690,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 -----
 
 
+-- TODO: Consider announcing on the question channel when a new PC has arrived in the game.
 question :: Action
 question (NoArgs' i mq) = getState >>= \ms ->
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
