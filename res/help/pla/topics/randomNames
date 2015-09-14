@@ -1,0 +1,25 @@
+\h RANDOM NAMES \d
+
+You've likely seen a message similar to the following:
+
+(Question) \uflounder\n: How can I pick up all the coins on the ground at once?
+
+"(Question)" indicates that this is an incoming message on the question channel (a "party line" for asking and answering newbie questions). But what about \uflounder\n? \uflounder\n is not really a fish; instead, it is a random name assigned to a person with whom you have not yet established a telepathic link. Someone identified as \uflounder\n is asking a question on the question channel.
+
+You may also encounter random names in communication over an In-Character (IC) telepathic channel. Consider the following message on the "hunt" channel:
+
+(hunt) \uyellow\n: I'm hurt rather badly...
+
+Once again, \uyellow\n is not a real name, but a random name identifying a person with whom you are not linked.
+
+The idea here is that your mind has chosen, at random (or so most think), an abstract image - the color "yellow" - to represent the owner of the telepathic message. You might actually know the person's name (if they have introduced themselves to you via the "intro" command), but as there is no direct telepathic connection between the two of you, you have no way of knowing who the person is.
+
+Random names are easily identified by the fact that they always start with a lowercase character and appear underlined.
+
+You may use random names in commands. For example, typing \qchannel hunt \l#p\qwave yellow\d will produce this message (assuming your name is Taro):
+
+(hunt) Taro: <Taro waves at \uyellow\n.>
+
+Here, the "wave" expressive command is used with the "channel" command to project, over the "hunt" channel, the image of Taro waving at \uyellow\n.
+
+\uSEE ALSO\n

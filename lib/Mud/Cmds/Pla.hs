@@ -335,7 +335,6 @@ bug p = bugTypoLogger p BugLog
 -----
 
 
--- TODO: Review the help file once more.
 -- TODO: Sending a msg should cost psionic points.
 chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
@@ -1033,7 +1032,6 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 
 -- TODO: Consider making a "cheatsheet" topic.
 -- TODO: Consider making a "communication" topic.
--- TODO: Consider making a "randomNames" topic.
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where

@@ -12,7 +12,7 @@ The question channel is a "party line" strictly for the purpose of asking and an
 Use the "set" command to tune the question channel (the "tune" command is for tuning IC telepathic connections).
 
 \uRANDOM NAMES\n
-Within communication over the question channel, random names are automatically assigned to people with whom you have not established a telepathic link. Random names will appear underlined, and will always start with a lowercase character. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name):
+Within communication over the question channel, random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name):
 (Question) \udog\n: How do I wield a weapon?
 
 \uEMOTES\n
