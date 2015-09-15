@@ -4,7 +4,7 @@
 look \s[\dobject \s...]\d
 
 \uDESCRIPTION\n
-Display a description of your current room, or examine one or more objects in your current room.
+Display a description of your current room, or examine one or more things in your current room.
 
 \uEXAMPLES\n
 \qlook\d to get a description of the room followed by a list of its contents.4`

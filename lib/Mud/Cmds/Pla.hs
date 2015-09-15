@@ -184,9 +184,9 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
                                         \introduce yourself to one or more people.")
     , ("inventory",  "i",   inv,        "Display your inventory, or examine one or more items in your inventory.")
     , ("leave",      "le",  leave,      "Sever your connections to one or more telepathic channels.")
-    , ("link",       "li",  link,       "Display a list of the people with whom you have established a telepathic link, \
-                                        \or establish a telepathic link with one or more people.")
-    , ("look",       "l",   look,       "Display a description of your current room, or examine one or more items in \
+    , ("link",       "li",  link,       "Display a list of the people with whom you have established a telepathic \
+                                        \link, or establish a telepathic link with one or more people.")
+    , ("look",       "l",   look,       "Display a description of your current room, or examine one or more things in \
                                         \your current room.")
     , ("motd",       "m",   motd,       "Display the message of the day.")
     , ("put",        "p",   putAction,  "Put one or more items into a container.")
@@ -194,7 +194,8 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("say",        "sa",  say,        "Say something out loud.")
     , ("show",       "sh",  showAction, "Show one or more items in your inventory and/or readied equipment to another \
                                         \person.")
-    -- , ("telepathic", "t", undefined, "Send a telepathic message to a person with whom you have established a two-way telepathic link.")
+    , ("telepathy",  "t",   tele,       "Send a message to a person with whom you have established a two-way \
+                                        \telepathic link.")
     , ("unready",    "un",  unready,    "Unready one or more items.")
     , ("who",        "wh",  who,        "Display or search a list of who is currently awake.") ]
 
@@ -2700,6 +2701,30 @@ mkSlotDesc i ms s = case s of
     wornOn = T.concat [ "worn on ", hisHer, " ", pp s ]
     wornAs = "worn as " <> (aOrAn . pp $ s)
     heldIn = "held in " <> hisHer <> pp s
+
+
+-----
+
+
+tele :: Action
+tele p@AdviseNoArgs = advise p ["telepathy"] advice
+  where
+    advice = T.concat [ "Please specify one or more items you want to put followed by where you want to put them, as \
+                        \in "
+                      , quoteColor
+                      , "put doll sack"
+                      , dfltColor
+                      , "." ]
+tele p@(AdviseOneArg a) = advise p ["telepathy"] advice
+  where
+    advice = T.concat [ "Please also specify where you want to put it, as in "
+                      , quoteColor
+                      , "put "
+                      , a
+                      , " sack"
+                      , dfltColor
+                      , "." ]
+tele p = patternMatchFail "tele" [ showText p ]
 
 
 -----

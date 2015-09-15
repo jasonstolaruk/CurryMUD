@@ -1,49 +1,67 @@
 \h GLOSSARY \d
 
-Asleep
-This is an IC ("In-Character") term for the state of being logged out.
+\uAsleep\d
+This is an In-Character (IC) term for the state of being logged out.
 
-Awake
-This is an IC ("In-Character") term for the state of being logged in.
+\uAwake\d
+This is an In-Character (IC) term for the state of being logged in.
 
-In-Character
+\uChannel\d
+A named "party line" providing the ability for a group of players to message each other in real-time. There is the question channel (OOC) along with telepathic channels (IC).
+
+\uExpressive Commands\d
+Commands that facilitate the execution of discreet actions In-Character (IC); commands such as "bow", "cry", "kiss", etc. (there are about 200 such commands). Sometimes referred to as "built-in emotes."
+
+\uIn-Character\d
 Something said or done as a character, in the context of role-playing. Or, in the context of the virtual world.
 
-Interactive Non-Player Character
+\uInteractive Non-Player Character\d
 A character that is usually controlled by the server, and sometimes controlled, or otherwise actively managed, by the administrators.
 
-Mobile
-A non-player character. Sometimes abbreviated to "mob."
+\uLink\d
+See "Telepathic Link."
 
-Multi-Playing
+\uMobile\d
+A Non-Player Character (NPC). Sometimes abbreviated to "mob."
+
+\uMulti-Playing\d
 When a single player simultaneously plays with multiple characters.
 
-Multi-User Dungeon
+\uMulti-User Dungeon\d
 This generally refers to a (usually text-based) virtual world in its totality.
 
-Newbie
-A player who is new to CurryMUD.
+\uNewbie\d
+A new, inexperienced player.
 
-Non-Player Character
-A character controlled by the server. A "mobile."
+\uNon-Player Character\d
+A character controlled by the server. A "mobile" or "mob."
 
-Out-Of-Character
+\uOut-Of-Character\d
 Something said or done as a player, outside the context of role-playing. Or, outside the context of the virtual world.
 
-Permadeath
-When a player character dies, it is truly dead; a deceased player character cannot return to the virtual world in any way, shape, or form.
+\uPermadeath\d
+When a Player Character (PC) dies, it is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form.
 
-Player Character
+\uPlayer Character\d
 A character controlled by a human player.
 
-Player Killing
-When one player character kills another player character.
+\uPlayer Killing\d
+When one Player Character (PC) kills another PC.
 
-Player vs. Player
-When one player character attacks another player character.
+\uPlayer vs. Player\d
+When one Player Character (PC) attacks another PC.
 
-Role-play Enforced
+\uRole-Play Intensive\d
+Used to describe a MUD with rules requiring that players stay In-Character (IC).
 
-Role-playing
+\uRoom\d
+A singular place/space, of arbitrary dimensions, in the virtual world. Typing \qlook\d will give you a description of your "current room" (that is, the room in which you are presently located); use the movement commands ("n" for north, "s", "e", "w", etc.) to move between rooms.
 
-Room
+\uTelepathic Channel\d
+An ad-hoc channel created by a player for In-Character (IC) communication. Using her innate psionic powers, a Player Character (PC) may create and name a channel, then connect to it anyone with whom she is two-way linked.
+
+\uTelepathic Link\d
+A psionic connection between two Player Characters (PCs), linking their minds together. When Taro's player types \qlink hanako\d, Taro creates a one-way link from his mind to Hanako's mind. If Hanako's player reciprocates by typing \qlink taro\d, this will establish a two-way link between them, enabling two-way telepathic communication.
+
+\uTwo-Way Link\d
+A telepathic connection between two Player Characters (PCs), where each PC has linked with the other.
