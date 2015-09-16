@@ -5,15 +5,18 @@
 
 module Mud.Cmds.Util.Pla ( armSubToSlot
                          , bugTypoLogger
+                         , checkMutuallyTuned
                          , clothToSlot
                          , donMsgs
                          , dudeYou'reNaked
                          , dudeYou'reScrewed
                          , dudeYourHandsAreEmpty
+                         , effortsBlocked
                          , findAvailSlot
                          , focusingInnate
                          , getMatchingChanWithName
                          , getRelativePCName
+                         , haven'tTwoWay
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
@@ -46,6 +49,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , noContainersHere
                          , noOneHere
                          , notConnectedChan
+                         , notFoundSuggestAsleeps
                          , otherHand
                          , putOnMsgs
                          , resolvePCInvCoins
@@ -155,6 +159,22 @@ bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl 
 -----
 
 
+checkMutuallyTuned :: Id -> MudState -> Sing -> Either T.Text Id
+checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
+  (False, _,    _       ) -> Left $ "You have tuned out " <> targetSing <> "."
+  (True,  False, _      ) -> Left . effortsBlocked $ targetSing <> " has tuned you out."
+  (True,  True, targetId) -> Right targetId
+  where
+    areMutuallyTuned | targetId <- getIdForPCSing targetSing ms
+                     , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
+                     , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
+                     = (a, b, targetId)
+    s                = getSing i ms
+
+
+-----
+
+
 clothToSlot :: Cloth -> Slot
 clothToSlot = \case Shirt    -> ShirtS
                     Smock    -> SmockS
@@ -194,6 +214,13 @@ dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything r
 -----
 
 
+effortsBlocked :: T.Text -> T.Text
+effortsBlocked = ("Your efforts are blocked; " <>)
+
+
+-----
+
+
 focusingInnate :: T.Text -> T.Text
 focusingInnate = ("Focusing your innate psionic energy for a brief moment, " <>)
 
@@ -214,6 +241,13 @@ getRelativePCName :: MudState -> (Id, Id) -> MudStack T.Text
 getRelativePCName ms pair@(_, y)
   | isLinked ms pair = return . getSing y $ ms
   | otherwise        = underline <$> uncurry updateRndmName pair
+
+
+-----
+
+
+haven'tTwoWay :: T.Text -> T.Text
+haven'tTwoWay a = "You haven't established a two-way telepathic link with anyone named " <> dblQuote a <> "."
 
 
 -----
@@ -823,6 +857,22 @@ noOneHere = "You don't see anyone here."
 
 notConnectedChan :: T.Text -> T.Text
 notConnectedChan cn = "You are not connected to a channel named " <> dblQuote cn <> "."
+
+
+-----
+
+
+notFoundSuggestAsleeps :: T.Text -> [Sing] -> MudState -> T.Text
+notFoundSuggestAsleeps a@(T.toLower -> a') asleepSings ms =
+    case findFullNameForAbbrev a' (map uncapitalize asleepSings) of
+      Just asleepTarget@(capitalize -> asleepTarget') ->
+          let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget' ms) $ ms
+              guess         = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget' <> "? ")
+          in T.concat [ guess
+                      , "Unfortunately, "
+                      , ()# guess ? asleepTarget' :? heShe
+                      , " is sleeping at the moment..." ]
+      Nothing -> haven'tTwoWay a
 
 
 -----

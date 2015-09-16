@@ -194,7 +194,7 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("say",        "sa",  say,        "Say something out loud.")
     , ("show",       "sh",  showAction, "Show one or more items in your inventory and/or readied equipment to another \
                                         \person.")
-    , ("telepathy",  "t",   tele,       "Send a message to a person with whom you have established a two-way \
+    , ("telepathy",  "t",   tele,       "Send a private message to a person with whom you have established a two-way \
                                         \telepathic link.")
     , ("unready",    "un",  unready,    "Unready one or more items.")
     , ("who",        "wh",  who,        "Display or search a list of who is currently awake.") ]
@@ -644,17 +644,7 @@ connectHelper i (target, as) ms =
     let notFound    = sorry . notConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let f pair a =
-                       let notFoundSing = oops $ case findFullNameForAbbrev a (map uncapitalize asleepSings) of
-                             Just asleepTarget@(capitalize -> asleepTarget') ->
-                                 let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget' ms) $ ms
-                                     guess = a /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget' <> "? ")
-                                 in T.concat [ guess
-                                             , "Unfortunately, "
-                                             , ()# guess ? asleepTarget' :? heShe
-                                             , " is sleeping at the moment..." ]
-                             Nothing -> "You haven't established a two-way telepathic link with anyone named " <>
-                                        dblQuote a                                                             <>
-                                        "."
+                       let notFoundSing = oops . notFoundSuggestAsleeps target asleepSings $ ms
                            foundSing singMatch =
                                let targetSing = head . filter ((== singMatch) . uncapitalize) $ targetSings
                                in case c^.chanConnTbl.at targetSing of
@@ -662,31 +652,26 @@ connectHelper i (target, as) ms =
                                                               , " is already connected to the "
                                                               , dblQuote cn
                                                               , " channel." ]
-                                 Nothing -> case areMutuallyTuned targetSing of
-                                   (False, _,    _      ) -> oops $ "You have tuned out " <> targetSing <> "."
-                                   (True, False, _      ) -> blocked $ targetSing <> " has tuned you out."
-                                   (True, True, targetId) -> if hasChanOfSameName targetId
-                                     then blocked . T.concat $ [ targetSing
-                                                               , " is already connected to a channel named "
-                                                               , dblQuote cn
-                                                               , "." ]
-                                     else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
-                                               & _2 <>~ (pure . Right $ targetSing)
+                                 Nothing ->
+                                     let g targetId = if hasChanOfSameName targetId
+                                           then blocked . T.concat $ [ targetSing
+                                                                     , " is already connected to a channel named "
+                                                                     , dblQuote cn
+                                                                     , "." ]
+                                           else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
+                                                     & _2 <>~ (pure . Right $ targetSing)
+                                     in either oops g . checkMutuallyTuned i ms $ targetSing
                            oops    msg = pair & _2 <>~ (pure . Left $ msg)
-                           blocked msg = oops $ "Your efforts are blocked; " <> msg
+                           blocked     = oops . effortsBlocked
                        in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
                    ci                         = c^.chanId
                    dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
                    dblLinkedsPair             = partition (`isAwake` ms) dblLinkeds
                    (targetSings, asleepSings) = dblLinkedsPair & both %~ map (`getSing` ms)
-                   areMutuallyTuned targetSing | targetId <- getIdForPCSing targetSing ms
-                                               , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
-                                               , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
-                                               = (a, b, targetId)
-                   hasChanOfSameName targetId  | targetCs  <- getPCChans targetId ms
-                                               , targetCns <- map (views chanName T.toLower) targetCs
-                                               = T.toLower cn `elem` targetCns
-                   (ms', res)                  = foldl' f (ms, []) as
+                   hasChanOfSameName targetId | targetCs  <- getPCChans targetId ms
+                                              , targetCns <- map (views chanName T.toLower) targetCs
+                                              = T.toLower cn `elem` targetCns
+                   (ms', res)                 = foldl' f (ms, []) as
                in (ms', (res, Just ci))
           else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
         (cs, cns, s) = mkChanBindings i ms
@@ -2706,25 +2691,49 @@ mkSlotDesc i ms s = case s of
 -----
 
 
+-- TODO: Help.
 tele :: Action
 tele p@AdviseNoArgs = advise p ["telepathy"] advice
   where
-    advice = T.concat [ "Please specify one or more items you want to put followed by where you want to put them, as \
-                        \in "
+    advice = T.concat [ "Please provide the name of a person followed by a message to send, as in "
                       , quoteColor
-                      , "put doll sack"
+                      , "telepathy taro i'll meet you there in a few"
                       , dfltColor
                       , "." ]
 tele p@(AdviseOneArg a) = advise p ["telepathy"] advice
   where
-    advice = T.concat [ "Please also specify where you want to put it, as in "
+    advice = T.concat [ "Please also provide a message to send, as in "
                       , quoteColor
-                      , "put "
+                      , "telepathy "
                       , a
-                      , " sack"
+                      , " i'll meet you there in a few"
                       , dfltColor
                       , "." ]
+tele (MsgWithTarget i mq cols target@(T.toLower -> target') msg) = getState >>= \ms ->
+    let (s, p) = (getSing i ms, getPla i ms) in if getPlaFlag IsIncognito p
+      then wrapSend mq cols . sorryIncog $ "telepathy"
+      else let notFound    = wrapSend mq cols . notFoundSuggestAsleeps target asleeps $ ms
+               found match =
+                   let targetSing        = head . filter ((== match) . uncapitalize) $ awakes
+                       helper targetId   = bcastNl . pure $ (format targetId, pure targetId)
+                       format targetId   = bracketQuote (mkStyled targetId) <> " " <> msg
+                       mkStyled targetId = let (target'sAwakes, _) = getDblLinkedSings targetId ms
+                                               styleds             = styleAbbrevs Don'tBracket target'sAwakes
+                                           in head . filter ((== s) . dropANSI) $ styleds
+                   in either (wrapSend mq cols) helper . checkMutuallyTuned i ms $ targetSing
+               (awakes, asleeps) = getDblLinkedSings i ms
+           in findFullNameForAbbrev target' (map uncapitalize awakes) |&| maybe notFound found
 tele p = patternMatchFail "tele" [ showText p ]
+
+
+getDblLinkedSings :: Id -> MudState -> ([Sing], [Sing])
+getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
+  where
+    helper s (awakes, asleeps) = let i' = getIdForPCSing s ms
+                                     f  = (s :)
+                                 in if isAwake i' ms
+                                   then (f awakes, asleeps  )
+                                   else (awakes,   f asleeps)
 
 
 -----
