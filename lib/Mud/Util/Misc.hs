@@ -23,6 +23,7 @@ module Mud.Util.Misc ( atLst1
                      , mkTimestamp
                      , mUnless
                      , mWhen
+                     , onLeft
                      , patternMatchFail
                      , reverseLookup
                      , sortEithers
@@ -152,6 +153,11 @@ mkDateTimeTxt = helper <$> (T.words . T.pack . show) `fmap` getZonedTime
 
 mkTimestamp :: IO T.Text
 mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeTxt ]
+
+
+onLeft :: (a -> c) -> Either a b -> Either c b
+onLeft f (Left a) = Left . f $ a
+onLeft _ _        = blowUp "Mud.Util.Misc" "onLeft" "Right" []
 
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a

@@ -65,12 +65,6 @@ default (Int)
 -----
 
 
-{-# ANN module ("HLint: ignore Use ||" :: String) #-}
-
-
------
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Admin"
 
@@ -204,9 +198,7 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | or [ (T.head . head $ ws) `elem` ("[<" :: String)
-       , "]." `T.isSuffixOf` last ws
-       , ">." `T.isSuffixOf` last ws ]  = Left . pure $ "Sorry, but you can't open or close your message with brackets."
+  | isBracketed ws          = pure `onLeft` sorryBracketedMsg
   | isHeDon't emoteChar msg = Left . pure $ "He don't."
   | c == emoteChar = fmap Right . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id

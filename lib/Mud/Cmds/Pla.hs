@@ -424,9 +424,7 @@ getChanStyleds i c ms =
 
 emotify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | or [ (T.head . head $ ws) `elem` ("[<" :: String)
-       , "]." `T.isSuffixOf` last ws
-       , ">." `T.isSuffixOf` last ws ]  = Left . pure $ "Sorry, but you can't open or close your message with brackets."
+  | isBracketed ws          = pure `onLeft` sorryBracketedMsg
   | isHeDon't emoteChar msg = Left . pure $ "He don't."
   | c == emoteChar = fmap Right . procEmote i ms cc triples . (tail ws |&|) $ if ()# rest
     then id
@@ -2747,9 +2745,7 @@ getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
 
 emotifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text (Either () [Broadcast])
 emotifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | or [ (T.head . head $ ws) `elem` ("[<" :: String)
-       , "]." `T.isSuffixOf` last ws
-       , ">." `T.isSuffixOf` last ws ]  = Left "Sorry, but you can't open or close your message with brackets."
+  | isBracketed ws          = sorryBracketedMsg
   | isHeDon't emoteChar msg = Left "He don't."
   | c == emoteChar = fmap Right . procTwoWayEmote i ms targetId targetSing . (tail ws |&|) $ if ()# rest
     then id

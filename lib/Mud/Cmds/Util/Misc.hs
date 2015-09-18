@@ -19,6 +19,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , hasEnc
                           , hasYou
                           , inOutOnOffs
+                          , isBracketed
                           , isDblLinked
                           , isHeDon't
                           , isHostBanned
@@ -40,6 +41,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , prefixCmd
                           , punc
                           , sendGenericErrorMsg
+                          , sorryBracketedMsg
                           , sorryDbEx
                           , sorryExpCmdName
                           , sorryExpCmdRequiresTarget
@@ -107,6 +109,7 @@ import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionEr
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+{-# ANN module ("HLint: ignore Use ||"        :: String) #-}
 
 
 -----
@@ -403,6 +406,15 @@ isHeDon't c msg = msg == T.singleton c <> "."
 -----
 
 
+isBracketed :: [T.Text] -> Bool
+isBracketed ws = or [ (T.head . head $ ws) `elem` ("[<" :: String)
+                    , "]." `T.isSuffixOf` last ws
+                    , ">." `T.isSuffixOf` last ws ]
+
+
+-----
+
+
 isHostBanned :: T.Text -> IO Any
 isHostBanned host = isBanned host <$> (getDbTblRecs "ban_host" :: IO [BanHostRec])
 
@@ -580,6 +592,13 @@ isPunc = (`elem` punc)
 
 sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
+
+
+-----
+
+
+sorryBracketedMsg :: Either T.Text a
+sorryBracketedMsg = Left "Sorry, but you can't open or close your message with brackets."
 
 
 -----
