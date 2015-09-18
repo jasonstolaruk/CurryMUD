@@ -53,7 +53,6 @@ import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
-import qualified Data.Set as S (filter, map, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Process (readProcess)
@@ -208,7 +207,7 @@ emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest
   | or [ (T.head . head $ ws) `elem` ("[<" :: String)
        , "]." `T.isSuffixOf` last ws
        , ">." `T.isSuffixOf` last ws ]  = Left . pure $ "Sorry, but you can't open or close your message with brackets."
-  | msg == T.singleton emoteChar <> "." = Left . pure $ "He don't."
+  | isHeDon't emoteChar msg = Left . pure $ "He don't."
   | c == emoteChar = fmap Right . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
@@ -268,7 +267,7 @@ sorryAdminName n = "There is no admin by the name of " <>
 
 expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)
 expCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | msg == T.singleton expCmdChar <> "." = Left "He don't."
+  | isHeDon't expCmdChar msg = Left "He don't."
   | c == expCmdChar = fmap format . procExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
@@ -279,20 +278,19 @@ expCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, re
 
 
 procExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either T.Text ([Broadcast], T.Text)
-procExpCmd _ _ _ _ (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
-procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, T.toLower -> target ]) =
-    let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
-    in findFullNameForAbbrev cn cns |&| maybe notFound found
+procExpCmd _ _ _ _ (_:_:_:_) = sorryExpCmdTooLong
+procExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, target]) =
+    findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
     found match =
-        let [ExpCmd _ ct] = S.toList . S.filter (\(ExpCmd cn' _) -> cn' == match) $ expCmdSet
+        let ExpCmd _ ct = getExpCmdByName match
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
             then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
                        , toSelf )
-            else Left $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
+            else Left . sorryExpCmdWithTarget $ match
           HasTarget toSelf toTarget toOthers -> if ()# target
-            then Left $ "The " <> dblQuote match <> " expressive command requires a single target."
+            then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of
               Nothing -> Left . sorryAdminName $ target
               Just n  -> let targetId = getIdForPCSing n ms
@@ -312,7 +310,7 @@ procExpCmd i ms tunedIds tunedSings (unmsg -> [ cn, T.toLower -> target ]) =
                                     (format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :
                                     mkBroadcast i toSelfWithTarget'
                                   , toSelfWithTarget' )
-    notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
+    notFound   = sorryExpCmdName cn
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
     format maybeTargetSing =
         let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]

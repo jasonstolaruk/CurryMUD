@@ -20,6 +20,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , hasYou
                           , inOutOnOffs
                           , isDblLinked
+                          , isHeDon't
                           , isHostBanned
                           , isLinked
                           , isPlaBanned
@@ -40,6 +41,10 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , punc
                           , sendGenericErrorMsg
                           , sorryDbEx
+                          , sorryExpCmdName
+                          , sorryExpCmdRequiresTarget
+                          , sorryExpCmdTooLong
+                          , sorryExpCmdWithTarget
                           , sorryIgnoreLocPref
                           , sorryIgnoreLocPrefPlur
                           , sorryNoOneListening
@@ -99,6 +104,12 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
+
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -385,6 +396,13 @@ inOutOnOffs = [ ("i",   True )
 -----
 
 
+isHeDon't :: Char -> T.Text -> Bool
+isHeDon't c msg = msg == T.singleton c <> "."
+
+
+-----
+
+
 isHostBanned :: T.Text -> IO Any
 isHostBanned host = isBanned host <$> (getDbTblRecs "ban_host" :: IO [BanHostRec])
 
@@ -574,6 +592,25 @@ sorryDbEx mq cols = wrapSend mq cols "There was an error when reading the databa
 -----
 
 
+sorryExpCmdName :: T.Text -> Either T.Text a
+sorryExpCmdName cn = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
+
+
+sorryExpCmdRequiresTarget :: ExpCmdName -> T.Text
+sorryExpCmdRequiresTarget cn = "The " <> dblQuote cn <> " expressive command requires a single target."
+
+
+sorryExpCmdTooLong :: Either T.Text a
+sorryExpCmdTooLong = Left "An expressive command sequence may not be more than 2 words long."
+
+
+sorryExpCmdWithTarget :: ExpCmdName -> T.Text
+sorryExpCmdWithTarget cn =  "The " <> dblQuote cn <> " expressive command cannot be used with a target."
+
+
+-----
+
+
 sorryIgnoreLocPref :: T.Text -> T.Text
 sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location prefix. The location prefix you provided \
                                               \will be ignored."
@@ -619,8 +656,8 @@ sorryNotTunedOOCChan = sorryNotTunedChan "set"
 
 
 unmsg :: [T.Text] -> [T.Text]
-unmsg [ cn         ] = [ T.init cn, ""            ]
-unmsg [ cn, target ] = [ cn,        T.init target ]
+unmsg [cn        ] = [ T.init cn, ""            ]
+unmsg [cn, target] = [ cn,        T.init target ]
 unmsg xs             = patternMatchFail "unmsg" xs
 
 

@@ -118,6 +118,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         auxAsyncs <- mapM runAsync [ adminChanTblPurger
                                    , chanTblPurger
                                    , questionChanTblPurger
+                                   , teleTblPurger
                                    , threadTblPurger
                                    , worldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
@@ -180,6 +181,10 @@ chanTblPurger = dbTblPurger "chan" countDbTblRecsChan purgeDbTblChan
 
 questionChanTblPurger :: MudStack ()
 questionChanTblPurger = dbTblPurger "question" countDbTblRecsQuestion purgeDbTblQuestion
+
+
+teleTblPurger :: MudStack ()
+teleTblPurger = dbTblPurger "tele" countDbTblRecsTele purgeDbTblTele
 
 
 dbTblPurger :: T.Text -> IO [Only Int] -> IO () -> MudStack ()

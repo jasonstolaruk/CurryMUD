@@ -75,7 +75,7 @@ import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup, map, singleton, size, toList)
-import qualified Data.Set as S (filter, map, toList)
+import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
@@ -427,7 +427,7 @@ emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | or [ (T.head . head $ ws) `elem` ("[<" :: String)
        , "]." `T.isSuffixOf` last ws
        , ">." `T.isSuffixOf` last ws ]  = Left . pure $ "Sorry, but you can't open or close your message with brackets."
-  | msg == T.singleton emoteChar <> "." = Left . pure $ "He don't."
+  | isHeDon't emoteChar msg = Left . pure $ "He don't."
   | c == emoteChar = fmap Right . procEmote i ms cc triples . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
@@ -494,7 +494,7 @@ mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
 
 expCmdify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | msg == T.singleton expCmdChar <> "." = Left "He don't."
+  | isHeDon't expCmdChar msg = Left "He don't."
   | c == expCmdChar = fmap format . procExpCmd i ms cc triples . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
@@ -505,21 +505,20 @@ expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
 
 
 procExpCmd :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
-procExpCmd _ _  _  _       (_:_:_:_) = Left "An expressive command sequence may not be more than 2 words long."
-procExpCmd i ms cc triples (unmsg -> [ cn, T.toLower -> target ]) =
-    let cns = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
-    in findFullNameForAbbrev cn cns |&| maybe notFound found
+procExpCmd _ _  _  _       (_:_:_:_) = sorryExpCmdTooLong
+procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
+    findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
     found match =
-        let [ExpCmd _ ct] = S.toList . S.filter (\(ExpCmd cn' _) -> cn' == match) $ expCmdSet
-            tunedIds      = map (view _1) triples
+        let ExpCmd _ ct = getExpCmdByName match
+            tunedIds    = map (view _1) triples
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
             then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
                        , toSelf )
-            else Left $ "The " <> dblQuote match <> " expressive command cannot be used with a target."
+            else Left . sorryExpCmdWithTarget $ match
           HasTarget toSelf toTarget toOthers -> if ()# target
-            then Left $ "The " <> dblQuote match <> " expressive command requires a single target."
+            then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of
               Nothing -> Left . sorryChanTargetName cc $ target
               Just n  -> let targetId = getIdForMatch n
@@ -539,7 +538,7 @@ procExpCmd i ms cc triples (unmsg -> [ cn, T.toLower -> target ]) =
                                     (format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :
                                     mkBroadcast i toSelfWithTarget'
                                   , toSelfWithTarget' )
-    notFound   = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
+    notFound   = sorryExpCmdName cn
     findTarget = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
     getIdForMatch match    = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
     format maybeTargetId =
@@ -2714,9 +2713,22 @@ tele (MsgWithTarget i mq cols target@(T.toLower -> target') msg) = getState >>= 
       then wrapSend mq cols . sorryIncog $ "telepathy"
       else let notFound    = wrapSend mq cols . notFoundSuggestAsleeps target asleeps $ ms
                found match =
-                   let targetSing        = head . filter ((== match) . uncapitalize) $ awakes
-                       helper targetId   = bcastNl . pure $ (format targetId, pure targetId)
-                       format targetId   = bracketQuote (mkStyled targetId) <> " " <> msg
+                   let targetSing      = head . filter ((== match) . uncapitalize) $ awakes
+                       helper targetId = case emotifyTwoWay i ms targetId targetSing msg of
+                         Left  errorMsg     -> wrapSend mq cols errorMsg
+                         Right (Right bs) -> ioHelper targetId bs
+                         Right (Left  ()) -> case expCmdifyTwoWay i ms targetId targetSing msg of
+                           Left  errorMsg -> wrapSend mq cols errorMsg
+                           Right bs       -> ioHelper targetId bs
+                       ioHelper targetId bs = let bs'@[(toSelf, _), _] = formatBs targetId bs in do
+                           bcastNl bs'
+                           logPlaOut "tele" i . pure $ toSelf
+                           ts <- liftIO mkTimestamp
+                           withDbExHandler_ "tele" . insertDbTblTele . TeleRec ts s targetSing $ toSelf
+                       formatBs targetId [toMe, toTarget] = let f n m = bracketQuote n <> " " <> m
+                                                            in [ toMe     & _1 %~ f s
+                                                               , toTarget & _1 %~ f (mkStyled targetId) ]
+                       formatBs _        bs               = patternMatchFail "tele found formatBs" [ showText bs ]
                        mkStyled targetId = let (target'sAwakes, _) = getDblLinkedSings targetId ms
                                                styleds             = styleAbbrevs Don'tBracket target'sAwakes
                                            in head . filter ((== s) . dropANSI) $ styleds
@@ -2729,11 +2741,67 @@ tele p = patternMatchFail "tele" [ showText p ]
 getDblLinkedSings :: Id -> MudState -> ([Sing], [Sing])
 getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
   where
-    helper s (awakes, asleeps) = let i' = getIdForPCSing s ms
-                                     f  = (s :)
-                                 in if isAwake i' ms
-                                   then (f awakes, asleeps  )
-                                   else (awakes,   f asleeps)
+    helper s pair = let lens = isAwake (getIdForPCSing s ms) ms ? _1 :? _2
+                    in pair & lens %~ (s :)
+
+
+emotifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text (Either () [Broadcast])
+emotifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | or [ (T.head . head $ ws) `elem` ("[<" :: String)
+       , "]." `T.isSuffixOf` last ws
+       , ">." `T.isSuffixOf` last ws ]  = Left "Sorry, but you can't open or close your message with brackets."
+  | isHeDon't emoteChar msg = Left "He don't."
+  | c == emoteChar = fmap Right . procTwoWayEmote i ms targetId targetSing . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right . Left $ ()
+
+
+procTwoWayEmote :: Id -> MudState -> Id -> Sing -> Args -> Either T.Text [Broadcast]
+procTwoWayEmote i _ _ _ as = Right . mkBroadcast i . bracketQuote . T.unwords $ as
+
+
+expCmdifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text [Broadcast]
+expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | isHeDon't expCmdChar msg = Left "He don't."
+  | c == expCmdChar = procExpCmdTwoWay i ms targetId targetSing . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right [ (msg, pure i), (msg, pure targetId) ]
+
+
+procExpCmdTwoWay :: Id -> MudState -> Id -> Sing -> Args -> Either T.Text [Broadcast]
+procExpCmdTwoWay _ _  _        _          (_:_:_:_) = sorryExpCmdTooLong
+procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]) =
+    findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
+  where
+    found match = let ExpCmd _ ct = getExpCmdByName match in map (_1 %~ angleBracketQuote) <$> case ct of
+      NoTarget toSelf toOthers -> if ()# target
+        then Right [ (toSelf,                  pure i       )
+                   , (format Nothing toOthers, pure targetId) ]
+        else Left . sorryExpCmdWithTarget $ match
+      HasTarget toSelf toTarget _ ->
+          let good = Right [ (format (Just targetId) toSelf,   pure i       )
+                           , (format Nothing         toTarget, pure targetId) ]
+          in ()# target ? good :? (target `T.isPrefixOf` uncapitalize targetSing ? good :? sorryTargetName)
+      Versatile toSelf toOthers toSelfWithTarget toTarget _
+        | ()# target -> Right [ (toSelf,                  pure i       )
+                              , (format Nothing toOthers, pure targetId) ]
+        | target `T.isPrefixOf` uncapitalize targetSing ->
+            Right [ (format (Just targetId) toSelfWithTarget, pure i       )
+                  , (format Nothing         toTarget,         pure targetId) ]
+        | otherwise -> sorryTargetName
+    notFound             = sorryExpCmdName cn
+    format maybeTargetId = let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
+                           in replace (substitutions ++ maybe [] (const . pure $ ("@", targetSing)) maybeTargetId)
+    s                    = getSing i ms
+    (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
+    sorryTargetName             = Left . T.concat $ [ "You can only target "
+                                                    , targetSing
+                                                    , " in a telepathic message to "
+                                                    , targetSing
+                                                    , "." ]
+procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" as
 
 
 -----

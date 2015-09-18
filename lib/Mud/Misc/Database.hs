@@ -8,6 +8,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , countDbTblRecsAdminChan
                          , countDbTblRecsChan
                          , countDbTblRecsQuestion
+                         , countDbTblRecsTele
                          , createDbTbls
                          , getDbTblRecs
                          , insertDbTblAdminChan
@@ -17,12 +18,15 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblChan
                          , insertDbTblProf
                          , insertDbTblQuestion
+                         , insertDbTblTele
                          , insertDbTblTypo
                          , ProfRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblChan
                          , purgeDbTblQuestion
+                         , purgeDbTblTele
                          , QuestionRec(..)
+                         , TeleRec(..)
                          , TypoRec(..)) where
 
 import Mud.TopLvlDefs.FilePaths
@@ -62,6 +66,10 @@ data ProfRec      = ProfRec      { profTimestamp      :: T.Text
 data QuestionRec  = QuestionRec  { questionTimestamp  :: T.Text
                                  , questionName       :: T.Text
                                  , questionMsg        :: T.Text }
+data TeleRec      = TeleRec      { teleTimestamp      :: T.Text
+                                 , teleFromName       :: T.Text
+                                 , teleToName         :: T.Text
+                                 , teleMsg            :: T.Text }
 data TypoRec      = TypoRec      { typoTimestamp      :: T.Text
                                  , typoName           :: T.Text
                                  , typoLoc            :: T.Text
@@ -97,6 +105,10 @@ instance FromRow QuestionRec where
   fromRow = QuestionRec <$ (field :: RowParser Int) <*> field <*> field <*> field
 
 
+instance FromRow TeleRec where
+  fromRow = TeleRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+
+
 instance FromRow TypoRec where
   fromRow = TypoRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
@@ -129,6 +141,10 @@ instance ToRow QuestionRec where
   toRow (QuestionRec a b c) = toRow (a, b, c)
 
 
+instance ToRow TeleRec where
+  toRow (TeleRec a b c d) = toRow (a, b, c, d)
+
+
 instance ToRow TypoRec where
   toRow (TypoRec a b c d e) = toRow (a, b, c, d, e)
 
@@ -143,6 +159,7 @@ createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
          , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
+         , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, msg text)"
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)" ]
 
 
@@ -186,6 +203,10 @@ insertDbTblQuestion :: QuestionRec -> IO ()
 insertDbTblQuestion = insertDbTblHelper "insert into question (timestamp, name, msg) values (?, ?, ?)"
 
 
+insertDbTblTele :: TeleRec -> IO ()
+insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, fromName, toName, msg) values (?, ?, ?, ?)"
+
+
 insertDbTblTypo :: TypoRec -> IO ()
 insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
 
@@ -200,6 +221,10 @@ countDbTblRecsChan = countHelper "chan"
 
 countDbTblRecsQuestion :: IO [Only Int]
 countDbTblRecsQuestion = countHelper "question"
+
+
+countDbTblRecsTele :: IO [Only Int]
+countDbTblRecsTele = countHelper "tele"
 
 
 countHelper :: T.Text -> IO [Only Int]
@@ -218,6 +243,10 @@ purgeDbTblChan = purgeHelper "chan"
 
 purgeDbTblQuestion :: IO ()
 purgeDbTblQuestion = purgeHelper "question"
+
+
+purgeDbTblTele :: IO ()
+purgeDbTblTele = purgeHelper "tele"
 
 
 purgeHelper :: T.Text -> IO ()

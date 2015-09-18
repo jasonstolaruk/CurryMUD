@@ -1,7 +1,9 @@
 {-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.ExpCmds ( expCmdSet
+                        , expCmdNames
                         , expCmds
+                        , getExpCmdByName
                         , mkExpAction ) where
 
 import Mud.Cmds.Util.Misc
@@ -14,7 +16,6 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.LocPref
 import Mud.Util.Operators
-import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -22,7 +23,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow (first)
 import Data.List ((\\), delete)
 import Data.Monoid ((<>))
-import qualified Data.Set as S (Set, filter, foldr, fromList, toList)
+import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 
 
@@ -702,12 +703,19 @@ expCmds = S.foldr helper [] expCmdSet
         (theCmd :)
 
 
+expCmdNames :: [T.Text]
+expCmdNames = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
+
+
+getExpCmdByName :: ExpCmdName -> ExpCmd
+getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _) -> cn' == cn) $ expCmdSet
+
+
 -----
 
 
 expCmd :: ExpCmdName -> ExpCmdType -> Action
-expCmd ecn (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive command \
-                                                                    \requires a single target."
+expCmd ecn (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols . sorryExpCmdRequiresTarget $ ecn
 expCmd ecn ect            (NoArgs'' i        ) = case ect of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
@@ -721,8 +729,7 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBroadcast           = pure (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
         in bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast >> (logPlaOut ecn i . pure $ toSelf)
-expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_) ) = wrapSend mq cols $ "The " <> dblQuote ecn <> " expressive \
-                                                                              \command cannot be used with a target."
+expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_) ) = wrapSend mq cols . sorryExpCmdWithTarget $ ecn
 expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
@@ -736,7 +743,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
             then case uncurry (resolveRmInvCoins i ms (pure target')) invCoins of
               (_,                    [ Left  [sorryMsg] ]) -> sendHelper sorryMsg
               (_,                    Right _:_           ) -> sendHelper "Sorry, but expressive commands cannot be \
-                                                                         \user with coins."
+                                                                         \used with coins."
               ([ Left sorryMsg    ], _                   ) -> sendHelper sorryMsg
               ([ Right (_:_:_)    ], _                   ) -> sendHelper "Sorry, but you can only target one person at \
                                                                          \a time with expressive commands."
