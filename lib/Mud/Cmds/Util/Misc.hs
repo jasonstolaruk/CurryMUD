@@ -598,7 +598,7 @@ sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 
 
 sorryBracketedMsg :: Either T.Text a
-sorryBracketedMsg = Left "Sorry, but you can't open or close your message with brackets."
+sorryBracketedMsg = Left "You can't open or close your message with brackets."
 
 
 -----

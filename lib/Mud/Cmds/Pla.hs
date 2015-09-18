@@ -2712,8 +2712,8 @@ tele (MsgWithTarget i mq cols target@(T.toLower -> target') msg) = getState >>= 
       else let notFound    = wrapSend mq cols . notFoundSuggestAsleeps target asleeps $ ms
                found match =
                    let targetSing      = head . filter ((== match) . uncapitalize) $ awakes
-                       helper targetId = case emotifyTwoWay i ms targetId targetSing msg of
-                         Left  errorMsg     -> wrapSend mq cols errorMsg
+                       helper targetId = case emotifyTwoWay "telepathy" i ms targetId msg of
+                         Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
                          Right (Right bs) -> ioHelper targetId bs
                          Right (Left  ()) -> case expCmdifyTwoWay i ms targetId targetSing msg of
                            Left  errorMsg -> wrapSend mq cols errorMsg
@@ -2743,18 +2743,59 @@ getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
                     in pair & lens %~ (s :)
 
 
-emotifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text (Either () [Broadcast])
-emotifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws          = sorryBracketedMsg
-  | isHeDon't emoteChar msg = Left "He don't."
-  | c == emoteChar = fmap Right . procTwoWayEmote i ms targetId targetSing . (tail ws |&|) $ if ()# rest
+emotifyTwoWay :: T.Text -> Id -> MudState -> Id -> T.Text -> Either [T.Text] (Either () [Broadcast])
+emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | isBracketed ws          = pure `onLeft` sorryBracketedMsg
+  | isHeDon't emoteChar msg = Left . pure $ "He don't."
+  | c == emoteChar = fmap Right . procTwoWayEmote cn i ms targetId . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
   | otherwise = Right . Left $ ()
 
 
-procTwoWayEmote :: Id -> MudState -> Id -> Sing -> Args -> Either T.Text [Broadcast]
-procTwoWayEmote i _ _ _ as = Right . mkBroadcast i . bracketQuote . T.unwords $ as
+procTwoWayEmote :: T.Text -> Id -> MudState -> Id -> Args -> Either [T.Text] [Broadcast]
+procTwoWayEmote cn i ms targetId as =
+    let s       = getSing i ms
+        xformed = xformArgs True as
+        xformArgs _      []     = []
+        xformArgs _      [x]
+          | (h, t) <- headTail x
+          , h == emoteNameChar
+          , all isPunc . T.unpack $ t
+          = pure . Right $ s <> t
+        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
+          | x == enc            -> Right s
+          | x == enc's          -> Right $ s <> "'s"
+          | enc `T.isInfixOf` x -> Left . adviceEnc $ cn'
+          | etc `T.isInfixOf` x -> Left sorryEtc
+          | isHead, hasEnc as   -> Right . capitalizeMsg $ x
+          | isHead              -> Right $ s <> " " <> x
+          | otherwise           -> Right x
+    in case filter isLeft xformed of
+      []      -> let msg = bracketQuote . T.unwords . map fromRight $ xformed
+                 in Right [ (msg, pure i), (msg, pure targetId) ]
+      advices -> Left . intersperse "" . map fromLeft . nub $ advices
+  where
+    cn'      = cn <> " " <> T.singleton emoteChar
+    sorryEtc = T.concat [ "Sorry, but you can't use "
+                        , dblQuote etc
+                        , " in private two-way communication, as with the "
+                        , dblQuote cn
+                        ,  " command. It is legal to use forms of the word "
+                        , dblQuote "you"
+                        , " here, so instead of "
+                        , quoteColor
+                        , cn'
+                        , "gives "
+                        , etc
+                        , "hanako a smooch!"
+                        , dfltColor
+                        , ", you should type "
+                        , quoteColor
+                        , cn'
+                        , "gives you a smooch!"
+                        , dfltColor
+                        , "." ]
 
 
 expCmdifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text [Broadcast]
