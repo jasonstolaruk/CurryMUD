@@ -116,6 +116,10 @@ port :: Int
 port = 9696
 
 
+rmDescIndentAmt :: Int
+rmDescIndentAmt = 2
+
+
 stdLinkNames :: [T.Text]
 stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 

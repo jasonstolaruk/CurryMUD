@@ -1250,13 +1250,23 @@ leave p = patternMatchFail "leave" [ showText p ]
 -----
 
 
+-- TODO: Move.
+fillerToSpcs :: T.Text -> T.Text
+fillerToSpcs = T.replace (T.singleton indentFiller) " "
+
+
 look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
-    let ri     = getRmId i  ms
-        r      = getRm   ri ms
-        top    = multiWrap cols [ underline $ " " <> r^.rmName <> " ", r^.rmDesc ]
-        bottom = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
+    let ri        = getRmId i  ms
+        r         = getRm   ri ms
+        top       = fillerToSpcs . multiWrap cols $ theRmName : theRmDesc
+        theRmName = views rmName (underline . quoteWith filler) r
+        theRmDesc = views rmDesc formatRmDesc r
+        bottom    = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
     in send mq . nl . T.concat $ top : bottom
+  where
+    filler       = T.singleton indentFiller
+    formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
 look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTargetDesigs) -> do
     send mq msg
     bcastIfNotIncog i bs

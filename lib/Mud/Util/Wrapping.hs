@@ -2,6 +2,7 @@
 
 module Mud.Util.Wrapping ( adjustIndent
                          , calcIndent
+                         , leadingFillerToSpcs
                          , multiWrap
                          , multiWrapNl
                          , wrap

@@ -102,7 +102,7 @@ createAdminZone = do
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
             \There are seven neat, white doors evenly spaced about the domed wall.\n\
-            \A spiral staircase leads up. To the side of the staircase is an open manhole."
+            \A spiral staircase leads up. To the side of the staircase lies an open manhole."
             zeroBits
             [ StdLink Northeast iObjCloset
             , StdLink East      iClothCloset
@@ -204,8 +204,8 @@ createAdminZone = do
         []
         mempty
         (Rm "The void"
-            "You have stumbled into an empty space. You are floating.\n\
-            \You see a colorful round shape some distance off to the north, while to the south, a door floats \
+            "You have stumbled into a vast, empty space. You are floating.\n\
+            \You see a colorful round shape some distance off to the north, while to the south a door floats \
             \innocuously."
             zeroBits
             [ StdLink North iTutEntrance
@@ -216,7 +216,7 @@ createAdminZone = do
         mempty
         (Rm "The portal"
             "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
-            \a peculiar pulling sensation in your chest, as if the portal is attempting to draw you towards itself.\n\
+            \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \Suspended above the portal is a wooden plaque reading, \"TUTORIAL THIS WAY.\""
             zeroBits
             [ StdLink South iVoid
