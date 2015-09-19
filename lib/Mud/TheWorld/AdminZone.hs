@@ -3,6 +3,7 @@ module Mud.TheWorld.AdminZone (createAdminZone) where
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Put
 import Mud.TheWorld.AdminZoneIds
+import Mud.TheWorld.TutorialIds (iTutWelcome)
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Data.Bits (setBit, zeroBits)
@@ -97,7 +98,11 @@ createAdminZone = do
         []
         mempty
         (Rm "Central control room"
-            "Welcome to the heart of the machine."
+            "Welcome to the heart of the machine. Sprawled about this dome-shaped, white room is a cluster of \
+            \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
+            \of CurryMUD.\n\
+            \There are seven neat, white doors evenly spaced about the domed wall.\n\
+            \A spiral staircase leads up. To the side of the staircase is an open manhole."
             zeroBits
             [ StdLink Northeast iObjCloset
             , StdLink East      iClothCloset
@@ -199,16 +204,40 @@ createAdminZone = do
         []
         mempty
         (Rm "The void"
-            "You have stumbled into an empty space. The world dissolves into nothingness. You are floating."
+            "You have stumbled into an empty space. You are floating.\n\
+            \You see a colorful round shape some distance off to the north, while to the south, a door floats \
+            \innocuously."
             zeroBits
-            [ StdLink Up iCentral, NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ])
+            [ StdLink North iTutEntrance
+            , StdLink South iLoungeEntrance
+            , StdLink Up    iCentral ])
+  putRm iTutEntrance
+        []
+        mempty
+        (Rm "The portal"
+            "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
+            \a peculiar pulling sensation in your chest, as if the portal is attempting to draw you towards itself.\n\
+            \Suspended above the portal is a wooden plaque reading, \"TUTORIAL THIS WAY.\""
+            zeroBits
+            [ StdLink South iVoid
+            , NonStdLink "portal" iTutWelcome "% gracefully floats into the portal, and promptly disappears."
+                                              "% arrives in the tutorial." ])
+  putRm iLoungeEntrance
+        []
+        mempty
+        (Rm "The floating door"
+            "Floating before you is polished wooden door surrounded by featureless white trimming. Hanging from a nail \
+            \affixed to the door is a small sign reading, \"Admin Lounge.\""
+            zeroBits
+            [ StdLink North iVoid
+            , NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ])
   putRm iLounge
         []
         mempty
         (Rm "The admin lounge"
             "Welcome, admin! Have a seat by the fire and relax for awhile."
             zeroBits
-            [ NonStdLink "out" iVoid "% exits the lounge." "% exits the lounge." ])
+            [ NonStdLink "out" iLoungeEntrance "% exits the lounge." "% exits the lounge." ])
   putRm iWeightRm
         [ i100Lb
         , i75Lb

@@ -21,7 +21,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.Misc.Persist
-import Mud.TheWorld.AdminZoneIds
+import Mud.TheWorld.AdminZoneIds (iWelcome)
 import Mud.TheWorld.TheWorld
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths

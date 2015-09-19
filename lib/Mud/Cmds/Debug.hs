@@ -17,7 +17,7 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
-import Mud.TheWorld.AdminZoneIds
+import Mud.TheWorld.AdminZoneIds (iLoggedOut)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs

@@ -29,7 +29,7 @@ import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.Misc.NameResolution
-import Mud.TheWorld.AdminZoneIds
+import Mud.TheWorld.AdminZoneIds (iLoggedOut, iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc

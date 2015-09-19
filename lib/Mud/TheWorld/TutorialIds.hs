@@ -9,4 +9,4 @@ module Mud.TheWorld.TutorialIds where
 -- ==================================================
 
 
--- TODO
+iTutWelcome = 500 :: Int

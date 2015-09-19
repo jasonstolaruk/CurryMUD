@@ -199,6 +199,10 @@ i1Lb5 = 93 :: Int
 
 iWeightRm = 94 :: Int
 
-iRoot = 95 :: Int
+iTutEntrance = 95 :: Int
 
-iJason = 96 :: Int
+iLoungeEntrance = 96 :: Int
+
+iRoot = 97 :: Int
+
+iJason = 98 :: Int
