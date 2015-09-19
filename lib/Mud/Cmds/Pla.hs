@@ -233,7 +233,7 @@ about p = withoutArgs about p
 -----
 
 
--- TODO: Should this cmd and the corresponding ":message" command accept emotes and exp cmds?
+-- TODO: This cmd and the corresponding ":message" command should accept emotes and exp cmds.
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] advice

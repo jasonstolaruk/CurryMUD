@@ -1,0 +1,50 @@
+\h VETERAN MUDDER CHEATSHEET \d
+
+\q?\d to display a list of available commands.2`
+
+\uBASIC COMMANDS\d
+\qlook\d or just \ql\d to look around.2`
+\ql mhuman\d to look at the male human in the room.2`
+
+\qinventory\d or just \qi\d to see your inventory.2`
+\qi apple\d to examine the apple in your inventory.2`
+
+\qequipment\d or just \qeq\d to see your readied equipment.2`
+\qeq sword\d to examine the sword you're wielding.2`
+
+\qready sword\d or just \qr sword\d to wield your sword.2`
+\qunready sword\d or just \qun sword\d to stop wielding your sword.2`
+
+\qput ring sack\d or just \qp ring sack\d to put your ring in your sack.2`
+\qremove ring sack\d or just \qrem ring sack\d to remove the ring from your sack.2`
+
+\qgive bracelet fhuman\d or just \qgi bracelet fhuman\d to give your bracelet to the female human.2`
+
+\uCOINS\d
+There are "cp" (copper pieces), "sp" (silver pieces), and "gp" (gold pieces).2`
+10 cp = 1   sp
+10 sp = 1   gp
+1  gp = 100 cp
+
+\qget \p10#m\qgp\d to pick up 10 gold pieces.2`
+\qget \p#a\qgp\d to pick up all the gold pieces.2`
+\qget \p#a\qcoin\d to pick up all the coins.2`
+
+\uCOMMUNICATION\d
+\qsay\d or just \qsa\d to say.2`
+\qsa \l#t\qmelf hello\d to say hello to the male elf.2`
+
+\qemote\d or just \qem\d to emote.2`
+\qexpressive\d or just \qexp\d to get a list of available expressive commands ("built-in emotes").2`
+\qexp laugh\d to search the list for "laugh".2`
+
+\qintro taro\d or just \qin taro\d to introduce yourself to Taro.2`
+\qlink taro\d or just \qli taro\d to establish a telepathic link with Taro.2`
+If Taro reciprocates and links with you, you'll then be able to send "tells" to each other with the "telepathy" command, like so: \qt taro hello\d.2`
+
+Use the \qquestion\d (or just \qq\d) command to ask a question on the "question channel:" a "chat room" for asking and answering newbie questions.2`
+\qq how can I pick up the second sword here?\d to ask a question (see "help prefixes" for the answer).2`
+
+Players may create their own ad-hoc channels; see "help newchannel" for more information.2`
+
+\uSEE ALSO\n

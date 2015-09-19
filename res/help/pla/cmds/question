@@ -7,7 +7,7 @@ question \s[\dmessage\s]\d
 Send a message on the question channel.
 When no arguments are provided, you'll get a list of all the people who are currently logged in, indicating whether they have tuned the channel in or out. * denotes an administrator.
 
-The question channel is a "party line" strictly for the purpose of asking and answering newbie questions related to game play. Discussions on the question channel are Out-Of-Character (OOC); In-Character (IC) knowledge that can and should be discovered in game may not be disclosed. (Note that telepathic channels, on the other hand, are strictly IC.) Appropriate topics of discussion are how to use a command, how to configure client software, how to contact an administrator, etc. "Which weapon does more damage, x or y" is an example of an inappropriate question.
+The question channel is a "chat room" strictly for the purpose of asking and answering newbie questions related to game play. Discussions on the question channel are Out-Of-Character (OOC); In-Character (IC) knowledge that can and should be discovered in game may not be disclosed. (Note that telepathic channels, on the other hand, are strictly IC.) Appropriate topics of discussion are how to use a command, how to configure client software, how to contact an administrator, etc. "Which weapon does more damage, x or y" is an example of an inappropriate question.
 
 Use the "set" command to tune the question channel (the "tune" command is for tuning IC telepathic connections).
 
