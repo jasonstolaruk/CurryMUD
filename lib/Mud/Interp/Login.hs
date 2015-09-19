@@ -15,7 +15,7 @@ import Mud.Data.State.Util.Set
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
-import Mud.TheWorld.Ids
+import Mud.TheWorld.AdminZoneIds
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc

@@ -28,7 +28,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Misc.ANSI
-import Mud.TheWorld.Ids
+import Mud.TheWorld.AdminZoneIds
 import Mud.TopLvlDefs.Chars
 import Mud.Util.List
 import Mud.Util.Misc

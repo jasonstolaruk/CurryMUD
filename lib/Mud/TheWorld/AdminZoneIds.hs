@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
-module Mud.TheWorld.Ids where
+module Mud.TheWorld.AdminZoneIds where
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
