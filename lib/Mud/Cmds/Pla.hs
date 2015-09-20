@@ -233,7 +233,6 @@ about p = withoutArgs about p
 -----
 
 
--- TODO: This cmd and the corresponding ":message" command should accept emotes and exp cmds.
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] advice
@@ -249,7 +248,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     logMsgs |#| let f = uncurry (logPla "admin") in mapM_ f
   where
     helper ms =
-        let SingleTarget { .. } = mkSingleTarget mq cols target "The administrator name"
+        let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the administrator you wish to message"
             s                   = getSing i ms
             msg'                = mkRetainedMsgFromPerson s msg
             isAdmin             = getPlaFlag IsAdmin . getPla i $ ms
@@ -286,8 +285,8 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
               | otherwise =
                   let ([((`getPla` ms) -> rootPla, _)], others) = partition ((== "Root") . snd) idSings
                   in if isLoggedIn rootPla && (not . getPlaFlag IsIncognito $ rootPla)
-                                   then idSings
-                                   else others
+                    then idSings
+                    else others
         in (findFullNameForAbbrev strippedTarget . filterRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
 admin p = patternMatchFail "admin" [ showText p ]
 
@@ -1248,11 +1247,6 @@ leave p = patternMatchFail "leave" [ showText p ]
 
 
 -----
-
-
--- TODO: Move.
-fillerToSpcs :: T.Text -> T.Text
-fillerToSpcs = T.replace (T.singleton indentFiller) " "
 
 
 look :: Action
@@ -2716,20 +2710,20 @@ tele p@(AdviseOneArg a) = advise p ["telepathy"] advice
                       , " i'll meet you there in a few"
                       , dfltColor
                       , "." ]
-tele (MsgWithTarget i mq cols target@(T.toLower -> target') msg) = getState >>= \ms ->
+tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let (s, p) = (getSing i ms, getPla i ms) in if getPlaFlag IsIncognito p
       then wrapSend mq cols . sorryIncog $ "telepathy"
-      else let notFound    = wrapSend mq cols . notFoundSuggestAsleeps target asleeps $ ms
-               found match =
-                   let targetSing      = head . filter ((== match) . uncapitalize) $ awakes
-                       helper targetId = case emotifyTwoWay "telepathy" i ms targetId msg of
-                         Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
+      else let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the person you wish to message"
+               notFound    = sendFun . notFoundSuggestAsleeps target asleeps $ ms
+               found targetSing =
+                   let helper targetId = case emotifyTwoWay "telepathy" i ms targetId msg of
+                         Left  errorMsgs  -> multiSendFun errorMsgs
                          Right (Right bs) -> ioHelper targetId bs
                          Right (Left  ()) -> case expCmdifyTwoWay i ms targetId targetSing msg of
-                           Left  errorMsg -> wrapSend mq cols errorMsg
+                           Left  errorMsg -> sendFun errorMsg
                            Right bs       -> ioHelper targetId bs
                        ioHelper targetId bs = let bs'@[(toSelf, _), _] = formatBs targetId bs in do
-                           bcastNl bs'
+                           bcastNl . consSorryBroadcast i $ bs'
                            logPlaOut "tele" i . pure $ toSelf
                            ts <- liftIO mkTimestamp
                            withDbExHandler_ "tele" . insertDbTblTele . TeleRec ts s targetSing $ toSelf
@@ -2740,9 +2734,9 @@ tele (MsgWithTarget i mq cols target@(T.toLower -> target') msg) = getState >>= 
                        mkStyled targetId = let (target'sAwakes, _) = getDblLinkedSings targetId ms
                                                styleds             = styleAbbrevs Don'tBracket target'sAwakes
                                            in head . filter ((== s) . dropANSI) $ styleds
-                   in either (wrapSend mq cols) helper . checkMutuallyTuned i ms $ targetSing
+                   in either sendFun helper . checkMutuallyTuned i ms $ targetSing
                (awakes, asleeps) = getDblLinkedSings i ms
-           in findFullNameForAbbrev target' (map uncapitalize awakes) |&| maybe notFound found
+           in findFullNameForAbbrev strippedTarget awakes |&| maybe notFound found
 tele p = patternMatchFail "tele" [ showText p ]
 
 

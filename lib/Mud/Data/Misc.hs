@@ -592,6 +592,7 @@ data ShouldLog = DoLog | Don'tLog deriving (Show)
 data SingleTarget = SingleTarget { strippedTarget     :: T.Text
                                  , strippedTarget'    :: T.Text
                                  , sendFun            :: T.Text   -> MudStack ()
+                                 , multiSendFun       :: [T.Text] -> MudStack ()
                                  , consSorry          :: [T.Text] -> [T.Text]
                                  , consSorryBroadcast :: Id -> [Broadcast] -> [Broadcast] }
 

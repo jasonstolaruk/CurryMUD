@@ -12,6 +12,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , dudeYou'reScrewed
                          , dudeYourHandsAreEmpty
                          , effortsBlocked
+                         , fillerToSpcs
                          , findAvailSlot
                          , focusingInnate
                          , getMatchingChanWithName
@@ -74,6 +75,7 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.NameResolution
+import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List
@@ -216,6 +218,13 @@ dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything r
 
 effortsBlocked :: T.Text -> T.Text
 effortsBlocked = ("Your efforts are blocked; " <>)
+
+
+-----
+
+
+fillerToSpcs :: T.Text -> T.Text
+fillerToSpcs = T.replace (T.singleton indentFiller) " "
 
 
 -----
@@ -863,14 +872,14 @@ notConnectedChan cn = "You are not connected to a channel named " <> dblQuote cn
 
 
 notFoundSuggestAsleeps :: T.Text -> [Sing] -> MudState -> T.Text
-notFoundSuggestAsleeps a@(T.toLower -> a') asleepSings ms =
-    case findFullNameForAbbrev a' (map uncapitalize asleepSings) of
-      Just asleepTarget@(capitalize -> asleepTarget') ->
-          let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget' ms) $ ms
-              guess         = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget' <> "? ")
+notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
+    case findFullNameForAbbrev a' asleepSings of
+      Just asleepTarget ->
+          let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget ms) $ ms
+              guess         = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget <> "? ")
           in T.concat [ guess
                       , "Unfortunately, "
-                      , ()# guess ? asleepTarget' :? heShe
+                      , ()# guess ? asleepTarget :? heShe
                       , " is sleeping at the moment..." ]
       Nothing -> haven'tTwoWay a
 

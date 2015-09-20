@@ -590,7 +590,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
     logMsgs |#| let f = uncurry (logPla "adminMsg") in mapM_ f
   where
     helper ms =
-        let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the message recipient"
+        let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to message"
             s                   = getSing i ms
             targetMsg           = mkRetainedMsgFromPerson s msg
             notFound            = emptied . sendFun $ "There is no regular player by the name of " <>

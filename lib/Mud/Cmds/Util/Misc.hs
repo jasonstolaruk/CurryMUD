@@ -523,6 +523,7 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
     SingleTarget { strippedTarget     = capitalize   t
                  , strippedTarget'    = uncapitalize t
                  , sendFun            = hlp ? (multiWrapSend mq cols . (sorryMsg :) . pure) :? wrapSend mq cols
+                 , multiSendFun       = hlp ? (multiWrapSend mq cols . (sorryMsg :)       ) :? multiWrapSend mq cols
                  , consSorry          = hlp ? (sorryMsg :)                                  :? id
                  , consSorryBroadcast = hlp ? f                                             :? const id }
   where
