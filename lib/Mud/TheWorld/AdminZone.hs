@@ -101,32 +101,62 @@ createAdminZone = do
             "Welcome to the heart of the machine. Sprawled about this dome-shaped, white room is a cluster of \
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
-            \There are seven neat, white doors evenly spaced about the domed wall.\n\
-            \A spiral staircase leads up. To the side of the staircase lies an open manhole."
+            \A spiral staircase leads down."
             zeroBits
-            [ StdLink Northeast iObjCloset
+            [ StdLink Down iBasement ])
+  putRm iBasement
+        []
+        mempty
+        (Rm "The basement"
+            "This dusty, unfinished basement smells of mold.\n\
+            \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
+            \Next to the staircase lies an open manhole."
+            zeroBits
+            [ StdLink North     iWeightRm
+            , StdLink Northeast iObjCloset
             , StdLink East      iClothCloset
             , StdLink Southeast iCoinsCloset
             , StdLink South     iConCloset
             , StdLink Southwest iWpnCloset
             , StdLink West      iArmCloset
             , StdLink Northwest iMobCloset
-            , StdLink Up        iWeightRm
-            , StdLink Down      iVoid ])
+            , StdLink Up        iCentral
+            , NonStdLink "manhole" iVoid "% climbs into the manhole." "% climbs out of the manhole." ])
+  putRm iWeightRm
+        [ i100Lb
+        , i75Lb
+        , i50Lb1
+        , i50Lb2
+        , i25Lb1
+        , i25Lb2
+        , i10Lb1
+        , i10Lb2
+        , i5Lb1
+        , i5Lb2
+        , i1Lb1
+        , i1Lb2
+        , i1Lb3
+        , i1Lb4
+        , i1Lb5 ]
+        mempty
+        (Rm "The weight closet"
+            "This closet holds weights."
+            zeroBits
+            [ StdLink South iCentral ])
   putRm iObjCloset
         [ iKewpie1, iKewpie2 ]
         mempty
         (Rm "Object closet"
             "This closet holds objects."
             zeroBits
-            [ StdLink Southwest iCentral ])
+            [ StdLink Southwest iBasement ])
   putRm iClothCloset
         [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ]
         mempty
         (Rm "Clothing closet"
             "This closet holds clothing."
             zeroBits
-            [ StdLink West iCentral, StdLink Down iAccessoriesCloset ])
+            [ StdLink West iBasement, StdLink Down iAccessoriesCloset ])
   putRm iAccessoriesCloset
         [ iEar1
         , iEar2
@@ -171,46 +201,46 @@ createAdminZone = do
         (Rm "Coin closet"
             "This closet holds coins."
             zeroBits
-            [ StdLink Northwest iCentral ])
+            [ StdLink Northwest iBasement ])
   putRm iConCloset
         [ iSack1, iSack2, iBackpack1, iBackpack2 ]
         mempty
         (Rm "Container closet"
             "This closet holds containers."
             zeroBits
-            [ StdLink North iCentral ])
+            [ StdLink North iBasement ])
   putRm iWpnCloset
         [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]
         mempty
         (Rm "Weapon closet"
             "This closet holds weapons."
             zeroBits
-            [ StdLink Northeast iCentral ])
+            [ StdLink Northeast iBasement ])
   putRm iArmCloset
         [ iCap, iHelm, iSandals1, iSandals2, iBoots ]
         mempty
         (Rm "Armor closet"
             "This closet holds armor."
             zeroBits
-            [ StdLink East iCentral ])
+            [ StdLink East iBasement ])
   putRm iMobCloset
         [ iRockCavy1, iRockCavy2, iPidge ]
         mempty
         (Rm "Mob closet"
             "This closet holds mobs."
             zeroBits
-            [ StdLink Southeast iCentral ])
+            [ StdLink Southeast iBasement ])
   putRm iVoid
         []
         mempty
         (Rm "The void"
             "You have stumbled into a vast, empty space. You are floating.\n\
-            \You see a colorful round shape some distance off to the north, while to the south a door floats \
-            \innocuously."
+            \An open manhole hovers above you. You see a colorful round shape some distance off to the north, while to \
+            \the south a door floats innocuously."
             zeroBits
             [ StdLink North iTutEntrance
             , StdLink South iLoungeEntrance
-            , StdLink Up    iCentral ])
+            , NonStdLink "manhole" iBasement "% climbs into the manhole." "% climbs out of the manhole." ])
   putRm iTutEntrance
         []
         mempty
@@ -220,7 +250,7 @@ createAdminZone = do
             \Suspended above the portal is a wooden plaque reading, \"TUTORIAL THIS WAY.\""
             zeroBits
             [ StdLink South iVoid
-            , NonStdLink "portal" iTutWelcome "% gracefully floats into the portal, and promptly disappears."
+            , NonStdLink "portal" iTutWelcome "% floats into the portal, and promptly disappears."
                                               "% arrives in the tutorial." ])
   putRm iLoungeEntrance
         []
@@ -238,27 +268,6 @@ createAdminZone = do
             "Welcome, admin! Have a seat by the fire and relax for awhile."
             zeroBits
             [ NonStdLink "out" iLoungeEntrance "% exits the lounge." "% exits the lounge." ])
-  putRm iWeightRm
-        [ i100Lb
-        , i75Lb
-        , i50Lb1
-        , i50Lb2
-        , i25Lb1
-        , i25Lb2
-        , i10Lb1
-        , i10Lb2
-        , i5Lb1
-        , i5Lb2
-        , i1Lb1
-        , i1Lb2
-        , i1Lb3
-        , i1Lb4
-        , i1Lb5 ]
-        mempty
-        (Rm "The weight room"
-            "This room contains weights."
-            zeroBits
-            [ StdLink Down iCentral ])
 
   -- ==================================================
   -- Room teleport names:

@@ -203,6 +203,8 @@ iTutEntrance = 95 :: Int
 
 iLoungeEntrance = 96 :: Int
 
-iRoot = 97 :: Int
+iBasement = 97 :: Int
 
-iJason = 98 :: Int
+iRoot = 98 :: Int
+
+iJason = 99 :: Int
