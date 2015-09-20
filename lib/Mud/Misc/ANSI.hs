@@ -36,6 +36,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , printConsoleColor
                      , promoteDemoteColor
                      , promptColor
+                     , questionArrivalColor
                      , quoteColor
                      , resetANSI
                      , retainedMsgColor
@@ -223,6 +224,10 @@ promoteDemoteColor = mkColorANSI (Dull, White) (Dull, Red)
 
 promptColor :: T.Text
 promptColor = yellow
+
+
+questionArrivalColor :: T.Text
+questionArrivalColor = yellow
 
 
 quoteColor :: T.Text

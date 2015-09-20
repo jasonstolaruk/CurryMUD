@@ -45,7 +45,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first, second)
+import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
@@ -1677,7 +1677,6 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 -----
 
 
--- TODO: Consider announcing on the question channel when a new PC has arrived in the game.
 question :: Action
 question (NoArgs' i mq) = getState >>= \ms ->
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
@@ -1705,55 +1704,20 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
   | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "the question"
   | otherwise                              -> getQuestionStyleds i ms >>= \triples -> if ()# triples
     then sorryNoOneListening mq cols "question"
-    else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
-             format (txt, is)   = if i `elem` is
-               then ((formatChanMsg "Question" s txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
-               else mkBsWithStyled is
-               where
-                 mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
-                     return [ (formatChanMsg "Question" styled txt, pure i') | i' <- is' | styled <- styleds ]
-             ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
-                 bcastNl =<< expandEmbeddedIds ms cc bs
+    else let ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
+                 bcastNl =<< expandEmbeddedIds ms questionChanContext bs
                  logPlaOut "question" i . pure $ logMsg
                  ts <- liftIO mkTimestamp
                  withDbExHandler_ "question" . insertDbTblQuestion . QuestionRec ts s $ logMsg
-             cc = ChanContext "question" Nothing True
              s  = getSing i ms
-          in case emotify i ms cc triples msg of
+          in case emotify i ms questionChanContext triples msg of
             Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
             Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
-                                in ioHelper logMsg =<< concatMapM format bs
-            Right (Left  ()) -> case expCmdify i ms cc triples msg of
+                                in ioHelper logMsg =<< concatMapM (formatQuestion i ms) bs
+            Right (Left  ()) -> case expCmdify i ms questionChanContext triples msg of
               Left  errorMsg     -> wrapSend mq cols errorMsg
-              Right (bs, logMsg) -> ioHelper logMsg =<< concatMapM format bs
+              Right (bs, logMsg) -> ioHelper logMsg =<< concatMapM (formatQuestion i ms) bs
 question p = patternMatchFail "question" [ showText p ]
-
-
-isTunedQuestion :: Id -> MudState -> Bool
-isTunedQuestion i = getPlaFlag IsTunedQuestion . getPla i
-
-
-getQuestionStyleds :: Id -> MudState -> MudStack [(Id, T.Text, T.Text)]
-getQuestionStyleds i ms =
-    let (plaIds,    adminIds) = getTunedQuestionIds i ms
-        (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
-    in mapM (updateRndmName i) otherIds >>= \rndmNames ->
-        let rndms   = zip otherIds rndmNames
-            f       = map (second (`getSing` ms) . dup)
-            linkeds = f linkedIds
-            admins  = f adminIds
-            combo   = sortBy (compare `on` snd) $ rndms ++ nubSort (linkeds ++ admins)
-            styleds = styleAbbrevs Don'tBracket . map snd $ combo
-            helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
-                                 | otherwise         = a
-              where
-                a = (x, y, styled)
-        in return . zipWith helper combo $ styleds
-
-
-getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
-getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms)
-                           in pair & both %~ filter (`isTunedQuestion` ms) . (i `delete`)
 
 
 -----

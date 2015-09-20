@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( adviceEnc
                           , adviceEtc
@@ -15,6 +15,9 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , expandEmbeddedIdsToSings
                           , fileIOExHandler
                           , formatChanMsg
+                          , formatQuestion
+                          , getQuestionStyleds
+                          , getTunedQuestionIds
                           , happy
                           , hasEnc
                           , hasYou
@@ -26,6 +29,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , isLinked
                           , isPlaBanned
                           , isPunc
+                          , isTunedQuestion
                           , mkActionParams
                           , mkInterfaceList
                           , mkPossPro
@@ -40,6 +44,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , plusRelated
                           , prefixCmd
                           , punc
+                          , questionChanContext
                           , sendGenericErrorMsg
                           , sorryBracketedMsg
                           , sorryDbEx
@@ -89,15 +94,16 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), second)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
-import Control.Lens (_2, at, each)
+import Control.Lens (_1, _2, _3, at, both, each, view, views)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
-import Data.List (intercalate, nub, sortBy)
+import Data.Function (on)
+import Data.List (delete, intercalate, nub, partition, sortBy)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
 import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', map, mapWithKey)
@@ -336,6 +342,49 @@ formatChanMsg cn n msg = T.concat [ parensQuote cn
                                   , n
                                   , ": "
                                   , msg ]
+
+
+-----
+
+
+formatQuestion :: Id  -> MudState -> Broadcast -> MudStack [Broadcast]
+formatQuestion i ms (txt, is)
+  | i `elem` is = ((formatChanMsg "Question" (getSing i ms) txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
+  | otherwise   = mkBsWithStyled is
+  where
+    mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
+        return [ (formatChanMsg "Question" styled txt, pure i') | i' <- is' | styled <- styleds ]
+    getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
+
+
+getQuestionStyleds :: Id -> MudState -> MudStack [(Id, T.Text, T.Text)]
+getQuestionStyleds i ms =
+    let (plaIds,    adminIds) = getTunedQuestionIds i ms
+        (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
+    in mapM (updateRndmName i) otherIds >>= \rndmNames ->
+        let rndms   = zip otherIds rndmNames
+            f       = map (second (`getSing` ms) . dup)
+            linkeds = f linkedIds
+            admins  = f adminIds
+            combo   = sortBy (compare `on` snd) $ rndms ++ nubSort (linkeds ++ admins)
+            styleds = styleAbbrevs Don'tBracket . map snd $ combo
+            helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
+                                 | otherwise         = a
+              where
+                a = (x, y, styled)
+        in return . zipWith helper combo $ styleds
+
+
+-----
+
+
+getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
+getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms)
+                           in pair & both %~ filter (`isTunedQuestion` ms) . (i `delete`)
+
+
+isTunedQuestion :: Id -> MudState -> Bool
+isTunedQuestion i = getPlaFlag IsTunedQuestion . getPla i
 
 
 -----
@@ -586,6 +635,13 @@ punc = "!\"),./:;?"
 
 isPunc :: Char -> Bool
 isPunc = (`elem` punc)
+
+
+-----
+
+
+questionChanContext :: ChanContext
+questionChanContext = ChanContext "question" Nothing True
 
 
 -----

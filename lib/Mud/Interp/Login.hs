@@ -228,11 +228,17 @@ checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
 
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
-  Just True -> helper |&| modifyState >=> \(getPla i -> p, oldSing) -> do
+  Just True -> helper |&| modifyState >=> \(ms@(getPla i -> p), oldSing) -> do
       send mq . nl $ ""
       handleLogin params { args = [] }
-      logPla    "interpConfirmName" i $ "new character logged in from " <> T.pack (p^.currHostName) <> "."
-      logNotice "interpConfirmName"   $ dblQuote oldSing <> " has logged in as " <> s <> " (new character)."
+      notifyQuestion i ms
+      logPla    "interpConfirmName" i $ "new character logged in from " <> views currHostName T.pack p <> "."
+      logNotice "interpConfirmName"   . T.concat $ [ dblQuote oldSing
+                                                   , " has logged in as "
+                                                   , s
+                                                   , " "
+                                                   , parensQuote "new character"
+                                                   , "." ]
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
@@ -244,6 +250,17 @@ interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
                     ms'' = ms' & invTbl.ind iCentral   %~ (sortInv ms' . (++ pure i))
                 in (ms'', (ms'', getSing i ms))
 interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
+
+
+notifyQuestion :: Id -> MudState -> MudStack ()
+notifyQuestion i ms =
+    let msg      = T.concat [ arrowColor
+                            , "<- "
+                            , questionArrivalColor
+                            , "A new character has arrived in the game."
+                            , dfltColor ]
+        tunedIds = uncurry (++) . getTunedQuestionIds i $ ms
+    in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
 
 
 yesNo :: T.Text -> Maybe Bool
