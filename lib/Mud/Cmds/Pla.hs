@@ -2692,7 +2692,6 @@ mkSlotDesc i ms s = case s of
 -----
 
 
--- TODO: Help.
 tele :: Action
 tele p@AdviseNoArgs = advise p ["telepathy"] advice
   where
@@ -2714,8 +2713,8 @@ tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let (s, p) = (getSing i ms, getPla i ms) in if getPlaFlag IsIncognito p
       then wrapSend mq cols . sorryIncog $ "telepathy"
       else let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the person you wish to message"
-               notFound    = sendFun . notFoundSuggestAsleeps target asleeps $ ms
-               found targetSing =
+               notFound            = sendFun . notFoundSuggestAsleeps target asleeps $ ms
+               found targetSing    =
                    let helper targetId = case emotifyTwoWay "telepathy" i ms targetId msg of
                          Left  errorMsgs  -> multiSendFun errorMsgs
                          Right (Right bs) -> ioHelper targetId bs

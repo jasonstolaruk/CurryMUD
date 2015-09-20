@@ -1,0 +1,32 @@
+\h TELEPATHY \d
+
+\uUSAGE\n
+telepathy name message
+
+\uDESCRIPTION\n
+Send a private message to a person with whom you have established a two-way telepathic link.
+
+Telepathic communication must be kept In-Character (IC) at all times.
+
+\uEMOTES\n
+You can send an emote in a telepathic message. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d. For example, if you type \qtelepathy hanako \l#x\qgives you his full attention\d, Hanako's player will see the following (assuming your name is Taro):
+[Taro] [Taro gives you his full attention.]
+
+Notice how in the above example we have \l#x\qgives you\d, as opposed to \l#x\qgives \l#r\qhanako\d. It is legal to use forms of the word "you" in emotes here and, as there is only one possible target, there is no need for "#rhanako".
+(This is only true of the "telepathy" command, and does not apply to any other command in which you may use emotes.)
+
+\uEXPRESSIVE COMMANDS\n
+You can send an expressive commands in a telepathic message. Expressive commands must begin with a \l#p\d. For example, if you type \qtelepathy hanako \l#p\qcomfort\d, Hanako's player will see the following (assuming your name is Taro):
+[Taro] <Taro comforts you.>
+
+Notice how in the above example we have \l#p\qcomfort\d, as opposed to \l#p\qcomfort hanako\d. Due to the fact that the "comfort" expressive command requires a target, and there is only one possible target in this case, the name may be omitted.
+(This is only true of the "telepathy" command, and does not apply to any other command in which you may use expressive commands.)
+
+The use of emotes and expressive commands in telepathic communication is explained IC as being the telepathic projection of thoughts, feelings, and images.
+
+\uEXAMPLES\n
+\qtelepathy hanako where have you been? I've missed you!\d to telepathically send a message to Hanako.4`
+\qtelepathy hanako \l#p\qembrace\d to telepathically send the image of your character embracing Hanako.4`
+\qtelepathy hanako \l#x\qhas been asking everyone where you went\d to telepathically send a thought (as opposed to a straightforward message).4`
+
+\uSEE ALSO\n

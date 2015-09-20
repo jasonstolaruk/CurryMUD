@@ -8,23 +8,21 @@ Send a message on a telepathic channel (provide a channel name followed by the m
 When no arguments are provided, you'll get a list of the telepathic channels to which you are connected, indicating whether you have tuned each channel in or out.
 When one argument - the name of a channel - is provided, you'll get a list of the people connected to that channel, indicating whether each person has tuned the channel in or out. Only those people who are currently "awake" (logged in) are listed.
 
-Telepathic channels provide a means for three or more people to communicate with each other telepathically. Telepathic channels are strictly for In-Character (IC) communication only. (Note that the question channel, on the other hand, is strictly OOC.)
-
-Use the "tune" command to tune a telepathic channel (use the "set" command to tune the question channel).
+Telepathic channels - analogous to named chat rooms - provide a means for three or more people to communicate with each other telepathically. Telepathic channels are strictly for In-Character (IC) communication only. (Note that the question channel, on the other hand, is strictly OOC.)
 
 \uRANDOM NAMES\n
 Within communication over telepathic channels, random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name; "hunt" is the channel name):
 (hunt) \udog\n: I'm lost! Where did everybody go?
 
 \uEMOTES\n
-You can emote on a telepathic channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \qchannel hunt #xsuggests that #rdog stay put for now\d will produce a message similar to the following (assuming your name is Taro):
+You can emote on a telepathic channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \qchannel hunt \l#x\qsuggests that \l#r\qdog stay put for now\d will produce a message similar to the following (assuming your name is Taro):
 (hunt) Taro: [Taro suggests that \udog\n stay put for now.]
 
 \uEXPRESSIVE COMMANDS\n
-You can use expressive commands on a telepathic channel. Expressive commands must begin with a \l#p\d. For example, \qchannel hunt #pcomfort hanako\d will produce a message similar to the following (assuming your name is Taro):
+You can use expressive commands on a telepathic channel. Expressive commands must begin with a \l#p\d. For example, \qchannel hunt \l#p\qcomfort hanako\d will produce a message similar to the following (assuming your name is Taro):
 (hunt) Taro: <Taro comforts Hanako.>
 
-The use of emotes and expressive commands in channel communication is explained IC as being the telepathic projection of abstract thoughts, feelings, and images.
+The use of emotes and expressive commands in channel communication is explained IC as being the telepathic projection of thoughts, feelings, and images.
 
 \uEXAMPLES\n
 \qchannel\d to see a list of your channels.4`

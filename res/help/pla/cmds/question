@@ -7,20 +7,18 @@ question \s[\dmessage\s]\d
 Send a message on the question channel.
 When no arguments are provided, you'll get a list of all the people who are currently logged in, indicating whether they have tuned the channel in or out. * denotes an administrator.
 
-The question channel is a "chat room" strictly for the purpose of asking and answering newbie questions related to game play. Discussions on the question channel are Out-Of-Character (OOC); In-Character (IC) knowledge that can and should be discovered in game may not be disclosed. (Note that telepathic channels, on the other hand, are strictly IC.) Appropriate topics of discussion are how to use a command, how to configure client software, how to contact an administrator, etc. "Which weapon does more damage, x or y" is an example of an inappropriate question.
-
-Use the "set" command to tune the question channel (the "tune" command is for tuning IC telepathic connections).
+The question channel is a "chat room" strictly for the purpose of asking and answering newbie questions related to game play. Discussions on the question channel are Out-Of-Character (OOC); In-Character (IC) knowledge that can and should be discovered in game may not be disclosed. (Note that telepathic channels, on the other hand, are strictly IC.) Appropriate topics of discussion are how to use a command, how to configure client software, how to contact an administrator, etc. "Which weapon does more damage, x or y?" is an example of an inappropriate question.
 
 \uRANDOM NAMES\n
 Within communication over the question channel, random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name):
 (Question) \udog\n: How do I wield a weapon?
 
 \uEMOTES\n
-You can emote on the question channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \qquestion #xsuggests that #rdog use the "help" command\d will produce a message similar to the following (assuming your name is Taro):
+You can emote on the question channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \qquestion \l#x\qsuggests that \l#r\qdog use the "help" command\d will produce a message similar to the following (assuming your name is Taro):
 (Question) Taro: [Taro suggests that \udog\n use the "help" command.]
 
 \uEXPRESSIVE COMMANDS\n
-You can use expressive commands on the question channel. Expressive commands must begin with a \l#p\d. For example, \qquestion #pcomfort hanako\d will produce a message similar to the following (assuming your name is Taro):
+You can use expressive commands on the question channel. Expressive commands must begin with a \l#p\d. For example, \qquestion \l#p\qcomfort hanako\d will produce a message similar to the following (assuming your name is Taro):
 (Question) Taro: <Taro comforts Hanako.>
 
 \uEXAMPLES\n
