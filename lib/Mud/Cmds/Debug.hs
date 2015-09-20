@@ -292,24 +292,27 @@ tblToList lens = views lens IM.toList
 
 
 mkTblNameKeysList :: MudState -> [(T.Text, Inv)]
-mkTblNameKeysList ms = [ ("Arm",         tblKeys armTbl          ms)
-                       , ("Chan",        tblKeys chanTbl         ms)
-                       , ("Cloth",       tblKeys clothTbl        ms)
-                       , ("Coins",       tblKeys coinsTbl        ms)
-                       , ("Con",         tblKeys conTbl          ms)
-                       , ("Ent",         tblKeys entTbl          ms)
-                       , ("EqMap",       tblKeys eqTbl           ms)
-                       , ("Inv",         tblKeys invTbl          ms)
-                       , ("Mob",         tblKeys mobTbl          ms)
-                       , ("MsgQueue",    tblKeys msgQueueTbl     ms)
-                       , ("Obj",         tblKeys objTbl          ms)
-                       , ("PC",          tblKeys pcTbl           ms)
-                       , ("PlaLogTbl",   tblKeys plaLogTbl       ms)
-                       , ("Pla",         tblKeys plaTbl          ms)
-                       , ("Rm",          tblKeys rmTbl           ms)
-                       , ("TeleLinkTbl", tblKeys teleLinkMstrTbl ms)
-                       , ("Type",        tblKeys typeTbl         ms)
-                       , ("Wpn",         tblKeys wpnTbl          ms) ]
+mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl           ms)
+                       , ("Chan",             tblKeys chanTbl          ms)
+                       , ("Cloth",            tblKeys clothTbl         ms)
+                       , ("Coins",            tblKeys coinsTbl         ms)
+                       , ("Con",              tblKeys conTbl           ms)
+                       , ("Ent",              tblKeys entTbl           ms)
+                       , ("EqMap",            tblKeys eqTbl            ms)
+                       , ("Inv",              tblKeys invTbl           ms)
+                       , ("Mob",              tblKeys mobTbl           ms)
+                       , ("MsgQueue",         tblKeys msgQueueTbl      ms)
+                       , ("Obj",              tblKeys objTbl           ms)
+                       , ("PC",               tblKeys pcTbl            ms)
+                       , ("PlaLogTbl",        tblKeys plaLogTbl        ms)
+                       , ("Pla",              tblKeys plaTbl           ms)
+                       , ("Rm",               tblKeys rmTbl            ms)
+                       , ("RmTeleNameTbl",    tblKeys rmTeleNameTbl    ms)
+                       , ("RndmNamesMstrTbl", tblKeys rndmNamesMstrTbl ms)
+                       , ("TeleLinkMstrTbl",  tblKeys teleLinkMstrTbl  ms)
+                       , ("TeleLinkTbl",      tblKeys teleLinkMstrTbl  ms)
+                       , ("Type",             tblKeys typeTbl          ms)
+                       , ("Wpn",              tblKeys wpnTbl           ms) ]
 
 
 tblKeys :: Optical (->) (->) (Const [Id]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [Id]
@@ -600,6 +603,7 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "c adverbCloseChar"
                 , charTokenDelimiter  `T.cons` "d adminCmdChar"
                 , charTokenDelimiter  `T.cons` "e emoteNameChar"
+                , charTokenDelimiter  `T.cons` "h chanTargetChar"
                 , charTokenDelimiter  `T.cons` "i indexChar"
                 , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"

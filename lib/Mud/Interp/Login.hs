@@ -257,7 +257,7 @@ notifyQuestion i ms =
     let msg      = T.concat [ arrowColor
                             , "<- "
                             , questionArrivalColor
-                            , "A new character has arrived in the game."
+                            , "A new character has arrived in CurryMUD."
                             , dfltColor ]
         tunedIds = uncurry (++) . getTunedQuestionIds i $ ms
     in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)

@@ -196,6 +196,12 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
 adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
+{-
+checkTarget :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
+checkTarget i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest))) =
+-}
+
+
 emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isBracketed ws          = pure `onLeft` sorryBracketedMsg
