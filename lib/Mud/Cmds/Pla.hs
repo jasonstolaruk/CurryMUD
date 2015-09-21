@@ -637,29 +637,32 @@ connect p = patternMatchFail "connect" [ showText p ]
 
 connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
 connectHelper i (target, as) ms =
-    let notFound    = sorry . notConnectedChan $ target
+    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
+                       | otherwise         = (id,           ""      )
+        g        = ()# guessWhat ? id :? (Left guessWhat :)
+        sorryMsg = sorryIgnoreLocPrefPlur "The names of the people you would like to connect"
+        as'      = map (capitalize . T.toLower . f) as
+        notFound    = sorry . notConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
-          then let f pair a =
-                       let notFoundSing = oops . notFoundSuggestAsleeps target asleepSings $ ms
-                           foundSing singMatch =
-                               let targetSing = head . filter ((== singMatch) . uncapitalize) $ targetSings
-                               in case c^.chanConnTbl.at targetSing of
-                                 Just _  -> oops . T.concat $ [ targetSing
-                                                              , " is already connected to the "
-                                                              , dblQuote cn
-                                                              , " channel." ]
-                                 Nothing ->
-                                     let g targetId = if hasChanOfSameName targetId
-                                           then blocked . T.concat $ [ targetSing
-                                                                     , " is already connected to a channel named "
-                                                                     , dblQuote cn
-                                                                     , "." ]
-                                           else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
-                                                     & _2 <>~ (pure . Right $ targetSing)
-                                     in either oops g . checkMutuallyTuned i ms $ targetSing
-                           oops    msg = pair & _2 <>~ (pure . Left $ msg)
-                           blocked     = oops . effortsBlocked
-                       in findFullNameForAbbrev a (map uncapitalize targetSings) |&| maybe notFoundSing foundSing
+          then let procTarget pair a =
+                       let notFoundSing         = oops . notFoundSuggestAsleeps target asleepSings $ ms
+                           foundSing targetSing = case c^.chanConnTbl.at targetSing of
+                             Just _  -> oops . T.concat $ [ targetSing
+                                                          , " is already connected to the "
+                                                          , dblQuote cn
+                                                          , " channel." ]
+                             Nothing ->
+                                 let checkChanName targetId = if hasChanOfSameName targetId
+                                       then blocked . T.concat $ [ targetSing
+                                                                 , " is already connected to a channel named "
+                                                                 , dblQuote cn
+                                                                 , "." ]
+                                       else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
+                                                 & _2 <>~ (pure . Right $ targetSing)
+                                 in either oops checkChanName . checkMutuallyTuned i ms $ targetSing
+                           oops msg = pair & _2 <>~ (pure . Left $ msg)
+                           blocked  = oops . effortsBlocked
+                       in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing
                    ci                         = c^.chanId
                    dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
                    dblLinkedsPair             = partition (`isAwake` ms) dblLinkeds
@@ -667,8 +670,8 @@ connectHelper i (target, as) ms =
                    hasChanOfSameName targetId | targetCs  <- getPCChans targetId ms
                                               , targetCns <- map (views chanName T.toLower) targetCs
                                               = T.toLower cn `elem` targetCns
-                   (ms', res)                 = foldl' f (ms, []) as
-               in (ms', (res, Just ci))
+                   (ms', res)                 = foldl' procTarget (ms, []) as'
+               in (ms', (g res, Just ci))
           else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
@@ -1573,7 +1576,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
     mkMsgHelper isPlur (map dblQuote -> ns) =
         T.concat [ focusingInnate "you create a "
                  , isPlur |?| "group of "
-                 , "shared abstract energy space"
+                 , "telepathic network"
                  , theLetterS isPlur
                  , " to which others may be connected. To "
                  , isPlur ? "these " :? "this "
