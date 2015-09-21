@@ -504,7 +504,7 @@ adminHost (LowerNub i mq cols as) = do
             let notFound = [ "There is no PC by the name of " <> dblQuote target <> "." ]
                 found    = uncurry (mkHostReport ms now zone)
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    multiWrapSend mq cols . g . intercalate [""] . map (helper . capitalize . f) $ as
+    multiWrapSend mq cols . g . intercalate [""] . map (helper . capitalize . T.toLower . f) $ as
     logPlaExec (prefixAdminCmd "host") i
   where
     sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
