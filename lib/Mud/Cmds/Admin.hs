@@ -177,16 +177,20 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
                 else mkBsWithStyled is
                 where
                   mkBsWithStyled is' = [ (formatChanMsg "Admin" (getStyled i') txt, pure i') | i' <- is' ]
-          in case emotify i ms tunedIds tunedSings msg of
-            Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
-            Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
-                                in ioHelper s (concatMap format bs) logMsg
-            Right (Left ()) -> case expCmdify i ms tunedIds tunedSings msg of
-              Left  errorMsg     -> wrapSend mq cols errorMsg
-              Right (bs, logMsg) -> ioHelper s (concatMap format bs) logMsg
+              f bs = ioHelper s (concatMap format bs)
+          in case targetify tunedIds tunedSings msg of
+            Left errorMsg    -> wrapSend mq cols errorMsg
+            Right (Right bs) -> f bs . mkLogMsg $ bs
+            Right (Left ())  -> case emotify i ms tunedIds tunedSings msg of
+              Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
+              Right (Right bs) -> f bs . mkLogMsg $ bs
+              Right (Left ())  -> case expCmdify i ms tunedIds tunedSings msg of
+                Left  errorMsg     -> wrapSend mq cols errorMsg
+                Right (bs, logMsg) -> f bs logMsg
       else sorryNotTunedOOCChan mq cols "admin"
   where
-    getTunedAdminIds ms = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
+    getTunedAdminIds ms  = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
+    mkLogMsg             = dropANSI . fst . head
     ioHelper s bs logMsg = bcastNl bs >> logHelper
       where
         logHelper = do
@@ -196,24 +200,42 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
 adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
-{-
-checkTarget :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
-checkTarget i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest))) =
--}
+targetify :: Inv -> [Sing] -> T.Text -> Either T.Text (Either () [Broadcast])
+targetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | isBracketed ws                = sorryBracketedMsg
+  | isHeDon't chanTargetChar msg  = Left "He don't."
+  | c == chanTargetChar           = fmap Right . procChanTarget tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right . Left $ ()
+
+
+procChanTarget :: Inv -> [Sing] -> Args -> Either T.Text [Broadcast]
+procChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
+    ()# rest ? Left sorryNoMsg :? (findFullNameForAbbrev target tunedSings |&| maybe notFound found)
+  where
+    notFound         = Left . sorryAdminName $ target
+    found targetSing =
+        let targetId = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
+            msg      = capitalizeMsg . T.unwords $ rest
+        in Right [ ( parensQuote ("to " <> targetSing) <> " " <> msg
+                   , targetId `delete` tunedIds )
+                 , ( parensQuote ("to " <> quoteWith' (emoteTargetColor, dfltColor) "you") <> " " <> msg
+                   , pure targetId ) ]
+procChanTarget _ _ as = patternMatchFail "procChanTarget" as
 
 
 emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws          = pure `onLeft` sorryBracketedMsg
   | isHeDon't emoteChar msg = Left . pure $ "He don't."
-  | c == emoteChar = fmap Right . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+  | c == emoteChar          = fmap Right . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
   | otherwise = Right . Left $ ()
 
 
 procEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
-procEmote _ _ _ _ as | hasYou as = Left . pure . adviceYouEmote . prefixAdminCmd $ "admin"
+procEmote _ _  _        _          as | hasYou as = Left . pure . adviceYouEmote . prefixAdminCmd $ "admin"
 procEmote i ms tunedIds tunedSings as =
     let s                       = getSing i ms
         xformed                 = xformArgs True as
@@ -574,6 +596,7 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
+-- TODO: Emotes and exp cmds.
 adminMsg :: Action
 adminMsg p@AdviseNoArgs = advise p [ prefixAdminCmd "message" ] advice
   where

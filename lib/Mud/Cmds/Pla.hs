@@ -233,6 +233,7 @@ about p = withoutArgs about p
 -----
 
 
+-- TODO: Emotes and exp cmds.
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] advice

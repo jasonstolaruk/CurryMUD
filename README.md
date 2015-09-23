@@ -30,7 +30,7 @@ CurryMUD will have the following features:
 * PCs can "link" with each other so as to enable "tells."
 * PCs can create their own ad-hoc channels.
 * Question channel for OOC newbie Q&A.
-* Free-form emotes and built-in emotes may be used in channel communications.
+* Free-form emotes and built-in emotes may be used in "tells" and channel communications.
 * Functionality enabling one-on-one communication between players and admins.
 * Help files for (almost) all existing non-debug commands.
 * The virtual world is automatically persisted at regular intervals and at shutdown.

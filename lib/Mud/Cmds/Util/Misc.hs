@@ -54,6 +54,7 @@ module Mud.Cmds.Util.Misc ( adviceEnc
                           , sorryExpCmdWithTarget
                           , sorryIgnoreLocPref
                           , sorryIgnoreLocPrefPlur
+                          , sorryNoMsg
                           , sorryNoOneListening
                           , sorryNotTunedICChan
                           , sorryNotTunedOOCChan
@@ -139,6 +140,7 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 -- ==================================================
 
 
+-- TODO: Move advice to its own module.
 adviceEnc :: T.Text -> T.Text
 adviceEnc cn = T.concat [ dblQuote enc
                         , " must either be used alone, or with a "
@@ -654,6 +656,7 @@ sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 -----
 
 
+-- TODO: Move sorry msgs to their own module.
 sorryBracketedMsg :: Either T.Text a
 sorryBracketedMsg = Left "You can't open or close your message with brackets."
 
@@ -695,6 +698,13 @@ sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location pre
 sorryIgnoreLocPrefPlur :: T.Text -> T.Text
 sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
                                                   \provided will be ignored."
+
+
+-----
+
+
+sorryNoMsg :: T.Text
+sorryNoMsg = "Please also provide a message to send."
 
 
 -----
