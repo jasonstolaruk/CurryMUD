@@ -178,14 +178,16 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
                 where
                   mkBsWithStyled is' = [ (formatChanMsg "Admin" (getStyled i') txt, pure i') | i' <- is' ]
               f bs = ioHelper s (concatMap format bs)
+              ws   = wrapSend      mq cols
+              mws  = multiWrapSend mq cols
           in case targetify tunedIds tunedSings msg of
-            Left errorMsg    -> wrapSend mq cols errorMsg
+            Left errorMsg    -> ws errorMsg
             Right (Right bs) -> f bs . mkLogMsg $ bs
             Right (Left ())  -> case emotify i ms tunedIds tunedSings msg of
-              Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
+              Left  errorMsgs  -> mws errorMsgs
               Right (Right bs) -> f bs . mkLogMsg $ bs
               Right (Left ())  -> case expCmdify i ms tunedIds tunedSings msg of
-                Left  errorMsg     -> wrapSend mq cols errorMsg
+                Left  errorMsg     -> ws errorMsg
                 Right (bs, logMsg) -> f bs logMsg
       else sorryNotTunedOOCChan mq cols "admin"
   where
@@ -202,9 +204,9 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 targetify :: Inv -> [Sing] -> T.Text -> Either T.Text (Either () [Broadcast])
 targetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws                = sorryBracketedMsg
-  | isHeDon't chanTargetChar msg  = Left "He don't."
-  | c == chanTargetChar           = fmap Right . procChanTarget tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+  | isBracketed ws               = sorryBracketedMsg
+  | isHeDon't chanTargetChar msg = Left "He don't."
+  | c == chanTargetChar          = fmap Right . procChanTarget tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
   | otherwise = Right . Left $ ()
@@ -216,13 +218,18 @@ procChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
   where
     notFound         = Left . sorryAdminName $ target
     found targetSing =
-        let targetId = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
-            msg      = capitalizeMsg . T.unwords $ rest
-        in Right [ ( parensQuote ("to " <> targetSing) <> " " <> msg
-                   , targetId `delete` tunedIds )
-                 , ( parensQuote ("to " <> quoteWith' (emoteTargetColor, dfltColor) "you") <> " " <> msg
-                   , pure targetId ) ]
+        let targetId    = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
+            msg         = capitalizeMsg . T.unwords $ rest
+            formatMsg x = parensQuote ("to " <> x) <> " " <> msg
+        in Right [ (formatMsg targetSing,                                         targetId `delete` tunedIds)
+                 , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
 procChanTarget _ _ as = patternMatchFail "procChanTarget" as
+
+
+sorryAdminName :: T.Text -> T.Text
+sorryAdminName n = "There is no admin by the name of " <>
+                   (dblQuote . capitalize $ n)         <>
+                   " currently tuned in to the admin channel."
 
 
 emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
@@ -277,12 +284,6 @@ procEmote i ms tunedIds tunedSings as =
             in findFullNameForAbbrev target' (getSing i ms `delete` tunedSings) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
-
-
-sorryAdminName :: T.Text -> T.Text
-sorryAdminName n = "There is no admin by the name of " <>
-                   (dblQuote . capitalize $ n)         <>
-                   " currently tuned in to the admin channel."
 
 
 expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)

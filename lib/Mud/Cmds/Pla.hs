@@ -389,14 +389,21 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          logPlaOut "chan" i . pure $ parensQuote cn <> " " <> logMsg
                          ts <- liftIO mkTimestamp
                          withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ logMsg
-                     cc = ChanContext "chan" (Just cn) False
-                 in case emotify i ms cc triples msg of
-                   Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
-                   Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
-                                       in ioHelper logMsg =<< concatMapM format bs
-                   Right (Left  ()) -> case expCmdify i ms cc triples msg of
-                     Left  errorMsg     -> wrapSend mq cols errorMsg
-                     Right (bs, logMsg) -> ioHelper logMsg =<< concatMapM format bs
+                     cc   = ChanContext "chan" (Just cn) False
+                     f bs = let logMsg = dropANSI . fst . head $ bs
+                            in ioHelper logMsg =<< g bs
+                     g    = concatMapM format
+                     ws   = wrapSend      mq cols
+                     mws  = multiWrapSend mq cols
+                 in case targetify i cc triples msg of
+                   Left  errorMsg   -> ws errorMsg
+                   Right (Right bs) -> f bs
+                   Right (Left  ()) -> case emotify i ms cc triples msg of
+                     Left  errorMsgs  -> mws errorMsgs
+                     Right (Right bs) -> f bs
+                     Right (Left  ()) -> case expCmdify i ms cc triples msg of
+                       Left  errorMsg     -> ws errorMsg
+                       Right (bs, logMsg) -> ioHelper logMsg =<< g bs
         (cs, cns, s) = mkChanBindings i ms
     in findFullNameForAbbrev (T.toLower target) (map T.toLower cns) |&| maybe notFound found
 chan p = patternMatchFail "chan" [ showText p ]
@@ -422,9 +429,47 @@ getChanStyleds i c ms =
         in return . zipWith helper combo $ styleds
 
 
+targetify :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text (Either () [Broadcast])
+targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | isBracketed ws               = sorryBracketedMsg
+  | isHeDon't chanTargetChar msg = Left "He don't."
+  | c == chanTargetChar          = fmap Right . procChanTarget i cc triples . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right . Left $ ()
+
+
+procChanTarget :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text [Broadcast]
+procChanTarget i cc triples ((T.toLower -> target):rest)
+  | ()# rest  = Left sorryNoMsg
+  | otherwise = case findFullNameForAbbrev target . map (views _2 T.toLower) $ triples of
+    Nothing -> Left . sorryChanTargetName cc $ target
+    Just n  -> let targetId    = getIdForMatch n
+                   tunedIds    = map (view _1) triples
+                   msg         = capitalizeMsg . T.unwords $ rest
+                   formatMsg x = parensQuote ("to " <> x) <> " " <> msg
+               in Right [ (formatMsg . embedId $ targetId,                               pure i                    )
+                        , (formatMsg . embedId $ targetId,                               targetId `delete` tunedIds)
+                        , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
+  where
+    getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
+procChanTarget _ _ _ as = patternMatchFail "procChanTarget" as
+
+
+sorryChanTargetName :: ChanContext -> T.Text -> T.Text
+sorryChanTargetName cc n = T.concat [ "There is no one by the name of "
+                                    , dblQuote . capitalize $ n
+                                    , " currently tuned in to the "
+                                    , mkEffChanName cc
+                                    , " channel." ]
+
+
+mkEffChanName :: ChanContext -> T.Text
+mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
+
+
 emotify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws          = pure `onLeft` sorryBracketedMsg
   | isHeDon't emoteChar msg = Left . pure $ "He don't."
   | c == emoteChar = fmap Right . procEmote i ms cc triples . (tail ws |&|) $ if ()# rest
     then id
@@ -478,18 +523,6 @@ procEmote i ms cc triples as =
     tunedIds             = map (view _1) triples
 
 
-sorryChanTargetName :: ChanContext -> T.Text -> T.Text
-sorryChanTargetName cc n = T.concat [ "There is no one by the name of "
-                                    , dblQuote . capitalize $ n
-                                    , " currently tuned in to the "
-                                    , mkEffChanName cc
-                                    , " channel." ]
-
-
-mkEffChanName :: ChanContext -> T.Text
-mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
-
-
 expCmdify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left "He don't."
@@ -536,9 +569,9 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
                                     (format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :
                                     mkBroadcast i toSelfWithTarget'
                                   , toSelfWithTarget' )
-    notFound   = sorryExpCmdName cn
-    findTarget = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
-    getIdForMatch match    = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
+    notFound             = sorryExpCmdName cn
+    findTarget           = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
+    getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
     format maybeTargetId =
         let substitutions = [ ("%", embedId i), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
         in replace (substitutions ++ maybe [] (pure . ("@", ) . embedId) maybeTargetId)

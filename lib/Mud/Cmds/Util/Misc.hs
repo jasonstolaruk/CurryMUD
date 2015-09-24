@@ -704,7 +704,7 @@ sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location p
 
 
 sorryNoMsg :: T.Text
-sorryNoMsg = "Please also provide a message to send."
+sorryNoMsg = "You must also provide a message to send."
 
 
 -----
