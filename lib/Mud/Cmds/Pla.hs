@@ -1746,14 +1746,21 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
                  logPlaOut "question" i . pure $ logMsg
                  ts <- liftIO mkTimestamp
                  withDbExHandler_ "question" . insertDbTblQuestion . QuestionRec ts s $ logMsg
-             s  = getSing i ms
-          in case emotify i ms questionChanContext triples msg of
-            Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
-            Right (Right bs) -> let logMsg = dropANSI . fst . head $ bs
-                                in ioHelper logMsg =<< concatMapM (formatQuestion i ms) bs
-            Right (Left  ()) -> case expCmdify i ms questionChanContext triples msg of
-              Left  errorMsg     -> wrapSend mq cols errorMsg
-              Right (bs, logMsg) -> ioHelper logMsg =<< concatMapM (formatQuestion i ms) bs
+             s    = getSing i ms
+             f bs = let logMsg = dropANSI . fst . head $ bs
+                    in ioHelper logMsg =<< g bs
+             g    = concatMapM (formatQuestion i ms)
+             ws   = wrapSend      mq cols
+             mws  = multiWrapSend mq cols
+          in case targetify i questionChanContext triples msg of
+            Left  errorMsg   -> ws errorMsg
+            Right (Right bs) -> f bs
+            Right (Left  ()) -> case emotify i ms questionChanContext triples msg of
+              Left  errorMsgs  -> mws errorMsgs
+              Right (Right bs) -> f bs
+              Right (Left  ()) -> case expCmdify i ms questionChanContext triples msg of
+                Left  errorMsg     -> ws errorMsg
+                Right (bs, logMsg) -> ioHelper logMsg =<< g bs
 question p = patternMatchFail "question" [ showText p ]
 
 
