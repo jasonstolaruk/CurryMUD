@@ -7,9 +7,13 @@
 Send a message on the admin channel.
 When no arguments are provided, you'll get a list of all the admins who are currently logged in, indicating whether they have tuned the channel in or out.
 
+\uADDRESSING A MESSAGE\d
+Use \l#h\d to address your message to a particular person. For example, \q#dadmin \l#h\qhanako i'll take care of it\d will produce a message similar to the following (assuming your PC name is Taro):
+(Admin) Taro: (to Hanako) I'll take care of it.
+
 \uEMOTES\n
-You can emote on the admin channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your PC name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \q#dadmin \l#x\qwill never see himself in the mirror with his eyes closed\d will produce a message similar to the following (assuming your PC name is Taro):
-(Admin) Taro: [Taro will never see himself in the mirror with his eyes closed.]
+You can emote on the admin channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your PC name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \q#dadmin \l#x\qagrees wholeheartedly\d will produce a message similar to the following (assuming your PC name is Taro):
+(Admin) Taro: [Taro agrees wholeheartedly.]
 
 \uEXPRESSIVE COMMANDS\n
 You can use expressive commands on the admin channel. Expressive commands must begin with a \l#p\d. For example, \q#dadmin \l#p\qcomfort hanako\d will produce a message similar to the following (assuming your PC name is Taro):
@@ -18,5 +22,6 @@ You can use expressive commands on the admin channel. Expressive commands must b
 \uEXAMPLES\n
 \q#dadmin\d to see who is tuned in and who is tuned out.4`
 \q#dadmin hello!\d to greet your fellow admins.4`
+\q#dadmin \l#h\qhanako when will you be back?\d to ask Hanako a question.4`
 
 \uSEE ALSO\n

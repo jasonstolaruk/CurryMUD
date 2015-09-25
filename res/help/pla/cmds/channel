@@ -14,6 +14,10 @@ Telepathic channels - analogous to named chat rooms - provide a means for three 
 Within communication over telepathic channels, random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name; "hunt" is the channel name):
 (hunt) \udog\n: I'm lost! Where did everybody go?
 
+\uADDRESSING A MESSAGE\d
+Use \l#h\d to address your message to a particular person. For example, \qchannel hunt \l#h\qdog i'm still waiting in the clearing\d will produce a message similar to the following (assuming your PC name is Taro):
+(hunt) Taro: (to \udog\n) I'm still waiting in the clearing.
+
 \uEMOTES\n
 You can emote on a telepathic channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \qchannel hunt \l#x\qsuggests that \l#r\qdog stay put for now\d will produce a message similar to the following (assuming your name is Taro):
 (hunt) Taro: [Taro suggests that \udog\n stay put for now.]
@@ -28,5 +32,6 @@ The use of emotes and expressive commands in channel communication is explained 
 \qchannel\d to see a list of your channels.4`
 \qchannel hunt\d to see a list of who is connected to the "hunt" channel.4`
 \qchannel hunt hello!\d to greet your fellow hunters.4`
+\qchannel hunt \l#h\qhanako how many potions do you have left?\d to ask Hanako a question.4`
 
 \uSEE ALSO\n

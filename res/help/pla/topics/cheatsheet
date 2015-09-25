@@ -1,14 +1,6 @@
 \h CHEATSHEET \d
 
-\uEMOTING\d
-\l#e\d         for your name10`
-\l#e's\d       for your name in possessive form ("Taro's")10`
-\l#r\qhanako\d   to target Hanako10`
-\l#r\qhanako\l's\d to target Hanako, in possessive form ("Hanako's")10`
-
-\uEMOTES AND EXPRESSIVE COMMANDS INSIDE OTHER COMMANDS\d
-\l#x\d to begin an emote2`
-\l#p\d to begin an expressive command2`
+(This cheatsheet is for experienced CurryMUD players.)
 
 \uLOCATION PREFIXES\d
 \li#l\d inventory2`
@@ -24,5 +16,18 @@
 \uCOMBINING PREFIXES\d
 The location prefix must come first, as in:
 \qshow \le#l\p#a\qring hanako\d2`
+
+\uEMOTING\d
+\l#e\d         for your name10`
+\l#e's\d       for your name in possessive form ("Taro's")10`
+\l#r\qhanako\d   to target Hanako10`
+\l#r\qhanako\l's\d to target Hanako, in possessive form ("Hanako's")10`
+
+\uEMOTES AND EXPRESSIVE COMMANDS INSIDE OTHER COMMANDS\d
+\l#x\d to begin an emote2`
+\l#p\d to begin an expressive command2`
+
+\uADDRESSING A CHANNEL MESSAGE\d
+\l#h\qhanako\d to indicate your message is for Hanako8`
 
 \uSEE ALSO\n

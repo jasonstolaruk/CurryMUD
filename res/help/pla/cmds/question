@@ -13,6 +13,10 @@ The question channel is a "chat room" strictly for the purpose of asking and ans
 Within communication over the question channel, random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name):
 (Question) \udog\n: How do I wield a weapon?
 
+\uADDRESSING A MESSAGE\d
+Use \l#h\d to address your message to a particular person. For example, \qquestion \l#h\qdog use the "ready" command\d will produce a message similar to the following (assuming your PC name is Taro):
+(Question) Taro: (to \udog\n) Use the "ready" command.
+
 \uEMOTES\n
 You can emote on the question channel. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d, and \l#r\d is used to specify a target. For example, \qquestion \l#x\qsuggests that \l#r\qdog use the "help" command\d will produce a message similar to the following (assuming your name is Taro):
 (Question) Taro: [Taro suggests that \udog\n use the "help" command.]
@@ -24,5 +28,6 @@ You can use expressive commands on the question channel. Expressive commands mus
 \uEXAMPLES\n
 \qquestion\d to see who is tuned in and who is tuned out.4`
 \qquestion how can I see which administrators are currently logged in?\d to ask a question on the channel.4`
+\qquestion \l#h\qhanako take a look at the cheatsheet ("help cheatsheet")\d to give Hanako's player a helpful suggestion.4`
 
 \uSEE ALSO\n
