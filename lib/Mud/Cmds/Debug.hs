@@ -5,6 +5,7 @@ module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
                       , ) where
 
+import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -53,14 +54,14 @@ import Data.Monoid ((<>), Sum(..))
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import Numeric (readInt)
 import Prelude hiding (pi)
+import qualified Data.IntMap.Lazy as IM (IntMap, assocs, keys, toList)
+import qualified Data.Map.Lazy as M (assocs, elems, keys, toList)
+import qualified Data.Text as T
 import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.CPUTime (getCPUTime)
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
-import qualified Data.IntMap.Lazy as IM (IntMap, assocs, keys, toList)
-import qualified Data.Map.Lazy as M (assocs, elems, keys, toList)
-import qualified Data.Text as T
 
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"

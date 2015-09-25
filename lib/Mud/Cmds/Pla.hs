@@ -11,6 +11,7 @@ module Mud.Cmds.Pla ( getRecordUptime
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Util.Abbrev
+import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
@@ -236,15 +237,7 @@ about p = withoutArgs about p
 -- TODO: Emotes and exp cmds.
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
-admin p@(AdviseOneArg a) = advise p ["admin"] advice
-  where
-    advice = T.concat [ "Please also provide a message to send, as in "
-                      , quoteColor
-                      , "admin "
-                      , a
-                      , " are you available? I need your assistance"
-                      , dfltColor
-                      , "." ]
+admin p@(AdviseOneArg a) = advise p ["admin"] . adviceAdminNoMsg $ a
 admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     logMsgs |#| let f = uncurry (logPla "admin") in mapM_ f
   where
@@ -323,14 +316,8 @@ adminList p = patternMatchFail "adminList" [ showText p ]
 
 
 bug :: Action
-bug p@AdviseNoArgs = advise p ["bug"] advice
-  where
-    advice = T.concat [ "Please describe the bug you've found, as in "
-                      , quoteColor
-                      , "bug i've fallen and I can't get up!"
-                      , dfltColor
-                      , "." ]
-bug p = bugTypoLogger p BugLog
+bug p@AdviseNoArgs = advise p ["bug"] adviceBugNoDesc
+bug p              = bugTypoLogger p BugLog
 
 
 -----
@@ -471,15 +458,15 @@ mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
 emotify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't emoteChar msg = Left . pure $ "He don't."
-  | c == emoteChar = fmap Right . procEmote i ms cc triples . (tail ws |&|) $ if ()# rest
+  | c == emoteChar          = fmap Right . procEmote i ms cc triples . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
   | otherwise = Right . Left $ ()
 
 
 procEmote :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either [T.Text] [Broadcast]
-procEmote _ _  cc _       as | hasYou as = Left . pure . adviceYouEmote . pp $ cc
-procEmote i ms cc triples as =
+procEmote _ _  cc _       as | hasYou as = Left . pure . adviceYouEmoteChar . pp $ cc
+procEmote i ms cc triples as             =
     let me                      = (getSing i ms, embedId i, embedId i)
         xformed                 = xformArgs True as
         xformArgs _      []     = []
@@ -499,8 +486,8 @@ procEmote i ms cc triples as =
           | isHead              -> mkRightForNonTargets (me & each <>~ (" " <> x))
           | otherwise           -> mkRightForNonTargets . dup3 $ x
     in case filter isLeft xformed of
-      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
-            in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
+      []      -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+                 in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
       advices -> Left . intersperse "" . map fromLeft . nub $ advices
   where
     cc'             = pp cc <> " " <> T.singleton emoteChar
@@ -526,7 +513,7 @@ procEmote i ms cc triples as =
 expCmdify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left "He don't."
-  | c == expCmdChar = fmap format . procExpCmd i ms cc triples . (tail ws |&|) $ if ()# rest
+  | c == expCmdChar          = fmap format . procExpCmd i ms cc triples . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
   | otherwise = Right (pure (msg, i : map (view _1) triples), msg)
@@ -613,23 +600,8 @@ color p = withoutArgs color p
 
 -- TODO: Connecting someone to a channel should cost psionic points.
 connect :: Action
-connect p@AdviseNoArgs = advise p ["connect"] advice
-  where
-    advice = T.concat [ "Please specify the names of one or more people followed by the name of a telepathic channel \
-                        \to connect them to, as in "
-                      , quoteColor
-                      , "connect taro hunt"
-                      , dfltColor
-                      , "." ]
-connect p@(AdviseOneArg a) = advise p ["connect"] advice
-  where
-    advice = T.concat [ "Please also specify the name of a telepathic channel, as in "
-                      , quoteColor
-                      , "connect "
-                      , a
-                      , " hunt"
-                      , dfltColor
-                      , "." ]
+connect p@AdviseNoArgs     = advise p ["connect"] adviceConnectNoArgs
+connect p@(AdviseOneArg a) = advise p ["connect"] . adviceConnectNoChan $ a
 connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
     if getPlaFlag IsIncognito . getPla i $ ms
       then wrapSend mq cols . sorryIncog $ "connect"
@@ -716,13 +688,7 @@ connectHelper i (target, as) ms =
 
 
 dropAction :: Action
-dropAction p@AdviseNoArgs = advise p ["drop"] advice
-  where
-    advice = T.concat [ "Please specify one or more items to drop, as in "
-                      , quoteColor
-                      , "drop sword"
-                      , dfltColor
-                      , "." ]
+dropAction p@AdviseNoArgs   = advise p ["drop"] adviceDropNoArgs
 dropAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "drop" i
   where
@@ -749,26 +715,8 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 emote :: Action
-emote p@AdviseNoArgs = advise p ["emote"] advice
-  where
-    advice = T.concat [ "Please provide a description of an action, as in "
-                      , quoteColor
-                      , "emote laughs with relief as tears roll down her face"
-                      , dfltColor
-                      , "." ]
-emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] advice
-  where
-    advice = T.concat [ "Sorry, but you can't use a form of the word "
-                      , dblQuote "you"
-                      , " in an emote. Instead, you must specify who you wish to target using "
-                      , dblQuote etc
-                      , ", as in "
-                      , quoteColor
-                      , "emote slowly turns her head to look directly at "
-                      , etc
-                      , "taro"
-                      , dfltColor
-                      , "." ]
+emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoDesc
+emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d@(stdPCEntSing -> Just s) = mkStdDesig i ms DoCap
         ser                        = serialize d
@@ -903,13 +851,7 @@ mkExpCmdListTxt =
 
 
 getAction :: Action
-getAction p@AdviseNoArgs = advise p ["get"] advice
-  where
-    advice = T.concat [ "Please specify one or more items to pick up, as in "
-                      , quoteColor
-                      , "get sword"
-                      , dfltColor
-                      , "." ]
+getAction p@AdviseNoArgs = advise p ["get"] adviceGetNoArgs
 getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == "from" =
     wrapSend mq cols . T.concat $ [ hintANSI
                                   , "Hint:"
@@ -1225,13 +1167,7 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 leave :: Action
-leave p@AdviseNoArgs = advise p ["leave"] advice
-  where
-    advice = T.concat [ "Please specify the names of one or more channels to leave, as in "
-                      , quoteColor
-                      , "leave hunt"
-                      , dfltColor
-                      , "." ]
+leave p@AdviseNoArgs                   = advise p ["leave"] adviceLeaveNoChans
 leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanIdNameIsDels, sorryMsgs) ->
     let s                              = getSing i ms
         (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanIdNameIsDels
@@ -1565,13 +1501,7 @@ showMotd mq cols = send mq =<< helper
 
 -- TODO: Creating a new channel should cost psionic points.
 newChan :: Action
-newChan p@AdviseNoArgs = advise p ["newchannel"] advice
-  where
-    advice = T.concat [ "Please specify one or more new channel names, as in "
-                      , quoteColor
-                      , "newchannel hunt"
-                      , dfltColor
-                      , "." ]
+newChan p@AdviseNoArgs                   = advise p ["newchannel"] adviceNewChanNoNames
 newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip -> (newChanNames, chanRecs), sorryMsgs) ->
     let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
         msgs                    = ()# sorryMsgs' ? otherMsgs :? sorryMsgs' ++ (otherMsgs |!| "" : otherMsgs)
@@ -1635,23 +1565,8 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 
 
 putAction :: Action
-putAction p@AdviseNoArgs = advise p ["put"] advice
-  where
-    advice = T.concat [ "Please specify one or more items you want to put followed by where you want to put them, as \
-                        \in "
-                      , quoteColor
-                      , "put doll sack"
-                      , dfltColor
-                      , "." ]
-putAction p@(AdviseOneArg a) = advise p ["put"] advice
-  where
-    advice = T.concat [ "Please also specify where you want to put it, as in "
-                      , quoteColor
-                      , "put "
-                      , a
-                      , " sack"
-                      , dfltColor
-                      , "." ]
+putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
+putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
 putAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "put" i
   where
@@ -1858,13 +1773,7 @@ quitCan'tAbbrev p = withoutArgs quitCan'tAbbrev p
 
 
 ready :: Action
-ready p@AdviseNoArgs = advise p ["ready"] advice
-  where
-    advice = T.concat [ "Please specify one or more items to ready, as in "
-                      , quoteColor
-                      , "ready sword"
-                      , dfltColor
-                      , "." ]
+ready p@AdviseNoArgs   = advise p ["ready"] adviceReadyNoArgs
 ready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "ready" i
   where
@@ -2140,23 +2049,8 @@ getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe
 
 
 remove :: Action
-remove p@AdviseNoArgs = advise p ["remove"] advice
-  where
-    advice = T.concat [ "Please specify one or more items to remove followed by the container you want to remove \
-                        \them from, as in "
-                      , quoteColor
-                      , "remove doll sack"
-                      , dfltColor
-                      , "." ]
-remove p@(AdviseOneArg a) = advise p ["remove"] advice
-  where
-    advice = T.concat [ "Please also specify the container you want to remove it from, as in "
-                      , quoteColor
-                      , "remove "
-                      , a
-                      , " sack"
-                      , dfltColor
-                      , "." ]
+remove p@AdviseNoArgs     = advise p ["remove"] adviceRemoveNoArgs
+remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
 remove (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "remove" i
   where
@@ -2215,13 +2109,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 
 
 say :: Action
-say p@AdviseNoArgs = advise p ["say"] advice
-  where
-    advice = T.concat [ "Please specify what you'd like to say, as in "
-                      , quoteColor
-                      , "say nice to meet you, too"
-                      , dfltColor
-                      , "." ]
+say p@AdviseNoArgs                    = advise p ["say"] adviceSayNoArgs
 say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
   | getPlaFlag IsIncognito . getPla i $ ms -> wrapSend mq cols . sorryIncog $ "say"
   | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of

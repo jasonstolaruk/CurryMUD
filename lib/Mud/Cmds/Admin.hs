@@ -5,6 +5,7 @@ module Mud.Cmds.Admin (adminCmds) where
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Abbrev
+import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -242,7 +243,7 @@ emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest
 
 
 procEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
-procEmote _ _  _        _          as | hasYou as = Left . pure . adviceYouEmote . prefixAdminCmd $ "admin"
+procEmote _ _  _        _          as | hasYou as = Left . pure . adviceYouEmoteChar . prefixAdminCmd $ "admin"
 procEmote i ms tunedIds tunedSings as =
     let s                       = getSing i ms
         xformed                 = xformArgs True as
@@ -289,7 +290,7 @@ procEmote i ms tunedIds tunedSings as =
 expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)
 expCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left "He don't."
-  | c == expCmdChar = fmap format . procExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+  | c == expCmdChar          = fmap format . procExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
   | otherwise = Right (pure (msg, tunedIds), msg)

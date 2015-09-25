@@ -1,12 +1,6 @@
 {-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
-module Mud.Cmds.Util.Misc ( adviceEnc
-                          , adviceEtc
-                          , adviceEtcEmptyPoss
-                          , adviceEtcHead
-                          , adviceYouEmote
-                          , advise
-                          , asterisk
+module Mud.Cmds.Util.Misc ( asterisk
                           , dbExHandler
                           , dispCmdList
                           , dispMatches
@@ -138,98 +132,6 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
 -- ==================================================
-
-
--- TODO: Move advice to its own module.
-adviceEnc :: T.Text -> T.Text
-adviceEnc cn = T.concat [ dblQuote enc
-                        , " must either be used alone, or with a "
-                        , dblQuote "'s"
-                        , " suffix "
-                        , parensQuote "to create a possessive noun"
-                        , ", as in "
-                        , quoteColor
-                        , cn
-                        , "shielding her eyes from the sun, "
-                        , enc
-                        , " looks out across the plains"
-                        , dfltColor
-                        , ", or "
-                        , quoteColor
-                        , cn
-                        , enc
-                        , "'s leg twitches involuntarily as she laughs with gusto"
-                        , dfltColor
-                        , "." ]
-
-
-adviceEtc :: T.Text -> T.Text
-adviceEtc cn = T.concat [ dblQuote etc
-                        , " must be immediately followed by the name of the person you wish to target, as in "
-                        , quoteColor
-                        , cn
-                        , "slowly turns her head to look directly at "
-                        , etc
-                        , "taro"
-                        , dfltColor
-                        , ". To create a possessive noun, append "
-                        , dblQuote "'s"
-                        , " to the target name, as in "
-                        , quoteColor
-                        , cn
-                        , "places her hand firmly on "
-                        , etc
-                        , "taro's shoulder"
-                        , dfltColor
-                        , "." ]
-
-
-adviceEtcEmptyPoss :: T.Text
-adviceEtcEmptyPoss = T.concat [ "You must specify the name of the person you want to target between "
-                              , dblQuote etc
-                              , " and "
-                              , dblQuote "'s"
-                              , "." ]
-
-
-adviceEtcHead :: T.Text
-adviceEtcHead = "You can't begin an emote with a target."
-
-
-adviceYouEmote :: T.Text -> T.Text
-adviceYouEmote cn = T.concat [ "Sorry, but you can't use a form of the word "
-                             , dblQuote "you"
-                             , " in an emote. Instead, you must specify who you wish to target using "
-                             , dblQuote etc
-                             , ", as in "
-                             , quoteColor
-                             , cn
-                             , " "
-                             , T.singleton emoteChar
-                             , "slowly turns her head to look directly at "
-                             , etc
-                             , "taro"
-                             , dfltColor
-                             , "." ]
-
-
------
-
-
-advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
-advise (Advising mq cols) []  msg = wrapSend mq cols msg
-advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For more information, type "
-                                                                          , quoteColor
-                                                                          , "help "
-                                                                          , h
-                                                                          , dfltColor
-                                                                          , "." ] ]
-advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
-    multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
-advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
-
-
------
 
 
 asterisk :: T.Text
