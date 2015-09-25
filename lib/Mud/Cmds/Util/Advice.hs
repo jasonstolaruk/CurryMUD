@@ -1,12 +1,15 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module Mud.Cmds.Util.Advice ( -- TODO: Sort.
-                              adviceAdminNoMsg
+module Mud.Cmds.Util.Advice ( adviceAdminNoMsg
+                            , adviceAdverbCloseChar
                             , adviceBugNoDesc
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
                             , adviceDropNoArgs
                             , adviceEmoteNoDesc
+                            , adviceEmptyAdverb
+                            , adviceEmptySay
+                            , adviceEmptySayTo
                             , adviceEnc
                             , adviceEtc
                             , adviceEtcEmptyPoss
@@ -20,6 +23,9 @@ module Mud.Cmds.Util.Advice ( -- TODO: Sort.
                             , adviceRemoveNoArgs
                             , adviceRemoveNoCon
                             , adviceSayNoArgs
+                            , adviceSettings
+                            , adviceShowNoArgs
+                            , adviceShowNoName
                             , adviceYouEmote
                             , adviceYouEmoteChar
                             , advise ) where
@@ -71,6 +77,21 @@ adviceAdminNoMsg a = T.concat [ "Please also provide a message to send, as in "
                               , dfltColor
                               , "." ]
 
+
+adviceAdverbCloseChar :: T.Text
+adviceAdverbCloseChar = "An adverbial phrase must be terminated with a " <> dblQuote acl <> adverbExample
+
+
+adverbExample :: T.Text
+adverbExample = T.concat [ ", as in "
+                         , quoteColor
+                         , "say "
+                         , quoteWith' (aop, acl) "enthusiastically"
+                         , " nice to meet you, too"
+                         , dfltColor
+                         , "." ]
+
+
 adviceBugNoDesc :: T.Text
 adviceBugNoDesc = T.concat [ "Please describe the bug you've found, as in "
                            , quoteColor
@@ -110,6 +131,28 @@ adviceEmoteNoDesc :: T.Text
 adviceEmoteNoDesc = T.concat [ "Please provide a description of an action, as in "
                              , quoteColor
                              , "emote laughs with relief as tears roll down her face"
+                             , dfltColor
+                             , "." ]
+
+
+adviceEmptyAdverb :: T.Text
+adviceEmptyAdverb = T.concat [ "Please provide an adverbial phrase between "
+                             , dblQuote aop
+                             , " and "
+                             , dblQuote acl
+                             , adverbExample ]
+
+
+adviceEmptySay :: T.Text
+adviceEmptySay = "Please also specify what you'd like to say" <> adverbExample
+
+
+adviceEmptySayTo :: T.Text
+adviceEmptySayTo  = T.concat [ "Please also specify what you'd like to say, as in "
+                             , quoteColor
+                             , "say "
+                             , T.singleton sayToChar
+                             , "taro nice to meet you, too"
                              , dfltColor
                              , "." ]
 
@@ -245,6 +288,34 @@ adviceSayNoArgs = T.concat [ "Please specify what you'd like to say, as in "
                            , "say nice to meet you, too"
                            , dfltColor
                            , "." ]
+
+
+adviceSettings :: T.Text
+adviceSettings = T.concat [ " Please specify the setting you want to change, followed immediately by "
+                          , dblQuote "="
+                          , ", followed immediately by the new value you want to assign, as in "
+                          , quoteColor
+                          , "set columns=80"
+                          , dfltColor
+                          , "." ]
+
+
+adviceShowNoArgs :: T.Text
+adviceShowNoArgs = T.concat [ "Please specify one or more items to show followed by the name of a person, as in "
+                            , quoteColor
+                            , "show ring taro"
+                            , dfltColor
+                            , "." ]
+
+
+adviceShowNoName :: T.Text -> T.Text
+adviceShowNoName a = T.concat [ "Please also provide the name of a person, as in "
+                              , quoteColor
+                              , "show "
+                              , a
+                              , " taro"
+                              , dfltColor
+                              , "." ]
 
 
 adviceYouEmote :: T.Text

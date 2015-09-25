@@ -2113,7 +2113,7 @@ say p@AdviseNoArgs                    = advise p ["say"] adviceSayNoArgs
 say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
   | getPlaFlag IsIncognito . getPla i $ ms -> wrapSend mq cols . sorryIncog $ "say"
   | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
-    Left  msg -> adviseHelper msg
+    Left  msg                    -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
         then sayTo (Just adverb) (T.tail rest) |&| modifyState >=> bcastAndLog
@@ -2124,36 +2124,13 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     else adviseHelper adviceEmptySayTo
   | otherwise -> simpleSayHelper ms Nothing (T.unwords args) >>= bcastAndLog
   where
+    adviseHelper                = advise p ["say"]
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
-      (_,   "")            -> Left  adviceCloseChar
+      (_,   "")            -> Left  adviceAdverbCloseChar
       ("",  _ )            -> Left  adviceEmptyAdverb
       (" ", _ )            -> Left  adviceEmptyAdverb
-      (_,   x ) | x == acc -> Left  adviceEmptySay
+      (_,   x ) | x == acl -> Left  adviceEmptySay
       (adverb, right)      -> Right (adverb, T.drop 2 right)
-    aoc               = T.singleton adverbOpenChar
-    acc               = T.singleton adverbCloseChar
-    adviceCloseChar   = "An adverbial phrase must be terminated with a " <> dblQuote acc <> example
-    example           = T.concat [ ", as in "
-                                 , quoteColor
-                                 , "say "
-                                 , quoteWith' (aoc, acc) "enthusiastically"
-                                 , " nice to meet you, too"
-                                 , dfltColor
-                                 , "." ]
-    adviceEmptyAdverb = T.concat [ "Please provide an adverbial phrase between "
-                                 , dblQuote aoc
-                                 , " and "
-                                 , dblQuote acc
-                                 , example ]
-    adviceEmptySay    = "Please also specify what you'd like to say" <> example
-    adviceEmptySayTo  = T.concat [ "Please also specify what you'd like to say, as in "
-                                 , quoteColor
-                                 , "say "
-                                 , T.singleton sayToChar
-                                 , "taro nice to meet you, too"
-                                 , dfltColor
-                                 , "." ]
-    adviseHelper      = advise p ["say"]
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d              = mkStdDesig i ms DoCap
             invCoins       = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
@@ -2265,14 +2242,7 @@ helperSettings :: Id -> MudState -> (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla,
 helperSettings _ _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
       let msg    = dblQuote arg <> " is not a valid argument."
-          advice = T.concat [ " Please specify the setting you want to change, followed immediately by "
-                            , dblQuote "="
-                            , ", followed immediately by the new value you want to assign, as in "
-                            , quoteColor
-                            , "set columns=80"
-                            , dfltColor
-                            , "." ]
-          f      = any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ])
+          f      = any (adviceSettings `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> adviceSettings ])
       in a & _2 %~ f
 helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
     findFullNameForAbbrev name (map fst . mkSettingPairs i $ ms) |&| maybe notFound found
@@ -2324,22 +2294,8 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 
 
 showAction :: Action
-showAction p@AdviseNoArgs = advise p ["show"] advice
-  where
-    advice = T.concat [ "Please specify one or more items to show followed by the name of a person, as in "
-                      , quoteColor
-                      , "show ring taro"
-                      , dfltColor
-                      , "." ]
-showAction p@(AdviseOneArg a) = advise p ["show"] advice
-  where
-    advice = T.concat [ "Please also provide the name of a person, as in "
-                      , quoteColor
-                      , "show "
-                      , a
-                      , " taro"
-                      , dfltColor
-                      , "." ]
+showAction p@AdviseNoArgs     = advise p ["show"] adviceShowNoArgs
+showAction p@(AdviseOneArg a) = advise p ["show"] . adviceShowNoName $ a
 showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms

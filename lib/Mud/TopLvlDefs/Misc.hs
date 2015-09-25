@@ -40,7 +40,9 @@ dfltPrompt :: T.Text
 dfltPrompt = promptColor <> "->" <> dfltColor
 
 
-enc, enc's, etc :: T.Text
+acl, aop, enc, enc's, etc :: T.Text
+acl   = T.singleton adverbCloseChar
+aop   = T.singleton adverbOpenChar
 enc   = T.singleton emoteNameChar
 enc's = enc <> "'s"
 etc   = T.singleton emoteTargetChar
