@@ -2545,22 +2545,8 @@ mkSlotDesc i ms s = case s of
 
 
 tele :: Action
-tele p@AdviseNoArgs = advise p ["telepathy"] advice
-  where
-    advice = T.concat [ "Please provide the name of a person followed by a message to send, as in "
-                      , quoteColor
-                      , "telepathy taro i'll meet you there in a few"
-                      , dfltColor
-                      , "." ]
-tele p@(AdviseOneArg a) = advise p ["telepathy"] advice
-  where
-    advice = T.concat [ "Please also provide a message to send, as in "
-                      , quoteColor
-                      , "telepathy "
-                      , a
-                      , " i'll meet you there in a few"
-                      , dfltColor
-                      , "." ]
+tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
+tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a
 tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let (s, p) = (getSing i ms, getPla i ms) in if getPlaFlag IsIncognito p
       then wrapSend mq cols . sorryIncog $ "telepathy"
@@ -2732,9 +2718,9 @@ tune p = patternMatchFail "tune" [ showText p ]
 
 helperTune :: Sing -> (TeleLinkTbl, [Chan], [T.Text], [T.Text]) -> T.Text -> (TeleLinkTbl, [Chan], [T.Text], [T.Text])
 helperTune _ a arg@(T.length . T.filter (== '=') -> noOfEqs)
-  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ sorryTune arg
+  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ adviceTune arg
 helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> value)) = case lookup value inOutOnOffs of
-  Nothing  -> a & _3 %~ sorryTune arg
+  Nothing  -> a & _3 %~ adviceTune arg
   Just val -> let connNames = "all" : linkNames ++ chanNames
               in findFullNameForAbbrev name connNames |&| maybe notFound (found val)
   where
@@ -2759,39 +2745,12 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
                         in appendMsg (match^.chanName) & _2 .~ (match & chanConnTbl.at s .~ Just val) : others
 
 
-sorryTune :: T.Text -> [T.Text] -> [T.Text]
-sorryTune arg msgs =
-    let msg    = dblQuote arg <> " is not a valid argument."
-        advice = T.concat [ " Please specify the name of the connection you want to tune, followed immediately by "
-                          , dblQuote "="
-                          , ", followed immediately by "
-                          , dblQuote "in"
-                          , "/"
-                          , dblQuote "out"
-                          , " or "
-                          , dblQuote "on"
-                          , "/"
-                          , dblQuote "off"
-                          , ", as in "
-                          , quoteColor
-                          , "tune taro=in"
-                          , dfltColor
-                          , "." ]
-    in msgs |&| (any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ]))
-
-
 -----
 
 
 typo :: Action
-typo p@AdviseNoArgs = advise p ["typo"] advice
-  where
-    advice = T.concat [ "Please describe the typo you've found, as in "
-                      , quoteColor
-                      , "typo 'accross from the fireplace' should be 'across from the fireplace'"
-                      , dfltColor
-                      , "." ]
-typo p = bugTypoLogger p TypoLog
+typo p@AdviseNoArgs = advise p ["typo"] adviceTypoNoArgs
+typo p              = bugTypoLogger p TypoLog
 
 
 -----
@@ -2799,13 +2758,7 @@ typo p = bugTypoLogger p TypoLog
 
 -- TODO: Unlinking should cost psionic points.
 unlink :: Action
-unlink p@AdviseNoArgs = advise p ["unlink"] advice
-  where
-    advice = T.concat [ "Please provide the full name of the person with whom you would like to unlink, as in "
-                      , quoteColor
-                      , "unlink taro"
-                      , dfltColor
-                      , "." ]
+unlink p@AdviseNoArgs          = advise p ["unlink"] adviceUnlinkNoArgs
 unlink (LowerNub i mq cols as) =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
                        | otherwise         = (id,           ""      )
@@ -2860,13 +2813,7 @@ unlink p = patternMatchFail "unlink" [ showText p ]
 
 
 unready :: Action
-unready p@AdviseNoArgs = advise p ["unready"] advice
-  where
-    advice = T.concat [ "Please specify one or more items to unready, as in "
-                      , quoteColor
-                      , "unready sword"
-                      , dfltColor
-                      , "." ]
+unready p@AdviseNoArgs   = advise p ["unready"] adviceUnreadyNoArgs
 unready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "unready" i
   where

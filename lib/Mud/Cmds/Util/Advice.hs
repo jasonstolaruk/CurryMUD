@@ -26,6 +26,12 @@ module Mud.Cmds.Util.Advice ( adviceAdminNoMsg
                             , adviceSettings
                             , adviceShowNoArgs
                             , adviceShowNoName
+                            , adviceTeleNoArgs
+                            , adviceTeleNoMsg
+                            , adviceTune
+                            , adviceTypoNoArgs
+                            , adviceUnlinkNoArgs
+                            , adviceUnreadyNoArgs
                             , adviceYouEmote
                             , adviceYouEmoteChar
                             , advise ) where
@@ -37,6 +43,7 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -316,6 +323,69 @@ adviceShowNoName a = T.concat [ "Please also provide the name of a person, as in
                               , " taro"
                               , dfltColor
                               , "." ]
+
+
+adviceTeleNoArgs :: T.Text
+adviceTeleNoArgs = T.concat [ "Please provide the name of a person followed by a message to send, as in "
+                            , quoteColor
+                            , "telepathy taro i'll meet you there in a few"
+                            , dfltColor
+                            , "." ]
+
+
+adviceTeleNoMsg :: T.Text -> T.Text
+adviceTeleNoMsg a = T.concat [ "Please also provide a message to send, as in "
+                             , quoteColor
+                             , "telepathy "
+                             , a
+                             , " i'll meet you there in a few"
+                             , dfltColor
+                             , "." ]
+
+
+adviceTune :: T.Text -> [T.Text] -> [T.Text]
+adviceTune arg msgs =
+    let msg    = dblQuote arg <> " is not a valid argument."
+        advice = T.concat [ " Please specify the name of the connection you want to tune, followed immediately by "
+                          , dblQuote "="
+                          , ", followed immediately by "
+                          , dblQuote "in"
+                          , "/"
+                          , dblQuote "out"
+                          , " or "
+                          , dblQuote "on"
+                          , "/"
+                          , dblQuote "off"
+                          , ", as in "
+                          , quoteColor
+                          , "tune taro=in"
+                          , dfltColor
+                          , "." ]
+    in msgs |&| (any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ]))
+
+
+adviceTypoNoArgs :: T.Text
+adviceTypoNoArgs = T.concat [ "Please describe the typo you've found, as in "
+                            , quoteColor
+                            , "typo 'accross from the fireplace' should be 'across from the fireplace'"
+                            , dfltColor
+                            , "." ]
+
+
+adviceUnlinkNoArgs :: T.Text
+adviceUnlinkNoArgs = T.concat [ "Please provide the full name of the person with whom you would like to unlink, as in "
+                              , quoteColor
+                              , "unlink taro"
+                              , dfltColor
+                              , "." ]
+
+
+adviceUnreadyNoArgs :: T.Text
+adviceUnreadyNoArgs = T.concat [ "Please specify one or more items to unready, as in "
+                               , quoteColor
+                               , "unready sword"
+                               , dfltColor
+                               , "." ]
 
 
 adviceYouEmote :: T.Text
