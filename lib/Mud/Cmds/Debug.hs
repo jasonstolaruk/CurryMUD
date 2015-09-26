@@ -131,10 +131,6 @@ mkDebugCmd (prefixDebugCmd -> cn) act cd = Cmd { cmdName           = cn
                                                , cmdDesc           = cd }
 
 
-prefixDebugCmd :: T.Text -> CmdName
-prefixDebugCmd = prefixCmd debugCmdChar
-
-
 -----
 
 
@@ -235,14 +231,7 @@ mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
 
 
 debugId :: Action
-debugId p@AdviseNoArgs = advise p [] advice
-  where
-    advice = T.concat [ "Please specify an ID to search for, as in "
-                      , quoteColor
-                      , prefixDebugCmd "id"
-                      , " 100"
-                      , dfltColor
-                      , "." ]
+debugId p@AdviseNoArgs       = advise p [] adviceDIdNoId
 debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
   _                -> sorryParse
@@ -274,14 +263,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
               plaTblList = tblToList plaTbl ms
           mapM_ (multiWrapSend mq cols) mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
-debugId p = advise p [] advice
-  where
-    advice = T.concat [ "Please provide one argument: the ID to search for, as in "
-                      , quoteColor
-                      , prefixDebugCmd "id"
-                      , " 100"
-                      , dfltColor
-                      , "." ]
+debugId p = advise p [] adviceDIdArgs
 
 
 sorryWtf :: MsgQueue -> Cols -> MudStack ()
@@ -351,22 +333,8 @@ type Base = Int
 
 
 debugNumber :: Action
-debugNumber p@AdviseNoArgs = advise p [] advice
-  where
-    advice = T.concat [ "Please specify a number followed by its base, as in "
-                      , quoteColor
-                      , prefixDebugCmd "number"
-                      , " a 16"
-                      , dfltColor
-                      , "." ]
-debugNumber p@(AdviseOneArg _) = advise p [] advice
-  where
-    advice = T.concat [ "Please also specify base, as in "
-                      , quoteColor
-                      , prefixDebugCmd "number"
-                      , " a 16"
-                      , dfltColor
-                      , "." ]
+debugNumber p@AdviseNoArgs     = advise p [] adviceDNumberNoArgs
+debugNumber p@(AdviseOneArg _) = advise p [] adviceDNumberNoBase
 debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
     case reads . T.unpack $ baseTxt :: [(Base, String)] of
       [(base, "")] | not . inRange (2, 36) $ base -> sorryParseBase
@@ -382,14 +350,7 @@ debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
                                                        , " is not a valid number in base "
                                                        , showText base
                                                        , "." ]
-debugNumber p = advise p [] advice
-  where
-    advice = T.concat [ "Please provide two arguments: a number and its base, as in "
-                      , quoteColor
-                      , prefixDebugCmd "number"
-                      , " a 16"
-                      , dfltColor
-                      , "." ]
+debugNumber p = advise p [] adviceDNumberArgs
 
 
 inBase :: T.Text -> Base -> [(Int, String)]
@@ -648,14 +609,7 @@ debugUnderline p = withoutArgs debugUnderline p
 
 
 debugWeight :: Action
-debugWeight p@AdviseNoArgs = advise p [] advice
-  where
-    advice = T.concat [ "Please specify an ID for which you would like to calculate weight, as in "
-                      , quoteColor
-                      , prefixDebugCmd "weight"
-                      , " 100"
-                      , dfltColor
-                      , "." ]
+debugWeight p@AdviseNoArgs       = advise p [] adviceDWeightNoArgs
 debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
   _                -> wrapSend mq cols $ dblQuote a <> " is not a valid ID."
@@ -665,28 +619,14 @@ debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] 
       | otherwise    = do
           send mq . nlnl . showText . calcWeight searchId =<< getState
           logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
-debugWeight p = advise p [] advice
-  where
-    advice = T.concat [ "Please provide one argument: the ID for which you would like to calculate weight, as in "
-                      , quoteColor
-                      , prefixDebugCmd "weight"
-                      , " 100"
-                      , dfltColor
-                      , "." ]
+debugWeight p = advise p [] adviceDWeightArgs
 
 
 -----
 
 
 debugWrap :: Action
-debugWrap p@AdviseNoArgs = advise p [] advice
-  where
-    advice = T.concat [ "Please specify line length, as in "
-                      , quoteColor
-                      , prefixDebugCmd "wrap"
-                      , " 40"
-                      , dfltColor
-                      , "." ]
+debugWrap p@AdviseNoArgs       = advise p [] adviceDWrapNoArgs
 debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(lineLen, "")] -> helper lineLen
   _               -> sorryParse
@@ -697,14 +637,7 @@ debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                    | otherwise                                  = do
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
                        logPlaExecArgs (prefixDebugCmd "wrap") (pure a) i
-debugWrap p = advise p [] advice
-  where
-    advice = T.concat [ "Please provide one argument: line length, as in "
-                      , quoteColor
-                      , prefixDebugCmd "wrap"
-                      , " 40"
-                      , dfltColor
-                      , "." ]
+debugWrap p = advise p [] adviceDWrapArgs
 
 
 wrapSorryLineLen :: MsgQueue -> Cols -> MudStack ()
@@ -730,22 +663,8 @@ wrapMsg = (<> dfltColor) . T.unwords $ wordy
 
 
 debugWrapIndent :: Action
-debugWrapIndent p@AdviseNoArgs = advise p [] advice
-  where
-    advice = T.concat [ "Please specify line length followed by indent amount, as in "
-                      , quoteColor
-                      , prefixDebugCmd "wrapindent"
-                      , " 40 4"
-                      , dfltColor
-                      , "." ]
-debugWrapIndent p@(AdviseOneArg _) = advise p [] advice
-  where
-    advice = T.concat [ "Please also specify indent amount, as in "
-                      , quoteColor
-                      , prefixDebugCmd "wrapindent"
-                      , " 40 4"
-                      , dfltColor
-                      , "." ]
+debugWrapIndent p@AdviseNoArgs     = advise p [] adviceDWrapIndentNoArgs
+debugWrapIndent p@(AdviseOneArg _) = advise p [] adviceDWrapIndentNoAmt
 debugWrapIndent (WithArgs i mq cols [a, b]) = do
     parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
     unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
@@ -762,11 +681,4 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
                               send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
                               logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
     sorryIndent = wrapSend mq cols "The indent amount must be less than the line length."
-debugWrapIndent p = advise p [] advice
-  where
-    advice = T.concat [ "Please provide two arguments: line length and indent amount, as in "
-                      , quoteColor
-                      , prefixDebugCmd "wrapindent"
-                      , " 40 4"
-                      , dfltColor
-                      , "." ]
+debugWrapIndent p = advise p [] adviceDWrapIndentArgs

@@ -2242,7 +2242,8 @@ helperSettings :: Id -> MudState -> (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla,
 helperSettings _ _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
       let msg    = dblQuote arg <> " is not a valid argument."
-          f      = any (adviceSettings `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> adviceSettings ])
+          f      = any (adviceSettingsInvalid `T.isInfixOf`) msgs ?  (++ pure msg)
+                                                                  :? (++ [ msg <> adviceSettingsInvalid ])
       in a & _2 %~ f
 helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
     findFullNameForAbbrev name (map fst . mkSettingPairs i $ ms) |&| maybe notFound found
@@ -2718,9 +2719,9 @@ tune p = patternMatchFail "tune" [ showText p ]
 
 helperTune :: Sing -> (TeleLinkTbl, [Chan], [T.Text], [T.Text]) -> T.Text -> (TeleLinkTbl, [Chan], [T.Text], [T.Text])
 helperTune _ a arg@(T.length . T.filter (== '=') -> noOfEqs)
-  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ adviceTune arg
+  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ adviceTuneInvalid arg
 helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> value)) = case lookup value inOutOnOffs of
-  Nothing  -> a & _3 %~ adviceTune arg
+  Nothing  -> a & _3 %~ adviceTuneInvalid arg
   Just val -> let connNames = "all" : linkNames ++ chanNames
               in findFullNameForAbbrev name connNames |&| maybe notFound (found val)
   where

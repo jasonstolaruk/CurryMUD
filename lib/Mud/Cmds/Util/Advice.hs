@@ -8,11 +8,23 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAPrintNoMsg
-                            , adviceATeleRm
+                            , adviceATeleRmArgs
                             , adviceBugNoDesc
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
+                            , adviceDIdArgs
+                            , adviceDIdNoId
+                            , adviceDNumberArgs
+                            , adviceDNumberNoArgs
+                            , adviceDNumberNoBase
                             , adviceDropNoArgs
+                            , adviceDWeightArgs
+                            , adviceDWeightNoArgs
+                            , adviceDWrapArgs
+                            , adviceDWrapIndentArgs
+                            , adviceDWrapIndentNoAmt
+                            , adviceDWrapIndentNoArgs
+                            , adviceDWrapNoArgs
                             , adviceEmoteNoDesc
                             , adviceEmptyAdverb
                             , adviceEmptySay
@@ -30,12 +42,12 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceRemoveNoArgs
                             , adviceRemoveNoCon
                             , adviceSayNoArgs
-                            , adviceSettings
+                            , adviceSettingsInvalid
                             , adviceShowNoArgs
                             , adviceShowNoName
                             , adviceTeleNoArgs
                             , adviceTeleNoMsg
-                            , adviceTune
+                            , adviceTuneInvalid
                             , adviceTypoNoArgs
                             , adviceUnlinkNoArgs
                             , adviceUnreadyNoArgs
@@ -140,13 +152,126 @@ adviceAPrintNoMsg = T.concat [ "You must provide a message to print to the serve
                              , "." ]
 
 
-adviceATeleRm :: T.Text
-adviceATeleRm = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
+adviceATeleRmArgs :: T.Text
+adviceATeleRmArgs = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as \
+                               \in "
+                             , quoteColor
+                             , prefixAdminCmd "telerm"
+                             , " lounge"
+                             , dfltColor
+                             , "." ]
+
+
+-----
+
+
+adviceDIdArgs :: T.Text
+adviceDIdArgs = T.concat [ "Please provide one argument: the ID to search for, as in "
                          , quoteColor
-                         , prefixAdminCmd "telerm"
-                         , " lounge"
+                         , prefixDebugCmd "id"
+                         , " 100"
                          , dfltColor
                          , "." ]
+
+
+adviceDIdNoId :: T.Text
+adviceDIdNoId = T.concat [ "Please specify an ID to search for, as in "
+                         , quoteColor
+                         , prefixDebugCmd "id"
+                         , " 100"
+                         , dfltColor
+                         , "." ]
+
+
+adviceDNumberArgs :: T.Text
+adviceDNumberArgs = T.concat [ "Please provide two arguments: a number and its base, as in "
+                             , quoteColor
+                             , prefixDebugCmd "number"
+                             , " a 16"
+                             , dfltColor
+                             , "." ]
+
+
+adviceDNumberNoArgs :: T.Text
+adviceDNumberNoArgs = T.concat [ "Please specify a number followed by its base, as in "
+                               , quoteColor
+                               , prefixDebugCmd "number"
+                               , " a 16"
+                               , dfltColor
+                               , "." ]
+
+
+adviceDNumberNoBase :: T.Text
+adviceDNumberNoBase = T.concat [ "Please also specify base, as in "
+                               , quoteColor
+                               , prefixDebugCmd "number"
+                               , " a 16"
+                               , dfltColor
+                               , "." ]
+
+
+adviceDWeightArgs :: T.Text
+adviceDWeightArgs = T.concat [ "Please provide one argument: the ID for which you would like to calculate weight, as \
+                               \in "
+                             , quoteColor
+                             , prefixDebugCmd "weight"
+                             , " 100"
+                             , dfltColor
+                             , "." ]
+
+
+adviceDWeightNoArgs :: T.Text
+adviceDWeightNoArgs = T.concat [ "Please specify an ID for which you would like to calculate weight, as in "
+                               , quoteColor
+                               , prefixDebugCmd "weight"
+                               , " 100"
+                               , dfltColor
+                               , "." ]
+
+
+adviceDWrapArgs :: T.Text
+adviceDWrapArgs = T.concat [ "Please provide one argument: line length, as in "
+                           , quoteColor
+                           , prefixDebugCmd "wrap"
+                           , " 40"
+                           , dfltColor
+                           , "." ]
+
+
+adviceDWrapNoArgs :: T.Text
+adviceDWrapNoArgs =  T.concat [ "Please specify line length, as in "
+                              , quoteColor
+                              , prefixDebugCmd "wrap"
+                              , " 40"
+                              , dfltColor
+                              , "." ]
+
+
+adviceDWrapIndentArgs :: T.Text
+adviceDWrapIndentArgs = T.concat [ "Please provide two arguments: line length and indent amount, as in "
+                                 , quoteColor
+                                 , prefixDebugCmd "wrapindent"
+                                 , " 40 4"
+                                 , dfltColor
+                                 , "." ]
+
+
+adviceDWrapIndentNoAmt :: T.Text
+adviceDWrapIndentNoAmt = T.concat [ "Please also specify indent amount, as in "
+                                  , quoteColor
+                                  , prefixDebugCmd "wrapindent"
+                                  , " 40 4"
+                                  , dfltColor
+                                  , "." ]
+
+
+adviceDWrapIndentNoArgs :: T.Text
+adviceDWrapIndentNoArgs = T.concat [ "Please specify line length followed by indent amount, as in "
+                                   , quoteColor
+                                   , prefixDebugCmd "wrapindent"
+                                   , " 40 4"
+                                   , dfltColor
+                                   , "." ]
 
 
 -----
@@ -374,14 +499,14 @@ adviceSayNoArgs = T.concat [ "Please specify what you'd like to say, as in "
                            , "." ]
 
 
-adviceSettings :: T.Text
-adviceSettings = T.concat [ " Please specify the setting you want to change, followed immediately by "
-                          , dblQuote "="
-                          , ", followed immediately by the new value you want to assign, as in "
-                          , quoteColor
-                          , "set columns=80"
-                          , dfltColor
-                          , "." ]
+adviceSettingsInvalid :: T.Text
+adviceSettingsInvalid = T.concat [ " Please specify the setting you want to change, followed immediately by "
+                                 , dblQuote "="
+                                 , ", followed immediately by the new value you want to assign, as in "
+                                 , quoteColor
+                                 , "set columns=80"
+                                 , dfltColor
+                                 , "." ]
 
 
 adviceShowNoArgs :: T.Text
@@ -420,8 +545,8 @@ adviceTeleNoMsg a = T.concat [ "Please also provide a message to send, as in "
                              , "." ]
 
 
-adviceTune :: T.Text -> [T.Text] -> [T.Text]
-adviceTune arg msgs =
+adviceTuneInvalid :: T.Text -> [T.Text] -> [T.Text]
+adviceTuneInvalid arg msgs =
     let msg    = dblQuote arg <> " is not a valid argument."
         advice = T.concat [ " Please specify the name of the connection you want to tune, followed immediately by "
                           , dblQuote "="

@@ -862,7 +862,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
                                                 , dfltColor
                                                 , " with no arguments to get a list of valid room names." ]
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
-adminTeleRm p = advise p [] adviceATeleRm
+adminTeleRm p = advise p [] adviceATeleRmArgs
 
 
 -----

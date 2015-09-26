@@ -38,6 +38,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , plusRelated
                           , prefixAdminCmd
                           , prefixCmd
+                          , prefixDebugCmd
                           , punc
                           , questionChanContext
                           , sendGenericErrorMsg
@@ -529,6 +530,10 @@ plusRelated = (<> ".") . (<> parensQuote "plus related functionality") . (<> " "
 
 prefixAdminCmd :: T.Text -> CmdName
 prefixAdminCmd = prefixCmd adminCmdChar
+
+
+prefixDebugCmd :: T.Text -> CmdName
+prefixDebugCmd = prefixCmd debugCmdChar
 
 
 prefixCmd :: Char -> CmdName -> T.Text
