@@ -773,8 +773,7 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                 | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not isAdmin)
                                               & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not isAdmin), fs)
         xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
-adminSudoer (ActionParams { plaMsgQueue, plaCols }) =
-    wrapSend plaMsgQueue plaCols "Sorry, but you can only promote/demote one player at a time."
+adminSudoer p = advise p [] adviceASudoerArgs
 
 
 -----

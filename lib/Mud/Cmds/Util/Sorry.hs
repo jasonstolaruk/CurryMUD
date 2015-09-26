@@ -5,6 +5,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 
@@ -114,3 +115,14 @@ sorryNotTunedChan x mq cols y = wrapSend mq cols . T.concat $ [ "You have tuned 
 
 sorryNotTunedOOCChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryNotTunedOOCChan = sorryNotTunedChan "set"
+
+
+-----
+
+
+sorryWrapLineLen :: MsgQueue -> Cols -> MudStack ()
+sorryWrapLineLen mq cols = wrapSend mq cols . T.concat $ [ "The line length must be between "
+                                                         , showText minCols
+                                                         , " and "
+                                                         , showText maxCols
+                                                         , " characters." ]

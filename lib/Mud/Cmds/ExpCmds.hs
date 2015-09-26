@@ -6,6 +6,7 @@ module Mud.Cmds.ExpCmds ( expCmdSet
                         , getExpCmdByName
                         , mkExpAction ) where
 
+import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
 import Mud.Cmds.Util.Sorry
@@ -716,8 +717,8 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _) -> cn' == cn) $
 
 
 expCmd :: ExpCmdName -> ExpCmdType -> Action
-expCmd ecn (HasTarget {}) (NoArgs   _ mq cols) = wrapSend mq cols . sorryExpCmdRequiresTarget $ ecn
-expCmd ecn ect            (NoArgs'' i        ) = case ect of
+expCmd ecn (HasTarget {}) p@(NoArgs   {}) = advise p [] . sorryExpCmdRequiresTarget $ ecn
+expCmd ecn ect              (NoArgs'' i ) = case ect of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
@@ -730,8 +731,8 @@ expCmd ecn ect            (NoArgs'' i        ) = case ect of
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBroadcast           = pure (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
         in bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast >> (logPlaOut ecn i . pure $ toSelf)
-expCmd ecn (NoTarget {}) (WithArgs     _ mq cols (_:_) ) = wrapSend mq cols . sorryExpCmdWithTarget $ ecn
-expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
+expCmd ecn (NoTarget {}) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdWithTarget $ ecn
+expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
@@ -746,8 +747,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
               (_,                    Right _:_           ) -> sendHelper "Sorry, but expressive commands cannot be \
                                                                          \used with coins."
               ([ Left sorryMsg    ], _                   ) -> sendHelper sorryMsg
-              ([ Right (_:_:_)    ], _                   ) -> sendHelper "Sorry, but you can only target one person at \
-                                                                         \a time with expressive commands."
+              ([ Right (_:_:_)    ], _                   ) -> sendHelper adviceExpCmdArgs
               ([ Right [targetId] ], _                   ) ->
                 let onPC targetDesigTxt =
                         let (toSelf', toSelfBroadcast, toOthers', substitutions) = mkBindings targetDesigTxt
@@ -788,8 +788,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
         loc' = case loc of InInv -> "inventory"
                            InEq  -> "readied equipment"
                            _     -> patternMatchFail "expCmd sorry loc'" [ showText loc ]
-expCmd _ _ (ActionParams { plaMsgQueue, plaCols }) =
-    wrapSend plaMsgQueue plaCols "Sorry, but you can only target one person at a time with expressive commands."
+expCmd _ _ p = advise p [] adviceExpCmdArgs
 
 
 mkSerializedDesig :: PCDesig -> T.Text -> T.Text

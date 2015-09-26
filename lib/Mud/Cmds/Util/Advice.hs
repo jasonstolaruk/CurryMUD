@@ -8,6 +8,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAPrintNoMsg
+                            , adviceASudoerArgs
                             , adviceATeleRmArgs
                             , adviceBugNoDesc
                             , adviceConnectNoArgs
@@ -33,6 +34,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceEtc
                             , adviceEtcEmptyPoss
                             , adviceEtcHead
+                            , adviceExpCmdArgs
                             , adviceGetNoArgs
                             , adviceLeaveNoChans
                             , adviceNewChanNoNames
@@ -149,6 +151,10 @@ adviceAPrintNoMsg = T.concat [ "You must provide a message to print to the serve
                              , " is anybody home?"
                              , dfltColor
                              , "." ]
+
+
+adviceASudoerArgs :: T.Text
+adviceASudoerArgs = "Sorry, but you can only promote/demote one player at a time."
 
 
 adviceATeleRmArgs :: T.Text
@@ -418,6 +424,10 @@ adviceEtcEmptyPoss = T.concat [ "You must specify the name of the person you wan
 
 adviceEtcHead :: T.Text
 adviceEtcHead = "You can't begin an emote with a target."
+
+
+adviceExpCmdArgs :: T.Text
+adviceExpCmdArgs = "Sorry, but you can only target one person at a time with expressive commands."
 
 
 adviceGetNoArgs :: T.Text

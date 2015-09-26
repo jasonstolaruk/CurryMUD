@@ -7,6 +7,7 @@ module Mud.Cmds.Debug ( debugCmds
 
 import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -633,19 +634,11 @@ debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   where
     sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     helper lineLen | lineLen < 0                                = sorryWtf         mq cols
-                   | not . inRange (minCols, maxCols) $ lineLen = wrapSorryLineLen mq cols
+                   | not . inRange (minCols, maxCols) $ lineLen = sorryWrapLineLen mq cols
                    | otherwise                                  = do
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
                        logPlaExecArgs (prefixDebugCmd "wrap") (pure a) i
 debugWrap p = advise p [] adviceDWrapArgs
-
-
-wrapSorryLineLen :: MsgQueue -> Cols -> MudStack ()
-wrapSorryLineLen mq cols = wrapSend mq cols . T.concat $ [ "The line length must be between "
-                                                         , showText minCols
-                                                         , " and "
-                                                         , showText maxCols
-                                                         , " characters." ]
 
 
 wrapMsg :: T.Text
@@ -675,7 +668,7 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
     sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
     sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
     helper lineLen indent | any (< 0) [ lineLen, indent ]              = sorryWtf         mq cols
-                          | not . inRange (minCols, maxCols) $ lineLen = wrapSorryLineLen mq cols
+                          | not . inRange (minCols, maxCols) $ lineLen = sorryWrapLineLen mq cols
                           | indent >= lineLen                          = sorryIndent
                           | otherwise                                  = do
                               send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
