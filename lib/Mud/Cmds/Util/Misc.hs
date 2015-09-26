@@ -36,6 +36,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkWhoHeader
                           , pager
                           , plusRelated
+                          , prefixAdminCmd
                           , prefixCmd
                           , punc
                           , questionChanContext
@@ -524,6 +525,10 @@ plusRelated = (<> ".") . (<> parensQuote "plus related functionality") . (<> " "
 
 
 -----
+
+
+prefixAdminCmd :: T.Text -> CmdName
+prefixAdminCmd = prefixCmd adminCmdChar
 
 
 prefixCmd :: Char -> CmdName -> T.Text

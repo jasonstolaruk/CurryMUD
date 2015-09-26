@@ -1,6 +1,9 @@
 {-# LANGUAGE ViewPatterns #-}
 
-module Mud.Cmds.Util.Advice ( adviceAdminNoMsg
+module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
+                            , adviceABanHostNoReason
+                            , adviceABanPlaNoReason
+                            , adviceAdminNoMsg
                             , adviceAdverbCloseChar
                             , adviceBugNoDesc
                             , adviceConnectNoArgs
@@ -36,6 +39,7 @@ module Mud.Cmds.Util.Advice ( adviceAdminNoMsg
                             , adviceYouEmoteChar
                             , advise ) where
 
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
@@ -70,6 +74,38 @@ advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
+
+
+-----
+
+
+adviceAAnnounceNoMsg :: T.Text
+adviceAAnnounceNoMsg = T.concat [ "You must provide a message to send, as in "
+                                , quoteColor
+                                , prefixAdminCmd "announce"
+                                , " CurryMUD will be shutting down for maintenance in 30 minutes"
+                                , dfltColor
+                                , "." ]
+
+
+adviceABanHostNoReason :: T.Text -> T.Text
+adviceABanHostNoReason a = T.concat [ "Please also provide a reason, as in "
+                                    , quoteColor
+                                    , prefixAdminCmd "banhost "
+                                    , a
+                                    , " used by Taro"
+                                    , dfltColor
+                                    , "." ]
+
+
+adviceABanPlaNoReason :: T.Text -> T.Text
+adviceABanPlaNoReason a = T.concat [ "Please also provide a reason, as in "
+                                   , quoteColor
+                                   , prefixAdminCmd "banplayer "
+                                   , a
+                                   , " for harassing hanako"
+                                   , dfltColor
+                                   , "." ]
 
 
 -----

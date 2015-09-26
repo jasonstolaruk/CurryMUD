@@ -110,7 +110,7 @@ adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
     , mkAdminCmd "admin"     adminAdmin       . plusRelated $ "Send a message on the admin channel"
     , mkAdminCmd "banhost"   adminBanHost     "Dump the banned hostname database, or ban/unban a host."
-    , mkAdminCmd "banplayer" adminBanPlayer   "Dump the banned player database, or ban/unban a player."
+    , mkAdminCmd "banplayer" adminBanPla      "Dump the banned player database, or ban/unban a player."
     , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"       adminBug         "Dump the bug database."
@@ -142,10 +142,6 @@ mkAdminCmd (prefixAdminCmd -> cn) act cd = Cmd { cmdName           = cn
                                                , cmdFullName       = cn
                                                , action            = act
                                                , cmdDesc           = cd }
-
-
-prefixAdminCmd :: T.Text -> CmdName
-prefixAdminCmd = prefixCmd adminCmdChar
 
 
 -----
@@ -351,14 +347,7 @@ procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
 
 
 adminAnnounce :: Action
-adminAnnounce p@AdviseNoArgs = advise p [ prefixAdminCmd "announce" ] advice
-  where
-    advice = T.concat [ "You must provide a message to send, as in "
-                      , quoteColor
-                      , prefixAdminCmd "announce"
-                      , " CurryMUD will be shutting down for maintenance in 30 minutes"
-                      , dfltColor
-                      , "." ]
+adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoMsg
 adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     ok mq
     massSend $ announceColor <> msg <> dfltColor
@@ -374,15 +363,7 @@ adminBanHost :: Action
 adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs $ "ban_host") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
   Nothing -> sorryDbEx mq cols
-adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] advice
-  where
-    advice = T.concat [ "Please also provide a reason, as in "
-                      , quoteColor
-                      , prefixAdminCmd "banhost "
-                      , a
-                      , " used by Taro"
-                      , dfltColor
-                      , "." ]
+adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] . adviceABanHostNoReason $ a
 adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
     (withDbExHandler "adminBanHost" . isHostBanned $ target) >>= \case
       Nothing      -> sorryDbEx mq cols
@@ -412,21 +393,13 @@ notifyBan i mq cols selfSing target newStatus x =
 -----
 
 
-adminBanPlayer :: Action
-adminBanPlayer (NoArgs i mq cols) = (withDbExHandler "adminBanPlayer" . getDbTblRecs $ "ban_pla") >>= \case
+adminBanPla :: Action
+adminBanPla (NoArgs i mq cols) = (withDbExHandler "adminBanPla" . getDbTblRecs $ "ban_pla") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanPlaRec]) >> logPlaExecArgs (prefixAdminCmd "banpla") [] i
   Nothing -> sorryDbEx mq cols
-adminBanPlayer p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] advice
-  where
-    advice = T.concat [ "Please also provide a reason, as in "
-                      , quoteColor
-                      , prefixAdminCmd "banplayer "
-                      , a
-                      , " for harassing hanako"
-                      , dfltColor
-                      , "." ]
-adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let fn = "adminBanPlayer"
+adminBanPla p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] . adviceABanPlaNoReason $ a
+adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+    let fn = "adminBanPla"
         SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to ban"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
       []      -> sendFun . T.concat $ [ "There is no PC by the name of "
@@ -439,16 +412,16 @@ adminBanPlayer p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                  in if
                    | banId == i             -> sendFun "You can't ban yourself."
                    | getPlaFlag IsAdmin pla -> sendFun "You can't ban an admin."
-                   | otherwise -> (withDbExHandler "adminBanPlayer" . isPlaBanned $ strippedTarget) >>= \case
+                   | otherwise -> (withDbExHandler "adminBanPla" . isPlaBanned $ strippedTarget) >>= \case
                      Nothing      -> sorryDbEx mq cols
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
                          let banPla = BanPlaRec ts strippedTarget newStatus msg
-                         withDbExHandler_ "adminBanPlayer" . insertDbTblBanPla $ banPla
+                         withDbExHandler_ "adminBanPla" . insertDbTblBanPla $ banPla
                          notifyBan i mq cols selfSing strippedTarget newStatus banPla
                          when (newStatus && isLoggedIn pla)
                               (adminBoot p { args = strippedTarget : T.words "You have been banned from CurryMUD!" })
       xs      -> patternMatchFail fn [ showText xs ]
-adminBanPlayer p = patternMatchFail "adminBanPlayer" [ showText p ]
+adminBanPla p = patternMatchFail "adminBanPla" [ showText p ]
 
 
 -----
