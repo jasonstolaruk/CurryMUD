@@ -7,6 +7,7 @@ import Mud.Cmds.Pla
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
@@ -213,7 +214,7 @@ procChanTarget :: Inv -> [Sing] -> Args -> Either T.Text [Broadcast]
 procChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
     ()# rest ? Left sorryNoMsg :? (findFullNameForAbbrev target tunedSings |&| maybe notFound found)
   where
-    notFound         = Left . sorryAdminName $ target
+    notFound         = Left . sorryAdminChanName $ target
     found targetSing =
         let targetId    = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
             msg         = capitalizeMsg . T.unwords $ rest
@@ -221,12 +222,6 @@ procChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
         in Right [ (formatMsg targetSing,                                         targetId `delete` tunedIds)
                  , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
 procChanTarget _ _ as = patternMatchFail "procChanTarget" as
-
-
-sorryAdminName :: T.Text -> T.Text
-sorryAdminName n = "There is no admin by the name of " <>
-                   (dblQuote . capitalize $ n)         <>
-                   " currently tuned in to the admin channel."
 
 
 emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
@@ -272,7 +267,7 @@ procEmote i ms tunedIds tunedSings as =
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
                 target'          = capitalize . T.toLower $ target
-                notFound         = Left . sorryAdminName $ target
+                notFound         = Left . sorryAdminChanName $ target
                 found targetSing@(addSuffix isPoss p -> targetSing') =
                     let targetId = head . filter ((== targetSing) . (`getSing` ms)) $ tunedIds
                     in Right ( targetSing'
@@ -310,7 +305,7 @@ procExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, target]) =
           HasTarget toSelf toTarget toOthers -> if ()# target
             then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of
-              Nothing -> Left . sorryAdminName $ target
+              Nothing -> Left . sorryAdminChanName $ target
               Just n  -> let targetId = getIdForPCSing n ms
                              toSelf'  = format (Just n) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
@@ -321,7 +316,7 @@ procExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, target]) =
             then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else case findTarget of
-              Nothing -> Left . sorryAdminName $ target
+              Nothing -> Left . sorryAdminChanName $ target
               Just n  -> let targetId          = getIdForPCSing n ms
                              toSelfWithTarget' = format (Just n) toSelfWithTarget
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
@@ -494,8 +489,8 @@ adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify th
 adminHost (LowerNub i mq cols as) = do
     ms          <- getState
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
-    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
-                       | otherwise         = (id,           ""      )
+    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryAdminHostIgnore)
+                       | otherwise         = (id,           ""                  )
         g = ()# guessWhat ? id :? (guessWhat :)
         helper target =
             let notFound = [ "There is no PC by the name of " <> dblQuote target <> "." ]
@@ -503,8 +498,6 @@ adminHost (LowerNub i mq cols as) = do
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . g . intercalate [""] . map (helper . capitalize . T.toLower . f) $ as
     logPlaExec (prefixAdminCmd "host") i
-  where
-    sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
 adminHost p = patternMatchFail "adminHost" [ showText p ]
 
 
@@ -654,8 +647,8 @@ adminPeep (LowerNub i mq cols as) = do
     helper ms =
         let s     = getSing i ms
             apiss = [ apis | apis@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
-            (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
-                           | otherwise         = (id,           ""      )
+            (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryAdminPeepIgnore)
+                           | otherwise         = (id,           ""                  )
             g = ()# guessWhat ? id :? (guessWhat :)
             peep target a@(pt, _, _) =
                 let notFound = a & _2 %~ ("No PC by the name of " <> dblQuote target <> " is currently logged in." :)
@@ -677,7 +670,6 @@ adminPeep (LowerNub i mq cols as) = do
                 in findFullNameForAbbrev target apiss |&| maybe notFound found
             res = foldr (peep . capitalize . f) (ms^.plaTbl, [], []) as
         in (ms & plaTbl .~ res^._1, (res^._2.to g, res^._3))
-    sorryMsg = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 
