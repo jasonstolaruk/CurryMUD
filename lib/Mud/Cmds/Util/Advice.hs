@@ -63,7 +63,6 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -545,25 +544,22 @@ adviceTeleNoMsg a = T.concat [ "Please also provide a message to send, as in "
                              , "." ]
 
 
-adviceTuneInvalid :: T.Text -> [T.Text] -> [T.Text]
-adviceTuneInvalid arg msgs =
-    let msg    = dblQuote arg <> " is not a valid argument."
-        advice = T.concat [ " Please specify the name of the connection you want to tune, followed immediately by "
-                          , dblQuote "="
-                          , ", followed immediately by "
-                          , dblQuote "in"
-                          , "/"
-                          , dblQuote "out"
-                          , " or "
-                          , dblQuote "on"
-                          , "/"
-                          , dblQuote "off"
-                          , ", as in "
-                          , quoteColor
-                          , "tune taro=in"
-                          , dfltColor
-                          , "." ]
-    in msgs |&| (any (advice `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> advice ]))
+adviceTuneInvalid :: T.Text
+adviceTuneInvalid = T.concat [ " Please specify the name of the connection you want to tune, followed immediately by "
+                             , dblQuote "="
+                             , ", followed immediately by "
+                             , dblQuote "in"
+                             , "/"
+                             , dblQuote "out"
+                             , " or "
+                             , dblQuote "on"
+                             , "/"
+                             , dblQuote "off"
+                             , ", as in "
+                             , quoteColor
+                             , "tune taro=in"
+                             , dfltColor
+                             , "." ]
 
 
 adviceTypoNoArgs :: T.Text

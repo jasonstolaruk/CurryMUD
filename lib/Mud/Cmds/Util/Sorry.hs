@@ -21,15 +21,15 @@ sorryAdminChanName n = "There is no admin by the name of " <>
 -----
 
 
-sorryAdminHostIgnore :: T.Text
-sorryAdminHostIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
+sorryHostIgnore :: T.Text
+sorryHostIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
 
 
 -----
 
 
-sorryAdminPeepIgnore :: T.Text
-sorryAdminPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
+sorryPeepIgnore :: T.Text
+sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
 
 
 -----

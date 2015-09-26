@@ -489,8 +489,8 @@ adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify th
 adminHost (LowerNub i mq cols as) = do
     ms          <- getState
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
-    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryAdminHostIgnore)
-                       | otherwise         = (id,           ""                  )
+    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryHostIgnore)
+                       | otherwise         = (id,           ""             )
         g = ()# guessWhat ? id :? (guessWhat :)
         helper target =
             let notFound = [ "There is no PC by the name of " <> dblQuote target <> "." ]
@@ -647,8 +647,8 @@ adminPeep (LowerNub i mq cols as) = do
     helper ms =
         let s     = getSing i ms
             apiss = [ apis | apis@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
-            (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryAdminPeepIgnore)
-                           | otherwise         = (id,           ""                  )
+            (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryPeepIgnore)
+                           | otherwise         = (id,           ""             )
             g = ()# guessWhat ? id :? (guessWhat :)
             peep target a@(pt, _, _) =
                 let notFound = a & _2 %~ ("No PC by the name of " <> dblQuote target <> " is currently logged in." :)
