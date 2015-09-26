@@ -5,6 +5,10 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceABanPlaNoReason
                             , adviceAdminNoMsg
                             , adviceAdverbCloseChar
+                            , adviceAMsgNoArgs
+                            , adviceAMsgNoMsg
+                            , adviceAPrintNoMsg
+                            , adviceATeleRm
                             , adviceBugNoDesc
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
@@ -106,6 +110,43 @@ adviceABanPlaNoReason a = T.concat [ "Please also provide a reason, as in "
                                    , " for harassing hanako"
                                    , dfltColor
                                    , "." ]
+
+
+adviceAMsgNoArgs :: T.Text
+adviceAMsgNoArgs = T.concat [ "Please specify the PC name of a regular player followed by a message, as in "
+                            , quoteColor
+                            , prefixAdminCmd "message"
+                            , " taro thank you for reporting the bug you found"
+                            , dfltColor
+                            , "." ]
+
+
+adviceAMsgNoMsg :: T.Text -> T.Text
+adviceAMsgNoMsg a = T.concat [ "Please also provide a message to send, as in "
+                             , quoteColor
+                             , prefixAdminCmd "message "
+                             , a
+                             , " thank you for reporting the bug you found"
+                             , dfltColor
+                             , "." ]
+
+
+adviceAPrintNoMsg :: T.Text
+adviceAPrintNoMsg = T.concat [ "You must provide a message to print to the server console, as in "
+                             , quoteColor
+                             , prefixAdminCmd "print"
+                             , " is anybody home?"
+                             , dfltColor
+                             , "." ]
+
+
+adviceATeleRm :: T.Text
+adviceATeleRm = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
+                         , quoteColor
+                         , prefixAdminCmd "telerm"
+                         , " lounge"
+                         , dfltColor
+                         , "." ]
 
 
 -----

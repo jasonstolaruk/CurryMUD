@@ -573,23 +573,8 @@ adminIp p = withoutArgs adminIp p
 
 -- TODO: Emotes and exp cmds.
 adminMsg :: Action
-adminMsg p@AdviseNoArgs = advise p [ prefixAdminCmd "message" ] advice
-  where
-    advice = T.concat [ "Please specify the PC name of a regular player followed by a message, as in "
-                      , quoteColor
-                      , prefixAdminCmd "message"
-                      , " taro thank you for reporting the bug you found"
-                      , dfltColor
-                      , "." ]
-adminMsg p@(AdviseOneArg a) = advise p [ prefixAdminCmd "message" ] advice
-  where
-    advice = T.concat [ "Please also provide a message to send, as in "
-                      , quoteColor
-                      , prefixAdminCmd "message "
-                      , a
-                      , " thank you for reporting the bug you found"
-                      , dfltColor
-                      , "." ]
+adminMsg p@AdviseNoArgs     = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
+adminMsg p@(AdviseOneArg a) = advise p [ prefixAdminCmd "message" ] . adviceAMsgNoMsg $ a
 adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     logMsgs |#| let f = uncurry (logPla "adminMsg") in mapM_ f
   where
@@ -708,14 +693,7 @@ adminPersist p              = withoutArgs adminPersist p
 
 
 adminPrint :: Action
-adminPrint p@AdviseNoArgs = advise p [ prefixAdminCmd "print" ] advice
-  where
-    advice = T.concat [ "You must provide a message to print to the server console, as in "
-                      , quoteColor
-                      , prefixAdminCmd "print"
-                      , " is anybody home?"
-                      , dfltColor
-                      , "." ]
+adminPrint p@AdviseNoArgs  = advise p [ prefixAdminCmd "print" ] adviceAPrintNoMsg
 adminPrint (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
     ok mq
@@ -884,14 +862,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
                                                 , dfltColor
                                                 , " with no arguments to get a list of valid room names." ]
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
-adminTeleRm p = advise p [] advice
-  where
-    advice = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as in "
-                      , quoteColor
-                      , prefixAdminCmd "telerm"
-                      , " lounge"
-                      , dfltColor
-                      , "." ]
+adminTeleRm p = advise p [] adviceATeleRm
 
 
 -----
