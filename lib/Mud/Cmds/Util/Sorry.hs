@@ -1,8 +1,11 @@
+{-# LANGUAGE RecordWildCards, ViewPatterns #-}
+
 module Mud.Cmds.Util.Sorry where
 
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Misc
@@ -22,15 +25,12 @@ sorryAdminChanName n = "There is no admin by the name of " <>
 -----
 
 
-sorryHostIgnore :: T.Text
-sorryHostIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
-
-
------
-
-
-sorryPeepIgnore :: T.Text
-sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
+sorryAlreadyWielding :: MudState -> Slot -> Id -> T.Text
+sorryAlreadyWielding ms sl i = let s = getSing i ms in T.concat [ "You're already wielding "
+                                                                , aOrAn s
+                                                                , " with your "
+                                                                , pp sl
+                                                                , "." ]
 
 
 -----
@@ -38,6 +38,26 @@ sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish t
 
 sorryBracketedMsg :: Either T.Text a
 sorryBracketedMsg = Left "You can't open or close your message with brackets."
+
+
+-----
+
+
+sorryChanTargetName :: ChanContext -> T.Text -> T.Text
+sorryChanTargetName cc n = T.concat [ "There is no one by the name of "
+                                    , dblQuote . capitalize $ n
+                                    , " currently tuned in to the "
+                                    , mkEffChanName cc
+                                    , " channel." ]
+  where
+    mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
+
+
+-----
+
+
+sorryConnectIgnore :: T.Text
+sorryConnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would like to connect"
 
 
 -----
@@ -69,6 +89,24 @@ sorryExpCmdWithTarget cn =  "The " <> dblQuote cn <> " expressive command cannot
 -----
 
 
+sorryFullClothSlotsOneSide :: Cloth -> Slot -> T.Text
+sorryFullClothSlotsOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more "
+                                                          , c
+                                                          , "s on your "
+                                                          , s
+                                                          , "." ]
+
+
+-----
+
+
+sorryHostIgnore :: T.Text
+sorryHostIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
+
+
+-----
+
+
 sorryIgnoreLocPref :: T.Text -> T.Text
 sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location prefix. The location prefix you provided \
                                               \will be ignored."
@@ -77,6 +115,13 @@ sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location pre
 sorryIgnoreLocPrefPlur :: T.Text -> T.Text
 sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
                                                   \provided will be ignored."
+
+
+-----
+
+
+sorryIllegalChanName :: T.Text -> T.Text -> [T.Text]
+sorryIllegalChanName a msg = pure . T.concat $ [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
 
 
 -----
@@ -115,6 +160,13 @@ sorryNotTunedChan x mq cols y = wrapSend mq cols . T.concat $ [ "You have tuned 
 
 sorryNotTunedOOCChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryNotTunedOOCChan = sorryNotTunedChan "set"
+
+
+-----
+
+
+sorryPeepIgnore :: T.Text
+sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
 
 
 -----

@@ -444,18 +444,6 @@ procChanTarget i cc triples ((T.toLower -> target):rest)
 procChanTarget _ _ _ as = patternMatchFail "procChanTarget" as
 
 
-sorryChanTargetName :: ChanContext -> T.Text -> T.Text
-sorryChanTargetName cc n = T.concat [ "There is no one by the name of "
-                                    , dblQuote . capitalize $ n
-                                    , " currently tuned in to the "
-                                    , mkEffChanName cc
-                                    , " channel." ]
-
-
-mkEffChanName :: ChanContext -> T.Text
-mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
-
-
 emotify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't emoteChar msg = Left . pure $ "He don't."
@@ -644,10 +632,9 @@ connect p = patternMatchFail "connect" [ showText p ]
 
 connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
 connectHelper i (target, as) ms =
-    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
-                       | otherwise         = (id,           ""      )
+    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryConnectIgnore)
+                       | otherwise         = (id,           ""                )
         g        = ()# guessWhat ? id :? (Left guessWhat :)
-        sorryMsg = sorryIgnoreLocPrefPlur "The names of the people you would like to connect"
         as'      = map (capitalize . T.toLower . f) as
         notFound    = sorry . notConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
@@ -1517,11 +1504,12 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
                 in (ms', (newChanNames, sorryMsgs))
       where
         f s triple a@(T.toLower -> a')
-          | T.length a > maxChanNameLen = triple & _3 <>~ mkSorryMsg a ("a channel name may not be more than " <>
-                                                                        showText maxChanNameLen                <>
-                                                                        " characters long")
-          | T.any isNG a = triple & _3 <>~ mkSorryMsg a "a channel name may only contain alphabetic letters and digits"
-          | a' `elem` illegalNames = triple & _3 <>~ mkSorryMsg a "this name is reserved or already in use"
+          | T.length a > maxChanNameLen =
+              let msg = "a channel name may not be more than " <> showText maxChanNameLen <> " characters long"
+              in triple & _3 <>~ sorryIllegalChanName a msg
+          | T.any isNG a = triple & _3 <>~ sorryIllegalChanName a "a channel name may only contain alphabetic letters \
+                                                                  \and digits"
+          | a' `elem` illegalNames = triple & _3 <>~ sorryIllegalChanName a "this name is reserved or already in use"
           | a' `elem` map T.toLower myChanNames
           , match <- head . filter ((== a') . T.toLower) $ myChanNames
           = triple & _3 <>~ [ "You are already connected to a channel named " <> dblQuote match <> "." ]
@@ -1530,7 +1518,6 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
                         in triple & _1.chanTbl.at ci .~ Just c
                                   & _2 <>~ pure (a, cr)
-        mkSorryMsg a msg = pure . T.concat $ [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
         isNG c           = not $ isLetter c || isDigit c
         illegalNames     = [ "admin", "all", "question" ] ++ pcNames
         pcNames          = map (uncapitalize . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
@@ -1890,6 +1877,13 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
       _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText sexy ]
 
 
+sorryFullClothSlots :: MudState -> Cloth -> EqMap -> T.Text
+sorryFullClothSlots ms cloth@(pp -> cloth') em
+  | cloth `elem` [ Earring .. Ring ]               = "You can't wear any more " <> cloth'               <> "s."
+  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn cloth'         <> "."
+  | otherwise = let i = em M.! clothToSlot cloth in  "You're already wearing "  <> aOrAn (getSing i ms) <> "."
+
+
 otherSex :: Sex -> Sex
 otherSex Male   = Female
 otherSex Female = Male
@@ -1903,13 +1897,6 @@ noseRingSlots  = [ NoseRing1S,    NoseRing2S  ]
 necklaceSlots  = [ Necklace1S  .. Necklace2S  ]
 rBraceletSlots = [ BraceletR1S .. BraceletR3S ]
 lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
-
-
-sorryFullClothSlots :: MudState -> Cloth -> EqMap -> T.Text
-sorryFullClothSlots ms cloth@(pp -> cloth') em
-  | cloth `elem` [ Earring .. Ring ]               = "You can't wear any more " <> cloth'               <> "s."
-  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn cloth'         <> "."
-  | otherwise = let i = em M.! clothToSlot cloth in  "You're already wearing "  <> aOrAn (getSing i ms) <> "."
 
 
 getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
@@ -1940,14 +1927,6 @@ getDesigClothSlot ms clothSing cloth em rol
                                         , " on your "
                                         , pp slot
                                         , "." ]
-
-
-sorryFullClothSlotsOneSide :: Cloth -> Slot -> T.Text
-sorryFullClothSlotsOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more "
-                                                          , c
-                                                          , "s on your "
-                                                          , s
-                                                          , "." ]
 
 
 -- Readying weapons:
@@ -2003,13 +1982,8 @@ getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
 getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigWpnSlot ms wpnSing em rol
   | isRingRol rol = Left $ "You can't wield " <> aOrAn wpnSing <> " with your finger!"
-  | otherwise     = M.lookup desigSlot em |&| maybe (Right desigSlot) (Left . sorry)
+  | otherwise     = M.lookup desigSlot em |&| maybe (Right desigSlot) (Left . sorryAlreadyWielding ms desigSlot)
   where
-    sorry i = let s = getSing i ms in T.concat [ "You're already wielding "
-                                               , aOrAn s
-                                               , " with your "
-                                               , pp desigSlot
-                                               , "." ]
     desigSlot = case rol of R -> RHandS
                             L -> LHandS
                             _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
