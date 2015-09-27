@@ -39,7 +39,6 @@ module Mud.Misc.ANSI ( abbrevColor
                      , questionArrivalColor
                      , quoteColor
                      , resetANSI
-                     , retainedMsgColor
                      , selectorColor
                      , shutdownMsgColor
                      , syntaxSymbolColor
@@ -232,10 +231,6 @@ questionArrivalColor = yellow
 
 quoteColor :: T.Text
 quoteColor = green
-
-
-retainedMsgColor :: T.Text
-retainedMsgColor = magenta
 
 
 selectorColor :: T.Text

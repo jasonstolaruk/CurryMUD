@@ -235,7 +235,7 @@ about p = withoutArgs about p
 -----
 
 
--- TODO: Emotes and exp cmds.
+-- TODO: Msg cannot have brackets.
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] . adviceAdminNoMsg $ a
@@ -245,36 +245,36 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the administrator you wish to message"
             s                   = getSing i ms
-            msg'                = mkRetainedMsgFromPerson s msg
             isAdmin             = getPlaFlag IsAdmin . getPla i $ ms
             notFound            = emptied . sendFun $ "There is no administrator by the name of " <>
                                                       dblQuote strippedTarget                     <>
                                                       "."
-            found (adminId, _        ) | adminId == i = emptied . sendFun $ "You talk to yourself."
-            found (adminId, adminSing) = let adminPla  = getPla adminId ms in
+            found      (adminId, _        ) | adminId == i = emptied . sendFun $ "You talk to yourself."
+            found pair@(adminId, adminSing) = case emotifyTwoWay "admin" i ms adminId msg of
+              Left  errorMsgs  -> emptied . multiSendFun $ errorMsgs
+              Right (Right bs) -> ioHelper pair bs
+              Right (Left  ()) -> case expCmdifyTwoWay i ms adminId adminSing msg of
+                Left  errorMsg -> emptied . sendFun $ errorMsg
+                Right bs       -> ioHelper pair bs
+            ioHelper (adminId, adminSing) [ fst -> toSelf, fst -> toAdmin ] = let adminPla = getPla adminId ms in
                 if getAll . mconcat $ [ All . isLoggedIn $ adminPla
                                       , not isAdmin |?| (All . not . getPlaFlag IsIncognito $ adminPla) ]
-                  then let sentLogMsg     = (i,       T.concat [ "sent message to "
-                                                               , adminSing
-                                                               , ": "
-                                                               , dblQuote msg ])
-                           receivedLogMsg = (adminId, T.concat [ "received message from "
-                                                               , s
-                                                               , ": "
-                                                               , dblQuote msg ])
-                       in do
-                           sendFun . T.concat $ [ "You send ", adminSing, ": ", dblQuote msg ]
-                           retainedMsg adminId ms msg'
-                           return [ sentLogMsg, receivedLogMsg ]
-                  else do
-                      multiWrapSend mq cols . consSorry $ [ T.concat [ "You send ", adminSing, ": ", dblQuote msg ]
-                                                          , parensQuote "Message retained." ]
-                      retainedMsg adminId ms msg'
-                      let sentLogMsg     = ( i
-                                           , T.concat [ "sent message to ", adminSing, ": ", dblQuote msg ] )
-                          receivedLogMsg = ( adminId
-                                           , T.concat [ "received message from ", s,   ": ", dblQuote msg ] )
+                  then do
+                      sendFun formatted
+                      retainedMsg adminId ms . mkRetainedMsgFromPerson s $ toAdmin
                       return [ sentLogMsg, receivedLogMsg ]
+                  else do
+                      multiSendFun . consSorry $ [ formatted, parensQuote "Message retained." ]
+                      return [ sentLogMsg, receivedLogMsg ]
+              where
+                formatted = T.concat [ parensQuote $ "to " <> adminSing
+                                     , " "
+                                     , quoteWith "__" s
+                                     , " "
+                                     , toSelf ]
+                sentLogMsg     = (i,       T.concat [ "sent message to ", adminSing, ": ", toSelf  ])
+                receivedLogMsg = (adminId, T.concat [ "received message from ", s,   ": ", toAdmin ])
+            ioHelper _ xs = patternMatchFail "admin helper ioHelper" [ showText xs ]
             filterRoot idSings
               | isAdmin   = idSings
               | otherwise =
@@ -311,6 +311,85 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
                         | abbrev      <- styleAbbrevs Don'tBracket . map fst $ singSuffixes' ]
         in ()!# combineds ? return combineds :? unadulterated "No administrators exist!"
 adminList p = patternMatchFail "adminList" [ showText p ]
+
+
+emotifyTwoWay :: T.Text -> Id -> MudState -> Id -> T.Text -> Either [T.Text] (Either () [Broadcast])
+emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | isBracketed ws          = pure `onLeft` sorryBracketedMsg
+  | isHeDon't emoteChar msg = Left . pure $ "He don't."
+  | c == emoteChar = fmap Right . procTwoWayEmote cn i ms targetId . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right . Left $ ()
+
+
+procTwoWayEmote :: T.Text -> Id -> MudState -> Id -> Args -> Either [T.Text] [Broadcast]
+procTwoWayEmote cn i ms targetId as =
+    let s       = getSing i ms
+        xformed = xformArgs True as
+        xformArgs _      []     = []
+        xformArgs _      [x]
+          | (h, t) <- headTail x
+          , h == emoteNameChar
+          , all isPunc . T.unpack $ t
+          = pure . Right $ s <> t
+        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
+          | x == enc            -> Right s
+          | x == enc's          -> Right $ s <> "'s"
+          | enc `T.isInfixOf` x -> Left . adviceEnc $ cn'
+          | etc `T.isInfixOf` x -> Left . adviceEtcInTwoWay cn $ cn'
+          | isHead, hasEnc as   -> Right . capitalizeMsg $ x
+          | isHead              -> Right $ s <> " " <> x
+          | otherwise           -> Right x
+    in case filter isLeft xformed of
+      []      -> let msg = bracketQuote . T.unwords . map fromRight $ xformed
+                 in Right [ (msg, pure i), (msg, pure targetId) ]
+      advices -> Left . intersperse "" . map fromLeft . nub $ advices
+  where
+    cn' = cn <> " " <> T.singleton emoteChar
+
+
+expCmdifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text [Broadcast]
+expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | isHeDon't expCmdChar msg = Left "He don't."
+  | c == expCmdChar = procExpCmdTwoWay i ms targetId targetSing . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right [ (msg, pure i), (msg, pure targetId) ]
+
+
+procExpCmdTwoWay :: Id -> MudState -> Id -> Sing -> Args -> Either T.Text [Broadcast]
+procExpCmdTwoWay _ _  _        _          (_:_:_:_) = sorryExpCmdTooLong
+procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]) =
+    findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
+  where
+    found match = let ExpCmd _ ct = getExpCmdByName match in map (_1 %~ angleBracketQuote) <$> case ct of
+      NoTarget toSelf toOthers -> if ()# target
+        then Right [ (toSelf,                  pure i       )
+                   , (format Nothing toOthers, pure targetId) ]
+        else Left . sorryExpCmdWithTarget $ match
+      HasTarget toSelf toTarget _ ->
+          let good = Right [ (format (Just targetId) toSelf,   pure i       )
+                           , (format Nothing         toTarget, pure targetId) ]
+          in ()# target ? good :? (target `T.isPrefixOf` uncapitalize targetSing ? good :? sorryTargetName)
+      Versatile toSelf toOthers toSelfWithTarget toTarget _
+        | ()# target -> Right [ (toSelf,                  pure i       )
+                              , (format Nothing toOthers, pure targetId) ]
+        | target `T.isPrefixOf` uncapitalize targetSing ->
+            Right [ (format (Just targetId) toSelfWithTarget, pure i       )
+                  , (format Nothing         toTarget,         pure targetId) ]
+        | otherwise -> sorryTargetName
+    notFound             = sorryExpCmdName cn
+    format maybeTargetId = let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
+                           in replace (substitutions ++ maybe [] (const . pure $ ("@", targetSing)) maybeTargetId)
+    s                    = getSing i ms
+    (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
+    sorryTargetName             = Left . T.concat $ [ "In a telepathic message to "
+                                                    , targetSing
+                                                    , ", the only possible target is "
+                                                    , targetSing
+                                                    , "." ]
+procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" as
 
 
 -----
@@ -2556,104 +2635,6 @@ getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
   where
     helper s pair = let lens = isAwake (getIdForPCSing s ms) ms ? _1 :? _2
                     in pair & lens %~ (s :)
-
-
-emotifyTwoWay :: T.Text -> Id -> MudState -> Id -> T.Text -> Either [T.Text] (Either () [Broadcast])
-emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws          = pure `onLeft` sorryBracketedMsg
-  | isHeDon't emoteChar msg = Left . pure $ "He don't."
-  | c == emoteChar = fmap Right . procTwoWayEmote cn i ms targetId . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
-  | otherwise = Right . Left $ ()
-
-
-procTwoWayEmote :: T.Text -> Id -> MudState -> Id -> Args -> Either [T.Text] [Broadcast]
-procTwoWayEmote cn i ms targetId as =
-    let s       = getSing i ms
-        xformed = xformArgs True as
-        xformArgs _      []     = []
-        xformArgs _      [x]
-          | (h, t) <- headTail x
-          , h == emoteNameChar
-          , all isPunc . T.unpack $ t
-          = pure . Right $ s <> t
-        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
-          | x == enc            -> Right s
-          | x == enc's          -> Right $ s <> "'s"
-          | enc `T.isInfixOf` x -> Left . adviceEnc $ cn'
-          | etc `T.isInfixOf` x -> Left sorryEtc
-          | isHead, hasEnc as   -> Right . capitalizeMsg $ x
-          | isHead              -> Right $ s <> " " <> x
-          | otherwise           -> Right x
-    in case filter isLeft xformed of
-      []      -> let msg = bracketQuote . T.unwords . map fromRight $ xformed
-                 in Right [ (msg, pure i), (msg, pure targetId) ]
-      advices -> Left . intersperse "" . map fromLeft . nub $ advices
-  where
-    cn'      = cn <> " " <> T.singleton emoteChar
-    sorryEtc = T.concat [ "Sorry, but you can't use "
-                        , dblQuote etc
-                        , " in private two-way communication, as with the "
-                        , dblQuote cn
-                        ,  " command. It is legal to use forms of the word "
-                        , dblQuote "you"
-                        , " here, so instead of "
-                        , quoteColor
-                        , cn'
-                        , "gives "
-                        , etc
-                        , "hanako a smooch!"
-                        , dfltColor
-                        , ", you should type "
-                        , quoteColor
-                        , cn'
-                        , "gives you a smooch!"
-                        , dfltColor
-                        , "." ]
-
-
-expCmdifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text [Broadcast]
-expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isHeDon't expCmdChar msg = Left "He don't."
-  | c == expCmdChar = procExpCmdTwoWay i ms targetId targetSing . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
-  | otherwise = Right [ (msg, pure i), (msg, pure targetId) ]
-
-
-procExpCmdTwoWay :: Id -> MudState -> Id -> Sing -> Args -> Either T.Text [Broadcast]
-procExpCmdTwoWay _ _  _        _          (_:_:_:_) = sorryExpCmdTooLong
-procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]) =
-    findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
-  where
-    found match = let ExpCmd _ ct = getExpCmdByName match in map (_1 %~ angleBracketQuote) <$> case ct of
-      NoTarget toSelf toOthers -> if ()# target
-        then Right [ (toSelf,                  pure i       )
-                   , (format Nothing toOthers, pure targetId) ]
-        else Left . sorryExpCmdWithTarget $ match
-      HasTarget toSelf toTarget _ ->
-          let good = Right [ (format (Just targetId) toSelf,   pure i       )
-                           , (format Nothing         toTarget, pure targetId) ]
-          in ()# target ? good :? (target `T.isPrefixOf` uncapitalize targetSing ? good :? sorryTargetName)
-      Versatile toSelf toOthers toSelfWithTarget toTarget _
-        | ()# target -> Right [ (toSelf,                  pure i       )
-                              , (format Nothing toOthers, pure targetId) ]
-        | target `T.isPrefixOf` uncapitalize targetSing ->
-            Right [ (format (Just targetId) toSelfWithTarget, pure i       )
-                  , (format Nothing         toTarget,         pure targetId) ]
-        | otherwise -> sorryTargetName
-    notFound             = sorryExpCmdName cn
-    format maybeTargetId = let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-                           in replace (substitutions ++ maybe [] (const . pure $ ("@", targetSing)) maybeTargetId)
-    s                    = getSing i ms
-    (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
-    sorryTargetName             = Left . T.concat $ [ "You can only target "
-                                                    , targetSing
-                                                    , " in a telepathic message to "
-                                                    , targetSing
-                                                    , "." ]
-procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" as
 
 
 -----

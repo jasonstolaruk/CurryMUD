@@ -34,6 +34,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceEtc
                             , adviceEtcEmptyPoss
                             , adviceEtcHead
+                            , adviceEtcInTwoWay
                             , adviceExpCmdArgs
                             , adviceGetNoArgs
                             , adviceLeaveNoChans
@@ -424,6 +425,28 @@ adviceEtcEmptyPoss = T.concat [ "You must specify the name of the person you wan
 
 adviceEtcHead :: T.Text
 adviceEtcHead = "You can't begin an emote with a target."
+
+
+adviceEtcInTwoWay :: T.Text -> T.Text -> T.Text
+adviceEtcInTwoWay cn cn' = T.concat [ "Sorry, but you can't use "
+                                    , dblQuote etc
+                                    , " in private two-way communication, as with the "
+                                    , dblQuote cn
+                                    ,  " command. It is legal to use forms of the word "
+                                    , dblQuote "you"
+                                    , " here, so instead of "
+                                    , quoteColor
+                                    , cn'
+                                    , "gives "
+                                    , etc
+                                    , "hanako a smooch!"
+                                    , dfltColor
+                                    , ", you should type "
+                                    , quoteColor
+                                    , cn'
+                                    , "gives you a smooch!"
+                                    , dfltColor
+                                    , "." ]
 
 
 adviceExpCmdArgs :: T.Text

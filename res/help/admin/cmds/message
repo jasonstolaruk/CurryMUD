@@ -5,7 +5,7 @@
 
 \uDESCRIPTION\n
 Send a message to a regular player.
-If the recipient is currently logged in, the message will be delivered immediately. If the recipient is currently logged out, the message will be retained such that the recipient will see the message the next time he/she logs in.
+If the recipient is currently logged in, the message will be delivered immediately. If the recipient is logged out, the message will be retained (the recipient will see it the next time he/she logs in).
 
 \uEXAMPLES\n
 \q#dmessage taro thank you for reporting the bug you found\d4`

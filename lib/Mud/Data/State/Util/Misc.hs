@@ -27,7 +27,6 @@ module Mud.Data.State.Util.Misc ( BothGramNos
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
-import Mud.Misc.ANSI
 import Mud.TheWorld.AdminZoneIds (iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.Util.List
@@ -155,11 +154,7 @@ mkPlurFromBoth (_, p ) = p
 
 
 mkRetainedMsgFromPerson :: Sing -> T.Text -> T.Text
-mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` T.concat [ quoteWith "__" s
-                                                                   , " "
-                                                                   , retainedMsgColor
-                                                                   , msg
-                                                                   , dfltColor ]
+mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s <> " " <> msg)
 
 
 -----
