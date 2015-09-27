@@ -8,10 +8,12 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
+import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 
+import Data.Char (toLower)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
@@ -174,6 +176,24 @@ sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish t
 
 sorryRemoveIgnore :: T.Text
 sorryRemoveIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+
+
+-----
+
+
+sorryTwoWayTargetName :: ExpCmdName -> Sing -> Either T.Text a
+sorryTwoWayTargetName cn s = Left . T.concat $ [ "In a telepathic message to "
+                                               , s
+                                               , ", the only possible target is "
+                                               , s
+                                               , ". Please try "
+                                               , quoteColor
+                                               , T.singleton expCmdChar
+                                               , cn
+                                               , " "
+                                               , T.singleton . toLower . T.head $ s
+                                               , dfltColor
+                                               , " instead." ]
 
 
 -----

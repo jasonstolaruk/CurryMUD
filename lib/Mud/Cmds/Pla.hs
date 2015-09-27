@@ -235,7 +235,6 @@ about p = withoutArgs about p
 -----
 
 
--- TODO: Msg cannot have brackets.
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] . adviceAdminNoMsg $ a
@@ -256,17 +255,17 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
               Right (Left  ()) -> case expCmdifyTwoWay i ms adminId adminSing msg of
                 Left  errorMsg -> emptied . sendFun $ errorMsg
                 Right bs       -> ioHelper pair bs
-            ioHelper (adminId, adminSing) [ fst -> toSelf, fst -> toAdmin ] = let adminPla = getPla adminId ms in
+            ioHelper (adminId, adminSing) [ fst -> toSelf, fst -> toAdmin ] = do
                 if getAll . mconcat $ [ All . isLoggedIn $ adminPla
                                       , not isAdmin |?| (All . not . getPlaFlag IsIncognito $ adminPla) ]
-                  then do
-                      sendFun formatted
-                      retainedMsg adminId ms . mkRetainedMsgFromPerson s $ toAdmin
-                      return [ sentLogMsg, receivedLogMsg ]
-                  else do
-                      multiSendFun . consSorry $ [ formatted, parensQuote "Message retained." ]
-                      return [ sentLogMsg, receivedLogMsg ]
+                  then sendFun formatted
+                  else multiSendFun . consSorry $ [ formatted, parensQuote "Message retained." ]
+                retainedMsg adminId ms . mkRetainedMsgFromPerson s $ toAdmin
+                ts <- liftIO mkTimestamp
+                withDbExHandler_ "admin_msg" . insertDbTblAdminMsg . AdminMsgRec ts s adminSing $ toSelf
+                return [ sentLogMsg, receivedLogMsg ]
               where
+                adminPla  = getPla adminId ms
                 formatted = T.concat [ parensQuote $ "to " <> adminSing
                                      , " "
                                      , quoteWith "__" s
@@ -371,24 +370,21 @@ procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]
       HasTarget toSelf toTarget _ ->
           let good = Right [ (format (Just targetId) toSelf,   pure i       )
                            , (format Nothing         toTarget, pure targetId) ]
-          in ()# target ? good :? (target `T.isPrefixOf` uncapitalize targetSing ? good :? sorryTargetName)
+          in ()# target ?  good
+                        :? (target `T.isPrefixOf` uncapitalize targetSing ?  good
+                                                                          :? sorryTwoWayTargetName match targetSing)
       Versatile toSelf toOthers toSelfWithTarget toTarget _
         | ()# target -> Right [ (toSelf,                  pure i       )
                               , (format Nothing toOthers, pure targetId) ]
         | target `T.isPrefixOf` uncapitalize targetSing ->
             Right [ (format (Just targetId) toSelfWithTarget, pure i       )
                   , (format Nothing         toTarget,         pure targetId) ]
-        | otherwise -> sorryTargetName
+        | otherwise -> sorryTwoWayTargetName match targetSing
     notFound             = sorryExpCmdName cn
     format maybeTargetId = let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
                            in replace (substitutions ++ maybe [] (const . pure $ ("@", targetSing)) maybeTargetId)
     s                    = getSing i ms
     (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
-    sorryTargetName             = Left . T.concat $ [ "In a telepathic message to "
-                                                    , targetSing
-                                                    , ", the only possible target is "
-                                                    , targetSing
-                                                    , "." ]
 procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" as
 
 

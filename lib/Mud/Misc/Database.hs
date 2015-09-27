@@ -1,17 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
+                         , AdminMsgRec(..)
                          , BanHostRec(..)
                          , BanPlaRec(..)
                          , BugRec(..)
                          , ChanRec(..)
                          , countDbTblRecsAdminChan
+                         , countDbTblRecsAdminMsg
                          , countDbTblRecsChan
                          , countDbTblRecsQuestion
                          , countDbTblRecsTele
                          , createDbTbls
                          , getDbTblRecs
                          , insertDbTblAdminChan
+                         , insertDbTblAdminMsg
                          , insertDbTblBanHost
                          , insertDbTblBanPla
                          , insertDbTblBug
@@ -22,6 +25,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblTypo
                          , ProfRec(..)
                          , purgeDbTblAdminChan
+                         , purgeDbTblAdminMsg
                          , purgeDbTblChan
                          , purgeDbTblQuestion
                          , purgeDbTblTele
@@ -42,6 +46,10 @@ import qualified Data.Text as T
 data AdminChanRec = AdminChanRec { adminChanTimestamp :: T.Text
                                  , adminChanName      :: T.Text
                                  , adminChanMsg       :: T.Text }
+data AdminMsgRec  = AdminMsgRec  { adminMsgTimestamp  :: T.Text
+                                 , adminMsgFromName   :: T.Text
+                                 , adminMsgToName     :: T.Text
+                                 , adminMsgMsg        :: T.Text }
 data BanHostRec   = BanHostRec   { banHostTimestamp   :: T.Text
                                  , banHostHost        :: T.Text
                                  , banHostIsBanned    :: Bool
@@ -77,8 +85,15 @@ data TypoRec      = TypoRec      { typoTimestamp      :: T.Text
                                  , typoIsOpen         :: Bool   }
 
 
+-----
+
+
 instance FromRow AdminChanRec where
   fromRow = AdminChanRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+
+
+instance FromRow AdminMsgRec where
+  fromRow = AdminMsgRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BanHostRec where
@@ -113,8 +128,15 @@ instance FromRow TypoRec where
   fromRow = TypoRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
 
+-----
+
+
 instance ToRow AdminChanRec where
   toRow (AdminChanRec a b c) = toRow (a, b, c)
+
+
+instance ToRow AdminMsgRec where
+  toRow (AdminMsgRec a b c d) = toRow (a, b, c, d)
 
 
 instance ToRow BanHostRec where
@@ -149,10 +171,14 @@ instance ToRow TypoRec where
   toRow (TypoRec a b c d e) = toRow (a, b, c, d, e)
 
 
+-----
+
+
 createDbTbls :: IO ()
 createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
   where
     qs = [ "create table if not exists admin_chan (id integer primary key, timestamp text, name text, msg text)"
+         , "create table if not exists admin_msg  (id integer primary key, timestamp text, fromName text, toName text, msg text)"
          , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned integer, reason text)"
          , "create table if not exists ban_pla    (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
@@ -163,10 +189,16 @@ createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)" ]
 
 
+-----
+
+
 getDbTblRecs :: (FromRow a) => T.Text -> IO [a]
 getDbTblRecs tblName = withConnection dbFile helper
   where
     helper conn = query_ conn . Query $ "select * from " <> tblName
+
+
+-----
 
 
 insertDbTblHelper :: (ToRow a) => Query -> a -> IO ()
@@ -177,6 +209,10 @@ insertDbTblHelper q x = withConnection dbFile helper
 
 insertDbTblAdminChan :: AdminChanRec -> IO ()
 insertDbTblAdminChan = insertDbTblHelper "insert into admin_chan (timestamp, name, msg) values (?, ?, ?)"
+
+
+insertDbTblAdminMsg :: AdminMsgRec -> IO ()
+insertDbTblAdminMsg = insertDbTblHelper "insert into admin_msg (timestamp, fromName, toName, msg) values (?, ?, ?, ?)"
 
 
 insertDbTblBanHost :: BanHostRec -> IO ()
@@ -211,8 +247,15 @@ insertDbTblTypo :: TypoRec -> IO ()
 insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
 
 
+-----
+
+
 countDbTblRecsAdminChan :: IO [Only Int]
 countDbTblRecsAdminChan = countHelper "admin_chan"
+
+
+countDbTblRecsAdminMsg :: IO [Only Int]
+countDbTblRecsAdminMsg = countHelper "admin_msg"
 
 
 countDbTblRecsChan :: IO [Only Int]
@@ -233,8 +276,15 @@ countHelper tblName = withConnection dbFile helper
     helper conn = query_ conn . Query $ "select count(*) from " <> tblName
 
 
+-----
+
+
 purgeDbTblAdminChan :: IO ()
 purgeDbTblAdminChan = purgeHelper "admin_chan"
+
+
+purgeDbTblAdminMsg :: IO ()
+purgeDbTblAdminMsg = purgeHelper "admin_msg"
 
 
 purgeDbTblChan :: IO ()

@@ -116,6 +116,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
         auxAsyncs <- mapM runAsync [ adminChanTblPurger
+                                   , adminMsgTblPurger
                                    , chanTblPurger
                                    , questionChanTblPurger
                                    , teleTblPurger
@@ -123,7 +124,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                    , worldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
-        logNotice "listen initialize" "creating the database tables."
+        logNotice "listen initialize" "creating database tables."
         liftIO createDbTbls `catch` dbExHandler "listen initialize"
         sortAllInvs
         logInterfaces
@@ -175,6 +176,10 @@ adminChanTblPurger :: MudStack ()
 adminChanTblPurger = dbTblPurger "admin_chan" countDbTblRecsAdminChan purgeDbTblAdminChan
 
 
+adminMsgTblPurger :: MudStack ()
+adminMsgTblPurger = dbTblPurger "admin_msg" countDbTblRecsAdminMsg purgeDbTblAdminMsg
+
+
 chanTblPurger :: MudStack ()
 chanTblPurger = dbTblPurger "chan" countDbTblRecsChan purgeDbTblChan
 
@@ -190,7 +195,7 @@ teleTblPurger = dbTblPurger "tele" countDbTblRecsTele purgeDbTblTele
 dbTblPurger :: T.Text -> IO [Only Int] -> IO () -> MudStack ()
 dbTblPurger tblName countFun purgeFun = handle (threadExHandler "dbTblPurger") $ do
     setThreadType DbTblPurger
-    logNotice "dbTblPurger" "database table purger started."
+    logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
     let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
     forever loop `catch` die "dbTblPurger"
   where
@@ -198,12 +203,12 @@ dbTblPurger tblName countFun purgeFun = handle (threadExHandler "dbTblPurger") $
         Just [Only count] -> if count > maxDbTblRecs
           then do
               withDbExHandler_ fn purgeFun
-              logNotice fn . T.concat $ [ "The "
+              logNotice fn . T.concat $ [ "the "
                                         , tblName
                                         , " table has been purged of "
                                         , showText noOfDbTblRecsToPurge
                                         , " records." ]
-          else logNotice fn . T.concat $ [ "The "
+          else logNotice fn . T.concat $ [ "the "
                                          , tblName
                                          , " table presently contains "
                                          , showText count
