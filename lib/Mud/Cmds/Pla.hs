@@ -2074,10 +2074,8 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
         Right {} -> sorry "You can only remove things from one container at a time."
   where
     sorry msg                         = (ms, (mkBroadcast i msg, []))
-    stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBroadcast i msg)
-                  | otherwise         = (as,                  []               )
-      where
-        msg = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+    stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBroadcast i sorryRemoveIgnore)
+                  | otherwise         = (as,                  []                             )
 
 
 -----
@@ -2742,17 +2740,16 @@ typo p              = bugTypoLogger p TypoLog
 unlink :: Action
 unlink p@AdviseNoArgs          = advise p ["unlink"] adviceUnlinkNoArgs
 unlink (LowerNub i mq cols as) =
-    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMsg)
-                       | otherwise         = (id,           ""      )
+    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryUnlinkIgnore)
+                       | otherwise         = (id,           ""               )
         g        = ()# guessWhat ? id :? ((guessWhat, pure i) :)
-        sorryMsg = sorryIgnoreLocPrefPlur "The names of the people with whom you would like to unlink"
         as'      = map (capitalize . T.toLower . f) as
     in do
         tingleLoc <- rndmElem [ "behind your eyes"
                               , "deep in your lower back"
                               , "in your scalp"
                               , "on the back of your neck"
-                              , "somewhere in your ears" ]
+                              , "somewhere between your ears" ]
         ms        <- getState
         res       <- helperLinkUnlink ms i mq cols
         flip maybeVoid res $ \(meLinkedToOthers, othersLinkedToMe, twoWays) ->

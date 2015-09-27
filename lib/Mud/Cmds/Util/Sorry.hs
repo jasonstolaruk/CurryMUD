@@ -172,6 +172,20 @@ sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish t
 -----
 
 
+sorryRemoveIgnore :: T.Text
+sorryRemoveIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+
+
+-----
+
+
+sorryUnlinkIgnore :: T.Text
+sorryUnlinkIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+
+
+-----
+
+
 sorryWrapLineLen :: MsgQueue -> Cols -> MudStack ()
 sorryWrapLineLen mq cols = wrapSend mq cols . T.concat $ [ "The line length must be between "
                                                          , showText minCols
