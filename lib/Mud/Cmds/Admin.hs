@@ -13,7 +13,6 @@ import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
@@ -25,7 +24,6 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Persist
-import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.Util.List hiding (headTail)
@@ -178,7 +176,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
               f bs = ioHelper s (concatMap format bs)
               ws   = wrapSend      mq cols
               mws  = multiWrapSend mq cols
-          in case targetify tunedIds tunedSings msg of
+          in case adminChanTargetify tunedIds tunedSings msg of
             Left errorMsg    -> ws errorMsg
             Right (Right bs) -> f bs . mkLogMsg $ bs
             Right (Left ())  -> case adminChanEmotify i ms tunedIds tunedSings msg of
@@ -198,30 +196,6 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
             ts <- liftIO mkTimestamp
             withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s $ logMsg
 adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
-
-
-targetify :: Inv -> [Sing] -> T.Text -> Either T.Text (Either () [Broadcast])
-targetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws               = sorryBracketedMsg
-  | isHeDon't chanTargetChar msg = Left "He don't."
-  | c == chanTargetChar          = fmap Right . procChanTarget tunedIds tunedSings . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
-  | otherwise = Right . Left $ ()
-
-
-procChanTarget :: Inv -> [Sing] -> Args -> Either T.Text [Broadcast]
-procChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
-    ()# rest ? Left sorryNoMsg :? (findFullNameForAbbrev target tunedSings |&| maybe notFound found)
-  where
-    notFound         = Left . sorryAdminChanName $ target
-    found targetSing =
-        let targetId    = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
-            msg         = capitalizeMsg . T.unwords $ rest
-            formatMsg x = parensQuote ("to " <> x) <> " " <> msg
-        in Right [ (formatMsg targetSing,                                         targetId `delete` tunedIds)
-                 , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
-procChanTarget _ _ as = patternMatchFail "procChanTarget" as
 
 
 -----

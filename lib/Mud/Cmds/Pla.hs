@@ -418,33 +418,6 @@ getChanStyleds i c ms =
         in return . zipWith helper combo $ styleds
 
 
-targetify :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text (Either () [Broadcast])
-targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws               = sorryBracketedMsg
-  | isHeDon't chanTargetChar msg = Left "He don't."
-  | c == chanTargetChar          = fmap Right . procChanTarget i cc triples . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
-  | otherwise = Right . Left $ ()
-
-
-procChanTarget :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text [Broadcast]
-procChanTarget i cc triples ((T.toLower -> target):rest)
-  | ()# rest  = Left sorryNoMsg
-  | otherwise = case findFullNameForAbbrev target . map (views _2 T.toLower) $ triples of
-    Nothing -> Left . sorryChanTargetName cc $ target
-    Just n  -> let targetId    = getIdForMatch n
-                   tunedIds    = map (view _1) triples
-                   msg         = capitalizeMsg . T.unwords $ rest
-                   formatMsg x = parensQuote ("to " <> x) <> " " <> msg
-               in Right [ (formatMsg . embedId $ targetId,                               pure i                    )
-                        , (formatMsg . embedId $ targetId,                               targetId `delete` tunedIds)
-                        , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
-  where
-    getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
-procChanTarget _ _ _ as = patternMatchFail "procChanTarget" as
-
-
 -----
 
 

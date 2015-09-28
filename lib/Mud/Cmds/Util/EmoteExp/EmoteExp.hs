@@ -2,8 +2,10 @@
 
 module Mud.Cmds.Util.EmoteExp.EmoteExp ( adminChanEmotify
                                        , adminChanExpCmdify
+                                       , adminChanTargetify
                                        , emotify
-                                       , expCmdify ) where
+                                       , expCmdify
+                                       , targetify ) where
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Util.Advice
@@ -39,6 +41,36 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.EmoteExp"
 
 
 -- ==================================================
+
+
+targetify :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text (Either () [Broadcast])
+targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | isBracketed ws               = sorryBracketedMsg
+  | isHeDon't chanTargetChar msg = Left "He don't."
+  | c == chanTargetChar          = fmap Right . procChanTarget i cc triples . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right . Left $ ()
+
+
+procChanTarget :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text [Broadcast]
+procChanTarget i cc triples ((T.toLower -> target):rest)
+  | ()# rest  = Left sorryNoMsg
+  | otherwise = case findFullNameForAbbrev target . map (views _2 T.toLower) $ triples of
+    Nothing -> Left . sorryChanTargetName cc $ target
+    Just n  -> let targetId    = getIdForMatch n
+                   tunedIds    = map (view _1) triples
+                   msg         = capitalizeMsg . T.unwords $ rest
+                   formatMsg x = parensQuote ("to " <> x) <> " " <> msg
+               in Right [ (formatMsg . embedId $ targetId,                               pure i                    )
+                        , (formatMsg . embedId $ targetId,                               targetId `delete` tunedIds)
+                        , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
+  where
+    getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
+procChanTarget _ _ _ as = patternMatchFail "procChanTarget" as
+
+
+-----
 
 
 emotify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
@@ -158,6 +190,33 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
                        (c, d) = T.span  isLetter b
                    in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
 procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
+
+
+-----
+
+
+adminChanTargetify :: Inv -> [Sing] -> T.Text -> Either T.Text (Either () [Broadcast])
+adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
+  | isBracketed ws               = sorryBracketedMsg
+  | isHeDon't chanTargetChar msg = Left "He don't."
+  | c == chanTargetChar          = fmap Right . adminChanProcChanTarget tunedIds tunedSings . (tail ws |&|) $ if ()# rest
+    then id
+    else (rest :)
+  | otherwise = Right . Left $ ()
+
+
+adminChanProcChanTarget :: Inv -> [Sing] -> Args -> Either T.Text [Broadcast]
+adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
+    ()# rest ? Left sorryNoMsg :? (findFullNameForAbbrev target tunedSings |&| maybe notFound found)
+  where
+    notFound         = Left . sorryAdminChanName $ target
+    found targetSing =
+        let targetId    = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
+            msg         = capitalizeMsg . T.unwords $ rest
+            formatMsg x = parensQuote ("to " <> x) <> " " <> msg
+        in Right [ (formatMsg targetSing,                                         targetId `delete` tunedIds)
+                 , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
+adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" as
 
 
 -----
