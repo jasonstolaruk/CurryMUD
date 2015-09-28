@@ -6,6 +6,9 @@ import Mud.Cmds.ExpCmds
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Advice
+import Mud.Cmds.Util.CmdPrefixes
+import Mud.Cmds.Util.EmoteExp.EmoteExp
+import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
 import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc
@@ -39,18 +42,15 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, both, to, view, views)
+import Control.Lens (_1, _2, _3, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Data.Char (isLetter)
-import Data.Either (isLeft)
 import Data.Function (on)
-import Data.List ((\\), delete, intercalate, intersperse, nub, partition, sortBy)
+import Data.List (delete, intercalate, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
-import Data.Tuple (swap)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
@@ -181,10 +181,10 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
           in case targetify tunedIds tunedSings msg of
             Left errorMsg    -> ws errorMsg
             Right (Right bs) -> f bs . mkLogMsg $ bs
-            Right (Left ())  -> case emotify i ms tunedIds tunedSings msg of
+            Right (Left ())  -> case adminChanEmotify i ms tunedIds tunedSings msg of
               Left  errorMsgs  -> mws errorMsgs
               Right (Right bs) -> f bs . mkLogMsg $ bs
-              Right (Left ())  -> case expCmdify i ms tunedIds tunedSings msg of
+              Right (Left ())  -> case adminChanExpCmdify i ms tunedIds tunedSings msg of
                 Left  errorMsg     -> ws errorMsg
                 Right (bs, logMsg) -> f bs logMsg
       else sorryNotTunedOOCChan mq cols "admin"
@@ -222,120 +222,6 @@ procChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
         in Right [ (formatMsg targetSing,                                         targetId `delete` tunedIds)
                  , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
 procChanTarget _ _ as = patternMatchFail "procChanTarget" as
-
-
-emotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
-emotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isHeDon't emoteChar msg = Left . pure $ "He don't."
-  | c == emoteChar          = fmap Right . procEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
-  | otherwise = Right . Left $ ()
-
-
-procEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
-procEmote _ _  _        _          as | hasYou as = Left . pure . adviceYouEmoteChar . prefixAdminCmd $ "admin"
-procEmote i ms tunedIds tunedSings as =
-    let s                       = getSing i ms
-        xformed                 = xformArgs True as
-        xformArgs _      []     = []
-        xformArgs _      [x]
-          | (h, t) <- headTail x
-          , h == emoteNameChar
-          , all isPunc . T.unpack $ t
-          = pure . mkRightForNonTargets . dup3 $ s <> t
-        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
-          | x == enc            -> mkRightForNonTargets . dup3 $ s
-          | x == enc's          -> mkRightForNonTargets . dup3 $ s <> "'s"
-          | enc `T.isInfixOf` x -> Left . adviceEnc $ cn
-          | x == etc            -> Left . adviceEtc $ cn
-          | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
-          | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
-          | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
-          | isHead              -> mkRightForNonTargets . dup3 $ s <> " " <> x
-          | otherwise           -> mkRightForNonTargets . dup3 $ x
-    in case filter isLeft xformed of
-      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
-            in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
-      advices -> Left . intersperse "" . map fromLeft . nub $ advices
-  where
-    cn              = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar
-    procTarget word =
-        case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
-          ("",   _) -> Left . adviceEtc $ cn
-          ("'s", _) -> Left adviceEtcEmptyPoss
-          (w,    p) ->
-            let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                target'          = capitalize . T.toLower $ target
-                notFound         = Left . sorryAdminChanName $ target
-                found targetSing@(addSuffix isPoss p -> targetSing') =
-                    let targetId = head . filter ((== targetSing) . (`getSing` ms)) $ tunedIds
-                    in Right ( targetSing'
-                             , [ mkEmoteWord isPoss p targetId, ForNonTargets targetSing' ]
-                             , targetSing' )
-            in findFullNameForAbbrev target' (getSing i ms `delete` tunedSings) |&| maybe notFound found
-    addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
-    mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
-
-
-expCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)
-expCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isHeDon't expCmdChar msg = Left "He don't."
-  | c == expCmdChar          = fmap format . procExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
-  | otherwise = Right (pure (msg, tunedIds), msg)
-  where
-    format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
-                   & _2 %~ angleBracketQuote
-
-
-procExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either T.Text ([Broadcast], T.Text)
-procExpCmd _ _ _ _ (_:_:_:_) = sorryExpCmdTooLong
-procExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, target]) =
-    findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
-  where
-    found match =
-        let ExpCmd _ ct = getExpCmdByName match
-        in case ct of
-          NoTarget toSelf toOthers -> if ()# target
-            then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
-                       , toSelf )
-            else Left . sorryExpCmdWithTarget $ match
-          HasTarget toSelf toTarget toOthers -> if ()# target
-            then Left . sorryExpCmdRequiresTarget $ match
-            else case findTarget of
-              Nothing -> Left . sorryAdminChanName $ target
-              Just n  -> let targetId = getIdForPCSing n ms
-                             toSelf'  = format (Just n) toSelf
-                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
-                                    (format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :
-                                    mkBroadcast i toSelf'
-                                  , toSelf' )
-          Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
-                       , toSelf )
-            else case findTarget of
-              Nothing -> Left . sorryAdminChanName $ target
-              Just n  -> let targetId          = getIdForPCSing n ms
-                             toSelfWithTarget' = format (Just n) toSelfWithTarget
-                         in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
-                                    (format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :
-                                    mkBroadcast i toSelfWithTarget'
-                                  , toSelfWithTarget' )
-    notFound   = sorryExpCmdName cn
-    findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
-    format maybeTargetSing =
-        let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-        in replace (substitutions ++ maybe [] (pure . ("@", )) maybeTargetSing)
-    s                           = getSing i ms
-    (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
-    colorizeYous                = T.unwords . map helper . T.words
-      where
-        helper w = let (a, b) = T.break isLetter w
-                       (c, d) = T.span  isLetter b
-                   in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
-procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
 
 
 -----
@@ -564,7 +450,6 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
--- TODO: Emotes and exp cmds.
 adminMsg :: Action
 adminMsg p@AdviseNoArgs     = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
 adminMsg p@(AdviseOneArg a) = advise p [ prefixAdminCmd "message" ] . adviceAMsgNoMsg $ a
@@ -574,39 +459,44 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to message"
             s                   = getSing i ms
-            targetMsg           = mkRetainedMsgFromPerson s msg
             notFound            = emptied . sendFun $ "There is no regular player by the name of " <>
                                                       dblQuote strippedTarget                      <>
                                                       "."
-            found (targetId, targetSing) = let targetPla = getPla targetId ms in if
+            found pair@(targetId, targetSing) = case emotifyTwoWay (prefixAdminCmd "message") i ms targetId msg of
+              Left  errorMsgs  -> emptied . multiSendFun $ errorMsgs
+              Right (Right bs) -> ioHelper pair bs
+              Right (Left  ()) -> case expCmdifyTwoWay i ms targetId targetSing msg of
+                Left  errorMsg -> emptied . sendFun $ errorMsg
+                Right bs       -> ioHelper pair bs
+            ioHelper (targetId, targetSing) [ fst -> toSelf, fst -> toTarget ] = if
               | isLoggedIn targetPla, getPlaFlag IsIncognito . getPla i $ ms ->
                 emptied . sendFun $ "You can't send a message to a player who is logged in while you are incognito."
-              | isLoggedIn targetPla ->
-                let sentLogMsg     = (i,        T.concat [ "sent message to "
-                                                         , targetSing
-                                                         , ": "
-                                                         , dblQuote msg ])
-                    receivedLogMsg = (targetId, T.concat [ "received message from "
-                                                         , s
-                                                         , ": "
-                                                         , dblQuote msg ])
-                in do
-                    sendFun . T.concat $ [ "You send ", targetSing, ": ", dblQuote msg ]
-                    let (targetMq, targetCols) = getMsgQueueColumns targetId ms
-                        f                      = multiWrapSend targetMq targetCols . fstList T.tail
-                    (f =<<) $ if getPlaFlag IsNotFirstAdminMsg targetPla
-                      then unadulterated targetMsg
-                      else [ targetMsg : hints | hints <- firstAdminMsg targetId s ]
-                    return [ sentLogMsg, receivedLogMsg ]
+              | isLoggedIn targetPla -> do
+                  sendFun formatted
+                  let (targetMq, targetCols) = getMsgQueueColumns targetId ms
+                      f                      = multiWrapSend targetMq targetCols . fstList T.tail
+                  (f =<<) $ if getPlaFlag IsNotFirstAdminMsg targetPla
+                    then unadulterated toTarget
+                    else [ toTarget : hints | hints <- firstAdminMsg targetId s ]
+                  dbHelper
               | otherwise -> do
-                  multiWrapSend mq cols . consSorry $ [ T.concat [ "You send ", targetSing, ": ", dblQuote msg ]
-                                                      , parensQuote "Message retained." ]
-                  retainedMsg targetId ms targetMsg
-                  let sentLogMsg     = ( i
-                                       , T.concat [ "sent message to ", targetSing, ": ", dblQuote msg ] )
-                      receivedLogMsg = ( targetId
-                                       , T.concat [ "received message from ", s,    ": ", dblQuote msg ] )
-                  return [ sentLogMsg, receivedLogMsg ]
+                  multiSendFun . consSorry $ [ formatted, parensQuote "Message retained." ]
+                  retainedMsg targetId ms toTarget -- TODO: retainedMsg targetId ms . mkRetainedMsgFromPerson s $ toTarget
+                  dbHelper
+              where
+                targetPla = getPla targetId ms
+                formatted = T.concat [ parensQuote $ "to " <> targetSing
+                                     , " "
+                                     , quoteWith "__" s
+                                     , " "
+                                     , toSelf ]
+                dbHelper  = do
+                    ts <- liftIO mkTimestamp
+                    withDbExHandler_ "admin_msg" . insertDbTblAdminMsg . AdminMsgRec ts s targetSing $ toSelf
+                    return [ sentLogMsg, receivedLogMsg ]
+                sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", toSelf   ])
+                receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", toTarget ])
+            ioHelper _ xs = patternMatchFail "adminMsg helper ioHelper" [ showText xs ]
         in (findFullNameForAbbrev strippedTarget . mkPlaIdSingList $ ms) |&| maybe notFound found
 adminMsg p = patternMatchFail "adminMsg" [ showText p ]
 

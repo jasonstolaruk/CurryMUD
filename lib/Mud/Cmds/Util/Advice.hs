@@ -58,7 +58,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceYouEmoteChar
                             , advise ) where
 
-import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData

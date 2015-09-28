@@ -6,6 +6,7 @@ module Mud.Cmds.Debug ( debugCmds
                       , ) where
 
 import Mud.Cmds.Util.Advice
+import Mud.Cmds.Util.CmdPrefixes
 import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc

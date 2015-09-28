@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( asterisk
                           , dbExHandler
@@ -36,9 +36,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkWhoHeader
                           , pager
                           , plusRelated
-                          , prefixAdminCmd
-                          , prefixCmd
-                          , prefixDebugCmd
                           , punc
                           , questionChanContext
                           , sendGenericErrorMsg
@@ -70,7 +67,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Msgs
 import Mud.TopLvlDefs.Padding
-import Mud.Util.List
+import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
@@ -512,21 +509,6 @@ pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i 
 
 plusRelated :: T.Text -> T.Text
 plusRelated = (<> ".") . (<> parensQuote "plus related functionality") . (<> " ")
-
-
------
-
-
-prefixAdminCmd :: T.Text -> CmdName
-prefixAdminCmd = prefixCmd adminCmdChar
-
-
-prefixDebugCmd :: T.Text -> CmdName
-prefixDebugCmd = prefixCmd debugCmdChar
-
-
-prefixCmd :: Char -> CmdName -> T.Text
-prefixCmd (T.singleton -> prefix) cn = prefix <> cn
 
 
 -----
