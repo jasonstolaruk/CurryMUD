@@ -448,16 +448,17 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
               | isLoggedIn targetPla -> do
                   sendFun formatted
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
-                      f                      = multiWrapSend targetMq targetCols . fstList T.tail
+                      f                      = multiWrapSend targetMq targetCols
                   (f =<<) $ if getPlaFlag IsNotFirstAdminMsg targetPla
-                    then unadulterated toTarget
-                    else [ toTarget : hints | hints <- firstAdminMsg targetId s ]
+                    then unadulterated toTarget'
+                    else [ toTarget' : hints | hints <- firstAdminMsg targetId s ]
                   dbHelper
               | otherwise -> do
-                  multiSendFun . consSorry $ [ formatted, parensQuote "Message retained." ]
-                  retainedMsg targetId ms toTarget -- TODO: retainedMsg targetId ms . mkRetainedMsgFromPerson s $ toTarget
+                  multiSendFun [ formatted, parensQuote "Message retained." ]
+                  retainedMsg targetId ms . mkRetainedMsgFromPerson s $ toTarget
                   dbHelper
               where
+                toTarget' = quoteWith "__" s <> " " <> toTarget
                 targetPla = getPla targetId ms
                 formatted = T.concat [ parensQuote $ "to " <> targetSing
                                      , " "
