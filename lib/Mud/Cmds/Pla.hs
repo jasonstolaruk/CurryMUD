@@ -130,7 +130,8 @@ plaCmds :: [Cmd]
 plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
 
 
--- TODO: Make a "give" command.
+-- TODO: "disconnect" command.
+-- TODO: "give" command.
 regularCmds :: [Cmd]
 regularCmds = map (uncurry3 mkRegularCmd)
     [ ("?",          plaDispCmdList,  "Display or search this command list.")
@@ -261,7 +262,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                 if getAll . mconcat $ [ All . isLoggedIn $ adminPla
                                       , not isAdmin |?| (All . not . getPlaFlag IsIncognito $ adminPla) ]
                   then sendFun formatted
-                  else multiSendFun . consSorry $ [ formatted, parensQuote "Message retained." ]
+                  else multiSendFun [ formatted, parensQuote "Message retained." ]
                 retainedMsg adminId ms . mkRetainedMsgFromPerson s $ toAdmin
                 ts <- liftIO mkTimestamp
                 withDbExHandler_ "admin_msg" . insertDbTblAdminMsg . AdminMsgRec ts s adminSing $ toSelf

@@ -104,6 +104,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
 -- TODO: Make a command to listen in on a channel.
+-- TODO: Make a command to kill a PC.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
