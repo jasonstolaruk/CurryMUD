@@ -15,6 +15,8 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceConnectNoChan
                             , adviceDIdArgs
                             , adviceDIdNoId
+                            , adviceDisconnectNoArgs
+                            , adviceDisconnectNoChan
                             , adviceDNumberArgs
                             , adviceDNumberNoArgs
                             , adviceDNumberNoBase
@@ -332,6 +334,25 @@ adviceConnectNoChan a = T.concat [ "Please also specify the name of a telepathic
                                  , " hunt"
                                  , dfltColor
                                  , "." ]
+
+
+adviceDisconnectNoArgs :: T.Text
+adviceDisconnectNoArgs = T.concat [ "Please specify the names of one or more people followed by the name of a \
+                                    \telepathic channel to disconnect them from, as in "
+                                  , quoteColor
+                                  , "disconnect taro hunt"
+                                  , dfltColor
+                                  , "." ]
+
+
+adviceDisconnectNoChan :: T.Text -> T.Text
+adviceDisconnectNoChan a = T.concat [ "Please also specify the name of a telepathic channel, as in "
+                                    , quoteColor
+                                    , "disconnect "
+                                    , a
+                                    , " hunt"
+                                    , dfltColor
+                                    , "." ]
 
 
 adviceDropNoArgs :: T.Text

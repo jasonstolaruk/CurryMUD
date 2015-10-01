@@ -57,7 +57,7 @@ procChanTarget :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either 
 procChanTarget i cc triples ((T.toLower -> target):rest)
   | ()# rest  = Left sorryNoMsg
   | otherwise = case findFullNameForAbbrev target . map (views _2 T.toLower) $ triples of
-    Nothing -> Left . sorryChanTargetName cc $ target
+    Nothing -> Left . sorryChanTargetNameFromContext target $ cc
     Just n  -> let targetId    = getIdForMatch n
                    tunedIds    = map (view _1) triples
                    msg         = capitalizeMsg . T.unwords $ rest
@@ -115,7 +115,7 @@ procEmote i ms cc triples as             =
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                notFound         = Left . sorryChanTargetName cc $ target
+                notFound         = Left . sorryChanTargetNameFromContext target $ cc
                 found match      =
                     let targetId = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
                         txt      = addSuffix isPoss p . embedId $ targetId
@@ -159,7 +159,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
           HasTarget toSelf toTarget toOthers -> if ()# target
             then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of
-              Nothing -> Left . sorryChanTargetName cc $ target
+              Nothing -> Left . sorryChanTargetNameFromContext target $ cc
               Just n  -> let targetId = getIdForMatch n
                              toSelf'  = format (Just targetId) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
@@ -170,7 +170,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
             then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else case findTarget of
-              Nothing -> Left . sorryChanTargetName cc $ target
+              Nothing -> Left . sorryChanTargetNameFromContext target $ cc
               Just n  -> let targetId          = getIdForMatch n
                              toSelfWithTarget' = format (Just targetId) toSelfWithTarget
                          in Right ( (colorizeYous . format Nothing $ toTarget,  pure targetId             ) :
@@ -209,7 +209,7 @@ adminChanProcChanTarget :: Inv -> [Sing] -> Args -> Either T.Text [Broadcast]
 adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
     ()# rest ? Left sorryNoMsg :? (findFullNameForAbbrev target tunedSings |&| maybe notFound found)
   where
-    notFound         = Left . sorryAdminChanName $ target
+    notFound         = Left . sorryAdminChanTargetName $ target
     found targetSing =
         let targetId    = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
             msg         = capitalizeMsg . T.unwords $ rest
@@ -265,7 +265,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
                 target'          = capitalize . T.toLower $ target
-                notFound         = Left . sorryAdminChanName $ target
+                notFound         = Left . sorryAdminChanTargetName $ target
                 found targetSing@(addSuffix isPoss p -> targetSing') =
                     let targetId = head . filter ((== targetSing) . (`getSing` ms)) $ tunedIds
                     in Right ( targetSing'
@@ -306,7 +306,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
           HasTarget toSelf toTarget toOthers -> if ()# target
             then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of
-              Nothing -> Left . sorryAdminChanName $ target
+              Nothing -> Left . sorryAdminChanTargetName $ target
               Just n  -> let targetId = getIdForPCSing n ms
                              toSelf'  = format (Just n) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
@@ -317,7 +317,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
             then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
                        , toSelf )
             else case findTarget of
-              Nothing -> Left . sorryAdminChanName $ target
+              Nothing -> Left . sorryAdminChanTargetName $ target
               Just n  -> let targetId          = getIdForPCSing n ms
                              toSelfWithTarget' = format (Just n) toSelfWithTarget
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :

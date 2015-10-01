@@ -18,15 +18,6 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
-sorryAdminChanName :: T.Text -> T.Text
-sorryAdminChanName n = "There is no admin by the name of " <>
-                       (dblQuote . capitalize $ n)         <>
-                       " currently tuned in to the admin channel."
-
-
------
-
-
 sorryAlreadyWielding :: MudState -> Slot -> Id -> T.Text
 sorryAlreadyWielding ms sl i = let s = getSing i ms in T.concat [ "You're already wielding "
                                                                 , aOrAn s
@@ -45,14 +36,22 @@ sorryBracketedMsg = Left "You can't open or close your message with brackets."
 -----
 
 
-sorryChanTargetName :: ChanContext -> T.Text -> T.Text
-sorryChanTargetName cc n = T.concat [ "There is no one by the name of "
+sorryChanTargetName :: T.Text -> T.Text -> T.Text
+sorryChanTargetName cn n = T.concat [ "There is no one by the name of "
                                     , dblQuote . capitalize $ n
                                     , " currently tuned in to the "
-                                    , mkEffChanName cc
+                                    , cn
                                     , " channel." ]
+
+
+sorryAdminChanTargetName :: T.Text -> T.Text
+sorryAdminChanTargetName = sorryChanTargetName "admin" . dblQuote . capitalize
+
+
+sorryChanTargetNameFromContext :: T.Text -> ChanContext -> T.Text
+sorryChanTargetNameFromContext n (ChanContext { .. }) = sorryChanTargetName (dblQuote . capitalize $ n) effChanName
   where
-    mkEffChanName (ChanContext { .. }) = maybe someCmdName dblQuote someChanName
+    effChanName = maybe someCmdName dblQuote someChanName
 
 
 -----
@@ -67,6 +66,13 @@ sorryConnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would l
 
 sorryDbEx :: MsgQueue -> Cols -> MudStack ()
 sorryDbEx mq cols = wrapSend mq cols "There was an error when reading the database."
+
+
+-----
+
+
+sorryDisconnectIgnore :: T.Text
+sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would like to disconnect"
 
 
 -----
