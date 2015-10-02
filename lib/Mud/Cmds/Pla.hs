@@ -400,26 +400,6 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
 chan p = patternMatchFail "chan" [ showText p ]
 
 
-getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, T.Text, T.Text)]
-getChanStyleds i c ms =
-    let s                     = getSing i ms
-        others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
-        f (s', isTuned)       = s' /= s && isTuned
-        g (s', _      )       = (getIdForPCSing s' ms, s')
-        h                     = (`isAwake` ms) . fst
-        (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
-        nonLinkedIds          = map fst nonLinkeds
-    in mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
-        let nonLinkeds' = zip nonLinkedIds rndmNames
-            combo       = sortBy (compare `on` snd) $ linkeds ++ nonLinkeds'
-            styleds     = styleAbbrevs Don'tBracket . map snd $ combo
-            helper (x, y) styled | x `elem` nonLinkedIds = a & _3 %~ underline
-                                 | otherwise             = a
-              where
-                a = (x, y, styled)
-        in return . zipWith helper combo $ styleds
-
-
 -----
 
 
@@ -449,8 +429,8 @@ color p = withoutArgs color p
 
 -- TODO: Connecting someone to a channel should cost psionic points.
 connect :: Action
-connect p@AdviseNoArgs     = advise p ["connect"] adviceConnectNoArgs
-connect p@(AdviseOneArg a) = advise p ["connect"] . adviceConnectNoChan $ a
+connect p@AdviseNoArgs       = advise p ["connect"] adviceConnectNoArgs
+connect p@(AdviseOneArg a)   = advise p ["connect"] . adviceConnectNoChan $ a
 connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
     if getPlaFlag IsIncognito . getPla i $ ms
       then wrapSend mq cols . sorryIncog $ "connect"
@@ -538,11 +518,12 @@ connectHelper i (target, as) ms =
 -- TODO: Help.
 -- TODO: Disconnecting someone from a channel should cost psionic points.
 disconnect :: Action
-disconnect p@AdviseNoArgs     = advise p ["disconnect"] adviceDisconnectNoArgs
-disconnect p@(AdviseOneArg a) = advise p ["disconnect"] . adviceDisconnectNoChan $ a
+disconnect p@AdviseNoArgs       = advise p ["disconnect"] adviceDisconnectNoArgs
+disconnect p@(AdviseOneArg a)   = advise p ["disconnect"] . adviceDisconnectNoChan $ a
 disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
     if getPlaFlag IsIncognito . getPla i $ ms
       then wrapSend mq cols . sorryIncog $ "disconnect"
+      -- TODO: Use "getChanIdNames" to get id/names for every channel that the player is tuned in to. Pass this to "disconnectHelper".
       else disconnectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
         ([Left msg], Nothing) -> bcastNl . mkBroadcast i $ msg
         (res,        Just ci)
@@ -590,9 +571,8 @@ disconnectHelper i (target, as) ms =
                            foundSing targetSing = pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
                                                        & _2 <>~ (pure . Right $ targetSing)
                            oops msg             = pair & _2 <>~ (pure . Left $ msg)
-                       in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing -- TODO: Must provide full PC name.
+                       in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing -- TODO: Must provide full PC name/random name.
                    ci          = c^.chanId
-                   -- TODO: What about random names?
                    targetSings = let tunedSings = views chanConnTbl (M.keys . M.filter id) c
                                      idSings    = [ (getIdForPCSing s' ms, s') | s' <- tunedSings ]
                                  in map snd . filter ((`isAwake` ms) . fst) $ idSings

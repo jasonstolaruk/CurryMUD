@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
@@ -15,6 +15,8 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , fillerToSpcs
                          , findAvailSlot
                          , focusingInnate
+                         , getChanIdNames
+                         , getChanStyleds
                          , getMatchingChanWithName
                          , getRelativePCName
                          , haven'tTwoWay
@@ -96,7 +98,7 @@ import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
-import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
+import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, partition, sortBy)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
 import qualified Data.IntMap.Lazy as IM (keys)
@@ -241,6 +243,44 @@ getMatchingChanWithName :: T.Text -> [ChanName] -> [Chan] -> (ChanName, Chan)
 getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.toLower) $ cns
                                            c   = head . filter (views chanName (== cn)) $ cs
                                        in (cn, c)
+
+
+-----
+
+
+getChanIdNames :: Id -> Chan -> MudState -> MudStack [(Id, T.Text)]
+getChanIdNames i c ms =
+    let s                     = getSing i ms
+        others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
+        f (s', isTuned)       = s' /= s && isTuned
+        g (s', _      )       = (getIdForPCSing s' ms, s')
+        h                     = (`isAwake` ms) . fst
+        (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
+        nonLinkedIds          = map fst nonLinkeds
+    in sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
+
+
+-----
+
+
+getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, T.Text, T.Text)]
+getChanStyleds i c ms =
+    let s                     = getSing i ms
+        others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
+        f (s', isTuned)       = s' /= s && isTuned
+        g (s', _      )       = (getIdForPCSing s' ms, s')
+        h                     = (`isAwake` ms) . fst
+        (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
+        nonLinkedIds          = map fst nonLinkeds
+    in mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
+        let nonLinkeds' = zip nonLinkedIds rndmNames
+            combo       = sortBy (compare `on` snd) $ linkeds ++ nonLinkeds'
+            styleds     = styleAbbrevs Don'tBracket . map snd $ combo
+            helper (x, y) styled | x `elem` nonLinkedIds = a & _3 %~ underline
+                                 | otherwise             = a
+              where
+                a = (x, y, styled)
+        in return . zipWith helper combo $ styleds
 
 
 -----
