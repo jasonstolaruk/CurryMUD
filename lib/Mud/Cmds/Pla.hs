@@ -338,7 +338,7 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
         multiWrapSend mq cols . helper (styleAbbrevs Don'tBracket chanNames) $ chanTunings
         logPlaExecArgs "chan" [] i
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
-    let notFound    = wrapSend mq cols . notConnectedChan $ a
+    let notFound    = wrapSend mq cols . sorryNotConnectedChan $ a
         found match =
             -- TODO: In the chan list, only the names of those who are tuned in should be abbrev styled.
             let (cn, c)                  = getMatchingChanWithName match cns cs
@@ -362,7 +362,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
         mkTriple (x, y) = (getIdForPCSing x ms, x, y)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let notFound    = wrapSend mq cols . notConnectedChan $ target
+    let notFound    = wrapSend mq cols . sorryNotConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if
           | views chanConnTbl (not . (M.! s)) c    -> sorryNotTunedICChan mq cols cn
           | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "a telepathic"
@@ -476,7 +476,7 @@ connectHelper i (target, as) ms =
                        | otherwise         = (id,           ""                )
         g           = ()# guessWhat ? id :? (Left guessWhat :)
         as'         = map (capitalize . T.toLower . f) as
-        notFound    = sorry . notConnectedChan $ target
+        notFound    = sorry . sorryNotConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let procTarget pair a =
                        let notFoundSing         = oops . notFoundSuggestAsleeps target asleepSings $ ms
@@ -564,7 +564,7 @@ disconnectHelper i (target, as) ms =
                        | otherwise         = (id,           ""                   )
         g           = ()# guessWhat ? id :? (Left guessWhat :)
         as'         = map (capitalize . T.toLower . f) as
-        notFound    = sorry . notConnectedChan $ target
+        notFound    = sorry . sorryNotConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let procTarget pair a =
                        let notFoundSing         = oops . sorryChanTargetName (dblQuote cn) $ a
@@ -693,7 +693,7 @@ equip (LowerNub i mq cols as) = getState >>= \ms ->
                invDesc                               = foldl' helperEitherInv "" eiss
                helperEitherInv acc (Left  msg)       = (acc <>) . wrapUnlinesNl cols $ msg
                helperEitherInv acc (Right targetIds) = nl $ acc <> mkEntDescs i cols ms targetIds
-               coinsDesc                             = rcs |!| wrapUnlinesNl cols noCoinsInEq
+               coinsDesc                             = rcs |!| wrapUnlinesNl cols sorryNoCoinsInEq
            in T.concat [ inInvs |!| sorryInInv, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYou'reNaked
   where
@@ -1098,7 +1098,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
                 in (ms', (ms', chanIdNameIsDels, sorryMsgs))
       where
         f triple a@(T.toLower -> a') =
-            let notFound     = triple & _3 <>~ (pure . notConnectedChan $ a)
+            let notFound     = triple & _3 <>~ (pure . sorryNotConnectedChan $ a)
                 found match  = let (cn, c) = getMatchingChanWithName match cns cs
                                    ci      = c^.chanId
                                    isDel   = views chanConnTbl ((== 1) . M.size) c
@@ -1477,7 +1477,7 @@ putAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
           (InEq,  _       ) -> (ms, (mkBroadcast i . sorryConInEq $ Put, []))
           (InRm,  conName') -> if ()!# fst rmInvCoins
             then shufflePut i ms d conName' True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
-            else (ms, (mkBroadcast i noContainersHere, []))
+            else (ms, (mkBroadcast i sorryNoContainersHere, []))
         else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 putAction p = patternMatchFail "putAction" [ showText p ]
 
@@ -1947,7 +1947,7 @@ remove (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
           (InEq,  _       ) -> (ms, (mkBroadcast i . sorryConInEq $ Rem, []))
           (InRm,  conName') -> if ()!# fst rmInvCoins
             then shuffleRem i ms d conName' True argsWithoutCon rmInvCoins procGecrMisRm
-            else (ms, (mkBroadcast i noContainersHere, []))
+            else (ms, (mkBroadcast i sorryNoContainersHere, []))
 remove p = patternMatchFail "remove" [ showText p ]
 
 
@@ -2189,7 +2189,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
            rmInvCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
        in if
          | ()# eqMap && ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
-         | ()# rmInvCoins            -> wrapSend mq cols noOneHere
+         | ()# rmInvCoins            -> wrapSend mq cols sorryNoOneHere
          | otherwise                 -> case singleArgInvEqRm InRm (last as) of
            (InInv, _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your inventory"         <> tryThisInstead
            (InEq,  _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your readied equipment" <> tryThisInstead
@@ -2368,7 +2368,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito 
                                             , i `delete` pcIds d )
                                           | itemId <- itemIds ]
                -----
-               showCoinsInEqHelper = rcs |!| mkBroadcast i noCoinsInEq
+               showCoinsInEqHelper = rcs |!| mkBroadcast i sorryNoCoinsInEq
            in ((++ showCoinsInEqHelper) *** slashes) showEqHelper
       else (mkBroadcast i dudeYou'reNaked, "")
 showAction p = patternMatchFail "showAction" [ showText p ]

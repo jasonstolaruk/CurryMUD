@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, RecordWildCards, ViewPatterns #-}
 
 module Mud.Cmds.Util.Sorry where
 
@@ -12,6 +12,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
+import Mud.Util.Wrapping
 
 import Data.Char (toLower)
 import Data.Monoid ((<>))
@@ -57,6 +58,21 @@ sorryChanTargetNameFromContext n (ChanContext { .. }) = sorryChanTargetName (dbl
 -----
 
 
+sorryConInEq :: PutOrRem -> T.Text
+sorryConInEq por = let (a, b) = expand por
+                   in T.concat [ "Sorry, but you can't "
+                               , a
+                               , " an item "
+                               , b
+                               , " a container in your readied equipment. Please unready the container first." ]
+  where
+    expand = \case Put -> ("put",    "into")
+                   Rem -> ("remove", "from")
+
+
+-----
+
+
 sorryConnectIgnore :: T.Text
 sorryConnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would like to connect"
 
@@ -73,6 +89,26 @@ sorryDbEx mq cols = wrapSend mq cols "There was an error when reading the databa
 
 sorryDisconnectIgnore :: T.Text
 sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would like to disconnect"
+
+
+-----
+
+
+sorryEquipInvLook :: Cols -> EquipInvLookCmd -> EquipInvLookCmd -> T.Text
+sorryEquipInvLook cols eilcA eilcB = wrapUnlinesNl cols . T.concat $ helper
+  where
+    helper = [ "You can only use the "
+             , dblQuote . showText $ eilcA
+             , " command to examine items in your "
+             , loc eilcA
+             , ". To examine items in your "
+             , loc eilcB
+             , ", use the "
+             , dblQuote . showText $ eilcB
+             , " command." ]
+    loc    = \case EquipCmd -> "readied equipment"
+                   InvCmd   -> "inventory"
+                   LookCmd  -> "current room"
 
 
 -----
@@ -135,6 +171,20 @@ sorryIllegalChanName a msg = pure . T.concat $ [ dblQuote a, " is not a legal ch
 -----
 
 
+sorryIncog :: T.Text -> T.Text
+sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito."
+
+
+-----
+
+
+sorryIncogChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
+
+
+-----
+
+
 sorryNoMsg :: T.Text
 sorryNoMsg = "You must also provide a message to send."
 
@@ -142,8 +192,36 @@ sorryNoMsg = "You must also provide a message to send."
 -----
 
 
+sorryNoContainersHere :: T.Text
+sorryNoContainersHere = "You don't see any containers here."
+
+
+-----
+
+
+sorryNoCoinsInEq :: T.Text
+sorryNoCoinsInEq = "You don't have any coins among your readied equipment."
+
+
+-----
+
+
+sorryNoOneHere :: T.Text
+sorryNoOneHere = "You don't see anyone here."
+
+
+-----
+
+
 sorryNoOneListening :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tuned in to the " <> n <> " channel."
+
+
+-----
+
+
+sorryNotConnectedChan :: ChanName -> T.Text
+sorryNotConnectedChan cn = "You are not connected to a channel named " <> dblQuote cn <> "."
 
 
 -----

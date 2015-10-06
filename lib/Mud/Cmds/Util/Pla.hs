@@ -15,6 +15,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , fillerToSpcs
                          , findAvailSlot
                          , focusingInnate
+                         , getAllChanIdNames
                          , getChanIdNames
                          , getChanStyleds
                          , getMatchingChanWithName
@@ -48,19 +49,11 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , mkPutRemoveBindings
                          , mkReadyMsgs
                          , moveReadiedItem
-                         , noCoinsInEq
-                         , noContainersHere
-                         , noOneHere
-                         , notConnectedChan
                          , notFoundSuggestAsleeps
                          , otherHand
                          , putOnMsgs
                          , resolvePCInvCoins
                          , resolveRmInvCoins
-                         , sorryConInEq
-                         , sorryEquipInvLook
-                         , sorryIncog
-                         , sorryIncogChan
                          , theLetterS ) where
 
 import Mud.Cmds.Util.Abbrev
@@ -94,14 +87,14 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***), first)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad (guard)
+import Control.Monad (forM, guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, partition, sortBy)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, fromList, keys)
 import qualified Data.Map.Lazy as M ((!), notMember, toList)
 import qualified Data.Text as T
 
@@ -258,6 +251,14 @@ getChanIdNames i c ms =
         (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
         nonLinkedIds          = map fst nonLinkeds
     in sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
+
+
+-- TODO: Consider making a debug command that dumps the IntMap.
+getAllChanIdNames :: Id -> MudState -> MudStack (IM.IntMap [(Id, T.Text)])
+getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
+    IM.fromList . zipWith (\chan -> (chan^.chanId, )) tunedChans <$> forM tunedChans (flip (getChanIdNames i) ms)
+  where
+    helper chan acc = views chanConnTbl (M.! getSing i ms) chan ? (chan : acc) :? acc
 
 
 -----
@@ -883,34 +884,6 @@ moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
 -----
 
 
-noCoinsInEq :: T.Text
-noCoinsInEq = "You don't have any coins among your readied equipment."
-
-
------
-
-
-noContainersHere :: T.Text
-noContainersHere = "You don't see any containers here."
-
-
------
-
-
-noOneHere :: T.Text
-noOneHere = "You don't see anyone here."
-
-
------
-
-
-notConnectedChan :: T.Text -> T.Text
-notConnectedChan cn = "You are not connected to a channel named " <> dblQuote cn <> "."
-
-
------
-
-
 notFoundSuggestAsleeps :: T.Text -> [Sing] -> MudState -> T.Text
 notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
     case findFullNameForAbbrev a' asleepSings of
@@ -965,55 +938,6 @@ resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms 
 
 resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
-
-
------
-
-
-sorryConInEq :: PutOrRem -> T.Text
-sorryConInEq por = let (a, b) = expand por
-                   in T.concat [ "Sorry, but you can't "
-                               , a
-                               , " an item "
-                               , b
-                               , " a container in your readied equipment. Please unready the container first." ]
-  where
-    expand = \case Put -> ("put",    "into")
-                   Rem -> ("remove", "from")
-
-
------
-
-
-sorryEquipInvLook :: Cols -> EquipInvLookCmd -> EquipInvLookCmd -> T.Text
-sorryEquipInvLook cols eilcA eilcB = wrapUnlinesNl cols . T.concat $ helper
-  where
-    helper = [ "You can only use the "
-             , dblQuote . showText $ eilcA
-             , " command to examine items in your "
-             , loc eilcA
-             , ". To examine items in your "
-             , loc eilcB
-             , ", use the "
-             , dblQuote . showText $ eilcB
-             , " command." ]
-    loc    = \case EquipCmd -> "readied equipment"
-                   InvCmd   -> "inventory"
-                   LookCmd  -> "current room"
-
-
------
-
-
-sorryIncog :: T.Text -> T.Text
-sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito."
-
-
------
-
-
-sorryIncogChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
 
 
 -----

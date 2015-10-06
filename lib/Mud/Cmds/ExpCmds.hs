@@ -780,7 +780,7 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
                   MobType -> onMob . theOnLower . getSing targetId $ ms
                   _       -> sendHelper "Sorry, but expressive commands can only target people."
               x -> patternMatchFail "expCmd helper" [ showText x ]
-            else sendHelper noOneHere
+            else sendHelper sorryNoOneHere
       (x, _) -> sorry x
     sendHelper = wrapSend mq cols
     sorry loc  = sendHelper $ "You can't target an item in your " <> loc' <> " with an expressive command."
