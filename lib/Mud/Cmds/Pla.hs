@@ -470,6 +470,8 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPC
 connect p = patternMatchFail "connect" [ showText p ]
 
 
+-- TODO: When Root is incog:
+-- "co root x" -> You haven't established a two-way telepathic link with anyone named "x".
 connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
 connectHelper i (target, as) ms =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryConnectIgnore)

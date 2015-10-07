@@ -251,6 +251,13 @@ sorryNotTunedOOCChan = sorryNotTunedChan "set"
 -----
 
 
+sorryParseId :: T.Text -> T.Text
+sorryParseId a = dblQuote a <> " is not a valid ID."
+
+
+-----
+
+
 sorryPeepIgnore :: T.Text
 sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
 

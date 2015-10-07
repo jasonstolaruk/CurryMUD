@@ -13,6 +13,8 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceBugNoDesc
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
+                            , adviceDCinsArgs
+                            , adviceDCinsNoId
                             , adviceDIdArgs
                             , adviceDIdNoId
                             , adviceDisconnectNoArgs
@@ -171,6 +173,24 @@ adviceATeleRmArgs = T.concat [ "Please provide one argument: the name of the roo
 
 
 -----
+
+
+adviceDCinsArgs :: T.Text
+adviceDCinsArgs = T.concat [ "Please provide one argument: the target ID, as in "
+                           , quoteColor
+                           , prefixDebugCmd "cins"
+                           , " 100"
+                           , dfltColor
+                           , "." ]
+
+
+adviceDCinsNoId :: T.Text
+adviceDCinsNoId = T.concat [ "Please provide one argument: the target ID, as in "
+                           , quoteColor
+                           , prefixDebugCmd "cins"
+                           , " 100"
+                           , dfltColor
+                           , "." ]
 
 
 adviceDIdArgs :: T.Text

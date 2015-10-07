@@ -8,6 +8,7 @@ module Mud.Cmds.Debug ( debugCmds
 import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Pla
 import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -65,6 +66,9 @@ import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
 
+
+-- TODO: Looks like we still need to move some functions to Advice and Sorry.
+
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
@@ -97,6 +101,7 @@ debugCmds =
     , mkDebugCmd "boot"       debugBoot        "Boot all players (including yourself)."
     , mkDebugCmd "broad"      debugBroad       "Broadcast (to yourself) a multi-line message."
     , mkDebugCmd "buffer"     debugBuffCheck   "Confirm the default buffering mode for file handles."
+    , mkDebugCmd "cins"       debugCins        "Dump all channel ID/names for a given player ID."
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
@@ -179,6 +184,29 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 -----
 
 
+debugCins :: Action
+debugCins p@AdviseNoArgs       = advise p [] adviceDCinsNoId
+debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+  [(targetId, "")] -> helper targetId
+  _                -> wrapSend mq cols . sorryParseId $ a
+  where
+    helper targetId@(showText -> targetIdTxt)
+      | targetId < 0 = sorryWtf mq cols
+      | otherwise    = getState >>= \ms -> do
+          multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms
+          logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
+      where
+        header = T.concat [ "All channel ID/names "
+                          , parensQuote "IM.IntMap [(Id, T.Text)]"
+                          , " for ID "
+                          , targetIdTxt
+                          , ":" ]
+debugCins p = advise p [] adviceDCinsArgs
+
+
+-----
+
+
 debugColor :: Action
 debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefixDebugCmd "color") i
   where
@@ -236,9 +264,8 @@ debugId :: Action
 debugId p@AdviseNoArgs       = advise p [] adviceDIdNoId
 debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
-  _                -> sorryParse
+  _                -> wrapSend mq cols . sorryParseId $ a
   where
-    sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid ID."
     helper searchId@(showText -> searchIdTxt)
       | searchId < 0 = sorryWtf mq cols
       | otherwise    = getState >>= \ms -> do

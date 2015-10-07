@@ -253,7 +253,6 @@ getChanIdNames i c ms =
     in sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
 
 
--- TODO: Consider making a debug command that dumps the IntMap.
 getAllChanIdNames :: Id -> MudState -> MudStack (IM.IntMap [(Id, T.Text)])
 getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
     IM.fromList . zipWith (\chan -> (chan^.chanId, )) tunedChans <$> forM tunedChans (flip (getChanIdNames i) ms)
