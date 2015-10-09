@@ -348,7 +348,6 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryNotConnectedChan $ a
         found match =
             -- TODO: In the chan list, only the names of those who are tuned in should be abbrev styled.
-            -- TODO: There is no point in displaying the player's own name in the list.
             -- TODO: "chan": (tomo) Jason is tuned in, Zaa is tuned in, crow is tuned in <-- Should have Sing instead of "crow"
             let (cn, c)                  = getMatchingChanWithName match cns cs
                 ([(_, isTuned)], others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
@@ -358,7 +357,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                 let combo    = map dropFst linkeds ++ zipWith (\rndmName -> (rndmName, ) . view _3) rndmNames nonLinkeds
                     combo'   = sortBy (compare `on` fst) combo
                     styleds  = styleAbbrevs Don'tBracket . map fst $ combo'
-                    combo''  = (s, isTuned) : zipWith (\styled -> _1 .~ styled) styleds combo'
+                    combo''  = zipWith (\styled -> _1 .~ styled) styleds combo'
                     g (x, y) = let x' = isRndmName x ? underline x :? x in padName x' <> inOut y
                     inOut x  = x ? "tuned in" :? "tuned out"
                 in if isTuned
@@ -556,7 +555,10 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
                                 , "." ] -> do
                   toOthers <- mkToOthers ms otherIds targetIds cn
                   bcastNl $ toTargets : toOthers ++ sorryBs ++ (()!# targetNames |?| mkBroadcast i toSelf)
-                  logPla "disconnect" i $ "disconnected from " <> dblQuote cn <> ": " <> commas targetSings
+                  targetSings |#| (const . logPla "disconnect" i . T.concat $ [ "disconnected from "
+                                                                              , dblQuote cn
+                                                                              , ": "
+                                                                              , commas targetSings ])
             xs -> patternMatchFail "disconnect" [ showText xs ]
   where
     format n = isRndmName n ? underline n :? n
