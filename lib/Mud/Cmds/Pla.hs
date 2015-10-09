@@ -347,27 +347,27 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryNotConnectedChan $ a
         found match =
-            -- TODO: In the chan list, only the names of those who are tuned in should be abbrev styled.
-            -- TODO: "chan": (tomo) Jason is tuned in, Zaa is tuned in, crow is tuned in <-- Should have Sing instead of "crow"
             let (cn, c)                  = getMatchingChanWithName match cns cs
                 ([(_, isTuned)], others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
                 (linkeds, nonLinkeds)    = partition (views _1 (isLinked ms . (i, ))) . filter f . map mkTriple $ others
                 f                        = views _1 (`isAwake` ms)
             in mapM (updateRndmName i . view _1) nonLinkeds >>= \rndmNames ->
-                let combo    = map dropFst linkeds ++ zipWith (\rndmName -> (rndmName, ) . view _3) rndmNames nonLinkeds
-                    combo'   = sortBy (compare `on` fst) combo
-                    styleds  = styleAbbrevs Don'tBracket . map fst $ combo'
-                    combo''  = zipWith (\styled -> _1 .~ styled) styleds combo'
-                    g (x, y) = let x' = isRndmName x ? underline x :? x in padName x' <> inOut y
-                    inOut x  = x ? "tuned in" :? "tuned out"
+                let combo       = linkeds ++ zipWith (\rndmName -> _2 .~ rndmName) rndmNames nonLinkeds
+                    (ins, outs) = partition (view _3) . sortBy (compare `on` view _2) $ combo
+                    styleds     = styleAbbrevs Don'tBracket . map (view _2) $ ins
+                    ins'        = zipWith (\styled -> _2 .~ styled) styleds ins
+                    g (_, n, isTuned') = let n' = isRndmName n ? underline n :? n in padName n' <> inOut isTuned'
+                    inOut isTuned'     = isTuned' ? "tuned in" :? "tuned out"
+                    combo'             = ins' ++ outs
                 in if isTuned
                   then do
-                      multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : map g combo''
+                      multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : map g combo'
                       let affixChanName msg = parensQuote cn <> " " <> msg
-                      logPla "chan" i . affixChanName . commas $ [ dropANSI x <> " is " <> inOut y | (x, y) <- combo'' ]
+                      logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> inOut isTuned'
+                                                                 | (i', _, isTuned') <- combo' ]
                   else sorryNotTunedICChan mq cols cn
-        (cs, cns, s)    = mkChanBindings i ms
-        mkTriple (x, y) = (getIdForPCSing x ms, x, y)
+        (cs, cns, s)           = mkChanBindings i ms
+        mkTriple (s', isTuned) = (getIdForPCSing s' ms, s', isTuned)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryNotConnectedChan $ target
@@ -550,7 +550,7 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
                 _   -> T.concat [ "you disconnect the following people from the "
                                 , dblQuote cn
                                 , " channel: "
-                                , commas targetNames
+                                , commas . map format $ targetNames
                                 , "." ] -> do
                   toOthers <- mkToOthers ms otherIds targetIds cn
                   bcastNl $ toTargets : toOthers ++ sorryBs ++ (()!# targetNames |?| mkBroadcast i toSelf)
