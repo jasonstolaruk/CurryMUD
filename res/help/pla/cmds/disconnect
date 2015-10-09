@@ -1,0 +1,14 @@
+\h DISCONNECT \d
+
+\uUSAGE\n
+disconnect name \s...\d channel
+
+\uDESCRIPTION\n
+Disconnect one or more people from a telepathic channel.
+You must specify the full name of each person you wish to disconnect.
+
+\uEXAMPLES\n
+\qdisconnect taro hunt\d to disconnect Taro from the "hunt" channel.4`
+\qdisconnect taro hanako hunt\d to disconnect both Taro and Hanako from "hunt".4`
+
+\uSEE ALSO\n

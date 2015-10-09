@@ -525,7 +525,6 @@ connectHelper i (target, as) ms =
 -----
 
 
--- TODO: Help.
 -- TODO: Disconnecting someone from a channel should cost psionic points.
 disconnect :: Action
 disconnect p@AdviseNoArgs       = advise p ["disconnect"] adviceDisconnectNoArgs
@@ -572,7 +571,6 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
 disconnect p = patternMatchFail "disconnect" [ showText p ]
 
 
--- TODO: We have some empty log statements: "disconnect": disconnected from "tomo":
 disconnectHelper :: Id
                  -> (T.Text, Args)
                  -> IM.IntMap [(Id, T.Text)]
