@@ -357,7 +357,7 @@ adviceConnectNoChan a = T.concat [ "Please also specify the name of a telepathic
 
 
 adviceDisconnectNoArgs :: T.Text
-adviceDisconnectNoArgs = T.concat [ "Please specify the names of one or more people followed by the name of a \
+adviceDisconnectNoArgs = T.concat [ "Please provide the full names of one or more people followed by the name of a \
                                     \telepathic channel to disconnect them from, as in "
                                   , quoteColor
                                   , "disconnect taro hunt"
@@ -366,7 +366,7 @@ adviceDisconnectNoArgs = T.concat [ "Please specify the names of one or more peo
 
 
 adviceDisconnectNoChan :: T.Text -> T.Text
-adviceDisconnectNoChan a = T.concat [ "Please also specify the name of a telepathic channel, as in "
+adviceDisconnectNoChan a = T.concat [ "Please also provide the name of a telepathic channel, as in "
                                     , quoteColor
                                     , "disconnect "
                                     , a

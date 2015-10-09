@@ -77,7 +77,7 @@ import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -327,6 +327,13 @@ bug p              = bugTypoLogger p BugLog
 
 
 -- TODO: Sending a msg should cost psionic points.
+-- TODO:
+{-
+c t >z great
+There is no one by the name of ""tomo"" currently tuned in to the "Z" channel.
+
+But all I did was type "z" instead of "j"...
+-}
 chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
     let (chanNames, chanTunings) = mkChanNamesTunings i ms
@@ -341,6 +348,8 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryNotConnectedChan $ a
         found match =
             -- TODO: In the chan list, only the names of those who are tuned in should be abbrev styled.
+            -- TODO: There is no point in displaying the player's own name in the list.
+            -- TODO: "chan": (tomo) Jason is tuned in, Zaa is tuned in, crow is tuned in <-- Should have Sing instead of "crow"
             let (cn, c)                  = getMatchingChanWithName match cns cs
                 ([(_, isTuned)], others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
                 (linkeds, nonLinkeds)    = partition (views _1 (isLinked ms . (i, ))) . filter f . map mkTriple $ others
@@ -525,31 +534,32 @@ disconnect p@(AdviseOneArg a)   = advise p ["disconnect"] . adviceDisconnectNoCh
 disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
     if getPlaFlag IsIncognito . getPla i $ ms
       then wrapSend mq cols . sorryIncog $ "disconnect"
-      -- TODO: Use "getChanIdNames" to get id/names for every channel that the player is tuned in to. Pass this to "disconnectHelper".
-      else disconnectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
-        ([Left msg], Nothing) -> bcastNl . mkBroadcast i $ msg
-        (res,        Just ci)
-          | (map fromLeft -> sorryMsgs, map fromRight -> targetSings) <- partition isLeft res
-          , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
-          , targetIds <- getIds targetSings
-          , c         <- getChan ci ms
-          , cn        <- c^.chanName
-          , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms) . getIds . M.keys . M.filter id
-                         in views chanConnTbl f c
-          , toTargets <- ( "Someone has severed your telepathic connection to the " <> dblQuote cn <> " channel."
-                         , targetIds )
-          , toSelf    <- focusingInnate $ case targetSings of
-            [one] -> T.concat [ "you disconnect ", one, " from the ", dblQuote cn, " channel." ]
-            _     -> T.concat [ "you disconnect the following people from the "
-                              , dblQuote cn
-                              , " channel: "
-                              , commas targetSings
-                              , "." ] -> do
-              toOthers <- mkToOthers ms otherIds targetIds cn
-              bcastNl $ toTargets : toOthers ++ sorryBs ++ (()!# targetSings |?| mkBroadcast i toSelf)
-              logPla "disconnect" i $ "disconnected from " <> dblQuote cn <> ": " <> commas targetSings
-        xs -> patternMatchFail "disconnect" [ showText xs ]
+      else getAllChanIdNames i ms >>= \idNamesTbl ->
+          disconnectHelper i (mkLastArgWithNubbedOthers as) idNamesTbl |&| modifyState >=> \case
+            ([Left msg], Nothing) -> bcastNl . mkBroadcast i $ msg
+            (res,        Just ci)
+              | (map fromLeft -> sorryMsgs, map fromRight -> idSingNames) <- partition isLeft res
+              , (targetIds, targetSings, targetNames)                     <- unzip3 idSingNames
+              , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
+              , c         <- getChan ci ms
+              , cn        <- c^.chanName
+              , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms) . getIds . M.keys . M.filter id
+                             in views chanConnTbl f c
+              , toTargets <- ( "Someone has severed your telepathic connection to the " <> dblQuote cn <> " channel."
+                             , targetIds )
+              , toSelf    <- focusingInnate $ case targetNames of
+                [n] -> T.concat [ "you disconnect ", format n, " from the ", dblQuote cn, " channel." ]
+                _   -> T.concat [ "you disconnect the following people from the "
+                                , dblQuote cn
+                                , " channel: "
+                                , commas targetNames
+                                , "." ] -> do
+                  toOthers <- mkToOthers ms otherIds targetIds cn
+                  bcastNl $ toTargets : toOthers ++ sorryBs ++ (()!# targetNames |?| mkBroadcast i toSelf)
+                  logPla "disconnect" i $ "disconnected from " <> dblQuote cn <> ": " <> commas targetSings
+            xs -> patternMatchFail "disconnect" [ showText xs ]
   where
+    format n = isRndmName n ? underline n :? n
     mkToOthers ms otherIds targetIds cn = do
         namesForMe      <- mapM (getRelativePCName ms . (, i)) otherIds
         namesForTargets <- mapM (\otherId -> mapM (getRelativePCName ms . (otherId, )) targetIds) otherIds
@@ -560,25 +570,34 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
 disconnect p = patternMatchFail "disconnect" [ showText p ]
 
 
-disconnectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
-disconnectHelper i (target, as) ms =
+-- TODO: We have some empty log statements: "disconnect": disconnected from "tomo":
+disconnectHelper :: Id
+                 -> (T.Text, Args)
+                 -> IM.IntMap [(Id, T.Text)]
+                 -> MudState
+                 -> (MudState, ([Either T.Text (Id, Sing, T.Text)], Maybe Id))
+disconnectHelper i (target, as) idNamesTbl ms =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryDisconnectIgnore)
                        | otherwise         = (id,           ""                   )
         g           = ()# guessWhat ? id :? (Left guessWhat :)
-        as'         = map (capitalize . T.toLower . f) as
+        as'         = map (T.toLower . f) as
         notFound    = sorry . sorryNotConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
-          then let procTarget pair a =
-                       let notFoundSing         = oops . sorryChanTargetName (dblQuote cn) $ a
-                           foundSing targetSing = pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
-                                                       & _2 <>~ (pure . Right $ targetSing)
-                           oops msg             = pair & _2 <>~ (pure . Left $ msg)
-                       in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing -- TODO: Must provide full PC name/random name.
-                   ci          = c^.chanId
-                   targetSings = let tunedSings = views chanConnTbl (M.keys . M.filter id) c
-                                     idSings    = [ (getIdForPCSing s' ms, s') | s' <- tunedSings ]
-                                 in map snd . filter ((`isAwake` ms) . fst) $ idSings
-                   (ms', res)  = foldl' procTarget (ms, []) as'
+          then let procTarget (pair, b) a = case filter ((== a) . T.toLower . snd) $ idNamesTbl IM.! ci of
+                     [] -> (pair & _2 <>~ (pure . Left . hint . sorryChanTargetName (dblQuote cn) $ a), True)
+                     [(targetId, targetName)] ->
+                       let targetSing = getSing targetId ms
+                       in ( pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
+                                 & _2 <>~ (pure . Right $ (targetId, targetSing, targetName))
+                          , b )
+                     xs -> patternMatchFail "disconnectHelper" [ showText xs ]
+                     where
+                       hint x | b         = x
+                              | otherwise = x <> " " <> hintMsg
+                       hintMsg = parensQuote "Note that you must specify the full name of the person you would like to \
+                                             \disconnect."
+                   ci              = c^.chanId
+                   ((ms', res), _) = foldl' procTarget ((ms, []), False) as'
                in (ms', (g res, Just ci))
           else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
         (cs, cns, s) = mkChanBindings i ms
