@@ -67,8 +67,6 @@ import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
 
 
--- TODO: Looks like we still need to move some functions to Advice and Sorry.
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
@@ -110,7 +108,7 @@ debugCmds =
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
-    , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"."
+    , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"." -- TODO: Change name.
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
     , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
@@ -184,6 +182,7 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 -----
 
 
+-- TODO: Logging.
 debugCins :: Action
 debugCins p@AdviseNoArgs       = advise p [] adviceDCinsNoId
 debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
@@ -191,7 +190,7 @@ debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper targetId@(showText -> targetIdTxt)
-      | targetId < 0 = sorryWtf mq cols
+      | targetId < 0 = wrapSend mq cols sorryWtf -- TODO: Colorize wtf's elsewhere, too.
       | otherwise    = getState >>= \ms -> do
           multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms
           logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
@@ -267,7 +266,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper searchId@(showText -> searchIdTxt)
-      | searchId < 0 = sorryWtf mq cols
+      | searchId < 0 = wrapSend mq cols sorryWtf
       | otherwise    = getState >>= \ms -> do
           let f     = commas . map (showText . fst)
               mkTxt =
@@ -293,10 +292,6 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
           mapM_ (multiWrapSend mq cols) mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
 debugId p = advise p [] adviceDIdArgs
-
-
-sorryWtf :: MsgQueue -> Cols -> MudStack ()
-sorryWtf mq cols = wrapSend mq cols $ wtfColor <> "He don't." <> dfltColor
 
 
 tblToList :: Optical (->) (->) (Const [(Id, a)]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [(Id, a)]
@@ -366,19 +361,13 @@ debugNumber p@AdviseNoArgs     = advise p [] adviceDNumberNoArgs
 debugNumber p@(AdviseOneArg _) = advise p [] adviceDNumberNoBase
 debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
     case reads . T.unpack $ baseTxt :: [(Base, String)] of
-      [(base, "")] | not . inRange (2, 36) $ base -> sorryParseBase
+      [(base, "")] | not . inRange (2, 36) $ base -> sorryParseBase mq cols baseTxt
                    | otherwise -> case numTxt `inBase` base of
                      [(res, "")] -> do
                          send mq . nlnl . showText $ res
                          logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
-                     _ -> sorryParseNum base
-      _ -> sorryParseBase
-  where
-    sorryParseBase     = wrapSend mq cols $ dblQuote baseTxt <> " is not a valid base."
-    sorryParseNum base = wrapSend mq cols . T.concat $ [ dblQuote numTxt
-                                                       , " is not a valid number in base "
-                                                       , showText base
-                                                       , "." ]
+                     _ -> sorryParseNum mq cols numTxt . showText $ base
+      _ -> sorryParseBase mq cols baseTxt
 debugNumber p = advise p [] adviceDNumberArgs
 
 
@@ -469,6 +458,7 @@ purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
 -----
 
 
+-- TODO: Logging.
 debugRnt :: Action
 debugRnt (NoArgs i mq cols) = wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
 debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
@@ -480,8 +470,7 @@ debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
                                           , "." ]
         pcSings = [ ms^.entTbl.ind pcId.sing | pcId <- views pcTbl IM.keys ms ]
     in findFullNameForAbbrev a pcSings |&| maybe notFound found
-debugRnt ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols "Sorry, but you can only generate a \
-                                                                              \random name for one PC at a time."
+debugRnt ActionParams { plaMsgQueue, plaCols } = sorryRnt plaMsgQueue plaCols
 
 
 -----
@@ -644,7 +633,7 @@ debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] 
   _                -> wrapSend mq cols $ dblQuote a <> " is not a valid ID."
   where
     helper searchId
-      | searchId < 0 = sorryWtf mq cols
+      | searchId < 0 = wrapSend mq cols sorryWtf
       | otherwise    = do
           send mq . nlnl . showText . calcWeight searchId =<< getState
           logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
@@ -658,10 +647,9 @@ debugWrap :: Action
 debugWrap p@AdviseNoArgs       = advise p [] adviceDWrapNoArgs
 debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(lineLen, "")] -> helper lineLen
-  _               -> sorryParse
+  _               -> sorryParseLineLen mq cols a
   where
-    sorryParse = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-    helper lineLen | lineLen < 0                                = sorryWtf         mq cols
+    helper lineLen | lineLen < 0                                = wrapSend mq cols sorryWtf
                    | not . inRange (minCols, maxCols) $ lineLen = sorryWrapLineLen mq cols
                    | otherwise                                  = do
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
@@ -687,19 +675,16 @@ debugWrapIndent :: Action
 debugWrapIndent p@AdviseNoArgs     = advise p [] adviceDWrapIndentNoArgs
 debugWrapIndent p@(AdviseOneArg _) = advise p [] adviceDWrapIndentNoAmt
 debugWrapIndent (WithArgs i mq cols [a, b]) = do
-    parsed <- (,) <$> parse a sorryParseLineLen <*> parse b sorryParseIndent
+    parsed <- (,) <$> parse a (sorryParseLineLen mq cols a) <*> parse b (sorryParseIndent mq cols b)
     unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
   where
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
       [(x, "")] -> unadulterated . Sum $ x
       _         -> emptied sorry
-    sorryParseLineLen = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-    sorryParseIndent  = wrapSend mq cols $ dblQuote b <> " is not a valid width amount."
-    helper lineLen indent | any (< 0) [ lineLen, indent ]              = sorryWtf         mq cols
+    helper lineLen indent | any (< 0) [ lineLen, indent ]              = wrapSend mq cols sorryWtf
                           | not . inRange (minCols, maxCols) $ lineLen = sorryWrapLineLen mq cols
-                          | indent >= lineLen                          = sorryIndent
+                          | indent >= lineLen                          = sorryIndent mq cols
                           | otherwise                                  = do
                               send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
                               logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
-    sorryIndent = wrapSend mq cols "The indent amount must be less than the line length."
 debugWrapIndent p = advise p [] adviceDWrapIndentArgs

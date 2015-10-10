@@ -178,6 +178,13 @@ sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito
 -----
 
 
+sorryIndent :: MsgQueue -> Cols -> MudStack ()
+sorryIndent mq cols = wrapSend mq cols "The indent amount must be less than the line length."
+
+
+-----
+
+
 sorryIncogChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
 
@@ -251,8 +258,39 @@ sorryNotTunedOOCChan = sorryNotTunedChan "set"
 -----
 
 
+sorryParseBase :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryParseBase mq cols txt = wrapSend mq cols $ dblQuote txt <> " is not a valid base."
+
+
+-----
+
+
 sorryParseId :: T.Text -> T.Text
 sorryParseId a = dblQuote a <> " is not a valid ID."
+
+
+-----
+
+
+sorryParseIndent :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryParseIndent mq cols a = wrapSend mq cols $ dblQuote a <> " is not a valid width amount."
+
+
+-----
+
+
+sorryParseLineLen :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryParseLineLen mq cols a = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
+
+
+-----
+
+
+sorryParseNum :: MsgQueue -> Cols -> T.Text -> T.Text -> MudStack ()
+sorryParseNum mq cols numTxt base = wrapSend mq cols . T.concat $ [ dblQuote numTxt
+                                                                  , " is not a valid number in base "
+                                                                  , base
+                                                                  , "." ]
 
 
 -----
@@ -267,6 +305,13 @@ sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish t
 
 sorryRemoveIgnore :: T.Text
 sorryRemoveIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+
+
+-----
+
+
+sorryRnt :: MsgQueue -> Cols -> MudStack ()
+sorryRnt mq cols = wrapSend mq cols "Sorry, but you can only generate a random name for one PC at a time."
 
 
 -----
@@ -303,3 +348,10 @@ sorryWrapLineLen mq cols = wrapSend mq cols . T.concat $ [ "The line length must
                                                          , " and "
                                                          , showText maxCols
                                                          , " characters." ]
+
+
+----
+
+
+sorryWtf :: T.Text
+sorryWtf = quoteWith' (wtfColor, dfltColor) "He don't."
