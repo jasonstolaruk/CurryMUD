@@ -365,14 +365,14 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                       let affixChanName msg = parensQuote cn <> " " <> msg
                       logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> inOut isTuned'
                                                                  | (i', _, isTuned') <- combo' ]
-                  else sorryNotTunedICChan mq cols cn
+                  else wrapSend mq cols . sorryNotTunedICChan $ cn
         (cs, cns, s)           = mkChanBindings i ms
         mkTriple (s', isTuned) = (getIdForPCSing s' ms, s', isTuned)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryNotConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if
-          | views chanConnTbl (not . (M.! s)) c    -> sorryNotTunedICChan mq cols cn
+          | views chanConnTbl (not . (M.! s)) c    -> wrapSend mq cols . sorryNotTunedICChan $ cn
           | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "a telepathic"
           | otherwise                              -> getChanStyleds i c ms >>= \triples -> if ()# triples
             then sorryNoOneListening mq cols . dblQuote $ cn
@@ -599,7 +599,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                    ci              = c^.chanId
                    ((ms', res), _) = foldl' procTarget ((ms, []), False) as'
                in (ms', (g res, Just ci))
-          else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
+          else sorry . sorryNotTunedICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
@@ -1143,6 +1143,133 @@ leave p = patternMatchFail "leave" [ showText p ]
 -----
 
 
+-- TODO: Linking should cost psionic points.
+-- TODO: Linking should award exp.
+link :: Action
+link (NoArgs i mq cols) = do
+    ms  <- getState
+    res <- helperLinkUnlink ms i mq cols
+    flip maybeVoid res $ \(meLinkedToOthers, othersLinkedToMe, twoWays) ->
+        let msgs             = intercalate [""] . dropEmpties $ [ twoWays       |!| twoWayMsgs
+                                                                , oneWaysFromMe |!| oneWayFromMeMsgs
+                                                                , oneWaysToMe   |!| oneWayToMeMsgs ]
+            oneWaysFromMe    = meLinkedToOthers \\ twoWays
+            oneWaysToMe      = othersLinkedToMe \\ twoWays
+            twoWayMsgs       = [ "Two-way links:",                mkSingsList True  twoWays       ]
+            oneWayFromMeMsgs = [ "One-way links from your mind:", mkSingsList False oneWaysFromMe ]
+            oneWayToMeMsgs   = [ "One-way links to your mind:",   mkSingsList False oneWaysToMe   ]
+            mkSingsList doStyle ss = let (awakes, asleeps) = sortAwakesAsleeps ss
+                                         f                 = doStyle ? styleAbbrevs Don'tBracket :? id
+                                     in commas $ f awakes ++ asleeps
+            sortAwakesAsleeps      = foldr sorter ([], [])
+            sorter linkSing acc    =
+                let linkId   = head . filter ((== linkSing) . flip getSing ms) $ ms^.pcTbl.to IM.keys
+                    linkPla  = getPla linkId ms
+                    f lens x = acc & lens %~ (x' :)
+                      where
+                        x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
+                          Nothing    -> x
+                          (Just val) -> val ? x :? x <> " (tuned out)"
+                in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . getPlaFlag IsIncognito $ linkPla ]
+                  then f _1
+                  else f _2
+        in do
+           multiWrapSend mq cols msgs
+           logPla "link" i . slashes . dropEmpties $ [ twoWays       |!| "Two-way: "         <> commas twoWays
+                                                     , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
+                                                     , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
+link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
+  then wrapSend mq cols . sorryIncog $ "link"
+  else helper |&| modifyState >=> \(bs, logMsgs, fs) ->
+      bcast bs >> sequence_ fs >> logMsgs |#| (logPla "link" i . slashes)
+  where
+    helper ms =
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+            sorryInInv  = inInvs |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
+                                                             \your inventory.")
+            sorryInEq   = inEqs  |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
+                                                             \your readied equipment.")
+            invCoins    = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+            (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
+            pt          = ms^.pcTbl
+            tlmt        = ms^.teleLinkMstrTbl
+            rnmt        = ms^.rndmNamesMstrTbl
+            (pt', tlmt', rnmt', bs,  logMsgs, fs) = foldl' (helperLinkEitherInv ms)
+                                                           (pt, tlmt, rnmt, [], [], [])
+                                                           eiss
+            (                   bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs) ecs
+        in if ()!# invCoins
+          then ( ms & pcTbl            .~ pt'
+                    & teleLinkMstrTbl  .~ tlmt'
+                    & rndmNamesMstrTbl .~ rnmt'
+               , (sorryInInv ++ sorryInEq ++ bs', logMsgs', fs) )
+          else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to link with.", [], []))
+    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _4 <>~ (mkBroadcast i . nlnl $ sorryMsg))
+    helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
+      where
+        tryLink a' targetId = let targetSing = getSing targetId ms in case getType targetId ms of
+          PCType ->
+            let (srcIntros, targetIntros) = f getIntroduced
+                (srcLinks,  targetLinks ) = f getLinked
+                f g                       = ((i |&|) *** (targetId |&|)) (dup $ uncurry g . (, ms))
+                s                         = getSing i ms
+                targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
+                srcMsg    = nlnl . T.concat $ [ focusingInnate "you establish a telepathic connection from your mind \
+                                                               \to "
+                                              , targetSing
+                                              , "'s mind."
+                                              , twoWayMsg ]
+                twoWayMsg = isTwoWay |?| " This completes the psionic circuit and you may now communicate with each \
+                                         \other telepathically."
+                isTwoWay  = targetSing `elem` srcLinks
+                logMsg    = T.concat [ "Established a ", oneTwoWay, " link with ", targetSing, "." ]
+                oneTwoWay | isTwoWay  = "two-way"
+                          | otherwise = "one-way"
+                targetMsg = nlnl . T.concat $ [ "You sense an ephemeral blip in your psionic energy field as "
+                                              , knownNameColor
+                                              , s
+                                              , dfltColor
+                                              , " establishes a telepathic connection from "
+                                              , mkPossPro . getSex i $ ms
+                                              , " mind to yours."
+                                              , twoWayMsg ]
+                bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
+                msgHelper txt = a' & _4 <>~ (mkBroadcast i . nlnl $ txt)
+            in if
+              | targetSing `notElem` srcIntros    -> msgHelper $ "You don't know the "                   <>
+                                                                 targetDesig                             <>
+                                                                 "'s name."
+              | s          `notElem` targetIntros -> msgHelper $ "You must first introduce yourself to " <>
+                                                                 targetSing                              <>
+                                                                 "."
+              | s             `elem` targetLinks  -> msgHelper . T.concat $ [ "You've already established a "
+                                                                            , oneTwoWay
+                                                                            , " link with "
+                                                                            , targetDesig
+                                                                            , "." ]
+              | act <- rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
+                  let g a'' | isTwoWay  = a''
+                            | otherwise = a'' & _3.ind i       .at targetSing .~ Nothing
+                                              & _3.ind targetId.at s          .~ Nothing
+                  in g $ a' & _1.ind targetId.linked %~ (sort . (s :))
+                            & _2.ind i       .at targetSing .~ Just True
+                            & _2.ind targetId.at s          .~ Just True
+                            & _4 <>~ bs
+                            & _5 <>~ pure logMsg
+                            & _6 <>~ pure act
+          _  -> let msg = nlnl $ "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
+                    b   = (msg, pure i)
+                in a' & _4 %~ (`appendIfUnique` b)
+    helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
+    helperLinkEitherCoins a (Right {}  ) =
+        let b = (nlnl "You can't establish a telepathic link with a coin.", pure i)
+        in first (`appendIfUnique` b) a
+link p = patternMatchFail "link" [ showText p ]
+
+
+-----
+
+
 look :: Action
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri        = getRmId i  ms
@@ -1269,133 +1396,6 @@ extractPCIdsFromEiss ms = foldl' helper []
   where
     helper acc (Left  {})  = acc
     helper acc (Right is)  = acc ++ findPCIds ms is
-
-
------
-
-
--- TODO: Linking should cost psionic points.
--- TODO: Linking should award exp.
-link :: Action
-link (NoArgs i mq cols) = do
-    ms  <- getState
-    res <- helperLinkUnlink ms i mq cols
-    flip maybeVoid res $ \(meLinkedToOthers, othersLinkedToMe, twoWays) ->
-        let msgs             = intercalate [""] . dropEmpties $ [ twoWays       |!| twoWayMsgs
-                                                                , oneWaysFromMe |!| oneWayFromMeMsgs
-                                                                , oneWaysToMe   |!| oneWayToMeMsgs ]
-            oneWaysFromMe    = meLinkedToOthers \\ twoWays
-            oneWaysToMe      = othersLinkedToMe \\ twoWays
-            twoWayMsgs       = [ "Two-way links:",                mkSingsList True  twoWays       ]
-            oneWayFromMeMsgs = [ "One-way links from your mind:", mkSingsList False oneWaysFromMe ]
-            oneWayToMeMsgs   = [ "One-way links to your mind:",   mkSingsList False oneWaysToMe   ]
-            mkSingsList doStyle ss = let (awakes, asleeps) = sortAwakesAsleeps ss
-                                         f                 = doStyle ? styleAbbrevs Don'tBracket :? id
-                                     in commas $ f awakes ++ asleeps
-            sortAwakesAsleeps      = foldr sorter ([], [])
-            sorter linkSing acc    =
-                let linkId   = head . filter ((== linkSing) . flip getSing ms) $ ms^.pcTbl.to IM.keys
-                    linkPla  = getPla linkId ms
-                    f lens x = acc & lens %~ (x' :)
-                      where
-                        x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
-                          Nothing    -> x
-                          (Just val) -> val ? x :? x <> " (tuned out)"
-                in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . getPlaFlag IsIncognito $ linkPla ]
-                  then f _1
-                  else f _2
-        in do
-           multiWrapSend mq cols msgs
-           logPla "link" i . slashes . dropEmpties $ [ twoWays       |!| "Two-way: "         <> commas twoWays
-                                                     , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
-                                                     , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
-link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
-  then wrapSend mq cols . sorryIncog $ "link"
-  else helper |&| modifyState >=> \(bs, logMsgs, fs) ->
-      bcast bs >> sequence_ fs >> logMsgs |#| (logPla "link" i . slashes)
-  where
-    helper ms =
-        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv  = inInvs |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
-                                                             \your inventory.")
-            sorryInEq   = inEqs  |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
-                                                             \your readied equipment.")
-            invCoins    = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
-            (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
-            pt          = ms^.pcTbl
-            tlmt        = ms^.teleLinkMstrTbl
-            rnmt        = ms^.rndmNamesMstrTbl
-            (pt', tlmt', rnmt', bs,  logMsgs, fs) = foldl' (helperLinkEitherInv ms)
-                                                           (pt, tlmt, rnmt, [], [], [])
-                                                           eiss
-            (                   bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs) ecs
-        in if ()!# invCoins
-          then ( ms & pcTbl            .~ pt'
-                    & teleLinkMstrTbl  .~ tlmt'
-                    & rndmNamesMstrTbl .~ rnmt'
-               , (sorryInInv ++ sorryInEq ++ bs', logMsgs', fs) )
-          else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to link with.", [], []))
-    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _4 <>~ (mkBroadcast i . nlnl $ sorryMsg))
-    helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
-      where
-        tryLink a' targetId = let targetSing = getSing targetId ms in case getType targetId ms of
-          PCType ->
-            let (srcIntros, targetIntros) = f getIntroduced
-                (srcLinks,  targetLinks ) = f getLinked
-                f g                       = ((i |&|) *** (targetId |&|)) (dup $ uncurry g . (, ms))
-                s                         = getSing i ms
-                targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
-                srcMsg    = nlnl . T.concat $ [ focusingInnate "you establish a telepathic connection from your mind \
-                                                               \to "
-                                              , targetSing
-                                              , "'s mind."
-                                              , twoWayMsg ]
-                twoWayMsg = isTwoWay |?| " This completes the psionic circuit and you may now communicate with each \
-                                         \other telepathically."
-                isTwoWay  = targetSing `elem` srcLinks
-                logMsg    = T.concat [ "Established a ", oneTwoWay, " link with ", targetSing, "." ]
-                oneTwoWay | isTwoWay  = "two-way"
-                          | otherwise = "one-way"
-                targetMsg = nlnl . T.concat $ [ "You sense an ephemeral blip in your psionic energy field as "
-                                              , knownNameColor
-                                              , s
-                                              , dfltColor
-                                              , " establishes a telepathic connection from "
-                                              , mkPossPro . getSex i $ ms
-                                              , " mind to yours."
-                                              , twoWayMsg ]
-                bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
-                msgHelper txt = a' & _4 <>~ (mkBroadcast i . nlnl $ txt)
-            in if
-              | targetSing `notElem` srcIntros    -> msgHelper $ "You don't know the "                   <>
-                                                                 targetDesig                             <>
-                                                                 "'s name."
-              | s          `notElem` targetIntros -> msgHelper $ "You must first introduce yourself to " <>
-                                                                 targetSing                              <>
-                                                                 "."
-              | s             `elem` targetLinks  -> msgHelper . T.concat $ [ "You've already established a "
-                                                                            , oneTwoWay
-                                                                            , " link with "
-                                                                            , targetDesig
-                                                                            , "." ]
-              | act <- rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
-                  let g a'' | isTwoWay  = a''
-                            | otherwise = a'' & _3.ind i       .at targetSing .~ Nothing
-                                              & _3.ind targetId.at s          .~ Nothing
-                  in g $ a' & _1.ind targetId.linked %~ (sort . (s :))
-                            & _2.ind i       .at targetSing .~ Just True
-                            & _2.ind targetId.at s          .~ Just True
-                            & _4 <>~ bs
-                            & _5 <>~ pure logMsg
-                            & _6 <>~ pure act
-          _  -> let msg = nlnl $ "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
-                    b   = (msg, pure i)
-                in a' & _4 %~ (`appendIfUnique` b)
-    helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
-    helperLinkEitherCoins a (Right {}  ) =
-        let b = (nlnl "You can't establish a telepathic link with a coin.", pure i)
-        in first (`appendIfUnique` b) a
-link p = patternMatchFail "link" [ showText p ]
 
 
 -----
@@ -1573,7 +1573,7 @@ question (NoArgs' i mq) = getState >>= \ms ->
                descs'         = "Question channel:" : descs
            in pager i mq descs' >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
-  | not . isTunedQuestion i $ ms           -> sorryNotTunedOOCChan mq cols "question"
+  | not . isTunedQuestion i $ ms           -> wrapSend mq cols . sorryNotTunedOOCChan $ "question"
   | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "the question"
   | otherwise                              -> getQuestionStyleds i ms >>= \triples -> if ()# triples
     then sorryNoOneListening mq cols "question"

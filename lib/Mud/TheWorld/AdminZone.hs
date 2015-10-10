@@ -32,7 +32,6 @@ adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
 -----
 
 
--- TODO: Exits out of the closets need to be fixed.
 createAdminZone :: MudStack ()
 createAdminZone = do
   logNotice "createAdminZone" "creating the admin zone."
@@ -143,7 +142,7 @@ createAdminZone = do
         (Rm "The weight closet"
             "This closet holds weights."
             zeroBits
-            [ StdLink South iCentral ])
+            [ StdLink South iBasement ])
   putRm iObjCloset
         [ iKewpie1, iKewpie2 ]
         mempty

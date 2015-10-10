@@ -227,24 +227,24 @@ sorryNotConnectedChan cn = "You are not connected to a channel named " <> dblQuo
 -----
 
 
-sorryNotTunedICChan :: MsgQueue -> Cols -> ChanName -> MudStack ()
+sorryNotTunedICChan :: ChanName -> T.Text
 sorryNotTunedICChan = sorryNotTunedChan "tune"
 
 
-sorryNotTunedChan :: T.Text -> MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryNotTunedChan x mq cols y = wrapSend mq cols . T.concat $ [ "You have tuned out the "
-                                                              , dblQuote y
-                                                              , " channel. Type "
-                                                              , quoteColor
-                                                              , x
-                                                              , " "
-                                                              , y
-                                                              , "=in"
-                                                              , dfltColor
-                                                              , " to tune it back in." ]
+sorryNotTunedChan :: T.Text -> T.Text -> T.Text
+sorryNotTunedChan x y = T.concat [ "You have tuned out the "
+                                 , dblQuote y
+                                 , " channel. Type "
+                                 , quoteColor
+                                 , x
+                                 , " "
+                                 , y
+                                 , "=in"
+                                 , dfltColor
+                                 , " to tune it back in." ]
 
 
-sorryNotTunedOOCChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryNotTunedOOCChan :: T.Text -> T.Text
 sorryNotTunedOOCChan = sorryNotTunedChan "set"
 
 

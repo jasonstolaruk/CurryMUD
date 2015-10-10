@@ -186,7 +186,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
               Right (Left ())  -> case adminChanExpCmdify i ms tunedIds tunedSings msg of
                 Left  errorMsg     -> ws errorMsg
                 Right (bs, logMsg) -> f bs logMsg
-      else sorryNotTunedOOCChan mq cols "admin"
+      else wrapSend mq cols . sorryNotTunedOOCChan $ "admin"
   where
     getTunedAdminIds ms  = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
     mkLogMsg             = dropANSI . fst . head
