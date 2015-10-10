@@ -313,7 +313,8 @@ happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ 
 
 
 hasEnc :: Args -> Bool
-hasEnc = any (`elem` [ enc, enc's ])
+hasEnc [] = False
+hasEnc as = any (`elem` [ enc, enc's ]) as || last as == enc <> "."
 
 
 -----

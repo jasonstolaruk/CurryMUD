@@ -337,7 +337,6 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
     in do
         multiWrapSend mq cols . helper (styleAbbrevs Don'tBracket chanNames) $ chanTunings
         logPlaExecArgs "chan" [] i
--- TODO: When the player is the only one connected, all we see is the header ('Channel "x":').
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryNotConnectedChan $ a
         found match =
@@ -355,8 +354,10 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                     combo'             = ins' ++ outs
                 in if isTuned
                   then do
-                      multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : map g combo'
-                      let affixChanName msg = parensQuote cn <> " " <> msg
+                      let onlyYou           = pure "You are the only person connected."
+                          msgs              = ()!# combo' ? map g combo' :? onlyYou
+                          affixChanName txt = parensQuote cn <> " " <> txt
+                      multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : msgs
                       logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> inOut isTuned'
                                                                  | (i', _, isTuned') <- combo' ]
                   else wrapSend mq cols . sorryNotTunedICChan $ cn
@@ -2443,7 +2444,6 @@ mkSlotDesc i ms s = case s of
 -----
 
 
--- TODO: t j ; he likes @ ==> [Zaa] [Zaa he likes Zaa.] Same w/ question chan, admin chan, and IC chans.
 tele :: Action
 tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
 tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a
