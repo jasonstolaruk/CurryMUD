@@ -96,6 +96,7 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 debugCmds :: [Cmd]
 debugCmds =
     [ mkDebugCmd "?"          debugDispCmdList "Display or search this command list."
+    , mkDebugCmd "ap"         debugAp          "Show \"ActionParams\"."
     , mkDebugCmd "boot"       debugBoot        "Boot all players (including yourself)."
     , mkDebugCmd "broad"      debugBroad       "Broadcast (to yourself) a multi-line message."
     , mkDebugCmd "buffer"     debugBuffCheck   "Confirm the default buffering mode for file handles."
@@ -108,7 +109,6 @@ debugCmds =
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
-    , mkDebugCmd "params"     debugParams      "Show \"ActionParams\"." -- TODO: Change name.
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
     , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
@@ -134,6 +134,14 @@ mkDebugCmd (prefixDebugCmd -> cn) act cd = Cmd { cmdName           = cn
                                                , cmdFullName       = cn
                                                , action            = act
                                                , cmdDesc           = cd }
+
+
+-----
+
+
+debugAp :: Action
+debugAp p@(WithArgs i mq cols _) = (wrapSend mq cols . showText $ p) >> logPlaExec (prefixDebugCmd "ap") i
+debugAp p = patternMatchFail "debugAp" [ showText p ]
 
 
 -----
@@ -182,7 +190,6 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 -----
 
 
--- TODO: Logging.
 debugCins :: Action
 debugCins p@AdviseNoArgs       = advise p [] adviceDCinsNoId
 debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
@@ -400,14 +407,6 @@ debugOut p = withoutArgs debugOut p
 -----
 
 
-debugParams :: Action
-debugParams p@(WithArgs i mq cols _) = (wrapSend mq cols . showText $ p) >> logPlaExec (prefixDebugCmd "params") i
-debugParams p = patternMatchFail "debugParams" [ showText p ]
-
-
------
-
-
 debugPersist :: Action
 debugPersist (NoArgs' i mq) = do
     replicateM_ 10 $ persist >> ok mq
@@ -458,16 +457,19 @@ purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
 -----
 
 
--- TODO: Logging.
 debugRnt :: Action
-debugRnt (NoArgs i mq cols) = wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
+debugRnt (NoArgs i mq cols) = do
+    wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
+    logPlaExec (prefixDebugCmd "rnt") i
 debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
     let notFound    = wrapSend mq cols $ "There is no PC by the name of " <> a <> "."
-        found match = (updateRndmName i . getIdForPCSing match $ ms) >>= \rndmName ->
+        found match = do
+            rndmName <- updateRndmName i . getIdForPCSing match $ ms
             wrapSend mq cols . T.concat $ [ dblQuote rndmName
                                           , " has been randomly generated for "
                                           , match
                                           , "." ]
+            logPlaExec (prefixDebugCmd "rnt") i
         pcSings = [ ms^.entTbl.ind pcId.sing | pcId <- views pcTbl IM.keys ms ]
     in findFullNameForAbbrev a pcSings |&| maybe notFound found
 debugRnt ActionParams { plaMsgQueue, plaCols } = sorryRnt plaMsgQueue plaCols
