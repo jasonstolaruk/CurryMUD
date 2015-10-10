@@ -327,13 +327,6 @@ bug p              = bugTypoLogger p BugLog
 
 
 -- TODO: Sending a msg should cost psionic points.
--- TODO:
-{-
-c t >z great
-There is no one by the name of ""tomo"" currently tuned in to the "Z" channel.
-
-But all I did was type "z" instead of "j"...
--}
 chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
     let (chanNames, chanTunings) = mkChanNamesTunings i ms
@@ -344,6 +337,7 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
     in do
         multiWrapSend mq cols . helper (styleAbbrevs Don'tBracket chanNames) $ chanTunings
         logPlaExecArgs "chan" [] i
+-- TODO: When the player is the only one connected, all we see is the header ('Channel "x":').
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryNotConnectedChan $ a
         found match =
@@ -478,8 +472,6 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPC
 connect p = patternMatchFail "connect" [ showText p ]
 
 
--- TODO: When Root is incog:
--- "co root x" -> You haven't established a two-way telepathic link with anyone named "x".
 connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
 connectHelper i (target, as) ms =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryConnectIgnore)
@@ -489,7 +481,7 @@ connectHelper i (target, as) ms =
         notFound    = sorry . sorryNotConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let procTarget pair a =
-                       let notFoundSing         = oops . notFoundSuggestAsleeps target asleepSings $ ms
+                       let notFoundSing         = oops . notFoundSuggestAsleeps a asleepSings $ ms
                            foundSing targetSing = case c^.chanConnTbl.at targetSing of
                              Just _  -> oops . T.concat $ [ targetSing
                                                           , " is already connected to the "
@@ -2451,6 +2443,7 @@ mkSlotDesc i ms s = case s of
 -----
 
 
+-- TODO: t j ; he likes @ ==> [Zaa] [Zaa he likes Zaa.] Same w/ question chan, admin chan, and IC chans.
 tele :: Action
 tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
 tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a

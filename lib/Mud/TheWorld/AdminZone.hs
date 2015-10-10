@@ -42,7 +42,7 @@ createAdminZone = do
          (Ent iRoot
               Nothing
               "Root" ""
-              "This is the root administrator."
+              "He is the root administrator."
               zeroBits)
          []
          mempty
@@ -62,7 +62,7 @@ createAdminZone = do
          (Ent iCurry
               Nothing
               "Curry" ""
-              "You see a CurryMUD administrator."
+              "He is a CurryMUD administrator."
               zeroBits)
          []
          mempty

@@ -39,18 +39,18 @@ sorryBracketedMsg = Left "You can't open or close your message with brackets."
 
 sorryChanTargetName :: T.Text -> T.Text -> T.Text
 sorryChanTargetName cn n = T.concat [ "There is no one by the name of "
-                                    , dblQuote . capitalize $ n
+                                    , dblQuote n
                                     , " currently tuned in to the "
                                     , cn
                                     , " channel." ]
 
 
 sorryAdminChanTargetName :: T.Text -> T.Text
-sorryAdminChanTargetName = sorryChanTargetName "admin" . dblQuote . capitalize
+sorryAdminChanTargetName = sorryChanTargetName "admin"
 
 
 sorryChanTargetNameFromContext :: T.Text -> ChanContext -> T.Text
-sorryChanTargetNameFromContext n (ChanContext { .. }) = sorryChanTargetName (dblQuote . capitalize $ n) effChanName
+sorryChanTargetNameFromContext n (ChanContext { .. }) = sorryChanTargetName effChanName n
   where
     effChanName = maybe someCmdName dblQuote someChanName
 
