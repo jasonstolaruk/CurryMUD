@@ -207,4 +207,4 @@ iBasement = 97 :: Int
 
 iRoot = 98 :: Int
 
-iJason = 99 :: Int
+iCurry = 99 :: Int

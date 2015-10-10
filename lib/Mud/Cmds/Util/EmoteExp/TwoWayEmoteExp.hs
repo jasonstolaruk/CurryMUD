@@ -37,7 +37,7 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp"
 emotifyTwoWay :: T.Text -> Id -> MudState -> Id -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isBracketed ws          = pure `onLeft` sorryBracketedMsg
-  | isHeDon't emoteChar msg = Left . pure $ "He don't."
+  | isHeDon't emoteChar msg = Left . pure $ sorryWtf
   | c == emoteChar = fmap Right . procTwoWayEmote cn i ms targetId . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)
@@ -75,7 +75,7 @@ procTwoWayEmote cn i ms targetId as =
 
 expCmdifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text [Broadcast]
 expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isHeDon't expCmdChar msg = Left "He don't."
+  | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar = procExpCmdTwoWay i ms targetId targetSing . (tail ws |&|) $ if ()# rest
     then id
     else (rest :)

@@ -42,15 +42,15 @@ createAdminZone = do
          (Ent iRoot
               Nothing
               "Root" ""
-              "This is the root admin."
+              "This is the root administrator."
               zeroBits)
          []
          mempty
          M.empty
          (Mob Male 50 50 50 50 10 10 0 RHand)
          M.empty
-         (M.fromList [("Jason", True)])
-         (PC iLoggedOut Human ["Jason"] ["Jason"])
+         (M.fromList [("Curry", True)])
+         (PC iLoggedOut Human ["Curry"] ["Curry"])
          (Pla "" Nothing
               (setBit adminFlags . fromEnum $ IsIncognito)
               80 24
@@ -58,11 +58,11 @@ createAdminZone = do
               [] []
               []
               (Just iLounge))
-  putPla iJason
-         (Ent iJason
+  putPla iCurry
+         (Ent iCurry
               Nothing
-              "Jason" ""
-              "Jason is the creator of CurryMUD."
+              "Curry" ""
+              "You see a CurryMUD administrator."
               zeroBits)
          []
          mempty

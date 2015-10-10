@@ -197,7 +197,7 @@ debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper targetId@(showText -> targetIdTxt)
-      | targetId < 0 = wrapSend mq cols sorryWtf -- TODO: Colorize wtf's elsewhere, too.
+      | targetId < 0 = wrapSend mq cols sorryWtf
       | otherwise    = getState >>= \ms -> do
           multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms
           logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
