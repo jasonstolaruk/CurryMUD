@@ -12,6 +12,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Interp.Prompt
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 import Mud.Util.Text
@@ -26,7 +27,7 @@ import qualified Data.Text as T
 centralDispatch :: Interp
 centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = do
     getState >>= \ms -> maybe (send plaMsgQueue . nlnl $ "What?") (p |&|) =<< findAction plaId ms cn
-    getState >>= \ms -> when (isNothing . getInterp plaId $ ms) . prompt plaMsgQueue $ dfltPrompt
+    getState >>= \ms -> when (isNothing . getInterp plaId $ ms) . prompt plaMsgQueue . mkPrompt plaId $ ms
 
 
 findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)

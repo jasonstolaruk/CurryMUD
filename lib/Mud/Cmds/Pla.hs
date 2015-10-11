@@ -238,7 +238,6 @@ about p = withoutArgs about p
 -----
 
 
--- TODO: Consider abbrev styling.
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] . adviceAdminNoMsg $ a
@@ -327,7 +326,6 @@ bug p              = bugTypoLogger p BugLog
 -----
 
 
--- TODO: Sending a msg should cost psionic points.
 chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
     let (chanNames, chanTunings) = mkChanNamesTunings i ms

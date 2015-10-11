@@ -239,9 +239,7 @@ instance Pretty Cloth where
 
 
 instance Pretty ProfRec where
-  pp (ProfRec { .. }) = T.intercalate " " [ profTimestamp
-                                          , profHost
-                                          , profProfanity ]
+  pp (ProfRec { .. }) = spaces [ profTimestamp, profHost, profProfanity ]
 
 
 instance Pretty Race where

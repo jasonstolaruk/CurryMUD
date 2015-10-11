@@ -20,6 +20,7 @@ module Mud.Util.Text ( aOrAn
                      , replace
                      , showText
                      , slashes
+                     , spaces
                      , stripControl
                      , stripTelnet
                      , theOnLower
@@ -189,6 +190,13 @@ showText = T.pack . show
 
 slashes :: [T.Text] -> T.Text
 slashes = T.intercalate " / "
+
+
+-----
+
+
+spaces :: [T.Text] -> T.Text
+spaces = T.intercalate " "
 
 
 -----

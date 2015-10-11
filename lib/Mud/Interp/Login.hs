@@ -13,6 +13,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
+import Mud.Interp.Prompt
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
@@ -277,7 +278,7 @@ handleLogin params@(ActionParams { .. }) = do
     showMotd plaMsgQueue plaCols
     (ms@(getSing plaId -> s), p) <- showRetainedMsgs
     look params
-    prompt plaMsgQueue dfltPrompt
+    prompt plaMsgQueue . mkPrompt plaId =<< getState
     notifyArrival ms s
     when (getPlaFlag IsAdmin p) . stopInacTimer plaId $ plaMsgQueue
     initPlaLog plaId s

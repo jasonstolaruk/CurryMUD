@@ -2,7 +2,6 @@
 
 module Mud.TopLvlDefs.Misc where
 
-import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 
 import Data.Monoid ((<>))
@@ -34,10 +33,6 @@ coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
 
 dbTblPurgerDelay :: Int
 dbTblPurgerDelay = 24 * 60 * 60 -- one day
-
-
-dfltPrompt :: T.Text
-dfltPrompt = promptColor <> "->" <> dfltColor
 
 
 acl, aop, enc, enc's, etc :: T.Text

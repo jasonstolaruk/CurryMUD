@@ -288,15 +288,17 @@ adHoc mq host = do
                        , _plur     = ""
                        , _entDesc  = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
                        , _entFlags = zeroBits }
-            m    = Mob { _sex  = sexy
-                       , _st   = 50
-                       , _dx   = 50
-                       , _iq   = 50
-                       , _ht   = 50
-                       , _hp   = 10
-                       , _fp   = 10
-                       , _xp   = 0
-                       , _hand = RHand }
+            m    = Mob { _sex   = sexy
+                       , _st    = 50
+                       , _dx    = 50
+                       , _iq    = 50
+                       , _ht    = 50
+                       , _maxHp = 100, _curHp = 100
+                       , _maxMp = 100, _curMp = 100
+                       , _maxPp = 100, _curPp = 100
+                       , _maxFp = 100, _curFp = 100
+                       , _xp    = 0
+                       , _hand  = RHand }
             pc   = PC  { _rmId       = iWelcome
                        , _race       = r
                        , _introduced = []

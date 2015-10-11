@@ -299,7 +299,10 @@ data LogCmd = LogMsg T.Text
 -- Has an entity and an inventory and coins and equipment.
 data Mob = Mob { _sex               :: Sex
                , _st, _dx, _iq, _ht :: Int
-               , _hp, _fp           :: Int
+               , _maxHp, _curHp     :: Int
+               , _maxMp, _curMp     :: Int
+               , _maxPp, _curPp     :: Int
+               , _maxFp, _curFp     :: Int
                , _xp                :: Int
                , _hand              :: Hand } deriving (Eq, Generic, Show)
 

@@ -57,6 +57,7 @@ library
                        Mud.Interp.CentralDispatch,
                        Mud.Interp.Login,
                        Mud.Interp.Pager,
+                       Mud.Interp.Prompt,
                        Mud.Misc.ANSI,
                        Mud.Misc.Database,
                        Mud.Misc.LocPref,

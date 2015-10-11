@@ -7,10 +7,11 @@ module Mud.Interp.Pager ( interpPager
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
+import Mud.Interp.Prompt
 import Mud.Misc.ANSI
-import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -28,23 +29,26 @@ type EntireTxtLen = Int
 
 
 interpPager :: PageLen -> EntireTxtLen -> ([T.Text], [T.Text]) -> Interp
-interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) =
-    case cn of ""  -> next
-               "b" -> prev
-               "d" -> next
-               "f" -> next
-               "n" -> next
-               "p" -> prev
-               "q" -> (prompt mq . nlPrefix $ dfltPrompt) >> setInterp i Nothing
-               "u" -> prev
-               _   -> promptRetry mq cols
+interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) = getState >>= \ms ->
+    let next = if length right + 3 <= pageLen
+                 then do
+                     send mq . nl . T.unlines $ right
+                     prompt mq . mkPrompt i $ ms
+                     setInterp i Nothing
+                 else let (page, right') = splitAt (pageLen - 2) right in do
+                     send mq . T.unlines $ page
+                     sendPagerPrompt mq (length left + pageLen - 2) txtLen
+                     setInterp i . Just $ interpPager pageLen txtLen (left ++ page, right')
+    in case cn of ""  -> next
+                  "b" -> prev
+                  "d" -> next
+                  "f" -> next
+                  "n" -> next
+                  "p" -> prev
+                  "q" -> (prompt mq . nlPrefix . mkPrompt i $ ms) >> setInterp i Nothing
+                  "u" -> prev
+                  _   -> promptRetry mq cols
   where
-    next = if length right + 3 <= pageLen
-      then (send mq . nl . T.unlines $ right) >> prompt mq dfltPrompt >> setInterp i Nothing
-      else let (page, right') = splitAt (pageLen - 2) right in do
-          send mq . T.unlines $ page
-          sendPagerPrompt mq (length left + pageLen - 2) txtLen
-          setInterp i . Just $ interpPager pageLen txtLen (left ++ page, right')
     prev | length left == pageLen - 2 = (send mq . T.unlines $ left) >> sendPagerPrompt mq (pageLen - 2) txtLen
          | (reverse -> currPage, left') <- splitAt (pageLen - 2) . reverse $ left
          , (prevPage, left'')           <- splitAt (pageLen - 2) left' & both %~ reverse = do

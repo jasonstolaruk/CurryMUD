@@ -47,7 +47,14 @@ createAdminZone = do
          []
          mempty
          M.empty
-         (Mob Male 50 50 50 50 10 10 0 RHand)
+         (Mob Male
+              50 50 50 50
+              100 100
+              100 100
+              100 100
+              100 100
+              0
+              RHand)
          M.empty
          (M.fromList [("Curry", True)])
          (PC iLoggedOut Human ["Curry"] ["Curry"])
@@ -67,7 +74,14 @@ createAdminZone = do
          []
          mempty
          M.empty
-         (Mob Male 50 50 50 50 10 10 0 LHand)
+         (Mob Male
+              50 50 50 50
+              100 100
+              100 100
+              100 100
+              100 100
+              0
+              RHand)
          M.empty
          (M.fromList [("Root", True)])
          (PC iLoggedOut Human ["Root"] ["Root"])
@@ -920,7 +934,14 @@ createAdminZone = do
          []
          mempty
          M.empty
-         (Mob Male 25 75 10 25 10 10 10 NoHand)
+         (Mob Male
+              25 75 10 25
+              10 10
+              10 10
+              10 10
+              10 10
+              10
+              NoHand)
   putMob iRockCavy2
          (Ent iRockCavy2
               (Just "rock")
@@ -930,7 +951,14 @@ createAdminZone = do
          []
          mempty
          M.empty
-         (Mob Male 25 75 10 25 10 10 10 NoHand)
+         (Mob Male
+              25 75 10 25
+              10 10
+              10 10
+              10 10
+              10 10
+              10
+              NoHand)
   putMob iPidge
          (Ent iPidge
               (Just "pidge")
@@ -944,7 +972,14 @@ createAdminZone = do
                      , (SmockS,    iLeatherApron   )
                      , (TrousersS, iOveralls       )
                      , (FeetS,     iTraveler'sBoots) ])
-         (Mob Female 50 50 50 50 10 10 10 RHand)
+         (Mob Female
+              50 50 50 50
+              100 100
+              100 100
+              100 100
+              100 100
+              10
+              RHand)
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
                 (Just "shirt")
