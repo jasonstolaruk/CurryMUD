@@ -1,25 +1,30 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE MultiWayIf #-}
+
 module Mud.Interp.Prompt where
 
 import Mud.Data.State.MudData
-import Mud.Util.Quoting
 import Mud.Data.State.Util.Get
+import Mud.Misc.ANSI
+import Mud.Util.Misc
+import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Control.Lens.Operators ((^.))
+import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
 mkPrompt :: Id -> MudState -> T.Text
-mkPrompt i ms = let m   = getMob i ms
-                    chp = m^.curHp
-                    cmp = m^.curMp
-                    cpp = m^.curPp
-                    cfp = m^.curFp
-                in angleBracketQuote . quoteWith " " . spaces $ [ f "H" chp
-                                                                , f "M" cmp
-                                                                , f "P" cpp
-                                                                , f "F" cfp ]
+mkPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
+                in spaces [ f "h" hps
+                          , f "m" mps
+                          , f "p" pps
+                          , f "f" fps ] <> " >"
   where
-    f x y = T.concat [ x
-                     , "="
-                     , showText y ]
+    f a (x, y) = let c   = if | x == y    -> green
+                              | per > 67  -> cyan
+                              | per > 33  -> yellow
+                              | per > 10  -> red
+                              | otherwise -> magenta
+                     per = round $ x `divide` y * 100 :: Int
+                 in quoteWith' (c, dfltColor) a <> showText x

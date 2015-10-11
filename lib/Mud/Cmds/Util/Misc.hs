@@ -552,11 +552,11 @@ unmsg xs           = patternMatchFail "unmsg" xs
 updateRndmName :: Id -> Id -> MudStack Sing
 updateRndmName i targetId = do
     rndmNames <- T.lines <$> readRndmNames
-    rndmName  <- ()# rndmNames ? return "curry" :? rndmElem rndmNames
+    rndmName  <- ()# rndmNames ? return "xyz" :? rndmElem rndmNames
     let helper ms = let targetSing = getSing targetId ms
                         rnt        = getRndmNamesTbl i ms
                         notFound   = let existing = M.elems rnt
-                                         checkLength n | T.length n > maxNameLen = mkUniqueName "curry" existing
+                                         checkLength n | T.length n > maxNameLen = mkUniqueName "xyz" existing
                                                        | otherwise               = n
                                          rndmName' = checkLength . mkUniqueName rndmName $ existing
                                          ms'       = ms & rndmNamesMstrTbl.ind i.at targetSing .~ Just rndmName'

@@ -481,3 +481,15 @@ getWpn i = view (wpnTbl.ind i)
 
 getWpnSub :: Id -> MudState -> WpnSub
 getWpnSub i = view wpnSub . getWpn i
+
+
+-----
+
+
+getXps :: Id -> MudState -> ((Int, Int), (Int, Int), (Int, Int), (Int, Int))
+getXps i ms = let m   = getMob i ms
+                  hps = (m^.curHp, m^.maxHp)
+                  mps = (m^.curMp, m^.maxMp)
+                  pps = (m^.curPp, m^.maxPp)
+                  fps = (m^.curFp, m^.maxFp)
+              in (hps, mps, pps, fps)

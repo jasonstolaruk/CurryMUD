@@ -93,7 +93,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
         (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn
                                                                 , checkIllegalNames    ms mq cn
                                                                 , checkPropNamesDict      mq cn
-                                                                , checkWordsDict          mq cn ])
+                                                                , checkWordsDict          mq cn ]) -- TODO: Check against random names.
                                       unit
                                       nextPrompt
         (ms, Right (originId, oldSing)) -> do

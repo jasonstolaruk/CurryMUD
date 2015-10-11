@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeFamilies, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime

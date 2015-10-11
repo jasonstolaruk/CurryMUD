@@ -5,11 +5,14 @@ module Mud.Misc.ANSI ( abbrevColor
                      , announceColor
                      , arrowColor
                      , asteriskColor
+                     , black
                      , blink
                      , blinkANSI
+                     , blue
                      , bootMsgColor
                      , colorizeFileTxt
                      , colors
+                     , cyan
                      , dfltColor
                      , dfltColor'
                      , dropANSI
@@ -18,11 +21,13 @@ module Mud.Misc.ANSI ( abbrevColor
                      , exitsColor
                      , extractANSI
                      , fromPeepedColor
+                     , green
                      , headerColor
                      , hintANSI
                      , insertANSI
                      , intensities
                      , knownNameColor
+                     , magenta
                      , mkBgColorANSI
                      , mkColorANSI
                      , mkFgColorANSI
@@ -37,6 +42,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , promoteDemoteColor
                      , questionArrivalColor
                      , quoteColor
+                     , red
                      , resetANSI
                      , selectorColor
                      , shutdownMsgColor
@@ -46,7 +52,9 @@ module Mud.Misc.ANSI ( abbrevColor
                      , underlineANSI
                      , unknownNameColor
                      , unlinkColor
+                     , white
                      , wtfColor
+                     , yellow
                      , zingColor ) where
 
 import Mud.TopLvlDefs.Chars
@@ -108,12 +116,15 @@ underline = quoteWith' (underlineANSI, noUnderlineANSI)
 -- ANSI color codes by color name:
 
 
-cyan, green, magenta, red, yellow :: T.Text
-cyan    = mkFgColorANSI (Dull, Cyan)
-green   = mkFgColorANSI (Dull, Green)
+black, blue, cyan, green, magenta, red, white, yellow :: T.Text
+black   = mkFgColorANSI (Dull, Black  )
+blue    = mkFgColorANSI (Dull, Blue   )
+cyan    = mkFgColorANSI (Dull, Cyan   )
+green   = mkFgColorANSI (Dull, Green  )
 magenta = mkFgColorANSI (Dull, Magenta)
-red     = mkFgColorANSI (Dull, Red)
-yellow  = mkFgColorANSI (Dull, Yellow)
+red     = mkFgColorANSI (Dull, Red    )
+white   = mkFgColorANSI (Dull, White  )
+yellow  = mkFgColorANSI (Dull, Yellow )
 
 
 -- ==================================================
