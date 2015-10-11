@@ -104,7 +104,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
 -- TODO: Make a command to listen in on a channel.
--- TODO: Make a command to kill a PC.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
@@ -446,20 +445,26 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
             ioHelper (targetId, targetSing) [ fst -> toSelf, fst -> toTarget ] = if
               | isLoggedIn targetPla, getPlaFlag IsIncognito . getPla i $ ms ->
                 emptied . sendFun $ "You can't send a message to a player who is logged in while you are incognito."
-              | isLoggedIn targetPla -> do
-                  sendFun formatted
+              | isLoggedIn targetPla ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
-                      f                      = multiWrapSend targetMq targetCols
-                  (f =<<) $ if getPlaFlag IsNotFirstAdminMsg targetPla
-                    then unadulterated toTarget'
-                    else [ toTarget' : hints | hints <- firstAdminMsg targetId s ]
-                  dbHelper
+                      adminSings             = map snd . filter f . mkAdminIdSingList $ ms
+                      f (iRoot, "Root")      = let rootPla = getPla iRoot ms
+                                               in isLoggedIn rootPla && (not . getPlaFlag IsIncognito $ rootPla)
+                      f _                    = True
+                      me                     = head . filter g . styleAbbrevs Don'tBracket $ adminSings
+                      g                      = (== s) . dropANSI
+                      toTarget'              = quoteWith "__" me <> " " <> toTarget
+                  in do
+                      sendFun formatted
+                      (multiWrapSend targetMq targetCols =<<) $ if getPlaFlag IsNotFirstAdminMsg targetPla
+                        then unadulterated toTarget'
+                        else [ toTarget' : hints | hints <- firstAdminMsg targetId s ]
+                      dbHelper
               | otherwise -> do
                   multiSendFun [ formatted, parensQuote "Message retained." ]
                   retainedMsg targetId ms . mkRetainedMsgFromPerson s $ toTarget
                   dbHelper
               where
-                toTarget' = quoteWith "__" s <> " " <> toTarget
                 targetPla = getPla targetId ms
                 formatted = T.concat [ parensQuote $ "to " <> targetSing
                                      , " "

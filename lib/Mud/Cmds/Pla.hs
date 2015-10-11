@@ -238,6 +238,7 @@ about p = withoutArgs about p
 -----
 
 
+-- TODO: Consider abbrev styling.
 admin :: Action
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] . adviceAdminNoMsg $ a
