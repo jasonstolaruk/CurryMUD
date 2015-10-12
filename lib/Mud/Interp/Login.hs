@@ -13,7 +13,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Set
-import Mud.Interp.Prompt
+import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)

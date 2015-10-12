@@ -12,7 +12,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Interp.Prompt
+import Mud.Interp.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 import Mud.Util.Text

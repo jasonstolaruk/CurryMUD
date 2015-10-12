@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE MultiWayIf #-}
 
-module Mud.Interp.Prompt where
+module Mud.Interp.Misc where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
