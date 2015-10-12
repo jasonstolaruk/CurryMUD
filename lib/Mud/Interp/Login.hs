@@ -93,7 +93,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
         (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn
                                                                 , checkIllegalNames    ms mq cn
                                                                 , checkPropNamesDict      mq cn
-                                                                , checkWordsDict          mq cn ]) -- TODO: Check against random names.
+                                                                , checkWordsDict          mq cn
+                                                                , checkRndmNames          mq cn ])
                                       unit
                                       nextPrompt
         (ms, Right (originId, oldSing)) -> do
@@ -204,7 +205,7 @@ checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (retu
 
 
 checkIllegalNames :: MudState -> MsgQueue -> CmdName -> MudStack Any
-checkIllegalNames ms mq cn = checkSet cn sorry . insertEntNames $ insertRaceNames
+checkIllegalNames ms mq cn = checkSet cn (promptRetryName mq sorryNameTaken) . insertEntNames $ insertRaceNames
   where
     insertRaceNames = foldr helper S.empty (allValues :: [Race])
       where
@@ -213,7 +214,6 @@ checkIllegalNames ms mq cn = checkSet cn sorry . insertEntNames $ insertRaceName
       where
         helper Nothing  = id
         helper (Just n) = S.insert n
-    sorry = promptRetryName mq "Sorry, but that name is already taken."
 
 
 checkPropNamesDict :: MsgQueue -> CmdName -> MudStack Any
@@ -226,6 +226,10 @@ checkWordsDict :: MsgQueue -> CmdName -> MudStack Any
 checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
   where
     sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
+
+
+checkRndmNames :: MsgQueue -> CmdName -> MudStack Any
+checkRndmNames mq = checkNameHelper (Just rndmNamesFile) "checkRndmNames" . promptRetryName mq $ sorryNameTaken
 
 
 interpConfirmName :: Sing -> Interp

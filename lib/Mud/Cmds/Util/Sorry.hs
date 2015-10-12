@@ -192,6 +192,13 @@ sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> 
 -----
 
 
+sorryNameTaken :: T.Text
+sorryNameTaken = "Sorry, but that name is already taken."
+
+
+-----
+
+
 sorryNoMsg :: T.Text
 sorryNoMsg = "You must also provide a message to send."
 

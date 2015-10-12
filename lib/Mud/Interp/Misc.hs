@@ -19,12 +19,12 @@ mkPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
                 in spaces [ f "h" hps
                           , f "m" mps
                           , f "p" pps
-                          , f "f" fps ] <> " >"
+                          , f "f" fps ] <> " ->"
   where
     f a (x, y) = let c   = if | x == y    -> green
                               | per > 67  -> cyan
                               | per > 33  -> yellow
                               | per > 10  -> red
                               | otherwise -> magenta
-                     per = round $ x `divide` y * 100 :: Int
+                     per = round $ x `divide` y * 100
                  in quoteWith' (c, dfltColor) a <> showText x
