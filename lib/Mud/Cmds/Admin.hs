@@ -52,7 +52,7 @@ import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime,
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
-import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
+import qualified Data.Map.Lazy as M (foldl, foldrWithKey, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Process (readProcess)
@@ -103,6 +103,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
+-- TODO: Make a command to display information about the channels that a given player is connected to.
 -- TODO: Make a command to listen in on a channel.
 adminCmds :: [Cmd]
 adminCmds =
@@ -113,6 +114,8 @@ adminCmds =
     , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."
     , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"       adminBug         "Dump the bug database."
+    , mkAdminCmd "channel"   adminChan        "Display a list of all telepathic channels, or display information about \
+                                              \one or more telepathic channels."
     , mkAdminCmd "date"      adminDate        "Display the current system date."
     , mkAdminCmd "host"      adminHost        "Display a report of connection statistics for one or more players."
     , mkAdminCmd "incognito" adminIncognito   "Toggle your incognito status."
@@ -320,6 +323,31 @@ adminBug (NoArgs i mq cols) = (withDbExHandler "adminBug" . getDbTblRecs $ "bug"
   Just xs -> dumpDbTblHelper mq cols (xs :: [BugRec]) >> logPlaExec (prefixAdminCmd "bug") i
   Nothing -> sorryDbEx mq cols
 adminBug p = withoutArgs adminBug p
+
+
+-----
+
+
+-- TODO: Help.
+adminChan :: Action
+adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport ms) . IM.elems) ms of
+  []      -> wrapSend mq cols "No channels exist!"
+  reports -> do
+      pager i mq . intercalate [""] $ reports
+      logPlaExecArgs (prefixAdminCmd "channel") [] i
+adminChan p = patternMatchFail "adminChan" [ showText p ]
+
+
+mkChanReport :: MudState -> Chan -> [T.Text]
+mkChanReport ms (Chan ci cn cct) =
+    let desc = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
+                                                      , let p = getPla (getIdForPCSing s ms) ms
+                                                      -- TODO: We should really just make an "isIncognito" function.
+                                                      , let l = isLoggedIn p && (not . getPlaFlag IsIncognito $ p) ]
+    in [ T.concat [ parensQuote . showText $ ci, " ", dblQuote cn, ":" ], desc ]
+  where
+    descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOut t, " / ", loggedInOut l ]
+    f                 = sortBy (compare `on` view _1)
 
 
 -----

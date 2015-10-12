@@ -15,6 +15,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , happy
                           , hasEnc
                           , hasYou
+                          , inOut
                           , inOutOnOffs
                           , isBracketed
                           , isDblLinked
@@ -24,6 +25,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isPlaBanned
                           , isPunc
                           , isTunedQuestion
+                          , loggedInOut
                           , mkActionParams
                           , mkInterfaceList
                           , mkPossPro
@@ -40,6 +42,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , questionChanContext
                           , sendGenericErrorMsg
                           , throwToListenThread
+                          , tunedInOut
                           , unmsg
                           , updateRndmName
                           , withDbExHandler
@@ -398,6 +401,19 @@ isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPla
 -----
 
 
+-- TODO: Look for more places to use these functions (including "tunedInOut").
+loggedInOut :: Bool -> T.Text
+loggedInOut = ("logged " <>) . inOut
+
+
+inOut :: Bool -> T.Text
+inOut True  = "in"
+inOut False = "out"
+
+
+-----
+
+
 mkInterfaceList :: IO T.Text
 mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.concat [ showText . NI.name $ n
                                                                                   , ": "
@@ -535,6 +551,13 @@ questionChanContext = ChanContext "question" Nothing True
 
 sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
+
+
+-----
+
+
+tunedInOut :: Bool -> T.Text
+tunedInOut = ("tuned " <>) . inOut
 
 
 -----

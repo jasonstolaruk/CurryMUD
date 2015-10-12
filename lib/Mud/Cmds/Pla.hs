@@ -347,8 +347,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                     (ins, outs) = partition (view _3) . sortBy (compare `on` view _2) $ combo
                     styleds     = styleAbbrevs Don'tBracket . map (view _2) $ ins
                     ins'        = zipWith (\styled -> _2 .~ styled) styleds ins
-                    g (_, n, isTuned') = let n' = isRndmName n ? underline n :? n in padName n' <> inOut isTuned'
-                    inOut isTuned'     = isTuned' ? "tuned in" :? "tuned out"
+                    g (_, n, isTuned') = let n' = isRndmName n ? underline n :? n in padName n' <> tunedInOut isTuned'
                     combo'             = ins' ++ outs
                 in if isTuned
                   then do
@@ -356,7 +355,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                           msgs              = ()!# combo' ? map g combo' :? onlyYou
                           affixChanName txt = parensQuote cn <> " " <> txt
                       multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : msgs
-                      logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> inOut isTuned'
+                      logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> tunedInOut isTuned'
                                                                  | (i', _, isTuned') <- combo' ]
                   else wrapSend mq cols . sorryNotTunedICChan $ cn
         (cs, cns, s)           = mkChanBindings i ms
@@ -2170,8 +2169,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ]
                     in appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
     alterTuning n flag = case filter ((== value) . fst) inOutOnOffs of
-      [(_, newBool)] -> let msg   = T.concat [ "Tuned ", inOut, " the ", n, " channel." ]
-                            inOut = newBool ? "in" :? "out"
+      [(_, newBool)] -> let msg   = T.concat [ "Tuned ", inOut newBool, " the ", n, " channel." ]
                         in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
       [] -> appendMsg . T.concat $ [ dblQuote value
                                    , " is not a valid value for the "
@@ -2532,7 +2530,7 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
                                                                 & _2 %~ map (chanConnTbl.at s .~ Just val)
                     else foundHelper
       where
-        appendMsg connName = let msg = T.concat [ "You tune ", connName, " ", val ? "in" :? "out", "." ]
+        appendMsg connName = let msg = T.concat [ "You tune ", connName, " ", inOut val, "." ]
                              in a & _3 <>~ pure msg
                                   & _4 <>~ pure msg
         foundHelper
