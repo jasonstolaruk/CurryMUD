@@ -242,7 +242,12 @@ getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.t
 
 
 getChanIdNames :: Id -> Chan -> MudState -> MudStack [(Id, T.Text)]
-getChanIdNames i c ms =
+getChanIdNames i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
+    sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
+
+
+getChanLinkeds_nonLinkedIds :: Id -> Chan -> MudState -> ([(Id, Sing)], [Id])
+getChanLinkeds_nonLinkedIds i c ms =
     let s                     = getSing i ms
         others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
         f (s', isTuned)       = s' /= s && isTuned
@@ -250,7 +255,10 @@ getChanIdNames i c ms =
         h                     = (`isAwake` ms) . fst
         (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
         nonLinkedIds          = map fst nonLinkeds
-    in sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
+    in (linkeds, nonLinkedIds)
+
+
+-----
 
 
 getAllChanIdNames :: Id -> MudState -> MudStack (IM.IntMap [(Id, T.Text)])
@@ -264,15 +272,8 @@ getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
 
 
 getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, T.Text, T.Text)]
-getChanStyleds i c ms =
-    let s                     = getSing i ms
-        others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
-        f (s', isTuned)       = s' /= s && isTuned
-        g (s', _      )       = (getIdForPCSing s' ms, s')
-        h                     = (`isAwake` ms) . fst
-        (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
-        nonLinkedIds          = map fst nonLinkeds
-    in mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
+getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
+    mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
         let nonLinkeds' = zip nonLinkedIds rndmNames
             combo       = sortBy (compare `on` snd) $ linkeds ++ nonLinkeds'
             styleds     = styleAbbrevs Don'tBracket . map snd $ combo
