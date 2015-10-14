@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.Util.List ( allValues
                      , appendIfUnique
                      , countOcc

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.TopLvlDefs.Padding where
 
 import Mud.Data.State.Util.Misc

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.TopLvlDefs.Chars where
 
 

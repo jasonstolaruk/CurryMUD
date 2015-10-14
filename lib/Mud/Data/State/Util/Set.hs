@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Set where
 

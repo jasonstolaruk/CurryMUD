@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Cmds.Util.CmdPrefixes where
 

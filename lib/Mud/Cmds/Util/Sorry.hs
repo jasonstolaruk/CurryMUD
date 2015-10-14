@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.Cmds.Util.Sorry where
 

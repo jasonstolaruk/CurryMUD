@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceABanHostNoReason
@@ -70,6 +70,7 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Msgs
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -622,13 +623,7 @@ adviceTuneInvalid :: T.Text
 adviceTuneInvalid = T.concat [ " Please specify the name of the connection you want to tune, followed immediately by "
                              , dblQuote "="
                              , ", followed immediately by "
-                             , dblQuote "in"
-                             , "/"
-                             , dblQuote "out"
-                             , " or "
-                             , dblQuote "on"
-                             , "/"
-                             , dblQuote "off"
+                             , inOutOrOnOff
                              , ", as in "
                              , quoteColor
                              , "tune taro=in"

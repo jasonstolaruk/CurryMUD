@@ -2,6 +2,8 @@
 
 module Mud.TopLvlDefs.Msgs where
 
+import Mud.Util.Quoting
+
 import qualified Data.Text as T
 
 
@@ -15,3 +17,13 @@ dfltShutdownMsg = "CurryMUD is shutting down. We apologize for the inconvenience
 
 genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
+
+
+inOutOrOnOff :: T.Text
+inOutOrOnOff = T.concat [ dblQuote "in"
+                        , "/"
+                        , dblQuote "out"
+                        , " or "
+                        , dblQuote "on"
+                        , "/"
+                        , dblQuote "off" ]

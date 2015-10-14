@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.Util.Operators ( (!#)
                           , (#)
                           , (?)

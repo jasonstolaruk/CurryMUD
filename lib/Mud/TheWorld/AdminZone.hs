@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.TheWorld.AdminZone (createAdminZone) where
 
 import Mud.Data.State.MudData

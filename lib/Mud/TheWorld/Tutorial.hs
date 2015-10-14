@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.TheWorld.Tutorial (createTutorial) where
 
 import Mud.Data.State.MudData

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.Data.State.Util.Random ( percent
                                   , rndmDo
                                   , rndmDos

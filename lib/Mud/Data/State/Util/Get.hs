@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Mud.Data.State.Util.Get where
 
 import Mud.Data.Misc

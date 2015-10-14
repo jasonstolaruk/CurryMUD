@@ -36,6 +36,7 @@ import Mud.TheWorld.AdminZoneIds (iLoggedOut, iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Msgs
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
@@ -2126,12 +2127,10 @@ mkSettingPairs :: Id -> MudState -> [(T.Text, T.Text)]
 mkSettingPairs i ms = let p = getPla i ms
                       in pairs p |&| (getPlaFlag IsAdmin p ? (adminPair p :) :? id)
   where
-    pairs p = [ ("columns",  showText   . getColumns   i $ ms           )
-              , ("lines",    showText   . getPageLines i $ ms           )
-              , ("question", descTuning . getPlaFlag IsTunedQuestion $ p) ]
-    descTuning True  = "in"
-    descTuning False = "out"
-    adminPair        = ("admin", ) . descTuning . getPlaFlag IsTunedAdmin
+    pairs p   = [ ("columns",  showText . getColumns   i $ ms           )
+                , ("lines",    showText . getPageLines i $ ms           )
+                , ("question", inOut    . getPlaFlag IsTunedQuestion $ p) ]
+    adminPair = ("admin", ) . inOut . getPlaFlag IsTunedAdmin
 
 
 helperSettings :: Id -> MudState -> (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
@@ -2175,13 +2174,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
                                    , " is not a valid value for the "
                                    , dblQuote n
                                    , " setting. Please specify one of the following: "
-                                   , dblQuote "in"
-                                   , "/"
-                                   , dblQuote "out"
-                                   , " or "
-                                   , dblQuote "on"
-                                   , "/"
-                                   , dblQuote "off"
+                                   , inOutOrOnOff
                                    , "." ]
       xs -> patternMatchFail "helperSettings alterTuning" [ showText xs ]
 
@@ -2494,7 +2487,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
         helper title names tunings = let txts = mkConnTxts
                                      in [ title, ()!# txts ? commas txts :? "None." ]
           where
-            mkConnTxts = [ n <> "=" <> (t ? "in" :? "out") | n <- names | t <- tunings ]
+            mkConnTxts = [ n <> "=" <> inOut t | n <- names | t <- tunings ]
     in do
         let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
                    , pure ""
