@@ -272,6 +272,13 @@ sorryParseBase mq cols txt = wrapSend mq cols $ dblQuote txt <> " is not a valid
 -----
 
 
+sorryParseChanId :: T.Text -> T.Text
+sorryParseChanId a = dblQuote a <> " is not a valid channel ID."
+
+
+-----
+
+
 sorryParseId :: T.Text -> T.Text
 sorryParseId a = dblQuote a <> " is not a valid ID."
 

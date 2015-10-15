@@ -25,6 +25,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isPlaBanned
                           , isPunc
                           , loggedInOut
+                          , loggedInOutColorize
                           , mkActionParams
                           , mkInterfaceList
                           , mkPossPro
@@ -42,6 +43,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , sendGenericErrorMsg
                           , throwToListenThread
                           , tunedInOut
+                          , tunedInOutColorize
                           , unmsg
                           , updateRndmName
                           , withDbExHandler
@@ -396,12 +398,21 @@ isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPla
 
 
 loggedInOut :: Bool -> T.Text
-loggedInOut = ("logged " <>) . inOut
+loggedInOut = loggedInOutHelper id
+
+
+loggedInOutHelper :: (T.Text -> T.Text) -> Bool -> T.Text
+loggedInOutHelper f = ("logged " <>) . f . inOut
 
 
 inOut :: Bool -> T.Text
 inOut True  = "in"
 inOut False = "out"
+
+
+loggedInOutColorize :: Bool -> T.Text
+loggedInOutColorize True  = loggedInOutHelper (quoteWith' (loggedInColor, dfltColor)) True
+loggedInOutColorize False = loggedInOutHelper id                                      False
 
 
 -----
@@ -550,7 +561,16 @@ sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 
 
 tunedInOut :: Bool -> T.Text
-tunedInOut = ("tuned " <>) . inOut
+tunedInOut = tunedInOutHelper id
+
+
+tunedInOutHelper :: (T.Text -> T.Text) -> Bool -> T.Text
+tunedInOutHelper f = ("tuned " <>) . f . inOut
+
+
+tunedInOutColorize :: Bool -> T.Text
+tunedInOutColorize True  = tunedInOutHelper (quoteWith' (tunedInColor, dfltColor)) True
+tunedInOutColorize False = tunedInOutHelper id                                     False
 
 
 -----

@@ -335,6 +335,17 @@ adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkCh
   reports -> do
       pager i mq . intercalate [""] $ reports
       logPlaExecArgs (prefixAdminCmd "channel") [] i
+{-
+adminChan (LowerNub i mq cols as) = getState >>= \ms ->
+
+case reads . T.unpack $ a :: [(Int, String)] of
+  [(ci, "")] | ci < 0                                -> pure sorryWtf
+             | ci `notElem` (ms^.chanTbl.to IM.keys) -> sorry
+             | otherwise                             -> mkChanReport ms . getChan ci $ ms
+  _                                                  -> sorry
+  where
+    sorry = pure . sorryParseChanId $ a
+-}
 adminChan p = patternMatchFail "adminChan" [ showText p ]
 
 
@@ -345,7 +356,7 @@ mkChanReport ms (Chan ci cn cct) =
                                                       , let l = isLoggedIn p && (not . isIncognito $ p) ]
     in [ T.concat [ parensQuote . showText $ ci, " ", dblQuote cn, ":" ], desc ]
   where
-    descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOut t, " / ", loggedInOut l ]
+    descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
     f                 = sortBy (compare `on` view _1)
 
 

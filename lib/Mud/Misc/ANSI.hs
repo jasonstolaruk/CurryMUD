@@ -27,6 +27,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , insertANSI
                      , intensities
                      , knownNameColor
+                     , loggedInColor
                      , magenta
                      , mkBgColorANSI
                      , mkColorANSI
@@ -48,6 +49,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , shutdownMsgColor
                      , syntaxSymbolColor
                      , toPeepedColor
+                     , tunedInColor
                      , underline
                      , underlineANSI
                      , unknownNameColor
@@ -195,6 +197,10 @@ knownNameColor :: T.Text
 knownNameColor = green
 
 
+loggedInColor :: T.Text
+loggedInColor = yellow
+
+
 motdColor :: T.Text
 motdColor = yellow
 
@@ -253,6 +259,10 @@ syntaxSymbolColor = yellow
 
 toPeepedColor :: T.Text
 toPeepedColor = mkColorANSI (Vivid, White) (Dull, Green)
+
+
+tunedInColor :: T.Text
+tunedInColor = loggedInColor
 
 
 underlineANSI :: T.Text
