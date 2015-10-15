@@ -25,7 +25,7 @@ getAdminIds = getAdminIdsHelper (const True)
 
 
 getAdminIdsHelper :: (Pla -> Bool) -> MudState -> Inv
-getAdminIdsHelper f = IM.keys . IM.filter (uncurry (&&) . (getPlaFlag IsAdmin *** f) . dup) . view plaTbl
+getAdminIdsHelper f = IM.keys . IM.filter (uncurry (&&) . (isAdmin *** f) . dup) . view plaTbl
 
 
 -----
@@ -232,7 +232,7 @@ isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 
 
 getLoggedInPlaIds :: MudState ->  Inv
-getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn *** not . getPlaFlag IsAdmin) . dup))
+getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn *** not . isAdmin) . dup))
 
 
 -----
@@ -273,7 +273,7 @@ getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
 getNonIncogLoggedInAdminIds :: MudState -> Inv
 getNonIncogLoggedInAdminIds ms =
     let adminIds = getLoggedInAdminIds ms
-    in [ adminId | adminId <- adminIds, not . getPlaFlag IsIncognito . getPla adminId $ ms ]
+    in [ adminId | adminId <- adminIds, not . isIncognitoId adminId $ ms ]
 
 
 -----
@@ -282,9 +282,9 @@ getNonIncogLoggedInAdminIds ms =
 getNonIncogInv :: Id -> MudState -> Inv
 getNonIncogInv i ms = filter notIncog . getInv i $ ms
   where
-    notIncog targetId | getType targetId ms /= PCType                       = True
-                      | not . getPlaFlag IsIncognito . getPla targetId $ ms = True
-                      | otherwise                                           = False
+    notIncog targetId | getType targetId ms /= PCType     = True
+                      | not . isIncognitoId targetId $ ms = True
+                      | otherwise                         = False
 
 
 -----
@@ -495,3 +495,118 @@ getXps i ms = let m   = getMob i ms
                   pps = (m^.curPp, m^.maxPp)
                   fps = (m^.curFp, m^.maxFp)
               in (hps, mps, pps, fps)
+
+
+-- ==================================================
+-- Entity flag getters:
+
+
+entFlagHelper :: EntFlags -> Id -> MudState -> Bool
+entFlagHelper flag i = getEntFlag flag . getEnt i
+
+
+-----
+
+
+isInvis :: Ent -> Bool
+isInvis = getEntFlag IsInvis
+
+
+isInvisId :: Id -> MudState -> Bool
+isInvisId = entFlagHelper IsInvis
+
+
+-- ==================================================
+-- Player flag getters:
+
+
+plaFlagHelper :: PlaFlags -> Id -> MudState -> Bool
+plaFlagHelper flag i = getPlaFlag flag . getPla i
+
+
+-----
+
+
+isAdmin :: Pla -> Bool
+isAdmin = getPlaFlag IsAdmin
+
+
+isAdminId :: Id -> MudState -> Bool
+isAdminId = plaFlagHelper IsAdmin
+
+
+-----
+
+
+isIncognito :: Pla -> Bool
+isIncognito = getPlaFlag IsIncognito
+
+
+isIncognitoId :: Id -> MudState -> Bool
+isIncognitoId = plaFlagHelper IsIncognito
+
+
+-----
+
+
+isNotFirstAdminMsg :: Pla -> Bool
+isNotFirstAdminMsg = getPlaFlag IsNotFirstAdminMsg
+
+
+isNotFirstAdminMsgId :: Id -> MudState -> Bool
+isNotFirstAdminMsgId = plaFlagHelper IsNotFirstAdminMsg
+
+
+-----
+
+
+isNotFirstLook :: Pla -> Bool
+isNotFirstLook = getPlaFlag IsNotFirstLook
+
+
+isNotFirstLookId :: Id -> MudState -> Bool
+isNotFirstLookId = plaFlagHelper IsNotFirstLook
+
+
+-----
+
+
+isNotFirstMobSay :: Pla -> Bool
+isNotFirstMobSay = getPlaFlag IsNotFirstMobSay
+
+
+isNotFirstModSayId :: Id -> MudState -> Bool
+isNotFirstModSayId = plaFlagHelper IsNotFirstMobSay
+
+
+-----
+
+
+isSeeingInvis :: Pla -> Bool
+isSeeingInvis = getPlaFlag IsSeeingInvis
+
+
+isSeeingInvisId :: Id -> MudState -> Bool
+isSeeingInvisId = plaFlagHelper IsSeeingInvis
+
+
+-----
+
+
+isTunedAdmin :: Pla -> Bool
+isTunedAdmin = getPlaFlag IsTunedAdmin
+
+
+isTunedAdminId :: Id -> MudState -> Bool
+isTunedAdminId = plaFlagHelper IsTunedAdmin
+
+
+-----
+
+
+isTunedQuestion :: Pla -> Bool
+isTunedQuestion = getPlaFlag IsTunedQuestion
+
+
+isTunedQuestionId :: Id -> MudState -> Bool
+isTunedQuestionId = plaFlagHelper IsTunedQuestion

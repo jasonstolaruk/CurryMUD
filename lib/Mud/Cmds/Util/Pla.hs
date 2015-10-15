@@ -643,7 +643,7 @@ mkPutRemInvDesc i ms d por mnom is ts =
 
 
 isAwake :: Id -> MudState -> Bool
-isAwake i ms = let p = getPla i ms in isLoggedIn p && (not . getPlaFlag IsIncognito $ p)
+isAwake i ms = let p = getPla i ms in isLoggedIn p && (not . isIncognito $ p)
 
 
 -----

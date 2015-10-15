@@ -94,7 +94,7 @@ bcastAdminsExcept is = bcastAdminsHelper (\\ is)
 
 
 bcastIfNotIncog :: Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncog i bs = getState >>= \ms -> bcast $ if getPlaFlag IsIncognito . getPla i $ ms
+bcastIfNotIncog i bs = getState >>= \ms -> bcast $ if isIncognitoId i ms
                                              then map (second (filter (== i))) bs
                                              else bs
 
@@ -129,8 +129,8 @@ bcastOtherAdmins i = bcastAdminsHelper (i `delete`)
 
 bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
-    unless (getPlaFlag IsIncognito . getPla i $ ms) $ let ((i `delete`) -> ris) = getPCRmInv i ms
-                                                      in bcast [(msg, findPCIds ms ris)]
+    unless (isIncognitoId i ms) $ let ((i `delete`) -> ris) = getPCRmInv i ms
+                                  in bcast [(msg, findPCIds ms ris)]
 
 
 -----
@@ -139,7 +139,7 @@ bcastOthersInRm i msg = getState >>= \ms ->
 bcastSelfOthers :: Id -> MudState -> [Broadcast] -> [Broadcast] -> MudStack ()
 bcastSelfOthers i ms toSelf toOthers = do
     bcast toSelf
-    unless (getPlaFlag IsIncognito . getPla i $ ms) . bcast $ toOthers
+    unless (isIncognitoId i ms) . bcast $ toOthers
 
 
 -----

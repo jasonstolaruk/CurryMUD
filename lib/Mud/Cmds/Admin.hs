@@ -154,7 +154,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
     let triples = sortBy (compare `on` view _2) [ (ai, as, isTuned) | ai <- getLoggedInAdminIds ms
                                                                     , let as      = getSing ai ms
                                                                     , let ap      = getPla  ai ms
-                                                                    , let isTuned = getPlaFlag IsTunedAdmin ap ]
+                                                                    , let isTuned = isTunedAdmin ap ]
         ([self],   others   )  = partition (\x -> x^._1.to (== i)) triples
         (tunedIns, tunedOuts)  = partition (view _3) others
         styleds                = styleAbbrevs Don'tBracket . map (view _2) $ tunedIns
@@ -163,7 +163,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
         descs                  = mkDesc self : map mkDesc others'
     in multiWrapSend mq cols descs >> logPlaExecArgs (prefixAdminCmd "admin") [] i
 adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
-    if getPlaFlag IsTunedAdmin . getPla i $ ms
+    if isTunedAdminId i ms
       then case getTunedAdminIds ms of
         [_]      -> sorryNoOneListening mq cols "admin"
         tunedIds ->
@@ -190,7 +190,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
                 Right (bs, logMsg) -> f bs logMsg
       else wrapSend mq cols . sorryNotTunedOOCChan $ "admin"
   where
-    getTunedAdminIds ms  = [ ai | ai <- getLoggedInAdminIds ms, getPlaFlag IsTunedAdmin . getPla ai $ ms ]
+    getTunedAdminIds ms  = [ ai | ai <- getLoggedInAdminIds ms, isTunedAdminId ai ms ]
     mkLogMsg             = dropANSI . fst . head
     ioHelper s bs logMsg = bcastNl bs >> logHelper
       where
@@ -268,9 +268,9 @@ adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
-                   | banId == i             -> sendFun "You can't ban yourself."
-                   | getPlaFlag IsAdmin pla -> sendFun "You can't ban an admin."
-                   | otherwise -> (withDbExHandler "adminBanPla" . isPlaBanned $ strippedTarget) >>= \case
+                   | banId == i  -> sendFun "You can't ban yourself."
+                   | isAdmin pla -> sendFun "You can't ban an admin."
+                   | otherwise   -> (withDbExHandler "adminBanPla" . isPlaBanned $ strippedTarget) >>= \case
                      Nothing      -> sorryDbEx mq cols
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
                          let banPla = BanPlaRec ts strippedTarget newStatus msg
@@ -342,8 +342,7 @@ mkChanReport :: MudState -> Chan -> [T.Text]
 mkChanReport ms (Chan ci cn cct) =
     let desc = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
                                                       , let p = getPla (getIdForPCSing s ms) ms
-                                                      -- TODO: We should really just make an "isIncognito" function.
-                                                      , let l = isLoggedIn p && (not . getPlaFlag IsIncognito $ p) ]
+                                                      , let l = isLoggedIn p && (not . isIncognito $ p) ]
     in [ T.concat [ parensQuote . showText $ ci, " ", dblQuote cn, ":" ], desc ]
   where
     descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOut t, " / ", loggedInOut l ]
@@ -426,15 +425,15 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
 adminIncognito :: Action
 adminIncognito (NoArgs i mq cols) = modifyState helper >>= sequence_
   where
-    helper ms = let s           = getSing i ms
-                    isIncognito = getPlaFlag IsIncognito . getPla i $ ms
-                    fs | isIncognito = [ wrapSend mq cols "You are no longer incognito."
-                                       , bcastOtherAdmins i $ s <> " is no longer incognito."
-                                       , logPla "adminIncognito helper fs" i "no longer incognito." ]
-                       | otherwise   = [ wrapSend mq cols "You have gone incognito."
-                                       , bcastOtherAdmins i $ s <> " has gone incognito."
-                                       , logPla "adminIncognito helper fs" i "went incognito." ]
-                in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncognito), fs)
+    helper ms = let s              = getSing i ms
+                    isIncog        = isIncognitoId i ms
+                    fs | isIncog   = [ wrapSend mq cols "You are no longer incognito."
+                                     , bcastOtherAdmins i $ s <> " is no longer incognito."
+                                     , logPla "adminIncognito helper fs" i "no longer incognito." ]
+                       | otherwise = [ wrapSend mq cols "You have gone incognito."
+                                     , bcastOtherAdmins i $ s <> " has gone incognito."
+                                     , logPla "adminIncognito helper fs" i "went incognito." ]
+                in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncog), fs)
 adminIncognito p = withoutArgs adminIncognito p
 
 
@@ -471,20 +470,20 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                 Left  errorMsg -> emptied . sendFun $ errorMsg
                 Right bs       -> ioHelper pair bs
             ioHelper (targetId, targetSing) [ fst -> toSelf, fst -> toTarget ] = if
-              | isLoggedIn targetPla, getPlaFlag IsIncognito . getPla i $ ms ->
+              | isLoggedIn targetPla, isIncognitoId i ms ->
                 emptied . sendFun $ "You can't send a message to a player who is logged in while you are incognito."
               | isLoggedIn targetPla ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
                       f (iRoot, "Root")      = let rootPla = getPla iRoot ms
-                                               in isLoggedIn rootPla && (not . getPlaFlag IsIncognito $ rootPla)
+                                               in isLoggedIn rootPla && (not . isIncognito $ rootPla)
                       f _                    = True
                       me                     = head . filter g . styleAbbrevs Don'tBracket $ adminSings
                       g                      = (== s) . dropANSI
                       toTarget'              = quoteWith "__" me <> " " <> toTarget
                   in do
                       sendFun formatted
-                      (multiWrapSend targetMq targetCols =<<) $ if getPlaFlag IsNotFirstAdminMsg targetPla
+                      (multiWrapSend targetMq targetCols =<<) $ if isNotFirstAdminMsg targetPla
                         then unadulterated toTarget'
                         else [ toTarget' : hints | hints <- firstAdminMsg targetId s ]
                       dbHelper
@@ -553,9 +552,9 @@ adminPeep (LowerNub i mq cols as) = do
                 let notFound = a & _2 %~ ("No PC by the name of " <> dblQuote target <> " is currently logged in." :)
                     found (peepId@(flip getPla ms -> peepPla), peepSing) = if peepId `notElem` pt^.ind i.peeping
                       then if
-                        | peepId == i                -> a & _2 %~ ("You can't peep yourself." :)
-                        | getPlaFlag IsAdmin peepPla -> a & _2 %~ ("You can't peep an admin." :)
-                        | otherwise                  ->
+                        | peepId == i     -> a & _2 %~ ("You can't peep yourself." :)
+                        | isAdmin peepPla -> a & _2 %~ ("You can't peep an admin." :)
+                        | otherwise       ->
                           let pt'     = pt & ind i     .peeping %~ (peepId :)
                                            & ind peepId.peepers %~ (i      :)
                               msg     = "You are now peeping " <> peepSing <> "."
@@ -645,10 +644,10 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
         [targetId]
           | selfSing       <- getSing i ms
           , targetSing     <- getSing targetId ms
-          , isAdmin        <- getPlaFlag IsAdmin . getPla targetId $ ms
-          , (verb, toFrom) <- isAdmin ? ("demoted", "from") :? ("promoted", "to")
+          , ia             <- isAdminId targetId ms
+          , (verb, toFrom) <- ia ? ("demoted", "from") :? ("promoted", "to")
           , handleIncog    <- let act = adminIncognito . mkActionParams targetId ms $ []
-                              in when (getPlaFlag IsIncognito . getPla targetId $ ms) act
+                              in when (isIncognitoId targetId ms) act
           , handlePeep     <- let peepingIds = getPeeping targetId ms
                                   act        = adminPeep . mkActionParams targetId ms . map (`getSing` ms) $ peepingIds
                               in unless (()# peepingIds) act
@@ -669,8 +668,8 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                   , handlePeep ]
           -> if | targetId   == i      -> (ms, [ sendFun "You can't demote yourself." ])
                 | targetSing == "Root" -> (ms, [ sendFun "You can't demote Root."     ])
-                | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not isAdmin)
-                                              & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not isAdmin), fs)
+                | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
+                                              & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
         xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
 adminSudoer p = advise p [] adviceASudoerArgs
 
@@ -828,8 +827,8 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn
                                           LoggedOut -> not . isLoggedIn
     mkAnnotatedName i a = let p     = getPla i ms
-                              admin = getPlaFlag IsAdmin     p |?| asterisk
-                              incog = getPlaFlag IsIncognito p |?| (asteriskColor <> "@" <> dfltColor)
+                              admin = isAdmin p     |?| asterisk
+                              incog = isIncognito p |?| (asteriskColor <> "@" <> dfltColor)
                           in a <> admin <> incog
 
 

@@ -247,7 +247,6 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the administrator you wish to message"
             s                   = getSing i ms
-            isAdmin             = getPlaFlag IsAdmin . getPla i $ ms
             notFound            = emptied . sendFun $ "There is no administrator by the name of " <>
                                                       dblQuote strippedTarget                     <>
                                                       "."
@@ -260,7 +259,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                 Right bs       -> ioHelper pair bs
             ioHelper (adminId, adminSing) [ fst -> toSelf, fst -> toAdmin ] = do
                 if getAll . mconcat $ [ All . isLoggedIn $ adminPla
-                                      , not isAdmin |?| (All . not . getPlaFlag IsIncognito $ adminPla) ]
+                                      , (not . isAdminId i $ ms) |?| (All . not . isIncognito $ adminPla) ]
                   then sendFun formatted
                   else multiSendFun [ formatted, parensQuote "Message retained." ]
                 retainedMsg adminId ms . mkRetainedMsgFromPerson s $ toAdmin
@@ -278,10 +277,10 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                 receivedLogMsg = (adminId, T.concat [ "received message from ", s,   ": ", toAdmin ])
             ioHelper _ xs = patternMatchFail "admin helper ioHelper" [ showText xs ]
             filterRoot idSings
-              | isAdmin   = idSings
-              | otherwise =
+              | isAdminId i ms = idSings
+              | otherwise      =
                   let ([((`getPla` ms) -> rootPla, _)], others) = partition ((== "Root") . snd) idSings
-                  in if isLoggedIn rootPla && (not . getPlaFlag IsIncognito $ rootPla)
+                  in if isLoggedIn rootPla && (not . isIncognito $ rootPla)
                     then idSings
                     else others
         in (findFullNameForAbbrev strippedTarget . filterRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
@@ -293,18 +292,17 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
   where
     helper ms =
         let p            = getPla i ms
-            isAdmin      = getPlaFlag IsAdmin p
             singSuffixes = [ (s, suffix) | (ai, s) <- mkAdminIdSingList ms
                                          , let suffix = " logged " <> mkSuffix ai
                                          , then sortWith by s ]
             mkSuffix ai =
                 let ap      = getPla ai ms
-                    isIncog = getPlaFlag IsIncognito ap
+                    isIncog = isIncognito ap
                 in if
                   | isLoggedIn ap && not isIncog -> "in"
-                  | isAdmin && isIncog           -> (isLoggedIn ap ? "in " :? "out ") <> parensQuote "incognito"
+                  | isAdmin p && isIncog         -> (isLoggedIn ap ? "in " :? "out ") <> parensQuote "incognito"
                   | otherwise                    -> "out"
-            singSuffixes' = singSuffixes |&| (isAdmin ? id :? filter f)
+            singSuffixes' = singSuffixes |&| (isAdmin p ? id :? filter f)
               where
                 f (a, b) | a == "Root" = b == " logged in"
                          | otherwise   = True
@@ -366,8 +364,8 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryNotConnectedChan $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if
           | views chanConnTbl (not . (M.! s)) c    -> wrapSend mq cols . sorryNotTunedICChan $ cn
-          | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "a telepathic"
-          | otherwise                              -> getChanStyleds i c ms >>= \triples -> if ()# triples
+          | isIncognitoId i ms -> sorryIncogChan mq cols "a telepathic"
+          | otherwise          -> getChanStyleds i c ms >>= \triples -> if ()# triples
             then sorryNoOneListening mq cols . dblQuote $ cn
             else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getChanStyleds targetId c ms
                      format (txt, is)   = if i `elem` is
@@ -433,7 +431,7 @@ connect :: Action
 connect p@AdviseNoArgs       = advise p ["connect"] adviceConnectNoArgs
 connect p@(AdviseOneArg a)   = advise p ["connect"] . adviceConnectNoChan $ a
 connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
-    if getPlaFlag IsIncognito . getPla i $ ms
+    if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "connect"
       else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
         ([Left msg], Nothing) -> bcastNl . mkBroadcast i $ msg
@@ -521,7 +519,7 @@ disconnect :: Action
 disconnect p@AdviseNoArgs       = advise p ["disconnect"] adviceDisconnectNoArgs
 disconnect p@(AdviseOneArg a)   = advise p ["disconnect"] . adviceDisconnectNoChan $ a
 disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
-    if getPlaFlag IsIncognito . getPla i $ ms
+    if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "disconnect"
       else getAllChanIdNames i ms >>= \idNamesTbl ->
           disconnectHelper i (mkLastArgWithNubbedOthers as) idNamesTbl |&| modifyState >=> \case
@@ -907,8 +905,8 @@ help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
     handler e = fileIOExHandler "help" e >> wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
-    helper rootHelpTxt = (getPlaFlag IsAdmin . getPla i <$> getState) >>= \isAdmin -> do
-        (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ isAdmin
+    helper rootHelpTxt = (isAdminId i <$> getState) >>= \ia -> do
+        (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ ia
         let zipped                 = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ (formatHelpNames . mkHelpNames)
             helpTxt                = T.concat [ nl rootHelpTxt
@@ -916,13 +914,13 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
                                               , nl cmdNames
                                               , nl "Help is available on the following topics:"
                                               , topicNames
-                                              , isAdmin |?| footnote ]
+                                              , ia |?| footnote ]
         (pager i mq . parseHelpTxt cols $ helpTxt) >> logPla "help" i "read root help file."
     mkHelpNames zipped    = [ padHelpTopic . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
-help (LowerNub i mq cols as) = (getPlaFlag IsAdmin . getPla i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
+help (LowerNub i mq cols as) = (isAdminId i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     pager i mq . intercalate [ "", T.replicate cols "=", "" ] $ helpTxts
     hns |#| logPla "help" i . ("read help on: " <>) . commas
@@ -930,10 +928,10 @@ help p = patternMatchFail "help" [ showText p ]
 
 
 mkHelpData :: Bool -> IO [Help]
-mkHelpData isAdmin = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
-                                                                     , plaHelpTopicNames
-                                                                     , adminHelpCmdNames
-                                                                     , adminHelpTopicNames ] -> do
+mkHelpData ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
+                                                                , plaHelpTopicNames
+                                                                , adminHelpCmdNames
+                                                                , adminHelpTopicNames ] -> do
     let phcs = [ Help { helpName     = T.pack phcn
                       , helpFilePath = plaHelpCmdsDir     </> phcn
                       , isCmdHelp    = True
@@ -950,7 +948,7 @@ mkHelpData isAdmin = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCm
                       , helpFilePath = adminHelpTopicsDir </> whtn
                       , isCmdHelp    = False
                       , isAdminHelp  = True }  | whtn <- adminHelpTopicNames ]
-    return $ phcs ++ phts ++ (guard isAdmin >> ahcs ++ ahts)
+    return $ phcs ++ phts ++ (guard ia >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
     getHelpDirectoryContents dir = dropIrrelevantFilenames . sort <$> getDirectoryContents dir
@@ -985,7 +983,7 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
   else let introsTxt = commas intros in do
       multiWrapSend mq cols [ "You know the following names:", introsTxt ]
       logPla "intro" i $ "known names: " <> introsTxt
-intro (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
+intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "intro"
   else helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
     bcastIfNotIncog i bs >> logMsgs |#| logPla "intro" i . slashes
@@ -1161,7 +1159,7 @@ link (NoArgs i mq cols) = do
                         x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
                           Nothing    -> x
                           (Just val) -> val ? x :? x <> " (tuned out)"
-                in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . getPlaFlag IsIncognito $ linkPla ]
+                in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . isIncognito $ linkPla ]
                   then f _1
                   else f _2
         in do
@@ -1169,7 +1167,7 @@ link (NoArgs i mq cols) = do
            logPla "link" i . slashes . dropEmpties $ [ twoWays       |!| "Two-way: "         <> commas twoWays
                                                      , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
                                                      , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
-link (LowerNub i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
+link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "link"
   else helper |&| modifyState >=> \(bs, logMsgs, fs) ->
       bcast bs >> sequence_ fs >> logMsgs |#| (logPla "link" i . slashes)
@@ -1348,7 +1346,7 @@ mkIsPC_StyledName_Count_BothList i ms targetIds =
 
 
 firstLook :: Id -> Cols -> (PlaTbl, T.Text) -> (PlaTbl, T.Text)
-firstLook i cols a@(pt, _) = if pt^.ind i.to (getPlaFlag IsNotFirstLook)
+firstLook i cols a@(pt, _) = if pt^.ind i.to isNotFirstLook
   then a
   else let msg = T.concat [ hintANSI
                           , "Hint:"
@@ -1546,27 +1544,26 @@ question (NoArgs' i mq) = getState >>= \ms ->
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
         (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
     in mapM (updateRndmName i) otherIds >>= \rndmNames ->
-           let isAdmin = getPlaFlag IsAdmin . (`getPla` ms)
-               rndms   = zip3 otherIds rndmNames . repeat $ False
-               linkeds = [ (li, getSing li ms, isAdmin li) | li <- linkedIds ]
-               admins  = [ (ai, getSing ai ms, True      ) | ai <- adminIds  ]
+           let rndms   = zip3 otherIds rndmNames . repeat $ False
+               linkeds = [ (li, getSing li ms, isAdminId li ms) | li <- linkedIds ]
+               admins  = [ (ai, getSing ai ms, True           ) | ai <- adminIds  ]
                (tunedIns, tunedOuts) =
                  let xs = rndms ++ nubSort (linkeds ++ admins)
-                 in partition (views _1 (`isTunedQuestion` ms)) . sortBy (compare `on` view _2) $ xs
+                 in partition (views _1 (`isTunedQuestionId` ms)) . sortBy (compare `on` view _2) $ xs
                styleds = styleAbbrevs Don'tBracket . map (view _2) $ tunedIns
                combo   = map f $ zipWith (\styled -> _2 .~ styled) styleds tunedIns ++ tunedOuts
                  where
                   f (i', n, ia) | ia           = (i', n <> asterisk)
                                 | isRndmName n = (i', underline n  )
                                 | otherwise    = (i', n            )
-               mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestion i' ms ? "tuned in" :? "tuned out")
-               descs          = mkDesc (i, getSing i ms <> (isAdmin i |?| asterisk)) : map mkDesc combo
+               mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestionId i' ms ? "tuned in" :? "tuned out")
+               descs          = mkDesc (i, getSing i ms <> (isAdminId i ms |?| asterisk)) : map mkDesc combo
                descs'         = "Question channel:" : descs
            in pager i mq descs' >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
-  | not . isTunedQuestion i $ ms           -> wrapSend mq cols . sorryNotTunedOOCChan $ "question"
-  | getPlaFlag IsIncognito . getPla i $ ms -> sorryIncogChan mq cols "the question"
-  | otherwise                              -> getQuestionStyleds i ms >>= \triples -> if ()# triples
+  | not . isTunedQuestionId i $ ms -> wrapSend mq cols . sorryNotTunedOOCChan $ "question"
+  | isIncognitoId i ms             -> sorryIncogChan mq cols "the question"
+  | otherwise                      -> getQuestionStyleds i ms >>= \triples -> if ()# triples
     then sorryNoOneListening mq cols "question"
     else let ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
                  bcastNl =<< expandEmbeddedIds ms questionChanContext bs
@@ -2008,7 +2005,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 say :: Action
 say p@AdviseNoArgs                    = advise p ["say"] adviceSayNoArgs
 say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
-  | getPlaFlag IsIncognito . getPla i $ ms -> wrapSend mq cols . sorryIncog $ "say"
+  | isIncognitoId i ms         -> wrapSend mq cols . sorryIncog $ "say"
   | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
     Left  msg                    -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
@@ -2093,7 +2090,7 @@ say p = patternMatchFail "say" [ showText p ]
 
 
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, T.Text)
-firstMobSay i pt = if pt^.ind i.to (getPlaFlag IsNotFirstMobSay)
+firstMobSay i pt = if pt^.ind i.to isNotFirstMobSay
   then (pt, "")
   else let msg = T.concat [ hintANSI
                           , "Hint:"
@@ -2125,12 +2122,12 @@ setAction p = patternMatchFail "setAction" [ showText p ]
 
 mkSettingPairs :: Id -> MudState -> [(T.Text, T.Text)]
 mkSettingPairs i ms = let p = getPla i ms
-                      in pairs p |&| (getPlaFlag IsAdmin p ? (adminPair p :) :? id)
+                      in pairs p |&| (isAdmin p ? (adminPair p :) :? id)
   where
-    pairs p   = [ ("columns",  showText . getColumns   i $ ms           )
-                , ("lines",    showText . getPageLines i $ ms           )
-                , ("question", inOut    . getPlaFlag IsTunedQuestion $ p) ]
-    adminPair = ("admin", ) . inOut . getPlaFlag IsTunedAdmin
+    pairs p   = [ ("columns",  showText . getColumns   i  $ ms)
+                , ("lines",    showText . getPageLines i  $ ms)
+                , ("question", inOut    . isTunedQuestion $ p ) ]
+    adminPair = ("admin", ) . inOut . isTunedAdmin
 
 
 helperSettings :: Id -> MudState -> (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
@@ -2185,7 +2182,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 showAction :: Action
 showAction p@AdviseNoArgs     = advise p ["show"] adviceShowNoArgs
 showAction p@(AdviseOneArg a) = advise p ["show"] . adviceShowNoName $ a
-showAction (Lower i mq cols as) = getState >>= \ms -> if getPlaFlag IsIncognito . getPla i $ ms
+showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms
            invCoins   = getInvCoins i ms
@@ -2437,7 +2434,7 @@ tele :: Action
 tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
 tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a
 tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let (s, p) = (getSing i ms, getPla i ms) in if getPlaFlag IsIncognito p
+    let (s, p) = (getSing i ms, getPla i ms) in if isIncognito p
       then wrapSend mq cols . sorryIncog $ "telepathy"
       else let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the person you wish to message"
                notFound            = sendFun . notFoundSuggestAsleeps target asleeps $ ms
@@ -2816,7 +2813,7 @@ mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
                                                                           , pluralize ("", "s") y ]))
                             , "." ]
   where
-    maruBatsus = map (uncurry (&&) . (isLoggedIn *** not . getPlaFlag IsIncognito) . dup . (`getPla` ms)) ais
+    maruBatsus = map (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup . (`getPla` ms)) ais
     ais        = getLoggedInAdminIds ms
 
 

@@ -24,7 +24,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isLinked
                           , isPlaBanned
                           , isPunc
-                          , isTunedQuestion
                           , loggedInOut
                           , mkActionParams
                           , mkInterfaceList
@@ -195,8 +194,7 @@ expandEmbeddedIds ms (ChanContext { revealAdminNames }) = concatMapM helper
           let embeddedId = read . T.unpack $ numTxt :: Int
               f i | g . isLinked ms $ (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
                   | otherwise = ((, pure i) . rebuild . underline) <$> updateRndmName i embeddedId
-              g       = revealAdminNames ? (isAdmin || ) :? id
-              isAdmin = getPlaFlag IsAdmin . getPla embeddedId $ ms
+              g       = revealAdminNames ? (isAdminId embeddedId ms || ) :? id
               rebuild = quoteWith' (x, y)
           in mapM f is >>= concatMapM helper
 
@@ -275,11 +273,7 @@ getQuestionStyleds i ms =
 
 getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
 getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms)
-                           in pair & both %~ filter (`isTunedQuestion` ms) . (i `delete`)
-
-
-isTunedQuestion :: Id -> MudState -> Bool
-isTunedQuestion i = getPlaFlag IsTunedQuestion . getPla i
+                           in pair & both %~ filter (`isTunedQuestionId` ms) . (i `delete`)
 
 
 -----

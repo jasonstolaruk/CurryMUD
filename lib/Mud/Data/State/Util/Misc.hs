@@ -54,7 +54,6 @@ import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Text as T
 
 
-
 findPCIds :: MudState -> [Id] -> [Id]
 findPCIds ms haystack = [ i | i <- haystack, getType i ms == PCType ]
 
@@ -120,7 +119,7 @@ mkAdminIdSingList = mkIdSingListHelper id
 
 mkIdSingListHelper :: (Bool -> Bool) -> MudState -> [(Id, Sing)]
 mkIdSingListHelper f ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
-                                                       , f . getPlaFlag IsAdmin $ pt ! i
+                                                       , f . isAdmin $ pt ! i
                                                        , let s = getSing i ms
                                                        , then sortWith by s ]
 
