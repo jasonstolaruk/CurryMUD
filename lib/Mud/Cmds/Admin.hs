@@ -51,7 +51,7 @@ import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (elems, filter, keys, toList)
+import qualified Data.IntMap.Lazy as IM (elems, filter, keys, size, toList)
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
@@ -335,17 +335,20 @@ adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkCh
   reports -> do
       pager i mq . intercalate [""] $ reports
       logPlaExecArgs (prefixAdminCmd "channel") [] i
-{-
 adminChan (LowerNub i mq cols as) = getState >>= \ms ->
-
-case reads . T.unpack $ a :: [(Int, String)] of
-  [(ci, "")] | ci < 0                                -> pure sorryWtf
-             | ci `notElem` (ms^.chanTbl.to IM.keys) -> sorry
-             | otherwise                             -> mkChanReport ms . getChan ci $ ms
-  _                                                  -> sorry
-  where
-    sorry = pure . sorryParseChanId $ a
--}
+    let helper a = case reads . T.unpack $ a :: [(Int, String)] of
+          [(ci, "")] | ci < 0                                -> pure sorryWtf
+                     | ci `notElem` (ms^.chanTbl.to IM.keys) -> sorry
+                     | otherwise                             -> mkChanReport ms . getChan ci $ ms
+          _                                                  -> sorry
+          where
+            sorry = pure . sorryParseChanId $ a
+        reports = map helper as
+    in case views chanTbl IM.size ms of
+      0 -> wrapSend mq cols "No channels exist!"
+      _ -> do
+          pager i mq . intercalate [""] $ reports
+          logPlaExecArgs (prefixAdminCmd "channel") as i
 adminChan p = patternMatchFail "adminChan" [ showText p ]
 
 
