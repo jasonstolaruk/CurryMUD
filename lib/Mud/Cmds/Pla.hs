@@ -922,7 +922,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
 help (LowerNub i mq cols as) = (isAdminId i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
-    pager i mq . intercalate [ "", T.replicate cols "=", "" ] $ helpTxts
+    pager i mq . intercalateDivider cols $ helpTxts
     hns |#| logPla "help" i . ("read help on: " <>) . commas
 help p = patternMatchFail "help" [ showText p ]
 

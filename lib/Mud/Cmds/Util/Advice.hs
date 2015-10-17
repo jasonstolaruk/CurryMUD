@@ -7,6 +7,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceAdverbCloseChar
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
+                            , adviceAMyChansNoArgs
                             , adviceAPrintNoMsg
                             , adviceASudoerArgs
                             , adviceATeleRmArgs
@@ -86,6 +87,9 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Advice"
 -- ==================================================
 
 
+-- TODO: Consider refactoring function names for consistency.
+
+
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
 advise (Advising mq cols) []  msg = wrapSend mq cols msg
 advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For more information, type "
@@ -148,6 +152,10 @@ adviceAMsgNoMsg a = T.concat [ "Please also provide a message to send, as in "
                              , " thank you for reporting the bug you found"
                              , dfltColor
                              , "." ]
+
+
+adviceAMyChansNoArgs :: T.Text
+adviceAMyChansNoArgs = "Please specify the PC names of one or more players whose channel information you'd like to see."
 
 
 adviceAPrintNoMsg :: T.Text

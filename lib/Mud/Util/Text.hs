@@ -7,6 +7,7 @@ module Mud.Util.Text ( aOrAn
                      , dropBlanks
                      , findFullNameForAbbrev
                      , headTail
+                     , intercalateDivider
                      , isCapital
                      , mkDateTimeTxt
                      , mkOrdinal
@@ -37,7 +38,7 @@ import Control.Monad (guard)
 import Data.Char (isUpper, toLower, toUpper)
 import Data.Function (on)
 import Data.Ix (inRange)
-import Data.List (sortBy)
+import Data.List (intercalate, sortBy)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 
@@ -63,6 +64,13 @@ aOrAnOnLower t | isCapital t = t
 isCapital :: T.Text -> Bool
 isCapital ""            = False
 isCapital (T.head -> h) = isUpper h
+
+
+-----
+
+
+intercalateDivider :: Int -> [[T.Text]] -> [T.Text]
+intercalateDivider cols = intercalate [ "", T.replicate cols "=", "" ]
 
 
 -----

@@ -192,6 +192,14 @@ sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> 
 -----
 
 
+sorryMyChansIgnore :: T.Text
+sorryMyChansIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose channel information you would like to \
+                                            \see"
+
+
+-----
+
+
 sorryNameTaken :: T.Text
 sorryNameTaken = "Sorry, but that name is already taken."
 
@@ -201,6 +209,13 @@ sorryNameTaken = "Sorry, but that name is already taken."
 
 sorryNoMsg :: T.Text
 sorryNoMsg = "You must also provide a message to send."
+
+
+-----
+
+
+sorryNoChans :: MsgQueue -> Cols -> MudStack ()
+sorryNoChans mq cols = wrapSend mq cols "No channels exist!"
 
 
 -----

@@ -27,6 +27,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , loggedInOut
                           , loggedInOutColorize
                           , mkActionParams
+                          , mkChanReport
                           , mkInterfaceList
                           , mkPossPro
                           , mkPrettifiedSexRaceLvl
@@ -94,7 +95,7 @@ import Data.List (delete, intercalate, nub, partition, sortBy)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
 import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', map, mapWithKey)
-import qualified Data.Map.Lazy as M (elems, lookup)
+import qualified Data.Map.Lazy as M (elems, lookup, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
@@ -433,6 +434,20 @@ mkActionParams i ms as = ActionParams { plaId       = i
                                       , plaMsgQueue = getMsgQueue i ms
                                       , plaCols     = getColumns  i ms
                                       , args        = as }
+
+
+-----
+
+
+mkChanReport :: MudState -> Chan -> [T.Text]
+mkChanReport ms (Chan ci cn cct) =
+    let desc = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
+                                                      , let p = getPla (getIdForPCSing s ms) ms
+                                                      , let l = isLoggedIn p && (not . isIncognito $ p) ]
+    in [ T.concat [ parensQuote . showText $ ci, " ", dblQuote cn, ":" ], desc ]
+  where
+    descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
+    f                 = sortBy (compare `on` view _1)
 
 
 -----

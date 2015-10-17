@@ -52,7 +52,7 @@ import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime,
 import GHC.Exts (sortWith)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, size, toList)
-import qualified Data.Map.Lazy as M (foldl, foldrWithKey, toList)
+import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Process (readProcess)
@@ -103,39 +103,40 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Make a command to display information about the channels that a given player is connected to.
+-- TODO: There is text that can be moved to the Advice and Sorry modules.
 -- TODO: Make a command to listen in on a channel.
 adminCmds :: [Cmd]
 adminCmds =
-    [ mkAdminCmd "?"         adminDispCmdList "Display or search this command list."
-    , mkAdminCmd "admin"     adminAdmin       . plusRelated $ "Send a message on the admin channel"
-    , mkAdminCmd "banhost"   adminBanHost     "Dump the banned hostname database, or ban/unban a host."
-    , mkAdminCmd "banplayer" adminBanPla      "Dump the banned player database, or ban/unban a player."
-    , mkAdminCmd "announce"  adminAnnounce    "Send a message to all players."
-    , mkAdminCmd "boot"      adminBoot        "Boot a player, optionally with a custom message."
-    , mkAdminCmd "bug"       adminBug         "Dump the bug database."
-    , mkAdminCmd "channel"   adminChan        "Display a list of all telepathic channels, or display information about \
-                                              \one or more telepathic channels."
-    , mkAdminCmd "date"      adminDate        "Display the current system date."
-    , mkAdminCmd "host"      adminHost        "Display a report of connection statistics for one or more players."
-    , mkAdminCmd "incognito" adminIncognito   "Toggle your incognito status."
-    , mkAdminCmd "ip"        adminIp          "Display the server's IP addresses and listening port."
-    , mkAdminCmd "message"   adminMsg         "Send a message to a regular player."
-    , mkAdminCmd "peep"      adminPeep        "Start or stop peeping one or more players."
-    , mkAdminCmd "persist"   adminPersist     "Persist the world (save the current world state to disk)."
-    , mkAdminCmd "print"     adminPrint       "Print a message to the server console."
-    , mkAdminCmd "profanity" adminProfanity   "Dump the profanity database."
-    , mkAdminCmd "shutdown"  adminShutdown    "Shut down CurryMUD, optionally with a custom message."
-    , mkAdminCmd "sudoer"    adminSudoer      "Toggle a player's admin status."
-    , mkAdminCmd "telepla"   adminTelePla     "Teleport to a given player."
-    , mkAdminCmd "telerm"    adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
-                                              \given room."
-    , mkAdminCmd "time"      adminTime        "Display the current system time."
-    , mkAdminCmd "typo"      adminTypo        "Dump the typo database."
-    , mkAdminCmd "uptime"    adminUptime      "Display the system uptime."
-    , mkAdminCmd "whoin"     adminWhoIn       "Display or search a list of all the people that are currently logged in."
-    , mkAdminCmd "whoout"    adminWhoOut      "Display or search a list of all the people that are currently logged \
-                                              \out." ]
+    [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
+    , mkAdminCmd "admin"      adminAdmin       . plusRelated $ "Send a message on the admin channel"
+    , mkAdminCmd "banhost"    adminBanHost     "Dump the banned hostname database, or ban/unban a host."
+    , mkAdminCmd "banplayer"  adminBanPla      "Dump the banned player database, or ban/unban a player."
+    , mkAdminCmd "announce"   adminAnnounce    "Send a message to all players."
+    , mkAdminCmd "boot"       adminBoot        "Boot a player, optionally with a custom message."
+    , mkAdminCmd "bug"        adminBug         "Dump the bug database."
+    , mkAdminCmd "channel"    adminChan        "Display information about one or more telepathic channels."
+    , mkAdminCmd "date"       adminDate        "Display the current system date."
+    , mkAdminCmd "host"       adminHost        "Display a report of connection statistics for one or more players."
+    , mkAdminCmd "incognito"  adminIncognito   "Toggle your incognito status."
+    , mkAdminCmd "ip"         adminIp          "Display the server's IP addresses and listening port."
+    , mkAdminCmd "message"    adminMsg         "Send a message to a regular player."
+    , mkAdminCmd "mychannels" adminMyChans     "Display information about telepathic channels for one or more players."
+    , mkAdminCmd "peep"       adminPeep        "Start or stop peeping one or more players."
+    , mkAdminCmd "persist"    adminPersist     "Persist the world (save the current world state to disk)."
+    , mkAdminCmd "print"      adminPrint       "Print a message to the server console."
+    , mkAdminCmd "profanity"  adminProfanity   "Dump the profanity database."
+    , mkAdminCmd "shutdown"   adminShutdown    "Shut down CurryMUD, optionally with a custom message."
+    , mkAdminCmd "sudoer"     adminSudoer      "Toggle a player's admin status."
+    , mkAdminCmd "telepla"    adminTelePla     "Teleport to a given player."
+    , mkAdminCmd "telerm"     adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
+                                               \given room."
+    , mkAdminCmd "time"       adminTime        "Display the current system time."
+    , mkAdminCmd "typo"       adminTypo        "Dump the typo database."
+    , mkAdminCmd "uptime"     adminUptime      "Display the system uptime."
+    , mkAdminCmd "whoin"      adminWhoIn       "Display or search a list of all the people that are currently logged \
+                                               \in."
+    , mkAdminCmd "whoout"     adminWhoOut      "Display or search a list of all the people that are currently logged \
+                                               \out." ]
 
 
 mkAdminCmd :: T.Text -> Action -> CmdDesc -> Cmd
@@ -331,10 +332,8 @@ adminBug p = withoutArgs adminBug p
 -- TODO: Help.
 adminChan :: Action
 adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport ms) . IM.elems) ms of
-  []      -> wrapSend mq cols "No channels exist!"
-  reports -> do
-      pager i mq . intercalate [""] $ reports
-      logPlaExecArgs (prefixAdminCmd "channel") [] i
+  []      -> sorryNoChans mq cols
+  reports -> adminChanIOHelper i mq reports
 adminChan (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
           [(ci, "")] | ci < 0                                -> pure sorryWtf
@@ -344,23 +343,14 @@ adminChan (LowerNub i mq cols as) = getState >>= \ms ->
           where
             sorry = pure . sorryParseChanId $ a
         reports = map helper as
-    in case views chanTbl IM.size ms of
-      0 -> wrapSend mq cols "No channels exist!"
-      _ -> do
-          pager i mq . intercalate [""] $ reports
-          logPlaExecArgs (prefixAdminCmd "channel") as i
+    in case views chanTbl IM.size ms of 0 -> sorryNoChans mq cols
+                                        _ -> adminChanIOHelper i mq reports
 adminChan p = patternMatchFail "adminChan" [ showText p ]
 
 
-mkChanReport :: MudState -> Chan -> [T.Text]
-mkChanReport ms (Chan ci cn cct) =
-    let desc = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
-                                                      , let p = getPla (getIdForPCSing s ms) ms
-                                                      , let l = isLoggedIn p && (not . isIncognito $ p) ]
-    in [ T.concat [ parensQuote . showText $ ci, " ", dblQuote cn, ":" ], desc ]
-  where
-    descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
-    f                 = sortBy (compare `on` view _1)
+adminChanIOHelper :: Id -> MsgQueue -> [[T.Text]] -> MudStack ()
+adminChanIOHelper i mq reports =
+    (pager i mq . intercalate [""] $ reports) >> logPlaExec (prefixAdminCmd "channel") i
 
 
 -----
@@ -542,6 +532,31 @@ firstAdminMsg i adminSing = modifyState $ (, msg) . (plaTbl.ind i %~ setPlaFlag 
                          , " is the message you want to send to "
                          , adminSing
                          , "." ] ]
+
+
+-----
+
+
+-- TODO: Help.
+adminMyChans :: Action
+adminMyChans p@AdviseNoArgs          = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
+adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
+    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMyChansIgnore)
+                       | otherwise         = (id,           ""                )
+        g = ()# guessWhat ? id :? (guessWhat :)
+        helper target =
+            let notFound                     = [ "There is no PC by the name of " <> dblQuote target <> "." ] -- TODO: Refactor out this msg.
+                found (targetId, targetSing) = let chans = getPCChans targetId ms in
+                    case chans of [] -> header . pure $ "None."
+                                  cs -> intercalate [""] . map (header . mkChanReport ms) $ cs
+                  where
+                   header xs = (targetSing <> "'s channels:") : "" : xs
+            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+        allReports = intercalateDivider cols . map (helper . capitalize . f) $ as
+    in case views chanTbl IM.size ms of
+      0 -> sorryNoChans mq cols
+      _ -> pager i mq (g allReports) >> logPlaExec (prefixAdminCmd "mychannels") i
+adminMyChans p = patternMatchFail "adminMyChans" [ showText p ]
 
 
 -----
@@ -815,7 +830,6 @@ whoHelper :: LoggedInOrOut -> T.Text -> Action
 whoHelper inOrOut cn (NoArgs i mq cols) = do
     pager i mq =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
     logPlaExecArgs (prefixAdminCmd cn) [] i
-  where
 whoHelper inOrOut cn p@(ActionParams { plaId, args }) =
     (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState) >> logPlaExecArgs (prefixAdminCmd cn) args plaId
 
