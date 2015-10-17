@@ -280,6 +280,13 @@ sorryNotTunedOOCChan = sorryNotTunedChan "set"
 -----
 
 
+sorryPCName :: Sing -> T.Text
+sorryPCName s = "There is no PC by the name of " <> dblQuote s <> "."
+
+
+-----
+
+
 sorryParseBase :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryParseBase mq cols txt = wrapSend mq cols $ dblQuote txt <> " is not a valid base."
 

@@ -462,7 +462,7 @@ debugRnt (NoArgs i mq cols) = do
     wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
     logPlaExec (prefixDebugCmd "rnt") i
 debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
-    let notFound    = wrapSend mq cols $ "There is no PC by the name of " <> a <> "."
+    let notFound    = wrapSend mq cols . sorryPCName $ a
         found match = do
             rndmName <- updateRndmName i . getIdForPCSing match $ ms
             wrapSend mq cols . T.concat $ [ dblQuote rndmName

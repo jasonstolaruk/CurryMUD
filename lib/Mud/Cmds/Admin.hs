@@ -261,11 +261,9 @@ adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let fn = "adminBanPla"
         SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to ban"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      []      -> sendFun . T.concat $ [ "There is no PC by the name of "
-                                      , dblQuote strippedTarget
-                                      , ". "
-                                      , parensQuote "Note that you must specify the full PC name of the player you \
-                                                    \wish to ban." ]
+      []      -> sendFun $ sorryPCName strippedTarget <>
+                           " "                        <>
+                           parensQuote "Note that you must specify the full PC name of the player you wish to ban."
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
@@ -292,11 +290,9 @@ adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify th
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      []       -> sendFun . T.concat $ [ "There is no PC by the name of "
-                                       , dblQuote strippedTarget
-                                       , ". "
-                                       , parensQuote "Note that you must specify the full PC name of the player you \
-                                                     \wish to boot." ]
+      []       -> sendFun $ sorryPCName strippedTarget <>
+                            " "                        <>
+                            parensQuote "Note that you must specify the full PC name of the player you wish to boot."
       [bootId] -> let selfSing = getSing i ms in if
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun $ strippedTarget <> " is not logged in."
                     | bootId == i -> sendFun "You can't boot yourself."
@@ -384,7 +380,7 @@ adminHost (LowerNub i mq cols as) = do
                        | otherwise         = (id,           ""             )
         g = ()# guessWhat ? id :? (guessWhat :)
         helper target =
-            let notFound = [ "There is no PC by the name of " <> dblQuote target <> "." ]
+            let notFound = pure . sorryPCName $ target
                 found    = uncurry (mkHostReport ms now zone)
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . g . intercalate [""] . map (helper . capitalize . T.toLower . f) $ as
@@ -545,7 +541,7 @@ adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
                        | otherwise         = (id,           ""                )
         g = ()# guessWhat ? id :? (guessWhat :)
         helper target =
-            let notFound                     = [ "There is no PC by the name of " <> dblQuote target <> "." ] -- TODO: Refactor out this msg.
+            let notFound                     = pure . sorryPCName $ target
                 found (targetId, targetSing) = let chans = getPCChans targetId ms in
                     case chans of [] -> header . pure $ "None."
                                   cs -> intercalate [""] . map (header . mkChanReport ms) $ cs
@@ -664,12 +660,11 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
       let fn                  = "adminSudoer helper"
           SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
       in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-        [] -> (ms, [ let msg = T.concat [ "There is no PC by the name of "
-                                        , dblQuote strippedTarget
-                                        , ". "
-                                        , parensQuote "Note that you must specify the full PC name of the player you  \
-                                                      \wish to promote/demote." ]
-                             in sendFun msg ])
+        [] -> (ms, [ let msg = sorryPCName strippedTarget <>
+                               " "                        <>
+                               parensQuote "Note that you must specify the full PC name of the player you wish to \
+                                           \promote/demote."
+                     in sendFun msg ])
         [targetId]
           | selfSing       <- getSing i ms
           , targetSing     <- getSing targetId ms
