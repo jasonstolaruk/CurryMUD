@@ -539,14 +539,14 @@ adminMyChans p@AdviseNoArgs          = advise p [ prefixAdminCmd "mychannels" ] 
 adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMyChansIgnore)
                        | otherwise         = (id,           ""                )
-        g = ()# guessWhat ? id :? (guessWhat :)
+        g = ()# guessWhat ? id :? ((guessWhat :) . ("" :))
         helper target =
             let notFound                     = pure . sorryPCName $ target
-                found (targetId, targetSing) = let chans = getPCChans targetId ms in
-                    case chans of [] -> header . pure $ "None."
-                                  cs -> intercalate [""] . map (header . mkChanReport ms) $ cs
+                found (targetId, targetSing) = case getPCChans targetId ms of
+                  [] -> header . pure $ "None."
+                  cs -> intercalate [""] . map (header . mkChanReport ms) $ cs
                   where
-                   header xs = (targetSing <> "'s channels:") : "" : xs
+                    header xs = (targetSing <> "'s channels:") : "" : xs
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
         allReports = intercalateDivider cols . map (helper . capitalize . f) $ as
     in case views chanTbl IM.size ms of
