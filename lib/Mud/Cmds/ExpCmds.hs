@@ -747,7 +747,7 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
               (_,                    Right _:_           ) -> sendHelper "Sorry, but expressive commands cannot be \
                                                                          \used with coins."
               ([ Left sorryMsg    ], _                   ) -> sendHelper sorryMsg
-              ([ Right (_:_:_)    ], _                   ) -> sendHelper adviceExpCmdArgs
+              ([ Right (_:_:_)    ], _                   ) -> sendHelper adviceExpCmdExcessArgs
               ([ Right [targetId] ], _                   ) ->
                 let onPC targetDesigTxt =
                         let (toSelf', toSelfBroadcast, toOthers', substitutions) = mkBindings targetDesigTxt
@@ -788,7 +788,7 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
         loc' = case loc of InInv -> "inventory"
                            InEq  -> "readied equipment"
                            _     -> patternMatchFail "expCmd sorry loc'" [ showText loc ]
-expCmd _ _ p = advise p [] adviceExpCmdArgs
+expCmd _ _ p = advise p [] adviceExpCmdExcessArgs
 
 
 mkSerializedDesig :: PCDesig -> T.Text -> T.Text

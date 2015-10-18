@@ -317,7 +317,7 @@ adminList p = patternMatchFail "adminList" [ showText p ]
 
 
 bug :: Action
-bug p@AdviseNoArgs = advise p ["bug"] adviceBugNoDesc
+bug p@AdviseNoArgs = advise p ["bug"] adviceBugNoArgs
 bug p              = bugTypoLogger p BugLog
 
 
@@ -625,7 +625,7 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 emote :: Action
-emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoDesc
+emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoArgs
 emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d@(stdPCEntSing -> Just s) = mkStdDesig i ms DoCap
@@ -1077,7 +1077,7 @@ inv p = patternMatchFail "inv" [ showText p ]
 
 
 leave :: Action
-leave p@AdviseNoArgs                   = advise p ["leave"] adviceLeaveNoChans
+leave p@AdviseNoArgs                   = advise p ["leave"] adviceLeaveNoArgs
 leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanIdNameIsDels, sorryMsgs) ->
     let s                              = getSing i ms
         (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanIdNameIsDels
@@ -1411,7 +1411,7 @@ showMotd mq cols = send mq =<< helper
 
 -- TODO: Creating a new channel should cost psionic points.
 newChan :: Action
-newChan p@AdviseNoArgs                   = advise p ["newchannel"] adviceNewChanNoNames
+newChan p@AdviseNoArgs                   = advise p ["newchannel"] adviceNewChanNoArgs
 newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip -> (newChanNames, chanRecs), sorryMsgs) ->
     let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
         msgs                    = ()# sorryMsgs' ? otherMsgs :? sorryMsgs' ++ (otherMsgs |!| "" : otherMsgs)
@@ -2011,11 +2011,11 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
         then sayTo (Just adverb) (T.tail rest) |&| modifyState >=> bcastAndLog
-        else adviseHelper adviceEmptySayTo
+        else adviseHelper adviceSayToNoUtterance
       | otherwise -> simpleSayHelper ms (Just adverb) rest >>= bcastAndLog
   | T.head a == sayToChar, T.length a > 1 -> if length args > 1
     then sayTo Nothing (T.tail . T.unwords $ args) |&| modifyState >=> bcastAndLog
-    else adviseHelper adviceEmptySayTo
+    else adviseHelper adviceSayToNoUtterance
   | otherwise -> simpleSayHelper ms Nothing (T.unwords args) >>= bcastAndLog
   where
     adviseHelper                = advise p ["say"]
@@ -2023,7 +2023,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
       (_,   "")            -> Left  adviceAdverbCloseChar
       ("",  _ )            -> Left  adviceEmptyAdverb
       (" ", _ )            -> Left  adviceEmptyAdverb
-      (_,   x ) | x == acl -> Left  adviceEmptySay
+      (_,   x ) | x == acl -> Left  adviceSayAdverbNoUtterance
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d              = mkStdDesig i ms DoCap

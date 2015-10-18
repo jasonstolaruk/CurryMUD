@@ -205,7 +205,7 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
 adminAnnounce :: Action
-adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoMsg
+adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
 adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     ok mq
     massSend $ announceColor <> msg <> dfltColor
@@ -602,7 +602,7 @@ adminPersist p              = withoutArgs adminPersist p
 
 
 adminPrint :: Action
-adminPrint p@AdviseNoArgs  = advise p [ prefixAdminCmd "print" ] adviceAPrintNoMsg
+adminPrint p@AdviseNoArgs  = advise p [ prefixAdminCmd "print" ] adviceAPrintNoArgs
 adminPrint (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
     ok mq
@@ -688,7 +688,7 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                 | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
                                               & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
         xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
-adminSudoer p = advise p [] adviceASudoerArgs
+adminSudoer p = advise p [] adviceASudoerExcessArgs
 
 
 -----
@@ -761,7 +761,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
               | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName consSorryBroadcast
             notFound               = (ms, pure . sendFun . sorryInvalidRmName $ strippedTarget')
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
-adminTeleRm p = advise p [] adviceATeleRmArgs
+adminTeleRm p = advise p [] adviceATeleRmExcessArgs
 
 
 -----

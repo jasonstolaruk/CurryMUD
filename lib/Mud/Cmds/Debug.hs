@@ -191,7 +191,7 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 
 
 debugCins :: Action
-debugCins p@AdviseNoArgs       = advise p [] adviceDCinsNoId
+debugCins p@AdviseNoArgs       = advise p [] adviceDCinsNoArgs
 debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(targetId, "")] -> helper targetId
   _                -> wrapSend mq cols . sorryParseId $ a
@@ -207,7 +207,7 @@ debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                           , " for ID "
                           , targetIdTxt
                           , ":" ]
-debugCins p = advise p [] adviceDCinsArgs
+debugCins p = advise p [] adviceDCinsExcessArgs
 
 
 -----
@@ -267,7 +267,7 @@ mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
 
 
 debugId :: Action
-debugId p@AdviseNoArgs       = advise p [] adviceDIdNoId
+debugId p@AdviseNoArgs       = advise p [] adviceDIdNoArgs
 debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
   _                -> wrapSend mq cols . sorryParseId $ a
@@ -298,7 +298,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
               plaTblList = tblToList plaTbl ms
           mapM_ (multiWrapSend mq cols) mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
-debugId p = advise p [] adviceDIdArgs
+debugId p = advise p [] adviceDIdExcessArgs
 
 
 tblToList :: Optical (->) (->) (Const [(Id, a)]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [(Id, a)]
@@ -375,7 +375,7 @@ debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
                          logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
                      _ -> sorryParseNum mq cols numTxt . showText $ base
       _ -> sorryParseBase mq cols baseTxt
-debugNumber p = advise p [] adviceDNumberArgs
+debugNumber p = advise p [] adviceDNumberExcessArgs
 
 
 inBase :: T.Text -> Base -> [(Int, String)]
@@ -639,7 +639,7 @@ debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] 
       | otherwise    = do
           send mq . nlnl . showText . calcWeight searchId =<< getState
           logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
-debugWeight p = advise p [] adviceDWeightArgs
+debugWeight p = advise p [] adviceDWeightExcessArgs
 
 
 -----
@@ -656,7 +656,7 @@ debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                    | otherwise                                  = do
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
                        logPlaExecArgs (prefixDebugCmd "wrap") (pure a) i
-debugWrap p = advise p [] adviceDWrapArgs
+debugWrap p = advise p [] adviceDWrapExcessArgs
 
 
 wrapMsg :: T.Text
@@ -689,4 +689,4 @@ debugWrapIndent (WithArgs i mq cols [a, b]) = do
                           | otherwise                                  = do
                               send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
                               logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
-debugWrapIndent p = advise p [] adviceDWrapIndentArgs
+debugWrapIndent p = advise p [] adviceDWrapIndentExcessArgs

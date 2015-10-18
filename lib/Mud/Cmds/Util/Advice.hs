@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
+module Mud.Cmds.Util.Advice ( adviceAAnnounceNoArgs
                             , adviceABanHostNoReason
                             , adviceABanPlaNoReason
                             , adviceABootNoArgs
@@ -11,50 +11,50 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
                             , adviceAPeepNoArgs
-                            , adviceAPrintNoMsg
-                            , adviceASudoerArgs
+                            , adviceAPrintNoArgs
+                            , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
                             , adviceATelePlaNoArgs
-                            , adviceATeleRmArgs
-                            , adviceBugNoDesc
+                            , adviceATeleRmExcessArgs
+                            , adviceBugNoArgs
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
-                            , adviceDCinsArgs
-                            , adviceDCinsNoId
-                            , adviceDIdArgs
-                            , adviceDIdNoId
+                            , adviceDCinsExcessArgs
+                            , adviceDCinsNoArgs
+                            , adviceDIdExcessArgs
+                            , adviceDIdNoArgs
                             , adviceDisconnectNoArgs
                             , adviceDisconnectNoChan
-                            , adviceDNumberArgs
+                            , adviceDNumberExcessArgs
                             , adviceDNumberNoArgs
                             , adviceDNumberNoBase
                             , adviceDropNoArgs
-                            , adviceDWeightArgs
+                            , adviceDWeightExcessArgs
                             , adviceDWeightNoArgs
-                            , adviceDWrapArgs
-                            , adviceDWrapIndentArgs
+                            , adviceDWrapExcessArgs
+                            , adviceDWrapIndentExcessArgs
                             , adviceDWrapIndentNoAmt
                             , adviceDWrapIndentNoArgs
                             , adviceDWrapNoArgs
-                            , adviceEmoteNoDesc
+                            , adviceEmoteNoArgs
                             , adviceEmptyAdverb
-                            , adviceEmptySay
-                            , adviceEmptySayTo
                             , adviceEnc
                             , adviceEtc
                             , adviceEtcEmptyPoss
                             , adviceEtcHead
                             , adviceEtcInTwoWay
-                            , adviceExpCmdArgs
+                            , adviceExpCmdExcessArgs
                             , adviceGetNoArgs
-                            , adviceLeaveNoChans
-                            , adviceNewChanNoNames
+                            , adviceLeaveNoArgs
+                            , adviceNewChanNoArgs
                             , advicePutNoArgs
                             , advicePutNoCon
                             , adviceReadyNoArgs
                             , adviceRemoveNoArgs
                             , adviceRemoveNoCon
+                            , adviceSayAdverbNoUtterance
                             , adviceSayNoArgs
+                            , adviceSayToNoUtterance
                             , adviceSettingsInvalid
                             , adviceShowNoArgs
                             , adviceShowNoName
@@ -92,7 +92,7 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Advice"
 -- ==================================================
 
 
--- TODO: Consider refactoring function names for consistency.
+-- TODO: Confirm alphabetical order.
 
 
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
@@ -111,13 +111,13 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 -----
 
 
-adviceAAnnounceNoMsg :: T.Text
-adviceAAnnounceNoMsg = T.concat [ "You must provide a message to send, as in "
-                                , quoteColor
-                                , prefixAdminCmd "announce"
-                                , " CurryMUD will be shutting down for maintenance in 30 minutes"
-                                , dfltColor
-                                , "." ]
+adviceAAnnounceNoArgs :: T.Text
+adviceAAnnounceNoArgs = T.concat [ "You must provide a message to send, as in "
+                                 , quoteColor
+                                 , prefixAdminCmd "announce"
+                                 , " CurryMUD will be shutting down for maintenance in 30 minutes"
+                                 , dfltColor
+                                 , "." ]
 
 
 adviceABanHostNoReason :: T.Text -> T.Text
@@ -176,17 +176,17 @@ adviceAPeepNoArgs :: T.Text
 adviceAPeepNoArgs = "Please specify the PC names of one or more players you wish to start or stop peeping."
 
 
-adviceAPrintNoMsg :: T.Text
-adviceAPrintNoMsg = T.concat [ "You must provide a message to print to the server console, as in "
-                             , quoteColor
-                             , prefixAdminCmd "print"
-                             , " is anybody home?"
-                             , dfltColor
-                             , "." ]
+adviceAPrintNoArgs :: T.Text
+adviceAPrintNoArgs = T.concat [ "You must provide a message to print to the server console, as in "
+                              , quoteColor
+                              , prefixAdminCmd "print"
+                              , " is anybody home?"
+                              , dfltColor
+                              , "." ]
 
 
-adviceASudoerArgs :: T.Text
-adviceASudoerArgs = "Sorry, but you can only promote/demote one player at a time."
+adviceASudoerExcessArgs :: T.Text
+adviceASudoerExcessArgs = "Sorry, but you can only promote/demote one player at a time."
 
 
 adviceASudoerNoArgs :: T.Text
@@ -197,62 +197,62 @@ adviceATelePlaNoArgs :: T.Text
 adviceATelePlaNoArgs = "Please specify the PC name of the player to which you want to teleport."
 
 
-adviceATeleRmArgs :: T.Text
-adviceATeleRmArgs = T.concat [ "Please provide one argument: the name of the room to which you'd like to teleport, as \
-                               \in "
-                             , quoteColor
-                             , prefixAdminCmd "telerm"
-                             , " lounge"
-                             , dfltColor
-                             , "." ]
+adviceATeleRmExcessArgs :: T.Text
+adviceATeleRmExcessArgs = T.concat [ "Please provide one argument: the name of the room to which you'd like to \
+                                     \teleport, as in "
+                                   , quoteColor
+                                   , prefixAdminCmd "telerm"
+                                   , " lounge"
+                                   , dfltColor
+                                   , "." ]
 
 
 -----
 
 
-adviceDCinsArgs :: T.Text
-adviceDCinsArgs = T.concat [ "Please provide one argument: the target ID, as in "
-                           , quoteColor
-                           , prefixDebugCmd "cins"
-                           , " 100"
-                           , dfltColor
-                           , "." ]
+adviceDCinsExcessArgs :: T.Text
+adviceDCinsExcessArgs = T.concat [ "Please provide one argument: the target ID, as in "
+                                 , quoteColor
+                                 , prefixDebugCmd "cins"
+                                 , " 100"
+                                 , dfltColor
+                                 , "." ]
 
 
-adviceDCinsNoId :: T.Text
-adviceDCinsNoId = T.concat [ "Please provide one argument: the target ID, as in "
-                           , quoteColor
-                           , prefixDebugCmd "cins"
-                           , " 100"
-                           , dfltColor
-                           , "." ]
-
-
-adviceDIdArgs :: T.Text
-adviceDIdArgs = T.concat [ "Please provide one argument: the ID to search for, as in "
-                         , quoteColor
-                         , prefixDebugCmd "id"
-                         , " 100"
-                         , dfltColor
-                         , "." ]
-
-
-adviceDIdNoId :: T.Text
-adviceDIdNoId = T.concat [ "Please specify an ID to search for, as in "
-                         , quoteColor
-                         , prefixDebugCmd "id"
-                         , " 100"
-                         , dfltColor
-                         , "." ]
-
-
-adviceDNumberArgs :: T.Text
-adviceDNumberArgs = T.concat [ "Please provide two arguments: a number and its base, as in "
+adviceDCinsNoArgs :: T.Text
+adviceDCinsNoArgs = T.concat [ "Please provide one argument: the target ID, as in "
                              , quoteColor
-                             , prefixDebugCmd "number"
-                             , " a 16"
+                             , prefixDebugCmd "cins"
+                             , " 100"
                              , dfltColor
                              , "." ]
+
+
+adviceDIdExcessArgs :: T.Text
+adviceDIdExcessArgs = T.concat [ "Please provide one argument: the ID to search for, as in "
+                               , quoteColor
+                               , prefixDebugCmd "id"
+                               , " 100"
+                               , dfltColor
+                               , "." ]
+
+
+adviceDIdNoArgs :: T.Text
+adviceDIdNoArgs = T.concat [ "Please specify an ID to search for, as in "
+                           , quoteColor
+                           , prefixDebugCmd "id"
+                           , " 100"
+                           , dfltColor
+                           , "." ]
+
+
+adviceDNumberExcessArgs :: T.Text
+adviceDNumberExcessArgs = T.concat [ "Please provide two arguments: a number and its base, as in "
+                                   , quoteColor
+                                   , prefixDebugCmd "number"
+                                   , " a 16"
+                                   , dfltColor
+                                   , "." ]
 
 
 adviceDNumberNoArgs :: T.Text
@@ -273,14 +273,14 @@ adviceDNumberNoBase = T.concat [ "Please also specify base, as in "
                                , "." ]
 
 
-adviceDWeightArgs :: T.Text
-adviceDWeightArgs = T.concat [ "Please provide one argument: the ID for which you would like to calculate weight, as \
-                               \in "
-                             , quoteColor
-                             , prefixDebugCmd "weight"
-                             , " 100"
-                             , dfltColor
-                             , "." ]
+adviceDWeightExcessArgs :: T.Text
+adviceDWeightExcessArgs = T.concat [ "Please provide one argument: the ID for which you would like to calculate weight, as \
+                                     \in "
+                                   , quoteColor
+                                   , prefixDebugCmd "weight"
+                                   , " 100"
+                                   , dfltColor
+                                   , "." ]
 
 
 adviceDWeightNoArgs :: T.Text
@@ -292,13 +292,13 @@ adviceDWeightNoArgs = T.concat [ "Please specify an ID for which you would like 
                                , "." ]
 
 
-adviceDWrapArgs :: T.Text
-adviceDWrapArgs = T.concat [ "Please provide one argument: line length, as in "
-                           , quoteColor
-                           , prefixDebugCmd "wrap"
-                           , " 40"
-                           , dfltColor
-                           , "." ]
+adviceDWrapExcessArgs :: T.Text
+adviceDWrapExcessArgs = T.concat [ "Please provide one argument: line length, as in "
+                                 , quoteColor
+                                 , prefixDebugCmd "wrap"
+                                 , " 40"
+                                 , dfltColor
+                                 , "." ]
 
 
 adviceDWrapNoArgs :: T.Text
@@ -310,13 +310,13 @@ adviceDWrapNoArgs =  T.concat [ "Please specify line length, as in "
                               , "." ]
 
 
-adviceDWrapIndentArgs :: T.Text
-adviceDWrapIndentArgs = T.concat [ "Please provide two arguments: line length and indent amount, as in "
-                                 , quoteColor
-                                 , prefixDebugCmd "wrapindent"
-                                 , " 40 4"
-                                 , dfltColor
-                                 , "." ]
+adviceDWrapIndentExcessArgs :: T.Text
+adviceDWrapIndentExcessArgs = T.concat [ "Please provide two arguments: line length and indent amount, as in "
+                                       , quoteColor
+                                       , prefixDebugCmd "wrapindent"
+                                       , " 40 4"
+                                       , dfltColor
+                                       , "." ]
 
 
 adviceDWrapIndentNoAmt :: T.Text
@@ -364,8 +364,8 @@ adverbExample = T.concat [ ", as in "
                          , "." ]
 
 
-adviceBugNoDesc :: T.Text
-adviceBugNoDesc = T.concat [ "Please describe the bug you've found, as in "
+adviceBugNoArgs :: T.Text
+adviceBugNoArgs = T.concat [ "Please describe the bug you've found, as in "
                            , quoteColor
                            , "bug i've fallen and I can't get up!"
                            , dfltColor
@@ -418,8 +418,8 @@ adviceDropNoArgs = T.concat [ "Please specify one or more items to drop, as in "
                             , "." ]
 
 
-adviceEmoteNoDesc :: T.Text
-adviceEmoteNoDesc = T.concat [ "Please provide a description of an action, as in "
+adviceEmoteNoArgs :: T.Text
+adviceEmoteNoArgs = T.concat [ "Please provide a description of an action, as in "
                              , quoteColor
                              , "emote laughs with relief as tears roll down her face"
                              , dfltColor
@@ -432,20 +432,6 @@ adviceEmptyAdverb = T.concat [ "Please provide an adverbial phrase between "
                              , " and "
                              , dblQuote acl
                              , adverbExample ]
-
-
-adviceEmptySay :: T.Text
-adviceEmptySay = "Please also specify what you'd like to say" <> adverbExample
-
-
-adviceEmptySayTo :: T.Text
-adviceEmptySayTo  = T.concat [ "Please also specify what you'd like to say, as in "
-                             , quoteColor
-                             , "say "
-                             , T.singleton sayToChar
-                             , "taro nice to meet you, too"
-                             , dfltColor
-                             , "." ]
 
 
 adviceEnc :: T.Text -> T.Text
@@ -525,8 +511,8 @@ adviceEtcInTwoWay cn cn' = T.concat [ "Sorry, but you can't use "
                                     , "." ]
 
 
-adviceExpCmdArgs :: T.Text
-adviceExpCmdArgs = "Sorry, but you can only target one person at a time with expressive commands."
+adviceExpCmdExcessArgs :: T.Text
+adviceExpCmdExcessArgs = "Sorry, but you can only target one person at a time with expressive commands."
 
 
 adviceGetNoArgs :: T.Text
@@ -537,20 +523,20 @@ adviceGetNoArgs = T.concat [ "Please specify one or more items to pick up, as in
                            , "." ]
 
 
-adviceLeaveNoChans :: T.Text
-adviceLeaveNoChans = T.concat [ "Please specify the names of one or more channels to leave, as in "
-                              , quoteColor
-                              , "leave hunt"
-                              , dfltColor
-                              , "." ]
+adviceLeaveNoArgs :: T.Text
+adviceLeaveNoArgs = T.concat [ "Please specify the names of one or more channels to leave, as in "
+                             , quoteColor
+                             , "leave hunt"
+                             , dfltColor
+                             , "." ]
 
 
-adviceNewChanNoNames :: T.Text
-adviceNewChanNoNames = T.concat [ "Please specify one or more new channel names, as in "
-                                , quoteColor
-                                , "newchannel hunt"
-                                , dfltColor
-                                , "." ]
+adviceNewChanNoArgs :: T.Text
+adviceNewChanNoArgs = T.concat [ "Please specify one or more new channel names, as in "
+                               , quoteColor
+                               , "newchannel hunt"
+                               , dfltColor
+                               , "." ]
 
 
 advicePutNoArgs :: T.Text
@@ -599,12 +585,26 @@ adviceRemoveNoCon a = T.concat [ "Please also specify the container you want to 
                                , "." ]
 
 
+adviceSayAdverbNoUtterance :: T.Text
+adviceSayAdverbNoUtterance = "Please also specify what you'd like to say" <> adverbExample
+
+
 adviceSayNoArgs :: T.Text
 adviceSayNoArgs = T.concat [ "Please specify what you'd like to say, as in "
                            , quoteColor
                            , "say nice to meet you, too"
                            , dfltColor
                            , "." ]
+
+
+adviceSayToNoUtterance :: T.Text
+adviceSayToNoUtterance  = T.concat [ "Please also specify what you'd like to say, as in "
+                                   , quoteColor
+                                   , "say "
+                                   , T.singleton sayToChar
+                                   , "taro nice to meet you, too"
+                                   , dfltColor
+                                   , "." ]
 
 
 adviceSettingsInvalid :: T.Text
