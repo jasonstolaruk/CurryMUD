@@ -1,17 +1,18 @@
 \h COMMUNICATION \d
 
-TODO: whisper? Racial languages?
+TODO: Whisper? Racial languages?
 
 \uOOC COMMUNICATION\n
 admin
 question
 
+set
+
 \uIC COMMUNICATION\n
 say
-telepathic
+telepathy
 channel
 
 tune
-set
 
 \uSEE ALSO\n

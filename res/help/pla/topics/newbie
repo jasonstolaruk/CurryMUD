@@ -51,7 +51,7 @@ There are "cp" (copper pieces), "sp" (silver pieces), and "gp" (gold pieces).2`
 
 \qintro taro\d or just \qin taro\d to introduce yourself to Taro, who will then know your name.2`
 \qlink taro\d or just \qli taro\d to establish a telepathic link with Taro.2`
-If Taro reciprocates and links with you, you'll then be able to message each other via the "telepathy" command, like so: \qt taro hello\d.2`
+If Taro reciprocates and links with you, you'll then be able to message each other via the \qtelepathy\d command, like so: \qt taro hello\d.2`
 
 \uOTHER\d
 \qwho\d or just \qwh\d to see who is currently logged in.2`

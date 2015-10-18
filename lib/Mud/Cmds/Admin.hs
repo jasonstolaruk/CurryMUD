@@ -325,7 +325,6 @@ adminBug p = withoutArgs adminBug p
 -----
 
 
--- TODO: Help.
 adminChan :: Action
 adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport ms) . IM.elems) ms of
   []      -> sorryNoChans mq cols

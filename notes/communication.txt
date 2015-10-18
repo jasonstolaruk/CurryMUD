@@ -1,7 +1,7 @@
 Communication commands:
 
 admin - send a msg to an admin / __Zaa__ Hello.
-telepathic - send a msg to a linked person / [Taro] Greetings.
+telepathy - send a msg to a linked person / [Taro] Greetings.
 
 :admin - the admin channel / (Admin) Root: Hi hi. -- On the admin channel, PC names are always given.
 :message - msg a regular player / __Jason__ Ello?

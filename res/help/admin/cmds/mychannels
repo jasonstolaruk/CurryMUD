@@ -1,0 +1,16 @@
+\h #dCHANNEL \d
+
+\uUSAGE\n
+#dchannel \s[\dID \s...]\d
+
+\uDESCRIPTION\n
+Display information about one or more telepathic channels.
+For each channel ID you provide, you will get a report comprised of the channel name along with a roster of who is connected to the channel.
+When no arguments are provided, you will get reports for all existing channels.
+
+\uEXAMPLES\n
+\q#dchannel 0\d to display a report for channel 0.4`
+\q#dchannel 0 1\d to display reports for channels 0 and 1.4`
+\q#dchannel\d to display reports for all existing channels.4`
+
+\uSEE ALSO\n
