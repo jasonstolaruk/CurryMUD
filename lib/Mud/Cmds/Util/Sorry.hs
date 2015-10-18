@@ -2,6 +2,7 @@
 
 module Mud.Cmds.Util.Sorry where
 
+import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
@@ -192,6 +193,18 @@ sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> 
 -----
 
 
+sorryInvalidRmName :: T.Text -> T.Text
+sorryInvalidRmName n = T.concat [ dblQuote n
+                                , " is not a valid room name. Type "
+                                , quoteColor
+                                , prefixAdminCmd "telerm"
+                                , dfltColor
+                                , " with no arguments to get a list of valid room names." ]
+
+
+-----
+
+
 sorryMyChansIgnore :: T.Text
 sorryMyChansIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose channel information you would like to \
                                             \see"
@@ -280,8 +293,15 @@ sorryNotTunedOOCChan = sorryNotTunedChan "set"
 -----
 
 
-sorryPCName :: Sing -> T.Text
-sorryPCName s = "There is no PC by the name of " <> dblQuote s <> "."
+sorryPCName :: T.Text -> T.Text
+sorryPCName n = "There is no PC by the name of " <> dblQuote n <> "."
+
+
+-----
+
+
+sorryPCNameLoggedIn :: T.Text -> T.Text
+sorryPCNameLoggedIn n = "No PC by the name of " <> dblQuote n <> " is currently logged in."
 
 
 -----

@@ -103,7 +103,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: There is text that can be moved to the Advice and Sorry modules.
 -- TODO: Make a command to listen in on a channel.
 adminCmds :: [Cmd]
 adminCmds =
@@ -285,8 +284,7 @@ adminBanPla p = patternMatchFail "adminBanPla" [ showText p ]
 
 
 adminBoot :: Action
-adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] "Please specify the full PC name of the player you wish \
-                                                              \to boot, optionally followed by a custom message."
+adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] adviceABootNoArgs
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
@@ -370,8 +368,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 
 
 adminHost :: Action
-adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] "Please specify the PC names of one or more players \
-                                                              \whose host statistics you would like to see."
+adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
 adminHost (LowerNub i mq cols as) = do
     ms          <- getState
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
@@ -557,8 +554,7 @@ adminMyChans p = patternMatchFail "adminMyChans" [ showText p ]
 
 
 adminPeep :: Action
-adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] "Please specify the PC names of one or more players you \
-                                                              \wish to start or stop peeping."
+adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] adviceAPeepNoArgs
 adminPeep (LowerNub i mq cols as) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
     multiWrapSend mq cols msgs
@@ -650,8 +646,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 
 
 adminSudoer :: Action
-adminSudoer p@AdviseNoArgs = advise p [ prefixAdminCmd "sudoer" ] "Please specify the full PC name of the player you \
-                                                                  \wish to promote/demote."
+adminSudoer p@AdviseNoArgs = advise p [ prefixAdminCmd "sudoer" ] adviceASudoerNoArgs
 adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
@@ -700,8 +695,7 @@ adminSudoer p = advise p [] adviceASudoerArgs
 
 
 adminTelePla :: Action
-adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] "Please specify the PC name of the player to which \
-                                                                    \you want to teleport."
+adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] adviceATelePlaNoArgs
 adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
@@ -714,7 +708,7 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
               | destId     == originId     = (ms, [ sendFun "You're already there!"           ])
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
             notFound     = (ms, pure sorryInvalid)
-            sorryInvalid = sendFun $ "No PC by the name of " <> dblQuote strippedTarget <> " is currently logged in."
+            sorryInvalid = sendFun . sorryPCNameLoggedIn $ strippedTarget
         in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
 adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
 
@@ -765,13 +759,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
             found (destId, rmTeleName)
               | destId == originId = (ms, [ sendFun "You're already there!" ])
               | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName consSorryBroadcast
-            notFound     = (ms, pure sorryInvalid)
-            sorryInvalid = sendFun . T.concat $ [ dblQuote strippedTarget'
-                                                , " is not a valid room name. Type "
-                                                , quoteColor
-                                                , prefixAdminCmd "telerm"
-                                                , dfltColor
-                                                , " with no arguments to get a list of valid room names." ]
+            notFound               = (ms, pure . sendFun . sorryInvalidRmName $ strippedTarget')
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
 adminTeleRm p = advise p [] adviceATeleRmArgs
 

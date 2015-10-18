@@ -3,13 +3,18 @@
 module Mud.Cmds.Util.Advice ( adviceAAnnounceNoMsg
                             , adviceABanHostNoReason
                             , adviceABanPlaNoReason
+                            , adviceABootNoArgs
                             , adviceAdminNoMsg
                             , adviceAdverbCloseChar
+                            , adviceAHostNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
+                            , adviceAPeepNoArgs
                             , adviceAPrintNoMsg
                             , adviceASudoerArgs
+                            , adviceASudoerNoArgs
+                            , adviceATelePlaNoArgs
                             , adviceATeleRmArgs
                             , adviceBugNoDesc
                             , adviceConnectNoArgs
@@ -135,6 +140,15 @@ adviceABanPlaNoReason a = T.concat [ "Please also provide a reason, as in "
                                    , "." ]
 
 
+adviceABootNoArgs :: T.Text
+adviceABootNoArgs = "Please specify the full PC name of the player you wish to boot, optionally followed by a custom \
+                    \message."
+
+
+adviceAHostNoArgs :: T.Text
+adviceAHostNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
+
+
 adviceAMsgNoArgs :: T.Text
 adviceAMsgNoArgs = T.concat [ "Please specify the PC name of a regular player followed by a message, as in "
                             , quoteColor
@@ -158,6 +172,10 @@ adviceAMyChansNoArgs :: T.Text
 adviceAMyChansNoArgs = "Please specify the PC names of one or more players whose channel information you'd like to see."
 
 
+adviceAPeepNoArgs :: T.Text
+adviceAPeepNoArgs = "Please specify the PC names of one or more players you wish to start or stop peeping."
+
+
 adviceAPrintNoMsg :: T.Text
 adviceAPrintNoMsg = T.concat [ "You must provide a message to print to the server console, as in "
                              , quoteColor
@@ -169,6 +187,14 @@ adviceAPrintNoMsg = T.concat [ "You must provide a message to print to the serve
 
 adviceASudoerArgs :: T.Text
 adviceASudoerArgs = "Sorry, but you can only promote/demote one player at a time."
+
+
+adviceASudoerNoArgs :: T.Text
+adviceASudoerNoArgs = "Please specify the full PC name of the player you wish to promote/demote."
+
+
+adviceATelePlaNoArgs :: T.Text
+adviceATelePlaNoArgs = "Please specify the PC name of the player to which you want to teleport."
 
 
 adviceATeleRmArgs :: T.Text
