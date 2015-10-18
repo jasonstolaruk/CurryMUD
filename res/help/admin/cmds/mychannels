@@ -1,16 +1,14 @@
-\h #dCHANNEL \d
+\h #dMYCHANNELS \d
 
 \uUSAGE\n
-#dchannel \s[\dID \s...]\d
+#dmychannels name \s...\d
 
 \uDESCRIPTION\n
-Display information about one or more telepathic channels.
-For each channel ID you provide, you will get a report comprised of the channel name along with a roster of who is connected to the channel.
-When no arguments are provided, you will get reports for all existing channels.
+Display information about telepathic channels for one or more players.
+For each PC name you provide, you will get a report for every channel that player is connected to. The reports are comprised of channel name along with a roster of who is connected to the channel.
 
 \uEXAMPLES\n
-\q#dchannel 0\d to display a report for channel 0.4`
-\q#dchannel 0 1\d to display reports for channels 0 and 1.4`
-\q#dchannel\d to display reports for all existing channels.4`
+\q#dmychannels taro\d to display channel reports for Taro.4`
+\q#dmychannels taro hanako\d to display channel reports for Taro and Hanako.4`
 
 \uSEE ALSO\n

@@ -2,6 +2,9 @@
 
 TODO: Whisper? Racial languages?
 
+\uChannel\d
+A named "chat room" providing the ability for a group of players to message each other in real-time. There is the question channel (OOC) along with telepathic channels (IC).
+
 \uOOC COMMUNICATION\n
 admin
 question

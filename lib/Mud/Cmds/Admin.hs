@@ -532,7 +532,6 @@ firstAdminMsg i adminSing = modifyState $ (, msg) . (plaTbl.ind i %~ setPlaFlag 
 -----
 
 
--- TODO: Help.
 adminMyChans :: Action
 adminMyChans p@AdviseNoArgs          = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
 adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
