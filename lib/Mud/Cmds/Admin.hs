@@ -159,7 +159,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
         (tunedIns, tunedOuts)  = partition (view _3) others
         styleds                = styleAbbrevs Don'tBracket . map (view _2) $ tunedIns
         others'                = zipWith (\triple styled -> triple & _2 .~ styled) tunedIns styleds ++ tunedOuts
-        mkDesc (_, n, isTuned) = padName n <> (isTuned ? "tuned in" :? "tuned out")
+        mkDesc (_, n, isTuned) = padName n <> tunedInOut isTuned
         descs                  = mkDesc self : map mkDesc others'
     in multiWrapSend mq cols descs >> logPlaExecArgs (prefixAdminCmd "admin") [] i
 adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
@@ -266,8 +266,8 @@ adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
-                   | banId == i  -> sendFun "You can't ban yourself."
-                   | isAdmin pla -> sendFun "You can't ban an admin."
+                   | banId == i  -> sendFun sorryCan'tBanSelf
+                   | isAdmin pla -> sendFun sorryCan'tBanAdmin
                    | otherwise   -> (withDbExHandler "adminBanPla" . isPlaBanned $ strippedTarget) >>= \case
                      Nothing      -> sorryDbEx mq cols
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
@@ -292,8 +292,8 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                             " "                        <>
                             parensQuote "Note that you must specify the full PC name of the player you wish to boot."
       [bootId] -> let selfSing = getSing i ms in if
-                    | not . isLoggedIn . getPla bootId $ ms -> sendFun $ strippedTarget <> " is not logged in."
-                    | bootId == i -> sendFun "You can't boot yourself."
+                    | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryNotLoggedIn $ strippedTarget
+                    | bootId == i -> sendFun sorryCan'tBootSelf
                     | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
                         wrapSend mq cols $ "You have booted " <> strippedTarget <> "."
                         sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
@@ -456,9 +456,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to message"
             s                   = getSing i ms
-            notFound            = emptied . sendFun $ "There is no regular player by the name of " <>
-                                                      dblQuote strippedTarget                      <>
-                                                      "."
+            notFound            = emptied . sendFun . sorryRegularPlaName $ strippedTarget
             found pair@(targetId, targetSing) = case emotifyTwoWay (prefixAdminCmd "message") i ms targetId msg of
               Left  errorMsgs  -> emptied . multiSendFun $ errorMsgs
               Right (Right bs) -> ioHelper pair bs
@@ -467,7 +465,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                 Right bs       -> ioHelper pair bs
             ioHelper (targetId, targetSing) [ fst -> toSelf, fst -> toTarget ] = if
               | isLoggedIn targetPla, isIncognitoId i ms ->
-                emptied . sendFun $ "You can't send a message to a player who is logged in while you are incognito."
+                emptied . sendFun $ sorryMsgLoggedInTargetIncog
               | isLoggedIn targetPla ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
@@ -568,11 +566,11 @@ adminPeep (LowerNub i mq cols as) = do
                            | otherwise         = (id,           ""             )
             g = ()# guessWhat ? id :? (guessWhat :)
             peep target a@(pt, _, _) =
-                let notFound = a & _2 %~ ("No PC by the name of " <> dblQuote target <> " is currently logged in." :)
+                let notFound = a & _2 %~ (sorryPCNameLoggedIn target :)
                     found (peepId@(flip getPla ms -> peepPla), peepSing) = if peepId `notElem` pt^.ind i.peeping
                       then if
-                        | peepId == i     -> a & _2 %~ ("You can't peep yourself." :)
-                        | isAdmin peepPla -> a & _2 %~ ("You can't peep an admin." :)
+                        | peepId == i     -> a & _2 %~ (sorryCan'tPeepSelf  :)
+                        | isAdmin peepPla -> a & _2 %~ (sorryCan'tPeepAdmin :)
                         | otherwise       ->
                           let pt'     = pt & ind i     .peeping %~ (peepId :)
                                            & ind peepId.peepers %~ (i      :)
@@ -683,8 +681,8 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                   , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
                   , handleIncog
                   , handlePeep ]
-          -> if | targetId   == i      -> (ms, [ sendFun "You can't demote yourself." ])
-                | targetSing == "Root" -> (ms, [ sendFun "You can't demote Root."     ])
+          -> if | targetId   == i      -> (ms, [ sendFun sorryCan'tDemoteSelf ])
+                | targetSing == "Root" -> (ms, [ sendFun sorryCan'tDemoteRoot ])
                 | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
                                               & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
         xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
@@ -704,13 +702,13 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
             idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
             originId            = getRmId i ms
             found (flip getRmId ms -> destId, targetSing)
-              | targetSing == getSing i ms = (ms, [ sendFun "You can't teleport to yourself." ])
-              | destId     == originId     = (ms, [ sendFun "You're already there!"           ])
+              | targetSing == getSing i ms = (ms, [ sendFun sorryCan'tTeleportToSelf ])
+              | destId     == originId     = (ms, [ sendFun sorryAlreadyThere        ])
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
             notFound     = (ms, pure sorryInvalid)
             sorryInvalid = sendFun . sorryPCNameLoggedIn $ strippedTarget
         in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
-adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols "Please specify a single PC name."
+adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePlaExcessArgs
 
 
 teleHelper :: Id
@@ -757,7 +755,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the room to which you want to teleport"
             originId            = getRmId i ms
             found (destId, rmTeleName)
-              | destId == originId = (ms, [ sendFun "You're already there!" ])
+              | destId == originId = (ms, [ sendFun sorryAlreadyThere ])
               | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName consSorryBroadcast
             notFound               = (ms, pure . sendFun . sorryInvalidRmName $ strippedTarget')
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found

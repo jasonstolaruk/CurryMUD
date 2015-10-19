@@ -20,6 +20,16 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
+-- TODO: Refactor for consistency where necessary.
+
+
+sorryAlreadyThere :: T.Text
+sorryAlreadyThere = "You're already there!"
+
+
+-----
+
+
 sorryAlreadyWielding :: MudState -> Slot -> Id -> T.Text
 sorryAlreadyWielding ms sl i = let s = getSing i ms in T.concat [ "You're already wielding "
                                                                 , aOrAn s
@@ -33,6 +43,62 @@ sorryAlreadyWielding ms sl i = let s = getSing i ms in T.concat [ "You're alread
 
 sorryBracketedMsg :: Either T.Text a
 sorryBracketedMsg = Left "You can't open or close your message with brackets."
+
+
+-----
+
+
+sorryCan'tBanAdmin :: T.Text
+sorryCan'tBanAdmin = "You can't ban an admin."
+
+
+-----
+
+
+sorryCan'tBanSelf :: T.Text
+sorryCan'tBanSelf = "You can't ban yourself."
+
+
+-----
+
+
+sorryCan'tBootSelf :: T.Text
+sorryCan'tBootSelf = "You can't boot yourself."
+
+
+-----
+
+
+sorryCan'tDemoteRoot :: T.Text
+sorryCan'tDemoteRoot = "You can't demote Root."
+
+
+-----
+
+
+sorryCan'tDemoteSelf :: T.Text
+sorryCan'tDemoteSelf = "You can't demote yourself."
+
+
+-----
+
+
+sorryCan'tPeepSelf :: T.Text
+sorryCan'tPeepSelf = "You can't peep yourself."
+
+
+-----
+
+
+sorryCan'tPeepAdmin :: T.Text
+sorryCan'tPeepAdmin = "You can't peep an admin."
+
+
+-----
+
+
+sorryCan'tTeleportToSelf :: T.Text
+sorryCan'tTeleportToSelf = "You can't teleport to yourself."
 
 
 -----
@@ -205,6 +271,13 @@ sorryInvalidRmName n = T.concat [ dblQuote n
 -----
 
 
+sorryMsgLoggedInTargetIncog :: T.Text
+sorryMsgLoggedInTargetIncog = "You can't send a message to a player who is logged in while you are incognito."
+
+
+-----
+
+
 sorryMyChansIgnore :: T.Text
 sorryMyChansIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose channel information you would like to \
                                             \see"
@@ -264,6 +337,13 @@ sorryNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tune
 
 sorryNotConnectedChan :: ChanName -> T.Text
 sorryNotConnectedChan cn = "You are not connected to a channel named " <> dblQuote cn <> "."
+
+
+-----
+
+
+sorryNotLoggedIn :: Sing -> T.Text
+sorryNotLoggedIn = (<> " is not logged in.")
 
 
 -----
@@ -354,6 +434,15 @@ sorryParseNum mq cols numTxt base = wrapSend mq cols . T.concat $ [ dblQuote num
 
 sorryPeepIgnore :: T.Text
 sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
+
+
+-----
+
+
+sorryRegularPlaName :: T.Text -> T.Text
+sorryRegularPlaName n = "There is no regular player by the name of " <>
+                        dblQuote n                                   <>
+                        "."
 
 
 -----

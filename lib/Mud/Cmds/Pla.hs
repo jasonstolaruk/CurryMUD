@@ -36,7 +36,6 @@ import Mud.TheWorld.AdminZoneIds (iLoggedOut, iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Msgs
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)

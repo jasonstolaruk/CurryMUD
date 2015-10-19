@@ -14,6 +14,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoArgs
                             , adviceAPrintNoArgs
                             , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
+                            , adviceATelePlaExcessArgs
                             , adviceATelePlaNoArgs
                             , adviceATeleRmExcessArgs
                             , adviceBugNoArgs
@@ -69,6 +70,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoArgs
                             , advise ) where
 
 import Mud.Cmds.Util.CmdPrefixes
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
@@ -76,7 +78,6 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Msgs
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -90,9 +91,6 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Advice"
 
 
 -- ==================================================
-
-
--- TODO: Confirm alphabetical order.
 
 
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
@@ -191,6 +189,10 @@ adviceASudoerExcessArgs = "Sorry, but you can only promote/demote one player at 
 
 adviceASudoerNoArgs :: T.Text
 adviceASudoerNoArgs = "Please specify the full PC name of the player you wish to promote/demote."
+
+
+adviceATelePlaExcessArgs :: T.Text
+adviceATelePlaExcessArgs = "Please specify a single PC name."
 
 
 adviceATelePlaNoArgs :: T.Text
@@ -301,15 +303,6 @@ adviceDWrapExcessArgs = T.concat [ "Please provide one argument: line length, as
                                  , "." ]
 
 
-adviceDWrapNoArgs :: T.Text
-adviceDWrapNoArgs =  T.concat [ "Please specify line length, as in "
-                              , quoteColor
-                              , prefixDebugCmd "wrap"
-                              , " 40"
-                              , dfltColor
-                              , "." ]
-
-
 adviceDWrapIndentExcessArgs :: T.Text
 adviceDWrapIndentExcessArgs = T.concat [ "Please provide two arguments: line length and indent amount, as in "
                                        , quoteColor
@@ -335,6 +328,15 @@ adviceDWrapIndentNoArgs = T.concat [ "Please specify line length followed by ind
                                    , " 40 4"
                                    , dfltColor
                                    , "." ]
+
+
+adviceDWrapNoArgs :: T.Text
+adviceDWrapNoArgs =  T.concat [ "Please specify line length, as in "
+                              , quoteColor
+                              , prefixDebugCmd "wrap"
+                              , " 40"
+                              , dfltColor
+                              , "." ]
 
 
 -----

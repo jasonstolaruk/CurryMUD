@@ -17,6 +17,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasYou
                           , inOut
                           , inOutOnOffs
+                          , inOutOrOnOff
                           , isBracketed
                           , isDblLinked
                           , isHeDon't
@@ -336,6 +337,19 @@ inOutOnOffs = [ ("i",   True )
               , ("on",  True )
               , ("ou",  False)
               , ("out", False) ]
+
+
+-----
+
+
+inOutOrOnOff :: T.Text
+inOutOrOnOff = T.concat [ dblQuote "in"
+                        , "/"
+                        , dblQuote "out"
+                        , " or "
+                        , dblQuote "on"
+                        , "/"
+                        , dblQuote "off" ]
 
 
 -----
