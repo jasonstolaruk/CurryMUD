@@ -165,7 +165,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
 adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
     if isTunedAdminId i ms
       then case getTunedAdminIds ms of
-        [_]      -> sorryChanOnlyYou mq cols "admin"
+        [_]      -> sorryChanNoOneListening mq cols "admin"
         tunedIds ->
           let tunedSings         = map (`getSing` ms) tunedIds
               getStyled targetId = let styleds = styleAbbrevs Don'tBracket $ getSing targetId ms `delete` tunedSings
@@ -469,7 +469,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                 Right bs       -> ioHelper pair bs
             ioHelper (targetId, targetSing) [ fst -> toSelf, fst -> toTarget ] = if
               | isLoggedIn targetPla, isIncognitoId i ms ->
-                emptied . sendFun $ sorryMsg_LoggedInTarget_Incog
+                emptied . sendFun $ sorryMsgIncog
               | isLoggedIn targetPla ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
@@ -685,8 +685,8 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                   , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
                   , handleIncog
                   , handlePeep ]
-          -> if | targetId   == i      -> (ms, [ sendFun sorryDemoteSelf ])
-                | targetSing == "Root" -> (ms, [ sendFun sorryDemoteRoot ])
+          -> if | targetId   == i      -> (ms, [ sendFun sorrySudoerDemoteSelf ])
+                | targetSing == "Root" -> (ms, [ sendFun sorrySudoerDemoteRoot ])
                 | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
                                               & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
         xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
@@ -706,8 +706,8 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
             idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
             originId            = getRmId i ms
             found (flip getRmId ms -> destId, targetSing)
-              | targetSing == getSing i ms = (ms, [ sendFun sorryTeleportToSelf ])
-              | destId     == originId     = (ms, [ sendFun sorryAlreadyThere        ])
+              | targetSing == getSing i ms = (ms, [ sendFun sorryTelePlaSelf  ])
+              | destId     == originId     = (ms, [ sendFun sorryAlreadyThere ])
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
             notFound     = (ms, pure sorryInvalid)
             sorryInvalid = sendFun . sorryPCNameLoggedIn $ strippedTarget
@@ -761,7 +761,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
             found (destId, rmTeleName)
               | destId == originId = (ms, [ sendFun sorryAlreadyThere ])
               | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName consSorryBroadcast
-            notFound               = (ms, pure . sendFun . sorryInvalidRmName $ strippedTarget')
+            notFound               = (ms, pure . sendFun . sorryTeleRmName $ strippedTarget')
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
 adminTeleRm p = advise p [] adviceATeleRmExcessArgs
 

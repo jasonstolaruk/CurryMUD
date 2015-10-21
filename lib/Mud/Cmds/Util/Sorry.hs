@@ -26,9 +26,6 @@ import qualified Data.Text as T
 -- ==================================================
 
 
--- TODO: Remove ----- dividers between related functions.
-
-
 -- TODO: Find a home for this.
 inOutOrOnOff :: T.Text
 inOutOrOnOff = T.concat [ dblQuote "in"
@@ -41,6 +38,19 @@ inOutOrOnOff = T.concat [ dblQuote "in"
 
 
 -----
+
+
+sorryIgnoreLocPref :: T.Text -> T.Text
+sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location prefix. The location prefix you provided \
+                                              \will be ignored."
+
+
+sorryIgnoreLocPrefPlur :: T.Text -> T.Text
+sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
+                                                  \provided will be ignored."
+
+
+-- ==================================================
 
 
 sorryAdminChanTargetName :: T.Text -> T.Text
@@ -61,11 +71,8 @@ sorryAlreadyThere :: T.Text
 sorryAlreadyThere = "You're already there!"
 
 
------
-
-
 sorryAlreadyWearing :: T.Text -> T.Text
-sorryAlreadyWearing t = "You're already wearing "  <> aOrAn t <> "."
+sorryAlreadyWearing t = "You're already wearing " <> aOrAn t <> "."
 
 
 sorryAlreadyWielding :: MudState -> Slot -> Id -> T.Text
@@ -91,9 +98,6 @@ sorryBanAdmin :: T.Text
 sorryBanAdmin = "You can't ban an admin."
 
 
------
-
-
 sorryBanSelf :: T.Text
 sorryBanSelf = "You can't ban yourself."
 
@@ -115,34 +119,20 @@ sorryBracketedMsg = Left "You can't open or close your message with brackets."
 -----
 
 
-sorryChanAlreadyConnected :: ChanName -> T.Text
-sorryChanAlreadyConnected cn = "You are already connected to a channel named " <> dblQuote cn <> "."
-
-
------
+sorryChanIncog :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryChanIncog mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
 
 
 sorryChanMsg :: T.Text
 sorryChanMsg = "You must also provide a message to send."
 
 
------
-
-
 sorryChanName :: ChanName -> T.Text
 sorryChanName cn = "You are not connected to a channel named " <> dblQuote cn <> "."
 
 
------
-
-
-
--- TODO: Is there a better name for this?
-sorryChanOnlyYou :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryChanOnlyYou mq cols n = wrapSend mq cols $ "You are the only person tuned in to the " <> n <> " channel."
-
-
------
+sorryChanNoOneListening :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryChanNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tuned in to the " <> n <> " channel."
 
 
 sorryChanTargetName :: T.Text -> T.Text -> T.Text
@@ -162,18 +152,8 @@ sorryChanTargetNameFromContext n (ChanContext { .. }) = sorryChanTargetName effC
 -----
 
 
-sorryCoinsInEq :: T.Text
-sorryCoinsInEq = "You don't have any coins among your readied equipment."
-
-
------
-
-
 sorryCon :: Sing -> T.Text
 sorryCon s = theOnLowerCap s <> " isn't a container."
-
-
------
 
 
 sorryConInEq :: PutOrRem -> T.Text
@@ -198,20 +178,6 @@ sorryConnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would l
 -----
 
 
-sorryDemoteRoot :: T.Text
-sorryDemoteRoot = "You can't demote Root."
-
-
------
-
-
-sorryDemoteSelf :: T.Text
-sorryDemoteSelf = "You can't demote yourself."
-
-
------
-
-
 sorryDisconnectIgnore :: T.Text
 sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would like to disconnect"
 
@@ -221,9 +187,6 @@ sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you woul
 
 sorryDropInEq :: T.Text
 sorryDropInEq = "Sorry, but you can't drop items in your readied equipment. Please unready the item(s) first."
-
-
------
 
 
 sorryDropInRm :: T.Text
@@ -236,10 +199,6 @@ sorryDropInRm = "You can't drop an item that's already in your current room. If 
 
 sorryEmoteExcessTargets :: T.Text
 sorryEmoteExcessTargets = "Sorry, but you can only target one person at a time."
-
-
-sorryEmoteIllegalTarget :: Sing -> T.Text
-sorryEmoteIllegalTarget s = "You can't target " <> aOrAn s <> "."
 
 
 sorryEmoteTargetCoins :: T.Text
@@ -256,6 +215,17 @@ sorryEmoteTargetInInv = "You can't target an item in your inventory."
 
 sorryEmoteTargetRmOnly :: T.Text
 sorryEmoteTargetRmOnly = "You can only target a person in your current room."
+
+
+sorryEmoteTargetType :: Sing -> T.Text
+sorryEmoteTargetType s = "You can't target " <> aOrAn s <> "."
+
+
+-----
+
+
+sorryEquipCoins :: T.Text
+sorryEquipCoins = "You don't have any coins among your readied equipment."
 
 
 -----
@@ -289,23 +259,12 @@ sorryExpCmdName :: T.Text -> Either T.Text a
 sorryExpCmdName cn = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
 
 
-sorryExpCmdRequiresTarget :: ExpCmdName -> T.Text
-sorryExpCmdRequiresTarget cn = "The " <> dblQuote cn <> " expressive command requires a single target."
-
-
 sorryExpCmdIllegalTarget :: ExpCmdName -> T.Text
 sorryExpCmdIllegalTarget cn =  "The " <> dblQuote cn <> " expressive command cannot be used with a target."
 
 
------
-
-
-sorryFullClothSlotsOneSide :: Cloth -> Slot -> T.Text
-sorryFullClothSlotsOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more "
-                                                          , c
-                                                          , "s on your "
-                                                          , s
-                                                          , "." ]
+sorryExpCmdRequiresTarget :: ExpCmdName -> T.Text
+sorryExpCmdRequiresTarget cn = "The " <> dblQuote cn <> " expressive command requires a single target."
 
 
 -----
@@ -318,35 +277,8 @@ sorryHostIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose host
 -----
 
 
-sorryIgnoreLocPref :: T.Text -> T.Text
-sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location prefix. The location prefix you provided \
-                                              \will be ignored."
-
-
-sorryIgnoreLocPrefPlur :: T.Text -> T.Text
-sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
-                                                  \provided will be ignored."
-
-
------
-
-
-sorryIllegalChanName :: T.Text -> T.Text -> [T.Text]
-sorryIllegalChanName a msg = pure . T.concat $ [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
-
-
------
-
-
 sorryIncog :: T.Text -> T.Text
 sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito."
-
-
------
-
-
-sorryIncogChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
 
 
 -----
@@ -359,20 +291,12 @@ sorryIndent mq cols = wrapSend mq cols "The indent amount must be less than the 
 -----
 
 
-sorryInvalidArg :: T.Text -> T.Text
-sorryInvalidArg a = dblQuote a <> " is not a valid argument."
+sorryNewChanExisting :: ChanName -> T.Text
+sorryNewChanExisting cn = "You are already connected to a channel named " <> dblQuote cn <> "."
 
 
------
-
-
-sorryInvalidRmName :: T.Text -> T.Text
-sorryInvalidRmName n = T.concat [ dblQuote n
-                                , " is not a valid room name. Type "
-                                , quoteColor
-                                , prefixAdminCmd "telerm"
-                                , dfltColor
-                                , " with no arguments to get a list of valid room names." ]
+sorryNewChanName :: T.Text -> T.Text -> [T.Text]
+sorryNewChanName a msg = pure . T.concat $ [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
 
 
 -----
@@ -380,9 +304,6 @@ sorryInvalidRmName n = T.concat [ dblQuote n
 
 sorryPeepAdmin :: T.Text
 sorryPeepAdmin = "You can't peep an admin."
-
-
------
 
 
 sorryPeepSelf :: T.Text
@@ -426,6 +347,14 @@ sorryReadyClothFull :: T.Text -> T.Text
 sorryReadyClothFull t = "You can't wear any more " <> t <> "s."
 
 
+sorryReadyClothFullOneSide :: Cloth -> Slot -> T.Text
+sorryReadyClothFullOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more "
+                                                          , c
+                                                          , "s on your "
+                                                          , s
+                                                          , "." ]
+
+
 sorryReadyCoins :: T.Text
 sorryReadyCoins = "You can't ready coins."
 
@@ -457,15 +386,38 @@ sorryReadyWpnRol s = "You can't wield " <> aOrAn s <> " with your finger!"
 -----
 
 
-sorryTeleportToSelf :: T.Text
-sorryTeleportToSelf = "You can't teleport to yourself."
+sorrySudoerDemoteRoot :: T.Text
+sorrySudoerDemoteRoot = "You can't demote Root."
+
+
+sorrySudoerDemoteSelf :: T.Text
+sorrySudoerDemoteSelf = "You can't demote yourself."
 
 
 -----
 
 
-sorryMsg_LoggedInTarget_Incog :: T.Text
-sorryMsg_LoggedInTarget_Incog = "You can't send a message to a player who is logged in while you are incognito."
+sorryTelePlaSelf :: T.Text
+sorryTelePlaSelf = "You can't teleport to yourself."
+
+
+-----
+
+
+sorryTeleRmName :: T.Text -> T.Text
+sorryTeleRmName n = T.concat [ dblQuote n
+                             , " is not a valid room name. Type "
+                             , quoteColor
+                             , prefixAdminCmd "telerm"
+                             , dfltColor
+                             , " with no arguments to get a list of valid room names." ]
+
+
+-----
+
+
+sorryMsgIncog :: T.Text
+sorryMsgIncog = "You can't send a message to a player who is logged in while you are incognito."
 
 
 -----
@@ -490,9 +442,6 @@ sorryNoContainersHere :: T.Text
 sorryNoContainersHere = "You don't see any containers here."
 
 
------
-
-
 sorryNoOneHere :: T.Text
 sorryNoOneHere = "You don't see anyone here."
 
@@ -501,7 +450,7 @@ sorryNoOneHere = "You don't see anyone here."
 
 
 sorryNotLoggedIn :: Sing -> T.Text
-sorryNotLoggedIn = (<> " is not logged in.")
+sorryNotLoggedIn s = s <> " is not logged in."
 
 
 -----
@@ -535,9 +484,6 @@ sorryPCName :: T.Text -> T.Text
 sorryPCName n = "There is no PC by the name of " <> dblQuote n <> "."
 
 
------
-
-
 sorryPCNameLoggedIn :: T.Text -> T.Text
 sorryPCNameLoggedIn n = "No PC by the name of " <> dblQuote n <> " is currently logged in."
 
@@ -545,39 +491,37 @@ sorryPCNameLoggedIn n = "No PC by the name of " <> dblQuote n <> " is currently 
 -----
 
 
+sorryParseArg :: T.Text -> T.Text
+sorryParseArg a = dblQuote a <> " is not a valid argument."
+
+
 sorryParseBase :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryParseBase mq cols txt = wrapSend mq cols $ dblQuote txt <> " is not a valid base."
-
-
------
 
 
 sorryParseChanId :: T.Text -> T.Text
 sorryParseChanId a = dblQuote a <> " is not a valid channel ID."
 
 
------
-
-
 sorryParseId :: T.Text -> T.Text
 sorryParseId a = dblQuote a <> " is not a valid ID."
 
 
------
+sorryParseInOut :: T.Text -> T.Text -> T.Text
+sorryParseInOut value n = T.concat [ dblQuote value
+                                   , " is not a valid value for the "
+                                   , dblQuote n
+                                   , " setting. Please specify one of the following: "
+                                   , inOutOrOnOff
+                                   , "." ]
 
 
 sorryParseIndent :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryParseIndent mq cols a = wrapSend mq cols $ dblQuote a <> " is not a valid width amount."
 
 
------
-
-
 sorryParseLineLen :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryParseLineLen mq cols a = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
-
-
------
 
 
 sorryParseNum :: MsgQueue -> Cols -> T.Text -> T.Text -> MudStack ()
@@ -585,6 +529,13 @@ sorryParseNum mq cols numTxt base = wrapSend mq cols . T.concat $ [ dblQuote num
                                                                   , " is not a valid number in base "
                                                                   , base
                                                                   , "." ]
+
+
+sorryParseSetting :: T.Text -> T.Text -> T.Text
+sorryParseSetting value name = T.concat [ dblQuote value
+                                        , " is not a valid value for the "
+                                        , dblQuote name
+                                        , " setting." ]
 
 
 -----
@@ -628,8 +579,8 @@ sorryRemIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed fr
 -----
 
 
-sorrySayCoin :: T.Text
-sorrySayCoin = "You're talking to coins now?"
+sorrySayCoins :: T.Text
+sorrySayCoins = "You're talking to coins now?"
 
 
 sorrySayExcessTargets :: T.Text
@@ -656,22 +607,6 @@ sorrySayTargetType s = "You can't talk to " <> aOrAn s <> "."
 -----
 
 
-sorrySetParse :: T.Text -> T.Text -> T.Text
-sorrySetParse value name = T.concat [ dblQuote value
-                                    , " is not a valid value for the "
-                                    , dblQuote name
-                                    , " setting." ]
-
-
-sorrySetParseInOut :: T.Text -> T.Text -> T.Text
-sorrySetParseInOut value n = T.concat [ dblQuote value
-                                      , " is not a valid value for the "
-                                      , dblQuote n
-                                      , " setting. Please specify one of the following: "
-                                      , inOutOrOnOff
-                                      , "." ]
-
-
 sorrySetRange :: T.Text -> T.Text -> T.Text -> T.Text
 sorrySetRange settingName minValTxt maxValTxt = T.concat [ capitalize settingName
                                                          , " must be between "
@@ -681,8 +616,8 @@ sorrySetRange settingName minValTxt maxValTxt = T.concat [ capitalize settingNam
                                                          , "." ]
 
 
-sorrySetSettingName :: T.Text -> T.Text
-sorrySetSettingName n = dblQuote n <> " is not a valid setting name."
+sorrySetName :: T.Text -> T.Text
+sorrySetName n = dblQuote n <> " is not a valid setting name."
 
 
 -----
