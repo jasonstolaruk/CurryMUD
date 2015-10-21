@@ -73,7 +73,6 @@ library
                        Mud.TheWorld.TutorialIds,
                        Mud.TopLvlDefs.Chars,
                        Mud.TopLvlDefs.FilePaths,
-                       Mud.TopLvlDefs.Msgs,
                        Mud.TopLvlDefs.Padding,
                        Mud.Util.List,
                        Mud.Util.Misc,

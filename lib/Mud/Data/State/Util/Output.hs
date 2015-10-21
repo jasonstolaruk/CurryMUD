@@ -23,7 +23,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , sendMsgBoot
                                   , wrapSend ) where
 
-import Mud.Cmds.Util.Msgs.Misc
+import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData

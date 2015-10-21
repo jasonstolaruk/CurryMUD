@@ -4,8 +4,8 @@ module Mud.Interp.Login (interpName) where
 
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Msgs.Misc
-import Mud.Cmds.Util.Msgs.Sorry
+import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue

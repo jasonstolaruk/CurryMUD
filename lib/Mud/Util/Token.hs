@@ -2,7 +2,7 @@
 
 module Mud.Util.Token (parseTokens) where
 
-import Mud.Cmds.Util.Msgs.Misc
+import Mud.Cmds.Msgs.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Text

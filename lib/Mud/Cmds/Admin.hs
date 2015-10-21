@@ -9,9 +9,9 @@ import Mud.Cmds.Util.CmdPrefixes
 import Mud.Cmds.Util.EmoteExp.EmoteExp
 import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Msgs.Advice
-import Mud.Cmds.Util.Msgs.Misc
-import Mud.Cmds.Util.Msgs.Sorry
+import Mud.Cmds.Msgs.Advice
+import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue

@@ -5,8 +5,8 @@ module Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp ( emotifyTwoWay
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Msgs.Advice
-import Mud.Cmds.Util.Msgs.Sorry
+import Mud.Cmds.Msgs.Advice
+import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.Util
 import Mud.Data.State.MudData

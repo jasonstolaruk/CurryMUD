@@ -51,8 +51,8 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , withoutArgs ) where
 
 import Mud.Cmds.Util.Abbrev
-import Mud.Cmds.Util.Msgs.Misc
-import Mud.Cmds.Util.Msgs.Sorry
+import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
