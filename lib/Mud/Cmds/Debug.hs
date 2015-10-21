@@ -5,11 +5,12 @@ module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
                       , ) where
 
-import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Msgs.Advice
+import Mud.Cmds.Util.Msgs.Misc
+import Mud.Cmds.Util.Msgs.Sorry
 import Mud.Cmds.Util.Pla
-import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -24,7 +25,6 @@ import Mud.Misc.Persist
 import Mud.TheWorld.AdminZoneIds (iLoggedOut)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Msgs
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding

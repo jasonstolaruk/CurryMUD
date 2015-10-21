@@ -4,7 +4,8 @@ module Mud.Interp.Login (interpName) where
 
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Sorry
+import Mud.Cmds.Util.Msgs.Misc
+import Mud.Cmds.Util.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -21,7 +22,6 @@ import Mud.TheWorld.AdminZoneIds
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Msgs
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators

@@ -10,12 +10,13 @@ module Mud.Cmds.Pla ( getRecordUptime
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Util.Abbrev
-import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.EmoteExp.EmoteExp
 import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Msgs.Advice
+import Mud.Cmds.Util.Msgs.Misc
+import Mud.Cmds.Util.Msgs.Sorry
 import Mud.Cmds.Util.Pla
-import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
@@ -36,7 +37,6 @@ import Mud.TheWorld.AdminZoneIds (iLoggedOut, iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Msgs
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)

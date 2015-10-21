@@ -6,10 +6,10 @@ module Mud.Cmds.ExpCmds ( expCmdSet
                         , getExpCmdByName
                         , mkExpAction ) where
 
-import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Msgs.Advice
+import Mud.Cmds.Util.Msgs.Sorry
 import Mud.Cmds.Util.Pla
-import Mud.Cmds.Util.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData

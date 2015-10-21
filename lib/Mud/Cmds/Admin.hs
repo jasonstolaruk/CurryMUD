@@ -5,12 +5,13 @@ module Mud.Cmds.Admin (adminCmds) where
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Abbrev
-import Mud.Cmds.Util.Advice
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Cmds.Util.EmoteExp.EmoteExp
 import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Sorry
+import Mud.Cmds.Util.Msgs.Advice
+import Mud.Cmds.Util.Msgs.Misc
+import Mud.Cmds.Util.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -25,7 +26,6 @@ import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Persist
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Msgs
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators

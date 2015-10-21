@@ -23,6 +23,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , sendMsgBoot
                                   , wrapSend ) where
 
+import Mud.Cmds.Util.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
@@ -30,7 +31,6 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Msgs
 import Mud.Util.List (nubSort)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators

@@ -2,9 +2,9 @@
 
 module Mud.Util.Token (parseTokens) where
 
+import Mud.Cmds.Util.Msgs.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Msgs
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 

@@ -51,7 +51,8 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , withoutArgs ) where
 
 import Mud.Cmds.Util.Abbrev
-import Mud.Cmds.Util.Sorry
+import Mud.Cmds.Util.Msgs.Misc
+import Mud.Cmds.Util.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
@@ -69,7 +70,6 @@ import Mud.Misc.LocPref
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Msgs
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)
