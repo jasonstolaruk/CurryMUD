@@ -55,7 +55,7 @@ targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
 
 procChanTarget :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text [Broadcast]
 procChanTarget i cc triples ((T.toLower -> target):rest)
-  | ()# rest  = Left sorryNoMsg
+  | ()# rest  = Left sorryChanMsg
   | otherwise = case findFullNameForAbbrev target . map (views _2 T.toLower) $ triples of
     Nothing -> Left . sorryChanTargetNameFromContext target $ cc
     Just n  -> let targetId    = getIdForMatch n
@@ -144,7 +144,7 @@ expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
 
 
 procExpCmd :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
-procExpCmd _ _  _  _       (_:_:_:_) = sorryExpCmdTooLong
+procExpCmd _ _  _  _       (_:_:_:_) = sorryExpCmdLen
 procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
@@ -155,7 +155,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
           NoTarget toSelf toOthers -> if ()# target
             then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
                        , toSelf )
-            else Left . sorryExpCmdWithTarget $ match
+            else Left . sorryExpCmdIllegalTarget $ match
           HasTarget toSelf toTarget toOthers -> if ()# target
             then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of
@@ -207,7 +207,7 @@ adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c
 
 adminChanProcChanTarget :: Inv -> [Sing] -> Args -> Either T.Text [Broadcast]
 adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
-    ()# rest ? Left sorryNoMsg :? (findFullNameForAbbrev target tunedSings |&| maybe notFound found)
+    ()# rest ? Left sorryChanMsg :? (findFullNameForAbbrev target tunedSings |&| maybe notFound found)
   where
     notFound         = Left . sorryAdminChanTargetName $ target
     found targetSing =
@@ -292,7 +292,7 @@ adminChanExpCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head 
 
 
 adminChanProcExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either T.Text ([Broadcast], T.Text)
-adminChanProcExpCmd _ _ _ _ (_:_:_:_) = sorryExpCmdTooLong
+adminChanProcExpCmd _ _ _ _ (_:_:_:_) = sorryExpCmdLen
 adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
@@ -302,7 +302,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
           NoTarget toSelf toOthers -> if ()# target
             then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
                        , toSelf )
-            else Left . sorryExpCmdWithTarget $ match
+            else Left . sorryExpCmdIllegalTarget $ match
           HasTarget toSelf toTarget toOthers -> if ()# target
             then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of

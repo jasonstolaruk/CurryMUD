@@ -16,8 +16,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasEnc
                           , hasYou
                           , inOut
-                          , inOutOnOffs
-                          , inOutOrOnOff
                           , isBracketed
                           , isDblLinked
                           , isHeDon't
@@ -323,33 +321,6 @@ hasEnc as = any (`elem` [ enc, enc's ]) as || last as == enc <> "."
 
 hasYou :: [T.Text] -> Bool
 hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
-
-
------
-
-
-inOutOnOffs :: [(T.Text, Bool)]
-inOutOnOffs = [ ("i",   True )
-              , ("in",  True )
-              , ("o",   False)
-              , ("of",  False)
-              , ("off", False)
-              , ("on",  True )
-              , ("ou",  False)
-              , ("out", False) ]
-
-
------
-
-
-inOutOrOnOff :: T.Text
-inOutOrOnOff = T.concat [ dblQuote "in"
-                        , "/"
-                        , dblQuote "out"
-                        , " or "
-                        , dblQuote "on"
-                        , "/"
-                        , dblQuote "off" ]
 
 
 -----

@@ -165,7 +165,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
 adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
     if isTunedAdminId i ms
       then case getTunedAdminIds ms of
-        [_]      -> sorryNoOneListening mq cols "admin"
+        [_]      -> sorryChanOnlyYou mq cols "admin"
         tunedIds ->
           let tunedSings         = map (`getSing` ms) tunedIds
               getStyled targetId = let styleds = styleAbbrevs Don'tBracket $ getSing targetId ms `delete` tunedSings
@@ -220,11 +220,11 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBanHost :: Action
 adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs $ "ban_host") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
-  Nothing -> sorryDbEx mq cols
+  Nothing -> wrapSend mq cols dbErrorMsg
 adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] . adviceABanHostNoReason $ a
 adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
     (withDbExHandler "adminBanHost" . isHostBanned $ target) >>= \case
-      Nothing      -> sorryDbEx mq cols
+      Nothing      -> wrapSend mq cols dbErrorMsg
       Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
           let banHost = BanHostRec ts target newStatus msg
           withDbExHandler_ "adminBanHost" . insertDbTblBanHost $ banHost
@@ -254,7 +254,7 @@ notifyBan i mq cols selfSing target newStatus x =
 adminBanPla :: Action
 adminBanPla (NoArgs i mq cols) = (withDbExHandler "adminBanPla" . getDbTblRecs $ "ban_pla") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanPlaRec]) >> logPlaExecArgs (prefixAdminCmd "banpla") [] i
-  Nothing -> sorryDbEx mq cols
+  Nothing -> wrapSend mq cols dbErrorMsg
 adminBanPla p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] . adviceABanPlaNoReason $ a
 adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let fn = "adminBanPla"
@@ -266,10 +266,10 @@ adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
-                   | banId == i  -> sendFun sorryCan'tBanSelf
-                   | isAdmin pla -> sendFun sorryCan'tBanAdmin
+                   | banId == i  -> sendFun sorryBanSelf
+                   | isAdmin pla -> sendFun sorryBanAdmin
                    | otherwise   -> (withDbExHandler "adminBanPla" . isPlaBanned $ strippedTarget) >>= \case
-                     Nothing      -> sorryDbEx mq cols
+                     Nothing      -> wrapSend mq cols dbErrorMsg
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
                          let banPla = BanPlaRec ts strippedTarget newStatus msg
                          withDbExHandler_ "adminBanPla" . insertDbTblBanPla $ banPla
@@ -293,7 +293,7 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                             parensQuote "Note that you must specify the full PC name of the player you wish to boot."
       [bootId] -> let selfSing = getSing i ms in if
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryNotLoggedIn $ strippedTarget
-                    | bootId == i -> sendFun sorryCan'tBootSelf
+                    | bootId == i -> sendFun sorryBootSelf
                     | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
                         wrapSend mq cols $ "You have booted " <> strippedTarget <> "."
                         sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
@@ -316,7 +316,7 @@ adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 adminBug :: Action
 adminBug (NoArgs i mq cols) = (withDbExHandler "adminBug" . getDbTblRecs $ "bug") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BugRec]) >> logPlaExec (prefixAdminCmd "bug") i
-  Nothing -> sorryDbEx mq cols
+  Nothing -> wrapSend mq cols dbErrorMsg
 adminBug p = withoutArgs adminBug p
 
 
@@ -325,7 +325,7 @@ adminBug p = withoutArgs adminBug p
 
 adminChan :: Action
 adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport ms) . IM.elems) ms of
-  []      -> sorryNoChans mq cols
+  []      -> informNoChans mq cols
   reports -> adminChanIOHelper i mq reports
 adminChan (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
@@ -336,9 +336,13 @@ adminChan (LowerNub i mq cols as) = getState >>= \ms ->
           where
             sorry = pure . sorryParseChanId $ a
         reports = map helper as
-    in case views chanTbl IM.size ms of 0 -> sorryNoChans mq cols
+    in case views chanTbl IM.size ms of 0 -> informNoChans mq cols
                                         _ -> adminChanIOHelper i mq reports
 adminChan p = patternMatchFail "adminChan" [ showText p ]
+
+
+informNoChans :: MsgQueue -> Cols -> MudStack ()
+informNoChans mq cols = wrapSend mq cols "No channels exist!"
 
 
 adminChanIOHelper :: Id -> MsgQueue -> [[T.Text]] -> MudStack ()
@@ -456,7 +460,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to message"
             s                   = getSing i ms
-            notFound            = emptied . sendFun . sorryRegularPlaName $ strippedTarget
+            notFound            = emptied . sendFun . sorryRegPlaName $ strippedTarget
             found pair@(targetId, targetSing) = case emotifyTwoWay (prefixAdminCmd "message") i ms targetId msg of
               Left  errorMsgs  -> emptied . multiSendFun $ errorMsgs
               Right (Right bs) -> ioHelper pair bs
@@ -465,7 +469,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                 Right bs       -> ioHelper pair bs
             ioHelper (targetId, targetSing) [ fst -> toSelf, fst -> toTarget ] = if
               | isLoggedIn targetPla, isIncognitoId i ms ->
-                emptied . sendFun $ sorryMsgLoggedInTargetIncog
+                emptied . sendFun $ sorryMsg_LoggedInTarget_Incog
               | isLoggedIn targetPla ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
@@ -543,7 +547,7 @@ adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
         allReports = intercalateDivider cols . map (helper . capitalize . f) $ as
     in case views chanTbl IM.size ms of
-      0 -> sorryNoChans mq cols
+      0 -> informNoChans mq cols
       _ -> pager i mq (g allReports) >> logPlaExec (prefixAdminCmd "mychannels") i
 adminMyChans p = patternMatchFail "adminMyChans" [ showText p ]
 
@@ -569,8 +573,8 @@ adminPeep (LowerNub i mq cols as) = do
                 let notFound = a & _2 %~ (sorryPCNameLoggedIn target :)
                     found (peepId@(flip getPla ms -> peepPla), peepSing) = if peepId `notElem` pt^.ind i.peeping
                       then if
-                        | peepId == i     -> a & _2 %~ (sorryCan'tPeepSelf  :)
-                        | isAdmin peepPla -> a & _2 %~ (sorryCan'tPeepAdmin :)
+                        | peepId == i     -> a & _2 %~ (sorryPeepSelf  :)
+                        | isAdmin peepPla -> a & _2 %~ (sorryPeepAdmin :)
                         | otherwise       ->
                           let pt'     = pt & ind i     .peeping %~ (peepId :)
                                            & ind peepId.peepers %~ (i      :)
@@ -615,7 +619,7 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 adminProfanity :: Action
 adminProfanity (NoArgs i mq cols) = (withDbExHandler "adminProfanity" . getDbTblRecs $ "profanity") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [ProfRec]) >> logPlaExec (prefixAdminCmd "profanity") i
-  Nothing -> sorryDbEx mq cols
+  Nothing -> wrapSend mq cols dbErrorMsg
 adminProfanity p = withoutArgs adminProfanity p
 
 
@@ -681,8 +685,8 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                   , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
                   , handleIncog
                   , handlePeep ]
-          -> if | targetId   == i      -> (ms, [ sendFun sorryCan'tDemoteSelf ])
-                | targetSing == "Root" -> (ms, [ sendFun sorryCan'tDemoteRoot ])
+          -> if | targetId   == i      -> (ms, [ sendFun sorryDemoteSelf ])
+                | targetSing == "Root" -> (ms, [ sendFun sorryDemoteRoot ])
                 | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
                                               & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
         xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
@@ -702,7 +706,7 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
             idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
             originId            = getRmId i ms
             found (flip getRmId ms -> destId, targetSing)
-              | targetSing == getSing i ms = (ms, [ sendFun sorryCan'tTeleportToSelf ])
+              | targetSing == getSing i ms = (ms, [ sendFun sorryTeleportToSelf ])
               | destId     == originId     = (ms, [ sendFun sorryAlreadyThere        ])
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
             notFound     = (ms, pure sorryInvalid)
@@ -782,7 +786,7 @@ adminTime p = withoutArgs adminTime p
 adminTypo :: Action
 adminTypo (NoArgs i mq cols) = (withDbExHandler "adminTypo" . getDbTblRecs $ "typo") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [TypoRec]) >> logPlaExec (prefixAdminCmd "typo") i
-  Nothing -> sorryDbEx mq cols
+  Nothing -> wrapSend mq cols dbErrorMsg
 adminTypo p = withoutArgs adminTypo p
 
 

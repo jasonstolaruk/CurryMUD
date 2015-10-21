@@ -27,6 +27,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , helperLinkUnlink
                          , helperPutRemEitherCoins
                          , helperPutRemEitherInv
+                         , inOutOnOffs
                          , InvWithCon
                          , isAwake
                          , IsConInRm
@@ -637,6 +638,20 @@ mkPutRemInvDesc i ms d por mnom is ts =
                     , rest ], otherPCIds) ]
     rest       = onTheGround mnom <> "."
     otherPCIds = i `delete` pcIds d
+
+
+-----
+
+
+inOutOnOffs :: [(T.Text, Bool)]
+inOutOnOffs = [ ("i",   True )
+              , ("in",  True )
+              , ("o",   False)
+              , ("of",  False)
+              , ("off", False)
+              , ("on",  True )
+              , ("ou",  False)
+              , ("out", False) ]
 
 
 -----

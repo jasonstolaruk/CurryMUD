@@ -472,7 +472,7 @@ debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
             logPlaExec (prefixDebugCmd "rnt") i
         pcSings = [ ms^.entTbl.ind pcId.sing | pcId <- views pcTbl IM.keys ms ]
     in findFullNameForAbbrev a pcSings |&| maybe notFound found
-debugRnt ActionParams { plaMsgQueue, plaCols } = sorryRnt plaMsgQueue plaCols
+debugRnt p = advise p [] adviceDRntExcessArgs
 
 
 -----
@@ -632,7 +632,7 @@ debugWeight :: Action
 debugWeight p@AdviseNoArgs       = advise p [] adviceDWeightNoArgs
 debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
-  _                -> wrapSend mq cols $ dblQuote a <> " is not a valid ID."
+  _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper searchId
       | searchId < 0 = wrapSend mq cols sorryWtf

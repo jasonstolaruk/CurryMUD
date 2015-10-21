@@ -731,7 +731,7 @@ expCmd ecn ect              (NoArgs'' i ) = case ect of
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBroadcast           = pure (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
         in bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast >> (logPlaOut ecn i . pure $ toSelf)
-expCmd ecn (NoTarget {}) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdWithTarget $ ecn
+expCmd ecn (NoTarget {}) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
 expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers

@@ -29,6 +29,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoArgs
                             , adviceDNumberExcessArgs
                             , adviceDNumberNoArgs
                             , adviceDNumberNoBase
+                            , adviceDRntExcessArgs
                             , adviceDropNoArgs
                             , adviceDWeightExcessArgs
                             , adviceDWeightNoArgs
@@ -50,6 +51,7 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoArgs
                             , adviceNewChanNoArgs
                             , advicePutNoArgs
                             , advicePutNoCon
+                            , adviceQuitExcessArgs
                             , adviceReadyNoArgs
                             , adviceRemoveNoArgs
                             , adviceRemoveNoCon
@@ -70,7 +72,6 @@ module Mud.Cmds.Util.Advice ( adviceAAnnounceNoArgs
                             , advise ) where
 
 import Mud.Cmds.Util.CmdPrefixes
-import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
@@ -84,6 +85,20 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+
+
+-- TODO: Find a home for this.
+inOutOrOnOff :: T.Text
+inOutOrOnOff = T.concat [ dblQuote "in"
+                        , "/"
+                        , dblQuote "out"
+                        , " or "
+                        , dblQuote "on"
+                        , "/"
+                        , dblQuote "off" ]
+
+
+-----
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -273,6 +288,14 @@ adviceDNumberNoBase = T.concat [ "Please also specify base, as in "
                                , " a 16"
                                , dfltColor
                                , "." ]
+
+
+adviceDRntExcessArgs :: T.Text
+adviceDRntExcessArgs = "Sorry, but you can only generate a random name for one PC at a time."
+
+
+-----
+
 
 
 adviceDWeightExcessArgs :: T.Text
@@ -558,6 +581,14 @@ advicePutNoCon a = T.concat [ "Please also specify where you want to put it, as 
                             , " sack"
                             , dfltColor
                             , "." ]
+
+
+adviceQuitExcessArgs :: T.Text
+adviceQuitExcessArgs =  T.concat [ "Type "
+                                 , quoteColor
+                                 , "quit"
+                                 , dfltColor
+                                 , " with no arguments to quit CurryMUD." ]
 
 
 adviceReadyNoArgs :: T.Text

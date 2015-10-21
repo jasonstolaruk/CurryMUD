@@ -36,6 +36,7 @@ import Mud.TheWorld.AdminZoneIds (iLoggedOut, iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Msgs
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
@@ -246,9 +247,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the administrator you wish to message"
             s                   = getSing i ms
-            notFound            = emptied . sendFun $ "There is no administrator by the name of " <>
-                                                      dblQuote strippedTarget                     <>
-                                                      "."
+            notFound            = emptied . sendFun . sorryAdminName $ strippedTarget
             found      (adminId, _        ) | adminId == i = emptied . sendFun $ "You talk to yourself."
             found pair@(adminId, adminSing) = case emotifyTwoWay "admin" i ms adminId msg of
               Left  errorMsgs  -> emptied . multiSendFun $ errorMsgs
@@ -334,7 +333,7 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
         multiWrapSend mq cols . helper (styleAbbrevs Don'tBracket chanNames) $ chanTunings
         logPlaExecArgs "chan" [] i
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
-    let notFound    = wrapSend mq cols . sorryNotConnectedChan $ a
+    let notFound    = wrapSend mq cols . sorryChanName $ a
         found match =
             let (cn, c)                  = getMatchingChanWithName match cns cs
                 ([(_, isTuned)], others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
@@ -360,12 +359,12 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
         mkTriple (s', isTuned) = (getIdForPCSing s' ms, s', isTuned)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let notFound    = wrapSend mq cols . sorryNotConnectedChan $ target
+    let notFound    = wrapSend mq cols . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if
           | views chanConnTbl (not . (M.! s)) c    -> wrapSend mq cols . sorryNotTunedICChan $ cn
           | isIncognitoId i ms -> sorryIncogChan mq cols "a telepathic"
           | otherwise          -> getChanStyleds i c ms >>= \triples -> if ()# triples
-            then sorryNoOneListening mq cols . dblQuote $ cn
+            then sorryChanOnlyYou mq cols . dblQuote $ cn
             else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getChanStyleds targetId c ms
                      format (txt, is)   = if i `elem` is
                                             then ((formatChanMsg cn s txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
@@ -474,7 +473,7 @@ connectHelper i (target, as) ms =
                        | otherwise         = (id,           ""                )
         g           = ()# guessWhat ? id :? (Left guessWhat :)
         as'         = map (capitalize . T.toLower . f) as
-        notFound    = sorry . sorryNotConnectedChan $ target
+        notFound    = sorry . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let procTarget pair a =
                        let notFoundSing         = oops . notFoundSuggestAsleeps a asleepSings $ ms
@@ -504,7 +503,7 @@ connectHelper i (target, as) ms =
                                               = T.toLower cn `elem` targetCns
                    (ms', res)                 = foldl' procTarget (ms, []) as'
                in (ms', (g res, Just ci))
-          else sorry $ "You have tuned out the " <> dblQuote cn <> " channel."
+          else sorry . sorryNotTunedICChan $ cn -- TODO: Ok?
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
@@ -569,7 +568,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                        | otherwise         = (id,           ""                   )
         g           = ()# guessWhat ? id :? (Left guessWhat :)
         as'         = map (T.toLower . f) as
-        notFound    = sorry . sorryNotConnectedChan $ target
+        notFound    = sorry . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let procTarget (pair, b) a = case filter ((== a) . T.toLower . snd) $ idNamesTbl IM.! ci of
                      [] -> (pair & _2 <>~ (pure . Left . hint . sorryChanTargetName (dblQuote cn) $ a), True)
@@ -603,11 +602,8 @@ dropAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-            sorryInEq              = inEqs |!| mkBroadcast i "Sorry, but you can't drop items in your readied \
-                                                             \equipment. Please unready the item(s) first."
-            sorryInRm              = inRms |!| mkBroadcast i "You can't drop an item that's already in your current \
-                                                             \room. If you're intent on dropping it, try picking it up \
-                                                             \first!"
+            sorryInEq              = inEqs |!| mkBroadcast i sorryDropInEq
+            sorryInRm              = inRms |!| mkBroadcast i sorryDropInRm
             invCoins               = getInvCoins i ms
             d                      = mkStdDesig  i ms DoCap
             ri                     = getRmId     i ms
@@ -665,13 +661,13 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                 invCoins         = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
             in if ()!# invCoins
               then case singleArgInvEqRm InRm target of
-                (InInv, _      ) -> sorry "You can't target an item in your inventory."
-                (InEq,  _      ) -> sorry "You can't target an item in your readied equipment."
+                (InInv, _      ) -> sorry sorryEmoteTargetInInv
+                (InEq,  _      ) -> sorry sorryEmoteTargetInEq
                 (InRm,  target') -> case uncurry (resolveRmInvCoins i ms [target']) invCoins of
                   (_,                    [ Left [msg] ]) -> Left msg
-                  (_,                    Right  _:_    ) -> sorry "You can't target coins."
+                  (_,                    Right  _:_    ) -> sorry sorryEmoteTargetCoins
                   ([ Left  msg        ], _             ) -> Left msg
-                  ([ Right (_:_:_)    ], _             ) -> Left "Sorry, but you can only target one person at a time."
+                  ([ Right (_:_:_)    ], _             ) -> Left sorryEmoteExcessTargets
                   ([ Right [targetId] ], _             ) ->
                       let targetSing = getSing targetId ms
                       in case getType targetId ms of
@@ -680,12 +676,12 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                             , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
                                             , targetDesig )
                         MobType -> mkRightForNonTargets . dup3 . addSuffix isPoss p . theOnLower $ targetSing
-                        _       -> sorry ("You can't target " <> aOrAn targetSing <> ".")
+                        _       -> Left . sorryEmoteIllegalTarget $ targetSing -- TODO: Ok? Was: sorry ("You can't target " <> aOrAn targetSing <> ".")
                   x -> patternMatchFail "emote procTarget" [ showText x ]
-              else Left "You don't see anyone here."
+              else Left sorryNoOneHere
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
-    sorry t              = Left $ t <> " You can only target a person in your current room."
+    sorry t              = Left . quoteWith' (t, sorryEmoteTargetRmOnly) $ " " -- TODO: Ok?
 emote p = patternMatchFail "emote" [ showText p ]
 
 
@@ -702,7 +698,7 @@ equip (LowerNub i mq cols as) = getState >>= \ms ->
                invDesc                               = foldl' helperEitherInv "" eiss
                helperEitherInv acc (Left  msg)       = (acc <>) . wrapUnlinesNl cols $ msg
                helperEitherInv acc (Right targetIds) = nl $ acc <> mkEntDescs i cols ms targetIds
-               coinsDesc                             = rcs |!| wrapUnlinesNl cols sorryNoCoinsInEq
+               coinsDesc                             = rcs |!| wrapUnlinesNl cols sorryCoinsInEq
            in T.concat [ inInvs |!| sorryInInv, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYou'reNaked
   where
@@ -1107,7 +1103,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
                 in (ms', (ms', chanIdNameIsDels, sorryMsgs))
       where
         f triple a@(T.toLower -> a') =
-            let notFound     = triple & _3 <>~ (pure . sorryNotConnectedChan $ a)
+            let notFound     = triple & _3 <>~ (pure . sorryChanName $ a)
                 found match  = let (cn, c) = getMatchingChanWithName match cns cs
                                    ci      = c^.chanId
                                    isDel   = views chanConnTbl ((== 1) . M.size) c
@@ -1402,7 +1398,7 @@ showMotd mq cols = send mq =<< helper
                 | cont <- T.readFile motdFile ]
     handler e = do
         fileIOExHandler "showMotd" e
-        return . wrapUnlinesNl cols $ "Unfortunately, the message of the day could not be retrieved."
+        return . wrapUnlinesNl cols $ motdErrorMsg
 
 
 -----
@@ -1433,7 +1429,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
           | a' `elem` illegalNames = triple & _3 <>~ sorryIllegalChanName a "this name is reserved or already in use"
           | a' `elem` map T.toLower myChanNames
           , match <- head . filter ((== a') . T.toLower) $ myChanNames
-          = triple & _3 <>~ [ "You are already connected to a channel named " <> dblQuote match <> "." ]
+          = triple & _3 <>~ (pure . sorryChanAlreadyConnected $ match)
           | otherwise = let ci = views chanTbl (head . ([0..] \\) . IM.keys) $ triple^._1
                             c  = Chan ci a . M.fromList . pure $ (s, True)
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
@@ -1509,16 +1505,14 @@ shufflePut :: Id
 shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms (pure conName)) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
-      then sorry "You can't put something inside a coin."
+      then sorry sorryPutInCoin
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> sorry msg
         Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
-          then sorry $ theOnLowerCap conSing <> " isn't a container."
+          then sorry . sorryCon $ conSing
           else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-                   sorryInEq = inEqs |!| mkBroadcast i "Sorry, but you can't put items in your readied equipment into \
-                                                       \a container. Please unready the item(s) first."
-                   sorryInRm = inRms |!| mkBroadcast i "Sorry, but you can't put items in your current room into a \
-                                                       \container. Please pick up the item(s) first."
+                   sorryInEq = inEqs |!| mkBroadcast i sorryPutInEq
+                   sorryInRm = inRms |!| mkBroadcast i sorryPutInRm
                    (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) pcInvCoins
                    eiss                = zipWith (curry procGecrMisPCInv) gecrs miss
                    ecs                 = map procReconciledCoinsPCInv rcs
@@ -1530,7 +1524,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
                in (ms & invTbl .~ it & coinsTbl .~ ct, (sorryInEq ++ sorryInRm ++ bs', logMsgs'))
-        Right {} -> sorry "You can only put things into one container at a time."
+        Right {} -> sorry sorryPutExcessCon
   where
     sorry msg = (ms, (mkBroadcast i msg, []))
 
@@ -1555,7 +1549,7 @@ question (NoArgs' i mq) = getState >>= \ms ->
                   f (i', n, ia) | ia           = (i', n <> asterisk)
                                 | isRndmName n = (i', underline n  )
                                 | otherwise    = (i', n            )
-               mkDesc (i', n) = pad (succ namePadding) n <> (isTunedQuestionId i' ms ? "tuned in" :? "tuned out")
+               mkDesc (i', n) = pad (succ namePadding) n <> (tunedInOut . isTunedQuestionId i' $ ms)
                descs          = mkDesc (i, getSing i ms <> (isAdminId i ms |?| asterisk)) : map mkDesc combo
                descs'         = "Question channel:" : descs
            in pager i mq descs' >> logPlaExecArgs "question" [] i
@@ -1563,7 +1557,7 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
   | not . isTunedQuestionId i $ ms -> wrapSend mq cols . sorryNotTunedOOCChan $ "question"
   | isIncognitoId i ms             -> sorryIncogChan mq cols "the question"
   | otherwise                      -> getQuestionStyleds i ms >>= \triples -> if ()# triples
-    then sorryNoOneListening mq cols "question"
+    then sorryChanOnlyYou mq cols "question"
     else let ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
                  bcastNl =<< expandEmbeddedIds ms questionChanContext bs
                  logPlaOut "question" i . pure $ logMsg
@@ -1592,13 +1586,7 @@ question p = patternMatchFail "question" [ showText p ]
 
 quit :: Action
 quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . atomically . writeTQueue mq $ Quit)
-quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols msg
-  where
-    msg = T.concat [ "Type "
-                   , quoteColor
-                   , "quit"
-                   , dfltColor
-                   , " with no arguments to quit CurryMUD." ]
+quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
 handleEgress :: Id -> MudStack ()
@@ -1668,18 +1656,14 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
 
 
 quitCan'tAbbrev :: Action
-quitCan'tAbbrev (NoArgs _ mq cols) =
-    wrapSend mq cols . T.concat $ [ "The "
-                                  , dblQuote "quit"
-                                  , " command may not be abbreviated. Type "
-                                  , dblQuote "quit"
-                                  , " with no arguments to quit CurryMUD." ]
-quitCan'tAbbrev p = withoutArgs quitCan'tAbbrev p
+quitCan'tAbbrev (NoArgs _ mq cols) = wrapSend mq cols sorryQuitCan'tAbbrev
+quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 
 
 -----
 
 
+-- TODO: Continue refactoring advice and sorry from here.
 ready :: Action
 ready p@AdviseNoArgs   = advise p ["ready"] adviceReadyNoArgs
 ready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -1687,14 +1671,13 @@ ready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-            sorryInEq = inEqs |!| mkBroadcast i "You can't ready an item that's already in your readied equipment."
-            sorryInRm = inRms |!| mkBroadcast i "Sorry, but you can't ready items in your current room. Please pick up \
-                                                \the item(s) first."
+            sorryInEq = inEqs |!| mkBroadcast i sorryReadyInEq
+            sorryInRm = inRms |!| mkBroadcast i sorryReadyInRm
             invCoins@(is, _)          = getInvCoins i ms
             d                         = mkStdDesig  i ms DoCap
             (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ms inInvs is mempty
             eiss                      = zipWith (curry procGecrMisReady) gecrs miss
-            bs                        = rcs |!| mkBroadcast i "You can't ready coins."
+            bs                        = rcs |!| mkBroadcast i sorryReadyCoins
             (et, it, bs', logMsgs)    = foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) . zip eiss $ mrols
         in if ()!# invCoins
           then (ms & eqTbl .~ et & invTbl .~ it, (sorryInEq ++ sorryInRm ++ bs', logMsgs))
@@ -1708,9 +1691,8 @@ helperReady :: Id
             -> (EqTbl, InvTbl, [Broadcast], [T.Text])
             -> (Either T.Text Inv, Maybe RightOrLeft)
             -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-helperReady i ms d a (eis, mrol) = case eis of
-  Left  (mkBroadcast i -> b) -> a & _3 <>~ b
-  Right targetIds            -> foldl' (readyDispatcher i ms d mrol) a targetIds
+helperReady i _  _ a (Left  (mkBroadcast i -> b), _   ) = a & _3 <>~ b
+helperReady i ms d a (Right targetIds,            mrol) = foldl' (readyDispatcher i ms d mrol) a targetIds
 
 
 readyDispatcher :: Id
@@ -1729,7 +1711,7 @@ readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
       WpnType   -> Just readyWpn
       ArmType   -> Just readyArm
       _         -> Nothing
-    sorry targetSing = a & _3 <>~ mkBroadcast i ("You can't ready " <> aOrAn targetSing <> ".")
+    sorry targetSing = a & _3 <>~ (mkBroadcast i . sorryReadyType $ targetSing)
 
 
 -- Readying clothing:
@@ -1799,9 +1781,9 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
 
 sorryFullClothSlots :: MudState -> Cloth -> EqMap -> T.Text
 sorryFullClothSlots ms cloth@(pp -> cloth') em
-  | cloth `elem` [ Earring .. Ring ]               = "You can't wear any more " <> cloth'               <> "s."
-  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = "You're already wearing "  <> aOrAn cloth'         <> "."
-  | otherwise = let i = em M.! clothToSlot cloth in  "You're already wearing "  <> aOrAn (getSing i ms) <> "."
+  | cloth `elem` [ Earring .. Ring ]               = sorryReadyClothFull cloth'
+  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = sorryAlreadyWearing cloth'
+  | otherwise = let i = em M.! clothToSlot cloth in sorryAlreadyWearing . getSing i $ ms
 
 
 otherSex :: Sex -> Sex
@@ -1821,8 +1803,8 @@ lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
 
 getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigClothSlot ms clothSing cloth em rol
-  | cloth `elem` [ NoseRing, Necklace ] ++ [ Shirt .. Cloak ] = Left sorryCan'tWearThere
-  | isRingRol rol, cloth /= Ring                              = Left sorryCan'tWearThere
+  | cloth `elem` [ NoseRing, Necklace ] ++ [ Shirt .. Cloak ] = sorryRol
+  | isRingRol rol, cloth /= Ring                              = sorryRol
   | cloth == Ring, not . isRingRol $ rol                      = Left ringHelp
   | otherwise = case cloth of
     Earring  -> findSlotFromList rEarringSlots  lEarringSlots  |&| maybe (Left sorryEarring ) Right
@@ -1830,7 +1812,6 @@ getDesigClothSlot ms clothSing cloth em rol
     Ring     -> M.lookup slotFromRol em |&| maybe (Right slotFromRol) (Left . sorryRing slotFromRol)
     _        -> patternMatchFail "getDesigClothSlot" [ showText cloth ]
   where
-    sorryCan'tWearThere    = T.concat [ "You can't wear ", aOrAn clothSing, " on your ", pp rol, "." ]
     findSlotFromList rs ls = findAvailSlot em $ case rol of
       R -> rs
       L -> ls
@@ -1839,6 +1820,7 @@ getDesigClothSlot ms clothSing cloth em rol
       R -> rs
       L -> ls
       _ -> patternMatchFail "getDesigClothSlot getSlotFromList"  [ showText rol ]
+    sorryRol         = Left . sorryReadyRol clothSing $ rol
     sorryEarring     = sorryFullClothSlotsOneSide cloth . getSlotFromList rEarringSlots  $ lEarringSlots
     sorryBracelet    = sorryFullClothSlotsOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
     slotFromRol      = fromRol rol :: Slot
@@ -1862,7 +1844,7 @@ readyWpn :: Id
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
-      then let b = mkBroadcast i "You're already wielding a two-handed weapon." in a & _3 <>~ b
+      then let b = mkBroadcast i sorryAlreadyWieldingTwoHanded in a & _3 <>~ b
                else case mrol |&| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
         Left  (mkBroadcast i -> b) -> a & _3 <>~ b
         Right slot  -> case sub of
@@ -1883,7 +1865,7 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
                                 , ( T.concat [ serialize d, " wields ", aOrAn wpnSing, " with both hands." ]
                                   , otherPCIds ) )
                 in moveReadiedItem i a BothHandsS wpnId readyMsgs
-            | otherwise -> let b = mkBroadcast i $ "Both hands are required to wield the " <> wpnSing <> "."
+            | otherwise -> let b = mkBroadcast i . sorryReadyWpnHands $ wpnSing
                            in a & _3 <>~ b
   where
     poss       = mkPossPro . getSex i $ ms
@@ -1892,7 +1874,7 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
 
 getAvailWpnSlot :: MudState -> Id -> EqMap -> Either T.Text Slot
 getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
-    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left "You're already wielding two weapons.") Right
+    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left sorryAlreadyWieldingTwoWpns) Right
   where
     getSlotForHand h = case h of RHand -> RHandS
                                  LHand -> LHandS
@@ -1901,7 +1883,7 @@ getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
 
 getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigWpnSlot ms wpnSing em rol
-  | isRingRol rol = Left $ "You can't wield " <> aOrAn wpnSing <> " with your finger!"
+  | isRingRol rol = Left . sorryReadyWpnRol $ wpnSing
   | otherwise     = M.lookup desigSlot em |&| maybe (Right desigSlot) (Left . sorryAlreadyWielding ms desigSlot)
   where
     desigSlot = case rol of R -> RHandS
@@ -1925,7 +1907,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
   where
-    sorryCan'tWearThere rol = Left . T.concat $ [ "You can't wear ", aOrAn armSing, " on your ", pp rol, "." ]
+    sorryCan'tWearThere rol = Left . sorryReadyRol armSing $ rol
     mkReadyArmMsgs = \case
       Head   -> putOnMsgs                     i d armSing
       Hands  -> putOnMsgs                     i d armSing
@@ -1937,7 +1919,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorryFullArmSlot) Right
   where
-    sorryFullArmSlot | i <- em M.! slot, s <- getSing i ms = "You're already wearing " <> aOrAn s <> "."
+    sorryFullArmSlot | i <- em M.! slot, s <- getSing i ms = sorryAlreadyWearing s
 
 
 -----
@@ -1971,11 +1953,11 @@ shuffleRem :: Id
 shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms (pure conName)) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
-      then sorry "You can't remove something from a coin."
+      then sorry sorryRemCoin
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> sorry msg
         Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
-          then sorry $ theOnLowerCap conSing <> " isn't a container."
+          then sorry . sorryCon $ conSing
           else let (as', guessWhat)    = stripLocPrefs
                    invCoinsInCon       = getInvCoins conId ms
                    (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as') invCoinsInCon
@@ -1991,11 +1973,11 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                in if ()!# invCoinsInCon
                  then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ bs', logMsgs'))
                  else sorry $ "The " <> conSing <> " is empty."
-        Right {} -> sorry "You can only remove things from one container at a time."
+        Right {} -> sorry sorryRemExcessCon
   where
     sorry msg                         = (ms, (mkBroadcast i msg, []))
-    stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBroadcast i sorryRemoveIgnore)
-                  | otherwise         = (as,                  []                             )
+    stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBroadcast i sorryRemIgnore)
+                  | otherwise         = (as,                  []                          )
 
 
 -----
@@ -2029,23 +2011,20 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             invCoins       = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
-            (InInv, _      ) -> sorry "You can't talk to an item in your inventory. Try saying something to someone in \
-                                      \your current room."
-            (InEq,  _      ) -> sorry "You can't talk to an item in your readied equipment. Try saying something to \
-                                      \someone in your current room."
+            (InInv, _      ) -> sorry sorrySayInInv
+            (InEq,  _      ) -> sorry sorrySayInEq
             (InRm,  target') -> case uncurry (resolveRmInvCoins i ms [target']) invCoins of
               (_,                    [ Left [msg] ]) -> sorry msg
-              (_,                    Right  _:_    ) -> sorry "You're talking to coins now?"
+              (_,                    Right  _:_    ) -> sorry sorrySayCoin
               ([ Left  msg        ], _             ) -> sorry msg
-              ([ Right (_:_:_)    ], _             ) -> sorry "Sorry, but you can only say something to one person at \
-                                                              \a time."
+              ([ Right (_:_:_)    ], _             ) -> sorry sorrySayExcessTargets
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                            in parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
                 MobType -> parseRearAdverb |&| either sorry (sayToMobHelper d targetSing)
-                _       -> sorry $ "You can't talk to " <> aOrAn targetSing <> "."
+                _       -> sorry . sorrySayTargetType $ targetSing
               x -> patternMatchFail "say sayTo" [ showText x ]
-          else sorry "You don't see anyone here to talk to."
+          else sorry sorrySayNoOneHere
       where
         sorry msg       = (ms, (mkBroadcast i . nlnl $ msg, []))
         parseRearAdverb = case maybeAdverb of
@@ -2132,14 +2111,14 @@ mkSettingPairs i ms = let p = getPla i ms
 helperSettings :: Id -> MudState -> (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
 helperSettings _ _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
-      let msg    = dblQuote arg <> " is not a valid argument."
+      let msg    = sorryInvalidArg arg
           f      = any (adviceSettingsInvalid `T.isInfixOf`) msgs ?  (++ pure msg)
                                                                   :? (++ [ msg <> adviceSettingsInvalid ])
       in a & _2 %~ f
 helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
     findFullNameForAbbrev name (map fst . mkSettingPairs i $ ms) |&| maybe notFound found
   where
-    notFound    = appendMsg $ dblQuote name <> " is not a valid setting name."
+    notFound    = appendMsg . sorrySetSettingName $ name
     appendMsg m = a & _2 <>~ pure m
     found       = \case "admin"    -> alterTuning "admin" IsTunedAdmin
                         "columns"  -> procEither . alterNumeric minCols      maxCols      "columns" $ columns
@@ -2150,28 +2129,15 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
         procEither f = parseInt |&| either appendMsg f
         parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
                                                                              _         -> sorryParse
-        sorryParse   = Left . T.concat $ [ dblQuote value
-                                         , " is not a valid value for the "
-                                         , dblQuote name
-                                         , " setting." ]
+        sorryParse   = Left . sorrySetParse value $ name
     alterNumeric minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x
-      | not . inRange (minVal, maxVal) $ x = appendMsg . T.concat $ [ capitalize settingName
-                                                                    , " must be between "
-                                                                    , minValTxt
-                                                                    , " and "
-                                                                    , maxValTxt
-                                                                    , "." ]
+      | not . inRange (minVal, maxVal) $ x = appendMsg . sorrySetRange settingName minValTxt $ maxValTxt
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ]
                     in appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
     alterTuning n flag = case filter ((== value) . fst) inOutOnOffs of
       [(_, newBool)] -> let msg   = T.concat [ "Tuned ", inOut newBool, " the ", n, " channel." ]
                         in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
-      [] -> appendMsg . T.concat $ [ dblQuote value
-                                   , " is not a valid value for the "
-                                   , dblQuote n
-                                   , " setting. Please specify one of the following: "
-                                   , inOutOrOnOff
-                                   , "." ]
+      [] -> appendMsg . sorrySetParseInOut value $ n
       xs -> patternMatchFail "helperSettings alterTuning" [ showText xs ]
 
 
@@ -2190,14 +2156,14 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
          | ()# eqMap && ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
          | ()# rmInvCoins            -> wrapSend mq cols sorryNoOneHere
          | otherwise                 -> case singleArgInvEqRm InRm (last as) of
-           (InInv, _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your inventory"         <> tryThisInstead
-           (InEq,  _     ) -> wrapSend mq cols $ sorryCan'tShow "item in your readied equipment" <> tryThisInstead
+           (InInv, _     ) -> wrapSend mq cols $ sorryShowTarget "item in your inventory"         <> tryThisInstead
+           (InEq,  _     ) -> wrapSend mq cols $ sorryShowTarget "item in your readied equipment" <> tryThisInstead
            (InRm,  target) ->
              let argsWithoutTarget                    = init $ case as of [_, _] -> as
                                                                           _      -> (++ pure target) . nub . init $ as
                  (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms (pure target)) rmInvCoins
              in if ()# targetMiss && ()!# targetRcs
-               then wrapSend mq cols . sorryCan'tShow $ "coin"
+               then wrapSend mq cols . sorryShowTarget $ "coin"
                else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
                  Left  msg        -> wrapSend mq cols msg
                  Right [targetId] ->
@@ -2209,9 +2175,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                        (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv argsWithoutTarget
                        (invBs, invLog)        = inInvs |!| showInv ms d invCoins inInvs theTarget
                        (eqBs,  eqLog )        = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
-                       rmBs                   = inRms  |!| mkBroadcast i "You can't show an item in your current room."
+                       rmBs                   = inRms  |!| mkBroadcast i sorryShowInRm
                    in if theType theTarget `notElem` [ MobType, PCType ]
-                     then wrapSend mq cols . sorryCan'tShow . theSing $ theTarget
+                     then wrapSend mq cols . sorryShowTarget . theSing $ theTarget
                      else do
                          bcastNl $ rmBs ++ invBs ++ eqBs
                          let log = slashes . dropBlanks $ [ invLog |!| parensQuote "inv" <> " " <> invLog
@@ -2219,10 +2185,9 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                          log |#| logPla "show" i . (T.concat [ "showed to "
                                                              , theSing theTarget
                                                              , ": " ] <>)
-                 Right _ -> wrapSend mq cols "Sorry, but you can only show something to one person at a time."
+                 Right _ -> wrapSend mq cols sorryShowExcessTargets
   where
-    sorryCan'tShow x = "You can't show something to " <> aOrAn x <> "."
-    tryThisInstead   = " Try showing something to someone in your current room."
+    tryThisInstead = " Try showing something to someone in your current room."
     showInv ms d invCoins inInvs IdSingTypeDesig { .. } = if ()!# invCoins
       then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
                showInvHelper                       = foldl' helperEitherInv ([], []) eiss
@@ -2367,7 +2332,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                             , i `delete` pcIds d )
                                           | itemId <- itemIds ]
                -----
-               showCoinsInEqHelper = rcs |!| mkBroadcast i sorryNoCoinsInEq
+               showCoinsInEqHelper = rcs |!| mkBroadcast i sorryCoinsInEq
            in ((++ showCoinsInEqHelper) *** slashes) showEqHelper
       else (mkBroadcast i dudeYou'reNaked, "")
 showAction p = patternMatchFail "showAction" [ showText p ]
@@ -2513,7 +2478,7 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
   where
     linkNames   = map uncapitalize . M.keys $ linkTbl
     chanNames   = map (views chanName T.toLower) chans
-    notFound    = a & _3 <>~ [ "You don't have a connection by the name of " <> dblQuote name <> "." ]
+    notFound    = a & _3 <>~ (pure . sorryTuneName $ name)
     found val n = if n == "all"
                     then appendMsg "all telepathic connections" & _1 %~ M.map (const val)
                                                                 & _2 %~ map (chanConnTbl.at s .~ Just val)
@@ -2534,9 +2499,8 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
 
 
 tuneInvalidArg :: T.Text -> [T.Text] -> [T.Text]
-tuneInvalidArg arg msgs =
-    let msg = dblQuote arg <> " is not a valid argument."
-    in msgs |&| (any (adviceTuneInvalid `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> adviceTuneInvalid ]))
+tuneInvalidArg arg msgs = let msg = sorryInvalidArg arg in
+    msgs |&| (any (adviceTuneInvalid `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> adviceTuneInvalid ]))
 
 
 -----
@@ -2571,13 +2535,7 @@ unlink (LowerNub i mq cols as) =
                              in (ms'', (bs, logMsgs))
                 procArg a@(ms', _, _) targetSing = if
                   | targetSing `elem` twoWays ++ meLinkedToOthers ++ othersLinkedToMe -> procArgHelper
-                  | otherwise ->
-                    let msg = T.concat [ "You don't have a link with "
-                                       , dblQuote targetSing
-                                       , ". "
-                                       , parensQuote "Note that you must specify the full name of the person with \
-                                                     \whom you would like to unlink." ]
-                    in a & _2 <>~ (mkBroadcast i . nlnl $ msg)
+                  | otherwise -> a & _2 <>~ (mkBroadcast i . nlnl . sorryUnlinkName $ targetSing)
                   where
                     procArgHelper =
                         let targetId  = getIdForPCSing targetSing ms'
@@ -2612,13 +2570,13 @@ unready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq as
-            sorryInInv             = inInvs |!| mkBroadcast i "You can't unready items in your inventory."
-            sorryInRm              = inRms  |!| mkBroadcast i "You can't unready items in your current room."
+            sorryInInv             = inInvs |!| mkBroadcast i sorryUnreadyInInv
+            sorryInRm              = inRms  |!| mkBroadcast i sorryUnreadyInRm
             d                      = mkStdDesig i ms DoCap
             is                     = M.elems . getEqMap i $ ms
             (gecrs, miss, rcs)     = resolveEntCoinNames i ms inEqs is mempty
             eiss                   = zipWith (curry procGecrMisPCEq) gecrs miss
-            bs                     = rcs |!| mkBroadcast i "You can't unready coins."
+            bs                     = rcs |!| mkBroadcast i sorryUnreadyCoins
             (et, it, bs', logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
         in if ()!# is
           then (ms & eqTbl .~ et & invTbl .~ it, (sorryInInv ++ sorryInRm ++ bs', logMsgs))

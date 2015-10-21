@@ -21,6 +21,7 @@ import Mud.TheWorld.AdminZoneIds
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Msgs
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -72,7 +73,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
                                       , " characters long." ]
   | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
   | otherwise = (withDbExHandler "interpName" . isPlaBanned $ cn') >>= \case
-    Nothing          -> sorryDbEx mq cols
+    Nothing          -> wrapSend mq cols dbErrorMsg
     Just (Any True ) -> handleBanned
     Just (Any False) -> handleNotBanned
   where

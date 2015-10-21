@@ -20,7 +20,41 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
--- TODO: Refactor for consistency where necessary.
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-- ==================================================
+
+
+-- TODO: Remove ----- dividers between related functions.
+
+
+-- TODO: Find a home for this.
+inOutOrOnOff :: T.Text
+inOutOrOnOff = T.concat [ dblQuote "in"
+                        , "/"
+                        , dblQuote "out"
+                        , " or "
+                        , dblQuote "on"
+                        , "/"
+                        , dblQuote "off" ]
+
+
+-----
+
+
+sorryAdminChanTargetName :: T.Text -> T.Text
+sorryAdminChanTargetName = sorryChanTargetName "admin"
+
+
+-----
+
+
+sorryAdminName :: T.Text -> T.Text
+sorryAdminName n = "There is no administrator by the name of " <> dblQuote n <> "."
+
+
+-----
 
 
 sorryAlreadyThere :: T.Text
@@ -30,12 +64,45 @@ sorryAlreadyThere = "You're already there!"
 -----
 
 
+sorryAlreadyWearing :: T.Text -> T.Text
+sorryAlreadyWearing t = "You're already wearing "  <> aOrAn t <> "."
+
+
 sorryAlreadyWielding :: MudState -> Slot -> Id -> T.Text
 sorryAlreadyWielding ms sl i = let s = getSing i ms in T.concat [ "You're already wielding "
                                                                 , aOrAn s
                                                                 , " with your "
                                                                 , pp sl
                                                                 , "." ]
+
+
+sorryAlreadyWieldingTwoHanded :: T.Text
+sorryAlreadyWieldingTwoHanded = "You're already wielding a two-handed weapon."
+
+
+sorryAlreadyWieldingTwoWpns :: T.Text
+sorryAlreadyWieldingTwoWpns = "You're already wielding two weapons."
+
+
+-----
+
+
+sorryBanAdmin :: T.Text
+sorryBanAdmin = "You can't ban an admin."
+
+
+-----
+
+
+sorryBanSelf :: T.Text
+sorryBanSelf = "You can't ban yourself."
+
+
+-----
+
+
+sorryBootSelf :: T.Text
+sorryBootSelf = "You can't boot yourself."
 
 
 -----
@@ -48,57 +115,31 @@ sorryBracketedMsg = Left "You can't open or close your message with brackets."
 -----
 
 
-sorryCan'tBanAdmin :: T.Text
-sorryCan'tBanAdmin = "You can't ban an admin."
+sorryChanAlreadyConnected :: ChanName -> T.Text
+sorryChanAlreadyConnected cn = "You are already connected to a channel named " <> dblQuote cn <> "."
 
 
 -----
 
 
-sorryCan'tBanSelf :: T.Text
-sorryCan'tBanSelf = "You can't ban yourself."
+sorryChanMsg :: T.Text
+sorryChanMsg = "You must also provide a message to send."
 
 
 -----
 
 
-sorryCan'tBootSelf :: T.Text
-sorryCan'tBootSelf = "You can't boot yourself."
+sorryChanName :: ChanName -> T.Text
+sorryChanName cn = "You are not connected to a channel named " <> dblQuote cn <> "."
 
 
 -----
 
 
-sorryCan'tDemoteRoot :: T.Text
-sorryCan'tDemoteRoot = "You can't demote Root."
 
-
------
-
-
-sorryCan'tDemoteSelf :: T.Text
-sorryCan'tDemoteSelf = "You can't demote yourself."
-
-
------
-
-
-sorryCan'tPeepSelf :: T.Text
-sorryCan'tPeepSelf = "You can't peep yourself."
-
-
------
-
-
-sorryCan'tPeepAdmin :: T.Text
-sorryCan'tPeepAdmin = "You can't peep an admin."
-
-
------
-
-
-sorryCan'tTeleportToSelf :: T.Text
-sorryCan'tTeleportToSelf = "You can't teleport to yourself."
+-- TODO: Is there a better name for this?
+sorryChanOnlyYou :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryChanOnlyYou mq cols n = wrapSend mq cols $ "You are the only person tuned in to the " <> n <> " channel."
 
 
 -----
@@ -112,14 +153,24 @@ sorryChanTargetName cn n = T.concat [ "There is no one by the name of "
                                     , " channel." ]
 
 
-sorryAdminChanTargetName :: T.Text -> T.Text
-sorryAdminChanTargetName = sorryChanTargetName "admin"
-
-
 sorryChanTargetNameFromContext :: T.Text -> ChanContext -> T.Text
 sorryChanTargetNameFromContext n (ChanContext { .. }) = sorryChanTargetName effChanName n
   where
     effChanName = maybe someCmdName dblQuote someChanName
+
+
+-----
+
+
+sorryCoinsInEq :: T.Text
+sorryCoinsInEq = "You don't have any coins among your readied equipment."
+
+
+-----
+
+
+sorryCon :: Sing -> T.Text
+sorryCon s = theOnLowerCap s <> " isn't a container."
 
 
 -----
@@ -147,8 +198,15 @@ sorryConnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would l
 -----
 
 
-sorryDbEx :: MsgQueue -> Cols -> MudStack ()
-sorryDbEx mq cols = wrapSend mq cols "There was an error when reading the database."
+sorryDemoteRoot :: T.Text
+sorryDemoteRoot = "You can't demote Root."
+
+
+-----
+
+
+sorryDemoteSelf :: T.Text
+sorryDemoteSelf = "You can't demote yourself."
 
 
 -----
@@ -156,6 +214,48 @@ sorryDbEx mq cols = wrapSend mq cols "There was an error when reading the databa
 
 sorryDisconnectIgnore :: T.Text
 sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would like to disconnect"
+
+
+-----
+
+
+sorryDropInEq :: T.Text
+sorryDropInEq = "Sorry, but you can't drop items in your readied equipment. Please unready the item(s) first."
+
+
+-----
+
+
+sorryDropInRm :: T.Text
+sorryDropInRm = "You can't drop an item that's already in your current room. If you're intent on dropping it, try \
+                \picking it up first!"
+
+
+-----
+
+
+sorryEmoteExcessTargets :: T.Text
+sorryEmoteExcessTargets = "Sorry, but you can only target one person at a time."
+
+
+sorryEmoteIllegalTarget :: Sing -> T.Text
+sorryEmoteIllegalTarget s = "You can't target " <> aOrAn s <> "."
+
+
+sorryEmoteTargetCoins :: T.Text
+sorryEmoteTargetCoins = "You can't target coins."
+
+
+sorryEmoteTargetInEq :: T.Text
+sorryEmoteTargetInEq = "You can't target an item in your readied equipment."
+
+
+sorryEmoteTargetInInv :: T.Text
+sorryEmoteTargetInInv = "You can't target an item in your inventory."
+
+
+sorryEmoteTargetRmOnly :: T.Text
+sorryEmoteTargetRmOnly = "You can only target a person in your current room."
 
 
 -----
@@ -181,6 +281,10 @@ sorryEquipInvLook cols eilcA eilcB = wrapUnlinesNl cols . T.concat $ helper
 -----
 
 
+sorryExpCmdLen :: Either T.Text a
+sorryExpCmdLen = Left "An expressive command sequence may not be more than 2 words long."
+
+
 sorryExpCmdName :: T.Text -> Either T.Text a
 sorryExpCmdName cn = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
 
@@ -189,12 +293,8 @@ sorryExpCmdRequiresTarget :: ExpCmdName -> T.Text
 sorryExpCmdRequiresTarget cn = "The " <> dblQuote cn <> " expressive command requires a single target."
 
 
-sorryExpCmdTooLong :: Either T.Text a
-sorryExpCmdTooLong = Left "An expressive command sequence may not be more than 2 words long."
-
-
-sorryExpCmdWithTarget :: ExpCmdName -> T.Text
-sorryExpCmdWithTarget cn =  "The " <> dblQuote cn <> " expressive command cannot be used with a target."
+sorryExpCmdIllegalTarget :: ExpCmdName -> T.Text
+sorryExpCmdIllegalTarget cn =  "The " <> dblQuote cn <> " expressive command cannot be used with a target."
 
 
 -----
@@ -245,6 +345,13 @@ sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito
 -----
 
 
+sorryIncogChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
+sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
+
+
+-----
+
+
 sorryIndent :: MsgQueue -> Cols -> MudStack ()
 sorryIndent mq cols = wrapSend mq cols "The indent amount must be less than the line length."
 
@@ -252,8 +359,8 @@ sorryIndent mq cols = wrapSend mq cols "The indent amount must be less than the 
 -----
 
 
-sorryIncogChan :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryIncogChan mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
+sorryInvalidArg :: T.Text -> T.Text
+sorryInvalidArg a = dblQuote a <> " is not a valid argument."
 
 
 -----
@@ -271,8 +378,94 @@ sorryInvalidRmName n = T.concat [ dblQuote n
 -----
 
 
-sorryMsgLoggedInTargetIncog :: T.Text
-sorryMsgLoggedInTargetIncog = "You can't send a message to a player who is logged in while you are incognito."
+sorryPeepAdmin :: T.Text
+sorryPeepAdmin = "You can't peep an admin."
+
+
+-----
+
+
+sorryPeepSelf :: T.Text
+sorryPeepSelf = "You can't peep yourself."
+
+
+-----
+
+
+sorryPutInEq :: T.Text
+sorryPutInEq = "Sorry, but you can't put items in your readied equipment into a container. Please unready the item(s) \
+               \first."
+
+
+sorryPutInRm :: T.Text
+sorryPutInRm = "Sorry, but you can't put items in your current room into a container. Please pick up the item(s) first."
+
+
+-----
+
+
+sorryPutExcessCon :: T.Text
+sorryPutExcessCon = "You can only put things into one container at a time."
+
+
+-----
+
+
+sorryQuitCan'tAbbrev :: T.Text
+sorryQuitCan'tAbbrev = T.concat [ "The "
+                                , dblQuote "quit"
+                                , " command may not be abbreviated. Type "
+                                , dblQuote "quit"
+                                , " with no arguments to quit CurryMUD." ]
+
+
+-----
+
+
+sorryReadyClothFull :: T.Text -> T.Text
+sorryReadyClothFull t = "You can't wear any more " <> t <> "s."
+
+
+sorryReadyCoins :: T.Text
+sorryReadyCoins = "You can't ready coins."
+
+
+sorryReadyInEq :: T.Text
+sorryReadyInEq = "You can't ready an item that's already in your readied equipment."
+
+
+sorryReadyInRm :: T.Text
+sorryReadyInRm = "Sorry, but you can't ready items in your current room. Please pick up the item(s) first."
+
+
+sorryReadyRol :: Sing -> RightOrLeft -> T.Text
+sorryReadyRol s rol = T.concat [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
+
+
+sorryReadyType :: Sing -> T.Text
+sorryReadyType s = "You can't ready " <> aOrAn s <> "."
+
+
+sorryReadyWpnHands :: Sing -> T.Text
+sorryReadyWpnHands s = "Both hands are required to wield the " <> s <> "."
+
+
+sorryReadyWpnRol :: Sing -> T.Text
+sorryReadyWpnRol s = "You can't wield " <> aOrAn s <> " with your finger!"
+
+
+-----
+
+
+sorryTeleportToSelf :: T.Text
+sorryTeleportToSelf = "You can't teleport to yourself."
+
+
+-----
+
+
+sorryMsg_LoggedInTarget_Incog :: T.Text
+sorryMsg_LoggedInTarget_Incog = "You can't send a message to a player who is logged in while you are incognito."
 
 
 -----
@@ -293,20 +486,6 @@ sorryNameTaken = "Sorry, but that name is already taken."
 -----
 
 
-sorryNoMsg :: T.Text
-sorryNoMsg = "You must also provide a message to send."
-
-
------
-
-
-sorryNoChans :: MsgQueue -> Cols -> MudStack ()
-sorryNoChans mq cols = wrapSend mq cols "No channels exist!"
-
-
------
-
-
 sorryNoContainersHere :: T.Text
 sorryNoContainersHere = "You don't see any containers here."
 
@@ -314,29 +493,8 @@ sorryNoContainersHere = "You don't see any containers here."
 -----
 
 
-sorryNoCoinsInEq :: T.Text
-sorryNoCoinsInEq = "You don't have any coins among your readied equipment."
-
-
------
-
-
 sorryNoOneHere :: T.Text
 sorryNoOneHere = "You don't see anyone here."
-
-
------
-
-
-sorryNoOneListening :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tuned in to the " <> n <> " channel."
-
-
------
-
-
-sorryNotConnectedChan :: ChanName -> T.Text
-sorryNotConnectedChan cn = "You are not connected to a channel named " <> dblQuote cn <> "."
 
 
 -----
@@ -355,7 +513,7 @@ sorryNotTunedICChan = sorryNotTunedChan "tune"
 
 sorryNotTunedChan :: T.Text -> T.Text -> T.Text
 sorryNotTunedChan x y = T.concat [ "You have tuned out the "
-                                 , dblQuote y
+                                 , dblQuote y -- TODO: Shouldn't we only double quote IC chan names?
                                  , " channel. Type "
                                  , quoteColor
                                  , x
@@ -439,24 +597,114 @@ sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish t
 -----
 
 
-sorryRegularPlaName :: T.Text -> T.Text
-sorryRegularPlaName n = "There is no regular player by the name of " <>
-                        dblQuote n                                   <>
-                        "."
+sorryPutInCoin :: T.Text
+sorryPutInCoin = "You can't put something inside a coin."
 
 
 -----
 
 
-sorryRemoveIgnore :: T.Text
-sorryRemoveIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+sorryRegPlaName :: T.Text -> T.Text
+sorryRegPlaName n = "There is no regular player by the name of " <>
+                    dblQuote n                                   <>
+                    "."
 
 
 -----
 
 
-sorryRnt :: MsgQueue -> Cols -> MudStack ()
-sorryRnt mq cols = wrapSend mq cols "Sorry, but you can only generate a random name for one PC at a time."
+sorryRemCoin :: T.Text
+sorryRemCoin = "You can't remove something from a coin."
+
+
+sorryRemExcessCon :: T.Text
+sorryRemExcessCon = "You can only remove things from one container at a time."
+
+
+sorryRemIgnore :: T.Text
+sorryRemIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+
+
+-----
+
+
+sorrySayCoin :: T.Text
+sorrySayCoin = "You're talking to coins now?"
+
+
+sorrySayExcessTargets :: T.Text
+sorrySayExcessTargets = "Sorry, but you can only say something to one person at a time."
+
+
+sorrySayInEq :: T.Text
+sorrySayInEq = "You can't talk to an item in your readied equipment. Try saying something to someone in your current \
+               \room."
+
+
+sorrySayInInv :: T.Text
+sorrySayInInv = "You can't talk to an item in your inventory. Try saying something to someone in your current room."
+
+
+sorrySayNoOneHere :: T.Text
+sorrySayNoOneHere = "You don't see anyone here to talk to."
+
+
+sorrySayTargetType :: Sing -> T.Text
+sorrySayTargetType s = "You can't talk to " <> aOrAn s <> "."
+
+
+-----
+
+
+sorrySetParse :: T.Text -> T.Text -> T.Text
+sorrySetParse value name = T.concat [ dblQuote value
+                                    , " is not a valid value for the "
+                                    , dblQuote name
+                                    , " setting." ]
+
+
+sorrySetParseInOut :: T.Text -> T.Text -> T.Text
+sorrySetParseInOut value n = T.concat [ dblQuote value
+                                      , " is not a valid value for the "
+                                      , dblQuote n
+                                      , " setting. Please specify one of the following: "
+                                      , inOutOrOnOff
+                                      , "." ]
+
+
+sorrySetRange :: T.Text -> T.Text -> T.Text -> T.Text
+sorrySetRange settingName minValTxt maxValTxt = T.concat [ capitalize settingName
+                                                         , " must be between "
+                                                         , minValTxt
+                                                         , " and "
+                                                         , maxValTxt
+                                                         , "." ]
+
+
+sorrySetSettingName :: T.Text -> T.Text
+sorrySetSettingName n = dblQuote n <> " is not a valid setting name."
+
+
+-----
+
+
+sorryShowExcessTargets :: T.Text
+sorryShowExcessTargets = "Sorry, but you can only show something to one person at a time."
+
+
+sorryShowInRm :: T.Text
+sorryShowInRm = "You can't show an item in your current room."
+
+
+sorryShowTarget :: T.Text -> T.Text
+sorryShowTarget t = "You can't show something to " <> aOrAn t <> "."
+
+
+-----
+
+
+sorryTuneName :: T.Text -> T.Text
+sorryTuneName n = "You don't have a connection by the name of " <> dblQuote n <> "."
 
 
 -----
@@ -482,6 +730,29 @@ sorryTwoWayTargetName cn s = Left . T.concat $ [ "In a telepathic message to "
 
 sorryUnlinkIgnore :: T.Text
 sorryUnlinkIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+
+
+sorryUnlinkName :: T.Text -> T.Text
+sorryUnlinkName t = T.concat [ "You don't have a link with "
+                             , dblQuote t
+                             , ". "
+                             , parensQuote "Note that you must specify the full name of the person with whom you would \
+                                           \like to unlink." ]
+
+
+-----
+
+
+sorryUnreadyCoins :: T.Text
+sorryUnreadyCoins = "You can't unready coins."
+
+
+sorryUnreadyInInv :: T.Text
+sorryUnreadyInInv = "You can't unready items in your inventory."
+
+
+sorryUnreadyInRm :: T.Text
+sorryUnreadyInRm = "You can't unready items in your current room."
 
 
 -----
