@@ -362,7 +362,7 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if
           | views chanConnTbl (not . (M.! s)) c    -> wrapSend mq cols . sorryNotTunedICChan $ cn
-          | isIncognitoId i ms -> sorryChanIncog mq cols "a telepathic"
+          | isIncognitoId i ms -> wrapSend mq cols . sorryChanIncog $ "a telepathic"
           | otherwise          -> getChanStyleds i c ms >>= \triples -> if ()# triples
             then sorryChanNoOneListening mq cols . dblQuote $ cn
             else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getChanStyleds targetId c ms
@@ -503,7 +503,7 @@ connectHelper i (target, as) ms =
                                               = T.toLower cn `elem` targetCns
                    (ms', res)                 = foldl' procTarget (ms, []) as'
                in (ms', (g res, Just ci))
-          else sorry . sorryNotTunedICChan $ cn -- TODO: Ok?
+          else sorry . sorryNotTunedICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
@@ -676,12 +676,12 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                             , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
                                             , targetDesig )
                         MobType -> mkRightForNonTargets . dup3 . addSuffix isPoss p . theOnLower $ targetSing
-                        _       -> Left . sorryEmoteTargetType $ targetSing -- TODO: Ok? Was: sorry ("You can't target " <> aOrAn targetSing <> ".")
+                        _       -> Left . sorryEmoteTargetType $ targetSing
                   x -> patternMatchFail "emote procTarget" [ showText x ]
               else Left sorryNoOneHere
     addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
-    sorry t              = Left . quoteWith' (t, sorryEmoteTargetRmOnly) $ " " -- TODO: Ok?
+    sorry t              = Left . quoteWith' (t, sorryEmoteTargetRmOnly) $ " "
 emote p = patternMatchFail "emote" [ showText p ]
 
 
@@ -1555,7 +1555,7 @@ question (NoArgs' i mq) = getState >>= \ms ->
            in pager i mq descs' >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
   | not . isTunedQuestionId i $ ms -> wrapSend mq cols . sorryNotTunedOOCChan $ "question"
-  | isIncognitoId i ms             -> sorryChanIncog mq cols "the question"
+  | isIncognitoId i ms             -> wrapSend mq cols . sorryChanIncog $ "the question"
   | otherwise                      -> getQuestionStyleds i ms >>= \triples -> if ()# triples
     then sorryChanNoOneListening mq cols "question"
     else let ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
@@ -1663,7 +1663,6 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 
--- TODO: Continue refactoring advice and sorry from here.
 ready :: Action
 ready p@AdviseNoArgs   = advise p ["ready"] adviceReadyNoArgs
 ready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -1884,11 +1883,12 @@ getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
 getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either T.Text Slot
 getDesigWpnSlot ms wpnSing em rol
   | isRingRol rol = Left . sorryReadyWpnRol $ wpnSing
-  | otherwise     = M.lookup desigSlot em |&| maybe (Right desigSlot) (Left . sorryAlreadyWielding ms desigSlot)
+  | otherwise     = M.lookup desigSlot em |&| maybe (Right desigSlot) (Left . sorry)
   where
     desigSlot = case rol of R -> RHandS
                             L -> LHandS
                             _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
+    sorry i = sorryAlreadyWielding (getSing i ms) desigSlot
 
 
 -- Readying armor:

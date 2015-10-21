@@ -87,20 +87,6 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
--- TODO: Find a home for this.
-inOutOrOnOff :: T.Text
-inOutOrOnOff = T.concat [ dblQuote "in"
-                        , "/"
-                        , dblQuote "out"
-                        , " or "
-                        , dblQuote "on"
-                        , "/"
-                        , dblQuote "off" ]
-
-
------
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Advice"
 
@@ -696,6 +682,14 @@ adviceTuneInvalid = T.concat [ " Please specify the name of the connection you w
                              , "tune taro=in"
                              , dfltColor
                              , "." ]
+  where
+    inOutOrOnOff = T.concat [ dblQuote "in"
+                            , "/"
+                            , dblQuote "out"
+                            , " or "
+                            , dblQuote "on"
+                            , "/"
+                            , dblQuote "off" ]
 
 
 adviceTypoNoArgs :: T.Text

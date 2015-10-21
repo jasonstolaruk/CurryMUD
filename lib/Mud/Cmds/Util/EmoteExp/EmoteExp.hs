@@ -45,7 +45,7 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.EmoteExp"
 
 targetify :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text (Either () [Broadcast])
 targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws               = sorryBracketedMsg
+  | isBracketed ws               = Left sorryBracketedMsg
   | isHeDon't chanTargetChar msg = Left sorryWtf
   | c == chanTargetChar          = fmap Right . procChanTarget i cc triples . (tail ws |&|) $ if ()# rest
     then id
@@ -197,7 +197,7 @@ procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
 
 adminChanTargetify :: Inv -> [Sing] -> T.Text -> Either T.Text (Either () [Broadcast])
 adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
-  | isBracketed ws               = sorryBracketedMsg
+  | isBracketed ws               = Left sorryBracketedMsg
   | isHeDon't chanTargetChar msg = Left sorryWtf
   | c == chanTargetChar          = fmap Right . adminChanProcChanTarget tunedIds tunedSings . (tail ws |&|) $ if ()# rest
     then id

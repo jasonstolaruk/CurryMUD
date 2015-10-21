@@ -6,7 +6,6 @@ import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
@@ -26,20 +25,6 @@ import qualified Data.Text as T
 -- ==================================================
 
 
--- TODO: Find a home for this.
-inOutOrOnOff :: T.Text
-inOutOrOnOff = T.concat [ dblQuote "in"
-                        , "/"
-                        , dblQuote "out"
-                        , " or "
-                        , dblQuote "on"
-                        , "/"
-                        , dblQuote "off" ]
-
-
------
-
-
 sorryIgnoreLocPref :: T.Text -> T.Text
 sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location prefix. The location prefix you provided \
                                               \will be ignored."
@@ -50,7 +35,7 @@ sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location p
                                                   \provided will be ignored."
 
 
--- ==================================================
+-----
 
 
 sorryAdminChanTargetName :: T.Text -> T.Text
@@ -75,12 +60,12 @@ sorryAlreadyWearing :: T.Text -> T.Text
 sorryAlreadyWearing t = "You're already wearing " <> aOrAn t <> "."
 
 
-sorryAlreadyWielding :: MudState -> Slot -> Id -> T.Text
-sorryAlreadyWielding ms sl i = let s = getSing i ms in T.concat [ "You're already wielding "
-                                                                , aOrAn s
-                                                                , " with your "
-                                                                , pp sl
-                                                                , "." ]
+sorryAlreadyWielding :: Sing -> Slot -> T.Text
+sorryAlreadyWielding s sl = T.concat [ "You're already wielding "
+                                     , aOrAn s
+                                     , " with your "
+                                     , pp sl
+                                     , "." ]
 
 
 sorryAlreadyWieldingTwoHanded :: T.Text
@@ -112,15 +97,15 @@ sorryBootSelf = "You can't boot yourself."
 -----
 
 
-sorryBracketedMsg :: Either T.Text a
-sorryBracketedMsg = Left "You can't open or close your message with brackets."
+sorryBracketedMsg :: T.Text
+sorryBracketedMsg = "You can't open or close your message with brackets."
 
 
 -----
 
 
-sorryChanIncog :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryChanIncog mq cols x = wrapSend mq cols $ "You can't send a message on " <> x <> " channel while incognito."
+sorryChanIncog :: T.Text -> T.Text
+sorryChanIncog t = "You can't send a message on " <> t <> " channel while incognito."
 
 
 sorryChanMsg :: T.Text
@@ -131,6 +116,7 @@ sorryChanName :: ChanName -> T.Text
 sorryChanName cn = "You are not connected to a channel named " <> dblQuote cn <> "."
 
 
+-- TODO: Continue removing MsgQueue etc. from here.
 sorryChanNoOneListening :: MsgQueue -> Cols -> T.Text -> MudStack ()
 sorryChanNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tuned in to the " <> n <> " channel."
 
@@ -457,12 +443,12 @@ sorryNotLoggedIn s = s <> " is not logged in."
 
 
 sorryNotTunedICChan :: ChanName -> T.Text
-sorryNotTunedICChan = sorryNotTunedChan "tune"
+sorryNotTunedICChan = sorryNotTunedChan "tune" . dblQuote
 
 
 sorryNotTunedChan :: T.Text -> T.Text -> T.Text
 sorryNotTunedChan x y = T.concat [ "You have tuned out the "
-                                 , dblQuote y -- TODO: Shouldn't we only double quote IC chan names?
+                                 , y
                                  , " channel. Type "
                                  , quoteColor
                                  , x
@@ -514,6 +500,14 @@ sorryParseInOut value n = T.concat [ dblQuote value
                                    , " setting. Please specify one of the following: "
                                    , inOutOrOnOff
                                    , "." ]
+  where
+    inOutOrOnOff = T.concat [ dblQuote "in"
+                            , "/"
+                            , dblQuote "out"
+                            , " or "
+                            , dblQuote "on"
+                            , "/"
+                            , dblQuote "off" ]
 
 
 sorryParseIndent :: MsgQueue -> Cols -> T.Text -> MudStack ()
