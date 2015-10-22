@@ -29,9 +29,6 @@ import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 
 
--- TODO: Do we need to refactor advice and sorry here or in other modules under Cmds?
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.ExpCmds"
 
@@ -747,8 +744,7 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
           in if ()!# invCoins
             then case uncurry (resolveRmInvCoins i ms (pure target')) invCoins of
               (_,                    [ Left  [sorryMsg] ]) -> sendHelper sorryMsg
-              (_,                    Right _:_           ) -> sendHelper "Sorry, but expressive commands cannot be \
-                                                                         \used with coins."
+              (_,                    Right _:_           ) -> sendHelper sorryExpCmdCoins
               ([ Left sorryMsg    ], _                   ) -> sendHelper sorryMsg
               ([ Right (_:_:_)    ], _                   ) -> sendHelper adviceExpCmdExcessArgs
               ([ Right [targetId] ], _                   ) ->
@@ -781,11 +777,12 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
                 in case getType targetId ms of
                   PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
                   MobType -> onMob . theOnLower . getSing targetId $ ms
-                  _       -> sendHelper "Sorry, but expressive commands can only target people."
+                  _       -> sendHelper sorryExpCmdTargetType
               x -> patternMatchFail "expCmd helper" [ showText x ]
             else sendHelper sorryNoOneHere
       (x, _) -> sorry x
     sendHelper = wrapSend mq cols
+    -- TODO: Continue refactoring sorry from here.
     sorry loc  = sendHelper $ "You can't target an item in your " <> loc' <> " with an expressive command."
       where
         loc' = case loc of InInv -> "inventory"

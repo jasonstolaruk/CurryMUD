@@ -228,6 +228,10 @@ sorryEquipInvLook a b = T.concat [ "You can only use the "
 -----
 
 
+sorryExpCmdCoins :: T.Text
+sorryExpCmdCoins = "Sorry, but expressive commands cannot be used with coins."
+
+
 sorryExpCmdLen :: T.Text
 sorryExpCmdLen = "An expressive command sequence may not be more than 2 words long."
 
@@ -242,6 +246,10 @@ sorryExpCmdIllegalTarget cn =  "The " <> dblQuote cn <> " expressive command can
 
 sorryExpCmdRequiresTarget :: ExpCmdName -> T.Text
 sorryExpCmdRequiresTarget cn = "The " <> dblQuote cn <> " expressive command requires a single target."
+
+
+sorryExpCmdTargetType :: T.Text
+sorryExpCmdTargetType = "Sorry, but expressive commands can only target people."
 
 
 -----
