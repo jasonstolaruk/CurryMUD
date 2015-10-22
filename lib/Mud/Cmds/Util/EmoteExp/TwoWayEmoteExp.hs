@@ -83,7 +83,7 @@ expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> 
 
 
 procExpCmdTwoWay :: Id -> MudState -> Id -> Sing -> Args -> Either T.Text [Broadcast]
-procExpCmdTwoWay _ _  _        _          (_:_:_:_) = sorryExpCmdLen
+procExpCmdTwoWay _ _  _        _          (_:_:_:_) = Left sorryExpCmdLen
 procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
@@ -93,19 +93,20 @@ procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]
                    , (format Nothing toOthers, pure targetId) ]
         else Left . sorryExpCmdIllegalTarget $ match
       HasTarget toSelf toTarget _ ->
-          let good = Right [ (format (Just targetId) toSelf,   pure i       )
-                           , (format Nothing         toTarget, pure targetId) ]
+          let good  = Right [ (format (Just targetId) toSelf,   pure i       )
+                            , (format Nothing         toTarget, pure targetId) ]
+              sorry = Left . sorryTwoWayTargetName match $ targetSing
           in ()# target ?  good
                         :? (target `T.isPrefixOf` uncapitalize targetSing ?  good
-                                                                          :? sorryTwoWayTargetName match targetSing)
+                                                                          :? sorry)
       Versatile toSelf toOthers toSelfWithTarget toTarget _
         | ()# target -> Right [ (toSelf,                  pure i       )
                               , (format Nothing toOthers, pure targetId) ]
         | target `T.isPrefixOf` uncapitalize targetSing ->
             Right [ (format (Just targetId) toSelfWithTarget, pure i       )
                   , (format Nothing         toTarget,         pure targetId) ]
-        | otherwise -> sorryTwoWayTargetName match targetSing
-    notFound             = sorryExpCmdName cn
+        | otherwise -> Left . sorryTwoWayTargetName match $ targetSing
+    notFound             = Left . sorryExpCmdName $ cn
     format maybeTargetId = let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
                            in replace (substitutions ++ maybe [] (const . pure $ ("@", targetSing)) maybeTargetId)
     s                    = getSing i ms

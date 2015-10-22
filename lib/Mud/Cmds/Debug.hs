@@ -368,13 +368,13 @@ debugNumber p@AdviseNoArgs     = advise p [] adviceDNumberNoArgs
 debugNumber p@(AdviseOneArg _) = advise p [] adviceDNumberNoBase
 debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
     case reads . T.unpack $ baseTxt :: [(Base, String)] of
-      [(base, "")] | not . inRange (2, 36) $ base -> sorryParseBase mq cols baseTxt
+      [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
                    | otherwise -> case numTxt `inBase` base of
                      [(res, "")] -> do
                          send mq . nlnl . showText $ res
                          logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
-                     _ -> sorryParseNum mq cols numTxt . showText $ base
-      _ -> sorryParseBase mq cols baseTxt
+                     _ -> wrapSend mq cols . sorryParseNum numTxt . showText $ base
+      _ -> wrapSend mq cols . sorryParseBase $ baseTxt
 debugNumber p = advise p [] adviceDNumberExcessArgs
 
 
@@ -649,10 +649,10 @@ debugWrap :: Action
 debugWrap p@AdviseNoArgs       = advise p [] adviceDWrapNoArgs
 debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(lineLen, "")] -> helper lineLen
-  _               -> sorryParseLineLen mq cols a
+  _               -> wrapSend mq cols . sorryParseLineLen $ a
   where
     helper lineLen | lineLen < 0                                = wrapSend mq cols sorryWtf
-                   | not . inRange (minCols, maxCols) $ lineLen = sorryWrapLineLen mq cols
+                   | not . inRange (minCols, maxCols) $ lineLen = wrapSend mq cols sorryWrapLineLen
                    | otherwise                                  = do
                        send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
                        logPlaExecArgs (prefixDebugCmd "wrap") (pure a) i
@@ -677,15 +677,16 @@ debugWrapIndent :: Action
 debugWrapIndent p@AdviseNoArgs     = advise p [] adviceDWrapIndentNoArgs
 debugWrapIndent p@(AdviseOneArg _) = advise p [] adviceDWrapIndentNoAmt
 debugWrapIndent (WithArgs i mq cols [a, b]) = do
-    parsed <- (,) <$> parse a (sorryParseLineLen mq cols a) <*> parse b (sorryParseIndent mq cols b)
+    parsed <- (,) <$> parse a (wrapSend mq cols . sorryParseLineLen $ a)
+                  <*> parse b (wrapSend mq cols . sorryParseIndent  $ b)
     unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
   where
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
       [(x, "")] -> unadulterated . Sum $ x
       _         -> emptied sorry
     helper lineLen indent | any (< 0) [ lineLen, indent ]              = wrapSend mq cols sorryWtf
-                          | not . inRange (minCols, maxCols) $ lineLen = sorryWrapLineLen mq cols
-                          | indent >= lineLen                          = sorryIndent mq cols
+                          | not . inRange (minCols, maxCols) $ lineLen = wrapSend mq cols sorryWrapLineLen
+                          | indent >= lineLen                          = wrapSend mq cols sorryIndent
                           | otherwise                                  = do
                               send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
                               logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i

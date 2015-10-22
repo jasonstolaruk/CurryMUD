@@ -144,7 +144,7 @@ expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
 
 
 procExpCmd :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
-procExpCmd _ _  _  _       (_:_:_:_) = sorryExpCmdLen
+procExpCmd _ _  _  _       (_:_:_:_) = Left sorryExpCmdLen
 procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
@@ -177,7 +177,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
                                     (format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :
                                     mkBroadcast i toSelfWithTarget'
                                   , toSelfWithTarget' )
-    notFound             = sorryExpCmdName cn
+    notFound             = Left . sorryExpCmdName $ cn
     findTarget           = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
     format maybeTargetId =
@@ -292,7 +292,7 @@ adminChanExpCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head 
 
 
 adminChanProcExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either T.Text ([Broadcast], T.Text)
-adminChanProcExpCmd _ _ _ _ (_:_:_:_) = sorryExpCmdLen
+adminChanProcExpCmd _ _ _ _ (_:_:_:_) = Left sorryExpCmdLen
 adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
@@ -324,7 +324,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
                                     (format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :
                                     mkBroadcast i toSelfWithTarget'
                                   , toSelfWithTarget' )
-    notFound   = sorryExpCmdName cn
+    notFound   = Left . sorryExpCmdName $ cn
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
     format maybeTargetSing =
         let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]

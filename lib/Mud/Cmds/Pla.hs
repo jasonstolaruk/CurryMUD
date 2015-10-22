@@ -364,7 +364,7 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
           | views chanConnTbl (not . (M.! s)) c    -> wrapSend mq cols . sorryNotTunedICChan $ cn
           | isIncognitoId i ms -> wrapSend mq cols . sorryChanIncog $ "a telepathic"
           | otherwise          -> getChanStyleds i c ms >>= \triples -> if ()# triples
-            then sorryChanNoOneListening mq cols . dblQuote $ cn
+            then wrapSend mq cols . sorryChanNoOneListening . dblQuote $ cn
             else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getChanStyleds targetId c ms
                      format (txt, is)   = if i `elem` is
                                             then ((formatChanMsg cn s txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
@@ -689,7 +689,7 @@ emote p = patternMatchFail "emote" [ showText p ]
 
 
 equip :: Action
-equip (NoArgs i mq cols)      = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
+equip (NoArgs   i mq cols   ) = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
     let em@(M.elems -> is) = getEqMap i ms in send mq $ if ()!# em
       then let (inInvs, inEqs, inRms)                = sortArgsInvEqRm InEq as
@@ -702,8 +702,8 @@ equip (LowerNub i mq cols as) = getState >>= \ms ->
            in T.concat [ inInvs |!| sorryInInv, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYou'reNaked
   where
-    sorryInInv = sorryEquipInvLook cols EquipCmd InvCmd
-    sorryInRm  = sorryEquipInvLook cols EquipCmd LookCmd
+    sorryInInv = wrapUnlinesNl cols . sorryEquipInvLook EquipCmd $ InvCmd
+    sorryInRm  = wrapUnlinesNl cols . sorryEquipInvLook EquipCmd $ LookCmd
 equip p = patternMatchFail "equip" [ showText p ]
 
 
@@ -1048,7 +1048,7 @@ intro p = patternMatchFail "intro" [ showText p ]
 
 
 inv :: Action
-inv (NoArgs i mq cols)      = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
+inv (NoArgs   i mq cols   ) = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
 inv (LowerNub i mq cols as) = getState >>= \ms ->
     let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
         invCoins               = getInvCoins i ms
@@ -1063,8 +1063,8 @@ inv (LowerNub i mq cols as) = getState >>= \ms ->
     helperEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
-    sorryInEq                           = sorryEquipInvLook cols InvCmd EquipCmd
-    sorryInRm                           = sorryEquipInvLook cols InvCmd LookCmd
+    sorryInEq                           = wrapUnlinesNl cols . sorryEquipInvLook InvCmd $ EquipCmd
+    sorryInRm                           = wrapUnlinesNl cols . sorryEquipInvLook InvCmd $ LookCmd
 inv p = patternMatchFail "inv" [ showText p ]
 
 
@@ -1276,8 +1276,8 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
   where
     helper ms = let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms in if ()!# invCoins
         then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-                 sorryInInv             = sorryEquipInvLook cols LookCmd InvCmd
-                 sorryInEq              = sorryEquipInvLook cols LookCmd EquipCmd
+                 sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
+                 sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
                  (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
                  invDesc                = foldl' (helperLookEitherInv ms) "" eiss
                  coinsDesc              = foldl' helperLookEitherCoins    "" ecs
@@ -1423,10 +1423,11 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
         f s triple a@(T.toLower -> a')
           | T.length a > maxChanNameLen =
               let msg = "a channel name may not be more than " <> showText maxChanNameLen <> " characters long"
-              in triple & _3 <>~ sorryNewChanName a msg
-          | T.any isNG a = triple & _3 <>~ sorryNewChanName a "a channel name may only contain alphabetic letters and \
-                                                              \digits"
-          | a' `elem` illegalNames = triple & _3 <>~ sorryNewChanName a "this name is reserved or already in use"
+              in triple & _3 <>~ (pure . sorryNewChanName a $ msg)
+          | T.any isNG a = triple & _3 <>~ (pure . sorryNewChanName a $ "a channel name may only contain alphabetic \
+                                                                        \letters and digits")
+          | a' `elem` illegalNames = triple & _3 <>~ (pure . sorryNewChanName a $ "this name is reserved or already in \
+                                                                                  \use")
           | a' `elem` map T.toLower myChanNames
           , match <- head . filter ((== a') . T.toLower) $ myChanNames
           = triple & _3 <>~ (pure . sorryNewChanExisting $ match)
@@ -1557,7 +1558,7 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
   | not . isTunedQuestionId i $ ms -> wrapSend mq cols . sorryNotTunedOOCChan $ "question"
   | isIncognitoId i ms             -> wrapSend mq cols . sorryChanIncog $ "the question"
   | otherwise                      -> getQuestionStyleds i ms >>= \triples -> if ()# triples
-    then sorryChanNoOneListening mq cols "question"
+    then wrapSend mq cols . sorryChanNoOneListening $ "question"
     else let ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
                  bcastNl =<< expandEmbeddedIds ms questionChanContext bs
                  logPlaOut "question" i . pure $ logMsg
@@ -2130,8 +2131,8 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
         parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
                                                                              _         -> sorryParse
         sorryParse   = Left . sorryParseSetting value $ name
-    alterNumeric minVal@(showText -> minValTxt) maxVal@(showText -> maxValTxt) settingName lens x
-      | not . inRange (minVal, maxVal) $ x = appendMsg . sorrySetRange settingName minValTxt $ maxValTxt
+    alterNumeric minVal maxVal settingName lens x
+      | not . inRange (minVal, maxVal) $ x = appendMsg . sorrySetRange settingName minVal $ maxVal
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ]
                     in appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
     alterTuning n flag = case filter ((== value) . fst) inOutOnOffs of

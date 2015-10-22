@@ -4,15 +4,12 @@ module Mud.Cmds.Msgs.Sorry where
 
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
-import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
-import Mud.Util.Wrapping
 
 import Data.Char (toLower)
 import Data.Monoid ((<>))
@@ -61,11 +58,7 @@ sorryAlreadyWearing t = "You're already wearing " <> aOrAn t <> "."
 
 
 sorryAlreadyWielding :: Sing -> Slot -> T.Text
-sorryAlreadyWielding s sl = T.concat [ "You're already wielding "
-                                     , aOrAn s
-                                     , " with your "
-                                     , pp sl
-                                     , "." ]
+sorryAlreadyWielding s sl = T.concat [ "You're already wielding ", aOrAn s, " with your ", pp sl, "." ]
 
 
 sorryAlreadyWieldingTwoHanded :: T.Text
@@ -116,9 +109,8 @@ sorryChanName :: ChanName -> T.Text
 sorryChanName cn = "You are not connected to a channel named " <> dblQuote cn <> "."
 
 
--- TODO: Continue removing MsgQueue etc. from here.
-sorryChanNoOneListening :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryChanNoOneListening mq cols n = wrapSend mq cols $ "You are the only person tuned in to the " <> n <> " channel."
+sorryChanNoOneListening :: T.Text -> T.Text
+sorryChanNoOneListening t = "You are the only person tuned in to the " <> t <> " channel."
 
 
 sorryChanTargetName :: T.Text -> T.Text -> T.Text
@@ -217,32 +209,31 @@ sorryEquipCoins = "You don't have any coins among your readied equipment."
 -----
 
 
-sorryEquipInvLook :: Cols -> EquipInvLookCmd -> EquipInvLookCmd -> T.Text
-sorryEquipInvLook cols eilcA eilcB = wrapUnlinesNl cols . T.concat $ helper
+sorryEquipInvLook :: EquipInvLookCmd -> EquipInvLookCmd -> T.Text
+sorryEquipInvLook a b = T.concat [ "You can only use the "
+                                 , dblQuote . showText $ a
+                                 , " command to examine items in your "
+                                 , loc a
+                                 , ". To examine items in your "
+                                 , loc b
+                                 , ", use the "
+                                 , dblQuote . showText $ b
+                                 , " command." ]
   where
-    helper = [ "You can only use the "
-             , dblQuote . showText $ eilcA
-             , " command to examine items in your "
-             , loc eilcA
-             , ". To examine items in your "
-             , loc eilcB
-             , ", use the "
-             , dblQuote . showText $ eilcB
-             , " command." ]
-    loc    = \case EquipCmd -> "readied equipment"
-                   InvCmd   -> "inventory"
-                   LookCmd  -> "current room"
+    loc = \case EquipCmd -> "readied equipment"
+                InvCmd   -> "inventory"
+                LookCmd  -> "current room"
 
 
 -----
 
 
-sorryExpCmdLen :: Either T.Text a
-sorryExpCmdLen = Left "An expressive command sequence may not be more than 2 words long."
+sorryExpCmdLen :: T.Text
+sorryExpCmdLen = "An expressive command sequence may not be more than 2 words long."
 
 
-sorryExpCmdName :: T.Text -> Either T.Text a
-sorryExpCmdName cn = Left $ "There is no expressive command by the name of " <> dblQuote cn <> "."
+sorryExpCmdName :: T.Text -> T.Text
+sorryExpCmdName cn = "There is no expressive command by the name of " <> dblQuote cn <> "."
 
 
 sorryExpCmdIllegalTarget :: ExpCmdName -> T.Text
@@ -270,8 +261,8 @@ sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito
 -----
 
 
-sorryIndent :: MsgQueue -> Cols -> MudStack ()
-sorryIndent mq cols = wrapSend mq cols "The indent amount must be less than the line length."
+sorryIndent :: T.Text
+sorryIndent = "The indent amount must be less than the line length."
 
 
 -----
@@ -281,8 +272,8 @@ sorryNewChanExisting :: ChanName -> T.Text
 sorryNewChanExisting cn = "You are already connected to a channel named " <> dblQuote cn <> "."
 
 
-sorryNewChanName :: T.Text -> T.Text -> [T.Text]
-sorryNewChanName a msg = pure . T.concat $ [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
+sorryNewChanName :: T.Text -> T.Text -> T.Text
+sorryNewChanName a msg = T.concat [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
 
 
 -----
@@ -334,11 +325,7 @@ sorryReadyClothFull t = "You can't wear any more " <> t <> "s."
 
 
 sorryReadyClothFullOneSide :: Cloth -> Slot -> T.Text
-sorryReadyClothFullOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more "
-                                                          , c
-                                                          , "s on your "
-                                                          , s
-                                                          , "." ]
+sorryReadyClothFullOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more ", c, "s on your ", s, "." ]
 
 
 sorryReadyCoins :: T.Text
@@ -481,8 +468,8 @@ sorryParseArg :: T.Text -> T.Text
 sorryParseArg a = dblQuote a <> " is not a valid argument."
 
 
-sorryParseBase :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryParseBase mq cols txt = wrapSend mq cols $ dblQuote txt <> " is not a valid base."
+sorryParseBase :: T.Text -> T.Text
+sorryParseBase t = dblQuote t <> " is not a valid base."
 
 
 sorryParseChanId :: T.Text -> T.Text
@@ -510,26 +497,20 @@ sorryParseInOut value n = T.concat [ dblQuote value
                             , dblQuote "off" ]
 
 
-sorryParseIndent :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryParseIndent mq cols a = wrapSend mq cols $ dblQuote a <> " is not a valid width amount."
+sorryParseIndent :: T.Text -> T.Text
+sorryParseIndent a = dblQuote a <> " is not a valid width amount."
 
 
-sorryParseLineLen :: MsgQueue -> Cols -> T.Text -> MudStack ()
-sorryParseLineLen mq cols a = wrapSend mq cols $ dblQuote a <> " is not a valid line length."
+sorryParseLineLen :: T.Text -> T.Text
+sorryParseLineLen a = dblQuote a <> " is not a valid line length."
 
 
-sorryParseNum :: MsgQueue -> Cols -> T.Text -> T.Text -> MudStack ()
-sorryParseNum mq cols numTxt base = wrapSend mq cols . T.concat $ [ dblQuote numTxt
-                                                                  , " is not a valid number in base "
-                                                                  , base
-                                                                  , "." ]
+sorryParseNum :: T.Text -> T.Text -> T.Text
+sorryParseNum numTxt base = T.concat [ dblQuote numTxt, " is not a valid number in base ", base, "." ]
 
 
 sorryParseSetting :: T.Text -> T.Text -> T.Text
-sorryParseSetting value name = T.concat [ dblQuote value
-                                        , " is not a valid value for the "
-                                        , dblQuote name
-                                        , " setting." ]
+sorryParseSetting value name = T.concat [ dblQuote value, " is not a valid value for the ", dblQuote name, " setting." ]
 
 
 -----
@@ -550,9 +531,7 @@ sorryPutInCoin = "You can't put something inside a coin."
 
 
 sorryRegPlaName :: T.Text -> T.Text
-sorryRegPlaName n = "There is no regular player by the name of " <>
-                    dblQuote n                                   <>
-                    "."
+sorryRegPlaName n = "There is no regular player by the name of " <> dblQuote n <> "."
 
 
 -----
@@ -601,13 +580,13 @@ sorrySayTargetType s = "You can't talk to " <> aOrAn s <> "."
 -----
 
 
-sorrySetRange :: T.Text -> T.Text -> T.Text -> T.Text
-sorrySetRange settingName minValTxt maxValTxt = T.concat [ capitalize settingName
-                                                         , " must be between "
-                                                         , minValTxt
-                                                         , " and "
-                                                         , maxValTxt
-                                                         , "." ]
+sorrySetRange :: T.Text -> Int -> Int -> T.Text
+sorrySetRange settingName minVal maxVal = T.concat [ capitalize settingName
+                                                   , " must be between "
+                                                   , showText minVal
+                                                   , " and "
+                                                   , showText maxVal
+                                                   , "." ]
 
 
 sorrySetName :: T.Text -> T.Text
@@ -639,19 +618,19 @@ sorryTuneName n = "You don't have a connection by the name of " <> dblQuote n <>
 -----
 
 
-sorryTwoWayTargetName :: ExpCmdName -> Sing -> Either T.Text a
-sorryTwoWayTargetName cn s = Left . T.concat $ [ "In a telepathic message to "
-                                               , s
-                                               , ", the only possible target is "
-                                               , s
-                                               , ". Please try "
-                                               , quoteColor
-                                               , T.singleton expCmdChar
-                                               , cn
-                                               , " "
-                                               , T.singleton . toLower . T.head $ s
-                                               , dfltColor
-                                               , " instead." ]
+sorryTwoWayTargetName :: ExpCmdName -> Sing -> T.Text
+sorryTwoWayTargetName cn s = T.concat [ "In a telepathic message to "
+                                      , s
+                                      , ", the only possible target is "
+                                      , s
+                                      , ". Please try "
+                                      , quoteColor
+                                      , T.singleton expCmdChar
+                                      , cn
+                                      , " "
+                                      , T.singleton . toLower . T.head $ s
+                                      , dfltColor
+                                      , " instead." ]
 
 
 -----
@@ -687,15 +666,15 @@ sorryUnreadyInRm = "You can't unready items in your current room."
 -----
 
 
-sorryWrapLineLen :: MsgQueue -> Cols -> MudStack ()
-sorryWrapLineLen mq cols = wrapSend mq cols . T.concat $ [ "The line length must be between "
-                                                         , showText minCols
-                                                         , " and "
-                                                         , showText maxCols
-                                                         , " characters." ]
+sorryWrapLineLen :: T.Text
+sorryWrapLineLen = T.concat [ "The line length must be between "
+                            , showText minCols
+                            , " and "
+                            , showText maxCols
+                            , " characters." ]
 
 
-----
+-----
 
 
 sorryWtf :: T.Text

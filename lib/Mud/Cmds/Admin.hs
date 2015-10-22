@@ -165,7 +165,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
 adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
     if isTunedAdminId i ms
       then case getTunedAdminIds ms of
-        [_]      -> sorryChanNoOneListening mq cols "admin"
+        [_]      -> wrapSend mq cols . sorryChanNoOneListening $ "admin"
         tunedIds ->
           let tunedSings         = map (`getSing` ms) tunedIds
               getStyled targetId = let styleds = styleAbbrevs Don'tBracket $ getSing targetId ms `delete` tunedSings
