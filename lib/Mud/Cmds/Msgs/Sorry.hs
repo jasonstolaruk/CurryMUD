@@ -1,6 +1,124 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
-module Mud.Cmds.Msgs.Sorry where
+module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
+                            , sorryAdminName
+                            , sorryAlreadyThere
+                            , sorryAlreadyWearing
+                            , sorryAlreadyWielding
+                            , sorryAlreadyWieldingTwoHanded
+                            , sorryAlreadyWieldingTwoWpns
+                            , sorryBanAdmin
+                            , sorryBanSelf
+                            , sorryBootSelf
+                            , sorryBracketedMsg
+                            , sorryChanIncog
+                            , sorryChanMsg
+                            , sorryChanName
+                            , sorryChanNoOneListening
+                            , sorryChanTargetName
+                            , sorryChanTargetNameFromContext
+                            , sorryCon
+                            , sorryConInEq
+                            , sorryConnectIgnore
+                            , sorryDisconnectIgnore
+                            , sorryDropInEq
+                            , sorryDropInRm
+                            , sorryEmoteExcessTargets
+                            , sorryEmoteTargetCoins
+                            , sorryEmoteTargetInEq
+                            , sorryEmoteTargetInInv
+                            , sorryEmoteTargetRmOnly
+                            , sorryEmoteTargetType
+                            , sorryEquipCoins
+                            , sorryEquipInvLook
+                            , sorryExpCmdCoins
+                            , sorryExpCmdIllegalTarget
+                            , sorryExpCmdInInvEq
+                            , sorryExpCmdLen
+                            , sorryExpCmdName
+                            , sorryExpCmdRequiresTarget
+                            , sorryExpCmdTargetType
+                            , sorryGetEnc
+                            , sorryGetType
+                            , sorryHostIgnore
+                            , sorryIgnoreLocPref
+                            , sorryIgnoreLocPrefPlur
+                            , sorryIncog
+                            , sorryIndent
+                            , sorryLoggedOut
+                            , sorryMsgIncog
+                            , sorryMyChansIgnore
+                            , sorryNameTaken
+                            , sorryNewChanExisting
+                            , sorryNewChanName
+                            , sorryNoConHere
+                            , sorryNoLinks
+                            , sorryNoOneHere
+                            , sorryParseArg
+                            , sorryParseBase
+                            , sorryParseChanId
+                            , sorryParseId
+                            , sorryParseIndent
+                            , sorryParseInOut
+                            , sorryParseLineLen
+                            , sorryParseNum
+                            , sorryParseSetting
+                            , sorryPCName
+                            , sorryPCNameLoggedIn
+                            , sorryPeepAdmin
+                            , sorryPeepIgnore
+                            , sorryPeepSelf
+                            , sorryPutExcessCon
+                            , sorryPutInCoin
+                            , sorryPutInEq
+                            , sorryPutInRm
+                            , sorryPutInsideSelf
+                            , sorryQuitCan'tAbbrev
+                            , sorryReadyClothFull
+                            , sorryReadyClothFullOneSide
+                            , sorryReadyCoins
+                            , sorryReadyInEq
+                            , sorryReadyInRm
+                            , sorryReadyRol
+                            , sorryReadyType
+                            , sorryReadyWpnHands
+                            , sorryReadyWpnRol
+                            , sorryRegPlaName
+                            , sorryRemCoin
+                            , sorryRemEmpty
+                            , sorryRemExcessCon
+                            , sorryRemIgnore
+                            , sorrySayCoins
+                            , sorrySayExcessTargets
+                            , sorrySayInEq
+                            , sorrySayInInv
+                            , sorrySayNoOneHere
+                            , sorrySayTargetType
+                            , sorrySearch
+                            , sorrySetName
+                            , sorrySetRange
+                            , sorryShowExcessTargets
+                            , sorryShowInRm
+                            , sorryShowTarget
+                            , sorrySudoerDemoteRoot
+                            , sorrySudoerDemoteSelf
+                            , sorryTelePlaSelf
+                            , sorryTeleRmName
+                            , sorryTunedOutChan
+                            , sorryTunedOutICChan
+                            , sorryTunedOutOOCChan
+                            , sorryTunedOutPCSelf
+                            , sorryTunedOutPCTarget
+                            , sorryTuneName
+                            , sorryTwoWayLink
+                            , sorryTwoWayTargetName
+                            , sorryUnlinkIgnore
+                            , sorryUnlinkName
+                            , sorryUnreadyCoins
+                            , sorryUnreadyInInv
+                            , sorryUnreadyInRm
+                            , sorryWrapLineLen
+                            , sorryWtf ) where
 
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
@@ -10,6 +128,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Char (toLower)
 import Data.Monoid ((<>))
@@ -17,6 +136,13 @@ import qualified Data.Text as T
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Msgs.Sorry"
 
 
 -- ==================================================
@@ -232,6 +358,14 @@ sorryExpCmdCoins :: T.Text
 sorryExpCmdCoins = "Sorry, but expressive commands cannot be used with coins."
 
 
+sorryExpCmdInInvEq :: InInvEqRm -> T.Text
+sorryExpCmdInInvEq loc = "You can't target an item in your " <> loc' <> " with an expressive command."
+  where
+    loc' = case loc of InEq  -> "readied equipment"
+                       InInv -> "inventory"
+                       _     -> patternMatchFail "sorryExpCmdInEqInv loc'" [ showText loc ]
+
+
 sorryExpCmdLen :: T.Text
 sorryExpCmdLen = "An expressive command sequence may not be more than 2 words long."
 
@@ -250,6 +384,17 @@ sorryExpCmdRequiresTarget cn = "The " <> dblQuote cn <> " expressive command req
 
 sorryExpCmdTargetType :: T.Text
 sorryExpCmdTargetType = "Sorry, but expressive commands can only target people."
+
+
+-----
+
+
+sorryGetEnc :: T.Text
+sorryGetEnc = "You are too encumbered to pick up "
+
+
+sorryGetType :: T.Text -> T.Text
+sorryGetType t = "You can't pick up " <> t <> "."
 
 
 -----
@@ -276,122 +421,8 @@ sorryIndent = "The indent amount must be less than the line length."
 -----
 
 
-sorryNewChanExisting :: ChanName -> T.Text
-sorryNewChanExisting cn = "You are already connected to a channel named " <> dblQuote cn <> "."
-
-
-sorryNewChanName :: T.Text -> T.Text -> T.Text
-sorryNewChanName a msg = T.concat [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
-
-
------
-
-
-sorryPeepAdmin :: T.Text
-sorryPeepAdmin = "You can't peep an admin."
-
-
-sorryPeepSelf :: T.Text
-sorryPeepSelf = "You can't peep yourself."
-
-
------
-
-
-sorryPutInEq :: T.Text
-sorryPutInEq = "Sorry, but you can't put items in your readied equipment into a container. Please unready the item(s) \
-               \first."
-
-
-sorryPutInRm :: T.Text
-sorryPutInRm = "Sorry, but you can't put items in your current room into a container. Please pick up the item(s) first."
-
-
------
-
-
-sorryPutExcessCon :: T.Text
-sorryPutExcessCon = "You can only put things into one container at a time."
-
-
------
-
-
-sorryQuitCan'tAbbrev :: T.Text
-sorryQuitCan'tAbbrev = T.concat [ "The "
-                                , dblQuote "quit"
-                                , " command may not be abbreviated. Type "
-                                , dblQuote "quit"
-                                , " with no arguments to quit CurryMUD." ]
-
-
------
-
-
-sorryReadyClothFull :: T.Text -> T.Text
-sorryReadyClothFull t = "You can't wear any more " <> t <> "s."
-
-
-sorryReadyClothFullOneSide :: Cloth -> Slot -> T.Text
-sorryReadyClothFullOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more ", c, "s on your ", s, "." ]
-
-
-sorryReadyCoins :: T.Text
-sorryReadyCoins = "You can't ready coins."
-
-
-sorryReadyInEq :: T.Text
-sorryReadyInEq = "You can't ready an item that's already in your readied equipment."
-
-
-sorryReadyInRm :: T.Text
-sorryReadyInRm = "Sorry, but you can't ready items in your current room. Please pick up the item(s) first."
-
-
-sorryReadyRol :: Sing -> RightOrLeft -> T.Text
-sorryReadyRol s rol = T.concat [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
-
-
-sorryReadyType :: Sing -> T.Text
-sorryReadyType s = "You can't ready " <> aOrAn s <> "."
-
-
-sorryReadyWpnHands :: Sing -> T.Text
-sorryReadyWpnHands s = "Both hands are required to wield the " <> s <> "."
-
-
-sorryReadyWpnRol :: Sing -> T.Text
-sorryReadyWpnRol s = "You can't wield " <> aOrAn s <> " with your finger!"
-
-
------
-
-
-sorrySudoerDemoteRoot :: T.Text
-sorrySudoerDemoteRoot = "You can't demote Root."
-
-
-sorrySudoerDemoteSelf :: T.Text
-sorrySudoerDemoteSelf = "You can't demote yourself."
-
-
------
-
-
-sorryTelePlaSelf :: T.Text
-sorryTelePlaSelf = "You can't teleport to yourself."
-
-
------
-
-
-sorryTeleRmName :: T.Text -> T.Text
-sorryTeleRmName n = T.concat [ dblQuote n
-                             , " is not a valid room name. Type "
-                             , quoteColor
-                             , prefixAdminCmd "telerm"
-                             , dfltColor
-                             , " with no arguments to get a list of valid room names." ]
+sorryLoggedOut :: Sing -> T.Text
+sorryLoggedOut s = s <> " is not logged in."
 
 
 -----
@@ -419,8 +450,19 @@ sorryNameTaken = "Sorry, but that name is already taken."
 -----
 
 
-sorryNoContainersHere :: T.Text
-sorryNoContainersHere = "You don't see any containers here."
+sorryNewChanExisting :: ChanName -> T.Text
+sorryNewChanExisting cn = "You are already connected to a channel named " <> dblQuote cn <> "."
+
+
+sorryNewChanName :: T.Text -> T.Text -> T.Text
+sorryNewChanName a msg = T.concat [ dblQuote a, " is not a legal channel name ", parensQuote msg, "." ]
+
+
+-----
+
+
+sorryNoConHere :: T.Text
+sorryNoConHere = "You don't see any containers here."
 
 
 sorryNoOneHere :: T.Text
@@ -430,32 +472,8 @@ sorryNoOneHere = "You don't see anyone here."
 -----
 
 
-sorryNotLoggedIn :: Sing -> T.Text
-sorryNotLoggedIn s = s <> " is not logged in."
-
-
------
-
-
-sorryNotTunedICChan :: ChanName -> T.Text
-sorryNotTunedICChan = sorryNotTunedChan "tune" . dblQuote
-
-
-sorryNotTunedChan :: T.Text -> T.Text -> T.Text
-sorryNotTunedChan x y = T.concat [ "You have tuned out the "
-                                 , y
-                                 , " channel. Type "
-                                 , quoteColor
-                                 , x
-                                 , " "
-                                 , y
-                                 , "=in"
-                                 , dfltColor
-                                 , " to tune it back in." ]
-
-
-sorryNotTunedOOCChan :: T.Text -> T.Text
-sorryNotTunedOOCChan = sorryNotTunedChan "set"
+sorryNoLinks :: T.Text
+sorryNoLinks = "You haven't established a telepathic link with anyone."
 
 
 -----
@@ -524,15 +542,90 @@ sorryParseSetting value name = T.concat [ dblQuote value, " is not a valid value
 -----
 
 
+sorryPeepAdmin :: T.Text
+sorryPeepAdmin = "You can't peep an admin."
+
+
 sorryPeepIgnore :: T.Text
 sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
+
+
+sorryPeepSelf :: T.Text
+sorryPeepSelf = "You can't peep yourself."
 
 
 -----
 
 
+sorryPutExcessCon :: T.Text
+sorryPutExcessCon = "You can only put things into one container at a time."
+
+
 sorryPutInCoin :: T.Text
 sorryPutInCoin = "You can't put something inside a coin."
+
+
+sorryPutInEq :: T.Text
+sorryPutInEq = "Sorry, but you can't put items in your readied equipment into a container. Please unready the item(s) \
+               \first."
+
+
+sorryPutInRm :: T.Text
+sorryPutInRm = "Sorry, but you can't put items in your current room into a container. Please pick up the item(s) first."
+
+
+sorryPutInsideSelf :: Sing -> T.Text
+sorryPutInsideSelf s = "You can't put the " <> s <> " inside itself."
+
+
+-----
+
+
+sorryQuitCan'tAbbrev :: T.Text
+sorryQuitCan'tAbbrev = T.concat [ "The "
+                                , dblQuote "quit"
+                                , " command may not be abbreviated. Type "
+                                , dblQuote "quit"
+                                , " with no arguments to quit CurryMUD." ]
+
+
+-----
+
+
+sorryReadyClothFull :: T.Text -> T.Text
+sorryReadyClothFull t = "You can't wear any more " <> t <> "s."
+
+
+sorryReadyClothFullOneSide :: Cloth -> Slot -> T.Text
+sorryReadyClothFullOneSide (pp -> c) (pp -> s) = T.concat [ "You can't wear any more ", c, "s on your ", s, "." ]
+
+
+sorryReadyCoins :: T.Text
+sorryReadyCoins = "You can't ready coins."
+
+
+sorryReadyInEq :: T.Text
+sorryReadyInEq = "You can't ready an item that's already in your readied equipment."
+
+
+sorryReadyInRm :: T.Text
+sorryReadyInRm = "Sorry, but you can't ready items in your current room. Please pick up the item(s) first."
+
+
+sorryReadyRol :: Sing -> RightOrLeft -> T.Text
+sorryReadyRol s rol = T.concat [ "You can't wear ", aOrAn s, " on your ", pp rol, "." ]
+
+
+sorryReadyType :: Sing -> T.Text
+sorryReadyType s = "You can't ready " <> aOrAn s <> "."
+
+
+sorryReadyWpnHands :: Sing -> T.Text
+sorryReadyWpnHands s = "Both hands are required to wield the " <> s <> "."
+
+
+sorryReadyWpnRol :: Sing -> T.Text
+sorryReadyWpnRol s = "You can't wield " <> aOrAn s <> " with your finger!"
 
 
 -----
@@ -547,6 +640,10 @@ sorryRegPlaName n = "There is no regular player by the name of " <> dblQuote n <
 
 sorryRemCoin :: T.Text
 sorryRemCoin = "You can't remove something from a coin."
+
+
+sorryRemEmpty :: Sing -> T.Text
+sorryRemEmpty s = "The " <> s <> " is empty."
 
 
 sorryRemExcessCon :: T.Text
@@ -588,6 +685,17 @@ sorrySayTargetType s = "You can't talk to " <> aOrAn s <> "."
 -----
 
 
+sorrySearch :: T.Text
+sorrySearch = "No matches found."
+
+
+-----
+
+
+sorrySetName :: T.Text -> T.Text
+sorrySetName n = dblQuote n <> " is not a valid setting name."
+
+
 sorrySetRange :: T.Text -> Int -> Int -> T.Text
 sorrySetRange settingName minVal maxVal = T.concat [ capitalize settingName
                                                    , " must be between "
@@ -595,10 +703,6 @@ sorrySetRange settingName minVal maxVal = T.concat [ capitalize settingName
                                                    , " and "
                                                    , showText maxVal
                                                    , "." ]
-
-
-sorrySetName :: T.Text -> T.Text
-sorrySetName n = dblQuote n <> " is not a valid setting name."
 
 
 -----
@@ -619,11 +723,77 @@ sorryShowTarget t = "You can't show something to " <> aOrAn t <> "."
 -----
 
 
+sorrySudoerDemoteRoot :: T.Text
+sorrySudoerDemoteRoot = "You can't demote Root."
+
+
+sorrySudoerDemoteSelf :: T.Text
+sorrySudoerDemoteSelf = "You can't demote yourself."
+
+
+-----
+
+
+sorryTelePlaSelf :: T.Text
+sorryTelePlaSelf = "You can't teleport to yourself."
+
+
+-----
+
+
+sorryTeleRmName :: T.Text -> T.Text
+sorryTeleRmName n = T.concat [ dblQuote n
+                             , " is not a valid room name. Type "
+                             , quoteColor
+                             , prefixAdminCmd "telerm"
+                             , dfltColor
+                             , " with no arguments to get a list of valid room names." ]
+
+
+-----
+
+
 sorryTuneName :: T.Text -> T.Text
 sorryTuneName n = "You don't have a connection by the name of " <> dblQuote n <> "."
 
 
 -----
+
+
+sorryTunedOutICChan :: ChanName -> T.Text
+sorryTunedOutICChan = sorryTunedOutChan "tune" . dblQuote
+
+
+sorryTunedOutChan :: CmdName -> T.Text -> T.Text
+sorryTunedOutChan x y = T.concat [ "You have tuned out the "
+                                 , y
+                                 , " channel. Type "
+                                 , quoteColor
+                                 , x
+                                 , " "
+                                 , y
+                                 , "=in"
+                                 , dfltColor
+                                 , " to tune it back in." ]
+
+
+sorryTunedOutOOCChan :: T.Text -> T.Text
+sorryTunedOutOOCChan = sorryTunedOutChan "set"
+
+
+sorryTunedOutPCSelf :: Sing -> T.Text
+sorryTunedOutPCSelf s = "You have tuned out " <> s <> "."
+
+
+sorryTunedOutPCTarget :: Sing -> T.Text
+sorryTunedOutPCTarget s = s <> " has tuned you out."
+
+
+-----
+
+
+sorryTwoWayLink :: T.Text -> T.Text
+sorryTwoWayLink t = "You haven't established a two-way telepathic link with anyone named " <> dblQuote t <> "."
 
 
 sorryTwoWayTargetName :: ExpCmdName -> Sing -> T.Text

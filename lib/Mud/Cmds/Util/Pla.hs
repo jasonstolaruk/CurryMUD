@@ -8,19 +8,13 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , checkMutuallyTuned
                          , clothToSlot
                          , donMsgs
-                         , dudeYou'reNaked
-                         , dudeYou'reScrewed
-                         , dudeYourHandsAreEmpty
-                         , effortsBlocked
                          , fillerToSpcs
                          , findAvailSlot
-                         , focusingInnate
                          , getAllChanIdNames
                          , getChanIdNames
                          , getChanStyleds
                          , getMatchingChanWithName
                          , getRelativePCName
-                         , haven'tTwoWay
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
@@ -57,6 +51,8 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , resolveRmInvCoins
                          , theLetterS ) where
 
+import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
@@ -159,8 +155,8 @@ bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl 
 
 checkMutuallyTuned :: Id -> MudState -> Sing -> Either T.Text Id
 checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
-  (False, _,    _       ) -> Left $ "You have tuned out " <> targetSing <> "."
-  (True,  False, _      ) -> Left . effortsBlocked $ targetSing <> " has tuned you out."
+  (False, _,    _       ) -> Left . sorryTunedOutPCSelf $ targetSing
+  (True,  False, _      ) -> Left . (effortsBlockedMsg <>) . sorryTunedOutPCTarget $ targetSing
   (True,  True, targetId) -> Right targetId
   where
     areMutuallyTuned | targetId <- getIdForPCSing targetSing ms
@@ -205,29 +201,8 @@ mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
 -----
 
 
-dudeYou'reScrewed :: T.Text
-dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything readied. You're naked!"
-
-
------
-
-
-effortsBlocked :: T.Text -> T.Text
-effortsBlocked = ("Your efforts are blocked; " <>)
-
-
------
-
-
 fillerToSpcs :: T.Text -> T.Text
 fillerToSpcs = T.replace (T.singleton indentFiller) " "
-
-
------
-
-
-focusingInnate :: T.Text -> T.Text
-focusingInnate = ("Focusing your innate psionic energy for a brief moment, " <>)
 
 
 -----
@@ -292,13 +267,6 @@ getRelativePCName :: MudState -> (Id, Id) -> MudStack T.Text
 getRelativePCName ms pair@(_, y)
   | isLinked ms pair = return . getSing y $ ms
   | otherwise        = underline <$> uncurry updateRndmName pair
-
-
------
-
-
-haven'tTwoWay :: T.Text -> T.Text
-haven'tTwoWay a = "You haven't established a two-way telepathic link with anyone named " <> dblQuote a <> "."
 
 
 -----
@@ -422,13 +390,9 @@ mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
 mkCan'tGetCoinsDesc :: Id -> Coins -> [Broadcast]
 mkCan'tGetCoinsDesc i = (`mkCoinsBroadcasts` helper)
   where
-    helper a cn = let rest | a == 1    = " the " <> cn <> "."
-                           | otherwise = T.concat [ " ", showText a, " ", cn, "s." ]
-                  in mkBroadcast i $ sorryEnc <> rest
-
-
-sorryEnc :: T.Text
-sorryEnc = "You are too encumbered to pick up"
+    helper a cn = let rest | a == 1    = "the " <> cn <> "."
+                           | otherwise = T.concat [ showText a, " ", cn, "s." ]
+                  in mkBroadcast i $ sorryGetEnc <> rest
 
 
 -----
@@ -460,15 +424,15 @@ helperGetEitherInv i d fi ti a@(ms, _, _) = \case
         w' <= maxEnc ? (acc & _1 .~ w' & _2 <>~ pure targetId) :? (acc & _3 <>~ pure targetId)
     sorryPC     targetId   = sorryHelper . serialize . mkStdDesig targetId ms $ Don'tCap
     sorryMob    targetId   = sorryHelper . theOnLower . getSing targetId $ ms
-    sorryHelper targetName = ("You can't pick up " <> targetName <> ".", pure i)
+    sorryHelper targetName = (sorryGetType targetName, pure i)
 
 
 mkCan'tGetInvDesc :: Id -> MudState -> Inv -> [Broadcast]
 mkCan'tGetInvDesc i ms = concatMap helper . mkNameCountBothList i ms
   where
-    helper (_, c, b@(s, _)) = let rest | c == 1    = " the " <> s <> "."
-                                       | otherwise = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
-                              in mkBroadcast i $ sorryEnc <> rest
+    helper (_, c, b@(s, _)) = let rest | c == 1    = "the " <> s <> "."
+                                       | otherwise = T.concat [ showText c, " ", mkPlurFromBoth b, "." ]
+                              in mkBroadcast i $ sorryGetEnc <> rest
 
 
 -----
@@ -483,8 +447,7 @@ helperLinkUnlink ms i mq cols =
                              | otherwise                = acc
         twoWays = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
     in if all (()#) [ othersLinkedToMe, meLinkedToOthers ]
-      then let msg = "You haven't established a telepathic link with anyone."
-           in emptied (wrapSend mq cols msg >> logPlaOut "helperLinkUnlink" i [msg])
+      then emptied $ wrapSend mq cols sorryNoLinks >> (logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks)
       else unadulterated (meLinkedToOthers, othersLinkedToMe, twoWays)
 
 
@@ -583,15 +546,16 @@ helperPutRemEitherInv :: Id
                       -> (InvTbl, [Broadcast], [T.Text])
 helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
   Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is -> let (is', bs')      = ti `elem` is ? (filter (/= ti) is, bs ++ sorryInsideSelf) :? (is, bs)
+  Right is -> let (is', bs')      = if ti `elem` is
+                                      then (filter (/= ti) is, (bs ++) . mkBroadcast i . sorryPutInsideSelf $ ts)
+                                      else (is, bs)
                   (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' ts
-              in ()# (a^._1.ind fi) ? sorryEmpty :? (a & _1.ind fi %~  (\\ is')
-                                                       & _1.ind ti %~  (sortInv ms . (++ is'))
-                                                       & _2        .~  (bs' ++ bs'')
-                                                       & _3        <>~ logMsgs)
+              in ()# (a^._1.ind fi) ? sorry :? (a & _1.ind fi %~  (\\ is')
+                                                  & _1.ind ti %~  (sortInv ms . (++ is'))
+                                                  & _2        .~  (bs' ++ bs'')
+                                                  & _3        <>~ logMsgs)
   where
-    sorryInsideSelf = mkBroadcast i $ "You can't put the " <> ts <> " inside itself."
-    sorryEmpty      = a & _2 <>~ mkBroadcast i ("The " <> getSing fi ms <> " is empty.")
+    sorry = a & _2 <>~ (mkBroadcast i . sorryRemEmpty . getSing fi $ ms)
 
 
 mkPutRemInvDesc :: Id -> MudState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Broadcast], [T.Text])
@@ -758,10 +722,6 @@ mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, 
     footer = targetId == i |?| nl $ (showText . calcEncPer i $ ms) <> "% encumbered."
 
 
-dudeYourHandsAreEmpty :: T.Text
-dudeYourHandsAreEmpty = "You aren't carrying anything."
-
-
 mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> T.Text
 mkEntsInInvDesc i cols ms =
     T.unlines . concatMap (wrapIndent entNamePadding cols . helper) . mkStyledName_Count_BothList i ms
@@ -806,10 +766,6 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
       | descType == PCType -> parsePCDesig i ms $ d  <> " has readied the following equipment:"
       | otherwise          -> theOnLowerCap descSing <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig descId ms descSing The DoCap
-
-
-dudeYou'reNaked :: T.Text
-dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 
 -----
@@ -899,6 +855,7 @@ moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
 -----
 
 
+-- TODO: Can this function be used more?
 notFoundSuggestAsleeps :: T.Text -> [Sing] -> MudState -> T.Text
 notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
     case findFullNameForAbbrev a' asleepSings of
@@ -909,7 +866,7 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
                       , "Unfortunately, "
                       , ()# guess ? asleepTarget :? heShe
                       , " is sleeping at the moment..." ]
-      Nothing -> haven'tTwoWay a
+      Nothing -> sorryTwoWayLink a
 
 
 -----
@@ -946,9 +903,6 @@ resolveHelper :: Id
 resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms as is c
                                , eiss               <- zipWith (curry f) gecrs miss
                                , ecs                <- map g rcs = (eiss, ecs)
-
-
------
 
 
 resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])

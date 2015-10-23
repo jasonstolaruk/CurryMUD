@@ -52,6 +52,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
+-- TODO: Continue refactoring for sorry, etc. from here.
+
+
 logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.Interp.Login"
 

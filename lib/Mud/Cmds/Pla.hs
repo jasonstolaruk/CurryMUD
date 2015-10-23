@@ -136,7 +136,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     [ ("?",          plaDispCmdList,  "Display or search this command list.")
     , ("about",      about,           "About CurryMUD.")
     , ("admin",      admin,           "Display a list of administrators, or send a message to an administrator.")
-    , ("channel",    chan,            plusRelated "Send a message on a telepathic channel")
+    , ("channel",    chan,            "Send a message on a telepathic channel " <> plusRelatedMsg)
     , ("d",          go "d",          "Go down.")
     , ("e",          go "e",          "Go east.")
     , ("equipment",  equip,           "Display your readied equipment, or examine one or more items in your readied \
@@ -146,7 +146,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     , ("ne",         go "ne",         "Go northeast.")
     , ("newchannel", newChan,         "Create one or more new telepathic channels.")
     , ("nw",         go "nw",         "Go northwest.")
-    , ("question",   question,        plusRelated "Ask/answer newbie questions")
+    , ("question",   question,        "Ask/answer newbie questions " <> plusRelatedMsg)
     , ("qui",        quitCan'tAbbrev, "")
     , ("quit",       quit,            "Quit playing CurryMUD.")
     , ("remove",     remove,          "Remove one or more items from a container.")
@@ -354,14 +354,14 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                       multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : msgs
                       logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> tunedInOut isTuned'
                                                                  | (i', _, isTuned') <- combo' ]
-                  else wrapSend mq cols . sorryNotTunedICChan $ cn
+                  else wrapSend mq cols . sorryTunedOutICChan $ cn
         (cs, cns, s)           = mkChanBindings i ms
         mkTriple (s', isTuned) = (getIdForPCSing s' ms, s', isTuned)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if
-          | views chanConnTbl (not . (M.! s)) c    -> wrapSend mq cols . sorryNotTunedICChan $ cn
+          | views chanConnTbl (not . (M.! s)) c    -> wrapSend mq cols . sorryTunedOutICChan $ cn
           | isIncognitoId i ms -> wrapSend mq cols . sorryChanIncog $ "a telepathic"
           | otherwise          -> getChanStyleds i c ms >>= \triples -> if ()# triples
             then wrapSend mq cols . sorryChanNoOneListening . dblQuote $ cn
@@ -442,7 +442,7 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPC
           , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms) . getIds . M.keys . M.filter id
                          in views chanConnTbl f c
           , toTargets <- (T.concat [ getSing i ms, " has connected you to the ", dblQuote cn, " channel." ], targetIds)
-          , toSelf    <- focusingInnate $ case targetSings of
+          , toSelf    <- (focusingInnateMsg <>) $ case targetSings of
             [one] -> T.concat [ "you connect ", one, " to the ", dblQuote cn, " channel." ]
             _     -> T.concat [ "you connect the following people to the "
                               , dblQuote cn
@@ -492,7 +492,7 @@ connectHelper i (target, as) ms =
                                                  & _2 <>~ (pure . Right $ targetSing)
                                  in either oops checkChanName . checkMutuallyTuned i ms $ targetSing
                            oops msg = pair & _2 <>~ (pure . Left $ msg)
-                           blocked  = oops . effortsBlocked
+                           blocked  = oops . (effortsBlockedMsg <>)
                        in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing
                    ci                         = c^.chanId
                    dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
@@ -503,7 +503,7 @@ connectHelper i (target, as) ms =
                                               = T.toLower cn `elem` targetCns
                    (ms', res)                 = foldl' procTarget (ms, []) as'
                in (ms', (g res, Just ci))
-          else sorry . sorryNotTunedICChan $ cn
+          else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
@@ -532,7 +532,7 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
                              in views chanConnTbl f c
               , toTargets <- ( "Someone has severed your telepathic connection to the " <> dblQuote cn <> " channel."
                              , targetIds )
-              , toSelf    <- focusingInnate $ case targetNames of
+              , toSelf    <- (focusingInnateMsg <>) $ case targetNames of
                 [n] -> T.concat [ "you disconnect ", format n, " from the ", dblQuote cn, " channel." ]
                 _   -> T.concat [ "you disconnect the following people from the "
                                 , dblQuote cn
@@ -586,7 +586,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                    ci              = c^.chanId
                    ((ms', res), _) = foldl' procTarget ((ms, []), False) as'
                in (ms', (g res, Just ci))
-          else sorry . sorryNotTunedICChan $ cn
+          else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
@@ -1116,7 +1116,8 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
     mkLeaveMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkLeaveMsg ns     = T.lines . mkMsgHelper True  $ ns
     mkMsgHelper isPlur (map dblQuote -> ns) =
-        T.concat [ focusingInnate "you sever your telepathic connection"
+        T.concat [ focusingInnateMsg
+                 , "you sever your telepathic connection"
                  , theLetterS isPlur
                  , " to the "
                  , isPlur ? "following channels:\n" <> commas ns :? head ns <> " channel"
@@ -1198,8 +1199,8 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                 f g                       = ((i |&|) *** (targetId |&|)) (dup $ uncurry g . (, ms))
                 s                         = getSing i ms
                 targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
-                srcMsg    = nlnl . T.concat $ [ focusingInnate "you establish a telepathic connection from your mind \
-                                                               \to "
+                srcMsg    = nlnl . T.concat $ [ focusingInnateMsg
+                                              , "you establish a telepathic connection from your mind to "
                                               , targetSing
                                               , "'s mind."
                                               , twoWayMsg ]
@@ -1444,7 +1445,8 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
     mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkNewChanMsg ns     = T.lines . mkMsgHelper True  $ ns
     mkMsgHelper isPlur (map dblQuote -> ns) =
-        T.concat [ focusingInnate "you create a "
+        T.concat [ focusingInnateMsg
+                 , "you create a "
                  , isPlur |?| "group of "
                  , "telepathic network"
                  , theLetterS isPlur
@@ -1483,7 +1485,7 @@ putAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
           (InEq,  _       ) -> (ms, (mkBroadcast i . sorryConInEq $ Put, []))
           (InRm,  conName') -> if ()!# fst rmInvCoins
             then shufflePut i ms d conName' True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
-            else (ms, (mkBroadcast i sorryNoContainersHere, []))
+            else (ms, (mkBroadcast i sorryNoConHere, []))
         else (ms, (mkBroadcast i dudeYourHandsAreEmpty, []))
 putAction p = patternMatchFail "putAction" [ showText p ]
 
@@ -1555,7 +1557,7 @@ question (NoArgs' i mq) = getState >>= \ms ->
                descs'         = "Question channel:" : descs
            in pager i mq descs' >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
-  | not . isTunedQuestionId i $ ms -> wrapSend mq cols . sorryNotTunedOOCChan $ "question"
+  | not . isTunedQuestionId i $ ms -> wrapSend mq cols . sorryTunedOutOOCChan $ "question"
   | isIncognitoId i ms             -> wrapSend mq cols . sorryChanIncog $ "the question"
   | otherwise                      -> getQuestionStyleds i ms >>= \triples -> if ()# triples
     then wrapSend mq cols . sorryChanNoOneListening $ "question"
@@ -1938,7 +1940,7 @@ remove (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
           (InEq,  _       ) -> (ms, (mkBroadcast i . sorryConInEq $ Rem, []))
           (InRm,  conName') -> if ()!# fst rmInvCoins
             then shuffleRem i ms d conName' True argsWithoutCon rmInvCoins procGecrMisRm
-            else (ms, (mkBroadcast i sorryNoContainersHere, []))
+            else (ms, (mkBroadcast i sorryNoConHere, []))
 remove p = patternMatchFail "remove" [ showText p ]
 
 
@@ -2541,7 +2543,7 @@ unlink (LowerNub i mq cols as) =
                     procArgHelper =
                         let targetId  = getIdForPCSing targetSing ms'
                             s         = getSing i ms
-                            srcMsg    = focusingInnate "you sever your link with " <> targetSing <> "."
+                            srcMsg    = T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
                             targetMsg = T.concat [ "You suddenly feel a slight tingle "
                                                  , tingleLoc
                                                  , "; you sense that your telepathic link with "

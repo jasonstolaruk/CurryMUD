@@ -107,7 +107,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
-    , mkAdminCmd "admin"      adminAdmin       . plusRelated $ "Send a message on the admin channel"
+    , mkAdminCmd "admin"      adminAdmin       ("Send a message on the admin channel " <> plusRelatedMsg)
     , mkAdminCmd "banhost"    adminBanHost     "Dump the banned hostname database, or ban/unban a host."
     , mkAdminCmd "banplayer"  adminBanPla      "Dump the banned player database, or ban/unban a player."
     , mkAdminCmd "announce"   adminAnnounce    "Send a message to all players."
@@ -188,7 +188,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
               Right (Left ())  -> case adminChanExpCmdify i ms tunedIds tunedSings msg of
                 Left  errorMsg     -> ws errorMsg
                 Right (bs, logMsg) -> f bs logMsg
-      else wrapSend mq cols . sorryNotTunedOOCChan $ "admin"
+      else wrapSend mq cols . sorryTunedOutOOCChan $ "admin"
   where
     getTunedAdminIds ms  = [ ai | ai <- getLoggedInAdminIds ms, isTunedAdminId ai ms ]
     mkLogMsg             = dropANSI . fst . head
@@ -292,7 +292,7 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                             " "                        <>
                             parensQuote "Note that you must specify the full PC name of the player you wish to boot."
       [bootId] -> let selfSing = getSing i ms in if
-                    | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryNotLoggedIn $ strippedTarget
+                    | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryLoggedOut $ strippedTarget
                     | bootId == i -> sendFun sorryBootSelf
                     | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
                         wrapSend mq cols $ "You have booted " <> strippedTarget <> "."

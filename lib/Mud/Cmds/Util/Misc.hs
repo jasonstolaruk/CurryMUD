@@ -37,7 +37,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkThrPerPro
                           , mkWhoHeader
                           , pager
-                          , plusRelated
                           , punc
                           , questionChanContext
                           , sendGenericErrorMsg
@@ -127,7 +126,7 @@ logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
 asterisk :: T.Text
-asterisk = asteriskColor <> "*" <> dfltColor
+asterisk = quoteWith' (asteriskColor, dfltColor) "*"
 
 
 -----
@@ -169,7 +168,7 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
 dispMatches :: ActionParams -> Int -> [T.Text] -> MudStack ()
 dispMatches (LowerNub i mq cols needles) indent haystack = let (dropEmpties -> matches) = map grep needles in
     if ()# matches
-      then wrapSend mq cols "No matches found."
+      then wrapSend mq cols sorrySearch
       else pager i mq . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
   where
     grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
@@ -523,13 +522,6 @@ pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i 
       send mq . T.unlines $ page
       sendPagerPrompt mq (pl - 2) txtLen
       setInterp i . Just $ interpPager pl txtLen (page, rest)
-
-
------
-
-
-plusRelated :: T.Text -> T.Text
-plusRelated = (<> ".") . (<> parensQuote "plus related functionality") . (<> " ")
 
 
 -----

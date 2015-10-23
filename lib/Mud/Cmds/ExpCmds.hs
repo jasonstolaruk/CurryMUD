@@ -6,9 +6,9 @@ module Mud.Cmds.ExpCmds ( expCmdSet
                         , getExpCmdByName
                         , mkExpAction ) where
 
-import Mud.Cmds.Util.Misc
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -24,7 +24,6 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow (first)
 import Data.List ((\\), delete)
-import Data.Monoid ((<>))
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 
@@ -743,10 +742,10 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
               (first (i `delete`) -> invCoins) = getPCRmInvCoins i ms
           in if ()!# invCoins
             then case uncurry (resolveRmInvCoins i ms (pure target')) invCoins of
-              (_,                    [ Left  [sorryMsg] ]) -> sendHelper sorryMsg
-              (_,                    Right _:_           ) -> sendHelper sorryExpCmdCoins
-              ([ Left sorryMsg    ], _                   ) -> sendHelper sorryMsg
-              ([ Right (_:_:_)    ], _                   ) -> sendHelper adviceExpCmdExcessArgs
+              (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
+              (_,                    Right _:_           ) -> wrapSend mq cols sorryExpCmdCoins
+              ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
+              ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols adviceExpCmdExcessArgs
               ([ Right [targetId] ], _                   ) ->
                 let onPC targetDesigTxt =
                         let (toSelf', toSelfBroadcast, toOthers', substitutions) = mkBindings targetDesigTxt
@@ -777,17 +776,10 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
                 in case getType targetId ms of
                   PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
                   MobType -> onMob . theOnLower . getSing targetId $ ms
-                  _       -> sendHelper sorryExpCmdTargetType
+                  _       -> wrapSend mq cols sorryExpCmdTargetType
               x -> patternMatchFail "expCmd helper" [ showText x ]
-            else sendHelper sorryNoOneHere
-      (x, _) -> sorry x
-    sendHelper = wrapSend mq cols
-    -- TODO: Continue refactoring sorry from here.
-    sorry loc  = sendHelper $ "You can't target an item in your " <> loc' <> " with an expressive command."
-      where
-        loc' = case loc of InInv -> "inventory"
-                           InEq  -> "readied equipment"
-                           _     -> patternMatchFail "expCmd sorry loc'" [ showText loc ]
+            else wrapSend mq cols sorryNoOneHere
+      (x, _) -> wrapSend mq cols . sorryExpCmdInInvEq $ x
 expCmd _ _ p = advise p [] adviceExpCmdExcessArgs
 
 
