@@ -68,29 +68,17 @@ logPla = L.logPla "Mud.Interp.Login"
 
 interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
-  | not . inRange (minNameLen, maxNameLen) . T.length $ cn =
-      promptRetryName mq . T.concat $ [ "Your name must be between "
-                                      , minNameLenTxt
-                                      , " and "
-                                      , maxNameLenTxt
-                                      , " characters long." ]
-  | T.any (`elem` illegalChars) cn = promptRetryName mq "Your name cannot include any numbers or symbols."
+  | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq sorryInterpNameLen
+  | T.any (`elem` illegalChars) cn                         = promptRetryName mq sorryInterpNameIllegal
   | otherwise = (withDbExHandler "interpName" . isPlaBanned $ cn') >>= \case
     Nothing          -> wrapSend mq cols dbErrorMsg
     Just (Any True ) -> handleBanned
     Just (Any False) -> handleNotBanned
   where
     handleBanned = (T.pack . getCurrHostName i <$> getState) >>= \host -> do
-        sendMsgBoot mq . Just . T.concat $ [ bootMsgColor
-                                           ,  cn'
-                                           , " has been banned from CurryMUD!"
-                                           , dfltColor ]
-        let msg  = T.concat [ cn'
-                            , " has been booted at login "
-                            , parensQuote "player is banned"
-                            , "." ]
-            hint = " Consider also banning host " <> dblQuote host <> "."
-        bcastAdmins $ msg <> hint
+        sendMsgBoot mq . Just . sorryInterpNameBanned $ cn'
+        let msg  = T.concat [ cn', " has been booted at login ", parensQuote "player is banned", "." ]
+        bcastAdmins $ msg <> " Consider also banning host " <> dblQuote host <> "."
         logNotice "interpName" msg
     handleNotBanned = helper |&| modifyState >=> \case
         (_,  Left  (Just msg)) -> promptRetryName mq msg
@@ -123,18 +111,16 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
                                       (ms^.plaTbl)
             matches = filter ((== cn') . snd) . snd $ sorted
         in if cn' `elem` fst sorted
-          then (ms, (ms, Left . Just $ cn' <> " is already logged in."))
+          then (ms, (ms, Left . Just $ cn'))
           else case matches of [(pi, _)] -> logIn i ms (newPla^.currHostName) (newPla^.connectTime) pi
                                _         -> (ms, (ms, Left Nothing))
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
     greet = wrapSend mq cols . nlPrefix $ if cn' == "Root"
-      then let sudoLecture = "HELLO, ROOT! We trust you have received the usual lecture from the local System \
-                             \Administrator..."
-           in zingColor <> sudoLecture <> dfltColor
+      then quoteWith' (zingColor, dfltColor) sudoMsg
       else "Welcome back, " <> cn' <> "!"
-interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue "Your name must be a single word."
+interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue sorryInterpNameExcessArgs
 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()

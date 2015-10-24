@@ -84,6 +84,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
+-- TODO: Look for functions defined in this and other modules with names that begin with "sorry", and consider whether or not their names should be changed.
+
 {-# ANN module ("HLint: ignore Use &&"        :: String) #-}
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 {-# ANN module ("HLint: ignore Use ||"        :: String) #-}
@@ -1784,8 +1786,8 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
 sorryFullClothSlots :: MudState -> Cloth -> EqMap -> T.Text
 sorryFullClothSlots ms cloth@(pp -> cloth') em
   | cloth `elem` [ Earring .. Ring ]               = sorryReadyClothFull cloth'
-  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = sorryAlreadyWearing cloth'
-  | otherwise = let i = em M.! clothToSlot cloth in sorryAlreadyWearing . getSing i $ ms
+  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = sorryReadyAlreadyWearing cloth'
+  | otherwise = let i = em M.! clothToSlot cloth in sorryReadyAlreadyWearing . getSing i $ ms
 
 
 otherSex :: Sex -> Sex
@@ -1846,7 +1848,7 @@ readyWpn :: Id
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
-      then let b = mkBroadcast i sorryAlreadyWieldingTwoHanded in a & _3 <>~ b
+      then let b = mkBroadcast i sorryReadyAlreadyWieldingTwoHanded in a & _3 <>~ b
                else case mrol |&| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
         Left  (mkBroadcast i -> b) -> a & _3 <>~ b
         Right slot  -> case sub of
@@ -1876,7 +1878,7 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
 
 getAvailWpnSlot :: MudState -> Id -> EqMap -> Either T.Text Slot
 getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
-    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left sorryAlreadyWieldingTwoWpns) Right
+    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left sorryReadyAlreadyWieldingTwoWpns) Right
   where
     getSlotForHand h = case h of RHand -> RHandS
                                  LHand -> LHandS
@@ -1891,7 +1893,7 @@ getDesigWpnSlot ms wpnSing em rol
     desigSlot = case rol of R -> RHandS
                             L -> LHandS
                             _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
-    sorry i = sorryAlreadyWielding (getSing i ms) desigSlot
+    sorry i = sorryReadyAlreadyWielding (getSing i ms) desigSlot
 
 
 -- Readying armor:
@@ -1922,7 +1924,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorryFullArmSlot) Right
   where
-    sorryFullArmSlot | i <- em M.! slot, s <- getSing i ms = sorryAlreadyWearing s
+    sorryFullArmSlot | i <- em M.! slot, s <- getSing i ms = sorryReadyAlreadyWearing s
 
 
 -----

@@ -56,3 +56,7 @@ motdErrorMsg = "Unfortunately, the message of the day could not be retrieved."
 
 plusRelatedMsg :: T.Text
 plusRelatedMsg = parensQuote "plus related functionality" <> "."
+
+
+sudoMsg :: T.Text
+sudoMsg = "HELLO, ROOT! We trust you have received the usual lecture from the local System Administrator..."

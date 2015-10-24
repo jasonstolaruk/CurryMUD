@@ -2,11 +2,6 @@
 
 module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
                             , sorryAdminName
-                            , sorryAlreadyThere
-                            , sorryAlreadyWearing
-                            , sorryAlreadyWielding
-                            , sorryAlreadyWieldingTwoHanded
-                            , sorryAlreadyWieldingTwoWpns
                             , sorryBanAdmin
                             , sorryBanSelf
                             , sorryBootSelf
@@ -45,6 +40,11 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
                             , sorryIgnoreLocPrefPlur
                             , sorryIncog
                             , sorryIndent
+                            , sorryInterpNameAlreadyTaken
+                            , sorryInterpNameBanned
+                            , sorryInterpNameExcessArgs
+                            , sorryInterpNameIllegal
+                            , sorryInterpNameLen
                             , sorryLoggedOut
                             , sorryMsgIncog
                             , sorryMyChansIgnore
@@ -74,6 +74,10 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
                             , sorryPutInRm
                             , sorryPutInsideSelf
                             , sorryQuitCan'tAbbrev
+                            , sorryReadyAlreadyWearing
+                            , sorryReadyAlreadyWielding
+                            , sorryReadyAlreadyWieldingTwoHanded
+                            , sorryReadyAlreadyWieldingTwoWpns
                             , sorryReadyClothFull
                             , sorryReadyClothFullOneSide
                             , sorryReadyCoins
@@ -102,6 +106,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
                             , sorryShowTarget
                             , sorrySudoerDemoteRoot
                             , sorrySudoerDemoteSelf
+                            , sorryTeleAlreadyThere
                             , sorryTelePlaSelf
                             , sorryTeleRmName
                             , sorryTunedOutChan
@@ -170,29 +175,6 @@ sorryAdminChanTargetName = sorryChanTargetName "admin"
 
 sorryAdminName :: T.Text -> T.Text
 sorryAdminName n = "There is no administrator by the name of " <> dblQuote n <> "."
-
-
------
-
-
-sorryAlreadyThere :: T.Text
-sorryAlreadyThere = "You're already there!"
-
-
-sorryAlreadyWearing :: T.Text -> T.Text
-sorryAlreadyWearing t = "You're already wearing " <> aOrAn t <> "."
-
-
-sorryAlreadyWielding :: Sing -> Slot -> T.Text
-sorryAlreadyWielding s sl = T.concat [ "You're already wielding ", aOrAn s, " with your ", pp sl, "." ]
-
-
-sorryAlreadyWieldingTwoHanded :: T.Text
-sorryAlreadyWieldingTwoHanded = "You're already wielding a two-handed weapon."
-
-
-sorryAlreadyWieldingTwoWpns :: T.Text
-sorryAlreadyWieldingTwoWpns = "You're already wielding two weapons."
 
 
 -----
@@ -421,6 +403,36 @@ sorryIndent = "The indent amount must be less than the line length."
 -----
 
 
+sorryInterpNameAlreadyTaken :: Sing -> T.Text
+sorryInterpNameAlreadyTaken s = dblQuote s <> " is already logged in."
+
+
+sorryInterpNameBanned :: Sing -> T.Text
+sorryInterpNameBanned s = T.concat [ bootMsgColor
+                                   , s
+                                   , " has been banned from CurryMUD!"
+                                   , dfltColor ]
+
+
+sorryInterpNameExcessArgs :: T.Text
+sorryInterpNameExcessArgs = "Your name must be a single word."
+
+
+sorryInterpNameIllegal :: T.Text
+sorryInterpNameIllegal = "Your name cannot include any numbers or symbols."
+
+
+sorryInterpNameLen :: T.Text
+sorryInterpNameLen = T.concat [ "Your name must be between "
+                              , minNameLenTxt
+                              , " and "
+                              , maxNameLenTxt
+                              , " characters long." ]
+
+
+-----
+
+
 sorryLoggedOut :: Sing -> T.Text
 sorryLoggedOut s = s <> " is not logged in."
 
@@ -592,6 +604,22 @@ sorryQuitCan'tAbbrev = T.concat [ "The "
 -----
 
 
+sorryReadyAlreadyWearing :: T.Text -> T.Text
+sorryReadyAlreadyWearing t = "You're already wearing " <> aOrAn t <> "."
+
+
+sorryReadyAlreadyWielding :: Sing -> Slot -> T.Text
+sorryReadyAlreadyWielding s sl = T.concat [ "You're already wielding ", aOrAn s, " with your ", pp sl, "." ]
+
+
+sorryReadyAlreadyWieldingTwoHanded :: T.Text
+sorryReadyAlreadyWieldingTwoHanded = "You're already wielding a two-handed weapon."
+
+
+sorryReadyAlreadyWieldingTwoWpns :: T.Text
+sorryReadyAlreadyWieldingTwoWpns = "You're already wielding two weapons."
+
+
 sorryReadyClothFull :: T.Text -> T.Text
 sorryReadyClothFull t = "You can't wear any more " <> t <> "s."
 
@@ -734,11 +762,12 @@ sorrySudoerDemoteSelf = "You can't demote yourself."
 -----
 
 
+sorryTeleAlreadyThere :: T.Text
+sorryTeleAlreadyThere = "You're already there!"
+
+
 sorryTelePlaSelf :: T.Text
 sorryTelePlaSelf = "You can't teleport to yourself."
-
-
------
 
 
 sorryTeleRmName :: T.Text -> T.Text

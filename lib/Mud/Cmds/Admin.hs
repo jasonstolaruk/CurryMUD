@@ -707,7 +707,7 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
             originId            = getRmId i ms
             found (flip getRmId ms -> destId, targetSing)
               | targetSing == getSing i ms = (ms, [ sendFun sorryTelePlaSelf  ])
-              | destId     == originId     = (ms, [ sendFun sorryAlreadyThere ])
+              | destId     == originId     = (ms, [ sendFun sorryTeleAlreadyThere ])
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
             notFound     = (ms, pure sorryInvalid)
             sorryInvalid = sendFun . sorryPCNameLoggedIn $ strippedTarget
@@ -759,7 +759,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the room to which you want to teleport"
             originId            = getRmId i ms
             found (destId, rmTeleName)
-              | destId == originId = (ms, [ sendFun sorryAlreadyThere ])
+              | destId == originId = (ms, [ sendFun sorryTeleAlreadyThere ])
               | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName consSorryBroadcast
             notFound               = (ms, pure . sendFun . sorryTeleRmName $ strippedTarget')
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found

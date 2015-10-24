@@ -33,6 +33,7 @@ library
                        Mud.Cmds.Debug,
                        Mud.Cmds.ExpCmds,
                        Mud.Cmds.Msgs.Advice,
+                       Mud.Cmds.Msgs.Hint
                        Mud.Cmds.Msgs.Misc,
                        Mud.Cmds.Msgs.Sorry,
                        Mud.Cmds.Pla,
