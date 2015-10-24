@@ -2,6 +2,7 @@
 
 module Mud.Misc.Persist (persist) where
 
+import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
@@ -89,5 +90,5 @@ persistHelper l ms = withLock l $ do
 
 persistExHandler :: SomeException -> MudStack ()
 persistExHandler e = do
-    logExMsg "persistExHandler" "exception caught while persisting the world; rethrowing to listen thread" e
+    logExMsg "persistExHandler" (rethrowExMsg "while persisting the world") e
     throwToListenThread e

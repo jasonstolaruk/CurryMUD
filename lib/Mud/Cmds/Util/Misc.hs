@@ -133,10 +133,8 @@ asterisk = quoteWith' (asteriskColor, dfltColor) "*"
 
 
 dbExHandler :: T.Text -> SomeException -> MudStack ()
-dbExHandler fn e = let msg = T.concat [ "exception caught during a database operation in "
-                                      , dblQuote fn
-                                      , "; rethrowing to listen thread" ]
-                   in logExMsg "dbExHandler" msg e >> throwToListenThread e
+dbExHandler fn e =
+    logExMsg "dbExHandler" (rethrowExMsg $ "during a database operation in " <> dblQuote fn) e >> throwToListenThread e
 
 
 -----

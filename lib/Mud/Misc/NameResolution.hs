@@ -118,8 +118,8 @@ pruneDupIds = dropJustNulls . pruneThem []
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
 reconcileCoins (Coins (cop, sil, gol)) enscs = guard (()!# enscs) Prelude.>> concatMap helper enscs
   where
-    helper Empty                                        = [ Left Empty        ]
-    helper (NoneOf c)                                   = [ Left . NoneOf $ c ]
+    helper Empty                                        = pure . Left $ Empty
+    helper (NoneOf c)                                   = pure . Left . NoneOf $ c
     helper (SomeOf (Coins (someCop, someSil, someGol))) = concat [ [ mkEitherCop | someCop /= 0 ]
                                                                  , [ mkEitherSil | someSil /= 0 ]
                                                                  , [ mkEitherGol | someGol /= 0 ] ]
@@ -141,7 +141,7 @@ distillEnscs enscs | Empty `elem` enscs               = pure Empty
     isSomeOf _          = False
     isNoneOf (NoneOf _) = True
     isNoneOf _          = False
-    distill  f enscs'   = guard (()!# enscs') Prelude.>> [ f . foldr ((<>) . fromEnsCoins) mempty $ enscs' ]
+    distill  f enscs'   = guard (()!# enscs') Prelude.>> (pure . f . foldr ((<>) . fromEnsCoins) mempty $ enscs')
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
@@ -313,11 +313,7 @@ sorryBadSlot n
   | T.singleton slotChar `T.isInfixOf` n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") (nlPrefix ringHelp)
   | otherwise                            = sformat (do { "You don't have "; "." }) . aOrAn $ n
   where
-    m = do
-        "Please specify "
-        " or "
-        "."
-        ""
+    m = do { "Please specify "; " or "; "."; "" }
 
 
 mkSlotTxt :: T.Text -> T.Text
@@ -398,28 +394,19 @@ procGecrMisCon cn gecrMis = patternMatchFail "procGecrMisCon" [ cn, showText gec
 doesn'tContain :: T.Text -> T.Text -> Either T.Text Inv
 doesn'tContain cn = Left . sformat m cn
   where
-    m = do
-        "The "
-        " doesn't contain "
-        "."
+    m = do { "The "; " doesn't contain "; "." }
 
 
 doesn'tContainAny :: T.Text -> T.Text -> Either T.Text Inv
 doesn'tContainAny cn = Left . sformat m cn
   where
-    m = do
-        "The "
-        " doesn't contain any "
-        "s."
+    m = do { "The "; " doesn't contain any "; "s." }
 
 
 doesn'tContainIndexed :: T.Text -> Int -> T.Text -> Either T.Text Inv
 doesn'tContainIndexed cn x = Left . sformat m cn x
   where
-    m = do
-        "The "
-        " doesn't contain " % int % " "
-        "."
+    m = do { "The "; " doesn't contain " % int % " "; "." }
 
 
 -- ==================================================
@@ -427,7 +414,7 @@ doesn'tContainIndexed cn x = Left . sformat m cn x
 
 
 procReconciledCoinsPCInv :: ReconciledCoins -> Either [T.Text] Coins
-procReconciledCoinsPCInv (Left  Empty)                            = Left ["You don't have any coins."]
+procReconciledCoinsPCInv (Left  Empty)                            = Left . pure $ "You don't have any coins."
 procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
     c = msgOnNonzero cop "You don't have any copper pieces."
@@ -453,7 +440,7 @@ msgOnNonzero x msg = guard (x /= 0) Prelude.>> return msg
 
 
 procReconciledCoinsRm :: ReconciledCoins -> Either [T.Text] Coins
-procReconciledCoinsRm (Left  Empty)                            = Left ["You don't see any coins here."]
+procReconciledCoinsRm (Left  Empty)                            = Left . pure $ "You don't see any coins here."
 procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
     c = msgOnNonzero cop "You don't see any copper pieces here."

@@ -14,6 +14,10 @@ import qualified Data.Text as T
 -- ==================================================
 
 
+bannedMsg :: T.Text
+bannedMsg = "You have been banned from CurryMUD!"
+
+
 dudeYou'reNaked :: T.Text
 dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
@@ -50,6 +54,14 @@ genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
 
+inacBootMsg :: T.Text
+inacBootMsg = "You are being disconnected from CurryMUD due to inactivity."
+
+
+loadWorldErrorMsg :: T.Text
+loadWorldErrorMsg = "Oops! There was an error loading the world. Check the error log for details."
+
+
 motdErrorMsg :: T.Text
 motdErrorMsg = "Unfortunately, the message of the day could not be retrieved."
 
@@ -60,6 +72,10 @@ notifyArrivalMsg n = n <> " slowly materializes out of thin air."
 
 plusRelatedMsg :: T.Text
 plusRelatedMsg = parensQuote "plus related functionality" <> "."
+
+
+rethrowExMsg :: T.Text -> T.Text
+rethrowExMsg t = "exception caught " <> t <> "; rethrowing to listen thread"
 
 
 sudoMsg :: T.Text

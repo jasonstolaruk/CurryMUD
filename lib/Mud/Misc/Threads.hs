@@ -5,6 +5,7 @@ module Mud.Misc.Threads ( getUnusedId
                         , listenWrapper ) where
 
 import Mud.Cmds.Debug
+import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
@@ -137,7 +138,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
           Just (Any False) -> setTalkAsync =<< onEnv (liftIO . async . runReaderT (talk h host))
           _                -> do
-              liftIO . T.hPutStr h . nlnl $ "You have been banned from CurryMUD!"
+              liftIO . T.hPutStr h . nlnl $ bannedMsg
               liftIO . hClose $ h
               let msg = T.concat [ "Connection from "
                                  , dblQuote host'
@@ -152,7 +153,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         mapM_ (liftIO . throwWait) auxAsyncs
         onEnv $ liftIO . atomically . void . takeTMVar . view (locks.persistLock)
     throwWait a = throwTo (asyncThreadId a) PlsDie >> (void . wait $ a)
-    halt        = liftIO . T.putStrLn $ "Oops! There was an error loading the world. Check the error log for details."
+    halt        = liftIO . T.putStrLn $ loadWorldErrorMsg
 
 
 listenExHandler :: SomeException -> MudStack ()
@@ -201,25 +202,23 @@ dbTblPurger tblName countFun purgeFun = handle (threadExHandler "dbTblPurger") $
   where
     helper = let fn = "dbTblPurger helper" in withDbExHandler fn countFun >>= \case
         Just [Only count] -> if count > maxDbTblRecs
-          then do
-              withDbExHandler_ fn purgeFun
-              logNotice fn . T.concat $ [ "the "
-                                        , tblName
-                                        , " table has been purged of "
-                                        , showText noOfDbTblRecsToPurge
-                                        , " records." ]
-          else logNotice fn . T.concat $ [ "the "
-                                         , tblName
-                                         , " table presently contains "
-                                         , showText count
-                                         , " records." ]
+                               then do
+                                   withDbExHandler_ fn purgeFun
+                                   logNotice fn . T.concat $ [ "the "
+                                                             , tblName
+                                                             , " table has been purged of "
+                                                             , showText noOfDbTblRecsToPurge
+                                                             , " records." ]
+                               else logNotice fn . T.concat $ [ "the "
+                                                               , tblName
+                                                               , " table presently contains "
+                                                               , showText count
+                                                               , " records." ]
         _ -> unit
 
 
 threadExHandler :: T.Text -> SomeException -> MudStack ()
-threadExHandler threadName e = do
-    logExMsg "threadExHandler" ("exception caught on " <> threadName <> " thread; rethrowing to listen thread") e
-    throwToListenThread e
+threadExHandler threadName e = logExMsg "threadExHandler" ("on " <> threadName <> " thread") e >> throwToListenThread e
 
 
 die :: T.Text -> PlsDie -> MudStack ()
@@ -433,9 +432,7 @@ handleFromServer i h msg = getState >>= \ms -> let peeps = getPeepers i ms in
 
 
 sendInacBootMsg :: Handle -> MudStack ()
-sendInacBootMsg h = liftIO . T.hPutStrLn h . nl $ bootMsg
-  where
-    bootMsg = bootMsgColor <> "You are being disconnected from CurryMUD due to inactivity." <> dfltColor
+sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . quoteWith' (bootMsgColor, dfltColor) $ inacBootMsg
 
 
 stopInacThread :: InacTimerQueue -> MudStack ()
