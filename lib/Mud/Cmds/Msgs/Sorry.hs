@@ -40,15 +40,20 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
                             , sorryIgnoreLocPrefPlur
                             , sorryIncog
                             , sorryIndent
-                            , sorryInterpNameAlreadyTaken
                             , sorryInterpNameBanned
+                            , sorryInterpNameDict
                             , sorryInterpNameExcessArgs
                             , sorryInterpNameIllegal
                             , sorryInterpNameLen
+                            , sorryInterpNameLoggedIn
+                            , sorryInterpNameProfanityBoot
+                            , sorryInterpNameProfanityLogged
+                            , sorryInterpNamePropName
+                            , sorryInterpNameTaken
+                            , sorryInterpPager
                             , sorryLoggedOut
                             , sorryMsgIncog
                             , sorryMyChansIgnore
-                            , sorryNameTaken
                             , sorryNewChanExisting
                             , sorryNewChanName
                             , sorryNoConHere
@@ -403,15 +408,15 @@ sorryIndent = "The indent amount must be less than the line length."
 -----
 
 
-sorryInterpNameAlreadyTaken :: Sing -> T.Text
-sorryInterpNameAlreadyTaken s = dblQuote s <> " is already logged in."
-
-
 sorryInterpNameBanned :: Sing -> T.Text
 sorryInterpNameBanned s = T.concat [ bootMsgColor
                                    , s
                                    , " has been banned from CurryMUD!"
                                    , dfltColor ]
+
+
+sorryInterpNameDict :: T.Text
+sorryInterpNameDict = "Your name cannot be an English word. Please choose an original fantasy name."
 
 
 sorryInterpNameExcessArgs :: T.Text
@@ -428,6 +433,39 @@ sorryInterpNameLen = T.concat [ "Your name must be between "
                               , " and "
                               , maxNameLenTxt
                               , " characters long." ]
+
+
+sorryInterpNameLoggedIn :: Sing -> T.Text
+sorryInterpNameLoggedIn s = s <> " is already logged in."
+
+
+sorryInterpNameProfanityLogged :: T.Text
+sorryInterpNameProfanityLogged = "Nice try. Your IP address has been logged. Keep this up and you'll get banned."
+
+
+sorryInterpNameProfanityBoot :: T.Text
+sorryInterpNameProfanityBoot = "Come back when you're ready to act like an adult!"
+
+
+sorryInterpNamePropName :: T.Text
+sorryInterpNamePropName = "Your name cannot be a real-world proper name. Please choose an original fantasy name."
+
+
+sorryInterpNameTaken :: T.Text
+sorryInterpNameTaken = "Sorry, but that name is already taken."
+
+
+-----
+
+
+sorryInterpPager :: T.Text
+sorryInterpPager = T.concat [ "Enter a blank line or "
+                            , dblQuote "n"
+                            , " for the next page, "
+                            , dblQuote "b"
+                            , " for the previous page, or "
+                            , dblQuote "q"
+                            , " to stop reading." ]
 
 
 -----
@@ -450,13 +488,6 @@ sorryMsgIncog = "You can't send a message to a player who is logged in while you
 sorryMyChansIgnore :: T.Text
 sorryMyChansIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose channel information you would like to \
                                             \see"
-
-
------
-
-
-sorryNameTaken :: T.Text
-sorryNameTaken = "Sorry, but that name is already taken."
 
 
 -----

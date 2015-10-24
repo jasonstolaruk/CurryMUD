@@ -54,6 +54,10 @@ motdErrorMsg :: T.Text
 motdErrorMsg = "Unfortunately, the message of the day could not be retrieved."
 
 
+notifyArrivalMsg :: T.Text -> T.Text
+notifyArrivalMsg n = n <> " slowly materializes out of thin air."
+
+
 plusRelatedMsg :: T.Text
 plusRelatedMsg = parensQuote "plus related functionality" <> "."
 

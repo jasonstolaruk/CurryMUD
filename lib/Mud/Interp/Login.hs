@@ -52,9 +52,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
--- TODO: Continue refactoring for sorry, etc. from here.
-
-
 logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.Interp.Login"
 
@@ -105,8 +102,8 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
     helper ms    =
         let newPla  = getPla i ms
             sorted  = IM.foldrWithKey (\pi pla acc -> acc & if isLoggedIn pla
-                                        then _1 %~ (     getSing pi ms  :)
-                                        else _2 %~ ((pi, getSing pi ms) :))
+                                                              then _1 %~ (     getSing pi ms  :)
+                                                              else _2 %~ ((pi, getSing pi ms) :))
                                       ([], [])
                                       (ms^.plaTbl)
             matches = filter ((== cn') . snd) . snd $ sorted
@@ -124,9 +121,8 @@ interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue sorryI
 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
-promptRetryName mq msg = do
-    send mq . nlPrefix $ msg |!| nl msg
-    prompt mq "Let's try this again. By what name are you known?"
+promptRetryName mq msg =
+    (send mq . nlPrefix $ msg |!| nl msg) >> prompt mq "Let's try this again. By what name are you known?"
 
 
 logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudState, Either (Maybe T.Text) (Id, Sing)))
@@ -171,10 +167,8 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
             hn = T.pack . getCurrHostName i $ ms
-        send mq . nlPrefix . nl $ bootMsgColor                                                                     <>
-                                  "Nice try. Your IP address has been logged. Keep this up and you'll get banned." <>
-                                  dfltColor
-        sendMsgBoot mq . Just $ "Come back when you're ready to act like an adult!"
+        send mq . nlPrefix . nl . quoteWith' (bootMsgColor, dfltColor) $ sorryInterpNameProfanityLogged
+        sendMsgBoot mq . Just $ sorryInterpNameProfanityBoot
         ts <- liftIO mkTimestamp
         let prof = ProfRec ts hn cn
         withDbExHandler_ "checkProfanitiesDict sorry" . insertDbTblProf $ prof
@@ -195,7 +189,7 @@ checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (retu
 
 
 checkIllegalNames :: MudState -> MsgQueue -> CmdName -> MudStack Any
-checkIllegalNames ms mq cn = checkSet cn (promptRetryName mq sorryNameTaken) . insertEntNames $ insertRaceNames
+checkIllegalNames ms mq cn = checkSet cn (promptRetryName mq sorryInterpNameTaken) . insertEntNames $ insertRaceNames
   where
     insertRaceNames = foldr helper S.empty (allValues :: [Race])
       where
@@ -207,19 +201,16 @@ checkIllegalNames ms mq cn = checkSet cn (promptRetryName mq sorryNameTaken) . i
 
 
 checkPropNamesDict :: MsgQueue -> CmdName -> MudStack Any
-checkPropNamesDict mq = checkNameHelper propNamesFile "checkPropNamesDict" sorry
-  where
-    sorry = promptRetryName mq "Your name cannot be a real-world proper name. Please choose an original fantasy name."
+checkPropNamesDict mq =
+    checkNameHelper propNamesFile "checkPropNamesDict" . promptRetryName mq $ sorryInterpNamePropName
 
 
 checkWordsDict :: MsgQueue -> CmdName -> MudStack Any
-checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" sorry
-  where
-    sorry = promptRetryName mq "Your name cannot be an English word. Please choose an original fantasy name."
+checkWordsDict mq = checkNameHelper wordsFile "checkWordsDict" . promptRetryName mq $ sorryInterpNameDict
 
 
 checkRndmNames :: MsgQueue -> CmdName -> MudStack Any
-checkRndmNames mq = checkNameHelper (Just rndmNamesFile) "checkRndmNames" . promptRetryName mq $ sorryNameTaken
+checkRndmNames mq = checkNameHelper (Just rndmNamesFile) "checkRndmNames" . promptRetryName mq $ sorryInterpNameTaken
 
 
 interpConfirmName :: Sing -> Interp
@@ -285,7 +276,7 @@ handleLogin params@(ActionParams { .. }) = do
                                                                _   -> "s"
                             msg = "You missed the following " <> m <> " while you were away:"
                         in multiWrapSend plaMsgQueue plaCols . (msg :)
-            logPla "handleLogin showRetainedMsgs" plaId "Showed retained messages."
+            logPla "handleLogin showRetainedMsgs" plaId "showed retained messages."
         return (ms, p)
     helper ms = let p   = getPla plaId ms
                     p'  = p  & retainedMsgs     .~ []
@@ -293,8 +284,7 @@ handleLogin params@(ActionParams { .. }) = do
                 in (ms', (ms', p^.retainedMsgs, p'))
     notifyArrival ms s = do
         bcastOtherAdmins plaId $ s <> " has logged in."
-        bcastOthersInRm  plaId . nlnl $ mkSerializedNonStdDesig plaId ms s A DoCap <> " slowly materializes out of \
-                                                                                      \thin air."
+        bcastOthersInRm  plaId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig plaId ms s A $ DoCap
     stopInacTimer i mq = do
         liftIO . atomically . writeTQueue mq $ InacStop
         logPla "handleLogin stopInacTimer" i "stopping the inactivity timer."

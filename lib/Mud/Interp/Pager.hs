@@ -4,6 +4,7 @@
 module Mud.Interp.Pager ( interpPager
                         , sendPagerPrompt ) where
 
+import Mud.Cmds.Msgs.Sorry
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
@@ -13,7 +14,6 @@ import Mud.Data.State.Util.Set
 import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Util.Misc
-import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 
@@ -72,12 +72,4 @@ sendPagerPrompt mq pageLen txtLen =
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()
-promptRetry mq cols = send mq . wrapUnlines cols $ p
-  where
-    p = T.concat [ "Enter a blank line or "
-                 , dblQuote "n"
-                 , " for the next page, "
-                 , dblQuote "b"
-                 , " for the previous page, or "
-                 , dblQuote "q"
-                 , " to stop reading." ]
+promptRetry mq cols = send mq . wrapUnlines cols $ sorryInterpPager
