@@ -9,13 +9,14 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , showMotd ) where
 
 import Mud.Cmds.ExpCmds
+import Mud.Cmds.Msgs.Advice
+import Mud.Cmds.Msgs.Hint
+import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.EmoteExp.EmoteExp
 import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Msgs.Advice
-import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -581,10 +582,8 @@ disconnectHelper i (target, as) idNamesTbl ms =
                           , b )
                      xs -> patternMatchFail "disconnectHelper" [ showText xs ]
                      where
-                       hint x | b         = x
-                              | otherwise = x <> " " <> hintMsg
-                       hintMsg = parensQuote "Note that you must specify the full name of the person you would like to \
-                                             \disconnect."
+                       hint | b         = id
+                            | otherwise = (<> hintDisconnect) . (<> " ")
                    ci              = c^.chanId
                    ((ms', res), _) = foldl' procTarget ((ms, []), False) as'
                in (ms', (g res, Just ci))
@@ -759,29 +758,15 @@ mkExpCmdListTxt =
 
 getAction :: Action
 getAction p@AdviseNoArgs = advise p ["get"] adviceGetNoArgs
-getAction (Lower _ mq cols as) | length as >= 3, (head . tail .reverse $ as) == "from" =
-    wrapSend mq cols . T.concat $ [ hintANSI
-                                  , "Hint:"
-                                  , noHintANSI
-                                  , " it appears that you want to remove an object from a container. In that case, \
-                                    \please use the "
-                                  , dblQuote "remove"
-                                  , " command. For example, to remove a ring from your sack, type "
-                                  , quoteColor
-                                  , "remove ring sack"
-                                  , dfltColor
-                                  , "." ]
+getAction (Lower _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
 getAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "get" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv = inInvs |!| mkBroadcast i   "You can't get an item that's already in your inventory. If you're \
-                                                    \intent on picking it up, try dropping it first!"
-            sorryInEq  = inEqs  |!| mkBroadcast i $ "Sorry, but you can't get an item in your readied equipment. If \
-                                                    \you want to move a readied item to your inventory, use the " <>
-                                                    dblQuote "unready"                                            <>
-                                                    " command."
+
+            sorryInInv = inInvs |!| mkBroadcast i sorryGetInInv
+            sorryInEq  = inEqs  |!| mkBroadcast i sorryGetInEq
             ri                    = getRmId i ms
             invCoins              = first (i `delete`) . getNonIncogInvCoins ri $ ms
             d                     = mkStdDesig i ms DoCap
@@ -1344,32 +1329,9 @@ mkIsPC_StyledName_Count_BothList i ms targetIds =
 
 
 firstLook :: Id -> Cols -> (PlaTbl, T.Text) -> (PlaTbl, T.Text)
-firstLook i cols a@(pt, _) = if pt^.ind i.to isNotFirstLook
-  then a
-  else let msg = T.concat [ hintANSI
-                          , "Hint:"
-                          , noHintANSI
-                          , " use the "
-                          , dblQuote "look"
-                          , " command to examine one or more items in your current room. To examine items in your \
-                            \inventory, use the "
-                          , dblQuote "inventory"
-                          , " command "
-                          , parensQuote $ "for example: " <> quoteWith' (quoteColor, dfltColor) "inventory bread"
-                          , ". To examine items in your readied equipment, use the "
-                          , dblQuote "equipment"
-                          , " command "
-                          , parensQuote $ "for example: " <> quoteWith' (quoteColor, dfltColor) "equipment sword"
-                          , ". "
-                          , quoteColor
-                          , "inventory"
-                          , dfltColor
-                          , " and "
-                          , quoteColor
-                          , "equipment"
-                          , dfltColor
-                          , " alone will list the items in your inventory and readied equipment, respectively." ]
-       in a & _1.ind i %~ setPlaFlag IsNotFirstLook True & _2 <>~ wrapUnlinesNl cols msg
+firstLook i cols a@(pt, _)
+  | pt^.ind i.to isNotFirstLook = a
+  | otherwise = a & _1.ind i %~ setPlaFlag IsNotFirstLook True & _2 <>~ wrapUnlinesNl cols hintLook
 
 
 isKnownPCSing :: Sing -> Bool
@@ -2073,19 +2035,8 @@ say p = patternMatchFail "say" [ showText p ]
 
 
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, T.Text)
-firstMobSay i pt = if pt^.ind i.to isNotFirstMobSay
-  then (pt, "")
-  else let msg = T.concat [ hintANSI
-                          , "Hint:"
-                          , noHintANSI
-                          , " to communicate with non-player characters, use the "
-                          , dblQuote "ask"
-                          , " command. For example, to ask a city guard about crime, type "
-                          , quoteColor
-                          , "ask guard crime"
-                          , dfltColor
-                          , "." ]
-       in (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlnlPrefix msg)
+firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, "")
+                 | otherwise = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlnlPrefix hintSay)
 
 
 -----

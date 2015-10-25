@@ -3,15 +3,16 @@
 module Mud.Cmds.Admin (adminCmds) where
 
 import Mud.Cmds.ExpCmds
+import Mud.Cmds.Msgs.Advice
+import Mud.Cmds.Msgs.Hint
+import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Cmds.Util.EmoteExp.EmoteExp
 import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Msgs.Advice
-import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -508,24 +509,8 @@ adminMsg p = patternMatchFail "adminMsg" [ showText p ]
 
 
 firstAdminMsg :: Id -> Sing -> MudStack [T.Text]
-firstAdminMsg i adminSing = modifyState $ (, msg) . (plaTbl.ind i %~ setPlaFlag IsNotFirstAdminMsg True)
-  where
-    msg = [ "", T.concat [ hintANSI
-                         , "Hint:"
-                         , noHintANSI
-                         , " the above is a message from "
-                         , adminSing
-                         , ", a CurryMUD administrator. To reply, type "
-                         , quoteColor
-                         , "admin "
-                         , uncapitalize adminSing
-                         , " msg"
-                         , dfltColor
-                         , ", where "
-                         , dblQuote "msg"
-                         , " is the message you want to send to "
-                         , adminSing
-                         , "." ] ]
+firstAdminMsg i adminSing =
+    modifyState $ (, [ "", hintAMsg adminSing ]) . (plaTbl.ind i %~ setPlaFlag IsNotFirstAdminMsg True)
 
 
 -----

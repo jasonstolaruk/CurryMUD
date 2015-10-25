@@ -34,6 +34,8 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
                             , sorryExpCmdRequiresTarget
                             , sorryExpCmdTargetType
                             , sorryGetEnc
+                            , sorryGetInEq
+                            , sorryGetInInv
                             , sorryGetType
                             , sorryHostIgnore
                             , sorryIgnoreLocPref
@@ -378,6 +380,18 @@ sorryExpCmdTargetType = "Sorry, but expressive commands can only target people."
 
 sorryGetEnc :: T.Text
 sorryGetEnc = "You are too encumbered to pick up "
+
+
+sorryGetInEq :: T.Text
+sorryGetInEq = "Sorry, but you can't get an item in your readied equipment. If you want to move a readied item to your \
+               \inventory, use the " <>
+               dblQuote "unready"    <>
+               " command."
+
+
+sorryGetInInv :: T.Text
+sorryGetInInv = "You can't get an item that's already in your inventory. If you're intent on picking it up, try \
+                \dropping it first!"
 
 
 sorryGetType :: T.Text -> T.Text
