@@ -383,10 +383,9 @@ numTxt `inBase` base = readInt base (isValidDigit base) letterToNum . T.unpack $
 
 
 isValidDigit :: Base -> Char -> Bool
-isValidDigit base (toLower -> c) | isDigit c                    = digitToInt c < base
-                                 | not . inRange ('a', 'z') $ c = False
-                                 | otherwise                    = let val = fromJust . lookup c . zip ['a'..] $ [11..]
-                                                                  in val <= base
+isValidDigit base (toLower -> c) | isDigit c                                         = digitToInt c < base
+                                 | not . inRange ('a', 'z') $ c                      = False
+                                 | val <- fromJust . lookup c . zip ['a'..] $ [11..] = val <= base
 
 
 letterToNum :: Char -> Int

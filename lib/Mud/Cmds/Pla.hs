@@ -251,7 +251,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the administrator you wish to message"
             s                   = getSing i ms
             notFound            = emptied . sendFun . sorryAdminName $ strippedTarget
-            found      (adminId, _        ) | adminId == i = emptied . sendFun $ "You talk to yourself."
+            found      (adminId, _        ) | adminId == i = emptied . sendFun $ sorryAdminChanSelf
             found pair@(adminId, adminSing) = case emotifyTwoWay "admin" i ms adminId msg of
               Left  errorMsgs  -> emptied . multiSendFun $ errorMsgs
               Right (Right bs) -> ioHelper pair bs
@@ -296,21 +296,17 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
             singSuffixes = [ (s, suffix) | (ai, s) <- mkAdminIdSingList ms
                                          , let suffix = " logged " <> mkSuffix ai
                                          , then sortWith by s ]
-            mkSuffix ai =
-                let ap      = getPla ai ms
-                    isIncog = isIncognito ap
-                in if
-                  | isLoggedIn ap && not isIncog -> "in"
-                  | isAdmin p && isIncog         -> (isLoggedIn ap ? "in " :? "out ") <> parensQuote "incognito"
-                  | otherwise                    -> "out"
+            mkSuffix ai = let { ap = getPla ai ms; isIncog = isIncognito ap } in if isAdmin p && isIncog
+              then (inOut . isLoggedIn $ ap) <> " " <> parensQuote "incognito"
+              else inOut (isLoggedIn ap && not isIncog)
             singSuffixes' = singSuffixes |&| (isAdmin p ? id :? filter f)
               where
                 f (a, b) | a == "Root" = b == " logged in"
-                         | otherwise   = True
+                         | otherwise   = otherwise
             combineds = [ padName abbrev <> suffix
                         | (_, suffix) <- singSuffixes'
                         | abbrev      <- styleAbbrevs Don'tBracket . map fst $ singSuffixes' ]
-        in ()!# combineds ? return combineds :? unadulterated "No administrators exist!"
+        in ()!# combineds ? return combineds :? unadulterated sorryNoAdmins
 adminList p = patternMatchFail "adminList" [ showText p ]
 
 
@@ -331,7 +327,7 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
         helper names tunings     = let txts = mkChanTxts
                                    in (()!# txts ? txts :? pure "None.") |&| ("Telepathic channels:" :)
           where
-            mkChanTxts = [ padChanName n <> (t ? "tuned in" :? "tuned out") | n <- names | t <- tunings ]
+            mkChanTxts = [ padChanName n <> tunedInOut t | n <- names | t <- tunings ]
     in do
         multiWrapSend mq cols . helper (styleAbbrevs Don'tBracket chanNames) $ chanTunings
         logPlaExecArgs "chan" [] i
@@ -481,6 +477,7 @@ connectHelper i (target, as) ms =
           then let procTarget pair a =
                        let notFoundSing         = oops . notFoundSuggestAsleeps a asleepSings $ ms
                            foundSing targetSing = case c^.chanConnTbl.at targetSing of
+                             -- TODO: Continue double-checking for sorry from here.
                              Just _  -> oops . T.concat $ [ targetSing
                                                           , " is already connected to the "
                                                           , dblQuote cn
@@ -580,7 +577,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                        in ( pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
                                  & _2 <>~ (pure . Right $ (targetId, targetSing, targetName))
                           , b )
-                     xs -> patternMatchFail "disconnectHelper" [ showText xs ]
+                     xs -> patternMatchFail "disconnectHelper found" [ showText xs ]
                      where
                        hint | b         = id
                             | otherwise = (<> hintDisconnect) . (<> " ")

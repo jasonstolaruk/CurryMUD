@@ -608,14 +608,14 @@ mkPutRemInvDesc i ms d por mnom is ts =
 
 
 inOutOnOffs :: [(T.Text, Bool)]
-inOutOnOffs = [ ("i",   True )
-              , ("in",  True )
-              , ("o",   False)
-              , ("of",  False)
-              , ("off", False)
-              , ("on",  True )
-              , ("ou",  False)
-              , ("out", False) ]
+inOutOnOffs = [ ("i",   otherwise)
+              , ("in",  otherwise)
+              , ("o",   likewise )
+              , ("of",  likewise )
+              , ("off", likewise )
+              , ("on",  otherwise)
+              , ("ou",  likewise )
+              , ("out", likewise ) ]
 
 
 -----

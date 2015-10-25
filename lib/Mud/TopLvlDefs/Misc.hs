@@ -47,6 +47,10 @@ isDebug :: Bool
 isDebug = True
 
 
+likewise :: Bool
+likewise = not otherwise
+
+
 logRotationDelay :: Int
 logRotationDelay = 60 * 60 -- one hr
 

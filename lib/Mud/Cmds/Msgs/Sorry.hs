@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
-module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
+module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
+                            , sorryAdminChanTargetName
                             , sorryAdminName
                             , sorryBanAdmin
                             , sorryBanSelf
@@ -58,6 +59,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanTargetName
                             , sorryMyChansIgnore
                             , sorryNewChanExisting
                             , sorryNewChanName
+                            , sorryNoAdmins
                             , sorryNoConHere
                             , sorryNoLinks
                             , sorryNoOneHere
@@ -171,6 +173,10 @@ sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location p
 
 
 -----
+
+
+sorryAdminChanSelf :: T.Text
+sorryAdminChanSelf = "You talk to yourself."
 
 
 sorryAdminChanTargetName :: T.Text -> T.Text
@@ -518,8 +524,18 @@ sorryNewChanName a msg = T.concat [ dblQuote a, " is not a legal channel name ",
 -----
 
 
+sorryNoAdmins :: T.Text
+sorryNoAdmins = "No administrators exist!"
+
+
+-----
+
+
 sorryNoConHere :: T.Text
 sorryNoConHere = "You don't see any containers here."
+
+
+-----
 
 
 sorryNoOneHere :: T.Text
