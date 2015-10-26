@@ -1753,7 +1753,8 @@ getDesigClothSlot ms clothSing cloth em rol
   | otherwise = case cloth of
     Earring  -> findSlotFromList rEarringSlots  lEarringSlots  |&| maybe (Left sorryEarring ) Right
     Bracelet -> findSlotFromList rBraceletSlots lBraceletSlots |&| maybe (Left sorryBracelet) Right
-    Ring     -> M.lookup slotFromRol em |&| maybe (Right slotFromRol) (Left . sorryRing slotFromRol)
+    Ring     -> M.lookup slotFromRol em |&| maybe (Right slotFromRol)
+                                                  (Left . sorryReadyAlreadyWearingRing slotFromRol . (`getSing` ms))
     _        -> patternMatchFail "getDesigClothSlot" [ showText cloth ]
   where
     findSlotFromList rs ls = findAvailSlot em $ case rol of
@@ -1768,11 +1769,6 @@ getDesigClothSlot ms clothSing cloth em rol
     sorryEarring     = sorryReadyClothFullOneSide cloth . getSlotFromList rEarringSlots  $ lEarringSlots
     sorryBracelet    = sorryReadyClothFullOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
     slotFromRol      = fromRol rol :: Slot
-    sorryRing slot i = T.concat [ "You're already wearing " -- TODO: Continue to check refactoring for sorry, etc. from here.
-                                , aOrAn . getSing i $ ms
-                                , " on your "
-                                , pp slot
-                                , "." ]
 
 
 -- Readying weapons:
@@ -1917,7 +1913,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                                                 ecs
                in if ()!# invCoinsInCon
                  then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ bs', logMsgs'))
-                 else sorry $ "The " <> conSing <> " is empty."
+                 else sorry . sorryRemEmpty $ conSing
         Right {} -> sorry sorryRemExcessCon
   where
     sorry msg                         = (ms, (mkBroadcast i msg, []))
@@ -2667,22 +2663,13 @@ mkCharList i ms =
         -----
         descTunedIns = zipWith (curry descThem) styleds tunedIns'
           where
-            descThem (styled, (_, s, r, l)) = T.concat [ padName styled
-                                                       , padSex  s
-                                                       , padRace r
-                                                       , l ]
+            descThem (styled, (_, s, r, l)) = T.concat [ padName styled, padSex s, padRace r, l ]
         descTunedOuts = map descThem tunedOuts'
           where
-            descThem (s, s', r, l) = T.concat [ padName s
-                                              , padSex  s'
-                                              , padRace r
-                                              , l ]
+            descThem (s, s', r, l) = T.concat [ padName s, padSex s', padRace r, l ]
         descOthers = map descThem others'
           where
-            descThem (s, r, l) = T.concat [ padName "?"
-                                          , padSex  s
-                                          , padRace r
-                                          , l ]
+            descThem (s, r, l) = T.concat [ padName "?", padSex  s, padRace r, l ]
     in concat [ descTunedIns, descTunedOuts, descOthers ]
 
 

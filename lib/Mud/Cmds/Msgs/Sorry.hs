@@ -105,6 +105,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryPutInsideSelf
                             , sorryQuitCan'tAbbrev
                             , sorryReadyAlreadyWearing
+                            , sorryReadyAlreadyWearingRing
                             , sorryReadyAlreadyWielding
                             , sorryReadyAlreadyWieldingTwoHanded
                             , sorryReadyAlreadyWieldingTwoWpns
@@ -787,6 +788,14 @@ sorryQuitCan'tAbbrev = T.concat [ "The "
 
 sorryReadyAlreadyWearing :: T.Text -> T.Text
 sorryReadyAlreadyWearing t = "You're already wearing " <> aOrAn t <> "."
+
+
+sorryReadyAlreadyWearingRing :: Slot -> Sing -> T.Text
+sorryReadyAlreadyWearingRing sl s = T.concat [ "You're already wearing "
+                                             , aOrAn s
+                                             , " on your "
+                                             , pp sl
+                                             , "." ]
 
 
 sorryReadyAlreadyWielding :: Sing -> Slot -> T.Text
