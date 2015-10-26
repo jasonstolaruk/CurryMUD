@@ -195,7 +195,7 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
              "gp" | gol == 0               -> NoneOf . Coins $ (0,   0,   a  )
                   | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   0,   gol)
                   | otherwise              -> SomeOf . Coins $ (0,   0,   a  )
-             _                             -> patternMatchFail "mkGecrMultForCoins helper" . pure $ n
+             _                             -> patternMatchFail "mkGecrMultForCoins helper" [n]
 
 
 distributeAmt :: Int -> [Int] -> [Int]

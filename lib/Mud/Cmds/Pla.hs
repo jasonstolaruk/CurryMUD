@@ -10,6 +10,7 @@ module Mud.Cmds.Pla ( getRecordUptime
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Msgs.Advice
+import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
@@ -85,7 +86,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
--- TODO: Look for functions defined in this and other modules with names that begin with "sorry", and consider whether or not their names should be changed.
+-- TODO: Look for functions defined in this and other modules with names that begin with "sorry", and consider whether or not their names should be changed. What about "oops"?
 
 {-# ANN module ("HLint: ignore Use &&"        :: String) #-}
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -477,17 +478,10 @@ connectHelper i (target, as) ms =
           then let procTarget pair a =
                        let notFoundSing         = oops . notFoundSuggestAsleeps a asleepSings $ ms
                            foundSing targetSing = case c^.chanConnTbl.at targetSing of
-                             -- TODO: Continue double-checking for sorry from here.
-                             Just _  -> oops . T.concat $ [ targetSing
-                                                          , " is already connected to the "
-                                                          , dblQuote cn
-                                                          , " channel." ]
+                             Just _  -> oops . sorryConnectAlready targetSing $ cn
                              Nothing ->
                                  let checkChanName targetId = if hasChanOfSameName targetId
-                                       then blocked . T.concat $ [ targetSing
-                                                                 , " is already connected to a channel named "
-                                                                 , dblQuote cn
-                                                                 , "." ]
+                                       then blocked . sorryConnectChanName targetSing $ cn
                                        else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
                                                  & _2 <>~ (pure . Right $ targetSing)
                                  in either oops checkChanName . checkMutuallyTuned i ms $ targetSing
@@ -771,8 +765,8 @@ getAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
             (ms',  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [], []     ) eiss
             (ms'', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i  (ms', bs, logMsgs) ecs
         in if ()!# invCoins
-          then (ms'', (sorryInInv ++ sorryInEq ++ bs',                          logMsgs'))
-          else (ms,   (mkBroadcast i "You don't see anything here to pick up.", []      ))
+          then (ms'', (sorryInInv ++ sorryInEq ++ bs',    logMsgs'))
+          else (ms,   (mkBroadcast i sorryGetNothingHere, []      ))
 getAction p = patternMatchFail "getAction" [ showText p ]
 
 
@@ -822,7 +816,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
                                        , showRm destId . getRm destId $ ms
                                        , "." ]
             in (ms', Right ([ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ], logMsg))
-    sorry = dir `elem` stdLinkNames ? "You can't go that way." :? dblQuote dir <> " is not a valid exit."
+    sorry = dir `elem` stdLinkNames ? sorryGoExit :? sorryGoParseDir dir
     verb
       | dir == "u"              = "goes"
       | dir == "d"              = "heads"
@@ -860,7 +854,7 @@ expandLinkName "w"  = "west"
 expandLinkName "nw" = "northwest"
 expandLinkName "u"  = "up"
 expandLinkName "d"  = "down"
-expandLinkName x    = patternMatchFail "expandLinkName" . pure $ x
+expandLinkName x    = patternMatchFail "expandLinkName" [x]
 
 
 expandOppLinkName :: T.Text -> T.Text
@@ -874,7 +868,7 @@ expandOppLinkName "w"  = "the east"
 expandOppLinkName "nw" = "the southeast"
 expandOppLinkName "u"  = "below"
 expandOppLinkName "d"  = "above"
-expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
+expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
 -----
@@ -883,7 +877,7 @@ expandOppLinkName x    = patternMatchFail "expandOppLinkName" . pure $ x
 help :: Action
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
-    handler e = fileIOExHandler "help" e >> wrapSend mq cols "Unfortunately, the root help file could not be retrieved."
+    handler e = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
     helper rootHelpTxt = (isAdminId i <$> getState) >>= \ia -> do
         (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ ia
         let zipped                 = zip (styleAbbrevs Don'tBracket [ helpName h | h <- hs ]) hs
@@ -943,13 +937,13 @@ parseHelpTxt cols = concat . wrapLines cols . map expandDividers . T.lines . par
 getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (T.Text, T.Text)
 getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <- hs ] |&| maybe sorry found
   where
-    sorry                                      = return ("No help is available on " <> dblQuote name <> ".", "")
+    sorry                                      = return (sorryHelpName name, "")
     found (helpFilePath -> hf, dblQuote -> hn) = (,) <$> readHelpFile hf hn <*> return hn
     readHelpFile hf hn                         = (liftIO . T.readFile $ hf) |&| try >=> eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpByName readHelpFile" e
-            return . wrapUnlines cols $ "Unfortunately, the " <> hn <> " help file could not be retrieved."
+            return . wrapUnlines cols . helpFileErrorMsg $ hn
 
 
 -----
@@ -969,15 +963,15 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv = inInvs |!| mkNTB "You can't introduce yourself to an item in your inventory."
-            sorryInEq  = inEqs  |!| mkNTB "You can't introduce yourself to an item in your readied equipment."
+            sorryInInv = inInvs |!| mkNTB sorryIntroInInv
+            sorryInEq  = inEqs  |!| mkNTB sorryIntroInEq
             invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
             (eiss, ecs)          = uncurry (resolveRmInvCoins i ms inRms) invCoins'
             (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms (fst invCoins)) (ms^.pcTbl, [],  []     ) eiss
             (    cbs', logMsgs') = foldl' helperIntroEitherCoins                   (           cbs, logMsgs) ecs
         in if ()!# invCoins'
           then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs'))
-          else (ms, (mkNTB "You don't see anyone here to introduce yourself to.", []))
+          else (ms, (mkNTB sorryIntroNoOneHere, []))
     mkNTB                                           = mkNTBroadcast i . nlnl
     helperIntroEitherInv _  _   a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
@@ -1013,15 +1007,14 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                       , TargetBroadcast    (targetMsg, pure targetId         )
                                       , NonTargetBroadcast (othersMsg, pis \\ [ i, targetId ]) ]
                     in if s `elem` pt^.ind targetId.introduced
-                      then let sorry = nlnl $ "You've already introduced yourself to " <> targetDesig <> "."
+                      then let sorry = nlnl . sorryIntroAlready $ targetDesig
                            in a' & _2 <>~ mkNTBroadcast i sorry
                       else a' & _1.ind targetId.introduced %~ (sort . (s :)) & _2 <>~ cbs & _3 <>~ pure logMsg
-          _      -> let msg = "You can't introduce yourself to " <> theOnLower targetSing <> "."
-                        b   = head . mkNTB $ msg
+          _      -> let b = head . mkNTB . sorryIntroType $ targetSing
                     in a' & _2 %~ (`appendIfUnique` b)
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperIntroEitherCoins a (Right {}  ) =
-        let cb = head . mkNTB $ "You can't introduce yourself to a coin."
+        let cb = head . mkNTB $ sorryIntroCoin
         in first (`appendIfUnique` cb) a
     fromClassifiedBroadcast (TargetBroadcast    b) = b
     fromClassifiedBroadcast (NonTargetBroadcast b) = b
@@ -1137,8 +1130,8 @@ link (NoArgs i mq cols) = do
                     f lens x = acc & lens %~ (x' :)
                       where
                         x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
-                          Nothing    -> x
-                          (Just val) -> val ? x :? x <> " (tuned out)"
+                          Nothing  -> x
+                          Just val -> val ? x :? (x <> " " <> parensQuote "tuned out")
                 in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . isIncognito $ linkPla ]
                   then f _1
                   else f _2
@@ -1154,10 +1147,8 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv  = inInvs |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
-                                                             \your inventory.")
-            sorryInEq   = inEqs  |!| (mkBroadcast i . nlnl $ "You can't establish a telepathic link with an item in \
-                                                             \your readied equipment.")
+            sorryInInv  = inInvs |!| (mkBroadcast i . nlnl $ sorryLinkInInv)
+            sorryInEq   = inEqs  |!| (mkBroadcast i . nlnl $ sorryLinkInEq )
             invCoins    = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
             (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
             pt          = ms^.pcTbl
@@ -1172,7 +1163,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                     & teleLinkMstrTbl  .~ tlmt'
                     & rndmNamesMstrTbl .~ rnmt'
                , (sorryInInv ++ sorryInEq ++ bs', logMsgs', fs) )
-          else (ms, (mkBroadcast i . nlnl $ "You don't see anyone here to link with.", [], []))
+          else (ms, (mkBroadcast i . nlnl $ sorryLinkNoOneHere, [], []))
     helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _4 <>~ (mkBroadcast i . nlnl $ sorryMsg))
     helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
       where
@@ -1205,17 +1196,9 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                 bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
                 msgHelper txt = a' & _4 <>~ (mkBroadcast i . nlnl $ txt)
             in if
-              | targetSing `notElem` srcIntros    -> msgHelper $ "You don't know the "                   <>
-                                                                 targetDesig                             <>
-                                                                 "'s name."
-              | s          `notElem` targetIntros -> msgHelper $ "You must first introduce yourself to " <>
-                                                                 targetSing                              <>
-                                                                 "."
-              | s             `elem` targetLinks  -> msgHelper . T.concat $ [ "You've already established a "
-                                                                            , oneTwoWay
-                                                                            , " link with "
-                                                                            , targetDesig
-                                                                            , "." ]
+              | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetDesig
+              | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
+              | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetDesig
               | act <- rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
                   let g a'' | isTwoWay  = a''
                             | otherwise = a'' & _3.ind i       .at targetSing .~ Nothing
@@ -1226,12 +1209,11 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                             & _4 <>~ bs
                             & _5 <>~ pure logMsg
                             & _6 <>~ pure act
-          _  -> let msg = nlnl $ "You can't establish a telepathic link with " <> theOnLower targetSing <> "."
-                    b   = (msg, pure i)
+          _  -> let b = (nlnl . sorryLinkType $ targetSing, pure i)
                 in a' & _4 %~ (`appendIfUnique` b)
     helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a (Right {}  ) =
-        let b = (nlnl "You can't establish a telepathic link with a coin.", pure i)
+        let b = (nlnl sorryLinkCoin, pure i)
         in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" [ showText p ]
 
@@ -1282,7 +1264,7 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
                      in toTarget : toOthers : acc
                  ms' = ms & plaTbl .~ pt
              in (ms', (msg, foldr mkBroadcastsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
-        else let msg        = wrapUnlinesNl cols "You don't see anything here to look at."
+        else let msg        = wrapUnlinesNl cols sorryLookNothingHere
                  (pt, msg') = firstLook i cols (ms^.plaTbl, msg)
                  ms'        = ms & plaTbl .~ pt
              in (ms', (msg', [], Nothing))
@@ -1563,9 +1545,8 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
         forM_ logMsgs $ uncurry (logPla "handleEgress")
         logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left CurryMUD." ]
   where
-    informEgress = getState >>= \ms -> let d = mkStdDesig i ms DoCap in
-        unless (getRmId i ms == iWelcome) . bcastOthersInRm i $ nlnl (serialize d <> " slowly dissolves into \
-                                                                                     \nothingness.")
+    informEgress = getState >>= \ms -> let d = serialize . mkStdDesig i ms $ DoCap in
+        unless (getRmId i ms == iWelcome) . bcastOthersInRm i . nlnl . egressMsg $ d
     helper now ms =
         let ri                 = getRmId i  ms
             s                  = getSing i  ms
@@ -1744,9 +1725,9 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
 
 sorryFullClothSlots :: MudState -> Cloth -> EqMap -> T.Text
 sorryFullClothSlots ms cloth@(pp -> cloth') em
-  | cloth `elem` [ Earring .. Ring ]               = sorryReadyClothFull cloth'
+  | cloth `elem` [ Earring .. Ring ]               = sorryReadyClothFull      cloth'
   | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = sorryReadyAlreadyWearing cloth'
-  | otherwise = let i = em M.! clothToSlot cloth in sorryReadyAlreadyWearing . getSing i $ ms
+  | i <- em M.! clothToSlot cloth                  = sorryReadyAlreadyWearing . getSing i $ ms
 
 
 otherSex :: Sex -> Sex
@@ -1787,11 +1768,11 @@ getDesigClothSlot ms clothSing cloth em rol
     sorryEarring     = sorryReadyClothFullOneSide cloth . getSlotFromList rEarringSlots  $ lEarringSlots
     sorryBracelet    = sorryReadyClothFullOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
     slotFromRol      = fromRol rol :: Slot
-    sorryRing slot i = T.concat [ "You're already wearing "
-                                        , aOrAn . getSing i $ ms
-                                        , " on your "
-                                        , pp slot
-                                        , "." ]
+    sorryRing slot i = T.concat [ "You're already wearing " -- TODO: Continue to check refactoring for sorry, etc. from here.
+                                , aOrAn . getSing i $ ms
+                                , " on your "
+                                , pp slot
+                                , "." ]
 
 
 -- Readying weapons:
@@ -2077,7 +2058,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
                         "columns"  -> procEither . alterNumeric minCols      maxCols      "columns" $ columns
                         "lines"    -> procEither . alterNumeric minPageLines maxPageLines "lines"   $ pageLines
                         "question" -> alterTuning "question" IsTunedQuestion
-                        t          -> patternMatchFail "helperSettings found" . pure $ t
+                        t          -> patternMatchFail "helperSettings found" [t]
       where
         procEither f = parseInt |&| either appendMsg f
         parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x

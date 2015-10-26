@@ -60,6 +60,9 @@ import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
 
 
+-- TODO: Check refactoring for sorry, etc.
+
+
 default (Int)
 
 
@@ -670,8 +673,8 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                   , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
                   , handleIncog
                   , handlePeep ]
-          -> if | targetId   == i      -> (ms, [ sendFun sorrySudoerDemoteSelf ])
-                | targetSing == "Root" -> (ms, [ sendFun sorrySudoerDemoteRoot ])
+          -> if | targetId   == i      -> (ms, pure . sendFun $ sorrySudoerDemoteSelf)
+                | targetSing == "Root" -> (ms, pure . sendFun $ sorrySudoerDemoteRoot)
                 | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
                                               & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
         xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
@@ -691,8 +694,8 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
             idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
             originId            = getRmId i ms
             found (flip getRmId ms -> destId, targetSing)
-              | targetSing == getSing i ms = (ms, [ sendFun sorryTelePlaSelf  ])
-              | destId     == originId     = (ms, [ sendFun sorryTeleAlreadyThere ])
+              | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTelePlaSelf)
+              | destId     == originId     = (ms, pure .  sendFun $ sorryTeleAlready)
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
             notFound     = (ms, pure sorryInvalid)
             sorryInvalid = sendFun . sorryPCNameLoggedIn $ strippedTarget
@@ -744,7 +747,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the room to which you want to teleport"
             originId            = getRmId i ms
             found (destId, rmTeleName)
-              | destId == originId = (ms, [ sendFun sorryTeleAlreadyThere ])
+              | destId == originId = (ms, pure . sendFun $ sorryTeleAlready)
               | otherwise          = teleHelper i ms p { args = [] } originId destId rmTeleName consSorryBroadcast
             notFound               = (ms, pure . sendFun . sorryTeleRmName $ strippedTarget')
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found

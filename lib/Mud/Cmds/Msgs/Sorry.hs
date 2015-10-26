@@ -15,6 +15,8 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryChanTargetNameFromContext
                             , sorryCon
                             , sorryConInEq
+                            , sorryConnectAlready
+                            , sorryConnectChanName
                             , sorryConnectIgnore
                             , sorryDisconnectIgnore
                             , sorryDropInEq
@@ -37,7 +39,11 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryGetEnc
                             , sorryGetInEq
                             , sorryGetInInv
+                            , sorryGetNothingHere
                             , sorryGetType
+                            , sorryGoExit
+                            , sorryGoParseDir
+                            , sorryHelpName
                             , sorryHostIgnore
                             , sorryIgnoreLocPref
                             , sorryIgnoreLocPrefPlur
@@ -54,7 +60,22 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryInterpNamePropName
                             , sorryInterpNameTaken
                             , sorryInterpPager
+                            , sorryIntroAlready
+                            , sorryIntroCoin
+                            , sorryIntroInEq
+                            , sorryIntroInInv
+                            , sorryIntroNoOneHere
+                            , sorryIntroType
+                            , sorryLinkAlready
+                            , sorryLinkCoin
+                            , sorryLinkInEq
+                            , sorryLinkInInv
+                            , sorryLinkIntroSelf
+                            , sorryLinkIntroTarget
+                            , sorryLinkNoOneHere
+                            , sorryLinkType
                             , sorryLoggedOut
+                            , sorryLookNothingHere
                             , sorryMsgIncog
                             , sorryMyChansIgnore
                             , sorryNewChanExisting
@@ -115,7 +136,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryShowTarget
                             , sorrySudoerDemoteRoot
                             , sorrySudoerDemoteSelf
-                            , sorryTeleAlreadyThere
+                            , sorryTeleAlready
                             , sorryTelePlaSelf
                             , sorryTeleRmName
                             , sorryTunedOutChan
@@ -270,6 +291,14 @@ sorryConInEq por = let (a, b) = expand por
 -----
 
 
+sorryConnectAlready :: Sing -> ChanName -> T.Text
+sorryConnectAlready s cn = T.concat [ s, " is already connected to the ", dblQuote cn, " channel." ]
+
+
+sorryConnectChanName :: Sing -> ChanName -> T.Text
+sorryConnectChanName s cn = T.concat [ s, " is already connected to a channel named ", dblQuote cn, "." ]
+
+
 sorryConnectIgnore :: T.Text
 sorryConnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would like to connect"
 
@@ -400,8 +429,30 @@ sorryGetInInv = "You can't get an item that's already in your inventory. If you'
                 \dropping it first!"
 
 
+sorryGetNothingHere :: T.Text
+sorryGetNothingHere = "You don't see anything here to pick up."
+
+
 sorryGetType :: T.Text -> T.Text
 sorryGetType t = "You can't pick up " <> t <> "."
+
+
+-----
+
+
+sorryGoExit :: T.Text
+sorryGoExit = "You can't go that way."
+
+
+sorryGoParseDir :: T.Text -> T.Text
+sorryGoParseDir t = dblQuote t <> " is not a valid exit."
+
+
+-----
+
+
+sorryHelpName :: T.Text -> T.Text
+sorryHelpName t = "No help is available on " <> dblQuote t <> "."
 
 
 -----
@@ -491,8 +542,77 @@ sorryInterpPager = T.concat [ "Enter a blank line or "
 -----
 
 
+sorryIntroAlready :: T.Text -> T.Text
+sorryIntroAlready n = "You've already introduced yourself to " <> n <> "."
+
+
+sorryIntroCoin :: T.Text
+sorryIntroCoin = "You can't introduce yourself to a coin."
+
+
+sorryIntroInEq :: T.Text
+sorryIntroInEq = "You can't introduce yourself to an item in your readied equipment."
+
+
+sorryIntroInInv :: T.Text
+sorryIntroInInv = "You can't introduce yourself to an item in your inventory."
+
+
+sorryIntroNoOneHere :: T.Text
+sorryIntroNoOneHere = "You don't see anyone here to introduce yourself to."
+
+
+sorryIntroType :: Sing -> T.Text
+sorryIntroType s = "You can't introduce yourself to " <> theOnLower s <> "."
+
+
+-----
+
+
+sorryLinkAlready :: T.Text -> T.Text -> T.Text
+sorryLinkAlready t n = T.concat [ "You've already established a ", t, " link with ", n, "." ]
+
+
+sorryLinkCoin :: T.Text
+sorryLinkCoin = "You can't establish a telepathic link with a coin."
+
+
+sorryLinkInEq :: T.Text
+sorryLinkInEq = "You can't establish a telepathic link with an item in your readied equipment."
+
+
+sorryLinkInInv :: T.Text
+sorryLinkInInv = "You can't establish a telepathic link with an item in your inventory."
+
+
+sorryLinkIntroSelf :: Sing -> T.Text
+sorryLinkIntroSelf s = "You must first introduce yourself to " <> s <> "."
+
+
+sorryLinkIntroTarget :: T.Text -> T.Text
+sorryLinkIntroTarget n = "You don't know the " <> n <> "'s name."
+
+
+sorryLinkNoOneHere :: T.Text
+sorryLinkNoOneHere = "You don't see anyone here to link with."
+
+
+sorryLinkType :: Sing -> T.Text
+sorryLinkType s = "You can't establish a telepathic link with " <> theOnLower s <> "."
+
+
+-----
+
+
 sorryLoggedOut :: Sing -> T.Text
 sorryLoggedOut s = s <> " is not logged in."
+
+
+-----
+
+
+sorryLookNothingHere :: T.Text
+sorryLookNothingHere = "You don't see anything here to look at."
 
 
 -----
@@ -823,8 +943,8 @@ sorrySudoerDemoteSelf = "You can't demote yourself."
 -----
 
 
-sorryTeleAlreadyThere :: T.Text
-sorryTeleAlreadyThere = "You're already there!"
+sorryTeleAlready :: T.Text
+sorryTeleAlready = "You're already there!"
 
 
 sorryTelePlaSelf :: T.Text

@@ -8,26 +8,8 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
-
-
 bannedMsg :: T.Text
 bannedMsg = "You have been banned from CurryMUD!"
-
-
-dudeYou'reNaked :: T.Text
-dudeYou'reNaked = "You don't have anything readied. You're naked!"
-
-
-dudeYou'reScrewed :: T.Text
-dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything readied. You're naked!"
-
-
-dudeYourHandsAreEmpty :: T.Text
-dudeYourHandsAreEmpty = "You aren't carrying anything."
 
 
 dbErrorMsg :: T.Text
@@ -46,6 +28,10 @@ effortsBlockedMsg :: T.Text
 effortsBlockedMsg = "Your efforts are blocked; "
 
 
+egressMsg :: T.Text -> T.Text
+egressMsg n = n <> " slowly dissolves into nothingness."
+
+
 focusingInnateMsg :: T.Text
 focusingInnateMsg = "Focusing your innate psionic energy for a brief moment, "
 
@@ -54,12 +40,20 @@ genericErrorMsg :: T.Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
 
+helpRootErrorMsg :: T.Text
+helpRootErrorMsg = helpFileErrorMsg "root"
+
+
+helpFileErrorMsg :: T.Text -> T.Text
+helpFileErrorMsg n = "Unfortunately, the " <> n <> " help file could not be read."
+
+
 inacBootMsg :: T.Text
 inacBootMsg = "You are being disconnected from CurryMUD due to inactivity."
 
 
 loadWorldErrorMsg :: T.Text
-loadWorldErrorMsg = "Oops! There was an error loading the world. Check the error log for details."
+loadWorldErrorMsg = "There was an error loading the world. Check the error log for details."
 
 
 motdErrorMsg :: T.Text

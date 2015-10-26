@@ -51,6 +51,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , resolveRmInvCoins
                          , theLetterS ) where
 
+import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.Abbrev

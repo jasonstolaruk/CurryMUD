@@ -231,7 +231,7 @@ expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) pcIdToExpand ((i 
               in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
     expandSex 'm'                = "male"
     expandSex 'f'                = "female"
-    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" . pure $ x
+    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
 
 
 -----

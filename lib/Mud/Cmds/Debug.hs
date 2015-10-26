@@ -67,6 +67,9 @@ import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
 
 
+-- TODO: Check refactoring for sorry, etc.
+
+
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
