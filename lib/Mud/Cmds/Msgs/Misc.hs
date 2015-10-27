@@ -12,6 +12,10 @@ bannedMsg :: T.Text
 bannedMsg = "You have been banned from CurryMUD!"
 
 
+dbEmptyMsg :: T.Text
+dbEmptyMsg = "The database is empty."
+
+
 dbErrorMsg :: T.Text
 dbErrorMsg = "There was an error when reading the database."
 
@@ -74,3 +78,24 @@ rethrowExMsg t = "exception caught " <> t <> "; rethrowing to listen thread"
 
 sudoMsg :: T.Text
 sudoMsg = "HELLO, ROOT! We trust you have received the usual lecture from the local System Administrator..."
+
+
+teleDescMsg :: T.Text
+teleDescMsg = "You are instantly transported in a blinding flash of white light. For a brief moment you are \
+              \overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
+
+
+teleDestMsg :: T.Text -> T.Text
+teleDestMsg t = "There is a soft audible pop as " <> t <> " appears in a jarring flash of white light."
+
+
+teleOriginMsg :: T.Text -> T.Text
+teleOriginMsg t = "There is a soft audible pop as " <> t <> " vanishes in a jarring flash of white light."
+
+
+unlinkMsg :: T.Text -> Sing -> T.Text
+unlinkMsg t s = [ "You suddenly feel a slight tingle "
+                , t
+                , "; you sense that your telepathic link with "
+                , s
+                , " has been severed." ]

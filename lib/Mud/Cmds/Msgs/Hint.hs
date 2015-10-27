@@ -15,6 +15,10 @@ hintHelper :: [T.Text] -> T.Text
 hintHelper t = quoteWith' (hintANSI, noHintANSI) "Hint:" <> " " <> T.concat t
 
 
+specifyFullHelper :: T.Text -> T.Text
+specifyFullHelper t = parensQuote $ "Note that you must specify the full " <> t <> "."
+
+
 -----
 
 
@@ -34,8 +38,23 @@ hintAMsg s = hintHelper [ "the above is a message from "
                         , "." ]
 
 
+hintABan :: T.Text
+hintABan = specifyFullHelper "PC name of the player you wish to ban"
+
+
+hintABoot :: T.Text
+hintABoot = specifyFullHelper "PC name of the player you wish to boot"
+
+
+hintASudoer :: T.Text
+hintASudoer = specifyFullHelper "PC name of the player you wish to promote/demote"
+
+
+-----
+
+
 hintDisconnect :: T.Text
-hintDisconnect = parensQuote "Note that you must specify the full name of the person you would like to disconnect."
+hintDisconnect = specifyFullHelper "name of the person you would like to disconnect"
 
 
 hintGet :: T.Text
@@ -79,3 +98,7 @@ hintSay = hintHelper [ "to communicate with non-player characters, use the "
                      , "ask guard crime"
                      , dfltColor
                      , "." ]
+
+
+hintUnlink :: T.Text
+hintUnlink = specifyFullHelper "name of the person with whom you would like to unlink"

@@ -1038,11 +1038,7 @@ sorryUnlinkIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed
 
 
 sorryUnlinkName :: T.Text -> T.Text
-sorryUnlinkName t = T.concat [ "You don't have a link with "
-                             , dblQuote t
-                             , ". "
-                             , parensQuote "Note that you must specify the full name of the person with whom you would \
-                                           \like to unlink." ]
+sorryUnlinkName t = "You don't have a link with " <> dblQuote t <> "."
 
 
 -----

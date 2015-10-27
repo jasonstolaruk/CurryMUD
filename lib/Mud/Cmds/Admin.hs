@@ -60,9 +60,6 @@ import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
 
 
--- TODO: Check refactoring for sorry, etc.
-
-
 default (Int)
 
 
@@ -237,7 +234,7 @@ adminBanHost p = patternMatchFail "adminBanHost" [ showText p ]
 
 
 dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [a] -> MudStack ()
-dumpDbTblHelper mq cols [] = wrapSend mq cols "The database is empty."
+dumpDbTblHelper mq cols [] = wrapSend mq cols dbEmptyMsg
 dumpDbTblHelper mq cols xs = multiWrapSend mq cols . map pp $ xs
 
 
@@ -246,10 +243,10 @@ notifyBan i mq cols selfSing target newStatus x =
     let fn          = "notifyBan"
         (v, suffix) = newStatus ? ("banned", [ ": " <> pp x ]) :? ("unbanned", [ ": " <> pp x ])
     in do
-        wrapSend mq cols   . T.concat $ [ "You have ",   v, " ",    target ] ++ suffix
-        bcastOtherAdmins i . T.concat $ [ selfSing, " ", v, " ",    target ] ++ suffix
-        logNotice fn       . T.concat $ [ selfSing, " ", v, " ",    target ] ++ suffix
-        logPla    fn i     . T.concat $ [                v, " ",    target ] ++ suffix
+        wrapSend mq cols   . T.concat $ [ "You have ",   v, " ", target ] ++ suffix
+        bcastOtherAdmins i . T.concat $ [ selfSing, " ", v, " ", target ] ++ suffix
+        logNotice fn       . T.concat $ [ selfSing, " ", v, " ", target ] ++ suffix
+        logPla    fn i     . T.concat $ [                v, " ", target ] ++ suffix
 
 
 -----
@@ -264,9 +261,7 @@ adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let fn = "adminBanPla"
         SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to ban"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      []      -> sendFun $ sorryPCName strippedTarget <>
-                           " "                        <>
-                           parensQuote "Note that you must specify the full PC name of the player you wish to ban."
+      []      -> sendFun . sorryPCName $ strippedTarget <> " " <> hintABan
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
@@ -279,7 +274,7 @@ adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          withDbExHandler_ "adminBanPla" . insertDbTblBanPla $ banPla
                          notifyBan i mq cols selfSing strippedTarget newStatus banPla
                          when (newStatus && isLoggedIn pla)
-                              (adminBoot p { args = strippedTarget : T.words "You have been banned from CurryMUD!" })
+                              (adminBoot p { args = strippedTarget : T.words bannedMsg })
       xs      -> patternMatchFail fn [ showText xs ]
 adminBanPla p = patternMatchFail "adminBanPla" [ showText p ]
 
@@ -292,9 +287,7 @@ adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] adviceABootNoArgs
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      []       -> sendFun $ sorryPCName strippedTarget <>
-                            " "                        <>
-                            parensQuote "Note that you must specify the full PC name of the player you wish to boot."
+      []       -> sendFun . sorryPCName $ strippedTarget <> " " <> hintABoot
       [bootId] -> let selfSing = getSing i ms in if
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryLoggedOut $ strippedTarget
                     | bootId == i -> sendFun sorryBootSelf
@@ -643,11 +636,7 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
       let fn                  = "adminSudoer helper"
           SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
       in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-        [] -> (ms, [ let msg = sorryPCName strippedTarget <>
-                               " "                        <>
-                               parensQuote "Note that you must specify the full PC name of the player you wish to \
-                                           \promote/demote."
-                     in sendFun msg ])
+        [] -> (ms, pure . sendFun . sorryPCName $ strippedTarget <> " " <> hintASudoer)
         [targetId]
           | selfSing       <- getSing i ms
           , targetSing     <- getSing targetId ms
@@ -720,13 +709,9 @@ teleHelper i ms p originId destId name f =
         ms'         = ms & pcTbl .ind i.rmId   .~ destId
                          & invTbl.ind originId %~ (i `delete`)
                          & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
-        msgAtOrigin = nlnl $ "There is a soft audible pop as " <> serialize originDesig <> " vanishes in a jarring \
-                             \flash of white light."
-        msgAtDest   = nlnl $ "There is a soft audible pop as " <> destDesig             <> " appears in a \
-                             \jarring flash of white light."
-        desc        = nlnl   "You are instantly transported in a blinding flash of white light. For a brief moment you \
-                             \are overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
-    in (ms', [ bcastIfNotIncog i . f i $ [ (desc, pure i), (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ]
+    in (ms', [ bcastIfNotIncog i . f i $ [ (nlnl   teleDescMsg,                             pure i     )
+                                         , (nlnl . teleOriginMsg . serialize $ originDesig, originPCIds)
+                                         , (nlnl . teleDestMsg               $ destDesig,   destPCIds  ) ]
              , look p
              , rndmDos [ (calcProbTeleVomit   i ms, mkExpAction "vomit"   p)
                        , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ]

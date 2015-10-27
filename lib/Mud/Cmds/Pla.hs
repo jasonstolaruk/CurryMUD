@@ -2465,18 +2465,13 @@ unlink (LowerNub i mq cols as) =
                              in (ms'', (bs, logMsgs))
                 procArg a@(ms', _, _) targetSing = if
                   | targetSing `elem` twoWays ++ meLinkedToOthers ++ othersLinkedToMe -> procArgHelper
-                  | otherwise -> a & _2 <>~ (mkBroadcast i . nlnl . sorryUnlinkName $ targetSing)
+                  | otherwise -> a & _2 <>~ (mkBroadcast i . nlnl $ sorryUnlinkName targetSing <> " " <> hintUnlink)
                   where
                     procArgHelper =
                         let targetId  = getIdForPCSing targetSing ms'
                             s         = getSing i ms
                             srcMsg    = T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
-                            targetMsg = T.concat [ "You suddenly feel a slight tingle "
-                                                 , tingleLoc
-                                                 , "; you sense that your telepathic link with "
-                                                 , s
-                                                 , " has been severed." ]
-                            targetBs  = let bs = mkBroadcast targetId . nlnl . colorize $ targetMsg
+                            targetBs  = let bs = mkBroadcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
                                         in (isLoggedIn . getPla targetId $ ms') |?| bs
                             colorize  = quoteWith' (unlinkColor, dfltColor)
                             ms''      = ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
