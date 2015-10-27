@@ -67,9 +67,6 @@ import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
 
 
--- TODO: Check refactoring for sorry, etc.
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
@@ -467,10 +464,7 @@ debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryPCName $ a
         found match = do
             rndmName <- updateRndmName i . getIdForPCSing match $ ms
-            wrapSend mq cols . T.concat $ [ dblQuote rndmName
-                                          , " has been randomly generated for "
-                                          , match
-                                          , "." ]
+            wrapSend mq cols . T.concat $ [ dblQuote rndmName, " has been randomly generated for ", match, "." ]
             logPlaExec (prefixDebugCmd "rnt") i
         pcSings = [ ms^.entTbl.ind pcId.sing | pcId <- views pcTbl IM.keys ms ]
     in findFullNameForAbbrev a pcSings |&| maybe notFound found
@@ -495,7 +489,7 @@ debugRemPut (NoArgs' i mq) = do
     mapM_ (fakeClientInput mq) . take 10 . cycle . map (<> rest) $ [ "remove", "put" ]
     logPlaExec (prefixDebugCmd "remput") i
   where
-    rest = T.concat [ " ", T.singleton allChar, " ", T.singleton selectorChar, "sack" ]
+    rest = (quoteWith " " . T.singleton $ allChar) <> ('r' `T.cons` selectorChar `T.cons` "sack")
 debugRemPut p = withoutArgs debugRemPut p
 
 
@@ -524,9 +518,9 @@ debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyn
   where
     mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
                   | statusTxt <- mkStatusTxt <$> (liftIO . poll $ a) ]
-    mkStatusTxt = \case Nothing                                    -> "running"
-                        Just (Left  (parensQuote . showText -> e)) -> "exception " <> e
-                        Just (Right ()                           ) -> "finished"
+    mkStatusTxt = \case Nothing         -> "running"
+                        Just (Left  e ) -> "exception " <> (parensQuote . showText $ e)
+                        Just (Right ()) -> "finished"
 debugTalk p = withoutArgs debugTalk p
 
 

@@ -28,9 +28,6 @@ import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 
 
--- TODO: Check refactoring for sorry, etc.
-
-
 patternMatchFail :: T.Text -> [T.Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.ExpCmds"
 

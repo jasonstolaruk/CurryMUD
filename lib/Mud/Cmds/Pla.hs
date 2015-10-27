@@ -86,8 +86,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
--- TODO: Look for functions defined in this and other modules with names that begin with "sorry", and consider whether or not their names should be changed. What about "oops"?
-
 {-# ANN module ("HLint: ignore Use &&"        :: String) #-}
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 {-# ANN module ("HLint: ignore Use ||"        :: String) #-}
@@ -476,17 +474,17 @@ connectHelper i (target, as) ms =
         notFound    = sorry . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let procTarget pair a =
-                       let notFoundSing         = oops . notFoundSuggestAsleeps a asleepSings $ ms
+                       let notFoundSing         = sorryNotFound . notFoundSuggestAsleeps a asleepSings $ ms
                            foundSing targetSing = case c^.chanConnTbl.at targetSing of
-                             Just _  -> oops . sorryConnectAlready targetSing $ cn
+                             Just _  -> sorryNotFound . sorryConnectAlready targetSing $ cn
                              Nothing ->
                                  let checkChanName targetId = if hasChanOfSameName targetId
                                        then blocked . sorryConnectChanName targetSing $ cn
                                        else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
                                                  & _2 <>~ (pure . Right $ targetSing)
-                                 in either oops checkChanName . checkMutuallyTuned i ms $ targetSing
-                           oops msg = pair & _2 <>~ (pure . Left $ msg)
-                           blocked  = oops . (effortsBlockedMsg <>)
+                                 in either sorryNotFound checkChanName . checkMutuallyTuned i ms $ targetSing
+                           sorryNotFound msg = pair & _2 <>~ (pure . Left $ msg)
+                           blocked           = sorryNotFound . (effortsBlockedMsg <>)
                        in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing
                    ci                         = c^.chanId
                    dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
@@ -1695,7 +1693,7 @@ readyCloth i ms d mrol a@(et, _, _, _) clothId clothSing | em <- et ! i, cloth <
 
 getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either T.Text Slot
 getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
-    maybe (Left . sorryFullClothSlots ms cloth $ em) Right $ case cloth of
+    maybe (Left sorry) Right $ case cloth of
       Earring  -> getEarringSlotForSex sexy `mplus` (getEarringSlotForSex . otherSex $ sexy)
       NoseRing -> findAvailSlot em noseRingSlots
       Necklace -> findAvailSlot em necklaceSlots
@@ -1721,13 +1719,9 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
         LHand -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRPS, RingLPS, RingRMS, RingLMS ]
         _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h    ]
       _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText sexy ]
-
-
-sorryFullClothSlots :: MudState -> Cloth -> EqMap -> T.Text
-sorryFullClothSlots ms cloth@(pp -> cloth') em
-  | cloth `elem` [ Earring .. Ring ]               = sorryReadyClothFull      cloth'
-  | cloth `elem` [ Skirt, Dress, Backpack, Cloak ] = sorryReadyAlreadyWearing cloth'
-  | i <- em M.! clothToSlot cloth                  = sorryReadyAlreadyWearing . getSing i $ ms
+    sorry | cloth `elem` [ Earring .. Ring ]                   = sorryReadyClothFull      . pp $ cloth
+          | cloth `elem` [ Skirt, Dress, Backpack, Cloak ]     = sorryReadyAlreadyWearing . pp $ cloth
+          | ci <- em M.! clothToSlot cloth, s <- getSing ci ms = sorryReadyAlreadyWearing        s
 
 
 otherSex :: Sex -> Sex
@@ -1829,7 +1823,7 @@ getDesigWpnSlot ms wpnSing em rol
     desigSlot = case rol of R -> RHandS
                             L -> LHandS
                             _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
-    sorry i = sorryReadyAlreadyWielding (getSing i ms) desigSlot
+    sorry i   = sorryReadyAlreadyWielding (getSing i ms) desigSlot
 
 
 -- Readying armor:
@@ -1844,11 +1838,11 @@ readyArm :: Id
          -> Sing
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
-    case mrol |&| maybe (getAvailArmSlot ms sub em) sorryCan'tWearThere of
+    case mrol |&| maybe (getAvailArmSlot ms sub em) sorry of
       Left  (mkBroadcast i -> b) -> a & _3 <>~ b
       Right slot                 -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
   where
-    sorryCan'tWearThere rol = Left . sorryReadyRol armSing $ rol
+    sorry          = Left . sorryReadyRol armSing
     mkReadyArmMsgs = \case
       Head   -> putOnMsgs                     i d armSing
       Hands  -> putOnMsgs                     i d armSing
@@ -1858,9 +1852,9 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
 
 
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
-getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorryFullArmSlot) Right
+getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorry) Right
   where
-    sorryFullArmSlot | i <- em M.! slot, s <- getSing i ms = sorryReadyAlreadyWearing s
+    sorry | i <- em M.! slot, s <- getSing i ms = sorryReadyAlreadyWearing s
 
 
 -----

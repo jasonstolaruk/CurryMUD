@@ -686,8 +686,7 @@ adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence
               | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTelePlaSelf)
               | destId     == originId     = (ms, pure .  sendFun $ sorryTeleAlready)
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
-            notFound     = (ms, pure sorryInvalid)
-            sorryInvalid = sendFun . sorryPCNameLoggedIn $ strippedTarget
+            notFound     = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
         in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
 adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePlaExcessArgs
 

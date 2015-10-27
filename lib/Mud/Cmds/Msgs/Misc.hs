@@ -2,6 +2,7 @@
 
 module Mud.Cmds.Msgs.Misc where
 
+import Mud.Data.State.MudData
 import Mud.Util.Quoting
 
 import Data.Monoid ((<>))
@@ -94,8 +95,8 @@ teleOriginMsg t = "There is a soft audible pop as " <> t <> " vanishes in a jarr
 
 
 unlinkMsg :: T.Text -> Sing -> T.Text
-unlinkMsg t s = [ "You suddenly feel a slight tingle "
-                , t
-                , "; you sense that your telepathic link with "
-                , s
-                , " has been severed." ]
+unlinkMsg t s = T.concat [ "You suddenly feel a slight tingle "
+                         , t
+                         , "; you sense that your telepathic link with "
+                         , s
+                         , " has been severed." ]
