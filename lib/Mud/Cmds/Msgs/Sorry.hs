@@ -980,24 +980,27 @@ sorryTuneName n = "You don't have a connection by the name of " <> dblQuote n <>
 
 
 sorryTunedOutICChan :: ChanName -> T.Text
-sorryTunedOutICChan = sorryTunedOutChan "tune" . dblQuote
+sorryTunedOutICChan = sorryTunedOutChan "tune" DoQuote
 
 
-sorryTunedOutChan :: CmdName -> T.Text -> T.Text
-sorryTunedOutChan x y = T.concat [ "You have tuned out the "
-                                 , y
-                                 , " channel. Type "
-                                 , quoteColor
-                                 , x
-                                 , " "
-                                 , y
-                                 , "=in"
-                                 , dfltColor
-                                 , " to tune it back in." ]
+sorryTunedOutChan :: CmdName -> ShouldQuote -> T.Text -> T.Text
+sorryTunedOutChan x sq y = T.concat [ "You have tuned out the "
+                                    , f y
+                                    , " channel. Type "
+                                    , quoteColor
+                                    , x
+                                    , " "
+                                    , y
+                                    , "=in"
+                                    , dfltColor
+                                    , " to tune it back in." ]
+  where
+    f = case sq of DoQuote    -> dblQuote
+                   Don'tQuote -> id
 
 
 sorryTunedOutOOCChan :: T.Text -> T.Text
-sorryTunedOutOOCChan = sorryTunedOutChan "set"
+sorryTunedOutOOCChan = sorryTunedOutChan "set" Don'tQuote
 
 
 sorryTunedOutPCSelf :: Sing -> T.Text

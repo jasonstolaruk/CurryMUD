@@ -253,7 +253,7 @@ getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedId
     mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
         let nonLinkeds' = zip nonLinkedIds rndmNames
             combo       = sortBy (compare `on` snd) $ linkeds ++ nonLinkeds'
-            styleds     = styleAbbrevs Don'tBracket . map snd $ combo
+            styleds     = styleAbbrevs Don'tQuote . map snd $ combo
             helper (x, y) styled | x `elem` nonLinkedIds = a & _3 %~ underline
                                  | otherwise             = a
               where
@@ -733,8 +733,8 @@ mkEntsInInvDesc i cols ms =
 
 mkStyledName_Count_BothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
 mkStyledName_Count_BothList i ms is =
-    let styleds                       = styleAbbrevs DoBracket [ getEffName        i ms targetId | targetId <- is ]
-        boths@(mkCountList -> counts) =                        [ getEffBothGramNos i ms targetId | targetId <- is ]
+    let styleds                       = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- is ]
+        boths@(mkCountList -> counts) =                      [ getEffBothGramNos i ms targetId | targetId <- is ]
     in nub . zip3 styleds counts $ boths
 
 
@@ -752,7 +752,7 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
     mkDescsSelf =
         let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)          | (slot, ei) <- M.toList . getEqMap i $ ms ]
             (sings,      ens) = unzip [ (e^.sing, fromJust $ e^.entName) | e          <- es                         ]
-        in map helper . zip3 slotNames sings . styleAbbrevs DoBracket $ ens
+        in map helper . zip3 slotNames sings . styleAbbrevs DoQuote $ ens
       where
         helper (T.breakOn " finger" -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, s, " ", styled ]
     mkDescsOther = map helper [ (pp slot, getSing ei ms) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
@@ -856,7 +856,6 @@ moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
 -----
 
 
--- TODO: Can this function be used more?
 notFoundSuggestAsleeps :: T.Text -> [Sing] -> MudState -> T.Text
 notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
     case findFullNameForAbbrev a' asleepSings of

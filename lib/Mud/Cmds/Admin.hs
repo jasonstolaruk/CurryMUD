@@ -158,7 +158,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
                                                                     , let isTuned = isTunedAdmin ap ]
         ([self],   others   )  = partition (\x -> x^._1.to (== i)) triples
         (tunedIns, tunedOuts)  = partition (view _3) others
-        styleds                = styleAbbrevs Don'tBracket . map (view _2) $ tunedIns
+        styleds                = styleAbbrevs Don'tQuote . map (view _2) $ tunedIns
         others'                = zipWith (\triple styled -> triple & _2 .~ styled) tunedIns styleds ++ tunedOuts
         mkDesc (_, n, isTuned) = padName n <> tunedInOut isTuned
         descs                  = mkDesc self : map mkDesc others'
@@ -169,7 +169,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
         [_]      -> wrapSend mq cols . sorryChanNoOneListening $ "admin"
         tunedIds ->
           let tunedSings         = map (`getSing` ms) tunedIds
-              getStyled targetId = let styleds = styleAbbrevs Don'tBracket $ getSing targetId ms `delete` tunedSings
+              getStyled targetId = let styleds = styleAbbrevs Don'tQuote $ getSing targetId ms `delete` tunedSings
                                    in head . filter ((== s) . dropANSI) $ styleds
               s                  = getSing i ms
               format (txt, is)   = if i `elem` is
@@ -473,7 +473,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                       f (iRoot, "Root")      = let rootPla = getPla iRoot ms
                                                in isLoggedIn rootPla && (not . isIncognito $ rootPla)
                       f _                    = True
-                      me                     = head . filter g . styleAbbrevs Don'tBracket $ adminSings
+                      me                     = head . filter g . styleAbbrevs Don'tQuote $ adminSings
                       g                      = (== s) . dropANSI
                       toTarget'              = quoteWith "__" me <> " " <> toTarget
                   in do
@@ -723,7 +723,7 @@ teleHelper i ms p originId destId name f =
 adminTeleRm :: Action
 adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExecArgs (prefixAdminCmd "telerm") [] i
   where
-    mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tBracket . IM.elems) <$> getState
+    mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . IM.elems) <$> getState
     header = "You may teleport to the following rooms:"
 adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
   where
@@ -792,7 +792,7 @@ whoHelper inOrOut cn p@(ActionParams { plaId, args }) =
 mkCharListTxt :: LoggedInOrOut -> MudState -> [T.Text]
 mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate $ ms^.plaTbl
                                (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
-                               ias              = zip is' . styleAbbrevs Don'tBracket $ ss
+                               ias              = zip is' . styleAbbrevs Don'tQuote $ ss
                                mkCharTxt (i, a) = let (s, r, l) = mkPrettifiedSexRaceLvl i ms
                                                       name      = mkAnnotatedName i a
                                                   in T.concat [ padName name

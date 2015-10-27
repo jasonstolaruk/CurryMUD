@@ -25,13 +25,13 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrevs"
 type FullWord = T.Text
 
 
-styleAbbrevs :: ShouldBracketQuote -> [FullWord] -> [FullWord]
-styleAbbrevs sbq fws = let abbrevs   = mkAbbrevs fws
-                           helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
-                                           f                     = case sbq of DoBracket    -> bracketQuote
-                                                                               Don'tBracket -> id
-                                       in f . T.concat $ [ abbrevColor, abbrev, dfltColor', rest ]
-                       in map helper fws
+styleAbbrevs :: ShouldQuote -> [FullWord] -> [FullWord]
+styleAbbrevs sq fws = let abbrevs   = mkAbbrevs fws
+                          helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
+                                          f                     = case sq of DoQuote    -> bracketQuote
+                                                                             Don'tQuote -> id
+                                      in f . T.concat $ [ abbrevColor, abbrev, dfltColor', rest ]
+                      in map helper fws
 
 
 type Abbrev         = T.Text

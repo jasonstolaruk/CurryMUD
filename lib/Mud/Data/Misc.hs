@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
-module Mud.Data.Misc ( AOrThe(..)
-                     , Action
+module Mud.Data.Misc ( Action
                      , Amount
+                     , AOrThe(..)
                      , Args
                      , BanRecord(..)
                      , Broadcast
@@ -13,43 +13,43 @@ module Mud.Data.Misc ( AOrThe(..)
                      , CmdFullName
                      , CmdPriorityAbbrevTxt
                      , Cols
+                     , deserialize
                      , EmoteWord(..)
                      , EmptyNoneSome(..)
                      , EquipInvLookCmd(..)
                      , ExpCmd(..)
                      , ExpCmdName
                      , ExpCmdType(..)
+                     , fromRol
+                     , getEntFlag
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)
+                     , getPlaFlag
+                     , getRmFlag
                      , Help(..)
                      , HelpName
                      , IdSingTypeDesig(..)
-                     , InInvEqRm(..)
                      , Index
+                     , InInvEqRm(..)
                      , LoggedInOrOut(..)
                      , PCDesig(..)
                      , PlsDie(..)
+                     , pp
                      , Pretty
                      , PutOrRem(..)
                      , RightOrLeft(..)
                      , Serializable
-                     , ShouldBracketQuote(..)
-                     , ShouldCap(..)
-                     , ShouldLog(..)
-                     , SingleTarget(..)
-                     , ToOrFromThePeeped(..)
-                     , Verb(..)
-                     , WhichLog(..)
-                     , deserialize
-                     , fromRol
-                     , getEntFlag
-                     , getPlaFlag
-                     , getRmFlag
-                     , pp
                      , serialize
                      , setEntFlag
                      , setPlaFlag
-                     , setRmFlag ) where
+                     , setRmFlag
+                     , ShouldCap(..)
+                     , ShouldLog(..)
+                     , ShouldQuote(..)
+                     , SingleTarget(..)
+                     , ToOrFromThePeeped(..)
+                     , Verb(..)
+                     , WhichLog(..) ) where
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Util
@@ -575,7 +575,7 @@ data RightOrLeft = R
 -----
 
 
-data ShouldBracketQuote = DoBracket | Don'tBracket
+data ShouldQuote = DoQuote | Don'tQuote
 
 
 -----

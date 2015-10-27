@@ -153,7 +153,7 @@ mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd
 styleCmdAbbrevs :: [Cmd] -> [T.Text]
 styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
                            cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
-                           styledCmdNames = styleAbbrevs Don'tBracket cmdNames
+                           styledCmdNames = styleAbbrevs Don'tQuote cmdNames
                        in [ checkProrityAbbrev a | a <- zip3 cmdNames cmdPAs styledCmdNames ]
   where
     checkProrityAbbrev (_,  Nothing,  scn) = scn
@@ -259,7 +259,7 @@ getQuestionStyleds i ms =
             linkeds = f linkedIds
             admins  = f adminIds
             combo   = sortBy (compare `on` snd) $ rndms ++ nubSort (linkeds ++ admins)
-            styleds = styleAbbrevs Don'tBracket . map snd $ combo
+            styleds = styleAbbrevs Don'tQuote . map snd $ combo
             helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
                                  | otherwise         = a
               where
