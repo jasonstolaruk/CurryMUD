@@ -422,12 +422,13 @@ mkActionParams i ms as = ActionParams { plaId       = i
 -----
 
 
-mkChanReport :: MudState -> Chan -> [T.Text]
-mkChanReport ms (Chan ci cn cct _) =
-    let desc = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
-                                                      , let p = getPla (getIdForPCSing s ms) ms
-                                                      , let l = isLoggedIn p && (not . isIncognito $ p) ]
-    in [ T.concat [ parensQuote . showText $ ci, " ", dblQuote cn, ":" ], desc ]
+mkChanReport :: Id -> MudState -> Chan -> [T.Text]
+mkChanReport i ms (Chan ci cn cct tappers) =
+    let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
+                                                         , let p = getPla (getIdForPCSing s ms) ms
+                                                         , let l = isLoggedIn p && (not . isIncognito $ p) ]
+        tapping = getSing i ms `elem` tappers |?| (" " <> parensQuote "wiretapped")
+    in [ T.concat [ bracketQuote . showText $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
   where
     descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
     f                 = sortBy (compare `on` view _1)

@@ -323,14 +323,14 @@ adminBug p = withoutArgs adminBug p
 
 
 adminChan :: Action
-adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport ms) . IM.elems) ms of
+adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport i ms) . IM.elems) ms of
   []      -> informNoChans mq cols
   reports -> adminChanIOHelper i mq reports
 adminChan (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
           [(ci, "")] | ci < 0                                -> pure sorryWtf
                      | ci `notElem` (ms^.chanTbl.to IM.keys) -> sorry
-                     | otherwise                             -> mkChanReport ms . getChan ci $ ms
+                     | otherwise                             -> mkChanReport i ms . getChan ci $ ms
           _                                                  -> sorry
           where
             sorry = pure . sorryParseChanId $ a
@@ -524,9 +524,9 @@ adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
             let notFound                     = pure . sorryPCName $ target
                 found (targetId, targetSing) = case getPCChans targetId ms of
                   [] -> header . pure $ "None."
-                  cs -> intercalate [""] . map (header . mkChanReport ms) $ cs
+                  cs -> header . intercalate [""] . map (mkChanReport i ms) $ cs
                   where
-                    header xs = (targetSing <> "'s channels:") : "" : xs
+                    header = (targetSing <> "'s channels:" :) . ("" :)
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
         allReports = intercalateDivider cols . map (helper . capitalize . f) $ as
     in case views chanTbl IM.size ms of
@@ -827,7 +827,6 @@ adminWhoOut = whoHelper LoggedOut "whoout"
 -----
 
 
--- TODO: Help.
 adminWire :: Action
 adminWire p@AdviseNoArgs          = advise p [ prefixAdminCmd "wiretap" ] adviceAWireNoArgs
 adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
