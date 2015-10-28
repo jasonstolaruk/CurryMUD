@@ -37,6 +37,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
@@ -45,8 +46,9 @@ import Control.Lens (_1, _2, _3, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
+import Data.Either (rights)
 import Data.Function (on)
-import Data.List (delete, intercalate, partition, sortBy)
+import Data.List (delete, foldl', intercalate, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
@@ -104,7 +106,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Make a command to listen in on a channel.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
@@ -136,7 +137,8 @@ adminCmds =
     , mkAdminCmd "whoin"      adminWhoIn       "Display or search a list of all the people that are currently logged \
                                                \in."
     , mkAdminCmd "whoout"     adminWhoOut      "Display or search a list of all the people that are currently logged \
-                                               \out." ]
+                                               \out."
+    , mkAdminCmd "wiretap"    adminWire        "Start or stop tapping one or more telepathic channels." ]
 
 
 mkAdminCmd :: T.Text -> Action -> CmdDesc -> Cmd
@@ -820,3 +822,34 @@ mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate 
 
 adminWhoOut :: Action
 adminWhoOut = whoHelper LoggedOut "whoout"
+
+
+-----
+
+
+-- TODO: Help.
+adminWire :: Action
+adminWire p@AdviseNoArgs          = advise p [ prefixAdminCmd "wiretap" ] adviceAWireNoArgs
+adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
+  0 -> informNoChans mq cols
+  _ -> helper |&| modifyState >=> \(msgs, logMsgs) ->
+           multiWrapSend mq cols msgs >> logMsgs |#| logPlaOut (prefixAdminCmd "wiretap") i
+  where
+    helper ms = let (ms', msgs) = foldl' helperWire (ms, []) as
+                in (ms', (map fromEither msgs, rights msgs))
+    helperWire (ms, msgs) a =
+        let (ms', msg) = case reads . T.unpack $ a :: [(Int, String)] of
+                           [(ci, "")] | ci < 0                                -> sorry sorryWtf
+                                      | ci `notElem` (ms^.chanTbl.to IM.keys) -> sorry . sorryParseChanId $ a
+                                      | otherwise                             -> toggle ms ci & _2 %~ Right
+                           _                                                  -> sorry . sorryParseChanId $ a
+            sorry = (ms, ) . Left
+        in (ms', msgs ++ pure msg)
+    toggle ms ci = let s        = getSing i ms
+                       (cn, ss) = ms^.chanTbl.ind ci.to ((view chanName *** view wiretappers) . dup)
+                   in if s `elem` ss
+                     then ( ms & chanTbl.ind ci.wiretappers .~ s `delete` ss
+                          , "You stop tapping the "  <> dblQuote cn <> " channel." )
+                     else ( ms & chanTbl.ind ci.wiretappers <>~ pure s
+                          , "You start tapping the " <> dblQuote cn <> " channel." )
+adminWire p = patternMatchFail "adminWire" [ showText p ]

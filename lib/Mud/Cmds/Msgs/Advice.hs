@@ -17,6 +17,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceATelePlaExcessArgs
                             , adviceATelePlaNoArgs
                             , adviceATeleRmExcessArgs
+                            , adviceAWireNoArgs
                             , adviceBugNoArgs
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
@@ -208,6 +209,10 @@ adviceATeleRmExcessArgs = T.concat [ "Please provide one argument: the name of t
                                    , " lounge"
                                    , dfltColor
                                    , "." ]
+
+
+adviceAWireNoArgs :: T.Text
+adviceAWireNoArgs = "Please specify the IDs of one or more telepathic channels you wish to start or stop tapping."
 
 
 -----

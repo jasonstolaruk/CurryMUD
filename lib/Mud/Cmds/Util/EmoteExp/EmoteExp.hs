@@ -29,7 +29,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Lens (_1, _2, both, each, view, views)
 import Control.Lens.Operators ((%~), (&), (<>~))
 import Data.Char (isLetter)
-import Data.Either (isLeft)
+import Data.Either (lefts)
 import Data.List ((\\), delete, intersperse, nub)
 import Data.Monoid ((<>))
 import Data.Tuple (swap)
@@ -103,10 +103,10 @@ procEmote i ms cc triples as             =
           | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
           | isHead              -> mkRightForNonTargets (me & each <>~ (" " <> x))
           | otherwise           -> mkRightForNonTargets . dup3 $ x
-    in case filter isLeft xformed of
+    in case lefts xformed of
       []      -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
                  in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
-      advices -> Left . intersperse "" . map fromLeft . nub $ advices
+      advices -> Left . intersperse "" . nub $ advices
   where
     cc'             = pp cc <> " " <> T.singleton emoteChar
     procTarget word =
@@ -252,10 +252,10 @@ adminChanProcEmote i ms tunedIds tunedSings as =
           | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
           | isHead              -> mkRightForNonTargets . dup3 $ s <> " " <> x
           | otherwise           -> mkRightForNonTargets . dup3 $ x
-    in case filter isLeft xformed of
+    in case lefts xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
-      advices -> Left . intersperse "" . map fromLeft . nub $ advices
+      advices -> Left . intersperse "" . nub $ advices
   where
     cn              = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar
     procTarget word =

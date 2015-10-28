@@ -11,6 +11,7 @@ module Mud.Util.Misc ( atLst1
                      , dup3
                      , eitherRet
                      , emptied
+                     , fromEither
                      , fromLeft
                      , fromRight
                      , ifThenElse
@@ -101,9 +102,14 @@ emptied :: (Monad m, Monoid b) => m a -> m b
 emptied m = m >> return mempty
 
 
+fromEither :: Either a a -> a
+fromEither (Right a) = a
+fromEither (Left  a) = a
+
+
 fromLeft :: (Show a, Show b) => Either a b -> a
-fromLeft (Left  x) = x
-fromLeft x         = blowUp "Mud.Util.Misc" "fromLeft" "Right" [ T.pack . show $ x ]
+fromLeft (Left x) = x
+fromLeft x        = blowUp "Mud.Util.Misc" "fromLeft" "Right" [ T.pack . show $ x ]
 
 
 fromRight :: (Show a, Show b) => Either a b -> b

@@ -116,7 +116,8 @@ type AC = Int
 
 data Chan = Chan { _chanId      :: Int
                  , _chanName    :: ChanName
-                 , _chanConnTbl :: ChanConnTbl } deriving (Eq, Generic, Show)
+                 , _chanConnTbl :: ChanConnTbl
+                 , _wiretappers :: [Sing] } deriving (Eq, Generic, Show)
 
 
 type ChanName = T.Text

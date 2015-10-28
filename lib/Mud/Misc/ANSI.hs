@@ -55,6 +55,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , unknownNameColor
                      , unlinkColor
                      , white
+                     , wiretapColor
                      , wtfColor
                      , yellow
                      , zingColor ) where
@@ -182,7 +183,7 @@ exitsColor = magenta
 
 
 fromPeepedColor :: T.Text
-fromPeepedColor = mkColorANSI (Vivid, White) (Dull, Blue)
+fromPeepedColor = mkColorANSI (Dull, White) (Dull, Blue)
 
 
 headerColor :: T.Text
@@ -258,7 +259,7 @@ syntaxSymbolColor = yellow
 
 
 toPeepedColor :: T.Text
-toPeepedColor = mkColorANSI (Vivid, White) (Dull, Green)
+toPeepedColor = mkColorANSI (Dull, White) (Dull, Green)
 
 
 tunedInColor :: T.Text
@@ -275,6 +276,10 @@ unknownNameColor = yellow
 
 unlinkColor :: T.Text
 unlinkColor = magenta
+
+
+wiretapColor :: T.Text
+wiretapColor = mkColorANSI (Dull, White) (Dull, Yellow)
 
 
 wtfColor :: T.Text

@@ -61,7 +61,7 @@ import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Char (isDigit, isLetter)
-import Data.Either (isLeft)
+import Data.Either (lefts, partitionEithers)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.IntMap.Lazy ((!))
@@ -372,12 +372,17 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                              return [ (formatChanMsg cn styled txt, pure i') | i' <- is' | styled <- styleds ]
                      ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
                          bcastNl =<< expandEmbeddedIds ms cc bs
+                         sendToWiretappers logMsg
                          logPlaOut "chan" i . pure $ parensQuote cn <> " " <> logMsg
                          ts <- liftIO mkTimestamp
                          withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ logMsg
+                     sendToWiretappers tappedMsg =
+                         let cn' = quoteWith' (wiretapColor <> " ", " " <> dfltColor) . parensQuote $ cn
+                             is  = c^.wiretappers.to (map (`getIdForPCSing` ms))
+                             is' = filter (isLoggedIn . (`getPla` ms)) is
+                         in bcastNl . pure $ (T.concat [ cn', " ", s, ": ", tappedMsg ], is')
                      cc   = ChanContext "chan" (Just cn) False
-                     f bs = let logMsg = dropANSI . fst . head $ bs
-                            in ioHelper logMsg =<< g bs
+                     f bs = let logMsg = dropANSI . fst . head $ bs in ioHelper logMsg =<< g bs
                      g    = concatMapM format
                      ws   = wrapSend      mq cols
                      mws  = multiWrapSend mq cols
@@ -432,7 +437,7 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPC
       else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
         ([Left msg], Nothing) -> bcastNl . mkBroadcast i $ msg
         (res,        Just ci)
-          | (map fromLeft -> sorryMsgs, map fromRight -> targetSings) <- partition isLeft res
+          | (sorryMsgs, targetSings) <- partitionEithers res
           , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
           , targetIds <- getIds targetSings
           , c         <- getChan ci ms
@@ -515,8 +520,8 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
           disconnectHelper i (mkLastArgWithNubbedOthers as) idNamesTbl |&| modifyState >=> \case
             ([Left msg], Nothing) -> bcastNl . mkBroadcast i $ msg
             (res,        Just ci)
-              | (map fromLeft -> sorryMsgs, map fromRight -> idSingNames) <- partition isLeft res
-              , (targetIds, targetSings, targetNames)                     <- unzip3 idSingNames
+              | (sorryMsgs, idSingNames)              <- partitionEithers res
+              , (targetIds, targetSings, targetNames) <- unzip3 idSingNames
               , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
               , c         <- getChan ci ms
               , cn        <- c^.chanName
@@ -637,10 +642,10 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                                      & _3 %~ (ser <>)
           | otherwise              -> mkRightForNonTargets . dup3 $ x
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
-    in case filter isLeft xformed of
+    in case lefts xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in bcastNl $ (toSelf, pure i) : (toOthers, pcIds d \\ (i : targetIds)) : toTargetBs
-      advices -> multiWrapSend mq cols . map fromLeft . nub $ advices
+      advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
@@ -1374,14 +1379,14 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
           , match <- head . filter ((== a') . T.toLower) $ myChanNames
           = triple & _3 <>~ (pure . sorryNewChanExisting $ match)
           | otherwise = let ci = views chanTbl (head . ([0..] \\) . IM.keys) $ triple^._1
-                            c  = Chan ci a . M.fromList . pure $ (s, True)
+                            c  = Chan ci a (M.fromList . pure $ (s, True)) []
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
                         in triple & _1.chanTbl.at ci .~ Just c
                                   & _2 <>~ pure (a, cr)
         isNG c           = not $ isLetter c || isDigit c
         illegalNames     = [ "admin", "all", "question" ] ++ pcNames
         pcNames          = map (uncapitalize . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
-        myChanNames          = map (view chanName) . getPCChans i $ ms
+        myChanNames      = map (view chanName) . getPCChans i $ ms
     mkNewChanMsg []     = []
     mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkNewChanMsg ns     = T.lines . mkMsgHelper True  $ ns

@@ -88,6 +88,7 @@ import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
+import Data.Either (rights)
 import Data.Function (on)
 import Data.List (delete, intercalate, nub, partition, sortBy)
 import Data.Maybe (fromJust)
@@ -279,7 +280,7 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 
 
 happy :: MudState -> [Either T.Text (T.Text, [EmoteWord], T.Text)] -> (T.Text, T.Text, [Id], [Broadcast])
-happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . map fromRight $ xformed
+happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . rights $ xformed
                        targetIds = nub . foldr extractIds [] $ toTargets
                        extractIds [ForNonTargets _           ] acc = acc
                        extractIds (ForTarget     _ targetId:_) acc = targetId : acc
@@ -422,7 +423,7 @@ mkActionParams i ms as = ActionParams { plaId       = i
 
 
 mkChanReport :: MudState -> Chan -> [T.Text]
-mkChanReport ms (Chan ci cn cct) =
+mkChanReport ms (Chan ci cn cct _) =
     let desc = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
                                                       , let p = getPla (getIdForPCSing s ms) ms
                                                       , let l = isLoggedIn p && (not . isIncognito $ p) ]

@@ -108,7 +108,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
                                       (ms^.plaTbl)
             matches = filter ((== cn') . snd) . snd $ sorted
         in if cn' `elem` fst sorted
-          then (ms, (ms, Left . Just $ cn'))
+          then (ms, (ms, Left . Just . sorryInterpNameLoggedIn $ cn'))
           else case matches of [(pi, _)] -> logIn i ms (newPla^.currHostName) (newPla^.connectTime) pi
                                _         -> (ms, (ms, Left Nothing))
     nextPrompt = do

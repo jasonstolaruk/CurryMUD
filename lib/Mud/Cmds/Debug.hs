@@ -3,7 +3,7 @@
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
-                      , ) where
+                      , ) where -- Not a typo.
 
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Misc

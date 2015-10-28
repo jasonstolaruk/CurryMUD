@@ -13,7 +13,6 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -21,7 +20,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1)
 import Control.Lens.Operators ((%~))
-import Data.Either (isLeft)
+import Data.Either (lefts, rights)
 import Data.List (intersperse, nub)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -62,10 +61,10 @@ procTwoWayEmote cn i ms targetId as =
           | isHead, hasEnc as   -> Right . capitalizeMsg $ x
           | isHead              -> Right $ s <> " " <> x
           | otherwise           -> Right x
-    in case filter isLeft xformed of
-      []      -> let msg = bracketQuote . T.unwords . map fromRight $ xformed
+    in case lefts xformed of
+      []      -> let msg = bracketQuote . T.unwords . rights $ xformed
                  in Right [ (msg, pure i), (msg, pure targetId) ]
-      advices -> Left . intersperse "" . map fromLeft . nub $ advices
+      advices -> Left . intersperse "" . nub $ advices
   where
     cn' = cn <> " " <> T.singleton emoteChar
 
