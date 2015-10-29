@@ -12,7 +12,7 @@ import Mud.Data.State.Util.Set
 import Mud.Interp.Login
 import Mud.TheWorld.AdminZoneIds (iWelcome)
 import Mud.Threads.InacTimer
-import Mud.Threads.NewMisc
+import Mud.Threads.Misc
 import Mud.Threads.Receive
 import Mud.Threads.Server
 import Mud.TopLvlDefs.FilePaths
@@ -130,12 +130,10 @@ adHoc mq host = do
         in (ms', (i, s))
 
 
--- TODO: Move to Random module?
 randomSex :: IO Sex
 randomSex = ([ Male, Female ] !!) . fromEnum <$> (randomIO :: IO Bool)
 
 
--- TODO: Move to Random module?
 randomRace :: IO Race
 randomRace = randomIO
 

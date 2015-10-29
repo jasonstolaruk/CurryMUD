@@ -1,12 +1,12 @@
 {-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
 
-module Mud.Threads.NewMisc ( die
-                           , plaThreadExHandler
-                           , PlsDie(..)
-                           , stopTimerThread
-                           , threadExHandler
-                           , TimerMsg(..)
-                           , TimerQueue ) where
+module Mud.Threads.Misc ( die
+                        , plaThreadExHandler
+                        , PlsDie(..)
+                        , stopTimerThread
+                        , threadExHandler
+                        , TimerMsg(..)
+                        , TimerQueue ) where
 
 import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
@@ -31,9 +31,6 @@ logNotice = L.logNotice "Mud.Threads.Misc"
 
 
 -- ==================================================
-
-
--- TODO: Rename module.
 
 
 data PlsDie = PlsDie deriving (Show, Typeable)

@@ -13,7 +13,7 @@ import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
 import Mud.TheWorld.TheWorld
 import Mud.Threads.DbTblPurger
-import Mud.Threads.NewMisc
+import Mud.Threads.Misc
 import Mud.Threads.Talk
 import Mud.Threads.ThreadTblPurger
 import Mud.Threads.WorldPersister

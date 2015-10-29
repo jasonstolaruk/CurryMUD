@@ -75,7 +75,7 @@ library
                        Mud.Threads.DbTblPurger,
                        Mud.Threads.InacTimer,
                        Mud.Threads.Listen,
-                       Mud.Threads.NewMisc,
+                       Mud.Threads.Misc,
                        Mud.Threads.Receive,
                        Mud.Threads.Server,
                        Mud.Threads.Talk,

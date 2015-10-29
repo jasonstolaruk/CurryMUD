@@ -11,7 +11,7 @@ import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Set
 import Mud.Misc.Database
-import Mud.Threads.NewMisc
+import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Quoting

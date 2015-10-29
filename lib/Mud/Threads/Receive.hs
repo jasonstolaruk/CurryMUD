@@ -5,7 +5,7 @@ module Mud.Threads.Receive (threadReceive) where
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Set
-import Mud.Threads.NewMisc
+import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc
 import Mud.Util.Text

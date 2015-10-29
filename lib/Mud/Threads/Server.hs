@@ -16,7 +16,7 @@ import Mud.Data.State.Util.Set
 import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
-import Mud.Threads.NewMisc
+import Mud.Threads.Misc
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.List
 import Mud.Util.Operators
