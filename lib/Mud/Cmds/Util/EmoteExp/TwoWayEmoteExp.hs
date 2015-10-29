@@ -8,7 +8,7 @@ import Mud.Cmds.Util.Misc
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
-import Mud.Data.State.ActionParams.Util
+import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TopLvlDefs.Chars

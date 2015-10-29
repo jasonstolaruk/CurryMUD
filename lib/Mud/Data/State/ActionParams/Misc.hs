@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Data.State.ActionParams.Util ( Args
+module Mud.Data.State.ActionParams.Misc ( Args
                                         , capitalizeMsg
                                         , formatMsgArgs
                                         , formatMsgWithTargetArgs

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.Misc ( Action
                      , Amount
@@ -33,7 +33,6 @@ module Mud.Data.Misc ( Action
                      , InInvEqRm(..)
                      , LoggedInOrOut(..)
                      , PCDesig(..)
-                     , PlsDie(..)
                      , pp
                      , Pretty
                      , PutOrRem(..)
@@ -52,7 +51,7 @@ module Mud.Data.Misc ( Action
                      , WhichLog(..) ) where
 
 import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.ActionParams.Util
+import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MudData
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
@@ -61,14 +60,12 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Exception (Exception)
 import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
-import Data.Typeable (Typeable)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
 
@@ -546,15 +543,6 @@ data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
 
 
 data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)
-
-
------
-
-
-data PlsDie = PlsDie deriving (Show, Typeable)
-
-
-instance Exception PlsDie
 
 
 -----

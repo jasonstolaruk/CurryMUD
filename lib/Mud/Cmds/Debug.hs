@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, TypeFamilies, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -23,6 +23,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.TheWorld.AdminZoneIds (iLoggedOut)
+import Mud.Threads.ThreadTblPurger
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -43,8 +44,8 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (at, both, view, views)
-import Control.Lens.Operators ((%~), (&), (.~), (^.))
+import Control.Lens (both, view, views)
+import Control.Lens.Operators ((%~), (&), (^.))
 import Control.Lens.Type (Optical)
 import Control.Monad ((>=>), replicateM_, unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -54,11 +55,11 @@ import Data.Ix (inRange)
 import Data.List (delete, intercalate, sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Sum(..))
-import GHC.Conc (ThreadStatus(..), threadStatus)
+import GHC.Conc (threadStatus)
 import Numeric (readInt)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, assocs, keys, toList)
-import qualified Data.Map.Lazy as M (assocs, elems, keys, toList)
+import qualified Data.Map.Lazy as M (assocs, elems, toList)
 import qualified Data.Text as T
 import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.CPUTime (getCPUTime)
@@ -419,38 +420,6 @@ debugPersist p = withoutArgs debugPersist p
 debugPurge :: Action
 debugPurge (NoArgs' i mq) = purgeThreadTbls >> ok mq >> logPlaExec (prefixDebugCmd "purge") i
 debugPurge p              = withoutArgs debugPurge p
-
-
-purgeThreadTbls :: MudStack ()
-purgeThreadTbls = do
-    sequence_ [ purgePlaLogTbl, purgeTalkAsyncTbl, purgeThreadTbl ]
-    logNotice "purgeThreadTbls" "purging the thread tables."
-
-
-purgePlaLogTbl :: MudStack ()
-purgePlaLogTbl = getState >>= \(views plaLogTbl (unzip . IM.assocs) -> (is, map fst -> asyncs)) -> do
-    zipped <- [ zip is statuses | statuses <- liftIO . mapM poll $ asyncs ]
-    modifyState $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped in (ms & plaLogTbl .~ plt, ())
-  where
-    purger (_poo, Nothing) tbl = tbl
-    purger (i,    _poo   ) tbl = tbl & at i .~ Nothing
-
-
-purgeTalkAsyncTbl :: MudStack ()
-purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
-    zipped <- [ zip asyncs statuses | statuses <- liftIO . mapM poll $ asyncs ]
-    modifyState $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) zipped in (ms & talkAsyncTbl .~ tat, ())
-  where
-    purger (_poo,                Nothing) tbl = tbl
-    purger (asyncThreadId -> ti, _poo   ) tbl = tbl & at ti .~ Nothing
-
-
-purgeThreadTbl :: MudStack ()
-purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
-    zipped <- [ zip threadIds statuses | statuses <- liftIO . mapM threadStatus $ threadIds ]
-    modifyState $ \ms -> let tt = foldr purger (ms^.threadTbl) zipped in (ms & threadTbl .~ tt, ())
-  where
-    purger (ti, status) tbl = status == ThreadFinished ? tbl & at ti .~ Nothing :? tbl
 
 
 -----

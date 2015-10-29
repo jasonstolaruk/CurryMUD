@@ -1,10 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Misc.Threads ( getUnusedId
+module Mud.Threads.Misc ( getUnusedId
                         , listenWrapper ) where
 
-import Mud.Cmds.Debug
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
@@ -20,11 +19,15 @@ import Mud.Interp.CentralDispatch
 import Mud.Interp.Login
 import Mud.Misc.ANSI
 import Mud.Misc.Database
-import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
+import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
 import Mud.Misc.Persist
 import Mud.TheWorld.AdminZoneIds (iWelcome)
 import Mud.TheWorld.TheWorld
-import Mud.TopLvlDefs.Chars
+import Mud.Threads.DbTblPurger
+import Mud.Threads.InacTimer
+import Mud.Threads.NewMisc
+import Mud.Threads.Receive
+import Mud.Threads.ThreadTblPurger
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
@@ -32,12 +35,12 @@ import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text hiding (headTail)
-import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
+import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice)
 
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.Async (async, asyncThreadId, race_, wait)
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue, newTMQueueIO, tryReadTMQueue, writeTMQueue)
+import Control.Concurrent.STM.TMQueue (closeTMQueue, newTMQueueIO, writeTMQueue)
 import Control.Concurrent.STM.TMVar (takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
@@ -52,17 +55,19 @@ import Data.Int (Int64)
 import Data.List ((\\))
 import Data.Monoid ((<>), Any(..), getSum)
 import Data.Time (getCurrentTime)
-import Database.SQLite.Simple (Only(..))
 import Network (HostName, PortID(..), accept, listenOn, sClose)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (keys, map)
 import qualified Data.Map.Lazy as M (elems, empty)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (hGetLine, hPutStr, hPutStrLn, putStrLn, readFile)
+import qualified Data.Text.IO as T (hPutStr, hPutStrLn, putStrLn, readFile)
 import System.FilePath ((</>))
-import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hIsEOF, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
+import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (randomIO, randomRIO)
 import System.Time.Utils (renderSecs)
+
+
+-- TODO: Move everything out of this module, then rename "NewMisc" to "Misc".
 
 
 default (Int)
@@ -81,10 +86,6 @@ logIOEx = L.logIOEx "Mud.Misc.Threads"
 
 logNotice :: T.Text -> T.Text -> MudStack ()
 logNotice = L.logNotice "Mud.Misc.Threads"
-
-
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
-logPla = L.logPla "Mud.Misc.Threads"
 
 
 -- ==================================================
@@ -116,12 +117,12 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         initialize
         logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
         sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
-        auxAsyncs <- mapM runAsync [ adminChanTblPurger
-                                   , adminMsgTblPurger
-                                   , chanTblPurger
-                                   , questionChanTblPurger
-                                   , teleTblPurger
-                                   , threadTblPurger
+        auxAsyncs <- mapM runAsync [ threadAdminChanTblPurger
+                                   , threadAdminMsgTblPurger
+                                   , threadChanTblPurger
+                                   , threadQuestionChanTblPurger
+                                   , threadTeleTblPurger
+                                   , threadThreadTblPurger
                                    , worldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
@@ -169,74 +170,6 @@ sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState 
     helper ms = (ms & invTbl %~ IM.map (sortInv ms), ())
 
 
--- ============================================================
--- "Database table purger" threads:
-
-
-adminChanTblPurger :: MudStack ()
-adminChanTblPurger = dbTblPurger "admin_chan" countDbTblRecsAdminChan purgeDbTblAdminChan
-
-
-adminMsgTblPurger :: MudStack ()
-adminMsgTblPurger = dbTblPurger "admin_msg" countDbTblRecsAdminMsg purgeDbTblAdminMsg
-
-
-chanTblPurger :: MudStack ()
-chanTblPurger = dbTblPurger "chan" countDbTblRecsChan purgeDbTblChan
-
-
-questionChanTblPurger :: MudStack ()
-questionChanTblPurger = dbTblPurger "question" countDbTblRecsQuestion purgeDbTblQuestion
-
-
-teleTblPurger :: MudStack ()
-teleTblPurger = dbTblPurger "tele" countDbTblRecsTele purgeDbTblTele
-
-
-dbTblPurger :: T.Text -> IO [Only Int] -> IO () -> MudStack ()
-dbTblPurger tblName countFun purgeFun = handle (threadExHandler "dbTblPurger") $ do
-    setThreadType DbTblPurger
-    logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
-    let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
-    forever loop `catch` die "dbTblPurger"
-  where
-    helper = let fn = "dbTblPurger helper" in withDbExHandler fn countFun >>= \case
-        Just [Only count] -> if count > maxDbTblRecs
-                               then do
-                                   withDbExHandler_ fn purgeFun
-                                   logNotice fn . T.concat $ [ "the "
-                                                             , tblName
-                                                             , " table has been purged of "
-                                                             , showText noOfDbTblRecsToPurge
-                                                             , " records." ]
-                               else logNotice fn . T.concat $ [ "the "
-                                                               , tblName
-                                                               , " table presently contains "
-                                                               , showText count
-                                                               , " records." ]
-        _ -> unit
-
-
-threadExHandler :: T.Text -> SomeException -> MudStack ()
-threadExHandler threadName e = logExMsg "threadExHandler" ("on " <> threadName <> " thread") e >> throwToListenThread e
-
-
-die :: T.Text -> PlsDie -> MudStack ()
-die threadName _ = logNotice "die" $ "the " <> threadName <> " thread is dying."
-
-
--- ==================================================
--- The "thread table purger" thread:
-
-
-threadTblPurger :: MudStack ()
-threadTblPurger = handle (threadExHandler "thread table purger") $ do
-    setThreadType ThreadTblPurger
-    logNotice "threadTblPurger" "thread table purger started."
-    let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
-    forever loop `catch` die "thread table purger"
-
-
 -- ==================================================
 -- The "world persister" thread:
 
@@ -257,7 +190,7 @@ talk :: Handle -> HostName -> MudStack ()
 talk h host = helper `finally` cleanUp
   where
     helper = do
-        (mq, itq)          <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
+        (mq, tq)           <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         setThreadType . Talk $ i
         handle (plaThreadExHandler "talk" i) $ onEnv $ \md -> do
@@ -266,9 +199,9 @@ talk h host = helper `finally` cleanUp
             prompt    mq "By what name are you known?"
             bcastAdmins $ "A new player has connected: " <> s <> "."
             logNotice "talk helper" $ "new PC name for incoming player: " <> s <> "."
-            liftIO . void . forkIO . runReaderT (inacTimer i mq itq) $ md
-            liftIO $ race_ (runReaderT (server  h i mq itq) md)
-                           (runReaderT (receive h i mq)     md)
+            liftIO . void . forkIO . runReaderT (threadInacTimer i mq tq) $ md
+            liftIO $ race_ (runReaderT (server        h i mq tq) md)
+                           (runReaderT (threadReceive h i mq)    md)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = logNotice "talk cleanUp" ("closing the handle for " <> T.pack host <> ".") >> (liftIO . hClose $ h)
@@ -339,12 +272,6 @@ getUnusedId :: MudState -> Id
 getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
 
 
-plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
-plaThreadExHandler threadName i e
-  | Just ThreadKilled <- fromException e = closePlaLog i
-  | otherwise                            = threadExHandler threadName e
-
-
 dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
@@ -353,56 +280,29 @@ dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHand
 
 
 -- ==================================================
--- "Inactivity timer" threads:
-
-
-type InacTimerQueue = TMQueue InacTimerMsg
-
-
-data InacTimerMsg = ResetTimer
-
-
-inacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-inacTimer i mq itq = sequence_ [ setThreadType . InacTimer $ i, loop 0 `catch` plaThreadExHandler "inactivity timer" i ]
-  where
-    loop secs = do
-        liftIO . threadDelay $ 1 * 10 ^ 6
-        itq |&| liftIO . atomically . tryReadTMQueue >=> \case
-          Just Nothing | secs >= maxInacSecs -> inacBoot secs
-                       | otherwise           -> loop . succ $ secs
-          Just (Just ResetTimer)             -> loop 0
-          Nothing                            -> unit
-    inacBoot (parensQuote . T.pack . renderSecs -> secs) = getState >>= \ms -> let s = getSing i ms in do
-        logPla "inacTimer inacBoot" i $ "booted due to inactivity " <> secs <>  "."
-        let noticeMsg = T.concat [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]
-        logNotice "inacTimer inacBoot" noticeMsg
-        liftIO . atomically . writeTQueue mq $ InacBoot
-
-
--- ==================================================
 -- "Server" threads:
 
 
-server :: Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-server h i mq itq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThreadExHandler "server" i ]
+server :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
+server h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThreadExHandler "server" i ]
   where
     loop = mq |&| liftIO . atomically . readTQueue >=> \case
       Dropped        ->                                  sayonara
-      FromClient msg -> handleFromClient i mq itq msg >> loop
-      FromServer msg -> handleFromServer i h msg      >> loop
-      InacBoot       -> sendInacBootMsg h             >> sayonara
-      InacStop       -> stopInacThread itq            >> loop
-      MsgBoot msg    -> sendBootMsg h msg             >> sayonara
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)  >> loop
-      Prompt  p      -> sendPrompt i h p              >> loop
-      Quit           -> cowbye h                      >> sayonara
-      Shutdown       -> shutDown                      >> loop
-      SilentBoot     ->                                  sayonara
-    sayonara = sequence_ [ stopInacThread itq, handleEgress i ]
+      FromClient msg -> handleFromClient i mq tq msg >> loop
+      FromServer msg -> handleFromServer i h msg     >> loop
+      InacBoot       -> sendInacBootMsg h            >> sayonara
+      InacStop       -> stopTimerThread tq           >> loop
+      MsgBoot msg    -> sendBootMsg h msg            >> sayonara
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg) >> loop
+      Prompt  p      -> sendPrompt i h p             >> loop
+      Quit           -> cowbye h                     >> sayonara
+      Shutdown       -> shutDown                     >> loop
+      SilentBoot     ->                                 sayonara
+    sayonara = sequence_ [ stopTimerThread tq, handleEgress i ]
 
 
-handleFromClient :: Id -> MsgQueue -> InacTimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
+handleFromClient :: Id -> MsgQueue -> TimerQueue -> T.Text -> MudStack ()
+handleFromClient i mq tq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p           = getPla i ms
         thruCentral = msg |#| uncurry (interpret p centralDispatch) . headTail . T.words
         thruOther f = uncurry (interpret p f) (()# msg ? ("", []) :? (headTail . T.words $ msg))
@@ -410,7 +310,7 @@ handleFromClient i mq itq (T.strip . stripControl . stripTelnet -> msg) = getSta
   where
     interpret p f cn as = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
-        liftIO . atomically . writeTMQueue itq $ ResetTimer
+        liftIO . atomically . writeTMQueue tq $ ResetTimer
         f cn . WithArgs i mq (p^.columns) $ as
 
 
@@ -435,8 +335,8 @@ sendInacBootMsg :: Handle -> MudStack ()
 sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . quoteWith' (bootMsgColor, dfltColor) $ inacBootMsg
 
 
-stopInacThread :: InacTimerQueue -> MudStack ()
-stopInacThread = liftIO . atomically . closeTMQueue
+stopTimerThread :: TimerQueue -> MudStack ()
+stopTimerThread = liftIO . atomically . closeTMQueue
 
 
 sendBootMsg :: Handle -> T.Text -> MudStack ()
@@ -464,21 +364,3 @@ shutDown = do
         persist
         logNotice "shutDown commitSuicide" "killing the listen thread."
         liftIO . killThread . getListenThreadId =<< getState
-
-
--- ==================================================
--- "Receive" threads:
-
-
-receive :: Handle -> Id -> MsgQueue -> MudStack ()
-receive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler "receive" i ]
-  where
-    loop = mIf (liftIO . hIsEOF $ h)
-               (sequence_ [ logPla "receive loop" i "connection dropped."
-                          , liftIO . atomically . writeTQueue mq $ Dropped ])
-               (sequence_ [ liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters =<< T.hGetLine h
-                          , loop ])
-    remDelimiters = T.foldr helper ""
-    helper c acc | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
-                 | otherwise                             = acc
-    delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]

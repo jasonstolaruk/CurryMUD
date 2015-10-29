@@ -12,8 +12,8 @@ kickButt <$> take maxBound names -- Welcome to the playground!
 module Main (main) where
 
 import Mud.Data.Misc
-import Mud.Misc.Threads
 import Mud.TheWorld.TheWorld
+import Mud.Threads.Misc
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators

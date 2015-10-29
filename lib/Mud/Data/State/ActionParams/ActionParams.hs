@@ -24,7 +24,7 @@ module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
                                                 , pattern OneArgNubbed
                                                 , pattern WithArgs ) where
 
-import Mud.Data.State.ActionParams.Util
+import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Util.Quoting
 
