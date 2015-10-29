@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, TypeFamilies, ViewPatterns #-}
+{-# LANGUAGE MonadComprehensions, OverloadedStrings, TypeFamilies, ViewPatterns #-}
 
 module Mud.Threads.ThreadTblPurger ( purgeThreadTbls
                                    , threadThreadTblPurger ) where

@@ -40,6 +40,34 @@ logNotice = L.logNotice "Mud.Threads.DbTblPurger"
 -- ==================================================
 
 
+dbTblPurger :: T.Text -> IO [Only Int] -> IO () -> MudStack ()
+dbTblPurger tblName countFun purgeFun = handle (threadExHandler threadName) $ do
+    setThreadType DbTblPurger
+    logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
+    let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
+    forever loop `catch` die threadName
+  where
+    threadName = "database table purger " <> parensQuote tblName
+    helper     = let fn = "dbTblPurger helper" in withDbExHandler fn countFun >>= \case
+        Just [Only count] -> if count > maxDbTblRecs
+                               then do
+                                   withDbExHandler_ fn purgeFun
+                                   logNotice fn  . T.concat $ [ "the "
+                                                              , dblQuote tblName
+                                                              , " table has been purged of "
+                                                              , showText noOfDbTblRecsToPurge
+                                                              , " records." ]
+                               else logNotice fn . T.concat $ [ "the "
+                                                              , dblQuote tblName
+                                                              , " table presently contains "
+                                                              , showText count
+                                                              , " records." ]
+        _ -> unit
+
+
+-----
+
+
 threadAdminChanTblPurger :: MudStack ()
 threadAdminChanTblPurger = dbTblPurger "admin_chan" countDbTblRecsAdminChan purgeDbTblAdminChan
 
@@ -58,27 +86,3 @@ threadQuestionChanTblPurger = dbTblPurger "question" countDbTblRecsQuestion purg
 
 threadTeleTblPurger :: MudStack ()
 threadTeleTblPurger = dbTblPurger "tele" countDbTblRecsTele purgeDbTblTele
-
-
-dbTblPurger :: T.Text -> IO [Only Int] -> IO () -> MudStack ()
-dbTblPurger tblName countFun purgeFun = handle (threadExHandler "database table purger") $ do
-    setThreadType DbTblPurger
-    logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
-    let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
-    forever loop `catch` die "dbTblPurger"
-  where
-    helper = let fn = "dbTblPurger helper" in withDbExHandler fn countFun >>= \case
-        Just [Only count] -> if count > maxDbTblRecs
-                               then do
-                                   withDbExHandler_ fn purgeFun
-                                   logNotice fn . T.concat $ [ "the "
-                                                             , tblName
-                                                             , " table has been purged of "
-                                                             , showText noOfDbTblRecsToPurge
-                                                             , " records." ]
-                               else logNotice fn . T.concat $ [ "the "
-                                                               , tblName
-                                                               , " table presently contains "
-                                                               , showText count
-                                                               , " records." ]
-        _ -> unit
