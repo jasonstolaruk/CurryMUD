@@ -4,7 +4,6 @@
 module Mud.Threads.WorldPersister (threadWorldPersister) where
 
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Set
 import Mud.Misc.Persist
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc

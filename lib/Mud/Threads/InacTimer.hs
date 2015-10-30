@@ -7,7 +7,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Set
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc

@@ -504,13 +504,14 @@ debugThread (NoArgs i mq cols) = do
     send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
     logPlaExec (prefixDebugCmd "thread") i
   where
-    mkDesc (ti, bracketPad 18 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
+    mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    mkTypeName (PlaLog  (showText -> pi)) = padOrTrunc 10 "PlaLog"  <> pi
-    mkTypeName (Receive (showText -> pi)) = padOrTrunc 10 "Receive" <> pi
-    mkTypeName (Regen   (showText -> pi)) = padOrTrunc 10 "Regen"   <> pi
-    mkTypeName (Server  (showText -> pi)) = padOrTrunc 10 "Server"  <> pi
-    mkTypeName (Talk    (showText -> pi)) = padOrTrunc 10 "Talk"    <> pi
+    mkTypeName (InacTimer (showText -> pi)) = padOrTrunc 10 "InacTimer" <> pi
+    mkTypeName (PlaLog    (showText -> pi)) = padOrTrunc 10 "PlaLog"    <> pi
+    mkTypeName (Receive   (showText -> pi)) = padOrTrunc 10 "Receive"   <> pi
+    mkTypeName (Regen     (showText -> pi)) = padOrTrunc 10 "Regen"     <> pi
+    mkTypeName (Server    (showText -> pi)) = padOrTrunc 10 "Server"    <> pi
+    mkTypeName (Talk      (showText -> pi)) = padOrTrunc 10 "Talk"      <> pi
     mkTypeName (showText -> tt)           = tt
 debugThread p = withoutArgs debugThread p
 

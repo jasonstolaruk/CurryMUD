@@ -1,6 +1,7 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
 
-module Mud.Threads.Talk (threadTalk) where
+module Mud.Threads.Talk ( runTalkAsync
+                        , threadTalk ) where
 
 import Mud.Cmds.Util.Misc
 import Mud.Data.State.MsgQueue
@@ -8,7 +9,6 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Set
 import Mud.Interp.Login
 import Mud.TheWorld.AdminZoneIds (iWelcome)
 import Mud.Threads.InacTimer
@@ -23,12 +23,12 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.Async (race_)
+import Control.Concurrent.Async (asyncThreadId, race_)
 import Control.Concurrent.STM.TMQueue (newTMQueueIO)
 import Control.Concurrent.STM.TQueue (newTQueueIO)
 import Control.Exception.Lifted (finally, handle, try)
-import Control.Lens (views)
-import Control.Lens.Operators ((&), (.~))
+import Control.Lens (at, views)
+import Control.Lens.Operators ((&), (.~), (?~))
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
@@ -52,6 +52,14 @@ logNotice = L.logNotice "Mud.Threads.Talk"
 
 
 -- ==================================================
+
+
+runTalkAsync :: Handle -> HostName -> MudStack ()
+runTalkAsync h host = runAsync (threadTalk h host) >>= \a@(asyncThreadId -> ti) ->
+    modifyState $ (, ()) . (talkAsyncTbl.at ti ?~ a)
+
+
+-----
 
 
 threadTalk :: Handle -> HostName -> MudStack ()
@@ -107,13 +115,13 @@ adHoc mq host = do
                        , _linked     = [] }
             pla  = Pla { _currHostName = host
                        , _connectTime  = Just ct
-                       , _plaAsyncs    = []
                        , _plaFlags     = zeroBits
                        , _columns      = 80
                        , _pageLines    = 24
                        , _interp       = Just interpName
                        , _peepers      = []
                        , _peeping      = []
+                       , _regenAsync   = Nothing
                        , _retainedMsgs = []
                        , _lastRmId     = Nothing }
             ms'  = ms  & coinsTbl        .ind i        .~ mempty

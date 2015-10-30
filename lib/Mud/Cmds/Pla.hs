@@ -87,6 +87,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
+-- TODO: Should we be using (?~) more?
+
+
 {-# ANN module ("HLint: ignore Use &&"        :: String) #-}
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 {-# ANN module ("HLint: ignore Use ||"        :: String) #-}
@@ -1543,8 +1546,8 @@ handleEgress :: Id -> MudStack ()
 handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress
     helper now |&| modifyState >=> \(s, bs, logMsgs) -> do
-        throwWaitPlaAsyncs i
-        closePlaLog        i
+        throwWaitRegen i
+        closePlaLog    i
         bcast bs
         bcastAdmins $ s <> " has left CurryMUD."
         forM_ logMsgs $ uncurry (logPla "handleEgress")

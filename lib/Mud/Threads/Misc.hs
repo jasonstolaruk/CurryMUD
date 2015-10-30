@@ -1,13 +1,14 @@
-{-# LANGUAGE DeriveDataTypeable, LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, LambdaCase, OverloadedStrings, TupleSections #-}
 
 module Mud.Threads.Misc ( die
                         , plaThreadExHandler
                         , PlsDie(..)
-                        , runPlaAsync
+                        , runAsync
+                        , setThreadType
                         , stopTimerThread
                         , threadExHandler
                         , throwWait
-                        , throwWaitPlaAsyncs
+                        , throwWaitRegen
                         , TimerMsg(..)
                         , TimerQueue ) where
 
@@ -19,12 +20,14 @@ import Mud.Util.Misc
 import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice, logPla)
 
+import Control.Concurrent (myThreadId)
 import Control.Concurrent.Async (Async, async, asyncThreadId, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, SomeException, fromException)
 import Control.Exception.Lifted (throwTo)
-import Control.Lens.Operators ((%~), (&), (.~), (^.))
+import Control.Lens (at)
+import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad ((>=>), void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
@@ -89,10 +92,17 @@ threadExHandler threadName e = logExMsg "threadExHandler" ("on " <> threadName <
 -----
 
 
-runPlaAsync :: Id -> (Id -> MudStack ()) -> MudStack ()
-runPlaAsync i f = onEnv (liftIO . async . runReaderT (f i)) >>= \a -> modifyState . helper $ a
+runAsync :: MudStack () -> MudStack (Async ())
+runAsync f = onEnv $ liftIO . async . runReaderT f
+
+
+-----
+
+
+setThreadType :: ThreadType -> MudStack ()
+setThreadType threadType = liftIO myThreadId >>= \ti -> modifyState (helper ti)
   where
-    helper a ms = (ms & plaTbl.ind i.plaAsyncs %~ (a :), ())
+    helper ti = (, ()) . (threadTbl.at ti ?~ threadType)
 
 
 -----
@@ -105,12 +115,12 @@ stopTimerThread = liftIO . atomically . closeTMQueue
 -----
 
 
-throwWaitPlaAsyncs :: Id -> MudStack ()
-throwWaitPlaAsyncs i = helper |&| modifyState >=> mapM_ throwWait
-  where
-    helper ms = let as = ms^.plaTbl.ind i.plaAsyncs
-                in (ms & plaTbl.ind i.plaAsyncs .~ [], as)
-
-
 throwWait :: Async () -> MudStack ()
 throwWait a = throwTo (asyncThreadId a) PlsDie >> (liftIO . void . wait $ a)
+
+
+throwWaitRegen :: Id -> MudStack ()
+throwWaitRegen i = helper |&| modifyState >=> maybeVoid throwWait
+  where
+    helper ms = let a = ms^.plaTbl.ind i.regenAsync
+                in (ms & plaTbl.ind i.regenAsync .~ Nothing, a)

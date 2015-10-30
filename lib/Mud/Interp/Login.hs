@@ -13,13 +13,11 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Set
 import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.AdminZoneIds
-import Mud.Threads.Misc
 import Mud.Threads.Regen
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -266,7 +264,7 @@ handleLogin s params@(ActionParams { .. }) = do
     look params
     prompt plaMsgQueue . mkPrompt plaId =<< getState
     when (getPlaFlag IsAdmin p) stopInacTimer
-    runPlaAsync plaId threadRegen
+    runRegenAsync plaId
     notifyArrival ms
   where
     greet = wrapSend plaMsgQueue plaCols . nlPrefix $ if s == "Root"

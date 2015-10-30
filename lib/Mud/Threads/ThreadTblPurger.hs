@@ -6,7 +6,6 @@ module Mud.Threads.ThreadTblPurger ( purgeThreadTbls
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Set
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators

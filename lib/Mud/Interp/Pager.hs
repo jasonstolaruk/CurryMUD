@@ -10,7 +10,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Set
 import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Util.Misc

@@ -12,7 +12,6 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Set
 import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist

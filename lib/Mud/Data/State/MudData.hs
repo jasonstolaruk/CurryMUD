@@ -84,7 +84,7 @@ type PlaTbl           = IM.IntMap Pla
 type RmTbl            = IM.IntMap Rm
 type RmTeleNameTbl    = IM.IntMap T.Text
 type RndmNamesMstrTbl = IM.IntMap RndmNamesTbl
-type TalkAsyncTbl     = M.Map ThreadId (Async ())
+type TalkAsyncTbl     = M.Map ThreadId TalkAsync
 type TeleLinkMstrTbl  = IM.IntMap TeleLinkTbl
 type ThreadTbl        = M.Map ThreadId ThreadType
 type TypeTbl          = IM.IntMap Type
@@ -356,13 +356,13 @@ instance Random Race where
 
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
-               , _plaAsyncs    :: [Async ()]
                , _plaFlags     :: Int
                , _columns      :: Int
                , _pageLines    :: Int
                , _interp       :: Maybe Interp
                , _peepers      :: Inv
                , _peeping      :: Inv
+               , _regenAsync   :: Maybe RegenAsync
                , _retainedMsgs :: [T.Text]
                , _lastRmId     :: Maybe Id }
 
@@ -375,6 +375,9 @@ data PlaFlags = IsAdmin
               | IsSeeingInvis
               | IsTunedAdmin
               | IsTunedQuestion deriving Enum
+
+
+type RegenAsync = Async ()
 
 
 type Interp  = CmdName -> ActionParams -> MudStack ()
@@ -400,13 +403,13 @@ plaToJSON Pla { .. } = object [ "_currHostName" .= _currHostName
 jsonToPla :: Value -> Parser Pla
 jsonToPla (Object o) = Pla <$> o .: "_currHostName"
                            <*> o .: "_connectTime"
-                           <*> pure []
                            <*> o .: "_plaFlags"
                            <*> o .: "_columns"
                            <*> o .: "_pageLines"
                            <*> pure Nothing
                            <*> pure []
                            <*> pure []
+                           <*> pure Nothing
                            <*> o .: "_retainedMsgs"
                            <*> o .: "_lastRmId"
 jsonToPla _          = empty
@@ -452,6 +455,12 @@ data LinkDir = North
 
 
 type LinkName = T.Text
+
+
+-- ==================================================
+
+
+type TalkAsync = Async ()
 
 
 -- ==================================================

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.Logging ( closeLogs
                         , closePlaLog
@@ -22,7 +22,6 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Set
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -39,6 +38,7 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, handle, throwIO)
 import Control.Lens (both, over, view, views)
+import Control.Lens.Operators ((.~))
 import Control.Monad ((>=>), forM_, forever, guard, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -148,7 +148,7 @@ initPlaLog i n@(T.unpack -> n') = do
     logExLock <- onEnv $ views (locks.loggingExLock) return
     q         <- liftIO newTQueueIO
     a         <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM q $ logExLock
-    setLogService i (a, q)
+    modifyState $ (, ()) . (plaLogTbl.ind i .~ (a, q))
 
 
 -- ==================================================

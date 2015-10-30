@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, TransformListComp, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, TransformListComp, TupleSections, ViewPatterns #-}
 
 -- This module contains state-related functions used by multiple modules.
 
@@ -21,6 +21,7 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , pluralize
                                 , onEnv
                                 , removeAdHoc
+                                , setInterp
                                 , sortInv
                                 , withLock ) where
 
@@ -208,6 +209,13 @@ removeAdHoc i ms = ms & coinsTbl   .at  i        .~ Nothing
                       & pcTbl      .at  i        .~ Nothing
                       & plaTbl     .at  i        .~ Nothing
                       & typeTbl    .at  i        .~ Nothing
+
+
+-----
+
+
+setInterp :: Id -> Maybe Interp -> MudStack ()
+setInterp i mi = modifyState $ (, ()) . (plaTbl.ind i.interp .~ mi)
 
 
 -----

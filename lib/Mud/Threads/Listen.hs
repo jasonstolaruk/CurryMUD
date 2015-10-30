@@ -8,7 +8,6 @@ import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Set
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
 import Mud.TheWorld.TheWorld
@@ -24,7 +23,6 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice)
 
-import Control.Concurrent.Async (async)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (takeTMVar)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
@@ -33,7 +31,6 @@ import Control.Lens (view)
 import Control.Lens.Operators ((%~), (&))
 import Control.Monad (forever, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (runReaderT)
 import Data.Int (Int64)
 import Data.Monoid ((<>), Any(..), getSum)
 import Network (PortID(..), accept, listenOn, sClose)
@@ -100,12 +97,11 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         logInterfaces
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
-    runAsync f = onEnv $ liftIO . async . runReaderT f
     loop sock = let fn = "listen loop" in do
         (h, host@(T.pack -> host'), localPort) <- liftIO . accept $ sock
         logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
-          Just (Any False) -> setTalkAsync =<< onEnv (liftIO . async . runReaderT (threadTalk h host))
+          Just (Any False) -> runTalkAsync h host
           _                -> do
               liftIO . T.hPutStr h . nlnl $ bannedMsg
               liftIO . hClose $ h

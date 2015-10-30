@@ -61,7 +61,6 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
-import Mud.Data.State.Util.Set
 import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database

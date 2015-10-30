@@ -9,7 +9,6 @@ module Mud.Threads.DbTblPurger ( threadAdminChanTblPurger
 
 import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Set
 import Mud.Misc.Database
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
