@@ -2,10 +2,10 @@
 
 module Mud.Interp.Login (interpName) where
 
-import Mud.Cmds.Pla
-import Mud.Cmds.Util.Misc
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Pla
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -19,6 +19,8 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.AdminZoneIds
+import Mud.Threads.Misc
+import Mud.Threads.Regen
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
@@ -87,9 +89,6 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
                                       unit
                                       nextPrompt
         (ms, Right (originId, oldSing)) -> do
-            greet
-            handleLogin p { args = [] }
-            logPla    "interpName" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
             logNotice "interpName" . T.concat $ [ dblQuote oldSing
                                                 , " has logged in as "
                                                 , cn'
@@ -98,6 +97,9 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
                                                 , " has been changed to "
                                                 , showText i
                                                 , "." ]
+            initPlaLog i cn'
+            logPla "interpName handleNotBanned" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
+            handleLogin cn' p { args = [] }
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
         let newPla  = getPla i ms
@@ -114,9 +116,6 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
-    greet = wrapSend mq cols . nlPrefix $ if cn' == "Root"
-      then quoteWith' (zingColor, dfltColor) sudoMsg
-      else "Welcome back, " <> cn' <> "!"
 interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue sorryInterpNameExcessArgs
 
 
@@ -216,16 +215,17 @@ checkRndmNames mq = checkNameHelper (Just rndmNamesFile) "checkRndmNames" . prom
 interpConfirmName :: Sing -> Interp
 interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
   Just True -> helper |&| modifyState >=> \(ms@(getPla i -> p), oldSing) -> do
-      send mq . nl $ ""
-      handleLogin params { args = [] }
-      notifyQuestion i ms
-      logPla    "interpConfirmName" i $ "new character logged in from " <> views currHostName T.pack p <> "."
       logNotice "interpConfirmName"   . T.concat $ [ dblQuote oldSing
                                                    , " has logged in as "
                                                    , s
                                                    , " "
                                                    , parensQuote "new character"
                                                    , "." ]
+      initPlaLog i s
+      logPla "interpConfirmName" i $ "new character logged in from " <> views currHostName T.pack p <> "."
+      send mq . nl $ ""
+      handleLogin s params { args = [] }
+      notifyQuestion i ms
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
@@ -258,16 +258,20 @@ yesNo (T.toLower -> a) = guard (()!# a) >> helper
            | otherwise              = Nothing
 
 
-handleLogin :: ActionParams -> MudStack ()
-handleLogin params@(ActionParams { .. }) = do
+handleLogin :: Sing -> ActionParams -> MudStack ()
+handleLogin s params@(ActionParams { .. }) = do
+    greet
     showMotd plaMsgQueue plaCols
-    (ms@(getSing plaId -> s), p) <- showRetainedMsgs
+    (ms, p) <- showRetainedMsgs
     look params
     prompt plaMsgQueue . mkPrompt plaId =<< getState
-    notifyArrival ms s
-    when (getPlaFlag IsAdmin p) . stopInacTimer plaId $ plaMsgQueue
-    initPlaLog plaId s
+    when (getPlaFlag IsAdmin p) stopInacTimer
+    runPlaAsync plaId threadRegen
+    notifyArrival ms
   where
+    greet = wrapSend plaMsgQueue plaCols . nlPrefix $ if s == "Root"
+      then quoteWith' (zingColor, dfltColor) sudoMsg
+      else "Welcome back, " <> s <> "!"
     showRetainedMsgs = helper |&| modifyState >=> \(ms, msgs, p) -> do
         unless (()# msgs) $ do
             let (fromPpl, others) = first (map T.tail) . partition ((== fromPersonMarker) . T.head) $ msgs
@@ -282,12 +286,12 @@ handleLogin params@(ActionParams { .. }) = do
                     p'  = p  & retainedMsgs     .~ []
                     ms' = ms & plaTbl.ind plaId .~ p'
                 in (ms', (ms', p^.retainedMsgs, p'))
-    notifyArrival ms s = do
+    stopInacTimer = do
+        liftIO . atomically . writeTQueue plaMsgQueue $ InacStop
+        logPla "handleLogin stopInacTimer" plaId "stopping the inactivity timer."
+    notifyArrival ms = do
         bcastOtherAdmins plaId $ s <> " has logged in."
         bcastOthersInRm  plaId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig plaId ms s A $ DoCap
-    stopInacTimer i mq = do
-        liftIO . atomically . writeTQueue mq $ InacStop
-        logPla "handleLogin stopInacTimer" i "stopping the inactivity timer."
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()

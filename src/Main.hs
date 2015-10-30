@@ -13,7 +13,7 @@ module Main (main) where
 
 import Mud.Data.Misc
 import Mud.TheWorld.TheWorld
-import Mud.Threads.Misc
+import Mud.Threads.Listen
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
@@ -40,7 +40,7 @@ main = withSocketsDo $ do
                                            , plaHelpCmdsDir
                                            , plaHelpTopicsDir ]
     welcome
-    runReaderT listenWrapper =<< initMudData DoLog
+    runReaderT threadListen =<< initMudData DoLog
 
 
 welcome :: IO ()

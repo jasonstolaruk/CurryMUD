@@ -508,6 +508,7 @@ debugThread (NoArgs i mq cols) = do
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
     mkTypeName (PlaLog  (showText -> pi)) = padOrTrunc 10 "PlaLog"  <> pi
     mkTypeName (Receive (showText -> pi)) = padOrTrunc 10 "Receive" <> pi
+    mkTypeName (Regen   (showText -> pi)) = padOrTrunc 10 "Regen"   <> pi
     mkTypeName (Server  (showText -> pi)) = padOrTrunc 10 "Server"  <> pi
     mkTypeName (Talk    (showText -> pi)) = padOrTrunc 10 "Talk"    <> pi
     mkTypeName (showText -> tt)           = tt

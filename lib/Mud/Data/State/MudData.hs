@@ -356,6 +356,7 @@ instance Random Race where
 
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
+               , _plaAsyncs    :: [Async ()]
                , _plaFlags     :: Int
                , _columns      :: Int
                , _pageLines    :: Int
@@ -399,6 +400,7 @@ plaToJSON Pla { .. } = object [ "_currHostName" .= _currHostName
 jsonToPla :: Value -> Parser Pla
 jsonToPla (Object o) = Pla <$> o .: "_currHostName"
                            <*> o .: "_connectTime"
+                           <*> pure []
                            <*> o .: "_plaFlags"
                            <*> o .: "_columns"
                            <*> o .: "_pageLines"
@@ -468,6 +470,7 @@ data ThreadType = DbTblPurger
                 | Notice
                 | PlaLog    Id
                 | Receive   Id
+                | Regen     Id
                 | Server    Id
                 | Talk      Id
                 | ThreadTblPurger

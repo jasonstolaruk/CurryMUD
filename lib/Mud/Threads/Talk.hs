@@ -19,7 +19,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Quoting
-import Mud.Util.Text hiding (headTail)
+import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent (forkIO)
@@ -107,6 +107,7 @@ adHoc mq host = do
                        , _linked     = [] }
             pla  = Pla { _currHostName = host
                        , _connectTime  = Just ct
+                       , _plaAsyncs    = []
                        , _plaFlags     = zeroBits
                        , _columns      = 80
                        , _pageLines    = 24

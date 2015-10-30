@@ -60,7 +60,7 @@ createAdminZone = do
          M.empty
          (M.fromList [("Curry", True)])
          (PC iLoggedOut Human ["Curry"] ["Curry"])
-         (Pla "" Nothing
+         (Pla "" Nothing []
               (setBit adminFlags . fromEnum $ IsIncognito)
               80 24
               Nothing
@@ -87,7 +87,7 @@ createAdminZone = do
          M.empty
          (M.fromList [("Root", True)])
          (PC iLoggedOut Human ["Root"] ["Root"])
-         (Pla "" Nothing
+         (Pla "" Nothing []
               adminFlags
               80 24
               Nothing

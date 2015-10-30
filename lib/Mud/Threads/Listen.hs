@@ -24,11 +24,11 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice)
 
-import Control.Concurrent.Async (async, asyncThreadId, wait)
+import Control.Concurrent.Async (async)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (takeTMVar)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
-import Control.Exception.Lifted (catch, finally, handle, throwTo)
+import Control.Exception.Lifted (catch, finally, handle)
 import Control.Lens (view)
 import Control.Lens.Operators ((%~), (&))
 import Control.Monad (forever, void)
@@ -119,10 +119,9 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     cleanUp auxAsyncs sock = do
         logNotice "listen cleanUp" "closing the socket."
         liftIO . sClose $ sock
-        mapM_ (liftIO . throwWait) auxAsyncs
+        mapM_ throwWait auxAsyncs
         onEnv $ liftIO . atomically . void . takeTMVar . view (locks.persistLock)
-    throwWait a = throwTo (asyncThreadId a) PlsDie >> (void . wait $ a)
-    halt        = liftIO . T.putStrLn $ loadWorldErrorMsg
+    halt = liftIO . T.putStrLn $ loadWorldErrorMsg
 
 
 listenExHandler :: SomeException -> MudStack ()

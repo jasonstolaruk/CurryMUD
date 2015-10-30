@@ -35,4 +35,4 @@ threadWorldPersister = handle (threadExHandler "world persister") $ do
     setThreadType WorldPersister
     logNotice "threadWorldPersister" "world persister started."
     let loop = (liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6) >> persist
-    forever loop `catch` die "world persister"
+    forever loop `catch` die "world persister" Nothing
