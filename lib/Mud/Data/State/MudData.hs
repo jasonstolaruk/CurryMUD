@@ -334,15 +334,15 @@ mobToJSON Mob { .. } = object [ "_sex"   .= _sex
                               , "_ma"    .= _ma
                               , "_ps"    .= _ps
                               , "_curHp" .= _curHp
-                              , "_maxHp" .= _st
-                              , "_curMp" .= _dx
-                              , "_maxMp" .= _ht
-                              , "_curPp" .= _ma
-                              , "_maxPp" .= _ps
-                              , "_curFp" .= _curHp
-                              , "_maxFp" .= _st
-                              , "_xp"    .= _dx
-                              , "_hand"  .= _ht ]
+                              , "_maxHp" .= _maxHp
+                              , "_curMp" .= _curMp
+                              , "_maxMp" .= _maxMp
+                              , "_curPp" .= _curPp
+                              , "_maxPp" .= _maxPp
+                              , "_curFp" .= _curFp
+                              , "_maxFp" .= _maxFp
+                              , "_xp"    .= _xp
+                              , "_hand"  .= _hand ]
 
 
 jsonToMob :: Value -> Parser Mob

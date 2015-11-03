@@ -96,7 +96,7 @@ calcRegenFpAmt i ms = calcRegenAmt $ (getHt i ms + getSt i ms) `divide` 2
 
 
 calcRegenDelay :: Double -> Int
-calcRegenDelay x = (30 -) . round $ ((x - 50) ^ 2) / 250
+calcRegenDelay x = (30 +) . round $ ((x - 50) ^ 2) / 250
 
 
 calcRegenHpDelay :: Id -> MudState -> Int

@@ -30,6 +30,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDNumberExcessArgs
                             , adviceDNumberNoArgs
                             , adviceDNumberNoBase
+                            , adviceDRegenExcessArgs
+                            , adviceDRegenNoArgs
                             , adviceDRntExcessArgs
                             , adviceDropNoArgs
                             , adviceDWeightExcessArgs
@@ -86,6 +88,9 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+
+
+-- TODO: Can we make "~ExcessArgs" msgs and "~NoArgs" msgs more consistent ("Please provide x arguments: ...")? Can "~NoArgs" be defined as equal to "~ExcessArgs"?
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -279,6 +284,24 @@ adviceDNumberNoBase = T.concat [ "Please also specify base, as in "
                                , " a 16"
                                , dfltColor
                                , "." ]
+
+
+adviceDRegenExcessArgs :: T.Text
+adviceDRegenExcessArgs = T.concat [ "Please provide one argument: the target ID, as in "
+                                  , quoteColor
+                                  , prefixDebugCmd "regen"
+                                  , " 100"
+                                  , dfltColor
+                                  , "." ]
+
+
+adviceDRegenNoArgs :: T.Text
+adviceDRegenNoArgs = T.concat [ "Please provide one argument: the target ID, as in "
+                              , quoteColor
+                              , prefixDebugCmd "regen"
+                              , " 100"
+                              , dfltColor
+                              , "." ]
 
 
 adviceDRntExcessArgs :: T.Text

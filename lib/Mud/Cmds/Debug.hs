@@ -113,6 +113,7 @@ debugCmds =
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
     , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
+    , mkDebugCmd "regen"      debugRegen       "Display regen amounts and delays for a given mob ID."
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
@@ -425,29 +426,39 @@ debugPurge p              = withoutArgs debugPurge p
 -----
 
 
-debugRnt :: Action
-debugRnt (NoArgs i mq cols) = do
-    wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
-    logPlaExec (prefixDebugCmd "rnt") i
-debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
-    let notFound    = wrapSend mq cols . sorryPCName $ a
-        found match = do
-            rndmName <- updateRndmName i . getIdForPCSing match $ ms
-            wrapSend mq cols . T.concat $ [ dblQuote rndmName, " has been randomly generated for ", match, "." ]
-            logPlaExec (prefixDebugCmd "rnt") i
-        pcSings = [ ms^.entTbl.ind pcId.sing | pcId <- views pcTbl IM.keys ms ]
-    in findFullNameForAbbrev a pcSings |&| maybe notFound found
-debugRnt p = advise p [] adviceDRntExcessArgs
-
-
------
-
-
 debugRandom :: Action
 debugRandom (NoArgs i mq cols) = do
     wrapSend mq cols . showText =<< rndmRs 10 (0, 99)
     logPlaExec (prefixDebugCmd "random") i
 debugRandom p = withoutArgs debugRandom p
+
+
+-----
+
+
+debugRegen :: Action
+debugRegen p@AdviseNoArgs       = advise p [] adviceDRegenNoArgs
+debugRegen (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+  [(targetId, "")] -> helper targetId
+  _                -> wrapSend mq cols . sorryParseId $ a
+  where
+    helper targetId
+      | targetId < 0 = wrapSend mq cols sorryWtf
+      | otherwise    = getState >>= \ms -> do
+          multiWrapSend mq cols . descRegens $ ms
+          logPlaExecArgs (prefixDebugCmd "regen") (pure a) i
+      where
+        descRegens ms = map (uncurry3 (descRegen ms)) [ ("hp", calcRegenHpAmt, calcRegenHpDelay)
+                                                      , ("mp", calcRegenMpAmt, calcRegenMpDelay)
+                                                      , ("pp", calcRegenPpAmt, calcRegenPpDelay)
+                                                      , ("fp", calcRegenFpAmt, calcRegenFpDelay) ]
+        descRegen ms t calcAmt calcDelay = T.concat [ t
+                                                    , ": "
+                                                    , showText . calcAmt   targetId $ ms
+                                                    , " / "
+                                                    , showText . calcDelay targetId $ ms
+                                                    , " sec" ]
+debugRegen p = advise p [] adviceDRegenExcessArgs
 
 
 -----
@@ -464,6 +475,24 @@ debugRemPut p = withoutArgs debugRemPut p
 
 fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
 fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
+
+
+-----
+
+
+debugRnt :: Action
+debugRnt (NoArgs i mq cols) = do
+    wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
+    logPlaExec (prefixDebugCmd "rnt") i
+debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
+    let notFound    = wrapSend mq cols . sorryPCName $ a
+        found match = do
+            rndmName <- updateRndmName i . getIdForPCSing match $ ms
+            wrapSend mq cols . T.concat $ [ dblQuote rndmName, " has been randomly generated for ", match, "." ]
+            logPlaExec (prefixDebugCmd "rnt") i
+        pcSings = [ ms^.entTbl.ind pcId.sing | pcId <- views pcTbl IM.keys ms ]
+    in findFullNameForAbbrev a pcSings |&| maybe notFound found
+debugRnt p = advise p [] adviceDRntExcessArgs
 
 
 -----

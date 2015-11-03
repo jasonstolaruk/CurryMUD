@@ -53,6 +53,7 @@ runRegenAsync i = runAsync (threadRegen i) >>= \a -> modifyState $ (, ()) . (mob
 -----
 
 
+-- TODO: Start regen threads for NPC mobs at world creation.
 threadRegen :: Id -> MudStack ()
 threadRegen i = onEnv $ \md -> do
     setThreadType . RegenParent $ i
@@ -67,16 +68,14 @@ threadRegen i = onEnv $ \md -> do
         m = regen curMp curMp maxMp calcRegenMpAmt calcRegenMpDelay
         p = regen curPp curPp maxPp calcRegenPpAmt calcRegenPpDelay
         f = regen curFp curFp maxFp calcRegenFpAmt calcRegenFpDelay
-    regen getCur setCur getMax calcAmt calcDelay = do
-        setThreadType . RegenChild $ i
-        forever loop
+    regen getCur setCur getMax calcAmt calcDelay = (setThreadType . RegenChild $ i) >> forever loop
       where
-        loop = getState >>= \ms ->
+        loop = delay >> getState >>= \ms ->
             let mob    = getMob i ms
                 (c, m) = (view getCur *** view getMax) . dup $ mob
                 amt    = calcAmt i ms
                 total  = c + amt
                 c'     = (total > m) ? m :? total
-            in do
-                when (c < m) . modifyState $ (, ()) . (mobTbl.ind i.setCur .~ c')
-                liftIO . threadDelay $ calcDelay i ms * 10 ^ 6
+            in when (c < m) . modifyState $ (, ()) . (mobTbl.ind i.setCur .~ c')
+          where
+            delay = getState >>= \ms -> liftIO . threadDelay $ calcDelay i ms * 10 ^ 6
