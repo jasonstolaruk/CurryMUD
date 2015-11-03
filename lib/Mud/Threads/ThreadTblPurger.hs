@@ -42,7 +42,7 @@ threadThreadTblPurger = handle (threadExHandler "thread table purger") $ do
     setThreadType ThreadTblPurger
     logNotice "threadThreadTblPurger" "thread table purger started."
     let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
-    forever loop `catch` die "thread table purger" Nothing
+    forever loop `catch` die Nothing "thread table purger"
 
 
 purgeThreadTbls :: MudStack ()

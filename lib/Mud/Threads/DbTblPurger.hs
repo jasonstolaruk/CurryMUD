@@ -44,7 +44,7 @@ dbTblPurger tblName countFun purgeFun = handle (threadExHandler threadName) $ do
     setThreadType DbTblPurger
     logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
     let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
-    forever loop `catch` die threadName Nothing
+    forever loop `catch` die Nothing threadName
   where
     threadName = "database table purger " <> parensQuote tblName
     helper     = let fn = "dbTblPurger helper" in withDbExHandler fn countFun >>= \case

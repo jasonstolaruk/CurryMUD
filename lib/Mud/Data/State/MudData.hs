@@ -298,14 +298,15 @@ data LogCmd = LogMsg T.Text
 
 
 -- Has an entity and an inventory and coins and equipment.
-data Mob = Mob { _sex               :: Sex
-               , _st, _dx, _iq, _ht :: Int
-               , _curHp, _maxHp     :: Int
-               , _curMp, _maxMp     :: Int
-               , _curPp, _maxPp     :: Int
-               , _curFp, _maxFp     :: Int
-               , _xp                :: Int
-               , _hand              :: Hand } deriving (Eq, Generic, Show)
+data Mob = Mob { _sex                    :: Sex
+               , _st, _dx, _ht, _ma, _ps :: Int
+               , _curHp, _maxHp          :: Int
+               , _curMp, _maxMp          :: Int
+               , _curPp, _maxPp          :: Int
+               , _curFp, _maxFp          :: Int
+               , _xp                     :: Int
+               , _hand                   :: Hand
+               , _regenAsync             :: Maybe RegenAsync }
 
 
 data Sex = Male
@@ -316,6 +317,53 @@ data Sex = Male
 data Hand = RHand
           | LHand
           | NoHand deriving (Eq, Generic, Show)
+
+
+type RegenAsync = Async ()
+
+
+instance FromJSON Mob where parseJSON = jsonToMob
+instance ToJSON   Mob where toJSON    = mobToJSON
+
+
+mobToJSON :: Mob -> Value
+mobToJSON Mob { .. } = object [ "_sex"   .= _sex
+                              , "_st"    .= _st
+                              , "_dx"    .= _dx
+                              , "_ht"    .= _ht
+                              , "_ma"    .= _ma
+                              , "_ps"    .= _ps
+                              , "_curHp" .= _curHp
+                              , "_maxHp" .= _st
+                              , "_curMp" .= _dx
+                              , "_maxMp" .= _ht
+                              , "_curPp" .= _ma
+                              , "_maxPp" .= _ps
+                              , "_curFp" .= _curHp
+                              , "_maxFp" .= _st
+                              , "_xp"    .= _dx
+                              , "_hand"  .= _ht ]
+
+
+jsonToMob :: Value -> Parser Mob
+jsonToMob (Object o) = Mob <$> o .: "_sex"
+                           <*> o .: "_st"
+                           <*> o .: "_dx"
+                           <*> o .: "_ht"
+                           <*> o .: "_ma"
+                           <*> o .: "_ps"
+                           <*> o .: "_curHp"
+                           <*> o .: "_maxHp"
+                           <*> o .: "_curMp"
+                           <*> o .: "_maxMp"
+                           <*> o .: "_curPp"
+                           <*> o .: "_maxPp"
+                           <*> o .: "_curFp"
+                           <*> o .: "_maxFp"
+                           <*> o .: "_xp"
+                           <*> o .: "_hand"
+                           <*> pure Nothing
+jsonToMob _          = empty
 
 
 -- ==================================================
@@ -362,7 +410,6 @@ data Pla = Pla { _currHostName :: HostName
                , _interp       :: Maybe Interp
                , _peepers      :: Inv
                , _peeping      :: Inv
-               , _regenAsync   :: Maybe RegenAsync
                , _retainedMsgs :: [T.Text]
                , _lastRmId     :: Maybe Id }
 
@@ -375,9 +422,6 @@ data PlaFlags = IsAdmin
               | IsSeeingInvis
               | IsTunedAdmin
               | IsTunedQuestion deriving Enum
-
-
-type RegenAsync = Async ()
 
 
 type Interp  = CmdName -> ActionParams -> MudStack ()
@@ -409,7 +453,6 @@ jsonToPla (Object o) = Pla <$> o .: "_currHostName"
                            <*> pure Nothing
                            <*> pure []
                            <*> pure []
-                           <*> pure Nothing
                            <*> o .: "_retainedMsgs"
                            <*> o .: "_lastRmId"
 jsonToPla _          = empty
@@ -474,14 +517,15 @@ type TeleLinkTbl = M.Map Sing IsTuned
 
 data ThreadType = DbTblPurger
                 | Error
-                | InacTimer Id
+                | InacTimer   Id
                 | Listen
                 | Notice
-                | PlaLog    Id
-                | Receive   Id
-                | Regen     Id
-                | Server    Id
-                | Talk      Id
+                | PlaLog      Id
+                | Receive     Id
+                | RegenChild  Id
+                | RegenParent Id
+                | Server      Id
+                | Talk        Id
                 | ThreadTblPurger
                 | WorldPersister deriving (Eq, Ord, Show)
 
@@ -525,7 +569,6 @@ instance FromJSON Ent
 instance FromJSON Hand
 instance FromJSON HostRecord
 instance FromJSON LinkDir
-instance FromJSON Mob
 instance FromJSON Obj
 instance FromJSON PC
 instance FromJSON Race
@@ -565,9 +608,6 @@ instance ToJSON   HostRecord
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   LinkDir
-  where
-    toJSON = genericToJSON defaultOptions
-instance ToJSON   Mob
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   Obj

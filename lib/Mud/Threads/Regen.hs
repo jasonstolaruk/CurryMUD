@@ -1,27 +1,39 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings, TupleSections #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
 
 module Mud.Threads.Regen ( runRegenAsync
                          , threadRegen ) where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
-import Mud.Util.Misc
-import Mud.Util.Quoting
+import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPla)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
-import Control.Exception.Lifted (catch, handle)
-import Control.Lens.Operators ((?~))
-import Control.Monad (forever)
+import Control.Exception.Lifted (handle)
+import Control.Lens (view)
+import Control.Lens.Operators ((.~), (?~))
+import Control.Monad (forever, void, when)
 import Control.Monad.IO.Class (liftIO)
-import Data.Monoid ((<>))
+import Control.Monad.Reader (runReaderT)
 import qualified Data.Text as T
 
 
 default (Int)
+
+
+-----
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Threads.Regen"
 
 
 -----
@@ -35,17 +47,36 @@ logPla = L.logPla "Mud.Threads.Regen"
 
 
 runRegenAsync :: Id -> MudStack ()
-runRegenAsync i = runAsync (threadRegen i) >>= \a -> modifyState $ (, ()) . (plaTbl.ind i.regenAsync ?~ a)
+runRegenAsync i = runAsync (threadRegen i) >>= \a -> modifyState $ (, ()) . (mobTbl.ind i.regenAsync ?~ a)
 
 
 -----
 
 
 threadRegen :: Id -> MudStack ()
-threadRegen i = handle (threadExHandler threadName) $ do
-    setThreadType . Regen $ i
-    logPla "threadRegen" i "regen started."
-    forever loop `catch` die "regen" (Just i)
+threadRegen i = onEnv $ \md -> do
+    setThreadType . RegenParent $ i
+    getType i <$> getState >>= \case
+      MobType -> handle dieSilently . spawnThreadTree $ md
+      PCType  -> handle (die (Just i) "regen") $ logPla "threadRegen" i "regen started." >> spawnThreadTree md
+      x       -> patternMatchFail "threadRegen" [ showText x ]
   where
-    threadName = "regen " <> (parensQuote . showText $ i)
-    loop       = liftIO . threadDelay $ 5 * 10 ^ 6
+    spawnThreadTree md = liftIO . void . concurrentTree . map (`runReaderT` md) $ [ h, m, p, f ]
+      where
+        h = regen curHp curHp maxHp calcRegenHpAmt calcRegenHpDelay
+        m = regen curMp curMp maxMp calcRegenMpAmt calcRegenMpDelay
+        p = regen curPp curPp maxPp calcRegenPpAmt calcRegenPpDelay
+        f = regen curFp curFp maxFp calcRegenFpAmt calcRegenFpDelay
+    regen getCur setCur getMax calcAmt calcDelay = do
+        setThreadType . RegenChild $ i
+        forever loop
+      where
+        loop = getState >>= \ms ->
+            let mob    = getMob i ms
+                (c, m) = (view getCur *** view getMax) . dup $ mob
+                amt    = calcAmt i ms
+                total  = c + amt
+                c'     = (total > m) ? m :? total
+            in do
+                when (c < m) . modifyState $ (, ()) . (mobTbl.ind i.setCur .~ c')
+                liftIO . threadDelay $ calcDelay i ms * 10 ^ 6

@@ -506,13 +506,14 @@ debugThread (NoArgs i mq cols) = do
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    mkTypeName (InacTimer (showText -> pi)) = padOrTrunc 10 "InacTimer" <> pi
-    mkTypeName (PlaLog    (showText -> pi)) = padOrTrunc 10 "PlaLog"    <> pi
-    mkTypeName (Receive   (showText -> pi)) = padOrTrunc 10 "Receive"   <> pi
-    mkTypeName (Regen     (showText -> pi)) = padOrTrunc 10 "Regen"     <> pi
-    mkTypeName (Server    (showText -> pi)) = padOrTrunc 10 "Server"    <> pi
-    mkTypeName (Talk      (showText -> pi)) = padOrTrunc 10 "Talk"      <> pi
-    mkTypeName (showText -> tt)           = tt
+    mkTypeName (InacTimer   (showText -> pi)) = padOrTrunc 12 "InacTimer"   <> pi
+    mkTypeName (PlaLog      (showText -> pi)) = padOrTrunc 12 "PlaLog"      <> pi
+    mkTypeName (Receive     (showText -> pi)) = padOrTrunc 12 "Receive"     <> pi
+    mkTypeName (RegenChild  (showText -> pi)) = padOrTrunc 12 "RegenChild"  <> pi
+    mkTypeName (RegenParent (showText -> pi)) = padOrTrunc 12 "RegenParent" <> pi
+    mkTypeName (Server      (showText -> pi)) = padOrTrunc 12 "Server"      <> pi
+    mkTypeName (Talk        (showText -> pi)) = padOrTrunc 12 "Talk"        <> pi
+    mkTypeName (showText -> tt)               = tt
 debugThread p = withoutArgs debugThread p
 
 

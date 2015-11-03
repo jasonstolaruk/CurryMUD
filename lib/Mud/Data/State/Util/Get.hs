@@ -185,13 +185,6 @@ getIdForPCSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views 
 -----
 
 
-getIq :: Id -> MudState -> Int
-getIq i = view iq . getMob i
-
-
------
-
-
 getLastRmId :: Id -> MudState -> Maybe Id
 getLastRmId i = view lastRmId . getPla i
 
@@ -244,6 +237,13 @@ type Lvl = Int
 
 getLvl :: Id -> MudState -> Lvl
 getLvl _ _ = 0 -- TODO
+
+
+-----
+
+
+getMa :: Id -> MudState -> Int
+getMa i = view ma . getMob i
 
 
 -----
@@ -385,6 +385,13 @@ getPeepersPeeping i = (getPeepers i *** getPeeping i) . dup
 
 getPla :: Id -> MudState -> Pla
 getPla i = view (plaTbl.ind i)
+
+
+-----
+
+
+getPs :: Id -> MudState -> Int
+getPs i = view ps . getMob i
 
 
 -----

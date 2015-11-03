@@ -50,13 +50,14 @@ createAdminZone = do
          mempty
          M.empty
          (Mob Male
-              50 50 50 50
+              50 50 50 50 50
               100 100
               100 100
               100 100
               100 100
               0
-              RHand)
+              RHand
+              Nothing)
          M.empty
          (M.fromList [("Curry", True)])
          (PC iLoggedOut Human ["Curry"] ["Curry"])
@@ -65,7 +66,6 @@ createAdminZone = do
               80 24
               Nothing
               [] []
-              Nothing
               []
               (Just iLounge))
   putPla iCurry
@@ -78,13 +78,14 @@ createAdminZone = do
          mempty
          M.empty
          (Mob Male
-              50 50 50 50
-              100 100
-              100 100
-              100 100
-              100 100
+              50 50 50 50 50
+              10 100
+              10 100
+              10 100
+              10 100
               0
-              RHand)
+              RHand
+              Nothing)
          M.empty
          (M.fromList [("Root", True)])
          (PC iLoggedOut Human ["Root"] ["Root"])
@@ -93,7 +94,6 @@ createAdminZone = do
               80 24
               Nothing
               [] []
-              Nothing
               []
               (Just iLounge))
 
@@ -940,13 +940,14 @@ createAdminZone = do
          mempty
          M.empty
          (Mob Male
-              25 75 10 25
+              50 50 50 50 50
               10 10
               10 10
               10 10
               10 10
               10
-              NoHand)
+              NoHand
+              Nothing)
   putMob iRockCavy2
          (Ent iRockCavy2
               (Just "rock")
@@ -957,13 +958,14 @@ createAdminZone = do
          mempty
          M.empty
          (Mob Male
-              25 75 10 25
+              50 50 50 50 50
               10 10
               10 10
               10 10
               10 10
               10
-              NoHand)
+              NoHand
+              Nothing)
   putMob iPidge
          (Ent iPidge
               (Just "pidge")
@@ -978,13 +980,14 @@ createAdminZone = do
                      , (TrousersS, iOveralls       )
                      , (FeetS,     iTraveler'sBoots) ])
          (Mob Female
-              50 50 50 50
+              50 50 50 50 50
               100 100
               100 100
               100 100
               100 100
               10
-              RHand)
+              RHand
+              Nothing)
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
                 (Just "shirt")

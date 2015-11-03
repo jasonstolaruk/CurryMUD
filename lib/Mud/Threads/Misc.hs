@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable, LambdaCase, OverloadedStrings, TupleSections #-}
 
-module Mud.Threads.Misc ( die
+module Mud.Threads.Misc ( concurrentTree
+                        , die
+                        , dieSilently
                         , plaThreadExHandler
                         , PlsDie(..)
                         , runAsync
@@ -12,6 +14,7 @@ module Mud.Threads.Misc ( die
                         , TimerMsg(..)
                         , TimerQueue ) where
 
+import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
@@ -21,7 +24,7 @@ import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice, logPla)
 
 import Control.Concurrent (myThreadId)
-import Control.Concurrent.Async (Async, async, asyncThreadId, wait)
+import Control.Concurrent.Async (Async, async, asyncThreadId, concurrently, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, SomeException, fromException)
@@ -69,11 +72,23 @@ data TimerMsg = ResetTimer
 -----
 
 
-die :: T.Text -> Maybe Id -> PlsDie -> MudStack ()
-die threadName = \case Nothing -> const . logNotice "die"   $ msg
-                       Just i  -> const . logPla    "die" i $ msg
+concurrentTree :: [IO a] -> IO [a]
+concurrentTree = foldr helper (return [])
   where
-    msg = "the " <> threadName <> " thread is dying."
+    helper ioa ioas = uncurry (:) <$> concurrently ioa ioas
+
+
+-----
+
+
+die :: Maybe Id -> T.Text -> PlsDie -> MudStack ()
+die mi threadName = const . f $ "the " <> threadName <> " thread is dying."
+  where
+    f = maybe (logNotice "die") (logPla "die") mi
+
+
+dieSilently :: PlsDie -> MudStack ()
+dieSilently = const unit
 
 
 -----
@@ -86,7 +101,9 @@ plaThreadExHandler threadName i e
 
 
 threadExHandler :: T.Text -> SomeException -> MudStack ()
-threadExHandler threadName e = logExMsg "threadExHandler" ("on " <> threadName <> " thread") e >> throwToListenThread e
+threadExHandler threadName e = do
+    logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName <> " thread") e
+    throwToListenThread e
 
 
 -----
@@ -122,5 +139,5 @@ throwWait a = throwTo (asyncThreadId a) PlsDie >> (liftIO . void . wait $ a)
 throwWaitRegen :: Id -> MudStack ()
 throwWaitRegen i = helper |&| modifyState >=> maybeVoid throwWait
   where
-    helper ms = let a = ms^.plaTbl.ind i.regenAsync
-                in (ms & plaTbl.ind i.regenAsync .~ Nothing, a)
+    helper ms = let a = ms^.mobTbl.ind i.regenAsync
+                in (ms & mobTbl.ind i.regenAsync .~ Nothing, a)

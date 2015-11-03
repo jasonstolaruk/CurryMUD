@@ -7,6 +7,14 @@ module Mud.Data.State.Util.Calc ( calcEncPer
                                 , calcProbLinkFlinch
                                 , calcProbTeleShudder
                                 , calcProbTeleVomit
+                                , calcRegenFpAmt
+                                , calcRegenFpDelay
+                                , calcRegenHpAmt
+                                , calcRegenHpDelay
+                                , calcRegenMpAmt
+                                , calcRegenMpDelay
+                                , calcRegenPpAmt
+                                , calcRegenPpDelay
                                 , calcWeight
                                 , coinWeight ) where
 
@@ -35,11 +43,11 @@ blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 
 calcEncPer :: Id -> MudState -> Int
-calcEncPer i ms = round $ calcWeight i ms `divide` calcMaxEnc i ms * 100
+calcEncPer i ms = round . (100 *) $ calcWeight i ms `divide` calcMaxEnc i ms
 
 
 calcMaxEnc :: Id -> MudState -> Int
-calcMaxEnc i ms = getSt i ms ^ 2 `quot` 13 * 100
+calcMaxEnc i ms = round . (100 *) $ getSt i ms ^ 2 `divide` 13
 
 
 -----
@@ -59,6 +67,52 @@ calcProbTeleShudder = calcProbLinkFlinch
 
 calcProbTeleVomit :: Id -> MudState -> Int
 calcProbTeleVomit i ms = (getHt i ms - 100) ^ 2 `quot` 250
+
+
+-----
+
+
+calcRegenAmt :: Double -> Int
+calcRegenAmt x = round $ x / 10
+
+
+calcRegenHpAmt :: Id -> MudState -> Int
+calcRegenHpAmt i = calcRegenAmt . fromIntegral . getHt i
+
+
+calcRegenMpAmt :: Id -> MudState -> Int
+calcRegenMpAmt i ms = calcRegenAmt $ (getHt i ms + getMa i ms) `divide` 2
+
+
+calcRegenPpAmt :: Id -> MudState -> Int
+calcRegenPpAmt i ms = calcRegenAmt $ (getHt i ms + getPs i ms) `divide` 2
+
+
+calcRegenFpAmt :: Id -> MudState -> Int
+calcRegenFpAmt i ms = calcRegenAmt $ (getHt i ms + getSt i ms) `divide` 2
+
+
+-----
+
+
+calcRegenDelay :: Double -> Int
+calcRegenDelay x = (30 -) . round $ ((x - 50) ^ 2) / 250
+
+
+calcRegenHpDelay :: Id -> MudState -> Int
+calcRegenHpDelay i = calcRegenDelay . fromIntegral . getHt i
+
+
+calcRegenMpDelay :: Id -> MudState -> Int
+calcRegenMpDelay i ms = calcRegenDelay $ (getHt i ms + getMa i ms) `divide` 2
+
+
+calcRegenPpDelay :: Id -> MudState -> Int
+calcRegenPpDelay i ms = calcRegenDelay $ (getHt i ms + getPs i ms) `divide` 2
+
+
+calcRegenFpDelay :: Id -> MudState -> Int
+calcRegenFpDelay i ms = calcRegenDelay $ (getHt i ms + getSt i ms) `divide` 2
 
 
 -----
