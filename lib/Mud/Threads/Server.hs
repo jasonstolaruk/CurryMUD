@@ -16,6 +16,7 @@ import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.Threads.Misc
+import Mud.Threads.Regen
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.List
 import Mud.Util.Operators
@@ -122,6 +123,7 @@ shutDown = do
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
         logNotice "shutDown commitSuicide" "all players have been disconnected."
+        stopNpcRegens
         persist
         logNotice "shutDown commitSuicide" "killing the listen thread."
         liftIO . killThread . getListenThreadId =<< getState

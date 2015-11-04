@@ -13,6 +13,7 @@ import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
 import Mud.TheWorld.TheWorld
 import Mud.Threads.DbTblPurger
 import Mud.Threads.Misc
+import Mud.Threads.Regen
 import Mud.Threads.Talk
 import Mud.Threads.ThreadTblPurger
 import Mud.Threads.WorldPersister
@@ -91,6 +92,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                    , threadWorldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do
+        startNpcRegens
         logNotice "listen initialize" "creating database tables."
         liftIO createDbTbls `catch` dbExHandler "listen initialize"
         sortAllInvs

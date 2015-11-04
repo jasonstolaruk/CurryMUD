@@ -57,6 +57,10 @@ inacBootMsg :: T.Text
 inacBootMsg = "You are being disconnected from CurryMUD due to inactivity."
 
 
+loadTblErrorMsg :: FilePath -> T.Text -> T.Text
+loadTblErrorMsg fp msg = T.concat [ "error parsing ", dblQuote . T.pack $ fp, ": ", msg, "." ]
+
+
 loadWorldErrorMsg :: T.Text
 loadWorldErrorMsg = "There was an error loading the world. Check the error log for details."
 

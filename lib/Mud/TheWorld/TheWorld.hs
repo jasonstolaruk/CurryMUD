@@ -3,6 +3,7 @@
 module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
 
+import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
@@ -128,8 +129,7 @@ loadEqTbl ((</> eqTblFile) -> absolute) = do
 
 
 sorry :: FilePath -> String -> MudStack Bool
-sorry absolute (T.pack -> err) =
-    (logError . T.concat $ [ "error parsing ", dblQuote . T.pack $ absolute, ": ", err, "." ]) >> return False
+sorry absolute (T.pack -> err) = (logError . loadTblErrorMsg absolute $ err) >> return False
 
 
 loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool

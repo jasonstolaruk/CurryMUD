@@ -10,7 +10,6 @@ module Mud.Threads.Misc ( concurrentTree
                         , stopTimerThread
                         , threadExHandler
                         , throwWait
-                        , throwWaitRegen
                         , TimerMsg(..)
                         , TimerQueue ) where
 
@@ -20,7 +19,6 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Misc.Logging hiding (logExMsg, logNotice, logPla)
 import Mud.Util.Misc
-import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice, logPla)
 
 import Control.Concurrent (myThreadId)
@@ -30,8 +28,8 @@ import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, SomeException, fromException)
 import Control.Exception.Lifted (throwTo)
 import Control.Lens (at)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad ((>=>), void)
+import Control.Lens.Operators ((?~))
+import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
@@ -134,10 +132,3 @@ stopTimerThread = liftIO . atomically . closeTMQueue
 
 throwWait :: Async () -> MudStack ()
 throwWait a = throwTo (asyncThreadId a) PlsDie >> (liftIO . void . wait $ a)
-
-
-throwWaitRegen :: Id -> MudStack ()
-throwWaitRegen i = helper |&| modifyState >=> maybeVoid throwWait
-  where
-    helper ms = let a = ms^.mobTbl.ind i.regenAsync
-                in (ms & mobTbl.ind i.regenAsync .~ Nothing, a)

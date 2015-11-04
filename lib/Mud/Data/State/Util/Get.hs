@@ -297,6 +297,13 @@ getNonIncogInvCoins i = (getNonIncogInv i *** getCoins i) . dup
 -----
 
 
+getNpcIds :: MudState -> Inv
+getNpcIds ms = views mobTbl (filter ((== MobType) . (`getType` ms)) . IM.keys) ms
+
+
+-----
+
+
 getObj :: Id -> MudState -> Obj
 getObj i = view (objTbl.ind i)
 
