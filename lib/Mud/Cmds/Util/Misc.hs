@@ -83,7 +83,7 @@ import Control.Arrow ((***), second)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, each, view, views)
-import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Lens.Operators ((%~), (&), (?~))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
@@ -285,7 +285,7 @@ happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . rights $ xformed
                        extractIds (ForTarget     _ targetId:_) acc = targetId : acc
                        extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
                        extractIds xs                           _   = patternMatchFail "happy extractIds" [ showText xs ]
-                       msgMap  = foldr (\targetId -> at targetId .~ Just []) IM.empty targetIds
+                       msgMap  = foldr (\targetId -> at targetId ?~ []) IM.empty targetIds
                        msgMap' = foldr consWord msgMap toTargets
                        consWord [ ForNonTargets word                           ] = IM.map (word :)
                        consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
@@ -586,7 +586,7 @@ updateRndmName i targetId = do
                                          checkLength n | T.length n > maxNameLen = mkUniqueName "xyz" existing
                                                        | otherwise               = n
                                          rndmName' = checkLength . mkUniqueName rndmName $ existing
-                                         ms'       = ms & rndmNamesMstrTbl.ind i.at targetSing .~ Just rndmName'
+                                         ms'       = ms & rndmNamesMstrTbl.ind i.at targetSing ?~ rndmName'
                                      in (ms', rndmName')
                         found match = (ms, match)
                     in maybe notFound found . M.lookup targetSing $ rnt

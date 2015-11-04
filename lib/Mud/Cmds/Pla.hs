@@ -57,7 +57,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, _6, at, both, each, set, to, view, views)
-import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (^.))
+import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -85,9 +85,6 @@ import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup,
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
-
-
--- TODO: Should we be using (?~) more?
 
 
 {-# ANN module ("HLint: ignore Use &&"        :: String) #-}
@@ -489,7 +486,7 @@ connectHelper i (target, as) ms =
                              Nothing ->
                                  let checkChanName targetId = if hasChanOfSameName targetId
                                        then blocked . sorryConnectChanName targetSing $ cn
-                                       else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Just True
+                                       else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing ?~ True
                                                  & _2 <>~ (pure . Right $ targetSing)
                                  in either sorryNotFound checkChanName . checkMutuallyTuned i ms $ targetSing
                            sorryNotFound msg = pair & _2 <>~ (pure . Left $ msg)
@@ -1211,8 +1208,8 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                             | otherwise = a'' & _3.ind i       .at targetSing .~ Nothing
                                               & _3.ind targetId.at s          .~ Nothing
                   in g $ a' & _1.ind targetId.linked %~ (sort . (s :))
-                            & _2.ind i       .at targetSing .~ Just True
-                            & _2.ind targetId.at s          .~ Just True
+                            & _2.ind i       .at targetSing ?~ True
+                            & _2.ind targetId.at s          ?~ True
                             & _4 <>~ bs
                             & _5 <>~ pure logMsg
                             & _6 <>~ pure act
@@ -1385,7 +1382,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
           | otherwise = let ci = views chanTbl (head . ([0..] \\) . IM.keys) $ triple^._1
                             c  = Chan ci a (M.fromList . pure $ (s, True)) []
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
-                        in triple & _1.chanTbl.at ci .~ Just c
+                        in triple & _1.chanTbl.at ci ?~ c
                                   & _2 <>~ pure (a, cr)
         isNG c           = not $ isLetter c || isDigit c
         illegalNames     = [ "admin", "all", "question" ] ++ pcNames
@@ -1588,11 +1585,11 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
                       & invTbl     .ind iLoggedOut %~ (i :)
                       & msgQueueTbl.at  i          .~ Nothing
                       & pcTbl      .ind i.rmId     .~ iLoggedOut
-                      & plaTbl     .ind i.lastRmId .~ Just ri
+                      & plaTbl     .ind i.lastRmId ?~ ri
     updateHostMap ms s now = flip (set $ hostTbl.at s) ms $ case getHostMap s ms of
       Nothing      -> Just . M.singleton host $ newRecord
-      Just hostMap -> case hostMap^.at host of Nothing -> Just $ hostMap & at host .~ Just newRecord
-                                               Just r  -> Just $ hostMap & at host .~ (Just . reviseRecord $ r)
+      Just hostMap -> case hostMap^.at host of Nothing -> Just $ hostMap & at host ?~ newRecord
+                                               Just r  -> Just $ hostMap & at host ?~ reviseRecord r
       where
         newRecord      = HostRecord { _noOfLogouts   = 1
                                     , _secsConnected = duration
@@ -2415,7 +2412,7 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
     notFound    = a & _3 <>~ (pure . sorryTuneName $ name)
     found val n = if n == "all"
                     then appendMsg "all telepathic connections" & _1 %~ M.map (const val)
-                                                                & _2 %~ map (chanConnTbl.at s .~ Just val)
+                                                                & _2 %~ map (chanConnTbl.at s ?~ val)
                     else foundHelper
       where
         appendMsg connName = let msg = T.concat [ "You tune ", connName, " ", inOut val, "." ]
@@ -2426,10 +2423,10 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
           | n `elem` chanNames = foundChan
           | otherwise          = blowUp "helperTune found foundHelper" "connection name not found" . pure $ n
           where
-            foundLink = let n' = capitalize n in appendMsg n' & _1.at n' .~ Just val
+            foundLink = let n' = capitalize n in appendMsg n' & _1.at n' ?~ val
             foundChan =
                 let ([match], others) = partition (views chanName ((== n) . T.toLower)) chans
-                in appendMsg (views chanName dblQuote match) & _2 .~ (match & chanConnTbl.at s .~ Just val) : others
+                in appendMsg (views chanName dblQuote match) & _2 .~ (match & chanConnTbl.at s ?~ val) : others
 
 
 tuneInvalidArg :: T.Text -> [T.Text] -> [T.Text]

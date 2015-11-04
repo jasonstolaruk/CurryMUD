@@ -19,7 +19,7 @@ import Mud.Util.Quoting
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent.STM.TMVar (newTMVarIO)
-import Control.Lens.Operators ((%~), (&), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
 import Control.Lens.Setter (ASetter)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
@@ -146,5 +146,5 @@ movePCs = modifyState $ \ms ->
         helper (i, ri) ms' = ms' & invTbl.ind ri         %~ (i `delete`)
                                  & invTbl.ind iLoggedOut %~ (i :)
                                  & pcTbl .ind i.rmId     .~ iLoggedOut
-                                 & plaTbl.ind i.lastRmId .~ Just ri
+                                 & plaTbl.ind i.lastRmId ?~ ri
     in (foldr helper ms idsWithRmIds, ())
