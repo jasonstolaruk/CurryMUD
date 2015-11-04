@@ -19,22 +19,22 @@ import Mud.Util.Quoting
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent.STM.TMVar (newTMVarIO)
+import Control.Lens (ASetter)
 import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
-import Control.Lens.Setter (ASetter)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.IORef (newIORef)
 import Data.List (delete, sort)
 import Data.Monoid ((<>))
 import Data.Tuple (swap)
-import System.Clock (Clock(..), getTime)
-import System.Directory (getDirectoryContents)
-import System.FilePath ((</>))
-import System.Random.MWC (createSystemRandom)
 import qualified Data.ByteString.Lazy as B (readFile)
 import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, toList, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
+import System.Clock (Clock(..), getTime)
+import System.Directory (getDirectoryContents)
+import System.FilePath ((</>))
+import System.Random.MWC (createSystemRandom)
 
 
 logNotice :: T.Text -> T.Text -> MudStack ()
