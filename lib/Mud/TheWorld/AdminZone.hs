@@ -79,10 +79,10 @@ createAdminZone = do
          M.empty
          (Mob Male
               50 50 50 50 50
-              10 100
-              10 100
-              10 100
-              10 100
+              100 100
+              100 100
+              100 100
+              100 100
               0
               RHand
               Nothing)

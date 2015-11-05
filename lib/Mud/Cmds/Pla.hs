@@ -56,7 +56,7 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, _4, _5, _6, at, both, each, set, to, view, views)
+import Control.Lens (_1, _2, _3, _4, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -486,10 +486,10 @@ connectHelper i (target, as) ms =
                                  let checkChanName targetId = if hasChanOfSameName targetId
                                        then blocked . sorryConnectChanName targetSing $ cn
                                        else checkPp
-                                     checkPp | not . hasPp i ms' $ 1 = let msg = sorryPp $ "connect " <> targetSing
+                                     checkPp | not . hasPp i ms' $ 3 = let msg = sorryPp $ "connect " <> targetSing
                                                                        in sorryProcTarget msg
                                              | otherwise = pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing ?~ True
-                                                                & _1.mobTbl.ind i.curPp -~ 1
+                                                                & _1.mobTbl.ind i.curPp -~ 3
                                                                 & _2 <>~ (pure . Right $ targetSing)
                                  in either sorryProcTarget checkChanName . checkMutuallyTuned i ms' $ targetSing
                            sorryProcTarget msg = pair & _2 <>~ (pure . Left $ msg)
@@ -573,13 +573,13 @@ disconnectHelper i (target, as) idNamesTbl ms =
           then let procTarget (pair@(ms', _), b) a = case filter ((== a) . T.toLower . snd) $ idNamesTbl IM.! ci of
                      [] -> (pair & _2 <>~ (pure . Left . hint . sorryChanTargetName (dblQuote cn) $ a), True)
                      [(targetId, targetName)]
-                       | not . hasPp i ms' $ 2 ->
+                       | not . hasPp i ms' $ 3 ->
                            let targetName' = isRndmName targetName ? underline targetName :? targetName
                                msg         = sorryPp $ "disconnect " <> targetName'
                            in (pair & _2 <>~ (pure . Left $ msg), b)
                        | otherwise -> let targetSing = getSing targetId ms'
                                       in ( pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
-                                                & _1.mobTbl.ind i.curPp -~ 2
+                                                & _1.mobTbl.ind i.curPp -~ 3
                                                 & _2 <>~ (pure . Right $ (targetId, targetSing, targetName))
                                          , b )
                      xs -> patternMatchFail "disconnectHelper found" [ showText xs ]
@@ -1116,7 +1116,6 @@ leave p = patternMatchFail "leave" [ showText p ]
 -----
 
 
--- TODO: Linking should cost psionic points.
 -- TODO: Linking should award exp.
 link :: Action
 link (NoArgs i mq cols) = do
@@ -1156,29 +1155,20 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   else helper |&| modifyState >=> \(bs, logMsgs, fs) ->
       bcast bs >> sequence_ fs >> logMsgs |#| (logPla "link" i . slashes)
   where
-    helper ms =
-        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv  = inInvs |!| (mkBroadcast i . nlnl $ sorryLinkInInv)
-            sorryInEq   = inEqs  |!| (mkBroadcast i . nlnl $ sorryLinkInEq )
-            invCoins    = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
-            (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
-            pt          = ms^.pcTbl
-            tlmt        = ms^.teleLinkMstrTbl
-            rnmt        = ms^.rndmNamesMstrTbl
-            (pt', tlmt', rnmt', bs,  logMsgs, fs) = foldl' (helperLinkEitherInv ms)
-                                                           (pt, tlmt, rnmt, [], [], [])
-                                                           eiss
-            (                   bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs) ecs
-        in if ()!# invCoins
-          then ( ms & pcTbl            .~ pt'
-                    & teleLinkMstrTbl  .~ tlmt'
-                    & rndmNamesMstrTbl .~ rnmt'
-               , (sorryInInv ++ sorryInEq ++ bs', logMsgs', fs) )
-          else (ms, (mkBroadcast i . nlnl $ sorryLinkNoOneHere, [], []))
-    helperLinkEitherInv _  a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _4 <>~ (mkBroadcast i . nlnl $ sorryMsg))
-    helperLinkEitherInv ms a (Right targetIds) = foldl' tryLink a targetIds
+    helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
+                    sorryInInv              = inInvs |!| (mkBroadcast i . nlnl $ sorryLinkInInv)
+                    sorryInEq               = inEqs  |!| (mkBroadcast i . nlnl $ sorryLinkInEq )
+                    invCoins                = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+                    (eiss, ecs)             = uncurry (resolveRmInvCoins i ms inRms) invCoins
+                    (ms', bs,  logMsgs, fs) = foldl' helperLinkEitherInv (ms, [], [], []) eiss
+                    (     bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs) ecs
+                in if ()!# invCoins
+                  then (ms', (sorryInInv ++ sorryInEq ++ bs',            logMsgs', fs))
+                  else (ms,  (mkBroadcast i . nlnl $ sorryLinkNoOneHere, [],       []))
+    helperLinkEitherInv a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _2 <>~ (mkBroadcast i . nlnl $ sorryMsg))
+    helperLinkEitherInv a (Right targetIds) = foldl' tryLink a targetIds
       where
-        tryLink a' targetId = let targetSing = getSing targetId ms in case getType targetId ms of
+        tryLink a'@(ms, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
           PCType ->
             let (srcIntros, targetIntros) = f getIntroduced
                 (srcLinks,  targetLinks ) = f getLinked
@@ -1205,27 +1195,27 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                               , " mind to yours."
                                               , twoWayMsg ]
                 bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
-                msgHelper txt = a' & _4 <>~ (mkBroadcast i . nlnl $ txt)
+                msgHelper txt = a' & _2 <>~ (mkBroadcast i . nlnl $ txt)
             in if
               | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetDesig
               | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
               | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetDesig
+              | not . hasPp i ms $ 5              -> msgHelper . sorryPp $ "link with " <> targetDesig
               | act <- rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
                   let g a'' | isTwoWay  = a''
-                            | otherwise = a'' & _3.ind i       .at targetSing .~ Nothing
-                                              & _3.ind targetId.at s          .~ Nothing
-                  in g $ a' & _1.ind targetId.linked %~ (sort . (s :))
-                            & _2.ind i       .at targetSing ?~ True
-                            & _2.ind targetId.at s          ?~ True
-                            & _4 <>~ bs
-                            & _5 <>~ pure logMsg
-                            & _6 <>~ pure act
+                            | otherwise = a'' & _1.rndmNamesMstrTbl.ind i       .at targetSing .~ Nothing
+                                              & _1.rndmNamesMstrTbl.ind targetId.at s          .~ Nothing
+                  in g $ a' & _1.pcTbl.ind targetId.linked %~ (sort . (s :))
+                            & _1.teleLinkMstrTbl.ind i       .at targetSing ?~ True
+                            & _1.teleLinkMstrTbl.ind targetId.at s          ?~ True
+                            & _1.mobTbl         .ind i       .curPp         -~ 5
+                            & _2 <>~ bs
+                            & _3 <>~ pure logMsg
+                            & _4 <>~ pure act
           _  -> let b = (nlnl . sorryLinkType $ targetSing, pure i)
-                in a' & _4 %~ (`appendIfUnique` b)
+                in a' & _2 %~ (`appendIfUnique` b)
     helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
-    helperLinkEitherCoins a (Right {}  ) =
-        let b = (nlnl sorryLinkCoin, pure i)
-        in first (`appendIfUnique` b) a
+    helperLinkEitherCoins a (Right {}  ) = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" [ showText p ]
 
 
