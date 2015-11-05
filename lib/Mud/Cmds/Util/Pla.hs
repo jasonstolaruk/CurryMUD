@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, RankNTypes, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
@@ -15,6 +15,10 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , getChanStyleds
                          , getMatchingChanWithName
                          , getRelativePCName
+                         , hasFp
+                         , hasHp
+                         , hasMp
+                         , hasPp
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
@@ -83,7 +87,7 @@ import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first)
-import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
+import Control.Lens (Getter, _1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad (forM, guard)
 import Control.Monad.IO.Class (liftIO)
@@ -268,6 +272,29 @@ getRelativePCName :: MudState -> (Id, Id) -> MudStack T.Text
 getRelativePCName ms pair@(_, y)
   | isLinked ms pair = return . getSing y $ ms
   | otherwise        = underline <$> uncurry updateRndmName pair
+
+
+-----
+
+
+hasHp :: Id -> MudState -> Int -> Bool
+hasHp = hasPoints curHp
+
+
+hasMp :: Id -> MudState -> Int -> Bool
+hasMp = hasPoints curMp
+
+
+hasPp :: Id -> MudState -> Int -> Bool
+hasPp = hasPoints curPp
+
+
+hasFp :: Id -> MudState -> Int -> Bool
+hasFp = hasPoints curFp
+
+
+hasPoints :: Getter Mob Int -> Id -> MudState -> Int -> Bool
+hasPoints lens i ms amt = views (mobTbl.ind i.lens) (>= amt) ms
 
 
 -----

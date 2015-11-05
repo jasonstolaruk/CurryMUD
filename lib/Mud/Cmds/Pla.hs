@@ -57,7 +57,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, _6, at, both, each, set, to, view, views)
-import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
+import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -428,7 +428,6 @@ color p = withoutArgs color p
 -----
 
 
--- TODO: Connecting someone to a channel should cost psionic points.
 connect :: Action
 connect p@AdviseNoArgs       = advise p ["connect"] adviceConnectNoArgs
 connect p@(AdviseOneArg a)   = advise p ["connect"] . adviceConnectNoChan $ a
@@ -454,7 +453,7 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPC
                               , commas targetSings
                               , "." ] -> do
               toOthers <- mkToOthers ms otherIds targetIds cn
-              bcastNl $ toTargets : toOthers ++ sorryBs ++ (()!# targetSings |?| mkBroadcast i toSelf)
+              bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBroadcast i toSelf) ++ sorryBs
               connectBlink targetIds ms
               logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
         xs -> patternMatchFail "connect" [ showText xs ]
@@ -479,18 +478,22 @@ connectHelper i (target, as) ms =
         as'         = map (capitalize . T.toLower . f) as
         notFound    = sorry . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
-          then let procTarget pair a =
-                       let notFoundSing         = sorryNotFound . notFoundSuggestAsleeps a asleepSings $ ms
+          then let procTarget pair@(ms', _) a =
+                       let notFoundSing         = sorryProcTarget . notFoundSuggestAsleeps a asleepSings $ ms'
                            foundSing targetSing = case c^.chanConnTbl.at targetSing of
-                             Just _  -> sorryNotFound . sorryConnectAlready targetSing $ cn
+                             Just _  -> sorryProcTarget . sorryConnectAlready targetSing $ cn
                              Nothing ->
                                  let checkChanName targetId = if hasChanOfSameName targetId
                                        then blocked . sorryConnectChanName targetSing $ cn
-                                       else pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing ?~ True
-                                                 & _2 <>~ (pure . Right $ targetSing)
-                                 in either sorryNotFound checkChanName . checkMutuallyTuned i ms $ targetSing
-                           sorryNotFound msg = pair & _2 <>~ (pure . Left $ msg)
-                           blocked           = sorryNotFound . (effortsBlockedMsg <>)
+                                       else checkPp
+                                     checkPp | not . hasPp i ms' $ 1 = let msg = sorryPp $ "connect " <> targetSing
+                                                                       in sorryProcTarget msg
+                                             | otherwise = pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing ?~ True
+                                                                & _1.mobTbl.ind i.curPp -~ 1
+                                                                & _2 <>~ (pure . Right $ targetSing)
+                                 in either sorryProcTarget checkChanName . checkMutuallyTuned i ms' $ targetSing
+                           sorryProcTarget msg = pair & _2 <>~ (pure . Left $ msg)
+                           blocked             = sorryProcTarget . (effortsBlockedMsg <>)
                        in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing
                    ci                         = c^.chanId
                    dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
@@ -499,8 +502,8 @@ connectHelper i (target, as) ms =
                    hasChanOfSameName targetId | targetCs  <- getPCChans targetId ms
                                               , targetCns <- map (views chanName T.toLower) targetCs
                                               = T.toLower cn `elem` targetCns
-                   (ms', res)                 = foldl' procTarget (ms, []) as'
-               in (ms', (g res, Just ci))
+                   (ms'', res)                = foldl' procTarget (ms, []) as'
+               in (ms'', (g res, Just ci))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))

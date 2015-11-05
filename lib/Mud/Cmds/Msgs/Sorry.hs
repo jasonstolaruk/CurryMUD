@@ -98,6 +98,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryPeepAdmin
                             , sorryPeepIgnore
                             , sorryPeepSelf
+                            , sorryPp
                             , sorryPutExcessCon
                             , sorryPutInCoin
                             , sorryPutInEq
@@ -746,6 +747,13 @@ sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish t
 
 sorryPeepSelf :: T.Text
 sorryPeepSelf = "You can't peep yourself."
+
+
+-----
+
+
+sorryPp :: T.Text -> T.Text
+sorryPp t = "You don't have enough psionic energy to " <> t <> "."
 
 
 -----
