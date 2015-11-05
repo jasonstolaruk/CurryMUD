@@ -513,7 +513,6 @@ connectHelper i (target, as) ms =
 -----
 
 
--- TODO: Disconnecting someone from a channel should cost psionic points.
 disconnect :: Action
 disconnect p@AdviseNoArgs       = advise p ["disconnect"] adviceDisconnectNoArgs
 disconnect p@(AdviseOneArg a)   = advise p ["disconnect"] . adviceDisconnectNoChan $ a
@@ -541,7 +540,7 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
                                 , commas . map format $ targetNames
                                 , "." ] -> do
                   toOthers <- mkToOthers ms otherIds targetIds cn
-                  bcastNl $ toTargets : toOthers ++ sorryBs ++ (()!# targetNames |?| mkBroadcast i toSelf)
+                  bcastNl $ toTargets : toOthers ++ (()!# targetNames |?| mkBroadcast i toSelf) ++ sorryBs
                   targetSings |#| (const . logPla "disconnect" i . T.concat $ [ "disconnected from "
                                                                               , dblQuote cn
                                                                               , ": "
@@ -571,20 +570,25 @@ disconnectHelper i (target, as) idNamesTbl ms =
         as'         = map (T.toLower . f) as
         notFound    = sorry . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
-          then let procTarget (pair, b) a = case filter ((== a) . T.toLower . snd) $ idNamesTbl IM.! ci of
+          then let procTarget (pair@(ms', _), b) a = case filter ((== a) . T.toLower . snd) $ idNamesTbl IM.! ci of
                      [] -> (pair & _2 <>~ (pure . Left . hint . sorryChanTargetName (dblQuote cn) $ a), True)
-                     [(targetId, targetName)] ->
-                       let targetSing = getSing targetId ms
-                       in ( pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
-                                 & _2 <>~ (pure . Right $ (targetId, targetSing, targetName))
-                          , b )
+                     [(targetId, targetName)]
+                       | not . hasPp i ms' $ 2 ->
+                           let targetName' = isRndmName targetName ? underline targetName :? targetName
+                               msg         = sorryPp $ "disconnect " <> targetName'
+                           in (pair & _2 <>~ (pure . Left $ msg), b)
+                       | otherwise -> let targetSing = getSing targetId ms'
+                                      in ( pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
+                                                & _1.mobTbl.ind i.curPp -~ 2
+                                                & _2 <>~ (pure . Right $ (targetId, targetSing, targetName))
+                                         , b )
                      xs -> patternMatchFail "disconnectHelper found" [ showText xs ]
                      where
                        hint | b         = id
                             | otherwise = (<> hintDisconnect) . (<> " ")
-                   ci              = c^.chanId
-                   ((ms', res), _) = foldl' procTarget ((ms, []), False) as'
-               in (ms', (g res, Just ci))
+                   ci               = c^.chanId
+                   ((ms'', res), _) = foldl' procTarget ((ms, []), False) as'
+               in (ms'', (g res, Just ci))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
