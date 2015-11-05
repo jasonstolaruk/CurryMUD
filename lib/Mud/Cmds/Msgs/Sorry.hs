@@ -138,7 +138,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorrySudoerDemoteRoot
                             , sorrySudoerDemoteSelf
                             , sorryTeleAlready
-                            , sorryTelePlaSelf
+                            , sorryTelePCSelf
                             , sorryTeleRmName
                             , sorryTunedOutChan
                             , sorryTunedOutICChan
@@ -956,8 +956,8 @@ sorryTeleAlready :: T.Text
 sorryTeleAlready = "You're already there!"
 
 
-sorryTelePlaSelf :: T.Text
-sorryTelePlaSelf = "You can't teleport to yourself."
+sorryTelePCSelf :: T.Text
+sorryTelePCSelf = "You can't teleport to yourself."
 
 
 sorryTeleRmName :: T.Text -> T.Text

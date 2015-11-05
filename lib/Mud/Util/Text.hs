@@ -183,7 +183,7 @@ replace = foldr ((.) . uncurry T.replace) id
 
 
 notInfixOf :: T.Text -> T.Text -> Bool
-notInfixOf needle haystack = not $  needle `T.isInfixOf` haystack
+notInfixOf needle = not . T.isInfixOf needle
 
 
 -----

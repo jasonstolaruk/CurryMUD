@@ -14,8 +14,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAPrintNoArgs
                             , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
-                            , adviceATelePlaExcessArgs
-                            , adviceATelePlaNoArgs
+                            , adviceATelePCExcessArgs
+                            , adviceATelePCNoArgs
                             , adviceATeleRmExcessArgs
                             , adviceAWireNoArgs
                             , adviceBugNoArgs
@@ -88,9 +88,6 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T
-
-
--- TODO: Can we make "~ExcessArgs" msgs and "~NoArgs" msgs more consistent ("Please provide x arguments: ...")? Can "~NoArgs" be defined as equal to "~ExcessArgs"?
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -198,22 +195,16 @@ adviceASudoerNoArgs :: T.Text
 adviceASudoerNoArgs = "Please specify the full PC name of the player you wish to promote/demote."
 
 
-adviceATelePlaExcessArgs :: T.Text
-adviceATelePlaExcessArgs = "Please specify a single PC name."
+adviceATelePCExcessArgs :: T.Text
+adviceATelePCExcessArgs = "You can only teleport to one PC at a time."
 
 
-adviceATelePlaNoArgs :: T.Text
-adviceATelePlaNoArgs = "Please specify the PC name of the player to which you want to teleport."
+adviceATelePCNoArgs :: T.Text
+adviceATelePCNoArgs = "Please specify the name of the PC to which you want to teleport."
 
 
 adviceATeleRmExcessArgs :: T.Text
-adviceATeleRmExcessArgs = T.concat [ "Please provide one argument: the name of the room to which you'd like to \
-                                     \teleport, as in "
-                                   , quoteColor
-                                   , prefixAdminCmd "telerm"
-                                   , " lounge"
-                                   , dfltColor
-                                   , "." ]
+adviceATeleRmExcessArgs = "You can only teleport to one room at a time."
 
 
 adviceAWireNoArgs :: T.Text
@@ -233,12 +224,7 @@ adviceDCinsExcessArgs = T.concat [ "Please provide one argument: the target ID, 
 
 
 adviceDCinsNoArgs :: T.Text
-adviceDCinsNoArgs = T.concat [ "Please provide one argument: the target ID, as in "
-                             , quoteColor
-                             , prefixDebugCmd "cins"
-                             , " 100"
-                             , dfltColor
-                             , "." ]
+adviceDCinsNoArgs = adviceDCinsExcessArgs
 
 
 adviceDIdExcessArgs :: T.Text
@@ -251,12 +237,7 @@ adviceDIdExcessArgs = T.concat [ "Please provide one argument: the ID to search 
 
 
 adviceDIdNoArgs :: T.Text
-adviceDIdNoArgs = T.concat [ "Please specify an ID to search for, as in "
-                           , quoteColor
-                           , prefixDebugCmd "id"
-                           , " 100"
-                           , dfltColor
-                           , "." ]
+adviceDIdNoArgs = adviceDIdExcessArgs
 
 
 adviceDNumberExcessArgs :: T.Text
@@ -269,12 +250,7 @@ adviceDNumberExcessArgs = T.concat [ "Please provide two arguments: a number and
 
 
 adviceDNumberNoArgs :: T.Text
-adviceDNumberNoArgs = T.concat [ "Please specify a number followed by its base, as in "
-                               , quoteColor
-                               , prefixDebugCmd "number"
-                               , " a 16"
-                               , dfltColor
-                               , "." ]
+adviceDNumberNoArgs = adviceDNumberExcessArgs
 
 
 adviceDNumberNoBase :: T.Text
@@ -296,25 +272,16 @@ adviceDRegenExcessArgs = T.concat [ "Please provide one argument: the target ID,
 
 
 adviceDRegenNoArgs :: T.Text
-adviceDRegenNoArgs = T.concat [ "Please provide one argument: the target ID, as in "
-                              , quoteColor
-                              , prefixDebugCmd "regen"
-                              , " 100"
-                              , dfltColor
-                              , "." ]
+adviceDRegenNoArgs = adviceDRegenExcessArgs
 
 
 adviceDRntExcessArgs :: T.Text
 adviceDRntExcessArgs = "Sorry, but you can only generate a random name for one PC at a time."
 
 
------
-
-
-
 adviceDWeightExcessArgs :: T.Text
-adviceDWeightExcessArgs = T.concat [ "Please provide one argument: the ID for which you would like to calculate weight, as \
-                                     \in "
+adviceDWeightExcessArgs = T.concat [ "Please provide one argument: the ID for which you would like to calculate \
+                                     \weight, as in "
                                    , quoteColor
                                    , prefixDebugCmd "weight"
                                    , " 100"
@@ -323,12 +290,7 @@ adviceDWeightExcessArgs = T.concat [ "Please provide one argument: the ID for wh
 
 
 adviceDWeightNoArgs :: T.Text
-adviceDWeightNoArgs = T.concat [ "Please specify an ID for which you would like to calculate weight, as in "
-                               , quoteColor
-                               , prefixDebugCmd "weight"
-                               , " 100"
-                               , dfltColor
-                               , "." ]
+adviceDWeightNoArgs = adviceDWeightExcessArgs
 
 
 adviceDWrapExcessArgs :: T.Text
@@ -338,6 +300,10 @@ adviceDWrapExcessArgs = T.concat [ "Please provide one argument: line length, as
                                  , " 40"
                                  , dfltColor
                                  , "." ]
+
+
+adviceDWrapNoArgs :: T.Text
+adviceDWrapNoArgs = adviceDWrapExcessArgs
 
 
 adviceDWrapIndentExcessArgs :: T.Text
@@ -359,21 +325,7 @@ adviceDWrapIndentNoAmt = T.concat [ "Please also specify indent amount, as in "
 
 
 adviceDWrapIndentNoArgs :: T.Text
-adviceDWrapIndentNoArgs = T.concat [ "Please specify line length followed by indent amount, as in "
-                                   , quoteColor
-                                   , prefixDebugCmd "wrapindent"
-                                   , " 40 4"
-                                   , dfltColor
-                                   , "." ]
-
-
-adviceDWrapNoArgs :: T.Text
-adviceDWrapNoArgs =  T.concat [ "Please specify line length, as in "
-                              , quoteColor
-                              , prefixDebugCmd "wrap"
-                              , " 40"
-                              , dfltColor
-                              , "." ]
+adviceDWrapIndentNoArgs = adviceDWrapIndentExcessArgs
 
 
 -----

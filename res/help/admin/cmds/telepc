@@ -1,0 +1,12 @@
+\h #dTELEPC \d
+
+\uUSAGE\n
+#dtelepc name
+
+\uDESCRIPTION\n
+Teleport to a PC.
+
+\uEXAMPLES\n
+\q#dtelepc taro\d to teleport to Taro.4`
+
+\uSEE ALSO\n

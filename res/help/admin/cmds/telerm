@@ -4,7 +4,7 @@
 #dtelerm \s[\droom\s]\d
 
 \uDESCRIPTION\n
-Display a list of rooms to which you may teleport, or teleport to a given room.
+Display a list of rooms to which you may teleport, or teleport to a room.
 
 \uEXAMPLES\n
 \q#dtelerm\d to get a list of rooms to which you may teleport.4`

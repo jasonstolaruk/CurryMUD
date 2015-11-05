@@ -128,9 +128,9 @@ adminCmds =
     , mkAdminCmd "profanity"  adminProfanity   "Dump the profanity database."
     , mkAdminCmd "shutdown"   adminShutdown    "Shut down CurryMUD, optionally with a custom message."
     , mkAdminCmd "sudoer"     adminSudoer      "Toggle a player's admin status."
-    , mkAdminCmd "telepla"    adminTelePla     "Teleport to a given player."
+    , mkAdminCmd "telepc"     adminTelePC      "Teleport to a PC."
     , mkAdminCmd "telerm"     adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
-                                               \given room."
+                                               \room."
     , mkAdminCmd "time"       adminTime        "Display the current system time."
     , mkAdminCmd "typo"       adminTypo        "Dump the typo database."
     , mkAdminCmd "uptime"     adminUptime      "Display the system uptime."
@@ -675,22 +675,21 @@ adminSudoer p = advise p [] adviceASudoerExcessArgs
 -----
 
 
-adminTelePla :: Action
-adminTelePla p@AdviseNoArgs = advise p [ prefixAdminCmd "telepla" ] adviceATelePlaNoArgs
-adminTelePla p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+adminTelePC :: Action
+adminTelePC p@AdviseNoArgs                    = advise p [ prefixAdminCmd "telepc" ] adviceATelePCNoArgs
+adminTelePC p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
-        let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player to which you want to \
-                                                                \teleport"
+        let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC to which you want to teleport"
             idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
             originId            = getRmId i ms
             found (flip getRmId ms -> destId, targetSing)
-              | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTelePlaSelf)
+              | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTelePCSelf)
               | destId     == originId     = (ms, pure .  sendFun $ sorryTeleAlready)
               | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
-            notFound     = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
+            notFound = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
         in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
-adminTelePla (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePlaExcessArgs
+adminTelePC (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePCExcessArgs
 
 
 teleHelper :: Id
