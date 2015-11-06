@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- This module contains straightforward getter methods that do little or no calculation.
+
 module Mud.Data.State.Util.Get where
 
 import Mud.Data.Misc
@@ -15,9 +17,13 @@ import Control.Lens.Operators ((^.))
 import Data.Monoid (Sum(..))
 import Data.Time (UTCTime)
 import Network (HostName)
+import Prelude hiding (exp)
 import qualified Data.IntMap.Lazy as IM (filter, foldr, keys, toList)
 import qualified Data.Map.Lazy as M (keys)
 import qualified Data.Text as T
+
+
+-- TODO: "This module contains straightforward getter methods that do little or no calculation."
 
 
 getAdminIds :: MudState -> Inv
@@ -117,6 +123,13 @@ getEntDesc i = view entDesc . getEnt i
 
 getEqMap :: Id -> MudState -> EqMap
 getEqMap i = view (eqTbl.ind i)
+
+
+-----
+
+
+getExp :: Id -> MudState -> Exp
+getExp i = view exp . getMob i
 
 
 -----
@@ -226,17 +239,6 @@ isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 
 getLoggedInPlaIds :: MudState ->  Inv
 getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn *** not . isAdmin) . dup))
-
-
------
-
-
--- TODO: Move.
-type Lvl = Int
-
-
-getLvl :: Id -> MudState -> Lvl
-getLvl _ _ = 0 -- TODO
 
 
 -----
@@ -441,13 +443,6 @@ getSex i = view sex . getMob i
 
 getSexRace :: Id -> MudState -> (Sex, Race)
 getSexRace i = (getSex i *** getRace i) . dup
-
-
------
-
-
-getSexRaceLvl :: Id -> MudState -> (Sex, Race, Lvl)
-getSexRaceLvl i ms | (s, r) <- getSexRace i ms = (s, r, getLvl i ms)
 
 
 -----

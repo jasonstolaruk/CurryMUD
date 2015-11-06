@@ -304,7 +304,7 @@ data Mob = Mob { _sex                    :: Sex
                , _curMp, _maxMp          :: Int
                , _curPp, _maxPp          :: Int
                , _curFp, _maxFp          :: Int
-               , _xp                     :: Int
+               , _exp                    :: Exp
                , _hand                   :: Hand
                , _regenAsync             :: Maybe RegenAsync }
 
@@ -312,6 +312,9 @@ data Mob = Mob { _sex                    :: Sex
 data Sex = Male
          | Female
          | NoSex deriving (Eq, Generic, Show)
+
+
+type Exp = Int
 
 
 data Hand = RHand
@@ -341,7 +344,7 @@ mobToJSON Mob { .. } = object [ "_sex"   .= _sex
                               , "_maxPp" .= _maxPp
                               , "_curFp" .= _curFp
                               , "_maxFp" .= _maxFp
-                              , "_xp"    .= _xp
+                              , "_exp"   .= _exp
                               , "_hand"  .= _hand ]
 
 

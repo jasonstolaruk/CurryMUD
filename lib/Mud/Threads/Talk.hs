@@ -108,7 +108,7 @@ adHoc mq host = do
                        , _maxMp      = 100, _curMp = 100
                        , _maxPp      = 100, _curPp = 100
                        , _maxFp      = 100, _curFp = 100
-                       , _xp         = 0
+                       , _exp        = 0
                        , _hand       = RHand
                        , _regenAsync = Nothing }
             pc   = PC  { _rmId       = iWelcome

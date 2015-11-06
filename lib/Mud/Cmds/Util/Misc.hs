@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.Misc ( asterisk
+                          , awardExp
                           , dbExHandler
                           , dispCmdList
                           , dispMatches
@@ -10,6 +11,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , fileIOExHandler
                           , formatChanMsg
                           , formatQuestion
+                          , getLvl
                           , getQuestionStyleds
                           , getTunedQuestionIds
                           , happy
@@ -49,14 +51,15 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , withDbExHandler_
                           , withoutArgs ) where
 
-import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Util.Abbrev
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -76,14 +79,14 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logExMsg, logIOEx)
+import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), second)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, each, view, views)
-import Control.Lens.Operators ((%~), (&), (?~))
+import Control.Lens.Operators ((%~), (&), (+~), (?~))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
@@ -92,6 +95,7 @@ import Data.Function (on)
 import Data.List (delete, intercalate, nub, partition, sortBy)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
+import Prelude hiding (exp)
 import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', map, mapWithKey)
 import qualified Data.Map.Lazy as M (elems, lookup, toList)
 import qualified Data.Text as T
@@ -122,11 +126,25 @@ logIOEx :: T.Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
+logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla = L.logPla "Mud.Cmds.Util.Misc"
+
+
 -- ==================================================
 
 
 asterisk :: T.Text
 asterisk = quoteWith' (asteriskColor, dfltColor) "*"
+
+
+-----
+
+
+awardExp :: Id -> Exp -> MudStack ()
+awardExp i amt = helper |&| modifyState >=> \(bs, logMsgs) ->
+    bcastNl bs >> logMsgs |#| logPla "awardExp" i . slashes
+  where
+    helper ms = (ms & mobTbl.ind i.exp +~ amt, ([], []))
 
 
 -----
@@ -249,6 +267,20 @@ formatQuestion i ms (txt, is)
     getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
 
 
+-----
+
+
+getLvl :: Id -> MudState -> Lvl
+getLvl i ms = let myExp                            = getExp i ms
+                  helper ((l, x):rest) | myExp < x = pred l
+                                       | otherwise = helper rest
+                  helper xs                        = patternMatchFail "getLvl" [ showText xs ]
+              in helper calcLvlExps
+
+
+-----
+
+
 getQuestionStyleds :: Id -> MudState -> MudStack [(Id, T.Text, T.Text)]
 getQuestionStyleds i ms =
     let (plaIds,    adminIds) = getTunedQuestionIds i ms
@@ -265,6 +297,13 @@ getQuestionStyleds i ms =
               where
                 a = (x, y, styled)
         in return . zipWith helper combo $ styleds
+
+
+-----
+
+
+getSexRaceLvl :: Id -> MudState -> (Sex, Race, Lvl)
+getSexRaceLvl i ms | (s, r) <- getSexRace i ms = (s, r, getLvl i ms)
 
 
 -----

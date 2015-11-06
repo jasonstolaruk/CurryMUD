@@ -960,6 +960,7 @@ getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <-
 -----
 
 
+-- TODO: Award 50 exp to the target.
 intro :: Action
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet." in
@@ -1116,7 +1117,6 @@ leave p = patternMatchFail "leave" [ showText p ]
 -----
 
 
--- TODO: Linking should award exp.
 link :: Action
 link (NoArgs i mq cols) = do
     ms  <- getState
@@ -1153,7 +1153,7 @@ link (NoArgs i mq cols) = do
 link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "link"
   else helper |&| modifyState >=> \(bs, logMsgs, fs) ->
-      bcast bs >> sequence_ fs >> logMsgs |#| (logPla "link" i . slashes)
+      bcast bs >> logMsgs |#| (logPla "link" i . slashes) >> sequence_ fs
   where
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
                     sorryInInv              = inInvs |!| (mkBroadcast i . nlnl $ sorryLinkInInv)
@@ -1201,7 +1201,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
               | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
               | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetDesig
               | not . hasPp i ms $ 5              -> msgHelper . sorryPp $ "link with " <> targetDesig
-              | act <- rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ [] ->
+              | otherwise                         ->
                   let g a'' | isTwoWay  = a''
                             | otherwise = a'' & _1.rndmNamesMstrTbl.ind i       .at targetSing .~ Nothing
                                               & _1.rndmNamesMstrTbl.ind targetId.at s          .~ Nothing
@@ -1211,9 +1211,11 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                             & _1.mobTbl         .ind i       .curPp         -~ 5
                             & _2 <>~ bs
                             & _3 <>~ pure logMsg
-                            & _4 <>~ pure act
+                            & _4 <>~ [ act, awardExp 100 targetId ]
           _  -> let b = (nlnl . sorryLinkType $ targetSing, pure i)
                 in a' & _2 %~ (`appendIfUnique` b)
+          where
+            act = rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ []
     helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a (Right {}  ) = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" [ showText p ]

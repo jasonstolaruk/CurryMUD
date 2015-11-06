@@ -32,6 +32,8 @@ module Mud.Data.Misc ( Action
                      , Index
                      , InInvEqRm(..)
                      , LoggedInOrOut(..)
+                     , Lvl
+                     , LvlExp
                      , PCDesig(..)
                      , pp
                      , Pretty
@@ -421,7 +423,7 @@ data ClassifiedBroadcast = TargetBroadcast    Broadcast
 instance Ord ClassifiedBroadcast where
   TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
   NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
-  _うんこ `compare` _糞 = EQ
+  _うんこ               `compare` _糞                  = EQ
 
 
 -----
@@ -528,6 +530,15 @@ data LoggedInOrOut = LoggedIn | LoggedOut deriving Eq
 instance Show LoggedInOrOut where
   show LoggedIn  = "logged in"
   show LoggedOut = "logged out"
+
+
+-----
+
+
+type Lvl = Int
+
+
+type LvlExp = (Lvl, Exp)
 
 
 -----

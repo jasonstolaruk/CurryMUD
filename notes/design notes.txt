@@ -44,11 +44,6 @@ Character generation can employ a "pick point" system similar to that of Hero's 
 
 Have one pool of points go towards attributes, and an entirely separate pool of points go towards initial skills.
 
-Consider having different and distinct attributes to represent (innate) ability in these areas:
-magic
-clerical magic
-psionics
-
 "Warning: don't have skills or attributes that affect how quickly characters learn skills. If you do, players will max them out at the first opportunity." p.367
 
 If a character's crafting skill increases on the basis of use, then players are likely to create many items solely so that their crafting skill will rise, leading to a severe over-production of goods. p.565
@@ -178,9 +173,6 @@ Avoid teleportation mechanisms, as they tend to have a devastating effect on vir
 COMMANDS:
 
 You should be able to use "smell" and "listen" with no arguments. "smell air" could have the same effect as "smell" with no arguments.
-
-"intro" and "link" should award experience points.
-"block" to block/unblock telepathic messages from a PC.
 
 When a PC dies, all those who have linked with him/her should be notified.
 

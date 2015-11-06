@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Data.State.Util.Calc ( calcEncPer
+                                , calcLvlExps
                                 , calcMaxEnc
                                 , calcProbConnectBlink
                                 , calcProbLinkFlinch
@@ -18,6 +19,7 @@ module Mud.Data.State.Util.Calc ( calcEncPer
                                 , calcWeight
                                 , coinWeight ) where
 
+import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
@@ -48,6 +50,13 @@ calcEncPer i ms = round . (100 *) $ calcWeight i ms `divide` calcMaxEnc i ms
 
 calcMaxEnc :: Id -> MudState -> Int
 calcMaxEnc i ms = round . (100 *) $ getSt i ms ^ 2 `divide` 13
+
+
+-----
+
+
+calcLvlExps :: [LvlExp]
+calcLvlExps = [ (lvl, 1250 * lvl ^ 2) | lvl <- [1..] ]
 
 
 -----
