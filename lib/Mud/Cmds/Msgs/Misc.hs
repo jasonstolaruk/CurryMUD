@@ -65,6 +65,10 @@ loadWorldErrorMsg :: T.Text
 loadWorldErrorMsg = "There was an error loading the world. Check the error log for details."
 
 
+lvlMsg :: T.Text
+lvlMsg = "Congratulations! You gained a level."
+
+
 motdErrorMsg :: T.Text
 motdErrorMsg = "Unfortunately, the message of the day could not be retrieved."
 

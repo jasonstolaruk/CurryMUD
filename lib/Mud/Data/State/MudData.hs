@@ -216,8 +216,7 @@ data EntFlags = IsInvis deriving Enum
 type EqMap = M.Map Slot Id
 
 
-data Slot =
-            HeadS                                   -- armor
+data Slot = HeadS                                   -- armor
           | EarringR1S | EarringR2S                 -- clothing
           | EarringL1S | EarringL2S                 -- clothing
           | NoseRing1S | NoseRing2S                 -- clothing
@@ -363,7 +362,7 @@ jsonToMob (Object o) = Mob <$> o .: "_sex"
                            <*> o .: "_maxPp"
                            <*> o .: "_curFp"
                            <*> o .: "_maxFp"
-                           <*> o .: "_xp"
+                           <*> o .: "_exp"
                            <*> o .: "_hand"
                            <*> pure Nothing
 jsonToMob _          = empty

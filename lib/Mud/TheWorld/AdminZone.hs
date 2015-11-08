@@ -985,7 +985,7 @@ createAdminZone = do
               100 100
               100 100
               100 100
-              10
+              0
               RHand
               Nothing)
   putCloth iPeasant'sShirt

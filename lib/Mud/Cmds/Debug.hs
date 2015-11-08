@@ -104,6 +104,7 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
+    , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
@@ -262,6 +263,17 @@ mkEnvListTxt :: [(String, String)] -> [T.Text]
 mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
   where
     mkAssocTxt (a, b) = T.concat [ envVarColor, a, ": ", dfltColor, b ]
+
+
+-----
+
+
+debugExp :: Action
+debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do
+    ok mq
+    logPlaExec cn i
+    awardExp 100000 ("executed " <> dblQuote cn) i
+debugExp p = withoutArgs debugExp p
 
 
 -----

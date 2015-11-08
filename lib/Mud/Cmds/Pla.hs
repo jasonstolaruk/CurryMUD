@@ -960,7 +960,6 @@ getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <-
 -----
 
 
--- TODO: Award 50 exp to the target.
 intro :: Action
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet." in
@@ -970,25 +969,28 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
       logPla "intro" i $ "known names: " <> introsTxt
 intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "intro"
-  else helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs) ->
-    bcastIfNotIncog i bs >> logMsgs |#| logPla "intro" i . slashes
+  else helper |&| modifyState >=> \(map fromClassifiedBroadcast . sort -> bs, logMsgs, intro'dIds) -> do
+    bcast bs
+    mapM_ (awardExp 50 (getSing i ms <> " introduced")) intro'dIds
+    logMsgs |#| logPla "intro" i . slashes
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorryInInv = inInvs |!| mkNTB sorryIntroInInv
             sorryInEq  = inEqs  |!| mkNTB sorryIntroInEq
             invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
-            (eiss, ecs)          = uncurry (resolveRmInvCoins i ms inRms) invCoins'
-            (pt, cbs,  logMsgs ) = foldl' (helperIntroEitherInv ms (fst invCoins)) (ms^.pcTbl, [],  []     ) eiss
-            (    cbs', logMsgs') = foldl' helperIntroEitherCoins                   (           cbs, logMsgs) ecs
+            (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins'
+            ris         = fst invCoins
+            (pt, cbs,  logMsgs, intro'dIds) = foldl' (helperIntroEitherInv ms ris) (ms^.pcTbl, [], [], []) eiss
+            (    cbs', logMsgs'           ) = foldl' helperIntroEitherCoins        (cbs, logMsgs)          ecs
         in if ()!# invCoins'
-          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs'))
-          else (ms, (mkNTB sorryIntroNoOneHere, []))
+          then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs', intro'dIds))
+          else (ms,               (mkNTB sorryIntroNoOneHere,       [],       []        ))
     mkNTB                                           = mkNTBroadcast i . nlnl
     helperIntroEitherInv _  _   a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
-        tryIntro a'@(pt, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
+        tryIntro a'@(pt, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
           PCType -> let s           = getSing i ms
                         targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                         msg         = "You introduce yourself to " <> targetDesig <> "."
@@ -1021,7 +1023,10 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                     in if s `elem` pt^.ind targetId.introduced
                       then let sorry = nlnl . sorryIntroAlready $ targetDesig
                            in a' & _2 <>~ mkNTBroadcast i sorry
-                      else a' & _1.ind targetId.introduced %~ (sort . (s :)) & _2 <>~ cbs & _3 <>~ pure logMsg
+                      else a' & _1.ind targetId.introduced %~ (sort . (s :))
+                              & _2 <>~ cbs
+                              & _3 <>~ pure logMsg
+                              & _4 %~  (targetId :)
           _      -> let b = head . mkNTB . sorryIntroType $ targetSing
                     in a' & _2 %~ (`appendIfUnique` b)
     helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBroadcast i . T.concat $ [ nlnl msg | msg <- msgs ])
@@ -1153,7 +1158,7 @@ link (NoArgs i mq cols) = do
 link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "link"
   else helper |&| modifyState >=> \(bs, logMsgs, fs) ->
-      bcast bs >> logMsgs |#| (logPla "link" i . slashes) >> sequence_ fs
+      bcast bs >> sequence_ fs >> logMsgs |#| logPla "link" i . slashes
   where
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
                     sorryInInv              = inInvs |!| (mkBroadcast i . nlnl $ sorryLinkInInv)
@@ -1211,7 +1216,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                             & _1.mobTbl         .ind i       .curPp         -~ 5
                             & _2 <>~ bs
                             & _3 <>~ pure logMsg
-                            & _4 <>~ [ act, awardExp 100 targetId ]
+                            & _4 <>~ [ act, awardExp 100 ("linked by " <> targetSing) targetId ]
           _  -> let b = (nlnl . sorryLinkType $ targetSing, pure i)
                 in a' & _2 %~ (`appendIfUnique` b)
           where
@@ -2481,7 +2486,7 @@ unlink (LowerNub i mq cols as) =
                         in a & _1 .~  ms''
                              & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                              & _3 <>~ pure targetSing
-            in helper |&| modifyState >=> \(bs, logMsgs) -> bcast (g bs) >> logMsgs |#| (logPla "unlink" i . slashes)
+            in helper |&| modifyState >=> \(bs, logMsgs) -> bcast (g bs) >> logMsgs |#| logPla "unlink" i . slashes
 unlink p = patternMatchFail "unlink" [ showText p ]
 
 

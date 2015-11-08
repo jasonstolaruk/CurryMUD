@@ -87,12 +87,12 @@ import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, each, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (?~))
-import Control.Monad ((>=>), unless)
+import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
 import Data.Either (rights)
 import Data.Function (on)
-import Data.List (delete, intercalate, nub, partition, sortBy)
+import Data.List (delete, intercalate, nub, partition, sortBy, unfoldr)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
 import Prelude hiding (exp)
@@ -140,11 +140,26 @@ asterisk = quoteWith' (asteriskColor, dfltColor) "*"
 -----
 
 
-awardExp :: Id -> Exp -> MudStack ()
-awardExp i amt = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> logMsgs |#| logPla "awardExp" i . slashes
+awardExp :: Exp -> T.Text -> Id -> MudStack ()
+awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
+    mapM_ (retainedMsg i ms) msgs
+    let logMsg = T.concat [ "awarded "
+                          , showText amt
+                          , " exp "
+                          , parensQuote reason
+                          , "."
+                          , logMsgs |!| " " <> (capitalize . (<> ".") . slashes $ logMsgs) ]
+    when (isLoggedIn . getPla i $ ms) . logPla "awardExp" i $ logMsg
   where
-    helper ms = (ms & mobTbl.ind i.exp +~ amt, ([], []))
+    helper ms =
+        let oldLvl = getLvl i ms
+            ms'    = ms & mobTbl.ind i.exp +~ amt
+            newLvl = getLvl i ms'
+            f seed | seed == 0 = Nothing
+                   | otherwise = Just ((lvlMsg, mkLogMsg), pred seed)
+              where
+                mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showText (newLvl - seed + 1)
+        in (ms', (ms', unzip . unfoldr f $ newLvl - oldLvl))
 
 
 -----
