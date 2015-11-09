@@ -117,6 +117,7 @@ adminCmds =
     , mkAdminCmd "bug"        adminBug         "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        "Display information about one or more telepathic channels."
     , mkAdminCmd "date"       adminDate        "Display the current system date."
+    , mkAdminCmd "experience" adminExp         "Dump the experience table."
     , mkAdminCmd "host"       adminHost        "Display a report of connection statistics for one or more players."
     , mkAdminCmd "incognito"  adminIncognito   "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          "Display the server's IP addresses and listening port."
@@ -365,6 +366,21 @@ adminDate p = withoutArgs adminDate p
 adminDispCmdList :: Action
 adminDispCmdList p@(LowerNub' i as) = dispCmdList adminCmds p >> logPlaExecArgs (prefixAdminCmd "?") as i
 adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ showText p ]
+
+
+-----
+
+
+-- TODO: Help.
+adminExp :: Action
+adminExp (NoArgs' i mq) = do
+    pager i mq mkReport
+    logPlaExec (prefixAdminCmd "experience") i
+  where
+    mkReport      = header ++ (take 25 . map helper $ calcLvlExps)
+    header        = [ "Level  Experience", T.replicate 17 "=" ]
+    helper (l, e) = (pad 7 . showText $ l) <> (commaEvery3 . showText $ e)
+adminExp p = withoutArgs adminExp p
 
 
 -----

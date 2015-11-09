@@ -12,6 +12,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , formatChanMsg
                           , formatQuestion
                           , getLvl
+                          , getLvlExp
                           , getQuestionStyleds
                           , getTunedQuestionIds
                           , happy
@@ -291,6 +292,10 @@ getLvl i ms = let myExp                            = getExp i ms
                                        | otherwise = helper rest
                   helper xs                        = patternMatchFail "getLvl" [ showText xs ]
               in helper calcLvlExps
+
+
+getLvlExp :: Id -> MudState -> LvlExp
+getLvlExp i = (getLvl i *** getExp i) . dup
 
 
 -----

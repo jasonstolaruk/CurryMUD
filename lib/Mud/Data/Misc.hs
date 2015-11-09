@@ -237,6 +237,12 @@ instance Pretty Cloth where
   pp Trousers = "trousers"
 
 
+instance Pretty Hand where
+  pp RHand  = "right-handed"
+  pp LHand  = "left-handed"
+  pp NoHand = undefined
+
+
 instance Pretty ProfRec where
   pp (ProfRec { .. }) = spaces [ profTimestamp, profHost, profProfanity ]
 

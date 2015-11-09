@@ -145,13 +145,6 @@ bcastSelfOthers i ms toSelf toOthers = do
 -----
 
 
-frame :: Cols -> T.Text -> T.Text
-frame cols | divider <- nl . T.replicate cols $ "=" = nl . (<> divider) . (divider <>)
-
-
------
-
-
 massMsg :: Msg -> MudStack ()
 massMsg msg = liftIO . atomically . helperSTM =<< getState
   where

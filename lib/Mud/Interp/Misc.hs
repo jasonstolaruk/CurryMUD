@@ -16,10 +16,11 @@ import qualified Data.Text as T
 
 mkPrompt :: Id -> MudState -> T.Text
 mkPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
-                in spaces [ f "h" hps
-                          , f "m" mps
-                          , f "p" pps
-                          , f "f" fps ] <> " ->"
+                    indent               = quoteWith' (promptIndentColor, dfltColor) "Curry"
+                in indent <> " " <> spaces [ f "h" hps
+                                           , f "m" mps
+                                           , f "p" pps
+                                           , f "f" fps ]
   where
     f a (x, y) = let c   = if | x == y    -> green
                               | per > 67  -> cyan

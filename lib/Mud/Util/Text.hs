@@ -3,9 +3,12 @@
 module Mud.Util.Text ( aOrAn
                      , aOrAnOnLower
                      , capitalize
+                     , commaEvery3
                      , commas
+                     , divider
                      , dropBlanks
                      , findFullNameForAbbrev
+                     , frame
                      , headTail
                      , intercalateDivider
                      , isCapital
@@ -69,13 +72,6 @@ isCapital (T.head -> h) = isUpper h
 -----
 
 
-intercalateDivider :: Int -> [[T.Text]] -> [T.Text]
-intercalateDivider cols = intercalate [ "", T.replicate cols "=", "" ]
-
-
------
-
-
 capitalize :: T.Text -> T.Text
 capitalize = capsHelper toUpper
 
@@ -91,11 +87,29 @@ capsHelper f (headTail -> (T.singleton . f -> h, t)) = h <> t
 -----
 
 
+commaEvery3 :: T.Text -> T.Text
+commaEvery3 = T.reverse . T.intercalate "," . T.chunksOf 3 . T.reverse
+
+
+-----
+
+
 commas :: [T.Text] -> T.Text
 commas = T.intercalate ", "
 
 
 -----
+
+
+type Cols = Int
+
+
+divider :: Cols -> T.Text
+divider = (`T.replicate` "=")
+
+
+-----
+
 
 dropBlanks :: [T.Text] -> [T.Text]
 dropBlanks []      = []
@@ -127,8 +141,22 @@ findFullNameForAbbrev needle hay =
 -----
 
 
+frame :: Cols -> T.Text -> T.Text
+frame cols | d <- nl . divider $ cols = nl . (<> d) . (d <>)
+
+
+-----
+
+
 headTail :: T.Text -> (Char, T.Text)
 headTail = (T.head *** T.tail) . dup
+
+
+-----
+
+
+intercalateDivider :: Cols -> [[T.Text]] -> [T.Text]
+intercalateDivider cols = intercalate [ "", divider cols, "" ]
 
 
 -----

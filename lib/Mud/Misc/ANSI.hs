@@ -41,6 +41,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , prefixColor
                      , printConsoleColor
                      , promoteDemoteColor
+                     , promptIndentColor
                      , questionArrivalColor
                      , quoteColor
                      , red
@@ -236,6 +237,10 @@ printConsoleColor = magenta
 
 promoteDemoteColor :: T.Text
 promoteDemoteColor = mkColorANSI (Dull, White) (Dull, Red)
+
+
+promptIndentColor :: T.Text
+promptIndentColor = mkColorANSI (Dull, White) (Dull, White)
 
 
 questionArrivalColor :: T.Text

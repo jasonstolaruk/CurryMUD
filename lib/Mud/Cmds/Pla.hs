@@ -202,6 +202,7 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("say",        "sa",  say,        "Say something out loud.")
     , ("show",       "sh",  showAction, "Show one or more items in your inventory and/or readied equipment to another \
                                         \person.")
+    , ("stats",      "st",  stats,      "Display your stats.")
     , ("telepathy",  "t",   tele,       "Send a private message to a person with whom you have established a two-way \
                                         \telepathic link.")
     , ("unready",    "un",  unready,    "Unready one or more items.")
@@ -2324,6 +2325,24 @@ mkSlotDesc i ms s = case s of
     wornOn = T.concat [ "worn on ", hisHer, " ", pp s ]
     wornAs = "worn as " <> (aOrAn . pp $ s)
     heldIn = "held in " <> hisHer <> pp s
+
+
+-----
+
+
+-- TODO: Help.
+stats :: Action
+stats (NoArgs i mq cols) = getState >>= \ms ->
+    let mkStats   = [ T.concat [ getSing i ms, ", the ", sexy, " ", r ]
+                    , pp . getHand i $ ms
+                    , "level " <> showText l
+                    , (commaEvery3 . showText $ x  ) <> " experience points"
+                    , (commaEvery3 . showText $ nxt) <> " experience points to next level" ]
+        (sexy, r) = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
+        (l, x)    = getLvlExp i ms
+        nxt       = subtract x . snd $ calcLvlExps !! l
+    in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
+stats p = withoutArgs stats p
 
 
 -----
