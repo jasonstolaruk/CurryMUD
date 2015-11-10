@@ -8,33 +8,15 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Util.Misc
-import Mud.Util.Operators
 
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
-import Control.Lens (at, to, view, views)
+import Control.Lens (at, to, view)
 import Control.Lens.Operators ((^.))
-import Data.Monoid (Sum(..))
 import Data.Time (UTCTime)
 import Network (HostName)
 import Prelude hiding (exp)
-import qualified Data.IntMap.Lazy as IM (filter, foldr, keys, toList)
-import qualified Data.Map.Lazy as M (keys)
 import qualified Data.Text as T
-
-
--- TODO: "This module contains straightforward getter methods that do little or no calculation."
-
-
-getAdminIds :: MudState -> Inv
-getAdminIds = getAdminIdsHelper (const True)
-
-
-getAdminIdsHelper :: (Pla -> Bool) -> MudState -> Inv
-getAdminIdsHelper f = IM.keys . IM.filter (uncurry (&&) . (isAdmin *** f) . dup) . view plaTbl
-
-
------
 
 
 getArm :: Id -> MudState -> Arm
@@ -191,13 +173,6 @@ getIsCloth i = view isCloth . getCon i
 -----
 
 
-getIdForPCSing :: Sing -> MudState -> Id
-getIdForPCSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
-
-
------
-
-
 getLastRmId :: Id -> MudState -> Maybe Id
 getLastRmId i = view lastRmId . getPla i
 
@@ -221,24 +196,6 @@ getListenThreadId = reverseLookup Listen . view threadTbl
 
 getLogQueue :: Id -> MudState -> LogQueue
 getLogQueue i = view (plaLogTbl.ind i.to snd)
-
-
------
-
-
-getLoggedInAdminIds :: MudState -> Inv
-getLoggedInAdminIds = getAdminIdsHelper isLoggedIn
-
-
-isLoggedIn :: Pla -> Bool
-isLoggedIn = views lastRmId ((()#) . (Sum <$>))
-
-
------
-
-
-getLoggedInPlaIds :: MudState ->  Inv
-getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn *** not . isAdmin) . dup))
 
 
 -----
@@ -272,40 +229,6 @@ getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
 -----
 
 
-getNonIncogLoggedInAdminIds :: MudState -> Inv
-getNonIncogLoggedInAdminIds ms =
-    let adminIds = getLoggedInAdminIds ms
-    in [ adminId | adminId <- adminIds, not . isIncognitoId adminId $ ms ]
-
-
------
-
-
-getNonIncogInv :: Id -> MudState -> Inv
-getNonIncogInv i ms = filter notIncog . getInv i $ ms
-  where
-    notIncog targetId | getType targetId ms /= PCType     = True
-                      | not . isIncognitoId targetId $ ms = True
-                      | otherwise                         = False
-
-
------
-
-
-getNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
-getNonIncogInvCoins i = (getNonIncogInv i *** getCoins i) . dup
-
-
------
-
-
-getNpcIds :: MudState -> Inv
-getNpcIds ms = views mobTbl (filter ((== MobType) . (`getType` ms)) . IM.keys) ms
-
-
------
-
-
 getObj :: Id -> MudState -> Obj
 getObj i = view (objTbl.ind i)
 
@@ -315,15 +238,6 @@ getObj i = view (objTbl.ind i)
 
 getPC :: Id -> MudState -> PC
 getPC i = view (pcTbl.ind i)
-
-
------
-
-
-getPCChans :: Id -> MudState -> [Chan]
-getPCChans i ms = views chanTbl (IM.foldr helper []) ms
-  where
-    helper chan acc = getSing i ms `elem` (chan^.chanConnTbl.to M.keys) ? (chan : acc) :? acc
 
 
 -----
@@ -352,13 +266,6 @@ getPCRmInv i ms = let ri = getRmId i ms in getInv ri ms
 
 getPCRmInvCoins :: Id -> MudState -> (Inv, Coins)
 getPCRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
-
-
------
-
-
-getPCRmNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
-getPCRmNonIncogInvCoins i ms = let ri = getRmId i ms in getNonIncogInvCoins ri ms
 
 
 -----

@@ -4,6 +4,7 @@
 module Mud.Data.State.Util.Calc ( calcEncPer
                                 , calcLvlExps
                                 , calcMaxEnc
+                                , calcMaxRaceLen
                                 , calcProbConnectBlink
                                 , calcProbLinkFlinch
                                 , calcProbTeleShudder
@@ -23,6 +24,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
@@ -50,6 +52,13 @@ calcEncPer i ms = round . (100 *) $ calcWeight i ms `divide` calcMaxEnc i ms
 
 calcMaxEnc :: Id -> MudState -> Int
 calcMaxEnc i ms = round . (100 *) $ getSt i ms ^ 2 `divide` 13
+
+
+-----
+
+
+calcMaxRaceLen :: Int
+calcMaxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 
 
 -----

@@ -2,7 +2,7 @@
 
 module Mud.TopLvlDefs.Padding where
 
-import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Calc
 import Mud.TopLvlDefs.Misc
 
 
@@ -35,7 +35,7 @@ namePadding = maxNameLen + 3
 
 
 racePadding :: Int
-racePadding = succ maxRaceLen
+racePadding = succ calcMaxRaceLen
 
 
 settingNamePadding :: Int

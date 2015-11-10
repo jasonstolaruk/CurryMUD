@@ -4,22 +4,30 @@
 
 module Mud.Data.State.Util.Misc ( BothGramNos
                                 , findPCIds
+                                , getAdminIds
                                 , getEffBothGramNos
                                 , getEffName
+                                , getIdForPCSing
+                                , getLoggedInAdminIds
+                                , getLoggedInPlaIds
+                                , getNonIncogInv
+                                , getNonIncogInvCoins
+                                , getNonIncogLoggedInAdminIds
+                                , getNpcIds
+                                , getPCRmNonIncogInvCoins
                                 , getState
-                                , maxRaceLen
+                                , isLoggedIn
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
                                 , mkCapsFun
                                 , mkPlaIdSingList
                                 , mkPlurFromBoth
-                                , mkRetainedMsgFromPerson
                                 , mkSerializedNonStdDesig
                                 , mkStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
-                                , pluralize
                                 , onEnv
+                                , pluralize
                                 , removeAdHoc
                                 , setInterp
                                 , sortInv
@@ -29,11 +37,8 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TheWorld.AdminZoneIds (iWelcome)
-import Mud.TopLvlDefs.Chars
-import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
-import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Control.Arrow ((***))
@@ -48,9 +53,9 @@ import Data.IntMap.Lazy ((!))
 import Data.IORef (atomicModifyIORef, readIORef)
 import Data.List (delete, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
-import Data.Monoid ((<>))
+import Data.Monoid (Sum(..), (<>))
 import GHC.Exts (sortWith)
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
 import qualified Data.Text as T
 
 
@@ -59,6 +64,20 @@ findPCIds ms haystack = [ i | i <- haystack, getType i ms == PCType ]
 
 
 -----
+
+
+getAdminIds :: MudState -> Inv
+getAdminIds = getAdminIdsHelper (const True)
+
+
+getAdminIdsHelper :: (Pla -> Bool) -> MudState -> Inv
+getAdminIdsHelper f = IM.keys . IM.filter (uncurry (&&) . (isAdmin *** f) . dup) . view plaTbl
+
+
+-----
+
+
+type BothGramNos = (Sing, Plur)
 
 
 getEffBothGramNos :: Id -> MudState -> Id -> BothGramNos
@@ -84,12 +103,70 @@ getEffName :: Id -> MudState -> Id -> T.Text
 getEffName i ms targetId = let targetEnt = getEnt targetId ms
                            in fromMaybe (helper $ targetEnt^.sing) $ targetEnt^.entName
   where
-    helper targetSing | views introduced (targetSing `elem`) (getPC i ms) = uncapitalize targetSing
-                      | otherwise                                         = mkUnknownPCEntName targetId ms
+    helper targetSing | views (pcTbl.ind i.introduced) (targetSing `elem`) ms = uncapitalize targetSing
+                      | otherwise                                             = mkUnknownPCEntName targetId ms
 
 
 mkUnknownPCEntName :: Id -> MudState -> T.Text
 mkUnknownPCEntName i ms = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
+
+
+-----
+
+
+getIdForPCSing :: Sing -> MudState -> Id
+getIdForPCSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
+
+
+-----
+
+
+getLoggedInAdminIds :: MudState -> Inv
+getLoggedInAdminIds = getAdminIdsHelper isLoggedIn
+
+
+getLoggedInPlaIds :: MudState ->  Inv
+getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn *** not . isAdmin) . dup))
+
+
+-----
+
+
+getNonIncogInv :: Id -> MudState -> Inv
+getNonIncogInv i ms = filter notIncog . getInv i $ ms
+  where
+    notIncog targetId | getType targetId ms /= PCType     = True
+                      | not . isIncognitoId targetId $ ms = True
+                      | otherwise                         = False
+
+
+-----
+
+
+getNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
+getNonIncogInvCoins i = (getNonIncogInv i *** getCoins i) . dup
+
+
+-----
+
+
+getNonIncogLoggedInAdminIds :: MudState -> Inv
+getNonIncogLoggedInAdminIds ms = let adminIds = getLoggedInAdminIds ms
+                                 in [ adminId | adminId <- adminIds, not . isIncognitoId adminId $ ms ]
+
+
+-----
+
+
+getNpcIds :: MudState -> Inv
+getNpcIds ms = views mobTbl (filter ((== MobType) . (`getType` ms)) . IM.keys) ms
+
+
+-----
+
+
+getPCRmNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
+getPCRmNonIncogInvCoins i ms = let ri = getRmId i ms in getNonIncogInvCoins ri ms
 
 
 -----
@@ -106,8 +183,8 @@ onEnv = (ask >>=)
 -----
 
 
-maxRaceLen :: Int
-maxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
+isLoggedIn :: Pla -> Bool
+isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 
 
 -----
@@ -141,19 +218,9 @@ mkPlaIdSingList = mkIdSingListHelper not
 -----
 
 
-type BothGramNos = (Sing, Plur)
-
-
 mkPlurFromBoth :: BothGramNos -> Plur
 mkPlurFromBoth (s, "") = s <> "s"
 mkPlurFromBoth (_, p ) = p
-
-
------
-
-
-mkRetainedMsgFromPerson :: Sing -> T.Text -> T.Text
-mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s <> " " <> msg)
 
 
 -----

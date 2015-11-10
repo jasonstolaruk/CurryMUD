@@ -37,7 +37,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
@@ -371,15 +371,13 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
--- TODO: Help.
 adminExp :: Action
-adminExp (NoArgs' i mq) = do
-    pager i mq mkReport
-    logPlaExec (prefixAdminCmd "experience") i
+adminExp (NoArgs' i mq) = pager i mq mkReport >> logPlaExec (prefixAdminCmd "experience") i
   where
-    mkReport      = header ++ (take 25 . map helper $ calcLvlExps)
-    header        = [ "Level  Experience", T.replicate 17 "=" ]
-    helper (l, e) = (pad 7 . showText $ l) <> (commaEvery3 . showText $ e)
+    mkReport = header ++ pure zero ++ (take 25 . map helper $ calcLvlExps)
+    header   = [ "Level  Experience", T.replicate 17 "=" ]
+    zero     = uncurry (<>) . first (pad 7) . dup $ "0"
+    helper   = uncurry (<>) . (pad 7 . showText *** commaEvery3 . showText)
 adminExp p = withoutArgs adminExp p
 
 

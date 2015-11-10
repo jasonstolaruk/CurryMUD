@@ -13,6 +13,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , formatQuestion
                           , getLvl
                           , getLvlExp
+                          , getPCChans
                           , getQuestionStyleds
                           , getTunedQuestionIds
                           , happy
@@ -35,6 +36,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkPrettifiedSexRaceLvl
                           , mkPros
                           , mkReflexPro
+                          , mkRetainedMsgFromPerson
                           , mkRightForNonTargets
                           , mkSingleTarget
                           , mkThrPerPro
@@ -86,8 +88,8 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***), second)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
-import Control.Lens (_1, _2, _3, at, both, each, view, views)
-import Control.Lens.Operators ((%~), (&), (+~), (?~))
+import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
+import Control.Lens.Operators ((%~), (&), (+~), (?~), (^.))
 import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
@@ -97,8 +99,8 @@ import Data.List (delete, intercalate, nub, partition, sortBy, unfoldr)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
 import Prelude hiding (exp)
-import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', map, mapWithKey)
-import qualified Data.Map.Lazy as M (elems, lookup, toList)
+import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', foldr, map, mapWithKey)
+import qualified Data.Map.Lazy as M (elems, keys, lookup, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
@@ -296,6 +298,15 @@ getLvl i ms = let myExp                            = getExp i ms
 
 getLvlExp :: Id -> MudState -> LvlExp
 getLvlExp i = (getLvl i *** getExp i) . dup
+
+
+-----
+
+
+getPCChans :: Id -> MudState -> [Chan]
+getPCChans i ms = views chanTbl (IM.foldr helper []) ms
+  where
+    helper chan acc = getSing i ms `elem` (chan^.chanConnTbl.to M.keys) ? (chan : acc) :? acc
 
 
 -----
@@ -523,6 +534,13 @@ mkReflexPro :: Sex -> T.Text
 mkReflexPro Male   = "himself"
 mkReflexPro Female = "herself"
 mkReflexPro s      = patternMatchFail "mkReflexPro" [ showText s ]
+
+
+-----
+
+
+mkRetainedMsgFromPerson :: Sing -> T.Text -> T.Text
+mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s <> " " <> msg)
 
 
 -----

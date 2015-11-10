@@ -2330,7 +2330,6 @@ mkSlotDesc i ms s = case s of
 -----
 
 
--- TODO: Help.
 stats :: Action
 stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = [ T.concat [ getSing i ms, ", the ", sexy, " ", r ]

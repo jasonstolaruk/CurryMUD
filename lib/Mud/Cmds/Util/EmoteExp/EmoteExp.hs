@@ -8,14 +8,15 @@ module Mud.Cmds.Util.EmoteExp.EmoteExp ( adminChanEmotify
                                        , targetify ) where
 
 import Mud.Cmds.ExpCmds
-import Mud.Cmds.Util.CmdPrefixes
-import Mud.Cmds.Util.Misc
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Util.CmdPrefixes
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
