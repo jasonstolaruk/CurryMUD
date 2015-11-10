@@ -1206,7 +1206,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
               | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetDesig
               | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
               | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetDesig
-              | not . hasPp i ms $ 5              -> msgHelper . sorryPp $ "link with " <> targetDesig
+              | not . hasPp i ms $ 10             -> msgHelper . sorryPp $ "link with " <> targetDesig
               | otherwise                         ->
                   let g a'' | isTwoWay  = a''
                             | otherwise = a'' & _1.rndmNamesMstrTbl.ind i       .at targetSing .~ Nothing
@@ -1214,7 +1214,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                   in g $ a' & _1.pcTbl.ind targetId.linked %~ (sort . (s :))
                             & _1.teleLinkMstrTbl.ind i       .at targetSing ?~ True
                             & _1.teleLinkMstrTbl.ind targetId.at s          ?~ True
-                            & _1.mobTbl         .ind i       .curPp         -~ 5
+                            & _1.mobTbl         .ind i       .curPp         -~ 10
                             & _2 <>~ bs
                             & _3 <>~ pure logMsg
                             & _4 <>~ [ act, awardExp 100 ("linked by " <> targetSing) targetId ]
@@ -1357,12 +1357,12 @@ showMotd mq cols = send mq =<< helper
 -----
 
 
--- TODO: Creating a new channel should cost psionic points.
 newChan :: Action
 newChan p@AdviseNoArgs                   = advise p ["newchannel"] adviceNewChanNoArgs
 newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip -> (newChanNames, chanRecs), sorryMsgs) ->
     let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
-        msgs                    = ()# sorryMsgs' ? otherMsgs :? sorryMsgs' ++ (otherMsgs |!| "" : otherMsgs)
+        msgs | ()# otherMsgs    = sorryMsgs'
+             | otherwise        = otherMsgs ++ (sorryMsgs' |!| "" : sorryMsgs')
     in do
         multiWrapSend mq cols msgs
         newChanNames |#| logPla "newChan" i . commas
@@ -1373,26 +1373,26 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
                     (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
                 in (ms', (newChanNames, sorryMsgs))
       where
-        f s triple a@(T.toLower -> a')
+        f s triple@(ms', _, _) a@(T.toLower -> a')
           | T.length a > maxChanNameLen =
               let msg = "a channel name may not be more than " <> showText maxChanNameLen <> " characters long"
-              in triple & _3 <>~ (pure . sorryNewChanName a $ msg)
-          | T.any isNG a = triple & _3 <>~ (pure . sorryNewChanName a $ "a channel name may only contain alphabetic \
-                                                                        \letters and digits")
-          | a' `elem` illegalNames = triple & _3 <>~ (pure . sorryNewChanName a $ "this name is reserved or already in \
-                                                                                  \use")
+              in sorryNewChanName a msg `sorry` triple
+          | T.any isNG a = sorryNewChanName a "a channel name may only contain alphabetic letters and digits" `sorry` triple
+          | a' `elem` illegalNames = sorryNewChanName a "this name is reserved or already in use" `sorry` triple
           | a' `elem` map T.toLower myChanNames
-          , match <- head . filter ((== a') . T.toLower) $ myChanNames
-          = triple & _3 <>~ (pure . sorryNewChanExisting $ match)
+          , match <- head . filter ((== a') . T.toLower) $ myChanNames = sorryNewChanExisting match `sorry` triple
+          | not . hasPp i ms' $ 3 = sorryPp ("create a new channel named " <> dblQuote a) `sorry` triple
           | otherwise = let ci = views chanTbl (head . ([0..] \\) . IM.keys) $ triple^._1
                             c  = Chan ci a (M.fromList . pure $ (s, True)) []
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
                         in triple & _1.chanTbl.at ci ?~ c
+                                  & _1.mobTbl.ind i.curPp -~ 3
                                   & _2 <>~ pure (a, cr)
-        isNG c           = not $ isLetter c || isDigit c
-        illegalNames     = [ "admin", "all", "question" ] ++ pcNames
-        pcNames          = map (uncapitalize . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
-        myChanNames      = map (view chanName) . getPCChans i $ ms
+        sorry msg    = _3 <>~ pure msg
+        isNG c       = not $ isLetter c || isDigit c
+        illegalNames = [ "admin", "all", "question" ] ++ pcNames
+        pcNames      = map (uncapitalize . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
+        myChanNames  = map (view chanName) . getPCChans i $ ms
     mkNewChanMsg []     = []
     mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkNewChanMsg ns     = T.lines . mkMsgHelper True  $ ns
@@ -2467,7 +2467,6 @@ typo p              = bugTypoLogger p TypoLog
 -----
 
 
--- TODO: Unlinking should cost psionic points.
 unlink :: Action
 unlink p@AdviseNoArgs          = advise p ["unlink"] adviceUnlinkNoArgs
 unlink (LowerNub i mq cols as) =
@@ -2488,22 +2487,25 @@ unlink (LowerNub i mq cols as) =
                              in (ms'', (bs, logMsgs))
                 procArg a@(ms', _, _) targetSing = if
                   | targetSing `elem` twoWays ++ meLinkedToOthers ++ othersLinkedToMe -> procArgHelper
-                  | otherwise -> a & _2 <>~ (mkBroadcast i . nlnl $ sorryUnlinkName targetSing <> " " <> hintUnlink)
+                  | otherwise -> sorry $ sorryUnlinkName targetSing <> " " <> hintUnlink
                   where
-                    procArgHelper =
-                        let targetId  = getIdForPCSing targetSing ms'
-                            s         = getSing i ms
-                            srcMsg    = T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
-                            targetBs  = let bs = mkBroadcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
-                                        in (isLoggedIn . getPla targetId $ ms') |?| bs
-                            colorize  = quoteWith' (unlinkColor, dfltColor)
-                            ms''      = ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
-                                            & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
-                                            & pcTbl.ind i       .linked %~ (targetSing `delete`)
-                                            & pcTbl.ind targetId.linked %~ (s          `delete`)
-                        in a & _1 .~  ms''
-                             & _2 <>~ (nlnl srcMsg, pure i) : targetBs
-                             & _3 <>~ pure targetSing
+                    sorry msg     = a & _2 <>~ (mkBroadcast i . nlnl $ msg)
+                    procArgHelper
+                      | not . hasPp i ms' $ 3 = sorry . sorryPp $ "sever your link with " <> targetSing
+                      | targetId <- getIdForPCSing targetSing ms'
+                      , s        <- getSing i ms
+                      , srcMsg   <- T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
+                      , targetBs <- let bs = mkBroadcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
+                                    in (isLoggedIn . getPla targetId $ ms') |?| bs
+                      , ms''     <- ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
+                                        & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
+                                        & pcTbl .ind i       .linked %~ (targetSing `delete`)
+                                        & pcTbl .ind targetId.linked %~ (s          `delete`)
+                                        & mobTbl.ind i       .curPp  -~ 3
+                      = a & _1 .~  ms''
+                          & _2 <>~ (nlnl srcMsg, pure i) : targetBs
+                          & _3 <>~ pure targetSing
+                    colorize = quoteWith' (unlinkColor, dfltColor)
             in helper |&| modifyState >=> \(bs, logMsgs) -> bcast (g bs) >> logMsgs |#| logPla "unlink" i . slashes
 unlink p = patternMatchFail "unlink" [ showText p ]
 
