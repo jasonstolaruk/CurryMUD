@@ -10,9 +10,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , donMsgs
                          , fillerToSpcs
                          , findAvailSlot
-                         , getAllChanIdNames
-                         , getChanIdNames
-                         , getChanStyleds
                          , getMatchingChanWithName
                          , getRelativePCName
                          , hasFp
@@ -27,7 +24,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , helperPutRemEitherInv
                          , inOutOnOffs
                          , InvWithCon
-                         , isAwake
                          , IsConInRm
                          , isNonStdLink
                          , isRingRol
@@ -52,8 +48,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , otherHand
                          , putOnMsgs
                          , resolvePCInvCoins
-                         , resolveRmInvCoins
-                         , theLetterS ) where
+                         , resolveRmInvCoins ) where
 
 import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Misc
@@ -89,14 +84,14 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***), first)
 import Control.Lens (Getter, _1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad (forM, guard)
+import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
-import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, partition, sortBy)
+import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
-import qualified Data.IntMap.Lazy as IM (IntMap, fromList, keys)
+import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), notMember, toList)
 import qualified Data.Text as T
 
@@ -217,52 +212,6 @@ getMatchingChanWithName :: T.Text -> [ChanName] -> [Chan] -> (ChanName, Chan)
 getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.toLower) $ cns
                                            c   = head . filter (views chanName (== cn)) $ cs
                                        in (cn, c)
-
-
------
-
-
-getChanIdNames :: Id -> Chan -> MudState -> MudStack [(Id, T.Text)]
-getChanIdNames i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
-    sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
-
-
-getChanLinkeds_nonLinkedIds :: Id -> Chan -> MudState -> ([(Id, Sing)], [Id])
-getChanLinkeds_nonLinkedIds i c ms =
-    let s                     = getSing i ms
-        others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
-        f (s', isTuned)       = s' /= s && isTuned
-        g (s', _      )       = (getIdForPCSing s' ms, s')
-        h                     = (`isAwake` ms) . fst
-        (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
-        nonLinkedIds          = map fst nonLinkeds
-    in (linkeds, nonLinkedIds)
-
-
------
-
-
-getAllChanIdNames :: Id -> MudState -> MudStack (IM.IntMap [(Id, T.Text)])
-getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
-    IM.fromList . zipWith (\chan -> (chan^.chanId, )) tunedChans <$> forM tunedChans (flip (getChanIdNames i) ms)
-  where
-    helper chan acc = views chanConnTbl (M.! getSing i ms) chan ? (chan : acc) :? acc
-
-
------
-
-
-getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, T.Text, T.Text)]
-getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
-    mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
-        let nonLinkeds' = zip nonLinkedIds rndmNames
-            combo       = sortBy (compare `on` snd) $ linkeds ++ nonLinkeds'
-            styleds     = styleAbbrevs Don'tQuote . map snd $ combo
-            helper (x, y) styled | x `elem` nonLinkedIds = a & _3 %~ underline
-                                 | otherwise             = a
-              where
-                a = (x, y, styled)
-        in return . zipWith helper combo $ styleds
 
 
 -----
@@ -649,13 +598,6 @@ inOutOnOffs = [ ("i",   otherwise)
 -----
 
 
-isAwake :: Id -> MudState -> Bool
-isAwake i ms = let p = getPla i ms in isLoggedIn p && (not . isIncognito $ p)
-
-
------
-
-
 isRingRol :: RightOrLeft -> Bool
 isRingRol = \case R -> False
                   L -> False
@@ -934,10 +876,3 @@ resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms 
 
 resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
-
-
------
-
-
-theLetterS :: Bool -> T.Text
-theLetterS = (|?| "s")

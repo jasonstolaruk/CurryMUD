@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
+-- This module contains helper functions used by multiple modules under "Mud.Cmds".
+
 module Mud.Cmds.Util.Misc ( asterisk
                           , awardExp
                           , dbExHandler
@@ -11,6 +13,9 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , fileIOExHandler
                           , formatChanMsg
                           , formatQuestion
+                          , getAllChanIdNames
+                          , getChanIdNames
+                          , getChanStyleds
                           , getLvl
                           , getLvlExp
                           , getPCChans
@@ -20,6 +25,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasEnc
                           , hasYou
                           , inOut
+                          , isAwake
                           , isBracketed
                           , isDblLinked
                           , isHeDon't
@@ -90,7 +96,7 @@ import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (?~), (^.))
-import Control.Monad ((>=>), unless, when)
+import Control.Monad ((>=>), forM, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
 import Data.Either (rights)
@@ -99,8 +105,8 @@ import Data.List (delete, intercalate, nub, partition, sortBy, unfoldr)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
 import Prelude hiding (exp)
-import qualified Data.IntMap.Lazy as IM (empty, foldlWithKey', foldr, map, mapWithKey)
-import qualified Data.Map.Lazy as M (elems, keys, lookup, toList)
+import qualified Data.IntMap.Lazy as IM (IntMap, empty, foldlWithKey', foldr, fromList, map, mapWithKey)
+import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
@@ -288,6 +294,46 @@ formatQuestion i ms (txt, is)
 -----
 
 
+getAllChanIdNames :: Id -> MudState -> MudStack (IM.IntMap [(Id, T.Text)])
+getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
+    IM.fromList . zipWith (\chan -> (chan^.chanId, )) tunedChans <$> forM tunedChans (flip (getChanIdNames i) ms)
+  where
+    helper chan acc = views chanConnTbl (M.! getSing i ms) chan ? (chan : acc) :? acc
+
+
+getChanIdNames :: Id -> Chan -> MudState -> MudStack [(Id, T.Text)]
+getChanIdNames i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
+    sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
+
+
+getChanLinkeds_nonLinkedIds :: Id -> Chan -> MudState -> ([(Id, Sing)], [Id])
+getChanLinkeds_nonLinkedIds i c ms =
+    let s                     = getSing i ms
+        others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
+        f (s', isTuned)       = s' /= s && isTuned
+        g (s', _      )       = (getIdForPCSing s' ms, s')
+        h                     = (`isAwake` ms) . fst
+        (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
+        nonLinkedIds          = map fst nonLinkeds
+    in (linkeds, nonLinkedIds)
+
+
+getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, T.Text, T.Text)]
+getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
+    mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
+        let nonLinkeds' = zip nonLinkedIds rndmNames
+            combo       = sortBy (compare `on` snd) $ linkeds ++ nonLinkeds'
+            styleds     = styleAbbrevs Don'tQuote . map snd $ combo
+            helper (x, y) styled | x `elem` nonLinkedIds = a & _3 %~ underline
+                                 | otherwise             = a
+              where
+                a = (x, y, styled)
+        in return . zipWith helper combo $ styleds
+
+
+-----
+
+
 getLvl :: Id -> MudState -> Lvl
 getLvl i ms = let myExp                            = getExp i ms
                   helper ((l, x):rest) | myExp < x = pred l
@@ -466,6 +512,13 @@ inOut False = "out"
 loggedInOutColorize :: Bool -> T.Text
 loggedInOutColorize True  = loggedInOutHelper (quoteWith' (loggedInColor, dfltColor)) True
 loggedInOutColorize False = loggedInOutHelper id                                      False
+
+
+-----
+
+
+isAwake :: Id -> MudState -> Bool
+isAwake i ms = let p = getPla i ms in isLoggedIn p && (not . isIncognito $ p)
 
 
 -----

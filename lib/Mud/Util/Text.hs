@@ -16,9 +16,9 @@ module Mud.Util.Text ( aOrAn
                      , mkOrdinal
                      , mkTimestamp
                      , nl
-                     , nlPrefix
                      , nlnl
                      , nlnlPrefix
+                     , nlPrefix
                      , notInfixOf
                      , readNum
                      , replace
@@ -27,6 +27,7 @@ module Mud.Util.Text ( aOrAn
                      , spaces
                      , stripControl
                      , stripTelnet
+                     , theLetterS
                      , theOnLower
                      , theOnLowerCap
                      , uncapitalize ) where
@@ -255,6 +256,13 @@ stripTelnet t
                                                                       (_, T.tail -> rest') -> stripTelnet rest'
       | otherwise     = stripTelnet rest
     helper _ = ""
+
+
+-----
+
+
+theLetterS :: Bool -> T.Text
+theLetterS = (|?| "s")
 
 
 -----
