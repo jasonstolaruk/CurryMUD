@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Data.State.Util.Calc ( calcEncPer
+module Mud.Data.State.Util.Calc ( calcBarLen
+                                , calcEncPer
                                 , calcLvlExps
                                 , calcMaxEnc
                                 , calcMaxRaceLen
@@ -26,6 +27,7 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp)
+import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
 
@@ -44,6 +46,13 @@ blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 
 -- ==================================================
+
+
+calcBarLen :: Cols -> Int
+calcBarLen cols = cols < 59 ? (cols - 9) :? 50
+
+
+-----
 
 
 calcEncPer :: Id -> MudState -> Int

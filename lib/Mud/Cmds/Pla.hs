@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeFamilies, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
@@ -52,7 +53,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first)
+import Control.Arrow ((***), first, second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
@@ -85,6 +86,12 @@ import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup,
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+
+
+default (Int, Double)
+
+
+-----
 
 
 {-# ANN module ("HLint: ignore Use &&"        :: String) #-}
@@ -139,6 +146,8 @@ regularCmds = map (uncurry3 mkRegularCmd)
     [ ("?",          plaDispCmdList,  "Display or search this command list.")
     , ("about",      about,           "About CurryMUD.")
     , ("admin",      admin,           "Display a list of administrators, or send a message to an administrator.")
+    , ("bars",       bars,            "Display your status bars.")
+    , ("bug",        bug,             "Report a bug.")
     , ("channel",    chan,            "Send a message on a telepathic channel " <> plusRelatedMsg)
     , ("d",          go "d",          "Go down.")
     , ("e",          go "e",          "Go east.")
@@ -178,8 +187,7 @@ mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
 
 priorityAbbrevCmds :: [Cmd]
 priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
-    [ ("bug",        "b",   bug,        "Report a bug.")
-    , ("clear",      "cl",  clear,      "Clear the screen.")
+    [ ("clear",      "cl",  clear,      "Clear the screen.")
     , ("color",      "col", color,      "Perform a color test.")
     , ("connect",    "co",  connect,    "Connect one or more people to a telepathic channel.")
     , ("disconnect", "di",  disconnect, "Disconnect one or more people from a telepathic channel.")
@@ -309,6 +317,51 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
                         | abbrev      <- styleAbbrevs Don'tQuote . map fst $ singSuffixes' ]
         in ()!# combineds ? return combineds :? unadulterated sorryNoAdmins
 adminList p = patternMatchFail "adminList" [ showText p ]
+
+
+-----
+
+
+-- TODO: Help.
+bars :: Action
+bars (NoArgs i mq cols) = getState >>= \ms ->
+    let mkBars = map (uncurry (mkBar (calcBarLen cols))) . mkPointPairs i $ ms
+    in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" [] i
+bars (LowerNub i mq cols as) = getState >>= \ms ->
+    let mkBars  = case second nub . partitionEithers . foldr f [] $ as of
+                    (x:xs, []     ) -> (x <> " " <> hint) : xs
+                    ([],   barTxts) -> barTxts
+                    (x:xs, barTxts) -> barTxts ++ [""] ++ ((x <> " " <> hint) : xs)
+        f a acc = (: acc) $ case filter ((a `T.isInfixOf`) . fst) . mkPointPairs i $ ms of
+          []      -> Left . sorryParseArg $ a
+          [match] -> Right . uncurry (mkBar (calcBarLen cols)) $ match
+          xs      -> patternMatchFail "bars f" [ showText xs ]
+    in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" as i
+  where
+    hint = T.concat [ "Please specify any of the following: "
+                    , commas . map dblQuote $ [ "hp", "mp", "pp" ]
+                    , ", or "
+                    , dblQuote "fp"
+                    , "." ]
+bars p = patternMatchFail "bars" [ showText p ]
+
+
+mkBar :: Int -> T.Text -> (Int, Int) -> T.Text
+mkBar x txt (c, m) = let ratio  = c `divide` m
+                         greens = round $ fromIntegral x * ratio
+                         reds   = x - greens
+                     in T.concat [ txt
+                                 , ": "
+                                 , quoteWith' (greenBarColor, dfltColor) . T.replicate greens $ " "
+                                 , quoteWith' (redBarColor,   dfltColor) . T.replicate reds   $ " "
+                                 , " "
+                                 , showText . round $ 100 * ratio
+                                 , "%" ]
+
+
+mkPointPairs :: Id -> MudState -> [(T.Text, (Int, Int))]
+mkPointPairs i ms = let (hps, mps, pps, fps) = getXps i ms
+                    in [ ("hp", hps), ("mp", mps), ("pp", pps), ("fp", fps) ]
 
 
 -----

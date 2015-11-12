@@ -690,7 +690,7 @@ sorryParseArg a = dblQuote a <> " is not a valid argument."
 
 
 sorryParseBase :: T.Text -> T.Text
-sorryParseBase t = dblQuote t <> " is not a valid base."
+sorryParseBase a = dblQuote a <> " is not a valid base."
 
 
 sorryParseChanId :: T.Text -> T.Text

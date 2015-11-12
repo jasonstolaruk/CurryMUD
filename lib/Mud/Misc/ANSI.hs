@@ -22,6 +22,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , extractANSI
                      , fromPeepedColor
                      , green
+                     , greenBarColor
                      , headerColor
                      , hintANSI
                      , insertANSI
@@ -45,6 +46,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , questionArrivalColor
                      , quoteColor
                      , red
+                     , redBarColor
                      , resetANSI
                      , selectorColor
                      , shutdownMsgColor
@@ -187,6 +189,10 @@ fromPeepedColor :: T.Text
 fromPeepedColor = mkColorANSI (Dull, White) (Dull, Blue)
 
 
+greenBarColor :: T.Text
+greenBarColor = mkColorANSI (Dull, White) (Dull, Green)
+
+
 headerColor :: T.Text
 headerColor = mkColorANSI (Dull, White) (Dull, Red)
 
@@ -249,6 +255,10 @@ questionArrivalColor = yellow
 
 quoteColor :: T.Text
 quoteColor = green
+
+
+redBarColor :: T.Text
+redBarColor = mkColorANSI (Dull, White) (Dull, Red)
 
 
 selectorColor :: T.Text
