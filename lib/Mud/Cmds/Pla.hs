@@ -331,7 +331,7 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
                     (x:xs, []     ) -> (x <> " " <> hint) : xs
                     ([],   barTxts) -> barTxts
                     (x:xs, barTxts) -> barTxts ++ [""] ++ ((x <> " " <> hint) : xs)
-        f a acc = (: acc) $ case filter ((a `T.isInfixOf`) . fst) . mkPointPairs i $ ms of
+        f a acc = (: acc) $ case filter ((a `T.isPrefixOf`) . fst) . mkPointPairs i $ ms of
           []      -> Left . sorryParseArg $ a
           [match] -> Right . uncurry (mkBar (calcBarLen cols)) $ match
           xs      -> patternMatchFail "bars f" [ showText xs ]

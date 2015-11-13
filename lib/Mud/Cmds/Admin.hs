@@ -106,6 +106,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
+-- TODO: "teleid"
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
@@ -117,8 +118,10 @@ adminCmds =
     , mkAdminCmd "bug"        adminBug         "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        "Display information about one or more telepathic channels."
     , mkAdminCmd "date"       adminDate        "Display the current system date."
+    , mkAdminCmd "examine"    adminExamine     "Display the properties of one or more IDs."
     , mkAdminCmd "experience" adminExp         "Dump the experience table."
     , mkAdminCmd "host"       adminHost        "Display a report of connection statistics for one or more players."
+    , mkAdminCmd "id"         adminId          "Search for IDs by name."
     , mkAdminCmd "incognito"  adminIncognito   "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          "Display the server's IP addresses and listening port."
     , mkAdminCmd "message"    adminMsg         "Send a message to a regular player."
@@ -371,6 +374,14 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
+-- TODO
+adminExamine :: Action
+adminExamine _ = undefined
+
+
+-----
+
+
 adminExp :: Action
 adminExp (NoArgs' i mq) = pager i mq mkReport >> logPlaExec (prefixAdminCmd "experience") i
   where
@@ -430,6 +441,14 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
                                           , views secsConnected renderIt r
                                           , ", "
                                           , views lastLogout (showText . utcToLocalTime zone) r ] :)
+
+
+-----
+
+
+-- TODO
+adminId :: Action
+adminId _ = undefined
 
 
 -----
