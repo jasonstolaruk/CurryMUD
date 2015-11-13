@@ -146,7 +146,7 @@ regularCmds = map (uncurry3 mkRegularCmd)
     [ ("?",          plaDispCmdList,  "Display or search this command list.")
     , ("about",      about,           "About CurryMUD.")
     , ("admin",      admin,           "Display a list of administrators, or send a message to an administrator.")
-    , ("bars",       bars,            "Display your status bars.")
+    , ("bars",       bars,            "Display one or more status bars.")
     , ("bug",        bug,             "Report a bug.")
     , ("channel",    chan,            "Send a message on a telepathic channel " <> plusRelatedMsg)
     , ("d",          go "d",          "Go down.")
@@ -322,7 +322,6 @@ adminList p = patternMatchFail "adminList" [ showText p ]
 -----
 
 
--- TODO: Help.
 bars :: Action
 bars (NoArgs i mq cols) = getState >>= \ms ->
     let mkBars = map (uncurry (mkBar (calcBarLen cols))) . mkPointPairs i $ ms

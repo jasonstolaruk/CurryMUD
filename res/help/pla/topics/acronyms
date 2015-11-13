@@ -6,6 +6,12 @@ AFK     Away From Keyboard`
 
 BRB     Be Right Back`
 
+FP      Fatigue Points`
+        A number representing a character's capacity for physical activity. Most commonly, movement and combat cost fp; fp are recovered naturally as one rests. When a character's fp reaches 0, that character is totally exhausted (he/she may neither move nor swing a weapon).
+
+HP      Hit Points`
+        A number representing a character's physical health. One looses hp as one is injured; hp are recovered naturally as one heals. When a character's hp falls below 0, that character dies.
+
 IC      In-Character`
         Something said or done as a character, in the context of role-playing.
 
@@ -13,6 +19,9 @@ INPC    Interactive Non-Player Character`
         A character that is usually controlled by the server, and sometimes controlled, or otherwise actively managed, by the administrators.
 
 IRL     In Real Life`
+
+MP      Magic Points`
+        A number representing a character's capacity to cast magic spells. The casting of spells costs mp; mp are recovered naturally as one rests. A character's mp may never drop below 0, as 0 represents the total depletion of one's magical energy.
 
 MUD     Multi-User Dungeon`
         This generally refers to a (usually text-based) virtual world in its totality.
@@ -31,6 +40,9 @@ PD      Permadeath`
 
 PKing   Player Killing`
         When one Player Character (PC) kills another PC.
+
+PP      Psionic Points`
+        A number representing a character's capacity to use psionic abilities. The use of psionics costs pp; pp are recovered naturally as one rests. A character's pp may never drop below 0, as 0 represents the total depletion of one's psionic energy.
 
 PvP     Player vs. Player`
         When one Player Character (PC) attacks another PC.
