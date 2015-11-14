@@ -47,6 +47,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , quoteColor
                      , red
                      , redBarColor
+                     , regexMatchColor
                      , resetANSI
                      , selectorColor
                      , shutdownMsgColor
@@ -259,6 +260,10 @@ quoteColor = green
 
 redBarColor :: T.Text
 redBarColor = mkColorANSI (Dull, White) (Dull, Red)
+
+
+regexMatchColor :: T.Text
+regexMatchColor = cyan
 
 
 selectorColor :: T.Text

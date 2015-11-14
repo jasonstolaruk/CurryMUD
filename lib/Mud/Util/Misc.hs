@@ -24,6 +24,7 @@ module Mud.Util.Misc ( atLst1
                      , mkTimestamp
                      , mUnless
                      , mWhen
+                     , none
                      , onLeft
                      , patternMatchFail
                      , reverseLookup
@@ -159,6 +160,10 @@ mkDateTimeTxt = helper <$> (T.words . T.pack . show) `fmap` getZonedTime
 
 mkTimestamp :: IO T.Text
 mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeTxt ]
+
+
+none :: [T.Text] -- TODO: Use this.
+none = pure "None."
 
 
 onLeft :: (a -> c) -> Either a b -> Either c b

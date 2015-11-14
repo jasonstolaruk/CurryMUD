@@ -716,7 +716,7 @@ mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . coinsToList $ c
 
 mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> T.Text
 mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsSelf :? mkDescsOther in
-    ()# descs ? none :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
+    ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
     mkDescsSelf =
         let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)          | (slot, ei) <- M.toList . getEqMap i $ ms ]
@@ -727,7 +727,7 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
     mkDescsOther = map helper [ (pp slot, getSing ei ms) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
       where
         helper (T.breakOn " finger" -> (slotName, _), s) = parensPad 15 slotName <> s
-    none = wrapUnlines cols $ if
+    noDescs = wrapUnlines cols $ if
       | descId   == i      -> dudeYou'reNaked
       | descType == PCType -> parsePCDesig i ms $ d  <> " doesn't have anything readied."
       | otherwise          -> theOnLowerCap descSing <> " doesn't have anything readied."

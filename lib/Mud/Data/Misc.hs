@@ -194,6 +194,11 @@ instance Pretty AOrThe where
   pp The = "the"
 
 
+instance Pretty ArmSub where
+  pp LowerBody = "lower body"
+  pp x         = uncapitalize . showText $ x
+
+
 instance Pretty BanHostRec where
   pp (BanHostRec { .. }) = slashes [ banHostTimestamp
                                    , banHostHost
@@ -240,7 +245,11 @@ instance Pretty Cloth where
 instance Pretty Hand where
   pp RHand  = "right-handed"
   pp LHand  = "left-handed"
-  pp NoHand = undefined
+  pp NoHand = "none"
+
+
+instance Pretty LinkDir where
+  pp = uncapitalize . showText
 
 
 instance Pretty ProfRec where
@@ -267,7 +276,7 @@ instance Pretty RightOrLeft where
 instance Pretty Sex where
   pp Male   = "male"
   pp Female = "female"
-  pp NoSex  = undefined
+  pp NoSex  = "none"
 
 
 instance Pretty Slot where
@@ -317,6 +326,17 @@ instance Pretty Slot where
   pp BothHandsS  = "both hands"
 
 
+instance Pretty Type where
+  pp ObjType   = "object"
+  pp ClothType = "clothing"
+  pp ConType   = "container"
+  pp WpnType   = "weapon"
+  pp ArmType   = "armor"
+  pp MobType   = "mobile"
+  pp PCType    = "PC"
+  pp RmType    = "room"
+
+
 instance Pretty TypoRec where
   pp (TypoRec { .. }) = slashes [ typoTimestamp
                                 , typoName
@@ -328,6 +348,11 @@ instance Pretty TypoRec where
 instance Pretty WhichLog where
   pp BugLog  = "bug"
   pp TypoLog = "typo"
+
+
+instance Pretty WpnSub where
+  pp OneHanded = "one-handed"
+  pp TwoHanded = "two-handed"
 
 
 -----

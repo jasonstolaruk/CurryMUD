@@ -158,7 +158,7 @@ createAdminZone = do
         , i1Lb4
         , i1Lb5 ]
         mempty
-        (Rm "The weight closet"
+        (Rm "Weight closet"
             "This closet holds weights."
             zeroBits
             [ StdLink South iBasement ])

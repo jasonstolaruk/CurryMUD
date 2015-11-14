@@ -18,6 +18,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -37,15 +38,16 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***), first)
+import Control.Arrow ((***), first, second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, to, view, views)
+import Control.Lens (_1, _2, _3, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
+import Data.Bits (zeroBits)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.List (delete, foldl', intercalate, partition, sortBy)
@@ -53,13 +55,14 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
-import Prelude hiding (pi)
+import Prelude hiding (exp, pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, size, toList)
-import qualified Data.Map.Lazy as M (foldl, foldrWithKey)
+import qualified Data.Map.Lazy as M (foldl, foldrWithKey, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
+import Text.Regex.Posix ((=~))
 
 
 default (Int)
@@ -107,6 +110,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
 -- TODO: "teleid"
+-- TODO: Can an admin possess a mob?
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
@@ -374,9 +378,158 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
--- TODO
+-- TODO: Help.
+-- TODO: Logging.
 adminExamine :: Action
-adminExamine _ = undefined
+adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
+adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
+    let helper a = case reads . T.unpack $ a :: [(Int, String)] of
+          [(targetId, "")] | targetId < 0                                -> pure sorryWtf
+                           | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
+                           | otherwise                                   -> examineHelper ms targetId
+          _                                                              -> sorry
+          where
+            sorry = pure . sorryParseId $ a
+    in pager i mq . intercalateDivider cols . map helper $ as
+adminExamine p = patternMatchFail "adminExamine" [ showText p ]
+
+
+examineHelper :: MudState -> Id -> [T.Text]
+examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
+  ObjType   -> [ examineEnt, examineObj ]
+  ClothType -> [ examineEnt, examineObj, examineCloth ]
+  ConType   -> [ examineEnt, examineObj, examineInv, examineCoins, examineCon ]
+  WpnType   -> [ examineEnt, examineObj, examineWpn ]
+  ArmType   -> [ examineEnt, examineObj, examineArm ]
+  MobType   -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob ]
+  PCType    -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob, examinePC, examinePla ]
+  RmType    -> [ examineInv, examineCoins, examineRm ]
+  where
+    helper t fs = let header = T.concat [ showText targetId, " ", parensQuote . pp $ t ]
+                  in header : "" : concatMap (\f -> f targetId ms) fs
+
+
+type ExamineHelper = Id -> MudState -> [T.Text]
+
+
+examineArm :: ExamineHelper
+examineArm i ms = let a = getArm i ms in [ "Type: " <> a^.armSub  .to pp
+                                         , "AC: "   <> a^.armClass.to showText ]
+
+
+examineCloth :: ExamineHelper
+examineCloth i ms = let c = getCloth i ms in [ "Type: " <> pp c ]
+
+
+examineCoins :: ExamineHelper
+examineCoins i ms = let (map showText . coinsToList -> cs) = getCoins i ms in [ "Coins: " <>  commas cs ]
+
+
+examineCon :: ExamineHelper
+examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.isCloth.to showText
+                                         , "Capacity: "    <> c^.cap    .to showText ]
+
+
+examineEnt :: ExamineHelper
+examineEnt i ms = let e = getEnt i ms in [ "Name: "         <> e^.sing
+                                         , "Description: "  <> e^.entDesc
+                                         , "Entity flags: " <> (commas . dropEmpties . descFlags $ e) ]
+  where
+    descFlags e | e^.entFlags == zeroBits = pure "None."
+                | otherwise               = let pairs = [(isInvis, "invisible")]
+                                            in [ f e |?| t | (f, t) <- pairs ]
+
+
+examineEqMap :: ExamineHelper
+examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
+  where
+    helper (slot, i') = T.concat [ bracketQuote . pp $ slot, " ", getSing i' ms, " ", parensQuote (showText i') ]
+
+
+examineInv :: ExamineHelper
+examineInv i ms = let is  = getInv i ms
+                      txt = commas . map helper $ is
+                  in [ "Contains: " <> (()# txt ? "Nothing." :? txt) ]
+  where
+    helper i' = getSing i' ms <> " " <> parensQuote (showText i')
+
+
+examineMob :: ExamineHelper
+examineMob i ms = let m           = getMob i ms
+                      showPts x y = m^.x.to showText <> " / " <> m^.y.to showText
+                  in [ "Sex: "        <> m^.sex.to pp
+                     , "ST: "         <> m^.st .to showText
+                     , "DX: "         <> m^.dx .to showText
+                     , "HT: "         <> m^.ht .to showText
+                     , "MA: "         <> m^.ma .to showText
+                     , "HP: "         <> showPts curHp maxHp
+                     , "MP: "         <> showPts curMp maxMp
+                     , "PP: "         <> showPts curPp maxPp
+                     , "FP: "         <> showPts curFp maxFp
+                     , "Exp: "        <> m^.exp .to showText
+                     , "Handedness: " <> m^.hand.to pp ]
+
+
+examineObj :: ExamineHelper
+examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to showText
+                                         , "Volume: " <> o^.vol   .to showText ]
+
+
+examinePC :: ExamineHelper
+examinePC i ms = let p = getPC i ms in [ "Room: "        <> let ri = p^.rmId
+                                                            in getRmName ri ms <> " " <> parensQuote (showText ri)
+                                       , "Race: "        <> p^.race      .to pp
+                                       , "Known names: " <> p^.introduced.to commas
+                                       , "Links: "       <> p^.linked    .to commas ]
+
+
+examinePla :: ExamineHelper
+examinePla i ms = let p = getPla i ms
+                  in [ "Host: "              <> let host = p^.currHostName.to T.pack
+                                                in ()# host ? "None." :? host -- TODO: Write a helper function.
+                     , "Connect time: "      <> maybe "None." showText (p^.connectTime)
+                     , "Player flags: "      <> (commas . dropEmpties . descFlags $ p)
+                     , "Columns: "           <> p^.columns  .to showText
+                     , "Lines: "             <> p^.pageLines.to showText
+                     , "Peepers: "           <> let txt = p^.peepers.to helper
+                                                in ()# txt ? "None." :? txt
+                     , "Peeping: "           <> let txt = p^.peeping.to helper
+                                                in ()# txt ? "None." :? txt
+                     , "Retained messages: " <> let txt = p^.retainedMsgs.to slashes
+                                                in ()# txt ? "None." :? txt
+                     , "Last room: "         <> let f ri = getRmName ri ms <> " " <> parensQuote (showText ri)
+                                                in maybe "None." f $ p^.lastRmId ]
+  where
+    descFlags p | p^.plaFlags == zeroBits = pure "None."
+                | otherwise               = let pairs = [ (isAdmin,            "admin"              )
+                                                        , (isIncognito,        "incognito"          )
+                                                        , (isNotFirstAdminMsg, "not first admin msg")
+                                                        , (isNotFirstLook,     "not first look"     )
+                                                        , (isNotFirstMobSay,   "not first mob say"  )
+                                                        , (isSeeingInvis,      "seeing invis"       )
+                                                        , (isTunedAdmin,       "tuned admin"        )
+                                                        , (isTunedQuestion,    "tuned question"     ) ]
+                                            in [ f p |?| t | (f, t) <- pairs ]
+    helper = commas . map (\i' -> getSing i ms <> " " <> parensQuote (showText i'))
+
+
+examineRm :: ExamineHelper
+examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
+                                       , "Description: " <> r^.rmDesc
+                                       , "Room flags: "  <> (commas . dropEmpties . descFlags $ r)
+                                       , "Links: "       <> views rmLinks (commas . map helper) r ] -- TODO: There could be no links...
+  where
+    descFlags r | r^.rmFlags == zeroBits = pure "None."
+                | otherwise              = pure "None." -- TODO: Room flags.
+    helper = \case (StdLink    dir destId    ) -> f (pp dir) destId
+                   (NonStdLink dir destId _ _) -> f dir      destId
+      where
+        f dir destId = T.concat [ dir, " to ", getRmName destId ms, " ", parensQuote (showText destId) ]
+
+
+examineWpn :: ExamineHelper
+examineWpn i ms = let w = getWpn i ms in [ "Type: "   <> w^.wpnSub.to pp
+                                         , "Damage: " <> w^.minDmg.to showText <> " / " <> w^.maxDmg.to showText ]
 
 
 -----
@@ -446,9 +599,34 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
 -----
 
 
--- TODO
+-- TODO: Help.
 adminId :: Action
-adminId _ = undefined
+adminId p@AdviseNoArgs                        = advise p [ prefixAdminCmd "id" ] adviceAIdNoArgs
+adminId (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
+    multiWrapSend mq cols $ descMatchingSings ms ++ [""] ++ descMatchingRmNames ms
+    logPlaExecArgs (prefixAdminCmd "id") (pure a) i
+  where
+    descMatchingSings ms =
+      let idSings = views entTbl (map (_2 %~ view sing) . IM.toList) ms
+      in "IDs with matching entity names:" : (noneOnEmpty . map (descMatch ms True) . getMatches $ idSings)
+    descMatchingRmNames ms =
+      let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
+      in "Room IDs with matching room names:" : (noneOnEmpty . map (descMatch ms False) . getMatches $ idNames)
+    getMatches = filter (views _2 (()!#) . snd) . map (second (applyRegex a))
+    descMatch ms b (i', (x, y, z)) = T.concat [ showText i'
+                                              , ": "
+                                              , b |?| (parensQuote . pp . getType i' $ ms) <> " "
+                                              , x
+                                              , regexMatchColor
+                                              , y
+                                              , dfltColor
+                                              , z ]
+    noneOnEmpty txt = ()# txt ? none :? txt -- TODO: Here is your helper function...!
+adminId p = patternMatchFail "adminId" [ showText p ]
+
+
+applyRegex :: T.Text -> T.Text -> (T.Text, T.Text, T.Text)
+applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTerm |&| each %~ T.pack
 
 
 -----

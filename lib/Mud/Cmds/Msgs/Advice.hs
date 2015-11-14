@@ -6,7 +6,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceABootNoArgs
                             , adviceAdminNoMsg
                             , adviceAdverbCloseChar
+                            , adviceAExamineNoArgs
                             , adviceAHostNoArgs
+                            , adviceAIdNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
@@ -147,8 +149,16 @@ adviceABootNoArgs = "Please specify the full PC name of the player you wish to b
                     \message."
 
 
+adviceAExamineNoArgs :: T.Text
+adviceAExamineNoArgs = "Please provide one or more IDs to examine."
+
+
 adviceAHostNoArgs :: T.Text
 adviceAHostNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
+
+
+adviceAIdNoArgs :: T.Text
+adviceAIdNoArgs = "Please provide a regular expression to search for."
 
 
 adviceAMsgNoArgs :: T.Text

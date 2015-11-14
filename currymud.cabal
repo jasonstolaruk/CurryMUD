@@ -140,6 +140,7 @@ library
                        network-info >=0.2 && <0.3,
                        process >=1.2 && <2.0,
                        random >=1.1 && <2.0,
+                       regex-posix >=0.95 && <0.96,
                        resourcet >=1.1 && <2.0,
                        split >=0.2 && <0.3,
                        sqlite-simple >=0.4 && <0.5,

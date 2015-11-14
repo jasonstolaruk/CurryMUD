@@ -334,6 +334,13 @@ getRmId i = view rmId . getPC i
 -----
 
 
+getRmName :: Id -> MudState -> T.Text
+getRmName i = view rmName . getRm i
+
+
+-----
+
+
 getRndmNamesTbl :: Id -> MudState -> RndmNamesTbl
 getRndmNamesTbl i = view (rndmNamesMstrTbl.ind i)
 
