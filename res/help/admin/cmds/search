@@ -1,0 +1,15 @@
+\h #dSEARCH \d
+
+\uUSAGE\n
+#dsearch regex
+
+\uDESCRIPTION\n
+Search for names and IDs using a regular expression.
+The regular expression you provide is matched against all entity and room names. Matches are displayed along with their IDs.
+
+\uEXAMPLES\n
+\q#dsearch ^The\d to search for names starting with "The".4`
+\q#dsearch [0-9]\d to search for names containing a digit.4`
+\q#dsearch gr[ae]y\d to search for names containing "gray" or "grey".4`
+
+\uSEE ALSO\n

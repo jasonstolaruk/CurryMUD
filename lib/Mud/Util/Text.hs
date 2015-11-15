@@ -19,6 +19,8 @@ module Mud.Util.Text ( aOrAn
                      , nlnl
                      , nlnlPrefix
                      , nlPrefix
+                     , none
+                     , noneOnEmpty
                      , notInfixOf
                      , readNum
                      , replace
@@ -52,6 +54,39 @@ blowUp = U.blowUp "Mud.Util.Text"
 
 
 -- ==================================================
+
+
+class HasText a where
+  extractText :: a -> T.Text
+
+
+instance HasText T.Text where
+  extractText = id
+
+
+instance HasText (a, T.Text) where
+  extractText = snd
+
+
+-----
+
+
+class Nullable a where
+  isNull :: a -> Bool
+  none   :: a
+
+
+instance Nullable T.Text where
+  isNull = T.null
+  none   = "None."
+
+
+instance Nullable [T.Text] where
+  isNull = null
+  none   = pure "None."
+
+
+-----
 
 
 aOrAn :: T.Text -> T.Text
@@ -121,18 +156,6 @@ dropBlanks ( x:xs) = x : dropBlanks xs
 -----
 
 
-class HasText a where
-  extractText :: a -> T.Text
-
-
-instance HasText T.Text where
-  extractText = id
-
-
-instance HasText (a, T.Text) where
-  extractText = snd
-
-
 findFullNameForAbbrev :: (Eq a, HasText a) => T.Text -> [a] -> Maybe a
 findFullNameForAbbrev needle hay =
     let res = sortBy (compare `on` extractText) . filter ((needle `T.isPrefixOf`) . extractText) $ hay
@@ -190,6 +213,14 @@ nlPrefix = ("\n" <>)
 
 nlnlPrefix :: T.Text -> T.Text
 nlnlPrefix = nlPrefix . nlPrefix
+
+
+-----
+
+
+-- TODO: Rename to "noneOnNull".
+noneOnEmpty :: (Nullable a) => a -> a
+noneOnEmpty a = isNull a ? none :? a
 
 
 -----

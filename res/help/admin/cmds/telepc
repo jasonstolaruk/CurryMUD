@@ -4,7 +4,7 @@
 #dtelepc name
 
 \uDESCRIPTION\n
-Teleport to a PC.
+Teleport to a PC by name.
 
 \uEXAMPLES\n
 \q#dtelepc taro\d to teleport to Taro.4`

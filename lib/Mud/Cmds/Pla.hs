@@ -349,7 +349,7 @@ mkBar :: Int -> T.Text -> (Int, Int) -> T.Text
 mkBar x txt (c, m) = let ratio  = c `divide` m
                          greens = round $ fromIntegral x * ratio
                          reds   = x - greens
-                     in T.concat [ txt
+                     in T.concat [ T.toUpper txt -- TODO: Ok?
                                  , ": "
                                  , quoteWith' (greenBarColor, dfltColor) . T.replicate greens $ " "
                                  , quoteWith' (redBarColor,   dfltColor) . T.replicate reds   $ " "
@@ -378,7 +378,7 @@ chan :: Action
 chan (NoArgs i mq cols) = getState >>= \ms ->
     let (chanNames, chanTunings) = mkChanNamesTunings i ms
         helper names tunings     = let txts = mkChanTxts
-                                   in (()!# txts ? txts :? pure "None.") |&| ("Telepathic channels:" :)
+                                   in (()!# txts ? txts :? none) |&| ("Telepathic channels:" :)
           where
             mkChanTxts = [ padChanName n <> tunedInOut t | n <- names | t <- tunings ]
     in do
@@ -2451,7 +2451,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
         linkTbl     = getTeleLinkTbl i ms
         (chanNames, chanTunings)   = mkChanNamesTunings i ms
         helper title names tunings = let txts = mkConnTxts
-                                     in [ title, ()!# txts ? commas txts :? "None." ]
+                                     in [ title, ()!# txts ? commas txts :? none ]
           where
             mkConnTxts = [ n <> "=" <> inOut t | n <- names | t <- tunings ]
     in do

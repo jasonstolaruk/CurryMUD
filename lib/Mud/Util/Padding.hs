@@ -47,6 +47,10 @@ padHelpTopic :: T.Text -> T.Text
 padHelpTopic = pad helpTopicPadding
 
 
+padId :: T.Text -> T.Text
+padId = pad idPadding
+
+
 padName :: T.Text -> T.Text
 padName = pad namePadding
 

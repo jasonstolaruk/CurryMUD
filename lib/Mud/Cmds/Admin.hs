@@ -109,7 +109,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: "teleid"
 -- TODO: Can an admin possess a mob?
 adminCmds :: [Cmd]
 adminCmds =
@@ -125,7 +124,6 @@ adminCmds =
     , mkAdminCmd "examine"    adminExamine     "Display the properties of one or more IDs."
     , mkAdminCmd "experience" adminExp         "Dump the experience table."
     , mkAdminCmd "host"       adminHost        "Display a report of connection statistics for one or more players."
-    , mkAdminCmd "id"         adminId          "Search for IDs by name."
     , mkAdminCmd "incognito"  adminIncognito   "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          "Display the server's IP addresses and listening port."
     , mkAdminCmd "message"    adminMsg         "Send a message to a regular player."
@@ -134,11 +132,13 @@ adminCmds =
     , mkAdminCmd "persist"    adminPersist     "Persist the world (save the current world state to disk)."
     , mkAdminCmd "print"      adminPrint       "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   "Dump the profanity database."
+    , mkAdminCmd "search"     adminSearch      "Search for names and IDs using a regular expression."
     , mkAdminCmd "shutdown"   adminShutdown    "Shut down CurryMUD, optionally with a custom message."
     , mkAdminCmd "sudoer"     adminSudoer      "Toggle a player's admin status."
-    , mkAdminCmd "telepc"     adminTelePC      "Teleport to a PC."
+    , mkAdminCmd "teleid"     adminTeleId      "Teleport to an entity or room by ID."
+    , mkAdminCmd "telepc"     adminTelePC      "Teleport to a PC by name."
     , mkAdminCmd "telerm"     adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
-                                               \room."
+                                               \room by name."
     , mkAdminCmd "time"       adminTime        "Display the current system time."
     , mkAdminCmd "typo"       adminTypo        "Dump the typo database."
     , mkAdminCmd "uptime"     adminUptime      "Display the system uptime."
@@ -378,8 +378,6 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
--- TODO: Help.
--- TODO: Logging.
 adminExamine :: Action
 adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
@@ -390,7 +388,7 @@ adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
           _                                                              -> sorry
           where
             sorry = pure . sorryParseId $ a
-    in pager i mq . intercalateDivider cols . map helper $ as
+    in (pager i mq . intercalateDivider cols . map helper $ as) >> logPlaExecArgs (prefixAdminCmd "examine") as i
 adminExamine p = patternMatchFail "adminExamine" [ showText p ]
 
 
@@ -435,7 +433,7 @@ examineEnt i ms = let e = getEnt i ms in [ "Name: "         <> e^.sing
                                          , "Description: "  <> e^.entDesc
                                          , "Entity flags: " <> (commas . dropEmpties . descFlags $ e) ]
   where
-    descFlags e | e^.entFlags == zeroBits = pure "None."
+    descFlags e | e^.entFlags == zeroBits = none
                 | otherwise               = let pairs = [(isInvis, "invisible")]
                                             in [ f e |?| t | (f, t) <- pairs ]
 
@@ -485,22 +483,18 @@ examinePC i ms = let p = getPC i ms in [ "Room: "        <> let ri = p^.rmId
 
 examinePla :: ExamineHelper
 examinePla i ms = let p = getPla i ms
-                  in [ "Host: "              <> let host = p^.currHostName.to T.pack
-                                                in ()# host ? "None." :? host -- TODO: Write a helper function.
-                     , "Connect time: "      <> maybe "None." showText (p^.connectTime)
+                  in [ "Host: "              <> p^.currHostName.to (noneOnEmpty . T.pack)
+                     , "Connect time: "      <> maybe none showText (p^.connectTime)
                      , "Player flags: "      <> (commas . dropEmpties . descFlags $ p)
-                     , "Columns: "           <> p^.columns  .to showText
-                     , "Lines: "             <> p^.pageLines.to showText
-                     , "Peepers: "           <> let txt = p^.peepers.to helper
-                                                in ()# txt ? "None." :? txt
-                     , "Peeping: "           <> let txt = p^.peeping.to helper
-                                                in ()# txt ? "None." :? txt
-                     , "Retained messages: " <> let txt = p^.retainedMsgs.to slashes
-                                                in ()# txt ? "None." :? txt
+                     , "Columns: "           <> p^.columns     .to showText
+                     , "Lines: "             <> p^.pageLines   .to showText
+                     , "Peepers: "           <> p^.peepers     .to (noneOnEmpty . helper)
+                     , "Peeping: "           <> p^.peeping     .to (noneOnEmpty . helper)
+                     , "Retained messages: " <> p^.retainedMsgs.to (noneOnEmpty . slashes)
                      , "Last room: "         <> let f ri = getRmName ri ms <> " " <> parensQuote (showText ri)
-                                                in maybe "None." f $ p^.lastRmId ]
+                                                in maybe none f $ p^.lastRmId ]
   where
-    descFlags p | p^.plaFlags == zeroBits = pure "None."
+    descFlags p | p^.plaFlags == zeroBits = none
                 | otherwise               = let pairs = [ (isAdmin,            "admin"              )
                                                         , (isIncognito,        "incognito"          )
                                                         , (isNotFirstAdminMsg, "not first admin msg")
@@ -517,10 +511,10 @@ examineRm :: ExamineHelper
 examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
                                        , "Description: " <> r^.rmDesc
                                        , "Room flags: "  <> (commas . dropEmpties . descFlags $ r)
-                                       , "Links: "       <> views rmLinks (commas . map helper) r ] -- TODO: There could be no links...
+                                       , "Links: "       <> views rmLinks (noneOnEmpty . commas . map helper) r ]
   where
-    descFlags r | r^.rmFlags == zeroBits = pure "None."
-                | otherwise              = pure "None." -- TODO: Room flags.
+    descFlags r | r^.rmFlags == zeroBits = none
+                | otherwise              = none -- TODO: Room flags.
     helper = \case (StdLink    dir destId    ) -> f (pp dir) destId
                    (NonStdLink dir destId _ _) -> f dir      destId
       where
@@ -594,39 +588,6 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
                                           , views secsConnected renderIt r
                                           , ", "
                                           , views lastLogout (showText . utcToLocalTime zone) r ] :)
-
-
------
-
-
--- TODO: Help.
-adminId :: Action
-adminId p@AdviseNoArgs                        = advise p [ prefixAdminCmd "id" ] adviceAIdNoArgs
-adminId (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
-    multiWrapSend mq cols $ descMatchingSings ms ++ [""] ++ descMatchingRmNames ms
-    logPlaExecArgs (prefixAdminCmd "id") (pure a) i
-  where
-    descMatchingSings ms =
-      let idSings = views entTbl (map (_2 %~ view sing) . IM.toList) ms
-      in "IDs with matching entity names:" : (noneOnEmpty . map (descMatch ms True) . getMatches $ idSings)
-    descMatchingRmNames ms =
-      let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
-      in "Room IDs with matching room names:" : (noneOnEmpty . map (descMatch ms False) . getMatches $ idNames)
-    getMatches = filter (views _2 (()!#) . snd) . map (second (applyRegex a))
-    descMatch ms b (i', (x, y, z)) = T.concat [ showText i'
-                                              , ": "
-                                              , b |?| (parensQuote . pp . getType i' $ ms) <> " "
-                                              , x
-                                              , regexMatchColor
-                                              , y
-                                              , dfltColor
-                                              , z ]
-    noneOnEmpty txt = ()# txt ? none :? txt -- TODO: Here is your helper function...!
-adminId p = patternMatchFail "adminId" [ showText p ]
-
-
-applyRegex :: T.Text -> T.Text -> (T.Text, T.Text, T.Text)
-applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTerm |&| each %~ T.pack
 
 
 -----
@@ -734,7 +695,7 @@ adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
         helper target =
             let notFound                     = pure . sorryPCName $ target
                 found (targetId, targetSing) = case getPCChans targetId ms of
-                  [] -> header . pure $ "None."
+                  [] -> header none
                   cs -> header . intercalate [""] . map (mkChanReport i ms) $ cs
                   where
                     header = (targetSing <> "'s channels:" :) . ("" :)
@@ -820,6 +781,37 @@ adminProfanity p = withoutArgs adminProfanity p
 -----
 
 
+adminSearch :: Action
+adminSearch p@AdviseNoArgs                        = advise p [ prefixAdminCmd "id" ] adviceASearchNoArgs
+adminSearch (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
+    multiWrapSend mq cols $ descMatchingSings ms ++ [""] ++ descMatchingRmNames ms
+    logPlaExecArgs (prefixAdminCmd "search") (pure a) i
+  where
+    descMatchingSings ms =
+      let idSings = views entTbl (map (_2 %~ view sing) . IM.toList) ms
+      in "IDs with matching entity names:" : (noneOnEmpty . map (descMatch ms True) . getMatches $ idSings)
+    descMatchingRmNames ms =
+      let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
+      in "Room IDs with matching room names:" : (noneOnEmpty . map (descMatch ms False) . getMatches $ idNames)
+    getMatches = filter (views _2 (()!#) . snd) . map (second (applyRegex a))
+    descMatch ms b (i', (x, y, z)) = T.concat [ padId . showText $ i'
+                                              , " "
+                                              , b |?| (parensQuote . pp . getType i' $ ms) <> " "
+                                              , x
+                                              , regexMatchColor
+                                              , y
+                                              , dfltColor
+                                              , z ]
+adminSearch p = patternMatchFail "adminSearch" [ showText p ]
+
+
+applyRegex :: T.Text -> T.Text -> (T.Text, T.Text, T.Text)
+applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTerm |&| each %~ T.pack
+
+
+-----
+
+
 adminShutdown :: Action
 adminShutdown (NoArgs' i mq    ) = shutdownHelper i mq Nothing
 adminShutdown (Msg'    i mq msg) = shutdownHelper i mq . Just $ msg
@@ -886,21 +878,33 @@ adminSudoer p = advise p [] adviceASudoerExcessArgs
 -----
 
 
-adminTelePC :: Action
-adminTelePC p@AdviseNoArgs                    = advise p [ prefixAdminCmd "telepc" ] adviceATelePCNoArgs
-adminTelePC p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+-- TODO: Help.
+adminTeleId :: Action
+adminTeleId p@AdviseNoArgs                    = advise p [ prefixAdminCmd "teleid" ] adviceATeleIdNoArgs
+adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
-        let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC to which you want to teleport"
-            idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
-            originId            = getRmId i ms
-            found (flip getRmId ms -> destId, targetSing)
-              | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTelePCSelf)
-              | destId     == originId     = (ms, pure .  sendFun $ sorryTeleAlready)
-              | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
-            notFound = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
-        in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
-adminTelePC (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePCExcessArgs
+        let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the entity or room to which you want to \
+                                                                \teleport"
+            teleport targetId = case getType targetId ms of
+              PCType -> dispatch (getRmId targetId ms) s
+              RmType -> dispatch targetId . getRmName targetId $ ms
+              _      -> dispatch findRm s
+              where
+                s      = getSing targetId ms
+                findRm = undefined -- TODO
+            dispatch destId name
+              | destId == i        = sorry sorryTeleSelf
+              | destId == originId = sorry sorryTeleAlready
+              | otherwise          = teleHelper i ms p { args = [] } originId destId name consSorryBroadcast
+            originId  = getRmId i ms
+            sorry txt = (ms, pure . sendFun $ txt)
+        in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
+          [(targetId, "")] | targetId < 0                                -> sorry sorryWtf
+                           | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget
+                           | otherwise                                   -> teleport targetId
+          _                                                              -> sorry . sorryParseId $ strippedTarget
+adminTeleId (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATeleIdExcessArgs
 
 
 teleHelper :: Id
@@ -927,6 +931,26 @@ teleHelper i ms p originId destId name f =
              , rndmDos [ (calcProbTeleVomit   i ms, mkExpAction "vomit"   p)
                        , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ]
              , logPla "telehelper" i $ "teleported to " <> dblQuote name <> "." ])
+
+
+-----
+
+
+adminTelePC :: Action
+adminTelePC p@AdviseNoArgs                    = advise p [ prefixAdminCmd "telepc" ] adviceATelePCNoArgs
+adminTelePC p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+  where
+    helper ms =
+        let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC to which you want to teleport"
+            idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+            originId            = getRmId i ms
+            found (flip getRmId ms -> destId, targetSing)
+              | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTeleSelf)
+              | destId     == originId     = (ms, pure .  sendFun $ sorryTeleAlready)
+              | otherwise = teleHelper i ms p { args = [] } originId destId targetSing consSorryBroadcast
+            notFound = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
+        in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
+adminTelePC (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePCExcessArgs
 
 
 -----

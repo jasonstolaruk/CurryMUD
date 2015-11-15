@@ -26,6 +26,10 @@ helpTopicPadding :: Int
 helpTopicPadding = maxHelpTopicLen + 2
 
 
+idPadding :: Int
+idPadding = 6
+
+
 lvlPadding :: Int
 lvlPadding = 5
 

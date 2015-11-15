@@ -8,14 +8,16 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAdverbCloseChar
                             , adviceAExamineNoArgs
                             , adviceAHostNoArgs
-                            , adviceAIdNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
                             , adviceAPeepNoArgs
                             , adviceAPrintNoArgs
+                            , adviceASearchNoArgs
                             , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
+                            , adviceATeleIdExcessArgs
+                            , adviceATeleIdNoArgs
                             , adviceATelePCExcessArgs
                             , adviceATelePCNoArgs
                             , adviceATeleRmExcessArgs
@@ -157,10 +159,6 @@ adviceAHostNoArgs :: T.Text
 adviceAHostNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
 
 
-adviceAIdNoArgs :: T.Text
-adviceAIdNoArgs = "Please provide a regular expression to search for."
-
-
 adviceAMsgNoArgs :: T.Text
 adviceAMsgNoArgs = T.concat [ "Please specify the PC name of a regular player followed by a message, as in "
                             , quoteColor
@@ -197,12 +195,24 @@ adviceAPrintNoArgs = T.concat [ "You must provide a message to print to the serv
                               , "." ]
 
 
+adviceASearchNoArgs :: T.Text
+adviceASearchNoArgs = "Please provide a regular expression to search for."
+
+
 adviceASudoerExcessArgs :: T.Text
 adviceASudoerExcessArgs = "Sorry, but you can only promote/demote one player at a time."
 
 
 adviceASudoerNoArgs :: T.Text
 adviceASudoerNoArgs = "Please specify the full PC name of the player you wish to promote/demote."
+
+
+adviceATeleIdExcessArgs :: T.Text
+adviceATeleIdExcessArgs = "You can only teleport to one entity or room at a time."
+
+
+adviceATeleIdNoArgs :: T.Text
+adviceATeleIdNoArgs = "Please specify the ID of the entity or room to which you want to teleport."
 
 
 adviceATelePCExcessArgs :: T.Text

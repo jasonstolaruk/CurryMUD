@@ -139,8 +139,8 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorrySudoerDemoteRoot
                             , sorrySudoerDemoteSelf
                             , sorryTeleAlready
-                            , sorryTelePCSelf
                             , sorryTeleRmName
+                            , sorryTeleSelf
                             , sorryTunedOutChan
                             , sorryTunedOutICChan
                             , sorryTunedOutOOCChan
@@ -964,10 +964,6 @@ sorryTeleAlready :: T.Text
 sorryTeleAlready = "You're already there!"
 
 
-sorryTelePCSelf :: T.Text
-sorryTelePCSelf = "You can't teleport to yourself."
-
-
 sorryTeleRmName :: T.Text -> T.Text
 sorryTeleRmName n = T.concat [ dblQuote n
                              , " is not a valid room name. Type "
@@ -975,6 +971,10 @@ sorryTeleRmName n = T.concat [ dblQuote n
                              , prefixAdminCmd "telerm"
                              , dfltColor
                              , " with no arguments to get a list of valid room names." ]
+
+
+sorryTeleSelf :: T.Text
+sorryTeleSelf = "You can't teleport to yourself."
 
 
 -----
