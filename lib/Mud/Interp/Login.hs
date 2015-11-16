@@ -164,7 +164,7 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
     sorry = getState >>= \ms -> do
         let s  = parensQuote . getSing i $ ms
             hn = T.pack . getCurrHostName i $ ms
-        send mq . nlPrefix . nl . quoteWith' (bootMsgColor, dfltColor) $ sorryInterpNameProfanityLogged
+        send mq . nlPrefix . nl . colorWith bootMsgColor $ sorryInterpNameProfanityLogged
         sendMsgBoot mq . Just $ sorryInterpNameProfanityBoot
         ts <- liftIO mkTimestamp
         let prof = ProfRec ts hn cn
@@ -239,11 +239,8 @@ interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQu
 
 notifyQuestion :: Id -> MudState -> MudStack ()
 notifyQuestion i ms =
-    let msg      = T.concat [ arrowColor
-                            , "<- "
-                            , questionArrivalColor
-                            , "A new character has arrived in CurryMUD."
-                            , dfltColor ]
+    let msg      = f "A new character has arrived in CurryMUD."
+        f        = (colorWith arrowColor "<- " <>) . colorWith questionArrivalColor
         tunedIds = uncurry (++) . getTunedQuestionIds i $ ms
     in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
 
@@ -268,7 +265,7 @@ handleLogin s params@(ActionParams { .. }) = do
     notifyArrival ms
   where
     greet = wrapSend plaMsgQueue plaCols . nlPrefix $ if s == "Root"
-      then quoteWith' (zingColor, dfltColor) sudoMsg
+      then colorWith zingColor sudoMsg
       else "Welcome back, " <> s <> "!"
     showRetainedMsgs = helper |&| modifyState >=> \(ms, msgs, p) -> do
         unless (()# msgs) $ do

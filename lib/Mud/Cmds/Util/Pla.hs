@@ -195,7 +195,7 @@ type ThrPerVerb = T.Text
 
 mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> PCDesig -> Sing -> (T.Text, Broadcast)
 mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
-                            , (T.concat [ serialize d, " ", tpv, " ", aOrAn s, "." ], i `delete` pcIds d) )
+                            , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], i `delete` pcIds d) )
 
 
 -----
@@ -274,13 +274,13 @@ mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
     let bs = concatMap helper ncbs in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
-        [ (T.concat [ "You ",           mkGodVerb god SndPer, " the ", s,   "." ], pure i)
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aOrAn s, "." ], otherPCIds) ]
+        [ (T.concat [ "You ",               mkGodVerb god SndPer, " the ", s, "." ], pure i)
+        , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aOrAn s,  "." ], otherPCIds) ]
     helper (_, c, b) =
         [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], pure i)
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
       where
-        rest = T.concat [ " ", showText c, " ", mkPlurFromBoth b, "." ]
+        rest = spaced (showText c) <>  mkPlurFromBoth b <> "."
     otherPCIds = i `delete` pcIds d
 
 
@@ -346,14 +346,14 @@ helperGetDropEitherCoins i d god fi ti (origMs, origBs, origMsgs) ecs =
 
 mkGetDropCoinsDescOthers :: Id -> PCDesig -> GetOrDrop -> Coins -> [Broadcast]
 mkGetDropCoinsDescOthers i d god c =
-  c |!| [ (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", aCoinSomeCoins c, "." ], i `delete` pcIds d) ]
+  c |!| [ (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aCoinSomeCoins c, "." ], i `delete` pcIds d) ]
 
 
 mkGetDropCoinsDescSelf :: Id -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
 mkGetDropCoinsDescSelf i god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
   where
-    helper 1 cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "." ], pure i) ]
-    helper a cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", showText a, " ", cn, "s." ], pure i) ]
+    helper 1 cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "."  ], pure i) ]
+    helper a cn = [ (T.concat [ "You ", mkGodVerb god SndPer, spaced . showText $ a, cn, "s." ], pure i) ]
 
 
 mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
@@ -461,9 +461,7 @@ helperPutRemEitherCoins i d por mnom fi ti ts (origCoinsTbl, origBs, origMsgs) e
 
 mkPutRemCoinsDescOthers :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [Broadcast]
 mkPutRemCoinsDescOthers i d por mnom c ts = c |!| [ ( T.concat [ serialize d
-                                                               , " "
-                                                               , mkPorVerb por ThrPer
-                                                               , " "
+                                                               , spaced . mkPorVerb por $ ThrPer
                                                                , aCoinSomeCoins c
                                                                , " "
                                                                , mkPorPrep por ThrPer mnom ts
@@ -542,15 +540,11 @@ mkPutRemInvDesc i ms d por mnom is ts =
     helper (_, c, (s, _)) | c == 1 =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
-                    , " "
-                    , withArticle
-                    , " "
+                    , spaced withArticle
                     , mkPorPrep por SndPer mnom ts
                     , rest ], pure i)
         , (T.concat [ serialize d
-                    , " "
-                    , mkPorVerb por ThrPer
-                    , " "
+                    , spaced . mkPorVerb por $ ThrPer
                     , aOrAn s
                     , " "
                     , mkPorPrep por ThrPer mnom ts
@@ -560,21 +554,15 @@ mkPutRemInvDesc i ms d por mnom is ts =
     helper (_, c, b) =
         [ (T.concat [ "You "
                     , mkPorVerb por SndPer
-                    , " "
-                    , showText c
-                    , " "
+                    , spaced . showText $ c
                     , mkPlurFromBoth b
                     , " "
                     , mkPorPrep por SndPer mnom ts
                     , rest ], pure i)
         , (T.concat [ serialize d
-                    , " "
-                    , mkPorVerb por ThrPer
-                    , " "
+                    , spaced . mkPorVerb por $ ThrPer
                     , showText c
-                    , " "
-                    , mkPlurFromBoth b
-                    , " "
+                    , spaced . mkPlurFromBoth $ b
                     , mkPorPrep por ThrPer mnom ts
                     , rest ], otherPCIds) ]
     rest       = onTheGround mnom <> "."
@@ -711,7 +699,7 @@ mkCoinsSummary :: Cols -> Coins -> T.Text
 mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . coinsToList $ c
   where
     helper         = T.unlines . wrapIndent 2 cols . commas . filter (()!#)
-    mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (abbrevColor <> cn <> dfltColor)
+    mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (colorWith abbrevColor cn)
 
 
 mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> T.Text
@@ -743,10 +731,8 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
 
 mkExitsSummary :: Cols -> Rm -> T.Text
 mkExitsSummary cols (view rmLinks -> rls) =
-    let stdNames    = [ exitsColor <> rl^.linkDir.to linkDirToCmdName <> dfltColor | rl <- rls
-                                                                                   , not . isNonStdLink $ rl ]
-        customNames = [ exitsColor <> rl^.linkName                    <> dfltColor | rl <- rls
-                                                                                   ,       isNonStdLink   rl ]
+    let stdNames    = [ rl^.linkDir .to (colorWith exitsColor . linkDirToCmdName) | rl <- rls, not . isNonStdLink $ rl ]
+        customNames = [ rl^.linkName.to (colorWith exitsColor                   ) | rl <- rls,       isNonStdLink   rl ]
     in T.unlines . wrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"

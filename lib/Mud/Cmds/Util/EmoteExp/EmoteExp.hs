@@ -63,9 +63,9 @@ procChanTarget i cc triples ((T.toLower -> target):rest)
                    tunedIds    = map (view _1) triples
                    msg         = capitalizeMsg . T.unwords $ rest
                    formatMsg x = parensQuote ("to " <> x) <> " " <> msg
-               in Right [ (formatMsg . embedId $ targetId,                               pure i                    )
-                        , (formatMsg . embedId $ targetId,                               targetId `delete` tunedIds)
-                        , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
+               in Right [ (formatMsg . embedId $ targetId,                 pure i                    )
+                        , (formatMsg . embedId $ targetId,                 targetId `delete` tunedIds)
+                        , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId             ) ]
   where
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
 procChanTarget _ _ _ as = patternMatchFail "procChanTarget" as
@@ -189,7 +189,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
       where
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
-                   in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
+                   in T.toLower c `elem` yous ? (a <> colorWith emoteTargetColor c <> d) :? w
 procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
 
 
@@ -215,8 +215,8 @@ adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):
         let targetId    = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
             msg         = capitalizeMsg . T.unwords $ rest
             formatMsg x = parensQuote ("to " <> x) <> " " <> msg
-        in Right [ (formatMsg targetSing,                                         targetId `delete` tunedIds)
-                 , (formatMsg . quoteWith' (emoteTargetColor, dfltColor) $ "you", pure targetId             ) ]
+        in Right [ (formatMsg targetSing,                           targetId `delete` tunedIds)
+                 , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId             ) ]
 adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" as
 
 
@@ -336,5 +336,5 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
       where
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
-                   in T.toLower c `elem` yous ? (a <> quoteWith' (emoteTargetColor, dfltColor) c <> d) :? w
+                   in T.toLower c `elem` yous ? (a <> colorWith emoteTargetColor c <> d) :? w
 adminChanProcExpCmd _ _ _ _ as = patternMatchFail "adminChanProcExpCmd" as

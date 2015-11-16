@@ -80,7 +80,7 @@ bcastAdmins = bcastAdminsHelper id
 
 bcastAdminsHelper :: (Inv -> Inv) -> T.Text -> MudStack ()
 bcastAdminsHelper f msg =
-    (f . getLoggedInAdminIds <$> getState) >>= bcastNl . pure . (adminBroadcastColor <> msg <> dfltColor, )
+    (f . getLoggedInAdminIds <$> getState) >>= bcastNl . pure . (colorWith adminBroadcastColor msg, )
 
 
 -----

@@ -20,7 +20,7 @@ module Mud.Util.Text ( aOrAn
                      , nlnlPrefix
                      , nlPrefix
                      , none
-                     , noneOnEmpty
+                     , noneOnNull
                      , notInfixOf
                      , readNum
                      , replace
@@ -218,9 +218,8 @@ nlnlPrefix = nlPrefix . nlPrefix
 -----
 
 
--- TODO: Rename to "noneOnNull".
-noneOnEmpty :: (Nullable a) => a -> a
-noneOnEmpty a = isNull a ? none :? a
+noneOnNull :: (Nullable a) => a -> a
+noneOnNull a = isNull a ? none :? a
 
 
 -----

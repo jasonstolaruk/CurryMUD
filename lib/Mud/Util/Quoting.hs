@@ -37,5 +37,15 @@ parensQuote :: T.Text -> T.Text
 parensQuote = quoteWith' ("(", ")")
 
 
+{-
+Code matching either of these regex may be refactored so as to utilize the "spaced" function.
+(The second regex spans lines and thus cannot be used with grep.)
+\" \", .*, \" \"
+" "\n.*\n *, " "
+-}
+spaced :: T.Text -> T.Text
+spaced = quoteWith " "
+
+
 unquote :: T.Text -> T.Text
 unquote = T.init . T.tail

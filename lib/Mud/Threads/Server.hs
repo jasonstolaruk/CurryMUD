@@ -35,7 +35,6 @@ import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
-import Data.Monoid ((<>))
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
@@ -89,7 +88,7 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< 
       ToThePeeped   ->      T.concat $ toPeepedColor   : rest
       FromThePeeped -> nl . T.concat $ fromPeepedColor : rest
       where
-        rest = [ " ", bracketQuote s, " ", dfltColor, " ", msg ]
+        rest = [ spaced . bracketQuote $ s, dfltColor, " ", msg ]
 
 
 handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
@@ -98,11 +97,11 @@ handleFromServer i h msg = getState >>= \ms -> let peeps = getPeepers i ms in
 
 
 sendInacBootMsg :: Handle -> MudStack ()
-sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . quoteWith' (bootMsgColor, dfltColor) $ inacBootMsg
+sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor $ inacBootMsg
 
 
 sendBootMsg :: Handle -> T.Text -> MudStack ()
-sendBootMsg h = liftIO . T.hPutStrLn h . nl . (<> dfltColor) . (bootMsgColor <>)
+sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
 
 sendPrompt :: Id -> Handle -> T.Text -> MudStack ()

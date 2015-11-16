@@ -39,6 +39,7 @@ import Mud.Data.State.Util.Get
 import Mud.TheWorld.AdminZoneIds (iWelcome)
 import Mud.Util.Misc
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Control.Arrow ((***))
@@ -228,7 +229,7 @@ mkPlurFromBoth (_, p ) = p
 
 mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> T.Text
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = let (pp *** pp -> (sexy, r)) = getSexRace i ms in
-    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = T.concat [ f . pp $ aot, " ", sexy, " ", r ] }
+    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = f (pp aot) <> spaced sexy <> r }
 
 
 mkCapsFun :: ShouldCap -> T.Text -> T.Text

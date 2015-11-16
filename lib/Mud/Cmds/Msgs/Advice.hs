@@ -103,12 +103,9 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Advice"
 
 advise :: ActionParams -> [HelpName] -> T.Text -> MudStack ()
 advise (Advising mq cols) []  msg = wrapSend mq cols msg
-advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, T.concat [ "For more information, type "
-                                                                          , quoteColor
-                                                                          , "help "
-                                                                          , h
-                                                                          , dfltColor
-                                                                          , "." ] ]
+advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, "For more information, type "       <>
+                                                                 colorWith quoteColor ("help " <> h) <>
+                                                                 "." ]
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
 advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
@@ -118,32 +115,22 @@ advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
 
 
 adviceAAnnounceNoArgs :: T.Text
-adviceAAnnounceNoArgs = T.concat [ "You must provide a message to send, as in "
-                                 , quoteColor
-                                 , prefixAdminCmd "announce"
-                                 , " CurryMUD will be shutting down for maintenance in 30 minutes"
-                                 , dfltColor
-                                 , "." ]
+adviceAAnnounceNoArgs = let msg = "CurryMUD will be shutting down for maintenance in 30 minutes" in
+    "You must provide a message to send, as in "                   <>
+    colorWith quoteColor (prefixAdminCmd "announce" <> " " <> msg) <>
+    "."
 
 
 adviceABanHostNoReason :: T.Text -> T.Text
-adviceABanHostNoReason a = T.concat [ "Please also provide a reason, as in "
-                                    , quoteColor
-                                    , prefixAdminCmd "banhost "
-                                    , a
-                                    , " used by Taro"
-                                    , dfltColor
-                                    , "." ]
+adviceABanHostNoReason a = "Please also provide a reason, as in "                                   <>
+                           colorWith quoteColor (prefixAdminCmd "banhost " <> a <> " used by Taro") <>
+                           "."
 
 
 adviceABanPlaNoReason :: T.Text -> T.Text
-adviceABanPlaNoReason a = T.concat [ "Please also provide a reason, as in "
-                                   , quoteColor
-                                   , prefixAdminCmd "banplayer "
-                                   , a
-                                   , " for harassing hanako"
-                                   , dfltColor
-                                   , "." ]
+adviceABanPlaNoReason a = "Please also provide a reason, as in "                                             <>
+                          colorWith quoteColor (prefixAdminCmd "banplayer " <> a <> " for harassing hanako") <>
+                          "."
 
 
 adviceABootNoArgs :: T.Text
@@ -160,22 +147,17 @@ adviceAHostNoArgs = "Please specify the PC names of one or more players whose ho
 
 
 adviceAMsgNoArgs :: T.Text
-adviceAMsgNoArgs = T.concat [ "Please specify the PC name of a regular player followed by a message, as in "
-                            , quoteColor
-                            , prefixAdminCmd "message"
-                            , " taro thank you for reporting the bug you found"
-                            , dfltColor
-                            , "." ]
+adviceAMsgNoArgs =
+    "Please specify the PC name of a regular player followed by a message, as in "                       <>
+    colorWith quoteColor (prefixAdminCmd "message" <> " taro thank you for reporting the bug you found") <>
+    "."
 
 
 adviceAMsgNoMsg :: T.Text -> T.Text
-adviceAMsgNoMsg a = T.concat [ "Please also provide a message to send, as in "
-                             , quoteColor
-                             , prefixAdminCmd "message "
-                             , a
-                             , " thank you for reporting the bug you found"
-                             , dfltColor
-                             , "." ]
+adviceAMsgNoMsg a =
+    "Please also provide a message to send, as in "                                                       <>
+    colorWith quoteColor (prefixAdminCmd "message " <> a <> " thank you for reporting the bug you found") <>
+    "."
 
 
 adviceAMyChansNoArgs :: T.Text
@@ -187,12 +169,9 @@ adviceAPeepNoArgs = "Please specify the PC names of one or more players you wish
 
 
 adviceAPrintNoArgs :: T.Text
-adviceAPrintNoArgs = T.concat [ "You must provide a message to print to the server console, as in "
-                              , quoteColor
-                              , prefixAdminCmd "print"
-                              , " is anybody home?"
-                              , dfltColor
-                              , "." ]
+adviceAPrintNoArgs = "You must provide a message to print to the server console, as in "  <>
+                     colorWith quoteColor (prefixAdminCmd "print" <> " is anybody home?") <>
+                     "."
 
 
 adviceASearchNoArgs :: T.Text
@@ -235,12 +214,9 @@ adviceAWireNoArgs = "Please specify the IDs of one or more telepathic channels y
 
 
 adviceDCinsExcessArgs :: T.Text
-adviceDCinsExcessArgs = T.concat [ "Please provide one argument: the target ID, as in "
-                                 , quoteColor
-                                 , prefixDebugCmd "cins"
-                                 , " 100"
-                                 , dfltColor
-                                 , "." ]
+adviceDCinsExcessArgs = "Please provide one argument: the target ID, as in "   <>
+                        colorWith quoteColor (prefixDebugCmd "cins" <> " 100") <>
+                        "."
 
 
 adviceDCinsNoArgs :: T.Text
@@ -248,12 +224,9 @@ adviceDCinsNoArgs = adviceDCinsExcessArgs
 
 
 adviceDIdExcessArgs :: T.Text
-adviceDIdExcessArgs = T.concat [ "Please provide one argument: the ID to search for, as in "
-                               , quoteColor
-                               , prefixDebugCmd "id"
-                               , " 100"
-                               , dfltColor
-                               , "." ]
+adviceDIdExcessArgs = "Please provide one argument: the ID to search for, as in " <>
+                      colorWith quoteColor (prefixDebugCmd "id" <> " 100")        <>
+                      "."
 
 
 adviceDIdNoArgs :: T.Text
@@ -261,12 +234,9 @@ adviceDIdNoArgs = adviceDIdExcessArgs
 
 
 adviceDNumberExcessArgs :: T.Text
-adviceDNumberExcessArgs = T.concat [ "Please provide two arguments: a number and its base, as in "
-                                   , quoteColor
-                                   , prefixDebugCmd "number"
-                                   , " a 16"
-                                   , dfltColor
-                                   , "." ]
+adviceDNumberExcessArgs = "Please provide two arguments: a number and its base, as in " <>
+                          colorWith quoteColor (prefixDebugCmd "number" <> " a 16")     <>
+                          "."
 
 
 adviceDNumberNoArgs :: T.Text
@@ -274,21 +244,15 @@ adviceDNumberNoArgs = adviceDNumberExcessArgs
 
 
 adviceDNumberNoBase :: T.Text
-adviceDNumberNoBase = T.concat [ "Please also specify base, as in "
-                               , quoteColor
-                               , prefixDebugCmd "number"
-                               , " a 16"
-                               , dfltColor
-                               , "." ]
+adviceDNumberNoBase = "Please also specify base, as in "                        <>
+                      colorWith quoteColor (prefixDebugCmd "number" <> " a 16") <>
+                      "."
 
 
 adviceDRegenExcessArgs :: T.Text
-adviceDRegenExcessArgs = T.concat [ "Please provide one argument: the target ID, as in "
-                                  , quoteColor
-                                  , prefixDebugCmd "regen"
-                                  , " 100"
-                                  , dfltColor
-                                  , "." ]
+adviceDRegenExcessArgs = "Please provide one argument: the target ID, as in "    <>
+                         colorWith quoteColor (prefixDebugCmd "regen" <> " 100") <>
+                         "."
 
 
 adviceDRegenNoArgs :: T.Text
@@ -300,13 +264,10 @@ adviceDRntExcessArgs = "Sorry, but you can only generate a random name for one P
 
 
 adviceDWeightExcessArgs :: T.Text
-adviceDWeightExcessArgs = T.concat [ "Please provide one argument: the ID for which you would like to calculate \
-                                     \weight, as in "
-                                   , quoteColor
-                                   , prefixDebugCmd "weight"
-                                   , " 100"
-                                   , dfltColor
-                                   , "." ]
+adviceDWeightExcessArgs =
+    "Please provide one argument: the ID for which you would like to calculate weight, as in " <>
+    quoteWith quoteColor (prefixDebugCmd "weight" <> " 100")                                   <>
+    "."
 
 
 adviceDWeightNoArgs :: T.Text
@@ -314,12 +275,9 @@ adviceDWeightNoArgs = adviceDWeightExcessArgs
 
 
 adviceDWrapExcessArgs :: T.Text
-adviceDWrapExcessArgs = T.concat [ "Please provide one argument: line length, as in "
-                                 , quoteColor
-                                 , prefixDebugCmd "wrap"
-                                 , " 40"
-                                 , dfltColor
-                                 , "." ]
+adviceDWrapExcessArgs = "Please provide one argument: line length, as in "    <>
+                        colorWith quoteColor (prefixDebugCmd "wrap" <> " 40") <>
+                        "."
 
 
 adviceDWrapNoArgs :: T.Text
@@ -327,21 +285,15 @@ adviceDWrapNoArgs = adviceDWrapExcessArgs
 
 
 adviceDWrapIndentExcessArgs :: T.Text
-adviceDWrapIndentExcessArgs = T.concat [ "Please provide two arguments: line length and indent amount, as in "
-                                       , quoteColor
-                                       , prefixDebugCmd "wrapindent"
-                                       , " 40 4"
-                                       , dfltColor
-                                       , "." ]
+adviceDWrapIndentExcessArgs = "Please provide two arguments: line length and indent amount, as in " <>
+                              colorWith quoteColor (prefixDebugCmd "wrapindent" <> " 40 4")         <>
+                              "."
 
 
 adviceDWrapIndentNoAmt :: T.Text
-adviceDWrapIndentNoAmt = T.concat [ "Please also specify indent amount, as in "
-                                  , quoteColor
-                                  , prefixDebugCmd "wrapindent"
-                                  , " 40 4"
-                                  , dfltColor
-                                  , "." ]
+adviceDWrapIndentNoAmt = "Please also specify indent amount, as in "                   <>
+                         colorWith quoteColor (prefixDebugCmd "wrapindent" <> " 40 4") <>
+                         "."
 
 
 adviceDWrapIndentNoArgs :: T.Text
@@ -352,13 +304,9 @@ adviceDWrapIndentNoArgs = adviceDWrapIndentExcessArgs
 
 
 adviceAdminNoMsg :: T.Text -> T.Text
-adviceAdminNoMsg a = T.concat [ "Please also provide a message to send, as in "
-                              , quoteColor
-                              , "admin "
-                              , a
-                              , " are you available? I need your assistance"
-                              , dfltColor
-                              , "." ]
+adviceAdminNoMsg a = "Please also provide a message to send, as in "                                      <>
+                     colorWith quoteColor ("admin " <> a <> " are you available? I need your assistance") <>
+                     "."
 
 
 adviceAdverbCloseChar :: T.Text
@@ -366,75 +314,57 @@ adviceAdverbCloseChar = "An adverbial phrase must be terminated with a " <> dblQ
 
 
 adverbExample :: T.Text
-adverbExample = T.concat [ ", as in "
-                         , quoteColor
-                         , "say "
-                         , quoteWith' (aop, acl) "enthusiastically"
-                         , " nice to meet you, too"
-                         , dfltColor
-                         , "." ]
+adverbExample = ", as in "                                                     <>
+                colorWith quoteColor ("say "                                   <>
+                                      quoteWith' (aop, acl) "enthusiastically" <>
+                                      " nice to meet you, too")                <>
+                "."
 
 
 adviceBugNoArgs :: T.Text
-adviceBugNoArgs = T.concat [ "Please describe the bug you've found, as in "
-                           , quoteColor
-                           , "bug i've fallen and I can't get up!"
-                           , dfltColor
-                           , "." ]
+adviceBugNoArgs = "Please describe the bug you've found, as in "             <>
+                  colorWith quoteColor "bug i've fallen and I can't get up!" <>
+                  "."
 
 
 adviceConnectNoArgs :: T.Text
-adviceConnectNoArgs = T.concat [ "Please specify the names of one or more people followed by the name of a telepathic \
-                                 \channel to connect them to, as in "
-                               , quoteColor
-                               , "connect taro hunt"
-                               , dfltColor
-                               , "." ]
+adviceConnectNoArgs =
+    "Please specify the names of one or more people followed by the name of a telepathic channel to connect them to, \
+    \as in "                                 <>
+    colorWith quoteColor "connect taro hunt" <>
+    "."
 
 
 adviceConnectNoChan :: T.Text -> T.Text
-adviceConnectNoChan a = T.concat [ "Please also specify the name of a telepathic channel, as in "
-                                 , quoteColor
-                                 , "connect "
-                                 , a
-                                 , " hunt"
-                                 , dfltColor
-                                 , "." ]
+adviceConnectNoChan a = "Please also specify the name of a telepathic channel, as in " <>
+                        colorWith quoteColor ("connect " <> a <> " hunt")              <>
+                        "."
 
 
 adviceDisconnectNoArgs :: T.Text
-adviceDisconnectNoArgs = T.concat [ "Please provide the full names of one or more people followed by the name of a \
-                                    \telepathic channel to disconnect them from, as in "
-                                  , quoteColor
-                                  , "disconnect taro hunt"
-                                  , dfltColor
-                                  , "." ]
+adviceDisconnectNoArgs =
+    "Please provide the full names of one or more people followed by the name of a telepathic channel to disconnect \
+    \them from, as in "                         <>
+    colorWith quoteColor "disconnect taro hunt" <>
+    "."
 
 
 adviceDisconnectNoChan :: T.Text -> T.Text
-adviceDisconnectNoChan a = T.concat [ "Please also provide the name of a telepathic channel, as in "
-                                    , quoteColor
-                                    , "disconnect "
-                                    , a
-                                    , " hunt"
-                                    , dfltColor
-                                    , "." ]
+adviceDisconnectNoChan a = "Please also provide the name of a telepathic channel, as in " <>
+                           colorWith quoteColor ("disconnect " <> a <> " hunt")           <>
+                           "."
 
 
 adviceDropNoArgs :: T.Text
-adviceDropNoArgs = T.concat [ "Please specify one or more items to drop, as in "
-                            , quoteColor
-                            , "drop sword"
-                            , dfltColor
-                            , "." ]
+adviceDropNoArgs = "Please specify one or more items to drop, as in " <>
+                   colorWith quoteColor "drop sword"                  <>
+                   "."
 
 
 adviceEmoteNoArgs :: T.Text
-adviceEmoteNoArgs = T.concat [ "Please provide a description of an action, as in "
-                             , quoteColor
-                             , "emote laughs with relief as tears roll down her face"
-                             , dfltColor
-                             , "." ]
+adviceEmoteNoArgs = "Please provide a description of an action, as in "                         <>
+                    colorWith quoteColor "emote laughs with relief as tears roll down her face" <>
+                    "."
 
 
 adviceEmptyAdverb :: T.Text
@@ -452,39 +382,29 @@ adviceEnc cn = T.concat [ dblQuote enc
                         , " suffix "
                         , parensQuote "to create a possessive noun"
                         , ", as in "
-                        , quoteColor
-                        , cn
-                        , "shielding her eyes from the sun, "
-                        , enc
-                        , " looks out across the plains"
-                        , dfltColor
+                        , colorWith quoteColor . T.concat $ [ cn
+                                                            , "shielding her eyes from the sun, "
+                                                            , enc
+                                                            , " looks out across the plains" ]
                         , ", or "
-                        , quoteColor
-                        , cn
-                        , enc
-                        , "'s leg twitches involuntarily as she laughs with gusto"
-                        , dfltColor
+                        , colorWith quoteColor $ cn <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
                         , "." ]
 
 
 adviceEtc :: T.Text -> T.Text
 adviceEtc cn = T.concat [ dblQuote etc
                         , " must be immediately followed by the name of the person you wish to target, as in "
-                        , quoteColor
-                        , cn
-                        , "slowly turns her head to look directly at "
-                        , etc
-                        , "taro"
-                        , dfltColor
+                        , colorWith quoteColor . T.concat $ [ cn
+                                                            , "slowly turns her head to look directly at "
+                                                            , etc
+                                                            , "taro" ]
                         , ". To create a possessive noun, append "
                         , dblQuote "'s"
                         , " to the target name, as in "
-                        , quoteColor
-                        , cn
-                        , "places her hand firmly on "
-                        , etc
-                        , "taro's shoulder"
-                        , dfltColor
+                        , colorWith quoteColor . T.concat $ [ cn
+                                                            , "places her hand firmly on "
+                                                            , etc
+                                                            , "taro's shoulder" ]
                         , "." ]
 
 
@@ -508,17 +428,12 @@ adviceEtcInTwoWay cn cn' = T.concat [ "Sorry, but you can't use "
                                     ,  " command. It is legal to use forms of the word "
                                     , dblQuote "you"
                                     , " here, so instead of "
-                                    , quoteColor
-                                    , cn'
-                                    , "gives "
-                                    , etc
-                                    , "hanako a smooch!"
-                                    , dfltColor
+                                    , colorWith quoteColor . T.concat $ [ cn'
+                                                                        , "gives "
+                                                                        , etc
+                                                                        , "hanako a smooch!" ]
                                     , ", you should type "
-                                    , quoteColor
-                                    , cn'
-                                    , "gives you a smooch!"
-                                    , dfltColor
+                                    , colorWith quoteColor $ cn' <> "gives you a smooch!"
                                     , "." ]
 
 
@@ -527,81 +442,59 @@ adviceExpCmdExcessArgs = "Sorry, but you can only target one person at a time wi
 
 
 adviceGetNoArgs :: T.Text
-adviceGetNoArgs = T.concat [ "Please specify one or more items to pick up, as in "
-                           , quoteColor
-                           , "get sword"
-                           , dfltColor
-                           , "." ]
+adviceGetNoArgs = "Please specify one or more items to pick up, as in " <>
+                  colorWith quoteColor "get sword"                      <>
+                  "."
 
 
 adviceLeaveNoArgs :: T.Text
-adviceLeaveNoArgs = T.concat [ "Please specify the names of one or more channels to leave, as in "
-                             , quoteColor
-                             , "leave hunt"
-                             , dfltColor
-                             , "." ]
+adviceLeaveNoArgs = "Please specify the names of one or more channels to leave, as in " <>
+                    colorWith quoteColor "leave hunt"                                   <>
+                    "."
 
 
 adviceNewChanNoArgs :: T.Text
-adviceNewChanNoArgs = T.concat [ "Please specify one or more new channel names, as in "
-                               , quoteColor
-                               , "newchannel hunt"
-                               , dfltColor
-                               , "." ]
+adviceNewChanNoArgs = "Please specify one or more new channel names, as in " <>
+                      colorWith quoteColor "newchannel hunt"                 <>
+                      "."
 
 
 advicePutNoArgs :: T.Text
-advicePutNoArgs = T.concat [ "Please specify one or more items you want to put followed by where you want to put them, \
-                             \as in "
-                           , quoteColor
-                           , "put doll sack"
-                           , dfltColor
-                           , "." ]
+advicePutNoArgs =
+    "Please specify one or more items you want to put followed by where you want to put them, as in " <>
+    colorWith quoteColor "put doll sack"                                                              <>
+    "."
 
 
 advicePutNoCon :: T.Text -> T.Text
-advicePutNoCon a = T.concat [ "Please also specify where you want to put it, as in "
-                            , quoteColor
-                            , "put "
-                            , a
-                            , " sack"
-                            , dfltColor
-                            , "." ]
+advicePutNoCon a = "Please also specify where you want to put it, as in " <>
+                   colorWith quoteColor ("put " <> a <> " sack")          <>
+                   "."
 
 
 adviceQuitExcessArgs :: T.Text
-adviceQuitExcessArgs =  T.concat [ "Type "
-                                 , quoteColor
-                                 , "quit"
-                                 , dfltColor
-                                 , " with no arguments to quit CurryMUD." ]
+adviceQuitExcessArgs = "Type "                     <>
+                       colorWith quoteColor "quit" <>
+                       " with no arguments to quit CurryMUD."
 
 
 adviceReadyNoArgs :: T.Text
-adviceReadyNoArgs = T.concat [ "Please specify one or more items to ready, as in "
-                             , quoteColor
-                             , "ready sword"
-                             , dfltColor
-                             , "." ]
+adviceReadyNoArgs = "Please specify one or more items to ready, as in " <>
+                    quoteWith quoteColor "ready sword"                  <>
+                    "."
 
 
 adviceRemoveNoArgs :: T.Text
-adviceRemoveNoArgs = T.concat [ "Please specify one or more items to remove followed by the container you want to \
-                                \remove them from, as in "
-                              , quoteColor
-                              , "remove doll sack"
-                              , dfltColor
-                              , "." ]
+adviceRemoveNoArgs =
+    "Please specify one or more items to remove followed by the container you want to remove them from, as in " <>
+    colorWith quoteColor "remove doll sack"                                                                     <>
+    "."
 
 
 adviceRemoveNoCon :: T.Text -> T.Text
-adviceRemoveNoCon a = T.concat [ "Please also specify the container you want to remove it from, as in "
-                               , quoteColor
-                               , "remove "
-                               , a
-                               , " sack"
-                               , dfltColor
-                               , "." ]
+adviceRemoveNoCon a = "Please also specify the container you want to remove it from, as in " <>
+                      colorWith quoteColor ("remove " <> a <> " sack")                       <>
+                      "."
 
 
 adviceSayAdverbNoUtterance :: T.Text
@@ -609,67 +502,47 @@ adviceSayAdverbNoUtterance = "Please also specify what you'd like to say" <> adv
 
 
 adviceSayNoArgs :: T.Text
-adviceSayNoArgs = T.concat [ "Please specify what you'd like to say, as in "
-                           , quoteColor
-                           , "say nice to meet you, too"
-                           , dfltColor
-                           , "." ]
+adviceSayNoArgs = "Please specify what you'd like to say, as in "  <>
+                  colorWith quoteColor "say nice to meet you, too" <>
+                  "."
 
 
 adviceSayToNoUtterance :: T.Text
-adviceSayToNoUtterance  = T.concat [ "Please also specify what you'd like to say, as in "
-                                   , quoteColor
-                                   , "say "
-                                   , T.singleton sayToChar
-                                   , "taro nice to meet you, too"
-                                   , dfltColor
-                                   , "." ]
+adviceSayToNoUtterance  = "Please also specify what you'd like to say, as in "                                   <>
+                          colorWith quoteColor ("say " <> T.singleton sayToChar <> "taro nice to meet you, too") <>
+                          "."
 
 
 adviceSettingsInvalid :: T.Text
 adviceSettingsInvalid = T.concat [ " Please specify the setting you want to change, followed immediately by "
                                  , dblQuote "="
                                  , ", followed immediately by the new value you want to assign, as in "
-                                 , quoteColor
-                                 , "set columns=80"
-                                 , dfltColor
+                                 , colorWith quoteColor "set columns=80"
                                  , "." ]
 
 
 adviceShowNoArgs :: T.Text
-adviceShowNoArgs = T.concat [ "Please specify one or more items to show followed by the name of a person, as in "
-                            , quoteColor
-                            , "show ring taro"
-                            , dfltColor
-                            , "." ]
+adviceShowNoArgs = "Please specify one or more items to show followed by the name of a person, as in " <>
+                   colorWith quoteColor "show ring taro"                                               <>
+                   "."
 
 
 adviceShowNoName :: T.Text -> T.Text
-adviceShowNoName a = T.concat [ "Please also provide the name of a person, as in "
-                              , quoteColor
-                              , "show "
-                              , a
-                              , " taro"
-                              , dfltColor
-                              , "." ]
+adviceShowNoName a = "Please also provide the name of a person, as in " <>
+                     colorWith quoteColor ("show " <> a <> " taro")     <>
+                     "."
 
 
 adviceTeleNoArgs :: T.Text
-adviceTeleNoArgs = T.concat [ "Please provide the name of a person followed by a message to send, as in "
-                            , quoteColor
-                            , "telepathy taro i'll meet you there in a few"
-                            , dfltColor
-                            , "." ]
+adviceTeleNoArgs = "Please provide the name of a person followed by a message to send, as in " <>
+                   colorWith quoteColor "telepathy taro i'll meet you there in a few"          <>
+                   "."
 
 
 adviceTeleNoMsg :: T.Text -> T.Text
-adviceTeleNoMsg a = T.concat [ "Please also provide a message to send, as in "
-                             , quoteColor
-                             , "telepathy "
-                             , a
-                             , " i'll meet you there in a few"
-                             , dfltColor
-                             , "." ]
+adviceTeleNoMsg a = "Please also provide a message to send, as in "                              <>
+                    colorWith quoteColor ("telepathy " <> a <>  " i'll meet you there in a few") <>
+                    "."
 
 
 adviceTuneInvalid :: T.Text
@@ -678,9 +551,7 @@ adviceTuneInvalid = T.concat [ " Please specify the name of the connection you w
                              , ", followed immediately by "
                              , inOutOrOnOff
                              , ", as in "
-                             , quoteColor
-                             , "tune taro=in"
-                             , dfltColor
+                             , colorWith quoteColor "tune taro=in"
                              , "." ]
   where
     inOutOrOnOff = T.concat [ dblQuote "in"
@@ -693,41 +564,32 @@ adviceTuneInvalid = T.concat [ " Please specify the name of the connection you w
 
 
 adviceTypoNoArgs :: T.Text
-adviceTypoNoArgs = T.concat [ "Please describe the typo you've found, as in "
-                            , quoteColor
-                            , "typo 'accross from the fireplace' should be 'across from the fireplace'"
-                            , dfltColor
-                            , "." ]
+adviceTypoNoArgs = "Please describe the typo you've found, as in "                                                <>
+                   colorWith quoteColor "typo 'accross from the fireplace' should be 'across from the fireplace'" <>
+                   "."
 
 
 adviceUnlinkNoArgs :: T.Text
-adviceUnlinkNoArgs = T.concat [ "Please provide the full name of the person with whom you would like to unlink, as in "
-                              , quoteColor
-                              , "unlink taro"
-                              , dfltColor
-                              , "." ]
+adviceUnlinkNoArgs = "Please provide the full name of the person with whom you would like to unlink, as in " <>
+                     colorWith quoteColor "unlink taro"                                                      <>
+                     "."
 
 
 adviceUnreadyNoArgs :: T.Text
-adviceUnreadyNoArgs = T.concat [ "Please specify one or more items to unready, as in "
-                               , quoteColor
-                               , "unready sword"
-                               , dfltColor
-                               , "." ]
+adviceUnreadyNoArgs = "Please specify one or more items to unready, as in " <>
+                      colorWith quoteColor "unready sword"                  <>
+                      "."
 
 
 adviceYouEmote :: T.Text
-adviceYouEmote = T.concat [ "Sorry, but you can't use a form of the word "
-                          , dblQuote "you"
-                          , " in an emote. Instead, you must specify who you wish to target using "
-                          , dblQuote etc
-                          , ", as in "
-                          , quoteColor
-                          , "emote slowly turns her head to look directly at "
-                          , etc
-                          , "taro"
-                          , dfltColor
-                          , "." ]
+adviceYouEmote =
+    T.concat [ "Sorry, but you can't use a form of the word "
+             , dblQuote "you"
+             , " in an emote. Instead, you must specify who you wish to target using "
+             , dblQuote etc
+             , ", as in "
+             , colorWith quoteColor ("emote slowly turns her head to look directly at " <> etc <> "taro" )
+             , "." ]
 
 
 adviceYouEmoteChar :: T.Text -> T.Text
@@ -736,12 +598,10 @@ adviceYouEmoteChar cn = T.concat [ "Sorry, but you can't use a form of the word 
                                  , " in an emote. Instead, you must specify who you wish to target using "
                                  , dblQuote etc
                                  , ", as in "
-                                 , quoteColor
-                                 , cn
-                                 , " "
-                                 , T.singleton emoteChar
-                                 , "slowly turns her head to look directly at "
-                                 , etc
-                                 , "taro"
-                                 , dfltColor
+                                 , colorWith quoteColor . T.concat $ [ cn
+                                                                     , " "
+                                                                     , T.singleton emoteChar
+                                                                     , "slowly turns her head to look directly at "
+                                                                     , etc
+                                                                     , "taro" ]
                                  , "." ]

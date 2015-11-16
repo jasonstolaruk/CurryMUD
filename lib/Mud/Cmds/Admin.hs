@@ -219,7 +219,7 @@ adminAnnounce :: Action
 adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
 adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     ok mq
-    massSend $ announceColor <> msg <> dfltColor
+    massSend . colorWith announceColor $ msg
     logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
     logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
 adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
@@ -253,10 +253,10 @@ notifyBan i mq cols selfSing target newStatus x =
     let fn          = "notifyBan"
         (v, suffix) = newStatus ? ("banned", [ ": " <> pp x ]) :? ("unbanned", [ ": " <> pp x ])
     in do
-        wrapSend mq cols   . T.concat $ [ "You have ",   v, " ", target ] ++ suffix
-        bcastOtherAdmins i . T.concat $ [ selfSing, " ", v, " ", target ] ++ suffix
-        logNotice fn       . T.concat $ [ selfSing, " ", v, " ", target ] ++ suffix
-        logPla    fn i     . T.concat $ [                v, " ", target ] ++ suffix
+        wrapSend mq cols   . T.concat $ [ "You have ",     v, " ", target ] ++ suffix
+        bcastOtherAdmins i . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
+        logNotice fn       . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
+        logPla    fn i     . T.concat $ [                  v, " ", target ] ++ suffix
 
 
 -----
@@ -441,7 +441,7 @@ examineEnt i ms = let e = getEnt i ms in [ "Name: "         <> e^.sing
 examineEqMap :: ExamineHelper
 examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
   where
-    helper (slot, i') = T.concat [ bracketQuote . pp $ slot, " ", getSing i' ms, " ", parensQuote (showText i') ]
+    helper (slot, i') = bracketQuote (pp slot) <> spaced (getSing i' ms) <> parensQuote (showText i')
 
 
 examineInv :: ExamineHelper
@@ -483,14 +483,14 @@ examinePC i ms = let p = getPC i ms in [ "Room: "        <> let ri = p^.rmId
 
 examinePla :: ExamineHelper
 examinePla i ms = let p = getPla i ms
-                  in [ "Host: "              <> p^.currHostName.to (noneOnEmpty . T.pack)
+                  in [ "Host: "              <> p^.currHostName.to (noneOnNull . T.pack)
                      , "Connect time: "      <> maybe none showText (p^.connectTime)
                      , "Player flags: "      <> (commas . dropEmpties . descFlags $ p)
                      , "Columns: "           <> p^.columns     .to showText
                      , "Lines: "             <> p^.pageLines   .to showText
-                     , "Peepers: "           <> p^.peepers     .to (noneOnEmpty . helper)
-                     , "Peeping: "           <> p^.peeping     .to (noneOnEmpty . helper)
-                     , "Retained messages: " <> p^.retainedMsgs.to (noneOnEmpty . slashes)
+                     , "Peepers: "           <> p^.peepers     .to (noneOnNull . helper)
+                     , "Peeping: "           <> p^.peeping     .to (noneOnNull . helper)
+                     , "Retained messages: " <> p^.retainedMsgs.to (noneOnNull . slashes)
                      , "Last room: "         <> let f ri = getRmName ri ms <> " " <> parensQuote (showText ri)
                                                 in maybe none f $ p^.lastRmId ]
   where
@@ -511,7 +511,7 @@ examineRm :: ExamineHelper
 examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
                                        , "Description: " <> r^.rmDesc
                                        , "Room flags: "  <> (commas . dropEmpties . descFlags $ r)
-                                       , "Links: "       <> views rmLinks (noneOnEmpty . commas . map helper) r ]
+                                       , "Links: "       <> views rmLinks (noneOnNull . commas . map helper) r ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Room flags.
@@ -662,11 +662,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                   dbHelper
               where
                 targetPla = getPla targetId ms
-                formatted = T.concat [ parensQuote $ "to " <> targetSing
-                                     , " "
-                                     , quoteWith "__" s
-                                     , " "
-                                     , toSelf ]
+                formatted = parensQuote ("to " <> targetSing) <> spaced (quoteWith "__" s) <> toSelf
                 dbHelper  = do
                     ts <- liftIO mkTimestamp
                     withDbExHandler_ "admin_msg" . insertDbTblAdminMsg . AdminMsgRec ts s targetSing $ toSelf
@@ -761,7 +757,7 @@ adminPersist p              = withoutArgs adminPersist p
 adminPrint :: Action
 adminPrint p@AdviseNoArgs  = advise p [ prefixAdminCmd "print" ] adviceAPrintNoArgs
 adminPrint (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
-    liftIO . T.putStrLn . T.concat $ [ bracketQuote s, " ", printConsoleColor, msg, dfltColor ]
+    liftIO . T.putStrLn $ bracketQuote s <> " " <> colorWith printConsoleColor msg
     ok mq
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
     logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
@@ -789,18 +785,16 @@ adminSearch (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
   where
     descMatchingSings ms =
       let idSings = views entTbl (map (_2 %~ view sing) . IM.toList) ms
-      in "IDs with matching entity names:" : (noneOnEmpty . map (descMatch ms True) . getMatches $ idSings)
+      in "IDs with matching entity names:" : (noneOnNull . map (descMatch ms True) . getMatches $ idSings)
     descMatchingRmNames ms =
       let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
-      in "Room IDs with matching room names:" : (noneOnEmpty . map (descMatch ms False) . getMatches $ idNames)
+      in "Room IDs with matching room names:" : (noneOnNull . map (descMatch ms False) . getMatches $ idNames)
     getMatches = filter (views _2 (()!#) . snd) . map (second (applyRegex a))
     descMatch ms b (i', (x, y, z)) = T.concat [ padId . showText $ i'
                                               , " "
                                               , b |?| (parensQuote . pp . getType i' $ ms) <> " "
                                               , x
-                                              , regexMatchColor
-                                              , y
-                                              , dfltColor
+                                              , colorWith regexMatchColor y
                                               , z ]
 adminSearch p = patternMatchFail "adminSearch" [ showText p ]
 
@@ -823,7 +817,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
         rest = maybeMsg |&| maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote)
     in do
-        massSend $ shutdownMsgColor <> fromMaybe dfltShutdownMsg maybeMsg <> dfltColor
+        massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
         logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
         massLogPla "shutdownHelper"   $ "closing connection due to server shutdown initiated by " <> s <> rest
         logNotice  "shutdownHelper"   $ "server shutdown initiated by "                           <> s <> rest
@@ -852,19 +846,17 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
           , handlePeep     <- let peepingIds = getPeeping targetId ms
                                   act        = adminPeep . mkActionParams targetId ms . map (`getSing` ms) $ peepingIds
                               in unless (()# peepingIds) act
-          , fs <- [ retainedMsg targetId ms           . T.concat $ [ promoteDemoteColor
-                                                                   , selfSing
-                                                                   , " has "
-                                                                   , verb
-                                                                   , " you "
-                                                                   , toFrom
-                                                                   , " admin status."
-                                                                   , dfltColor ]
+          , fs <- [ retainedMsg targetId ms . colorWith promoteDemoteColor . T.concat $ [ selfSing
+                                                                                        , " has "
+                                                                                        , verb
+                                                                                        , " you "
+                                                                                        , toFrom
+                                                                                        , " admin status." ]
                   , sendFun                           . T.concat $ [ "You have ",       verb, " ", targetSing, "." ]
                   , bcastAdminsExcept [ i, targetId ] . T.concat $ [ selfSing, " has ", verb, " ", targetSing, "." ]
-                  , logNotice fn                      . T.concat $ [ selfSing, " ",     verb, " ", targetSing, "." ]
-                  , logPla    fn i                    . T.concat $ [ verb, " ",    targetSing, "." ]
-                  , logPla    fn targetId             . T.concat $ [ verb, " by ", selfSing,   "." ]
+                  , logNotice fn                      . T.concat $ [ selfSing, spaced verb,        targetSing, "." ]
+                  , logPla    fn i                    . T.concat $ [ verb, " ",                    targetSing, "." ]
+                  , logPla    fn targetId             . T.concat $ [ verb, " by ",                 selfSing,   "." ]
                   , handleIncog
                   , handlePeep ]
           -> if | targetId   == i      -> (ms, pure . sendFun $ sorrySudoerDemoteSelf)
@@ -886,7 +878,7 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the entity or room to which you want to \
                                                                 \teleport"
-            teleport targetId = case getType targetId ms of
+            teleport targetId   = case getType targetId ms of
               PCType -> dispatch (getRmId targetId ms) s
               RmType -> dispatch targetId . getRmName targetId $ ms
               _      -> dispatch findRm s
@@ -1026,28 +1018,24 @@ whoHelper inOrOut cn p@(ActionParams { plaId, args }) =
 
 
 mkCharListTxt :: LoggedInOrOut -> MudState -> [T.Text]
-mkCharListTxt inOrOut ms = let is               = IM.keys . IM.filter predicate $ ms^.plaTbl
-                               (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
-                               ias              = zip is' . styleAbbrevs Don'tQuote $ ss
-                               mkCharTxt (i, a) = let (s, r, l) = mkPrettifiedSexRaceLvl i ms
-                                                      name      = mkAnnotatedName i a
-                                                  in T.concat [ padName name
-                                                              , padSex  s
-                                                              , padRace r
-                                                              , l ]
-                               nop              = length is
-                           in mkWhoHeader ++ map mkCharTxt ias ++ [ T.concat [ showText nop
-                                                                             , " "
-                                                                             , pluralize ("person", "people") nop
-                                                                             , " "
-                                                                             , showText inOrOut
-                                                                             , "." ] ]
+mkCharListTxt inOrOut ms =
+    let is               = IM.keys . IM.filter predicate $ ms^.plaTbl
+        (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
+        ias              = zip is' . styleAbbrevs Don'tQuote $ ss
+        mkCharTxt (i, a) = let (s, r, l) = mkPrettifiedSexRaceLvl i ms
+                               name      = mkAnnotatedName i a
+                           in T.concat [ padName name, padSex s, padRace r, l ]
+        nop              = length is
+    in mkWhoHeader ++ map mkCharTxt ias ++ (pure .  T.concat $ [ showText nop
+                                                               , spaced . pluralize ("person", "people") $ nop
+                                                               , showText inOrOut
+                                                               , "." ])
   where
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn
                                           LoggedOut -> not . isLoggedIn
     mkAnnotatedName i a = let p     = getPla i ms
                               admin = isAdmin p     |?| asterisk
-                              incog = isIncognito p |?| (asteriskColor <> "@" <> dfltColor)
+                              incog = isIncognito p |?| colorWith asteriskColor "@"
                           in a <> admin <> incog
 
 

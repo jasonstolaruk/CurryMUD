@@ -482,10 +482,7 @@ sorryIndent = "The indent amount must be less than the line length."
 
 
 sorryInterpNameBanned :: Sing -> T.Text
-sorryInterpNameBanned s = T.concat [ bootMsgColor
-                                   , s
-                                   , " has been banned from CurryMUD!"
-                                   , dfltColor ]
+sorryInterpNameBanned s = colorWith bootMsgColor $ s <> " has been banned from CurryMUD!"
 
 
 sorryInterpNameDict :: T.Text
@@ -967,9 +964,7 @@ sorryTeleAlready = "You're already there!"
 sorryTeleRmName :: T.Text -> T.Text
 sorryTeleRmName n = T.concat [ dblQuote n
                              , " is not a valid room name. Type "
-                             , quoteColor
-                             , prefixAdminCmd "telerm"
-                             , dfltColor
+                             , colorWith quoteColor . prefixAdminCmd $ "telerm"
                              , " with no arguments to get a list of valid room names." ]
 
 
@@ -995,12 +990,7 @@ sorryTunedOutChan :: CmdName -> ShouldQuote -> T.Text -> T.Text
 sorryTunedOutChan x sq y = T.concat [ "You have tuned out the "
                                     , f y
                                     , " channel. Type "
-                                    , quoteColor
-                                    , x
-                                    , " "
-                                    , y
-                                    , "=in"
-                                    , dfltColor
+                                    , colorWith quoteColor . T.concat $ [ x, " ", y, "=in" ]
                                     , " to tune it back in." ]
   where
     f = case sq of DoQuote    -> dblQuote
@@ -1032,12 +1022,10 @@ sorryTwoWayTargetName cn s = T.concat [ "In a telepathic message to "
                                       , ", the only possible target is "
                                       , s
                                       , ". Please try "
-                                      , quoteColor
-                                      , T.singleton expCmdChar
-                                      , cn
-                                      , " "
-                                      , T.singleton . toLower . T.head $ s
-                                      , dfltColor
+                                      , colorWith quoteColor . T.concat $ [ T.singleton expCmdChar
+                                                                          , cn
+                                                                          , " "
+                                                                          , T.singleton . toLower . T.head $ s ]
                                       , " instead." ]
 
 
@@ -1082,4 +1070,4 @@ sorryWrapLineLen = T.concat [ "The line length must be between "
 
 
 sorryWtf :: T.Text
-sorryWtf = quoteWith' (wtfColor, dfltColor) "He don't."
+sorryWtf = colorWith wtfColor "He don't."

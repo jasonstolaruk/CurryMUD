@@ -218,7 +218,7 @@ debugColor :: Action
 debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefixDebugCmd "color") i
   where
     msg :: [] T.Text
-    msg = [ nl . T.concat $ [ pad 15 . showText $ ansi, mkColorDesc fg bg, ansi, " CurryMUD ", dfltColor ]
+    msg = [ nl $ (pad 15 . showText $ ansi) <> mkColorDesc fg bg <> (colorWith ansi . spaced $ "CurryMUD")
           | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
@@ -261,7 +261,7 @@ debugDispEnv p@(ActionParams { plaId, args }) = do
 mkEnvListTxt :: [(String, String)] -> [T.Text]
 mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
   where
-    mkAssocTxt (a, b) = T.concat [ envVarColor, a, ": ", dfltColor, b ]
+    mkAssocTxt (a, b) = colorWith envVarColor (a <> ": ") <> b
 
 
 -----
@@ -479,7 +479,7 @@ debugRemPut (NoArgs' i mq) = do
     mapM_ (fakeClientInput mq) . take 10 . cycle . map (<> rest) $ [ "remove", "put" ]
     logPlaExec (prefixDebugCmd "remput") i
   where
-    rest = (quoteWith " " . T.singleton $ allChar) <> ('r' `T.cons` selectorChar `T.cons` "sack")
+    rest = (spaced . T.singleton $ allChar) <> ('r' `T.cons` selectorChar `T.cons` "sack")
 debugRemPut p = withoutArgs debugRemPut p
 
 

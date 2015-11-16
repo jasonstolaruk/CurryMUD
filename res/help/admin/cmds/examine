@@ -5,7 +5,6 @@
 
 \uDESCRIPTION\n
 Display the properties of one or more IDs.
-This command gives you complete visibility into the observable state of all entities in the virtual world.
 
 \uEXAMPLES\n
 \q#dexamine 0\d to display the properties of ID 0.4`

@@ -30,7 +30,7 @@ styleAbbrevs sq fws = let abbrevs   = mkAbbrevs fws
                           helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
                                           f                     = case sq of DoQuote    -> bracketQuote
                                                                              Don'tQuote -> id
-                                      in f . T.concat $ [ abbrevColor, abbrev, dfltColor', rest ]
+                                      in f $ quoteWith' (abbrevColor, dfltColor') abbrev <> rest
                       in map helper fws
 
 

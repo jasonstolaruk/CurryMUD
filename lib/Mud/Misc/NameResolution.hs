@@ -317,15 +317,15 @@ sorryBadSlot n
 
 
 mkSlotTxt :: T.Text -> T.Text
-mkSlotTxt = (<> dfltColor) . (quoteColor <>) . dblQuote . (T.singleton slotChar <>)
+mkSlotTxt = colorWith quoteColor . dblQuote . (T.singleton slotChar <>)
 
 
 ringHelp :: T.Text
 ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", nl " immediately followed by:"
-                    , quoteColor, dblQuote "i", dfltColor, nl " for index finger,"
-                    , quoteColor, dblQuote "m", dfltColor, nl " for middle finger,"
-                    , quoteColor, dblQuote "r", dfltColor, nl " for ring finger, or"
-                    , quoteColor, dblQuote "p", dfltColor, nl " for pinky finger." ]
+                    , colorWith quoteColor (dblQuote "i") <> nl " for index finger,"
+                    , colorWith quoteColor (dblQuote "m") <> nl " for middle finger,"
+                    , colorWith quoteColor (dblQuote "r") <> nl " for ring finger, or"
+                    , colorWith quoteColor (dblQuote "p") <> nl " for pinky finger." ]
 
 
 procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv

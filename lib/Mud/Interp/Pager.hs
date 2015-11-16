@@ -13,6 +13,7 @@ import Mud.Data.State.Util.Output
 import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Util.Misc
+import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 
@@ -59,15 +60,13 @@ interpPager _ _ _ _ (ActionParams { plaMsgQueue, plaCols }) = promptRetry plaMsg
 
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()
 sendPagerPrompt mq pageLen txtLen =
-    prompt mq . T.concat $ [ pagerPromptColor
-                           , " [ "
-                           , showText pageLen
-                           , " of "
-                           , showText txtLen
-                           , " lines ("
-                           , uncurry (<>) . second (T.take 2) . T.breakOn "." . showText $ pageLen `divide` txtLen * 100
-                           , "%) ] "
-                           , dfltColor ]
+    prompt mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced . T.concat $ [ showText pageLen
+                                                                                         , " of "
+                                                                                         , showText txtLen
+                                                                                         , " lines "
+                                                                                         , parensQuote $ per <> "%" ]
+  where
+    per = uncurry (<>) . second (T.take 2) . T.breakOn "." . showText $ pageLen `divide` txtLen * 100
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()

@@ -278,11 +278,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                 return [ sentLogMsg, receivedLogMsg ]
               where
                 adminPla  = getPla adminId ms
-                formatted = T.concat [ parensQuote $ "to " <> adminSing
-                                     , " "
-                                     , quoteWith "__" s
-                                     , " "
-                                     , toSelf ]
+                formatted = parensQuote ("to " <> adminSing) <> spaced (quoteWith "__" s) <> toSelf
                 sentLogMsg     = (i,       T.concat [ "sent message to ", adminSing, ": ", toSelf  ])
                 receivedLogMsg = (adminId, T.concat [ "received message from ", s,   ": ", toAdmin ])
             ioHelper _ xs = patternMatchFail "admin helper ioHelper" [ showText xs ]
@@ -349,10 +345,10 @@ mkBar :: Int -> T.Text -> (Int, Int) -> T.Text
 mkBar x txt (c, m) = let ratio  = c `divide` m
                          greens = round $ fromIntegral x * ratio
                          reds   = x - greens
-                     in T.concat [ T.toUpper txt -- TODO: Ok?
+                     in T.concat [ T.toUpper txt
                                  , ": "
-                                 , quoteWith' (greenBarColor, dfltColor) . T.replicate greens $ " "
-                                 , quoteWith' (redBarColor,   dfltColor) . T.replicate reds   $ " "
+                                 , colorWith greenBarColor . T.replicate greens $ " "
+                                 , colorWith redBarColor   . T.replicate reds   $ " "
                                  , " "
                                  , showText . round $ 100 * ratio
                                  , "%" ]
@@ -431,7 +427,7 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          ts <- liftIO mkTimestamp
                          withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ logMsg
                      sendToWiretappers tappedMsg =
-                         let cn' = quoteWith' (wiretapColor <> " ", " " <> dfltColor) . parensQuote $ cn
+                         let cn' = colorWith wiretapColor . spaced . parensQuote $ cn
                              is  = c^.wiretappers.to (map (`getIdForPCSing` ms))
                              is' = filter (isLoggedIn . (`getPla` ms)) is
                          in bcastNl . pure $ (T.concat [ cn', " ", s, ": ", tappedMsg ], is')
@@ -468,13 +464,13 @@ clear p              = withoutArgs clear p
 color :: Action
 color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
   where
-    msg = [ nl . T.concat $ [ mkColorDesc fg bg, ansi, " CurryMUD ", dfltColor ]
+    msg = [ nl . T.concat $ [ mkColorDesc fg bg, colorWith ansi . spaced $  "CurryMUD" ]
           | fgc <- colors, bgc <- colors, fgc /= bgc
           , let fg = (Dull, fgc), let bg = (Dull, bgc), let ansi = mkColorANSI fg bg ] ++ other
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName                                         = padColorName . showText . snd
-    other = [ nl . T.concat $ [ pad 19 "Blinking",   blink     " CurryMUD " ]
-            , nl . T.concat $ [ pad 19 "Underlined", underline " CurryMUD " ] ]
+    other = [ nl . T.concat $ [ pad 19 "Blinking",   blink     . spaced $ "CurryMUD" ]
+            , nl . T.concat $ [ pad 19 "Underlined", underline . spaced $ "CurryMUD" ] ]
 color p = withoutArgs color p
 
 
@@ -800,12 +796,7 @@ mkExpCmdListTxt =
                                                      T.replace "@" "Hanako" toSelfWithTarget ]
       where
         paddedName         = padCmdName styled
-        mkInitialTxt input = T.concat [ quoteWith' (quoteColor, dfltColor) input
-                                      , " "
-                                      , arrowColor
-                                      , "->"
-                                      , dfltColor
-                                      , " " ]
+        mkInitialTxt input = colorWith quoteColor input <> spaced (colorWith arrowColor "->")
 
 
 -----
@@ -867,7 +858,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
                                  & invTbl.ind originId %~ (i `delete`)
                                  & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
                 msgAtOrigin = nlnl $ case maybeOriginMsg of
-                                Nothing  -> T.concat [ serialize originDesig, " ", verb, " ", expandLinkName dir, "." ]
+                                Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
                                 Just msg -> T.replace "%" (serialize originDesig) msg
                 msgAtDest   = let destDesig = mkSerializedNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
                                 Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
@@ -1060,9 +1051,7 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                         , " introduces "
                                                         , himHerself
                                                         , " to you as "
-                                                        , knownNameColor
-                                                        , s
-                                                        , dfltColor
+                                                        , colorWith knownNameColor s
                                                         , "." ]
                         othersMsg   = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
                                                         , " introduces "
@@ -1245,9 +1234,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                 oneTwoWay | isTwoWay  = "two-way"
                           | otherwise = "one-way"
                 targetMsg = nlnl . T.concat $ [ "You sense an ephemeral blip in your psionic energy field as "
-                                              , knownNameColor
-                                              , s
-                                              , dfltColor
+                                              , colorWith knownNameColor s
                                               , " establishes a telepathic connection from "
                                               , mkPossPro . getSex i $ ms
                                               , " mind to yours."
@@ -1346,18 +1333,11 @@ mkRmInvCoinsDesc i cols ms ri =
   where
     splitPCsOthers                       = (both %~ map snd) . span fst
     mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s
-                                             then knownNameColor   <> s       <> dfltColor
-                                             else unknownNameColor <> aOrAn s <> dfltColor
-    mkPCDesc    (en, c, b     )          = T.concat [ unknownNameColor
-                                                    , showText c
-                                                    , " "
-                                                    , mkPlurFromBoth b
-                                                    , dfltColor
-                                                    , " "
-                                                    , en ]
+                                             then colorWith knownNameColor s
+                                             else colorWith unknownNameColor . aOrAn $ s
+    mkPCDesc    (en, c, b     ) = colorWith unknownNameColor (showText c <> " " <> mkPlurFromBoth b) <> " " <> en
     mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAnOnLower s <> " " <> en
-    mkOtherDesc (en, c, b     )          = T.concat [ showText c, " ", mkPlurFromBoth b, " ", en ]
-
+    mkOtherDesc (en, c, b     )          = showText c <> spaced (mkPlurFromBoth b) <> en
 
 mkIsPC_StyledName_Count_BothList :: Id -> MudState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
 mkIsPC_StyledName_Count_BothList i ms targetIds =
@@ -2547,7 +2527,8 @@ unlink (LowerNub i mq cols as) =
                       | targetId <- getIdForPCSing targetSing ms'
                       , s        <- getSing i ms
                       , srcMsg   <- T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
-                      , targetBs <- let bs = mkBroadcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
+                      , targetBs <- let bs       = mkBroadcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
+                                        colorize = colorWith unlinkColor
                                     in (isLoggedIn . getPla targetId $ ms') |?| bs
                       , ms''     <- ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
                                         & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
@@ -2557,7 +2538,6 @@ unlink (LowerNub i mq cols as) =
                       = a & _1 .~  ms''
                           & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                           & _3 <>~ pure targetSing
-                    colorize = quoteWith' (unlinkColor, dfltColor)
             in helper |&| modifyState >=> \(bs, logMsgs) -> bcast (g bs) >> logMsgs |#| logPla "unlink" i . slashes
 unlink p = patternMatchFail "unlink" [ showText p ]
 
@@ -2609,20 +2589,16 @@ mkUnreadyDescs :: Id
 mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
   where
     helper (targetId, count, b@(targetSing, _)) = if count == 1
-      then let toSelfMsg   = T.concat [ "You ",           mkVerb targetId SndPer, " the ",   targetSing, "." ]
-               toOthersMsg = T.concat [ serialize d, " ", mkVerb targetId ThrPer, " ", aOrAn targetSing, "." ]
+      then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
+               toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing,  "." ]
            in ((toOthersMsg, otherPCIds) : mkBroadcast i toSelfMsg, toSelfMsg)
       else let toSelfMsg   = T.concat [ "You "
                                       , mkVerb targetId SndPer
-                                      , " "
-                                      , showText count
-                                      , " "
+                                      , spaced . showText $ count
                                       , mkPlurFromBoth b
                                       , "." ]
                toOthersMsg = T.concat [ serialize d
-                                      , " "
-                                      , mkVerb targetId ThrPer
-                                      , " "
+                                      , spaced . mkVerb targetId $ ThrPer
                                       , showText count
                                       , " "
                                       , mkPlurFromBoth b
@@ -2683,11 +2659,8 @@ uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime
   where
     helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
     mkUptimeTxt    = mkTxtHelper "."
-    mkNewRecTxt    = mkTxtHelper . T.concat $ [ " - "
-                                              , newRecordColor
-                                              , "it's a new record!"
-                                              , dfltColor ]
-    mkRecTxt recUp = mkTxtHelper $ " (record uptime: " <> renderIt recUp <> ")."
+    mkNewRecTxt    = mkTxtHelper $ " - " <> colorWith newRecordColor "it's a new record!"
+    mkRecTxt recUp = mkTxtHelper $ " " <> parensQuote ("record uptime: " <> renderIt recUp) <> "."
     mkTxtHelper    = ("Up " <>) . (renderIt up <>)
     renderIt       = T.pack . renderSecs . fromIntegral
 
@@ -2775,5 +2748,9 @@ whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPla
   where
     helper ms = let s         = getSing i ms
                     (sexy, r) = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
-                in return . T.concat $ [ "You are ", knownNameColor, s, dfltColor, " (a ", sexy, " ", r, ")." ]
+                in return . T.concat $ [ "You are "
+                                       , colorWith knownNameColor s
+                                       , " "
+                                       , parensQuote . T.concat $ [ "a ", sexy, " ", r ]
+                                       , "." ]
 whoAmI p = withoutArgs whoAmI p

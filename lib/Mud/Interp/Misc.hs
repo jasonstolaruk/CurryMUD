@@ -7,7 +7,6 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Misc.ANSI
 import Mud.Util.Misc
-import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Data.Monoid ((<>))
@@ -16,7 +15,7 @@ import qualified Data.Text as T
 
 mkPrompt :: Id -> MudState -> T.Text
 mkPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
-                    indent               = quoteWith' (promptIndentColor, dfltColor) . T.replicate 5 $ " "
+                    indent               = colorWith promptIndentColor . T.replicate 5 $ " "
                 in indent <> " " <> spaces [ f "h" hps
                                            , f "m" mps
                                            , f "p" pps
@@ -28,4 +27,4 @@ mkPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
                               | per > 10  -> red
                               | otherwise -> magenta
                      per = round $ x `divide` y * 100
-                 in quoteWith' (c, dfltColor) a <> showText x
+                 in colorWith c a <> showText x

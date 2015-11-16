@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.ANSI ( abbrevColor
                      , adminBroadcastColor
@@ -12,6 +12,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , bootMsgColor
                      , colorizeFileTxt
                      , colors
+                     , colorWith
                      , cyan
                      , dfltColor
                      , dfltColor'
@@ -109,6 +110,10 @@ mkBgColorANSI bg = T.pack . setSGRCode $ [ uncurry (SetColor Background) bg ]
 
 mkColorANSI :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> T.Text
 mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
+
+
+colorWith :: T.Text -> T.Text -> T.Text
+colorWith = quoteWith' . (, dfltColor)
 
 
 blink :: T.Text -> T.Text
@@ -315,8 +320,8 @@ zingColor = red
 
 
 colorizeFileTxt :: T.Text -> T.Text -> T.Text
-colorizeFileTxt c t | T.last t == '\n' = nl . T.concat $ [ c, T.init t, dfltColor ]
-                    | otherwise        = c <> t <> dfltColor
+colorizeFileTxt c t | T.last t == '\n' = nl . colorWith c . T.init $ t
+                    | otherwise        = colorWith c t
 
 
 -----

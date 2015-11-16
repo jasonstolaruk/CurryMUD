@@ -143,7 +143,7 @@ logPla = L.logPla "Mud.Cmds.Util.Misc"
 
 
 asterisk :: T.Text
-asterisk = quoteWith' (asteriskColor, dfltColor) "*"
+asterisk = colorWith asteriskColor "*"
 
 
 -----
@@ -199,7 +199,7 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
                        in [ checkProrityAbbrev a | a <- zip3 cmdNames cmdPAs styledCmdNames ]
   where
     checkProrityAbbrev (_,  Nothing,  scn) = scn
-    checkProrityAbbrev (cn, Just cpa, _  ) = T.concat [ abbrevColor, cpa, dfltColor, fromJust . T.stripPrefix cpa $ cn ]
+    checkProrityAbbrev (cn, Just cpa, _  ) = colorWith abbrevColor cpa <> (fromJust . T.stripPrefix cpa $ cn)
 
 
 -----
@@ -411,7 +411,7 @@ happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . rights $ xformed
                          where
                            helper k v = let targetSing = getSing k ms |&| (isPoss ? (<> "'s") :? id)
                                         in (: v) $ if k == targetId
-                                          then T.concat [ emoteTargetColor, targetSing, dfltColor, p ]
+                                          then colorWith emoteTargetColor targetSing <> p
                                           else word
                        toTargetBs = IM.foldlWithKey' helper [] msgMap'
                          where
@@ -510,8 +510,8 @@ inOut False = "out"
 
 
 loggedInOutColorize :: Bool -> T.Text
-loggedInOutColorize True  = loggedInOutHelper (quoteWith' (loggedInColor, dfltColor)) True
-loggedInOutColorize False = loggedInOutHelper id                                      False
+loggedInOutColorize True  = loggedInOutHelper (colorWith loggedInColor) True
+loggedInOutColorize False = loggedInOutHelper id                        False
 
 
 -----
@@ -690,8 +690,8 @@ tunedInOutHelper f = ("tuned " <>) . f . inOut
 
 
 tunedInOutColorize :: Bool -> T.Text
-tunedInOutColorize True  = tunedInOutHelper (quoteWith' (tunedInColor, dfltColor)) True
-tunedInOutColorize False = tunedInOutHelper id                                     False
+tunedInOutColorize True  = tunedInOutHelper (colorWith tunedInColor) True
+tunedInOutColorize False = tunedInOutHelper id                       False
 
 
 -----
