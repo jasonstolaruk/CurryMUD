@@ -139,6 +139,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorrySudoerDemoteRoot
                             , sorrySudoerDemoteSelf
                             , sorryTeleAlready
+                            , sorryTeleLoggedOutRm
                             , sorryTeleRmName
                             , sorryTeleSelf
                             , sorryTunedOutChan
@@ -959,6 +960,10 @@ sorrySudoerDemoteSelf = "You can't demote yourself."
 
 sorryTeleAlready :: T.Text
 sorryTeleAlready = "You're already there!"
+
+
+sorryTeleLoggedOutRm :: T.Text
+sorryTeleLoggedOutRm = "You can't teleport to the logged out room."
 
 
 sorryTeleRmName :: T.Text -> T.Text

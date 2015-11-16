@@ -65,6 +65,7 @@ concatMapM  :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = fmap concat . mapM f
 
 
+-- TODO: Write a debug command that blows up ("blowUp" is called by "patternMatchFail") and confirm that you like how the log looks.
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
 blowUp modName funName msg (bracketQuote . T.intercalate "" . map singleQuote -> vals) =
     error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, ". ", vals ]

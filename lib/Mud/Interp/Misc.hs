@@ -15,8 +15,8 @@ import qualified Data.Text as T
 
 mkPrompt :: Id -> MudState -> T.Text
 mkPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
-                    indent               = colorWith promptIndentColor . T.replicate 5 $ " "
-                in indent <> " " <> spaces [ f "h" hps
+                    marker               = colorWith promptIndentColor " "
+                in marker <> " " <> spaces [ f "h" hps
                                            , f "m" mps
                                            , f "p" pps
                                            , f "f" fps ]

@@ -27,16 +27,17 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Persist
+import Mud.TheWorld.AdminZoneIds
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List hiding (headTail)
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), first, second)
 import Control.Concurrent.STM (atomically)
@@ -45,7 +46,7 @@ import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 import Control.Lens (_1, _2, _3, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
-import Control.Monad ((>=>), forM_, unless, when)
+import Control.Monad ((>=>), forM_, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
 import Data.Either (rights)
@@ -57,7 +58,7 @@ import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime,
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, size, toList)
-import qualified Data.Map.Lazy as M (foldl, foldrWithKey, toList)
+import qualified Data.Map.Lazy as M (elems, foldl, foldrWithKey, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Process (readProcess)
@@ -69,6 +70,10 @@ default (Int)
 
 
 -----
+
+
+blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp = U.blowUp "Mud.Cmds.Admin"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -644,7 +649,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
               | isLoggedIn targetPla ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
-                      f (iRoot, "Root")      = let rootPla = getPla iRoot ms
+                      f (_, "Root")          = let rootPla = getPla iRoot ms
                                                in isLoggedIn rootPla && (not . isIncognito $ rootPla)
                       f _                    = True
                       me                     = head . filter g . styleAbbrevs Don'tQuote $ adminSings
@@ -878,24 +883,37 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the entity or room to which you want to \
                                                                 \teleport"
-            teleport targetId   = case getType targetId ms of
-              PCType -> dispatch (getRmId targetId ms) s
-              RmType -> dispatch targetId . getRmName targetId $ ms
-              _      -> dispatch findRm s
+            teleport targetId       = either sorry dispatch . findDestIdName $ targetId
+            findDestIdName targetId = case getType targetId ms of
+              PCType -> let ri = getRmId targetId ms in if ri == iLoggedOut
+                          then Left sorryTeleLoggedOutRm
+                          else Right (ri, getSing targetId ms)
+              RmType -> if targetId == iLoggedOut
+                          then Left sorryTeleLoggedOutRm
+                          else Right (targetId, getRmName targetId ms)
+              _      -> maybe oops findDestIdName $ searchInvs `mplus` searchEqs
               where
-                s      = getSing targetId ms
-                findRm = undefined -- TODO
-            dispatch destId name
+                searchInvs = case views invTbl (IM.keys . IM.filter (targetId `elem`)) ms of -- TODO: listToMaybe
+                  []  -> Nothing
+                  [x] -> Just x
+                  xs  -> patternMatchFail "adminTeleId helper findDestIdName searchInvs" [ showText xs ]
+                searchEqs = case views eqTbl (IM.keys . IM.filter ((targetId `elem`) . M.elems)) ms of
+                  []  -> Nothing
+                  [x] -> Just x
+                  xs  -> patternMatchFail "adminTeleId helper findDestIdName searchEqs" [ showText xs ]
+                oops = blowUp "adminTeleId helper findDestIdName" "ID is in limbo" [ showText targetId ]
+            dispatch (destId, destName)
               | destId == i        = sorry sorryTeleSelf
               | destId == originId = sorry sorryTeleAlready
-              | otherwise          = teleHelper i ms p { args = [] } originId destId name consSorryBroadcast
+              | otherwise          = teleHelper i ms p { args = [] } originId destId destName consSorryBroadcast
             originId  = getRmId i ms
             sorry txt = (ms, pure . sendFun $ txt)
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
-          [(targetId, "")] | targetId < 0                                -> sorry sorryWtf
-                           | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget
-                           | otherwise                                   -> teleport targetId
-          _                                                              -> sorry . sorryParseId $ strippedTarget
+          [(targetId, "")]
+            | targetId < 0                                -> sorry sorryWtf
+            | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId . uncapitalize $ strippedTarget
+            | otherwise                                   -> teleport targetId
+          _                                               -> sorry . sorryParseId . uncapitalize $ strippedTarget
 adminTeleId (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATeleIdExcessArgs
 
 
@@ -907,7 +925,7 @@ teleHelper :: Id
            -> T.Text
            -> (Id -> [Broadcast] -> [Broadcast])
            -> (MudState, [MudStack ()])
-teleHelper i ms p originId destId name f =
+teleHelper i ms p originId destId destName f =
     let originDesig = mkStdDesig i ms Don'tCap
         originPCIds = i `delete` pcIds originDesig
         s           = fromJust . stdPCEntSing $ originDesig
@@ -920,9 +938,9 @@ teleHelper i ms p originId destId name f =
                                          , (nlnl . teleOriginMsg . serialize $ originDesig, originPCIds)
                                          , (nlnl . teleDestMsg               $ destDesig,   destPCIds  ) ]
              , look p
+             , logPla "telehelper" i $ "teleported to " <> dblQuote destName <> "."
              , rndmDos [ (calcProbTeleVomit   i ms, mkExpAction "vomit"   p)
-                       , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ]
-             , logPla "telehelper" i $ "teleported to " <> dblQuote name <> "." ])
+                       , (calcProbTeleShudder i ms, mkExpAction "shudder" p) ] ])
 
 
 -----
