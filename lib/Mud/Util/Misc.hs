@@ -66,10 +66,9 @@ concatMapM  :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = fmap concat . mapM f
 
 
--- TODO: Write a debug command that blows up ("blowUp" is called by "patternMatchFail") and confirm that you like how the log looks.
 blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
-blowUp modName funName msg (bracketQuote . T.intercalate "" . map singleQuote -> vals) =
-    error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, ". ", vals ]
+blowUp modName funName msg (T.intercalate ", " . map backQuote -> vals) =
+    error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, "; values: ", vals ]
 
 
 divide :: (Integral a, Fractional b) => a -> a -> b
@@ -163,9 +162,9 @@ mkTimestamp :: IO T.Text
 mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeTxt ]
 
 
-onLeft :: (a -> c) -> Either a b -> Either c b
-onLeft f (Left a) = Left . f $ a
-onLeft _ _        = blowUp "Mud.Util.Misc" "onLeft" "Right" []
+onLeft :: (Show a, Show b) => (a -> c) -> Either a b -> Either c b
+onLeft f (Left  a) = Left . f $ a
+onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" [ T.pack . show $ x ]
 
 
 patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a

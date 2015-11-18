@@ -110,6 +110,7 @@ debugCmds =
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
+    , mkDebugCmd "pmf"        debugPmf         "Trigger a pattern match failure."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
     , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
     , mkDebugCmd "regen"      debugRegen       "Display regen amounts and delays for a given mob ID."
@@ -419,10 +420,18 @@ debugOut p = withoutArgs debugOut p
 
 
 debugPersist :: Action
-debugPersist (NoArgs' i mq) = do
-    replicateM_ 10 $ persist >> ok mq
-    logPlaExec (prefixDebugCmd "persist") i
-debugPersist p = withoutArgs debugPersist p
+debugPersist (NoArgs' i mq) = replicateM_ 10 (persist >> ok mq) >> logPlaExec (prefixDebugCmd "persist") i
+debugPersist p              = withoutArgs debugPersist p
+
+
+-----
+
+
+debugPmf :: Action
+debugPmf (NoArgs'' i) = do
+    logPlaExec (prefixDebugCmd "pmf") i
+    patternMatchFail "debugPmf" [ "text", showText [ "list" :: T.Text, "of", "text" ], showText [ 0 .. 9 ] ]
+debugPmf p = withoutArgs debugPmf p
 
 
 -----
