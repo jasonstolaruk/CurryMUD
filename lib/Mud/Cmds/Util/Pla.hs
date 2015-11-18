@@ -614,7 +614,7 @@ findAvailSlot em = find (isSlotAvail em)
 
 
 maybeSingleSlot :: EqMap -> Slot -> Maybe Slot
-maybeSingleSlot em s = toMaybe (isSlotAvail em s) s
+maybeSingleSlot em s = boolToMaybe (isSlotAvail em s) s
 
 
 -----

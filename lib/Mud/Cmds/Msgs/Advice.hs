@@ -8,6 +8,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAdverbCloseChar
                             , adviceAExamineNoArgs
                             , adviceAHostNoArgs
+                            , adviceALocateNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
@@ -144,6 +145,10 @@ adviceAExamineNoArgs = "Please provide one or more IDs to examine."
 
 adviceAHostNoArgs :: T.Text
 adviceAHostNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
+
+
+adviceALocateNoArgs :: T.Text
+adviceALocateNoArgs = "Please provide one or more IDs to locate."
 
 
 adviceAMsgNoArgs :: T.Text

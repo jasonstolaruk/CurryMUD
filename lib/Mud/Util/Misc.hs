@@ -2,6 +2,7 @@
 
 module Mud.Util.Misc ( atLst1
                      , blowUp
+                     , boolToMaybe
                      , concatMapM
                      , divide
                      , dropFst
@@ -17,6 +18,7 @@ module Mud.Util.Misc ( atLst1
                      , ifThenElse
                      , ind
                      , isVowel
+                     , listToMaybe
                      , maybeRet
                      , maybeVoid
                      , mIf
@@ -28,7 +30,6 @@ module Mud.Util.Misc ( atLst1
                      , patternMatchFail
                      , reverseLookup
                      , sortEithers
-                     , toMaybe
                      , unadulterated
                      , uncurry3
                      , uncurry4
@@ -182,8 +183,14 @@ sortEithers = foldr helper ([], [])
     helper (Left  b) acc = acc & _2 %~ (b :)
 
 
-toMaybe :: Bool -> a -> Maybe a
-toMaybe b = (guard b >>) . return
+boolToMaybe :: Bool -> a -> Maybe a
+boolToMaybe b = (guard b >>) . return
+
+
+listToMaybe :: (Show a) => [a] -> Maybe a
+listToMaybe []  = Nothing
+listToMaybe [a] = Just a
+listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" [ T.pack . show $ xs ]
 
 
 unadulterated :: (Monad m) => (Applicative f) => a -> m (f a)

@@ -33,11 +33,13 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isLinked
                           , isPlaBanned
                           , isPunc
+                          , locateHelper
                           , loggedInOut
                           , loggedInOutColorize
                           , mkActionParams
                           , mkChanReport
                           , mkInterfaceList
+                          , mkNameTypeIdDesc
                           , mkPossPro
                           , mkPrettifiedSexRaceLvl
                           , mkPros
@@ -82,21 +84,21 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List hiding (headTail)
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logPla)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), second)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (?~), (^.))
-import Control.Monad ((>=>), forM, unless, when)
+import Control.Monad ((>=>), forM, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
 import Data.Either (rights)
@@ -105,7 +107,7 @@ import Data.List (delete, intercalate, nub, partition, sortBy, unfoldr)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
 import Prelude hiding (exp)
-import qualified Data.IntMap.Lazy as IM (IntMap, empty, foldlWithKey', foldr, fromList, map, mapWithKey)
+import qualified Data.IntMap.Lazy as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey)
 import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -118,6 +120,10 @@ import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionEr
 
 
 -----
+
+
+blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp = U.blowUp "Mud.Cmds.Util.Misc"
 
 
 patternMatchFail :: T.Text -> [T.Text] -> a
@@ -439,6 +445,13 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 -----
 
 
+isAwake :: Id -> MudState -> Bool
+isAwake i ms = let p = getPla i ms in isLoggedIn p && (not . isIncognito $ p)
+
+
+-----
+
+
 isHeDon't :: Char -> T.Text -> Bool
 isHeDon't c msg = msg == T.singleton c <> "."
 
@@ -496,6 +509,20 @@ isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPla
 -----
 
 
+locateHelper :: MudState -> [T.Text] -> Id -> (Id, T.Text)
+locateHelper ms txts i = case getType i ms of
+  RmType -> (i, commas txts)
+  _      -> maybe oops (uncurry (locateHelper ms)) $ searchInvs `mplus` searchEqs
+  where
+    searchInvs = views invTbl (fmap (mkDescId "in"         ) . listToMaybe . IM.keys . IM.filter ( i `elem`)           ) ms
+    searchEqs  = views eqTbl  (fmap (mkDescId "equipped by") . listToMaybe . IM.keys . IM.filter ((i `elem`) . M.elems)) ms
+    mkDescId txt targetId = ((txts ++) . pure $ txt <> " " <> mkNameTypeIdDesc targetId ms, targetId)
+    oops                  = blowUp "locateHelper" "ID is in limbo" [ showText i ]
+
+
+-----
+
+
 loggedInOut :: Bool -> T.Text
 loggedInOut = loggedInOutHelper id
 
@@ -517,18 +544,20 @@ loggedInOutColorize False = loggedInOutHelper id                        False
 -----
 
 
-isAwake :: Id -> MudState -> Bool
-isAwake i ms = let p = getPla i ms in isLoggedIn p && (not . isIncognito $ p)
-
-
------
-
-
 mkInterfaceList :: IO T.Text
 mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.concat [ showText . NI.name $ n
                                                                                   , ": "
                                                                                   , showText . NI.ipv4 $ n ]
                                                                        | n <- ns ]
+
+
+-----
+
+
+mkNameTypeIdDesc :: Id -> MudState -> T.Text
+mkNameTypeIdDesc i ms = let (n, typeTxt) = case getType i ms of RmType -> (getRmName i ms, pp RmType)
+                                                                t      -> (getSing   i ms, pp t     )
+                        in n <> spaced (parensQuote typeTxt) <> bracketQuote (showText i)
 
 
 -----
