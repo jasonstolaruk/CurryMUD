@@ -44,7 +44,6 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryGoExit
                             , sorryGoParseDir
                             , sorryHelpName
-                            , sorryHostIgnore
                             , sorryIgnoreLocPref
                             , sorryIgnoreLocPrefPlur
                             , sorryIncog
@@ -77,7 +76,6 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryLoggedOut
                             , sorryLookNothingHere
                             , sorryMsgIncog
-                            , sorryMyChansIgnore
                             , sorryNewChanExisting
                             , sorryNewChanName
                             , sorryNoAdmins
@@ -96,7 +94,6 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryPCName
                             , sorryPCNameLoggedIn
                             , sorryPeepAdmin
-                            , sorryPeepIgnore
                             , sorryPeepSelf
                             , sorryPp
                             , sorryPutExcessCon
@@ -461,13 +458,6 @@ sorryHelpName t = "No help is available on " <> dblQuote t <> "."
 -----
 
 
-sorryHostIgnore :: T.Text
-sorryHostIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose host statistics you would like to see"
-
-
------
-
-
 sorryIncog :: T.Text -> T.Text
 sorryIncog cn = "You can't use the " <> dblQuote cn <> " command while incognito."
 
@@ -625,14 +615,6 @@ sorryMsgIncog = "You can't send a message to a player who is logged in while you
 -----
 
 
-sorryMyChansIgnore :: T.Text
-sorryMyChansIgnore = sorryIgnoreLocPrefPlur "The PC names of the players whose channel information you would like to \
-                                            \see"
-
-
------
-
-
 sorryNewChanExisting :: ChanName -> T.Text
 sorryNewChanExisting cn = "You are already connected to a channel named " <> dblQuote cn <> "."
 
@@ -737,10 +719,6 @@ sorryParseSetting value name = T.concat [ dblQuote value, " is not a valid value
 
 sorryPeepAdmin :: T.Text
 sorryPeepAdmin = "You can't peep an admin."
-
-
-sorryPeepIgnore :: T.Text
-sorryPeepIgnore = sorryIgnoreLocPrefPlur "The PC names of the players you wish to start or stop peeping"
 
 
 sorryPeepSelf :: T.Text

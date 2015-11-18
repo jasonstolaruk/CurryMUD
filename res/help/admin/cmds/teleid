@@ -1,0 +1,12 @@
+\h #dTELEID \d
+
+\uUSAGE\n
+#dteleid ID
+
+\uDESCRIPTION\n
+Teleport to an entity or room by ID.
+
+\uEXAMPLES\n
+\q#dteleid 100\d to teleport to ID 100.4`
+
+\uSEE ALSO\n
