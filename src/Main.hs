@@ -46,8 +46,8 @@ main = withSocketsDo $ do
 welcome :: IO ()
 welcome = do
     un <- getEnv "USER"
-    mn <- whatsMyName
+    mn <- what'sMyName
     T.putStrLn . nl . T.concat $ [ "Hello, ", T.pack un, ". Welcome to ", dblQuote mn, " ver ", ver, "." ]
   where
-    whatsMyName = getProgName >>= \mn ->
-        return (mn == "<interactive>" ? "Y U NO COMPILE ME?" :? T.pack mn)
+    what'sMyName = getProgName >>= \n ->
+        return (n == "<interactive>" ? "Y U NO COMPILE ME?" :? T.pack n)

@@ -35,6 +35,6 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
                (sequence_ [ liftIO $ atomically . writeTQueue mq . FromClient . remDelimiters =<< T.hGetLine h
                           , loop ])
     remDelimiters = T.foldr helper ""
-    helper c acc | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
-                 | otherwise                             = acc
-    delimiters = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
+    helper c acc  | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
+                  | otherwise                             = acc
+    delimiters    = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]

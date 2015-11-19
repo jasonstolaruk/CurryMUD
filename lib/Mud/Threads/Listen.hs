@@ -82,7 +82,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     proceed = do
         initialize
         logNotice "listen proceed" $ "listening for incoming connections on port " <> showText port <> "."
-        sock <- liftIO . listenOn . PortNumber . fromIntegral $ port
+        sock      <- liftIO . listenOn . PortNumber . fromIntegral $ port
         auxAsyncs <- mapM runAsync [ threadAdminChanTblPurger
                                    , threadAdminMsgTblPurger
                                    , threadChanTblPurger
@@ -99,8 +99,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         logInterfaces
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" $ "server network interfaces: " <> ifList <> "."
-    loop sock = let fn = "listen loop" in do
-        (h, host@(T.pack -> host'), localPort) <- liftIO . accept $ sock
+    loop sock = let fn = "listen loop" in (liftIO . accept $ sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
         logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
           Just (Any False) -> runTalkAsync h host
