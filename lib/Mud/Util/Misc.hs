@@ -56,6 +56,15 @@ infixl 7 `divide`
 -- ==================================================
 
 
+-- TODO: Make a typeclass. Move.
+boolToMaybe :: Bool -> a -> Maybe a
+boolToMaybe b = (guard b >>) . return
+listToMaybe :: (Show a) => [a] -> Maybe a
+listToMaybe []  = Nothing
+listToMaybe [a] = Just a
+listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" [ T.pack . show $ xs ]
+
+
 atLst1 :: (Eq a, Num a) => a -> a
 atLst1 x = case signum x of -1 -> 1
                             0  -> 1
@@ -181,16 +190,6 @@ sortEithers = foldr helper ([], [])
   where
     helper (Right a) acc = acc & _1 %~ (a :)
     helper (Left  b) acc = acc & _2 %~ (b :)
-
-
-boolToMaybe :: Bool -> a -> Maybe a
-boolToMaybe b = (guard b >>) . return
-
-
-listToMaybe :: (Show a) => [a] -> Maybe a
-listToMaybe []  = Nothing
-listToMaybe [a] = Just a
-listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" [ T.pack . show $ xs ]
 
 
 unadulterated :: (Monad m) => (Applicative f) => a -> m (f a)
