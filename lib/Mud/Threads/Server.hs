@@ -52,7 +52,7 @@ threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
 threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThreadExHandler "server" i ]
   where
     loop = mq |&| liftIO . atomically . readTQueue >=> \case
-      Dropped        ->                                  sayonara
+      Dropped        ->                                 sayonara
       FromClient msg -> handleFromClient i mq tq msg >> loop
       FromServer msg -> handleFromServer i h msg     >> loop
       InacBoot       -> sendInacBootMsg h            >> sayonara

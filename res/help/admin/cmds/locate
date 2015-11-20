@@ -1,0 +1,13 @@
+\h #dLOCATE \d
+
+\uUSAGE\n
+#dlocate ID \s...\d
+
+\uDESCRIPTION\n
+Locate one or more IDs.
+
+\uEXAMPLES\n
+\q#dlocate 100\d to describe the location of ID 100.4`
+\q#dlocate 100 101\d to describe the locations of IDs 100 and 101.4`
+
+\uSEE ALSO\n

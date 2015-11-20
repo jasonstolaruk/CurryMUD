@@ -25,7 +25,6 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
-import Mud.Misc.LocPref
 import Mud.Misc.Persist
 import Mud.TheWorld.AdminZoneIds
 import Mud.TopLvlDefs.Misc
@@ -110,7 +109,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Can an admin possess a mob?
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
@@ -549,14 +547,10 @@ adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
 adminHost (LowerNub i mq cols as) = do
     ms          <- getState
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
-    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryHostIgnore)
-                       | otherwise         = (id,           ""             )
-        g = ()# guessWhat ? id :? (guessWhat :)
-        helper target =
-            let notFound = pure . sorryPCName $ target
-                found    = uncurry (mkHostReport ms now zone)
-            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    multiWrapSend mq cols . g . intercalate [""] . map (helper . capitalize . T.toLower . f) $ as
+    let helper target = let notFound = pure . sorryPCName $ target
+                            found    = uncurry (mkHostReport ms now zone)
+                        in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+    multiWrapSend mq cols . intercalate [""] . map (helper . capitalize . T.toLower) $ as
     logPlaExec (prefixAdminCmd "host") i
 adminHost p = patternMatchFail "adminHost" [ showText p ]
 
@@ -624,7 +618,6 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
--- TODO: Help.
 adminLocate :: Action
 adminLocate p@AdviseNoArgs          = advise p [ prefixAdminCmd "locate" ] adviceALocateNoArgs
 adminLocate (LowerNub i mq cols as) = getState >>= \ms ->
@@ -708,21 +701,17 @@ firstAdminMsg i adminSing =
 adminMyChans :: Action
 adminMyChans p@AdviseNoArgs          = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
 adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
-    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryMyChansIgnore)
-                       | otherwise         = (id,           ""                )
-        g = ()# guessWhat ? id :? ((guessWhat :) . ("" :))
-        helper target =
-            let notFound                     = pure . sorryPCName $ target
-                found (targetId, targetSing) = case getPCChans targetId ms of
-                  [] -> header none
-                  cs -> header . intercalate [""] . map (mkChanReport i ms) $ cs
-                  where
-                    header = (targetSing <> "'s channels:" :) . ("" :)
-            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-        allReports = intercalateDivider cols . map (helper . capitalize . f) $ as
+    let helper target = let notFound                     = pure . sorryPCName $ target
+                            found (targetId, targetSing) = case getPCChans targetId ms of
+                              [] -> header none
+                              cs -> header . intercalate [""] . map (mkChanReport i ms) $ cs
+                              where
+                                header = (targetSing <> "'s channels:" :) . ("" :)
+                        in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+        allReports = intercalateDivider cols . map (helper . capitalize ) $ as
     in case views chanTbl IM.size ms of
       0 -> informNoChans mq cols
-      _ -> pager i mq (g allReports) >> logPlaExec (prefixAdminCmd "mychannels") i
+      _ -> pager i mq allReports >> logPlaExec (prefixAdminCmd "mychannels") i
 adminMyChans p = patternMatchFail "adminMyChans" [ showText p ]
 
 
@@ -740,9 +729,6 @@ adminPeep (LowerNub i mq cols as) = do
     helper ms =
         let s     = getSing i ms
             apiss = [ apis | apis@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
-            (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryPeepIgnore)
-                           | otherwise         = (id,           ""             )
-            g = ()# guessWhat ? id :? (guessWhat :)
             peep target a@(pt, _, _) =
                 let notFound = a & _2 %~ (sorryPCNameLoggedIn target :)
                     found (peepId@(flip getPla ms -> peepPla), peepSing) = if peepId `notElem` pt^.ind i.peeping
@@ -761,8 +747,8 @@ adminPeep (LowerNub i mq cols as) = do
                                logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
                 in findFullNameForAbbrev target apiss |&| maybe notFound found
-            res = foldr (peep . capitalize . f) (ms^.plaTbl, [], []) as
-        in (ms & plaTbl .~ res^._1, (res^._2.to g, res^._3))
+            res = foldr (peep . capitalize) (ms^.plaTbl, [], []) as
+        in (ms & plaTbl .~ res^._1, (res^._2, res^._3))
 adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 
 
@@ -893,7 +879,6 @@ adminSudoer p = advise p [] adviceASudoerExcessArgs
 -----
 
 
--- TODO: Help.
 adminTeleId :: Action
 adminTeleId p@AdviseNoArgs                    = advise p [ prefixAdminCmd "teleid" ] adviceATeleIdNoArgs
 adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_

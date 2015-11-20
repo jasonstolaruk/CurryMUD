@@ -1,15 +1,15 @@
-module MudTests.Misc.Threads where
+module MudTests.Threads.Talk where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
-import Mud.Misc.Threads
+import Mud.Threads.Talk
 import MudTests.TestUtil
 
 import Control.Lens (to)
 import Control.Lens.Operators ((^.))
+import qualified Data.IntMap.Lazy as IM (keys)
 import Test.QuickCheck.Monadic (assert, monadicIO)
 import Test.Tasty.QuickCheck (Property)
-import qualified Data.IntMap.Lazy as IM (keys)
 
 
 prop_getUnusedId :: Property

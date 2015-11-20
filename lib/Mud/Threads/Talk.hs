@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
 
-module Mud.Threads.Talk ( runTalkAsync
+module Mud.Threads.Talk ( getUnusedId
+                        , runTalkAsync
                         , threadTalk ) where
 
 import Mud.Cmds.Util.Misc

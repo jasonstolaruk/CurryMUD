@@ -2,7 +2,7 @@
 
 module Mud.TopLvlDefs.FilePaths where
 
-import System.Environment (getEnv)
+import System.Directory (getHomeDirectory)
 import System.FilePath ((<.>), (</>), pathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -16,14 +16,14 @@ drive = pathSeparator
 
 
 mudDir :: FilePath
-mudDir = let home = unsafePerformIO . getEnv $ "HOME" in home </> "CurryMUD"
+mudDir = unsafePerformIO getHomeDirectory </> "CurryMUD"
 
 
-databaseDir, logDir, persistDir, resDir :: FilePath
-databaseDir = mudDir </> "db"
-logDir      = mudDir </> "logs"
-persistDir  = mudDir </> "persist"
-resDir      = mudDir </> "res"
+dbDir, logDir, persistDir, resDir :: FilePath
+dbDir      = mudDir </> "db"
+logDir     = mudDir </> "logs"
+persistDir = mudDir </> "persist"
+resDir     = mudDir </> "res"
 
 
 helpDir, miscDir, titleDir :: FilePath
@@ -90,7 +90,7 @@ wpnTblFile           = "wpnTbl.json"
 
 
 dbFile :: FilePath
-dbFile = databaseDir </> "CurryMud" <.> "sqlite3"
+dbFile = dbDir </> "CurryMud" <.> "sqlite3"
 
 
 -- ==================================================

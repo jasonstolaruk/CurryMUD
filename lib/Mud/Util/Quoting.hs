@@ -29,6 +29,10 @@ asteriskQuote :: T.Text -> T.Text
 asteriskQuote = quoteWith' ("*** ", " ***")
 
 
+backQuote :: T.Text -> T.Text
+backQuote = quoteWith "`"
+
+
 bracketQuote :: T.Text -> T.Text
 bracketQuote = quoteWith' ("[", "]")
 

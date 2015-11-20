@@ -15,7 +15,7 @@ import Mud.TheWorld.Tutorial
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.Misc
 import Mud.Util.Operators
-import Mud.Util.Quoting
+import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent.STM.TMVar (newTMVarIO)
@@ -46,7 +46,7 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 initMudData :: ShouldLog -> IO MudData
 initMudData shouldLog = do
-    (logExLock, perLock) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
+    (logExLock,       perLock         ) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
     (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
     genIO   <- createSystemRandom
     msIORef <- newIORef MudState { _armTbl           = IM.empty
@@ -72,13 +72,13 @@ initMudData shouldLog = do
                                  , _threadTbl        =  M.empty
                                  , _typeTbl          = IM.empty
                                  , _wpnTbl           = IM.empty }
-    start <- getTime Monotonic
-    return MudData { _errorLog       = errorLogService
-                   , _gen            = genIO
-                   , _locks          = Locks logExLock perLock
-                   , _mudStateIORef  = msIORef
-                   , _noticeLog      = noticeLogService
-                   , _startTime      = start }
+    start   <- getTime Monotonic
+    return MudData { _errorLog      = errorLogService
+                   , _gen           = genIO
+                   , _locks         = Locks logExLock perLock
+                   , _mudStateIORef = msIORef
+                   , _noticeLog     = noticeLogService
+                   , _startTime     = start }
 
 
 initWorld :: MudStack Bool
@@ -95,7 +95,7 @@ createWorld = do
 
 loadWorld :: FilePath -> MudStack Bool
 loadWorld dir@((persistDir </>) -> path) = do
-    logNotice "loadWorld" $ "loading the world from the " <> (dblQuote . T.pack $ dir) <> " directory."
+    logNotice "loadWorld" $ "loading the world from the " <> showText dir <> " directory."
     loadEqTblRes <- loadEqTbl path
     ((loadEqTblRes :) -> res) <- mapM (path |&|) [ loadTbl armTblFile           armTbl
                                                  , loadTbl chanTblFile          chanTbl

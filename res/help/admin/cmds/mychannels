@@ -5,7 +5,7 @@
 
 \uDESCRIPTION\n
 Display information about telepathic channels for one or more players.
-For each PC name you provide, you will get a report for every channel that player is connected to. The reports are comprised of channel name along with a roster of who is connected to the channel.
+For each PC name you provide, you will get a report for every channel that player is connected to, comprised of the channel name along with a roster of who is connected to the channel.
 
 \uEXAMPLES\n
 \q#dmychannels taro\d to display channel reports for Taro.4`

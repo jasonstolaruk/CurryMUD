@@ -43,6 +43,11 @@ import qualified Data.Text as T
 import qualified Prelude ((>>))
 
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+-----
+
+
 (>>) :: Format (T.Text -> b) a -> Format c b -> Format c a
 a >> b = a % stext % b
 
@@ -223,7 +228,7 @@ mkGecrIndexed i ms x n is
     notFound = Left ""
     found effNames fn | matches <- filter ((== fn) . snd) . zip is $ effNames = if length matches < x
       then Left . mkPlurFromBoth . getEffBothGramNos i ms . fst . head $ matches
-      else Right . (flip getEnt ms) . fst $ matches !! pred x
+      else Right . (`getEnt` ms) . fst $ matches !! pred x
 
 
 -- ============================================================
