@@ -19,11 +19,11 @@ mudDir :: FilePath
 mudDir = let home = unsafePerformIO . getEnv $ "HOME" in home </> "CurryMUD"
 
 
-databaseDir, logDir, persistDir, resDir :: FilePath
-databaseDir = mudDir </> "db"
-logDir      = mudDir </> "logs"
-persistDir  = mudDir </> "persist"
-resDir      = mudDir </> "res"
+dbDir, logDir, persistDir, resDir :: FilePath
+dbDir      = mudDir </> "db"
+logDir     = mudDir </> "logs"
+persistDir = mudDir </> "persist"
+resDir     = mudDir </> "res"
 
 
 helpDir, miscDir, titleDir :: FilePath
@@ -90,7 +90,7 @@ wpnTblFile           = "wpnTbl.json"
 
 
 dbFile :: FilePath
-dbFile = databaseDir </> "CurryMud" <.> "sqlite3"
+dbFile = dbDir </> "CurryMud" <.> "sqlite3"
 
 
 -- ==================================================

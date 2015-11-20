@@ -30,15 +30,11 @@ import qualified Data.Text.IO as T (putStrLn)
 
 main :: IO ()
 main = withSocketsDo $ do
-    setCurrentDirectory mudDir
-    mapM_ (createDirectoryIfMissing False) [ adminHelpCmdsDir -- TODO: Needs more testing.
-                                           , adminHelpTopicsDir
-                                           , databaseDir
-                                           , helpDir
+    mapM_ (createDirectoryIfMissing False) [ mudDir -- TODO: Test.
+                                           , dbDir
                                            , logDir
-                                           , persistDir
-                                           , plaHelpCmdsDir
-                                           , plaHelpTopicsDir ]
+                                           , persistDir ]
+    setCurrentDirectory mudDir
     welcome
     runReaderT threadListen =<< initMudData DoLog
 
