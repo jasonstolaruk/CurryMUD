@@ -2,7 +2,7 @@
 
 module Mud.TopLvlDefs.FilePaths where
 
-import System.Environment (getEnv)
+import System.Directory (getHomeDirectory)
 import System.FilePath ((<.>), (</>), pathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -16,7 +16,7 @@ drive = pathSeparator
 
 
 mudDir :: FilePath
-mudDir = let home = unsafePerformIO . getEnv $ "HOME" in home </> "CurryMUD"
+mudDir = unsafePerformIO getHomeDirectory </> "CurryMUD"
 
 
 dbDir, logDir, persistDir, resDir :: FilePath
