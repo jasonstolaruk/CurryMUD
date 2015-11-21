@@ -930,7 +930,7 @@ createAdminZone = do
   let rockCavyDesc = "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock \
                      \cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and \
                      \hills."
-  putMob iRockCavy1
+  putNpc iRockCavy1
          (Ent iRockCavy1
               (Just "rock")
               "rock cavy" "rock cavies"
@@ -948,7 +948,7 @@ createAdminZone = do
               10
               NoHand
               Nothing)
-  putMob iRockCavy2
+  putNpc iRockCavy2
          (Ent iRockCavy2
               (Just "rock")
               "rock cavy" "rock cavies"
@@ -966,7 +966,7 @@ createAdminZone = do
               10
               NoHand
               Nothing)
-  putMob iPidge
+  putNpc iPidge
          (Ent iPidge
               (Just "pidge")
               "Pidge" ""

@@ -229,6 +229,20 @@ getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
 -----
 
 
+getNpc :: Id -> MudState -> Npc
+getNpc i = view (npcTbl.ind i)
+
+
+-----
+
+
+getNpcMsgQueue :: Id -> MudState -> NpcMsgQueue
+getNpcMsgQueue i = view npcMsgQueue . getNpc i
+
+
+-----
+
+
 getObj :: Id -> MudState -> Obj
 getObj i = view (objTbl.ind i)
 

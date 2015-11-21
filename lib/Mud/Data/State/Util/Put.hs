@@ -51,13 +51,13 @@ putCon i e o is coi mc con = modifyState $ \ms -> (ms & clothTbl.at  i .~ mc
 -----
 
 
-putMob :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
-putMob i e is c em m = modifyState $ \ms -> (ms & coinsTbl.ind i .~ c
+putNpc :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
+putNpc i e is c em m = modifyState $ \ms -> (ms & coinsTbl.ind i .~ c
                                                 & entTbl  .ind i .~ e
                                                 & eqTbl   .ind i .~ em
                                                 & invTbl  .ind i .~ is
                                                 & mobTbl  .ind i .~ m
-                                                & typeTbl .ind i .~ MobType, ())
+                                                & typeTbl .ind i .~ NpcType, ())
 
 
 -----

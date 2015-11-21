@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Data.State.MsgQueue where
+module Mud.Data.State.MsgQueue ( Msg(..)
+                               , MsgQueue
+                               , NpcMsg(..)
+                               , NpcMsgQueue ) where
 
 import Control.Concurrent.STM.TQueue (TQueue)
 import qualified Data.Text as T
@@ -20,3 +23,16 @@ data Msg = Dropped
          | Quit
          | Shutdown
          | SilentBoot
+
+
+-----
+
+
+type NpcMsgQueue = TQueue NpcMsg
+
+
+data NpcMsg = ExternCmd MsgQueue Cols T.Text
+            | StopNpcServer
+
+
+type Cols = Int

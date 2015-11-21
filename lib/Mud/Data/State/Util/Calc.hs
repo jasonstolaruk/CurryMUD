@@ -148,12 +148,12 @@ calcRegenFpDelay i ms = calcRegenDelay $ (getHt i ms + getSt i ms) `divide` 2
 calcWeight :: Id -> MudState -> Int
 calcWeight i ms = case getType i ms of
   ConType -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
-  MobType -> mobPC
-  PCType  -> mobPC
+  NpcType -> npcPC
+  PCType  -> npcPC
   RmType  -> blowUp "calcWeight" "cannot calculate the weight of a room" [ showText i ]
   _       -> getWeight i ms
   where
-    mobPC           = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
+    npcPC           = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
     calcInvWeight   = helper .           getInv   i $ ms
     calcEqWeight    = helper . M.elems . getEqMap i $ ms
     helper          = sum . map (`calcWeight` ms)

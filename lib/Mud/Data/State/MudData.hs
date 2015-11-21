@@ -52,6 +52,7 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _invTbl           :: InvTbl
                          , _mobTbl           :: MobTbl
                          , _msgQueueTbl      :: MsgQueueTbl
+                         , _npcTbl           :: NpcTbl
                          , _objTbl           :: ObjTbl
                          , _pcTbl            :: PCTbl
                          , _plaLogTbl        :: PlaLogTbl
@@ -77,6 +78,7 @@ type HostTbl          = M.Map Sing HostMap
 type InvTbl           = IM.IntMap Inv
 type MobTbl           = IM.IntMap Mob
 type MsgQueueTbl      = IM.IntMap MsgQueue
+type NpcTbl           = IM.IntMap Npc
 type ObjTbl           = IM.IntMap Obj
 type PCTbl            = IM.IntMap PC
 type PlaLogTbl        = IM.IntMap LogService
@@ -371,6 +373,17 @@ jsonToMob _          = empty
 -- ==================================================
 
 
+-- Has a mob (and an entity and an inventory and coins and equipment).
+data Npc = Npc { _npcMsgQueue    :: NpcMsgQueue
+               , _npcServerAsync :: NpcServerAsync }
+
+
+type NpcServerAsync = Async ()
+
+
+-- ==================================================
+
+
 -- Has an entity.
 data Obj = Obj { _weight :: Int
                , _vol    :: Int } deriving (Eq, Generic, Show)
@@ -522,6 +535,7 @@ data ThreadType = DbTblPurger
                 | InacTimer   Id
                 | Listen
                 | Notice
+                | NpcServer   Id
                 | PlaLog      Id
                 | Receive     Id
                 | RegenChild  Id
@@ -540,7 +554,7 @@ data Type = ObjType
           | ConType
           | WpnType
           | ArmType
-          | MobType
+          | NpcType
           | PCType
           | RmType deriving (Eq, Generic, Show)
 
@@ -656,6 +670,7 @@ makeLenses ''Locks
 makeLenses ''Mob
 makeLenses ''MudData
 makeLenses ''MudState
+makeLenses ''Npc
 makeLenses ''Obj
 makeLenses ''PC
 makeLenses ''Pla

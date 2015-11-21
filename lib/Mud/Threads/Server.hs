@@ -16,6 +16,7 @@ import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.Threads.Misc
+import Mud.Threads.NpcServer
 import Mud.Threads.Regen
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.List
@@ -69,11 +70,11 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq tq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p           = getPla i ms
-        thruCentral = msg |#| uncurry (interpret p centralDispatch) . headTail . T.words
-        thruOther f = uncurry (interpret p f) (()# msg ? ("", []) :? (headTail . T.words $ msg))
+        thruCentral = msg |#| interpret p centralDispatch . headTail . T.words
+        thruOther f = interpret p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
     in p^.interp |&| maybe thruCentral thruOther
   where
-    interpret p f cn as = do
+    interpret p f (cn, as) = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
         liftIO . atomically . writeTMQueue tq $ ResetTimer
         f cn . WithArgs i mq (p^.columns) $ as
@@ -123,6 +124,7 @@ shutDown = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
         logNotice "shutDown commitSuicide" "all players have been disconnected."
         stopNpcRegens
+        stopNpcServers
         persist
         logNotice "shutDown commitSuicide" "killing the listen thread."
         liftIO . killThread . getListenThreadId =<< getState

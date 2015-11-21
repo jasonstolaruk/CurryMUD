@@ -113,6 +113,7 @@ adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
     , mkAdminCmd "admin"      adminAdmin       ("Send a message on the admin channel " <> plusRelatedMsg)
+    , mkAdminCmd "as"         adminAs          "Execute a command as as someone else."
     , mkAdminCmd "banhost"    adminBanHost     "Dump the banned hostname database, or ban/unban a host."
     , mkAdminCmd "banplayer"  adminBanPla      "Dump the banned player database, or ban/unban a player."
     , mkAdminCmd "announce"   adminAnnounce    "Send a message to all players."
@@ -215,6 +216,30 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 -----
 
 
+-- TODO: Help.
+-- TODO: Logging.
+adminAs :: Action
+adminAs p@AdviseNoArgs                       = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs
+adminAs p@(AdviseOneArg a)                   = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a
+adminAs (MsgWithTarget _ mq cols target msg) = getState >>= \ms ->
+    let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID" -- TODO: Test w/ loc prefs.
+        sorryParse          = sendFun . sorryParseId $ strippedTarget
+        helper targetId     = case getType targetId ms of
+          NpcType -> let npcMq = getNpcMsgQueue targetId ms
+                     in liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ msg
+          PCType  -> unit -- TODO
+          _       -> unit -- TODO
+    in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
+      [(targetId, "")] | targetId < 0                                -> sendFun sorryWtf
+                       | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse
+                       | otherwise                                   -> helper targetId
+      _                                                              -> sorryParse
+adminAs p = patternMatchFail "adminAs" [ showText p ]
+
+
+-----
+
+
 adminAnnounce :: Action
 adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
 adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
@@ -293,7 +318,7 @@ adminBanPla p = patternMatchFail "adminBanPla" [ showText p ]
 
 
 adminBoot :: Action
-adminBoot p@AdviseNoArgs = advise p [ prefixAdminCmd "boot" ] adviceABootNoArgs
+adminBoot p@AdviseNoArgs                       = advise p [ prefixAdminCmd "boot" ] adviceABootNoArgs
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
@@ -302,7 +327,7 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryLoggedOut $ strippedTarget
                     | bootId == i -> sendFun sorryBootSelf
                     | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
-                        wrapSend mq cols $ "You have booted " <> strippedTarget <> "."
+                        sendFun $ "You have booted " <> strippedTarget <> "."
                         sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
                         bcastAdminsExcept [ i, bootId ] . T.concat $ [ selfSing, " booted ", strippedTarget, "." ]
       xs       -> patternMatchFail "adminBoot" [ showText xs ]
@@ -399,7 +424,7 @@ examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   ConType   -> [ examineEnt, examineObj, examineInv, examineCoins, examineCon ]
   WpnType   -> [ examineEnt, examineObj, examineWpn ]
   ArmType   -> [ examineEnt, examineObj, examineArm ]
-  MobType   -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob ]
+  NpcType   -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob ]
   PCType    -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob, examinePC, examinePla ]
   RmType    -> [ examineInv, examineCoins, examineRm ]
   where
@@ -543,7 +568,7 @@ adminExp p = withoutArgs adminExp p
 
 
 adminHost :: Action
-adminHost p@AdviseNoArgs = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
+adminHost p@AdviseNoArgs          = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
 adminHost (LowerNub i mq cols as) = do
     ms          <- getState
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
@@ -837,7 +862,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 
 
 adminSudoer :: Action
-adminSudoer p@AdviseNoArgs = advise p [ prefixAdminCmd "sudoer" ] adviceASudoerNoArgs
+adminSudoer p@AdviseNoArgs                  = advise p [ prefixAdminCmd "sudoer" ] adviceASudoerNoArgs
 adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =

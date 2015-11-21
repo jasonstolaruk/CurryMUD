@@ -3,9 +3,9 @@
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
-                    , go
                     , handleEgress
                     , look
+                    , mkNonStdRmLinkCmds
                     , plaCmds
                     , showMotd ) where
 
@@ -727,7 +727,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                    in Right ( targetDesig
                                             , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
                                             , targetDesig )
-                        MobType -> mkRightForNonTargets . dup3 . addSuffix isPoss p . theOnLower $ targetSing
+                        NpcType -> mkRightForNonTargets . dup3 . addSuffix isPoss p . theOnLower $ targetSing
                         _       -> Left . sorryEmoteTargetType $ targetSing
                   x -> patternMatchFail "emote procTarget" [ showText x ]
               else Left sorryNoOneHere
@@ -926,7 +926,22 @@ expandOppLinkName "d"  = "above"
 expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
------
+-- TODO: Moved these functions here because they reference "go" (which references "look")...
+mkNonStdRmLinkCmds :: Rm -> [Cmd]
+mkNonStdRmLinkCmds (view rmLinks -> rls) = [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
+
+
+mkCmdForRmLink :: RmLink -> Cmd
+mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) =
+    Cmd { cmdName = cn, cmdPriorityAbbrev = Nothing, cmdFullName = cn, action = go cn, cmdDesc = "" }
+
+
+mkCmdNameForRmLink :: RmLink -> T.Text
+mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _linkDir
+                                               NonStdLink { .. } -> _linkName
+
+
+ -----
 
 
 help :: Action
@@ -2000,7 +2015,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                            in parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
-                MobType -> parseRearAdverb |&| either sorry (sayToMobHelper d targetSing)
+                NpcType -> parseRearAdverb |&| either sorry (sayToMobHelper d targetSing)
                 _       -> sorry . sorrySayTargetType $ targetSing
               x -> patternMatchFail "say sayTo" [ showText x ]
           else sorry sorrySayNoOneHere
@@ -2144,7 +2159,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                        (invBs, invLog)        = inInvs |!| showInv ms d invCoins inInvs theTarget
                        (eqBs,  eqLog )        = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
                        rmBs                   = inRms  |!| mkBroadcast i sorryShowInRm
-                   in if theType theTarget `notElem` [ MobType, PCType ]
+                   in if theType theTarget `notElem` [ NpcType, PCType ]
                      then wrapSend mq cols . sorryShowTarget . theSing $ theTarget
                      else do
                          bcastNl $ rmBs ++ invBs ++ eqBs
@@ -2165,7 +2180,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                  where
                    mkBs = concatMap (itemIds |&|) $ case theType of
                      PCType  -> [ mkToSelfInvBs, mkToTargetInvBs, mkToOthersInvBs ]
-                     MobType -> [ mkToSelfInvBsMobs, mkToOthersInvBsMobs ]
+                     NpcType -> [ mkToSelfInvBsMobs, mkToOthersInvBsMobs ]
                      x       -> patternMatchFail "showAction showInv helperEitherInv mkBs" [ showText x ]
                    mkLog = commas . map (`getSing` ms) $ itemIds
                mkToSelfInvBs       itemIds = [ ( T.concat [ "You show the "
@@ -2210,7 +2225,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                showCoinsHelper           = (mkBroadcast i . T.unlines $ can'tCoinMsgs) ++ mkCanCoinsBs
                mkCanCoinsBs              = case theType of
                  PCType  -> mkToSelfCoinsBs     ++ mkToTargetCoinsBs ++ mkToOthersCoinsBs
-                 MobType -> mkToSelfCoinsBsMobs ++                      mkToOthersCoinsBsMobs
+                 NpcType -> mkToSelfCoinsBsMobs ++                      mkToOthersCoinsBsMobs
                  x       -> patternMatchFail "showAction mkCanCoinsBs" [ showText x ]
                coinTxt               = mkCoinTxt canCoins
                mkToSelfCoinsBs       = coinTxt |!| mkBroadcast i     . T.concat $ [ "You show "
@@ -2253,7 +2268,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                  where
                    mkBs = concatMap (itemIds |&|) $ case theType of
                      PCType  -> [ mkToSelfBs, mkToTargetBs, mkToOthersBs ]
-                     MobType -> [ mkToSelfBsMobs, mkToOthersBsMobs ]
+                     NpcType -> [ mkToSelfBsMobs, mkToOthersBsMobs ]
                      x       -> patternMatchFail "showAction showEq helperEitherInv mkBs" [ showText x ]
                    mkLog = commas . map (`getSing` ms) $ itemIds
                mkToSelfBs       itemIds = [ ( T.concat [ "You show the "

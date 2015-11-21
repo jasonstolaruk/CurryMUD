@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
+                            , adviceAAsNoArgs
+                            , adviceAAsNoCmd
                             , adviceABanHostNoReason
                             , adviceABanPlaNoReason
                             , adviceABootNoArgs
@@ -120,6 +122,18 @@ adviceAAnnounceNoArgs = let msg = "CurryMUD will be shutting down for maintenanc
     "You must provide a message to send, as in "                   <>
     colorWith quoteColor (prefixAdminCmd "announce" <> " " <> msg) <>
     "."
+
+
+adviceAAsNoArgs :: T.Text
+adviceAAsNoArgs = "Please specify an ID followed by a command, as in "         <>
+                  colorWith quoteColor (prefixAdminCmd "as" <> " 74 get sack") <>
+                  "."
+
+
+adviceAAsNoCmd :: T.Text -> T.Text
+adviceAAsNoCmd a = "Please also provide a command, as in "                         <>
+                   colorWith quoteColor (prefixAdminCmd "as " <> a <> " get sack") <>
+                   "."
 
 
 adviceABanHostNoReason :: T.Text -> T.Text

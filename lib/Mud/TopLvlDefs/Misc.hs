@@ -32,7 +32,7 @@ coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
 
 
 dbTblPurgerDelay :: Int
-dbTblPurgerDelay = 24 * 60 * 60 -- one day
+dbTblPurgerDelay = 60 * 60 -- one hr
 
 
 acl, aop, enc, enc's, etc :: T.Text

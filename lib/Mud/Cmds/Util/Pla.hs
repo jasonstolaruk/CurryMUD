@@ -394,7 +394,7 @@ helperGetEitherInv i d fi ti a@(ms, _, _) = \case
   where
     sortByType             = foldr helper ([], [], [])
     helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
-                                                                    MobType -> _2
+                                                                    NpcType -> _2
                                                                     _       -> _3
                              in sorted & lens %~ (targetId :)
     partitionByEnc maxEnc acc@(w, _, _) targetId = let w' = w + calcWeight targetId ms in
@@ -660,7 +660,7 @@ mkEntDescs i cols ms eis = T.intercalate "\n" [ mkEntDesc i cols ms (ei, e) | ei
 mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> T.Text
 mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- getSing ei ms, t <- getType ei ms =
     case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ms ei $ s
-              MobType ->                 (ed <>) . mkEqDesc       i cols ms ei   s $ t
+              NpcType ->                 (ed <>) . mkEqDesc       i cols ms ei   s $ t
               PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ms ei   s $ t
               _       -> ed
   where

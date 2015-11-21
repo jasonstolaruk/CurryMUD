@@ -332,7 +332,7 @@ instance Pretty Type where
   pp ConType   = "container"
   pp WpnType   = "weapon"
   pp ArmType   = "armor"
-  pp MobType   = "mobile"
+  pp NpcType   = "NPC"
   pp PCType    = "PC"
   pp RmType    = "room"
 

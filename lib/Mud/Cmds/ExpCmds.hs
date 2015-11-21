@@ -755,7 +755,7 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
                         in do
                             bcastSelfOthers i ms toSelfBroadcast [ toTargetBroadcast, toOthersBroadcast ]
                             logPlaOut ecn i . pure . parsePCDesig i ms $ toSelf'
-                    onMob targetNoun =
+                    onNpc targetNoun =
                         let (toSelf', toSelfBroadcast, toOthers', _) = mkBindings targetNoun
                             toOthersBroadcast                        = pure (nlnl toOthers', i `delete` pcIds d)
                         in do
@@ -775,7 +775,7 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
                         in (toSelf', toSelfBroadcast, toOthers', substitutions)
                 in case getType targetId ms of
                   PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
-                  MobType -> onMob . theOnLower . getSing targetId $ ms
+                  NpcType -> onNpc . theOnLower . getSing targetId $ ms
                   _       -> wrapSend mq cols sorryExpCmdTargetType
               x -> patternMatchFail "expCmd helper" [ showText x ]
             else wrapSend mq cols sorryNoOneHere

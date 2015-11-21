@@ -80,7 +80,7 @@ threadRegen :: Id -> MudStack ()
 threadRegen i = onEnv $ \md -> do
     setThreadType . RegenParent $ i
     getType i <$> getState >>= \case
-      MobType -> handle dieSilently . spawnThreadTree $ md
+      NpcType -> handle dieSilently . spawnThreadTree $ md
       PCType  -> handle (die (Just i) "regen") $ logPla "threadRegen" i "regen started." >> spawnThreadTree md
       x       -> patternMatchFail "threadRegen" [ showText x ]
   where

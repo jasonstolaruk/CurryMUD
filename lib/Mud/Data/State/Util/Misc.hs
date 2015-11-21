@@ -14,6 +14,8 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , getNonIncogInvCoins
                                 , getNonIncogLoggedInAdminIds
                                 , getNpcIds
+                                , getNpcRm
+                                , getNpcRmId
                                 , getPCRmNonIncogInvCoins
                                 , getState
                                 , isLoggedIn
@@ -160,7 +162,18 @@ getNonIncogLoggedInAdminIds ms = let adminIds = getLoggedInAdminIds ms
 
 
 getNpcIds :: MudState -> Inv
-getNpcIds ms = views mobTbl (filter ((== MobType) . (`getType` ms)) . IM.keys) ms
+getNpcIds = views pcTbl IM.keys
+
+
+-----
+
+
+getNpcRm :: Id -> MudState -> Rm
+getNpcRm i ms = let ri = getNpcRmId i ms in getRm ri ms
+
+
+getNpcRmId :: Id -> MudState -> Id
+getNpcRmId i = views invTbl (head . IM.keys . IM.filter (i `elem`))
 
 
 -----

@@ -60,6 +60,7 @@ initMudData shouldLog = do
                                  , _invTbl           = IM.empty
                                  , _mobTbl           = IM.empty
                                  , _msgQueueTbl      = IM.empty
+                                 , _npcTbl           = IM.empty
                                  , _objTbl           = IM.empty
                                  , _pcTbl            = IM.empty
                                  , _plaLogTbl        = IM.empty

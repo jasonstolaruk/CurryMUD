@@ -1,11 +1,10 @@
-{-# LANGUAGE MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Interp.CentralDispatch (centralDispatch) where
 
 import Mud.Cmds.Admin
 import Mud.Cmds.Debug
 import Mud.Cmds.Pla
-import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
@@ -17,7 +16,6 @@ import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 import Mud.Util.Text
 
-import Control.Lens (view)
 import Control.Monad (when)
 import Data.List (sort)
 import Data.Maybe (isNothing)
@@ -35,18 +33,4 @@ findAction i ms (T.toLower -> cn) = helper mkCmdList
   where
     helper cmds = return $ action . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds ]
     mkCmdList = let ia = getPlaFlag IsAdmin . getPla i $ ms
-                in mkCmdListWithNonStdRmLinks (getPCRm i ms) ++ (ia |?| adminCmds) ++ (ia && isDebug |?| debugCmds)
-
-
-mkCmdListWithNonStdRmLinks :: Rm -> [Cmd]
-mkCmdListWithNonStdRmLinks (view rmLinks -> rls) = sort $ plaCmds ++ [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
-
-
-mkCmdForRmLink :: RmLink -> Cmd
-mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) =
-    Cmd { cmdName = cn, cmdPriorityAbbrev = Nothing, cmdFullName = cn, action = go cn, cmdDesc = "" }
-
-
-mkCmdNameForRmLink :: RmLink -> T.Text
-mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _linkDir
-                                               NonStdLink { .. } -> _linkName
+                in sort . concat $ [ plaCmds, mkNonStdRmLinkCmds . getPCRm i $ ms, ia |?| adminCmds, ia && isDebug |?| debugCmds ]
