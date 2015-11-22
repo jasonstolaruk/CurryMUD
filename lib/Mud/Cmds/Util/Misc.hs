@@ -38,6 +38,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , loggedInOutColorize
                           , mkActionParams
                           , mkChanReport
+                          , mkCmdListText
                           , mkInterfaceList
                           , mkNameTypeIdDesc
                           , mkPossPro

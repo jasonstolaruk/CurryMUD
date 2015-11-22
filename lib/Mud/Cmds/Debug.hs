@@ -92,7 +92,6 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 -- ==================================================
 
 
--- TODO: Some cmds need updating now that we have a NPC tbl.
 debugCmds :: [Cmd]
 debugCmds =
     [ mkDebugCmd "?"          debugDispCmdList "Display or search this command list."
@@ -290,7 +289,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
       | searchId < 0 = wrapSend mq cols sorryWtf
       | otherwise    = getState >>= \ms -> do
           let f     = commas . map (showText . fst)
-              mkTxt =
+              mkTxt = -- TODO: NPCs being possessed by ID...
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
                   , [ T.concat [ "Channels with an ", dblQuote "chanId", " of ", searchIdTxt, ": " ]
@@ -307,6 +306,8 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                     , f . filter ((searchId `elem`) . view peepers . snd) $ plaTblList ]
                   , [ T.concat [ "Players peeping ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . view peeping . snd) $ plaTblList ]
+                  , [ T.concat [ "Players possessing ID ", searchIdTxt, ": " ]
+                    , f . filter ((searchId `elem`) . view possessing . snd) $ plaTblList ]
                   , [ T.concat [ "Players with a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== Just searchId) . view lastRmId . snd) $ plaTblList ] ]
               plaTblList = tblToList plaTbl ms
@@ -330,6 +331,7 @@ mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl           ms)
                        , ("Inv",              tblKeys invTbl           ms)
                        , ("Mob",              tblKeys mobTbl           ms)
                        , ("MsgQueue",         tblKeys msgQueueTbl      ms)
+                       , ("Npc",              tblKeys npcTbl           ms)
                        , ("Obj",              tblKeys objTbl           ms)
                        , ("PC",               tblKeys pcTbl            ms)
                        , ("PlaLogTbl",        tblKeys plaLogTbl        ms)

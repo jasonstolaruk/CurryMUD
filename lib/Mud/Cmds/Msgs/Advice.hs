@@ -19,6 +19,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAPossessNoArgs
                             , adviceAPrintNoArgs
                             , adviceASearchNoArgs
+                            , adviceAsSelfNoArgs
                             , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
                             , adviceATeleIdExcessArgs
@@ -340,6 +341,12 @@ adviceAdminNoMsg a = "Please also provide a message to send, as in "            
 
 adviceAdverbCloseChar :: T.Text
 adviceAdverbCloseChar = "An adverbial phrase must be terminated with a " <> dblQuote acl <> adverbExample
+
+
+adviceAsSelfNoArgs :: T.Text
+adviceAsSelfNoArgs = "Please provide a command to execute, as in " <>
+                     colorWith quoteColor ". look"                 <>
+                     "."
 
 
 adverbExample :: T.Text

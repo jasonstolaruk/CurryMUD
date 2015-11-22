@@ -12,7 +12,8 @@ import qualified Data.Text as T
 type MsgQueue = TQueue Msg
 
 
-data Msg = Dropped
+data Msg = AsSelf     T.Text
+         | Dropped
          | FromClient T.Text
          | FromServer T.Text
          | InacBoot

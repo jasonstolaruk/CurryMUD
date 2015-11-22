@@ -65,7 +65,7 @@ createAdminZone = do
               (setBit adminFlags . fromEnum $ IsIncognito)
               80 24
               Nothing
-              [] []
+              [] [] Nothing
               []
               (Just iLounge))
   putPla iCurry
@@ -93,7 +93,7 @@ createAdminZone = do
               adminFlags
               80 24
               Nothing
-              [] []
+              [] [] Nothing
               []
               (Just iLounge))
 
@@ -981,7 +981,7 @@ createAdminZone = do
                      , (FeetS,     iTraveler'sBoots) ])
          (Mob Female
               50 50 50 50 50
-              100 100
+              10  100 -- TODO: Poor Pidge...
               100 100
               100 100
               100 100

@@ -82,7 +82,7 @@ import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (IntMap, (!), filter, keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -139,12 +139,6 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
 plaCmds :: [Cmd]
 plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
-
-
-npcCmds :: [Cmd]
-npcCmds = map (uncurry3 mkRegularCmd)
-    [ ("stop",   stop,   "Stop possessing.")
-    , ("whoami", whoAmI, "Confirm who you are.") ]
 
 
 -- TODO: "give" command.
@@ -240,6 +234,14 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
                                   , cmdFullName       = cfn
                                   , action            = act
                                   , cmdDesc           = "" }
+
+
+npcCmds :: [Cmd]
+npcCmds = map (uncurry3 mkRegularCmd)
+    [ (".",      npcAsSelf,      "Execute a command as your true self.")
+    , ("?",      npcDispCmdList, "Display this command list.")
+    , ("stop",   npcStop,        "Stop possessing.")
+    , ("whoami", whoAmI,         "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
 -----
@@ -933,7 +935,7 @@ expandOppLinkName "d"  = "above"
 expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
 
 
--- TODO: Moved these functions here because they reference "go" (which references "look")...
+-- The following 3 functions are here because they reference "go" (which references "look")...
 mkNonStdRmLinkCmds :: Rm -> [Cmd]
 mkNonStdRmLinkCmds (view rmLinks -> rls) = [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
 
@@ -1470,6 +1472,38 @@ newChan p = patternMatchFail "newChan" [ showText p ]
 -----
 
 
+npcAsSelf :: Action
+npcAsSelf p@AdviseNoArgs       = advise p [] adviceAsSelfNoArgs
+npcAsSelf (WithArgs i mq _ as) = getPossessorId i <$> getState >>= \pi -> do
+    logPlaExecArgs "." as pi
+    liftIO . atomically . writeTQueue mq . AsSelf . nl . T.unwords $ as
+npcAsSelf p = patternMatchFail "npcAsSelf" [ showText p ]
+
+
+-----
+
+
+npcDispCmdList :: Action
+npcDispCmdList (NoArgs i mq cols) = getPossessorId i <$> getState >>= \pi -> do
+    send mq . nl . T.unlines . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ npcCmds
+    logPlaExec "?" pi
+npcDispCmdList p = withoutArgs npcDispCmdList p
+
+
+-----
+
+
+npcStop :: Action
+npcStop (NoArgs' i mq) = getPossessorId i <$> getState >>= \pi -> do
+    ok mq
+    modifyState $ (, ()) . (plaTbl.ind pi.possessing .~ Nothing) -- TODO: Could make a utility function for this pattern of modifying state.
+    logPlaExec "stop" pi
+npcStop p = withoutArgs npcStop p
+
+
+-----
+
+
 plaDispCmdList :: Action
 plaDispCmdList p@(LowerNub' i as) = dispCmdList plaCmds p >> logPlaExecArgs "?" as i
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
@@ -1618,7 +1652,7 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
             ms''               = if T.takeWhile (not . isDigit) s `elem` map showText (allValues :: [Race])
                                    then removeAdHoc i ms'
                                    else updateHostMap (movePC ms' ri) s now
-        in (ms'', (s, bs, logMsgs))
+        in (ms'' & plaTbl.ind i.possessing .~ Nothing, (s, bs, logMsgs)) -- TODO: Set NPC's possessor to Nothing.
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
             bs                      = [ (nlnl    . T.concat $ [ "You are no longer peeping "
@@ -2396,20 +2430,6 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         nxt       = subtract x . snd $ calcLvlExps !! l
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
-
-
------
-
-
-stop :: Action
-stop (NoArgs'' i) = getPossessorId i <$> getState >>= \pi -> do
-    modifyState $ (, ()) . (plaTbl.ind pi.possessing .~ Nothing)
-    logPlaExec "stop" pi
-stop p = withoutArgs stop p
-
-
-getPossessorId :: Id -> MudState -> Id
-getPossessorId i = views plaTbl (head . IM.keys . IM.filter (views possessing (== Just i)))
 
 
 -----

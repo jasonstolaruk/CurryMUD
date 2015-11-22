@@ -11,6 +11,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , fillerToSpcs
                          , findAvailSlot
                          , getMatchingChanWithName
+                         , getPossessorId
                          , getRelativePCName
                          , hasFp
                          , hasHp
@@ -92,7 +93,7 @@ import Data.Function (on)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Map.Lazy as M ((!), notMember, toList)
 import qualified Data.Text as T
 
@@ -213,6 +214,14 @@ getMatchingChanWithName :: T.Text -> [ChanName] -> [Chan] -> (ChanName, Chan)
 getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.toLower) $ cns
                                            c   = head . filter (views chanName (== cn)) $ cs
                                        in (cn, c)
+
+
+-----
+
+
+-- TODO: Store possessor ID w/ the NPC.
+getPossessorId :: Id -> MudState -> Id
+getPossessorId i = views plaTbl (head . IM.keys . IM.filter (views possessing (== Just i)))
 
 
 -----

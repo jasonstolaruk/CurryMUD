@@ -53,29 +53,30 @@ threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
 threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThreadExHandler "server" i ]
   where
     loop = mq |&| liftIO . atomically . readTQueue >=> \case
-      Dropped        ->                                 sayonara
-      FromClient msg -> handleFromClient i mq tq msg >> loop
-      FromServer msg -> handleFromServer i h msg     >> loop
-      InacBoot       -> sendInacBootMsg h            >> sayonara
-      InacStop       -> stopTimerThread tq           >> loop
-      MsgBoot msg    -> sendBootMsg h msg            >> sayonara
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg) >> loop
-      Prompt  p      -> sendPrompt i h p             >> loop
-      Quit           -> cowbye h                     >> sayonara
-      Shutdown       -> shutDown                     >> loop
-      SilentBoot     ->                                 sayonara
+      AsSelf     msg -> handleFromClient i mq tq True msg  >> loop
+      Dropped        ->                                       sayonara
+      FromClient msg -> handleFromClient i mq tq False msg >> loop
+      FromServer msg -> handleFromServer i h msg           >> loop
+      InacBoot       -> sendInacBootMsg h                  >> sayonara
+      InacStop       -> stopTimerThread tq                 >> loop
+      MsgBoot msg    -> sendBootMsg h msg                  >> sayonara
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> loop
+      Prompt  p      -> sendPrompt i h p                   >> loop
+      Quit           -> cowbye h                           >> sayonara
+      Shutdown       -> shutDown                           >> loop
+      SilentBoot     ->                                       sayonara
     sayonara = sequence_ [ stopTimerThread tq, handleEgress i ]
 
 
-handleFromClient :: Id -> MsgQueue -> TimerQueue -> T.Text -> MudStack ()
-handleFromClient i mq tq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
+handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> T.Text -> MudStack ()
+handleFromClient i mq tq isAsSelf (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p                  = getPla i ms
         isn'tPossessing    = p^.interp.to (maybe thruCentral thruOther)
         thruCentral        = msg |#| interpret p centralDispatch . headTail . T.words
         thruOther f        = interpret p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
         isPossessing npcId = let npcMq = getNpcMsgQueue npcId ms
                              in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg
-    in views possessing (maybe isn'tPossessing isPossessing) p
+    in isAsSelf ? isn'tPossessing :? views possessing (maybe isn'tPossessing isPossessing) p
   where
     interpret p f (cn, as) = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
