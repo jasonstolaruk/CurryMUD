@@ -10,7 +10,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
-import Mud.Interp.CentralDispatch
+import Mud.Interp.Npc
 import Mud.Threads.Misc
 import Mud.Util.List
 import Mud.Util.Misc
@@ -44,12 +44,12 @@ runNpcServerAsync i = do
 
 startNpcServers :: MudStack ()
 startNpcServers =
-    logNotice "startNpcServers" "starting NPC server threads." >> (mapM_ runNpcServerAsync  . getNpcIds =<< getState)
+    logNotice "startNpcServers" "starting NPC server threads." >> (mapM_ runNpcServerAsync  . findNpcIds =<< getState)
 
 
 stopNpcServers :: MudStack ()
 stopNpcServers =
-    logNotice "stopNpcServers"  "stopping NPC server threads." >> (mapM_ stopWaitNpcServer  . getNpcIds =<< getState)
+    logNotice "stopNpcServers"  "stopping NPC server threads." >> (mapM_ stopWaitNpcServer  . findNpcIds =<< getState)
 
 
 stopWaitNpcServer :: Id -> MudStack ()
@@ -77,4 +77,4 @@ threadNpcServer i npcMq = do
 handleExternCmd :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
 handleExternCmd i mq cols msg = msg |#| interpret . headTail . T.words
   where
-    interpret (cn, as) = centralDispatch cn . WithArgs i mq cols $ as
+    interpret (cn, as) = npcInterp cn . WithArgs i mq cols $ as

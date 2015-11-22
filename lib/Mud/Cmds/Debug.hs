@@ -92,6 +92,7 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 -- ==================================================
 
 
+-- TODO: Some cmds need updating now that we have a NPC tbl.
 debugCmds :: [Cmd]
 debugCmds =
     [ mkDebugCmd "?"          debugDispCmdList "Display or search this command list."
@@ -545,16 +546,17 @@ debugTalk p = withoutArgs debugTalk p
 
 
 debugThread :: Action
-debugThread (NoArgs i mq cols) = do
+debugThread (NoArgs' i mq) = do
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
-    send mq . frame cols . multiWrap cols =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
+    pager i mq =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
     logPlaExec (prefixDebugCmd "thread") i
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
     mkTypeName (InacTimer   (showText -> pi)) = padOrTrunc 12 "InacTimer"   <> pi
+    mkTypeName (NpcServer   (showText -> pi)) = padOrTrunc 12 "NpcServer"   <> pi
     mkTypeName (PlaLog      (showText -> pi)) = padOrTrunc 12 "PlaLog"      <> pi
     mkTypeName (Receive     (showText -> pi)) = padOrTrunc 12 "Receive"     <> pi
     mkTypeName (RegenChild  (showText -> pi)) = padOrTrunc 12 "RegenChild"  <> pi

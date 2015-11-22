@@ -124,6 +124,7 @@ adHoc mq host = do
                        , _interp       = Just interpName
                        , _peepers      = []
                        , _peeping      = []
+                       , _possessing   = Nothing
                        , _retainedMsgs = []
                        , _lastRmId     = Nothing }
             ms'  = ms  & coinsTbl        .ind i        .~ mempty

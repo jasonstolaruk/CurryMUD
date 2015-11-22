@@ -131,6 +131,7 @@ adminCmds =
     , mkAdminCmd "mychannels" adminMyChans     "Display information about telepathic channels for one or more players."
     , mkAdminCmd "peep"       adminPeep        "Start or stop peeping one or more players."
     , mkAdminCmd "persist"    adminPersist     "Persist the world (save the current world state to disk)."
+    , mkAdminCmd "possess"    adminPossess     "Possess an NPC."
     , mkAdminCmd "print"      adminPrint       "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   "Dump the profanity database."
     , mkAdminCmd "search"     adminSearch      "Search for names and IDs using a regular expression."
@@ -223,16 +224,16 @@ adminAs p@AdviseNoArgs                       = advise p [ prefixAdminCmd "as" ] 
 adminAs p@(AdviseOneArg a)                   = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a
 adminAs (MsgWithTarget _ mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID" -- TODO: Test w/ loc prefs.
-        sorryParse          = sendFun . sorryParseId $ strippedTarget
-        helper targetId     = case getType targetId ms of
+        as targetId         = case getType targetId ms of
           NpcType -> let npcMq = getNpcMsgQueue targetId ms
-                     in liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ msg
+                     in liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols . T.unwords . unmsg . T.words $ msg
           PCType  -> unit -- TODO
           _       -> unit -- TODO
+        sorryParse = sendFun . sorryParseId . uncapitalize $ strippedTarget
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                                -> sendFun sorryWtf
                        | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse
-                       | otherwise                                   -> helper targetId
+                       | otherwise                                   -> as targetId
       _                                                              -> sorryParse
 adminAs p = patternMatchFail "adminAs" [ showText p ]
 
@@ -783,6 +784,29 @@ adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 adminPersist :: Action
 adminPersist (NoArgs' i mq) = persist >> ok mq >> logPlaExec (prefixAdminCmd "persist") i
 adminPersist p              = withoutArgs adminPersist p
+
+
+-----
+
+
+-- TODO: Help.
+adminPossess :: Action
+adminPossess p@AdviseNoArgs                  = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs
+adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+  where
+    helper ms =
+        let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
+            possess targetId    = case getType targetId ms of
+              NpcType -> (ms & plaTbl.ind i.possessing .~ Just targetId, []) -- TODO: Can multiple admins possess the same NPC?
+              t       -> sorry . sorryPossessType $ t
+            sorry = (ms, ) . pure . sendFun
+        in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
+          [(targetId, "")]
+            | targetId < 0                                -> sorry sorryWtf
+            | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget
+            | otherwise                                   -> possess targetId
+          _                                               -> sorry . sorryParseId $ strippedTarget -- TODO: Technically, we should uncap (here nad elsewhere)...
+adminPossess (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
 
 
 -----

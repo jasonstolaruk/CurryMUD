@@ -95,6 +95,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryPCNameLoggedIn
                             , sorryPeepAdmin
                             , sorryPeepSelf
+                            , sorryPossessType
                             , sorryPp
                             , sorryPutExcessCon
                             , sorryPutInCoin
@@ -723,6 +724,13 @@ sorryPeepAdmin = "You can't peep an admin."
 
 sorryPeepSelf :: T.Text
 sorryPeepSelf = "You can't peep yourself."
+
+
+-----
+
+
+sorryPossessType :: Type -> T.Text
+sorryPossessType t = "You can't possess " <> aOrAn (pp t) <> "."
 
 
 -----

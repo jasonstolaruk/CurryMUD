@@ -31,7 +31,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (writeTMQueue)
 import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
-import Control.Lens (view)
+import Control.Lens (to, view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_, void)
 import Control.Monad.IO.Class (liftIO)
@@ -69,10 +69,13 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
 
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> T.Text -> MudStack ()
 handleFromClient i mq tq (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
-    let p           = getPla i ms
-        thruCentral = msg |#| interpret p centralDispatch . headTail . T.words
-        thruOther f = interpret p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
-    in p^.interp |&| maybe thruCentral thruOther
+    let p                  = getPla i ms
+        isn'tPossessing    = p^.interp.to (maybe thruCentral thruOther)
+        thruCentral        = msg |#| interpret p centralDispatch . headTail . T.words
+        thruOther f        = interpret p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
+        isPossessing npcId = let npcMq = getNpcMsgQueue npcId ms
+                             in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg
+    in views possessing (maybe isn'tPossessing isPossessing) p
   where
     interpret p f (cn, as) = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg

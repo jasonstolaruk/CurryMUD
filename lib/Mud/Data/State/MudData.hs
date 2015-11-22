@@ -27,6 +27,9 @@ import qualified Data.Map.Lazy as M (Map)
 import qualified Data.Text as T
 
 
+-- TODO: DisambiguateRecordFields?
+
+
 type MudStack = ReaderT MudData IO
 
 
@@ -425,6 +428,7 @@ data Pla = Pla { _currHostName :: HostName
                , _interp       :: Maybe Interp
                , _peepers      :: Inv
                , _peeping      :: Inv
+               , _possessing   :: Maybe Id
                , _retainedMsgs :: [T.Text]
                , _lastRmId     :: Maybe Id }
 
@@ -468,6 +472,7 @@ jsonToPla (Object o) = Pla <$> o .: "_currHostName"
                            <*> pure Nothing
                            <*> pure []
                            <*> pure []
+                           <*> pure Nothing
                            <*> o .: "_retainedMsgs"
                            <*> o .: "_lastRmId"
 jsonToPla _          = empty

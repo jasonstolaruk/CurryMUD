@@ -6,6 +6,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , handleEgress
                     , look
                     , mkNonStdRmLinkCmds
+                    , npcCmds
                     , plaCmds
                     , showMotd ) where
 
@@ -81,7 +82,7 @@ import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
-import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
+import qualified Data.IntMap.Lazy as IM (IntMap, (!), filter, keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -138,6 +139,12 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
 plaCmds :: [Cmd]
 plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
+
+
+npcCmds :: [Cmd]
+npcCmds = map (uncurry3 mkRegularCmd)
+    [ ("stop",   stop,   "Stop possessing.")
+    , ("whoami", whoAmI, "Confirm who you are.") ]
 
 
 -- TODO: "give" command.
@@ -2394,6 +2401,20 @@ stats p = withoutArgs stats p
 -----
 
 
+stop :: Action
+stop (NoArgs'' i) = getPossessorId i <$> getState >>= \pi -> do
+    modifyState $ (, ()) . (plaTbl.ind pi.possessing .~ Nothing)
+    logPlaExec "stop" pi
+stop p = withoutArgs stop p
+
+
+getPossessorId :: Id -> MudState -> Id
+getPossessorId i = views plaTbl (head . IM.keys . IM.filter (views possessing (== Just i)))
+
+
+-----
+
+
 tele :: Action
 tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
 tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a
@@ -2761,11 +2782,16 @@ mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
 whoAmI :: Action
 whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoami" i
   where
-    helper ms = let s         = getSing i ms
-                    (sexy, r) = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
-                in return . T.concat $ [ "You are "
-                                       , colorWith knownNameColor s
-                                       , " "
-                                       , parensQuote . T.concat $ [ "a ", sexy, " ", r ]
-                                       , "." ]
+    helper ms = return $ let s = getSing i ms in if isNpc i ms
+      then let sexy = getSex i ms
+           in T.concat [ "You are "
+                       , aOrAnOnLower s
+                       , sexy /= NoSex |?| (" " <> parensQuote (pp sexy))
+                       , "." ]
+      else let (sexy, r) = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
+           in T.concat [ "You are "
+                       , colorWith knownNameColor s
+                       , " "
+                       , parensQuote . T.concat $ [ "a ", sexy, " ", r ]
+                       , "." ]
 whoAmI p = withoutArgs whoAmI p

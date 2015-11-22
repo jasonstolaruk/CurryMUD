@@ -15,6 +15,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
                             , adviceAPeepNoArgs
+                            , adviceAPossessExcessArgs
+                            , adviceAPossessNoArgs
                             , adviceAPrintNoArgs
                             , adviceASearchNoArgs
                             , adviceASudoerExcessArgs
@@ -187,6 +189,14 @@ adviceAPeepNoArgs :: T.Text
 adviceAPeepNoArgs = "Please specify the PC names of one or more players you wish to start or stop peeping."
 
 
+adviceAPossessExcessArgs :: T.Text
+adviceAPossessExcessArgs = "You can only possess one NPC at a time."
+
+
+adviceAPossessNoArgs :: T.Text
+adviceAPossessNoArgs = "Please specify the ID of the NPC you wish to possess."
+
+
 adviceAPrintNoArgs :: T.Text
 adviceAPrintNoArgs = "You must provide a message to print to the server console, as in "  <>
                      colorWith quoteColor (prefixAdminCmd "print" <> " is anybody home?") <>
@@ -210,7 +220,7 @@ adviceATeleIdExcessArgs = "You can only teleport to one entity or room at a time
 
 
 adviceATeleIdNoArgs :: T.Text
-adviceATeleIdNoArgs = "Please specify the ID of the entity or room to which you want to teleport."
+adviceATeleIdNoArgs = "Please specify the ID of the entity or room to which you wish to teleport."
 
 
 adviceATelePCExcessArgs :: T.Text
@@ -218,7 +228,7 @@ adviceATelePCExcessArgs = "You can only teleport to one PC at a time."
 
 
 adviceATelePCNoArgs :: T.Text
-adviceATelePCNoArgs = "Please specify the name of the PC to which you want to teleport."
+adviceATelePCNoArgs = "Please specify the name of the PC to which you wish to teleport."
 
 
 adviceATeleRmExcessArgs :: T.Text

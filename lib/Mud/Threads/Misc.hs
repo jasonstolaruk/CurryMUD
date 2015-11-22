@@ -3,6 +3,7 @@
 module Mud.Threads.Misc ( concurrentTree
                         , die
                         , dieSilently
+                        , findNpcIds
                         , plaThreadExHandler
                         , PlsDie(..)
                         , runAsync
@@ -27,13 +28,14 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, SomeException, fromException)
 import Control.Exception.Lifted (throwTo)
-import Control.Lens (at)
+import Control.Lens (at, views)
 import Control.Lens.Operators ((?~))
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
 import Data.Typeable (Typeable)
+import qualified Data.IntMap.Lazy as IM (filter, keys)
 import qualified Data.Text as T
 
 
@@ -87,6 +89,13 @@ die mi threadName = const . f $ "the " <> threadName <> " thread is dying."
 
 dieSilently :: PlsDie -> MudStack ()
 dieSilently = const unit
+
+
+-----
+
+
+findNpcIds :: MudState -> Inv
+findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 
 
 -----

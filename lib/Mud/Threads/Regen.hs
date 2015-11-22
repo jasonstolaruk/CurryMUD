@@ -58,12 +58,12 @@ runRegenAsync i = runAsync (threadRegen i) >>= \a -> modifyState $ (, ()) . (mob
 
 startNpcRegens :: MudStack ()
 startNpcRegens =
-    logNotice "startNpcRegens" "starting NPC regens." >> (mapM_ runRegenAsync  . getNpcIds =<< getState)
+    logNotice "startNpcRegens" "starting NPC regens." >> (mapM_ runRegenAsync  . findNpcIds =<< getState)
 
 
 stopNpcRegens :: MudStack ()
 stopNpcRegens =
-    logNotice "stopNpcRegens"  "stopping NPC regens." >> (mapM_ throwWaitRegen . getNpcIds =<< getState)
+    logNotice "stopNpcRegens"  "stopping NPC regens." >> (mapM_ throwWaitRegen . findNpcIds =<< getState)
 
 
 throwWaitRegen :: Id -> MudStack ()

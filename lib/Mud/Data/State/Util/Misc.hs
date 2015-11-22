@@ -162,7 +162,7 @@ getNonIncogLoggedInAdminIds ms = let adminIds = getLoggedInAdminIds ms
 
 
 getNpcIds :: MudState -> Inv
-getNpcIds = views pcTbl IM.keys
+getNpcIds = views npcTbl IM.keys
 
 
 -----
