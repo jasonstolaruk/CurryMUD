@@ -378,7 +378,8 @@ jsonToMob _          = empty
 
 -- Has a mob (and an entity and an inventory and coins and equipment).
 data Npc = Npc { _npcMsgQueue    :: NpcMsgQueue
-               , _npcServerAsync :: NpcServerAsync }
+               , _npcServerAsync :: NpcServerAsync
+               , _possessor      :: Maybe Id }
 
 
 type NpcServerAsync = Async ()

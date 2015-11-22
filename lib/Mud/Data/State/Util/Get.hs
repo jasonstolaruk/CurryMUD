@@ -320,6 +320,20 @@ getPla i = view (plaTbl.ind i)
 -----
 
 
+getPossessing :: Id -> MudState -> Maybe Id
+getPossessing i = view possessing . getPla i
+
+
+-----
+
+
+getPossessor :: Id -> MudState -> Maybe Id
+getPossessor i = view possessor . getNpc i
+
+
+-----
+
+
 getPs :: Id -> MudState -> Int
 getPs i = view ps . getMob i
 

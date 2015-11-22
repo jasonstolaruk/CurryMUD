@@ -289,7 +289,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
       | searchId < 0 = wrapSend mq cols sorryWtf
       | otherwise    = getState >>= \ms -> do
           let f     = commas . map (showText . fst)
-              mkTxt = -- TODO: NPCs being possessed by ID...
+              mkTxt =
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
                   , [ T.concat [ "Channels with an ", dblQuote "chanId", " of ", searchIdTxt, ": " ]
@@ -300,6 +300,8 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                     , f . filter ((searchId `elem`) . M.elems . snd) . tblToList eqTbl $ ms ]
                   , [ T.concat [ "Inventories containing ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . snd) . tblToList invTbl $ ms ]
+                  , [ T.concat [ "NPCs being possessed by ID ", searchIdTxt, ": " ] -- TODO: Test.
+                    , f . filter ((searchId `elem`) . view possessor . snd) . tblToList npcTbl $ ms ]
                   , [ T.concat [ "PCs with a ", dblQuote "rmId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view rmId . snd) . tblToList pcTbl $ ms ]
                   , [ T.concat [ "Players being peeped by ID ", searchIdTxt, ": " ]
@@ -309,7 +311,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   , [ T.concat [ "Players possessing ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . view possessing . snd) $ plaTblList ]
                   , [ T.concat [ "Players with a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
-                    , f . filter ((== Just searchId) . view lastRmId . snd) $ plaTblList ] ]
+                    , f . filter ((searchId `elem`) . view lastRmId . snd) $ plaTblList ] ]
               plaTblList = tblToList plaTbl ms
           mapM_ (multiWrapSend mq cols) mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i

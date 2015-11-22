@@ -1474,7 +1474,7 @@ newChan p = patternMatchFail "newChan" [ showText p ]
 
 npcAsSelf :: Action
 npcAsSelf p@AdviseNoArgs       = advise p [] adviceAsSelfNoArgs
-npcAsSelf (WithArgs i mq _ as) = getPossessorId i <$> getState >>= \pi -> do
+npcAsSelf (WithArgs i mq _ as) = fromJust . getPossessor i <$> getState >>= \pi -> do
     logPlaExecArgs "." as pi
     liftIO . atomically . writeTQueue mq . AsSelf . nl . T.unwords $ as
 npcAsSelf p = patternMatchFail "npcAsSelf" [ showText p ]
@@ -1484,7 +1484,7 @@ npcAsSelf p = patternMatchFail "npcAsSelf" [ showText p ]
 
 
 npcDispCmdList :: Action
-npcDispCmdList (NoArgs i mq cols) = getPossessorId i <$> getState >>= \pi -> do
+npcDispCmdList (NoArgs i mq cols) = fromJust . getPossessor i <$> getState >>= \pi -> do
     send mq . nl . T.unlines . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ npcCmds
     logPlaExec "?" pi
 npcDispCmdList p = withoutArgs npcDispCmdList p
@@ -1494,7 +1494,7 @@ npcDispCmdList p = withoutArgs npcDispCmdList p
 
 
 npcStop :: Action
-npcStop (NoArgs' i mq) = getPossessorId i <$> getState >>= \pi -> do
+npcStop (NoArgs' i mq) = fromJust . getPossessor i <$> getState >>= \pi -> do
     ok mq
     modifyState $ (, ()) . (plaTbl.ind pi.possessing .~ Nothing) -- TODO: Could make a utility function for this pattern of modifying state.
     logPlaExec "stop" pi
@@ -1646,13 +1646,13 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress = getState >>= \ms -> let d = serialize . mkStdDesig i ms $ DoCap in
         unless (getRmId i ms == iWelcome) . bcastOthersInRm i . nlnl . egressMsg $ d
     helper now ms =
-        let ri                 = getRmId i  ms
-            s                  = getSing i  ms
+        let ri                 = getRmId i ms
+            s                  = getSing i ms
             (ms', bs, logMsgs) = peepHelper ms s
             ms''               = if T.takeWhile (not . isDigit) s `elem` map showText (allValues :: [Race])
                                    then removeAdHoc i ms'
-                                   else updateHostMap (movePC ms' ri) s now
-        in (ms'' & plaTbl.ind i.possessing .~ Nothing, (s, bs, logMsgs)) -- TODO: Set NPC's possessor to Nothing.
+                                   else updateHostMap (possessHelper (movePC ms' ri)) s now
+        in (ms'', (s, bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
             bs                      = [ (nlnl    . T.concat $ [ "You are no longer peeping "
@@ -1674,11 +1674,6 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
                                         in foldr f pt peepingIds
         stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
                                         in foldr f pt peeperIds
-    movePC ms ri = ms & invTbl     .ind ri         %~ (i `delete`)
-                      & invTbl     .ind iLoggedOut %~ (i :)
-                      & msgQueueTbl.at  i          .~ Nothing
-                      & pcTbl      .ind i.rmId     .~ iLoggedOut
-                      & plaTbl     .ind i.lastRmId ?~ ri
     updateHostMap ms s now = flip (set $ hostTbl.at s) ms $ case getHostMap s ms of
       Nothing      -> Just . M.singleton host $ newRecord
       Just hostMap -> case hostMap^.at host of Nothing -> Just $ hostMap & at host ?~ newRecord
@@ -1693,6 +1688,13 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
         host           = getCurrHostName i ms
         duration       = round $ now `diffUTCTime` conTime
         conTime        = fromJust . getConnectTime i $ ms
+    possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.possessor .~ Nothing) . getPossessing i $ ms
+                       in ms & plaTbl.ind i.possessing .~ Nothing & f
+    movePC ms ri     = ms & invTbl     .ind ri         %~ (i `delete`)
+                          & invTbl     .ind iLoggedOut %~ (i :)
+                          & msgQueueTbl.at  i          .~ Nothing
+                          & pcTbl      .ind i.rmId     .~ iLoggedOut
+                          & plaTbl     .ind i.lastRmId ?~ ri
 
 
 -----
