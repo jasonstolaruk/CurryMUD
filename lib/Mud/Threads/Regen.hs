@@ -53,7 +53,7 @@ logNotice = L.logNotice "Mud.Threads.Regen"
 
 
 runRegenAsync :: Id -> MudStack ()
-runRegenAsync i = runAsync (threadRegen i) >>= \a -> modifyState $ (, ()) . (mobTbl.ind i.regenAsync ?~ a)
+runRegenAsync i = runAsync (threadRegen i) >>= \a -> tweak $ mobTbl.ind i.regenAsync ?~ a
 
 
 startNpcRegens :: MudStack ()
@@ -99,6 +99,6 @@ threadRegen i = onEnv $ \md -> do
                 amt    = calcAmt i ms
                 total  = c + amt
                 c'     = (total > m) ? m :? total
-            in when (c < m) . modifyState $ (, ()) . (mobTbl.ind i.curLens .~ c')
+            in when (c < m) . tweak $ mobTbl.ind i.curLens .~ c'
           where
             delay = getState >>= \ms -> liftIO . threadDelay $ calcDelay i ms * 10 ^ 6

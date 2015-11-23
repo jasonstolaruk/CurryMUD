@@ -131,6 +131,6 @@ listenExHandler e = case fromException e of
 
 
 sortAllInvs :: MudStack ()
-sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> modifyState helper
-  where
-    helper ms = (ms & invTbl %~ IM.map (sortInv ms), ())
+sortAllInvs = do
+    logNotice "sortAllInvs" "sorting all inventories."
+    tweak $ \ms -> ms & invTbl %~ IM.map (sortInv ms)

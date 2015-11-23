@@ -33,6 +33,8 @@ module Mud.Data.State.Util.Misc ( BothGramNos
                                 , removeAdHoc
                                 , setInterp
                                 , sortInv
+                                , tweak
+                                , tweaks
                                 , withLock ) where
 
 import Mud.Data.Misc
@@ -54,7 +56,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.IORef (atomicModifyIORef, readIORef)
-import Data.List (delete, sortBy)
+import Data.List (delete, foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import GHC.Exts (sortWith)
@@ -295,7 +297,7 @@ removeAdHoc i ms = ms & coinsTbl   .at  i        .~ Nothing
 
 
 setInterp :: Id -> Maybe Interp -> MudStack ()
-setInterp i mi = modifyState $ (, ()) . (plaTbl.ind i.interp .~ mi)
+setInterp i mi = tweak $ plaTbl.ind i.interp .~ mi
 
 
 -----
@@ -311,6 +313,17 @@ sortInv ms is = let (foldr helper ([], []) -> (pcIs, nonPCIs)) = [ (i, getType i
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped nonPCIs                     = [ (i, views entName fromJust e, e^.sing) | i <- nonPCIs
                                                                                   , let e = getEnt i ms ]
+
+
+-----
+
+
+tweak :: (MudState -> MudState) -> MudStack ()
+tweak f = modifyState $ (, ()) . f
+
+
+tweaks :: [MudState -> MudState] -> MudStack ()
+tweaks fs = tweak $ \ms -> foldl' (&) ms fs
 
 
 -----

@@ -56,8 +56,7 @@ logNotice = L.logNotice "Mud.Threads.Talk"
 
 
 runTalkAsync :: Handle -> HostName -> MudStack ()
-runTalkAsync h host = runAsync (threadTalk h host) >>= \a@(asyncThreadId -> ti) ->
-    modifyState $ (, ()) . (talkAsyncTbl.at ti ?~ a)
+runTalkAsync h host = runAsync (threadTalk h host) >>= \a@(asyncThreadId -> ti) -> tweak $ talkAsyncTbl.at ti ?~ a
 
 
 -----

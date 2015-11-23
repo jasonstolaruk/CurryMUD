@@ -124,9 +124,9 @@ runAsync f = onEnv $ liftIO . async . runReaderT f
 
 
 setThreadType :: ThreadType -> MudStack ()
-setThreadType threadType = liftIO myThreadId >>= \ti -> modifyState (helper ti)
+setThreadType threadType = tweak . helper =<< liftIO myThreadId
   where
-    helper ti = (, ()) . (threadTbl.at ti ?~ threadType)
+    helper ti = threadTbl.at ti ?~ threadType
 
 
 -----

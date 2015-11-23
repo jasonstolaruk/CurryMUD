@@ -39,7 +39,7 @@ runNpcServerAsync :: Id -> MudStack ()
 runNpcServerAsync i = do
     npcMq <- liftIO newTQueueIO
     a     <- runAsync . threadNpcServer i $ npcMq
-    modifyState $ (, ()) . (npcTbl.ind i .~ Npc npcMq a Nothing)
+    tweak $ npcTbl.ind i .~ Npc npcMq a Nothing
 
 
 startNpcServers :: MudStack ()

@@ -116,7 +116,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl teleLinkMstrTblFile  teleLinkMstrTbl
                                                  , loadTbl typeTblFile          typeTbl
                                                  , loadTbl wpnTblFile           wpnTbl ]
-    modifyState $ \ms -> (foldr removeAdHoc ms . getInv iWelcome $ ms, ())
+    tweak $ \ms -> foldr removeAdHoc ms . getInv iWelcome $ ms
     movePCs
     return . and $ res
 
@@ -126,7 +126,7 @@ loadEqTbl ((</> eqTblFile) -> absolute) = do
     json <- liftIO . B.readFile $ absolute
     case eitherDecode json of
       Left err -> sorry absolute err
-      Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> modifyState ((, ()) . (eqTbl .~ tbl)) >> return True
+      Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> tweak (eqTbl .~ tbl) >> return True
 
 
 sorry :: FilePath -> String -> MudStack Bool
@@ -137,15 +137,15 @@ loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath
 loadTbl tblFile lens path = let absolute = path </> tblFile in
     eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
       Left  err -> sorry absolute err
-      Right tbl -> modifyState ((, ()) . (lens .~ tbl)) >> return True
+      Right tbl -> tweak (lens .~ tbl) >> return True
 
 
 movePCs :: MudStack ()
-movePCs = modifyState $ \ms ->
+movePCs = tweak $ \ms ->
     let idsWithRmIds       = let pairs = IM.foldrWithKey (\i pc -> ((i, pc^.rmId) :)) [] $ ms^.pcTbl
                              in filter ((/= iLoggedOut) . snd) pairs
         helper (i, ri) ms' = ms' & invTbl.ind ri         %~ (i `delete`)
                                  & invTbl.ind iLoggedOut %~ (i :)
                                  & pcTbl .ind i.rmId     .~ iLoggedOut
                                  & plaTbl.ind i.lastRmId ?~ ri
-    in (foldr helper ms idsWithRmIds, ())
+    in foldr helper ms idsWithRmIds

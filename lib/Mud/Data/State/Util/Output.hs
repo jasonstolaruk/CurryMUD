@@ -241,7 +241,7 @@ retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
 retainedMsg targetId ms targetMsg@(T.uncons -> Just (x, xs))
   | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                                         in wrapSend targetMq targetCols stripMarker
-  | otherwise                         = modifyState $ (, ()) . (plaTbl.ind targetId.retainedMsgs <>~ pure targetMsg)
+  | otherwise                         = tweak $ plaTbl.ind targetId.retainedMsgs <>~ pure targetMsg
   where
     stripMarker | x == fromPersonMarker = xs
                 | otherwise             = targetMsg

@@ -54,7 +54,7 @@ purgeThreadTbls = do
 purgePlaLogTbl :: MudStack ()
 purgePlaLogTbl = getState >>= \(views plaLogTbl (unzip . IM.assocs) -> (is, map fst -> asyncs)) -> do
     zipped <- [ zip is statuses | statuses <- liftIO . mapM poll $ asyncs ]
-    modifyState $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped in (ms & plaLogTbl .~ plt, ())
+    tweak $ \ms -> let plt = foldr purger (ms^.plaLogTbl) zipped in ms & plaLogTbl .~ plt
   where
     purger (_poo, Nothing) tbl = tbl
     purger (i,    _poo   ) tbl = tbl & at i .~ Nothing
@@ -63,7 +63,7 @@ purgePlaLogTbl = getState >>= \(views plaLogTbl (unzip . IM.assocs) -> (is, map 
 purgeTalkAsyncTbl :: MudStack ()
 purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
     zipped <- [ zip asyncs statuses | statuses <- liftIO . mapM poll $ asyncs ]
-    modifyState $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) zipped in (ms & talkAsyncTbl .~ tat, ())
+    tweak $ \ms -> let tat = foldr purger (ms^.talkAsyncTbl) zipped in ms & talkAsyncTbl .~ tat
   where
     purger (_poo,                Nothing) tbl = tbl
     purger (asyncThreadId -> ti, _poo   ) tbl = tbl & at ti .~ Nothing
@@ -72,6 +72,6 @@ purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
 purgeThreadTbl :: MudStack ()
 purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
     zipped <- [ zip threadIds statuses | statuses <- liftIO . mapM threadStatus $ threadIds ]
-    modifyState $ \ms -> let tt = foldr purger (ms^.threadTbl) zipped in (ms & threadTbl .~ tt, ())
+    tweak $ \ms -> let tt = foldr purger (ms^.threadTbl) zipped in ms & threadTbl .~ tt
   where
     purger (ti, status) tbl = status == ThreadFinished ? tbl & at ti .~ Nothing :? tbl

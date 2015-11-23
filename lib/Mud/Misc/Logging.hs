@@ -148,7 +148,7 @@ initPlaLog i n@(T.unpack -> n') = do
     logExLock <- onEnv $ views (locks.loggingExLock) return
     q         <- liftIO newTQueueIO
     a         <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM q $ logExLock
-    modifyState $ (, ()) . (plaLogTbl.ind i .~ (a, q))
+    tweak $ plaLogTbl.ind i .~ (a, q)
 
 
 -- ==================================================

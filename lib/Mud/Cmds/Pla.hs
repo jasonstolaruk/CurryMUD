@@ -1494,10 +1494,8 @@ npcDispCmdList p = withoutArgs npcDispCmdList p
 
 
 npcStop :: Action
-npcStop (NoArgs' i mq) = fromJust . getPossessor i <$> getState >>= \pi -> do
-    ok mq
-    modifyState $ (, ()) . (plaTbl.ind pi.possessing .~ Nothing) -- TODO: Could make a utility function for this pattern of modifying state.
-    logPlaExec "stop" pi
+npcStop (NoArgs' i mq) = fromJust . getPossessor i <$> getState >>= \pi ->
+    ok mq >> (tweak $ plaTbl.ind pi.possessing .~ Nothing) >> logPlaExec "stop" pi
 npcStop p = withoutArgs npcStop p
 
 
