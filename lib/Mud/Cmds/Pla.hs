@@ -1494,8 +1494,14 @@ npcDispCmdList p = withoutArgs npcDispCmdList p
 
 
 npcStop :: Action
-npcStop (NoArgs' i mq) = fromJust . getPossessor i <$> getState >>= \pi ->
-    ok mq >> (tweak $ plaTbl.ind pi.possessing .~ Nothing) >> logPlaExec "stop" pi
+npcStop (NoArgs' i mq) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
+    tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
+    ok mq
+    logPla "stop" pi . T.concat $ [ "stopped possessing "
+                                  , aOrAnOnLower . getSing i $ ms
+                                  , " "
+                                  , parensQuote . showText $ i
+                                  , "." ]
 npcStop p = withoutArgs npcStop p
 
 

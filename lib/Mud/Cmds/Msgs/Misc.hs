@@ -18,7 +18,7 @@ dbEmptyMsg = "The database is empty."
 
 
 dbErrorMsg :: T.Text
-dbErrorMsg = "There was an error when reading the database."
+dbErrorMsg = "There was an error while reading the database."
 
 
 dfltBootMsg :: T.Text

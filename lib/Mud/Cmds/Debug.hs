@@ -118,7 +118,7 @@ debugCmds =
     , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "talk"       debugTalk        "Dump the talk async table."
-    , mkDebugCmd "thread"     debugThread      "Dump the thread table."
+    , mkDebugCmd "threads"    debugThreads     "Dump the thread table."
     , mkDebugCmd "throw"      debugThrow       "Throw an exception."
     , mkDebugCmd "throwlog"   debugThrowLog    "Throw an exception on your player log thread."
     , mkDebugCmd "token"      debugToken       "Test token parsing."
@@ -549,13 +549,13 @@ debugTalk p = withoutArgs debugTalk p
 -----
 
 
-debugThread :: Action
-debugThread (NoArgs' i mq) = do
+debugThreads :: Action -- TODO: Make searchable.
+debugThreads (NoArgs' i mq) = do
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
     pager i mq =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
-    logPlaExec (prefixDebugCmd "thread") i
+    logPlaExec (prefixDebugCmd "threads") i
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
@@ -568,7 +568,7 @@ debugThread (NoArgs' i mq) = do
     mkTypeName (Server      (showText -> pi)) = padOrTrunc 12 "Server"      <> pi
     mkTypeName (Talk        (showText -> pi)) = padOrTrunc 12 "Talk"        <> pi
     mkTypeName (showText -> tt)               = tt
-debugThread p = withoutArgs debugThread p
+debugThreads p = withoutArgs debugThreads p
 
 
 getLogAsyncs :: MudData -> (LogAsync, LogAsync)

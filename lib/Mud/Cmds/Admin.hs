@@ -790,6 +790,7 @@ adminPersist p              = withoutArgs adminPersist p
 
 
 -- TODO: Help.
+-- TODO: Check that no one is already possessing.
 adminPossess :: Action
 adminPossess p@AdviseNoArgs                  = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs
 adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
@@ -797,7 +798,13 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
             possess targetId    = case getType targetId ms of
-              NpcType -> (ms & plaTbl.ind i.possessing .~ Just targetId, []) -- TODO: Can multiple admins possess the same NPC?
+              NpcType -> ( ms & plaTbl.ind i       .possessing .~ Just targetId
+                              & npcTbl.ind targetId.possessor  .~ Just i
+                         , [ logPla "adminPossess" i . T.concat $ [ "started possessing "
+                                                                  , aOrAnOnLower . getSing targetId $ ms
+                                                                  , " "
+                                                                  , parensQuote . showText $ i
+                                                                  , "." ] ] )
               t       -> sorry . sorryPossessType $ t
             sorry = (ms, ) . pure . sendFun
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
