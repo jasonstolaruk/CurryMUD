@@ -415,11 +415,12 @@ adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
           _                                                              -> sorry
           where
             sorry = pure . sorryParseId $ a
-    in (pager i mq . intercalateDivider cols . map helper $ as) >> logPlaExecArgs (prefixAdminCmd "examine") as i
+    in do
+        pager i mq . concatMap (wrapIndent 2 cols) . intercalateDivider cols . map helper $ as
+        logPlaExecArgs (prefixAdminCmd "examine") as i
 adminExamine p = patternMatchFail "adminExamine" [ showText p ]
 
 
--- TODO: The pager doesn't seem to be paging properly, likely due to Description line wrapping.
 examineHelper :: MudState -> Id -> [T.Text]
 examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   ObjType   -> [ examineEnt, examineObj ]
@@ -475,7 +476,7 @@ examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
 examineInv :: ExamineHelper
 examineInv i ms = let is  = getInv i ms
                       txt = commas . map (`descSingId` ms) $ is
-                  in [ "Contains: " <> (()# txt ? "Nothing." :? txt) ]
+                  in [ "Contains: " <> (()# txt ? "nothing." :? txt) ]
 
 
 descSingId :: Id -> MudState -> T.Text
