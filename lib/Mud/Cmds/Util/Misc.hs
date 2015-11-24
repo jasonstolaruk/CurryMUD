@@ -10,6 +10,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , embedId
                           , expandEmbeddedIds
                           , expandEmbeddedIdsToSings
+                          , fakeClientInput
                           , fileIOExHandler
                           , formatChanMsg
                           , formatQuestion
@@ -95,6 +96,8 @@ import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), second)
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException, SomeException, toException)
 import Control.Exception.Lifted (catch, throwTo, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
@@ -258,6 +261,13 @@ expandEmbeddedIdsToSings ms = helper
       (_, "")                                        -> msg
       (x, breakIt . T.tail -> (numTxt, T.tail -> y)) -> let embeddedId = read . T.unpack $ numTxt :: Int
                                                         in helper . quoteWith' (x, y) . getSing embeddedId $ ms
+
+
+-----
+
+
+fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
+fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 -----

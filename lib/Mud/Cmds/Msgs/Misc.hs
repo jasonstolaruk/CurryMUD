@@ -9,6 +9,10 @@ import Data.Monoid ((<>))
 import qualified Data.Text as T
 
 
+asMsg :: T.Text
+asMsg = "You suddenly feel as though someone else is in control..."
+
+
 bannedMsg :: T.Text
 bannedMsg = "You have been banned from CurryMUD!"
 

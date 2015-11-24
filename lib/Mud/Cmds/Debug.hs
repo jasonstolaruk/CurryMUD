@@ -507,10 +507,6 @@ debugRemPut (NoArgs' i mq) = do
 debugRemPut p = withoutArgs debugRemPut p
 
 
-fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
-fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
-
-
 -----
 
 

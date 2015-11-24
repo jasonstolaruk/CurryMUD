@@ -225,11 +225,15 @@ adminAs p@(AdviseOneArg a)                   = advise p [ prefixAdminCmd "as" ] 
 adminAs (MsgWithTarget _ mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = case getType targetId ms of
-          NpcType -> let npcMq = getNpcMsgQueue targetId ms in do
-            sendLocPrefMsg
-            liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols . T.unwords . unmsg . T.words $ msg
-          PCType  -> unit -- TODO
+          NpcType | npcMq <- getNpcMsgQueue targetId ms -> do
+              sendLocPrefMsg
+              liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ msg'
+          PCType  | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do -- TODO: Confirm that the PC is logged in.
+              ok mq
+              wrapSend targetMq targetCols asMsg
+              fakeClientInput targetMq msg'
           _       -> unit -- TODO
+        msg'       = T.unwords . unmsg . T.words $ msg -- TODO: Ugh...
         sorryParse = sendFun . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                                -> sendFun sorryWtf
