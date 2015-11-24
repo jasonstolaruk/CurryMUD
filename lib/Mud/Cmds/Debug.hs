@@ -98,7 +98,7 @@ debugCmds =
     [ mkDebugCmd "?"          debugDispCmdList "Display or search this command list."
     , mkDebugCmd "ap"         debugAp          "Show \"ActionParams\", including any arguments you provide."
     , mkDebugCmd "boot"       debugBoot        "Boot all players (including yourself)."
-    , mkDebugCmd "broadcast"  debugBroad       "Broadcast (to yourself) a multi-line message."
+    , mkDebugCmd "broadcast"  debugBcast       "Broadcast (to yourself) a multi-line message."
     , mkDebugCmd "buffer"     debugBuffCheck   "Confirm the default buffering mode for file handles."
     , mkDebugCmd "cins"       debugCins        "Dump all channel ID/names for a given player ID."
     , mkDebugCmd "color"      debugColor       "Perform a color test."
@@ -159,8 +159,8 @@ debugBoot p              = withoutArgs debugBoot p
 -----
 
 
-debugBroad :: Action
-debugBroad (NoArgs'' i) = (bcastNl . mkBroadcast i $ msg) >> logPlaExec (prefixDebugCmd "broadcast") i
+debugBcast :: Action
+debugBcast (NoArgs'' i) = (bcastNl . mkBcast i $ msg) >> logPlaExec (prefixDebugCmd "broadcast") i
   where
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\
@@ -172,7 +172,7 @@ debugBroad (NoArgs'' i) = (bcastNl . mkBroadcast i $ msg) >> logPlaExec (prefixD
           \[8] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
           \[9] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
           \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
-debugBroad p = withoutArgs debugBroad p
+debugBcast p = withoutArgs debugBcast p
 
 
 -----

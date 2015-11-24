@@ -7,7 +7,7 @@ module Mud.Data.Misc ( Action
                      , BanRecord(..)
                      , Broadcast
                      , ChanContext(..)
-                     , ClassifiedBroadcast(..)
+                     , ClassifiedBcast(..)
                      , Cmd(..)
                      , CmdDesc
                      , CmdFullName
@@ -447,14 +447,14 @@ data ChanContext = ChanContext { someCmdName      :: T.Text
 type Broadcast = (T.Text, Inv)
 
 
-data ClassifiedBroadcast = TargetBroadcast    Broadcast
-                         | NonTargetBroadcast Broadcast deriving Eq
+data ClassifiedBcast = TargetBcast    Broadcast
+                     | NonTargetBcast Broadcast deriving Eq
 
 
-instance Ord ClassifiedBroadcast where
-  TargetBroadcast    _ `compare` NonTargetBroadcast _ = LT
-  NonTargetBroadcast _ `compare` TargetBroadcast    _ = GT
-  _うんこ               `compare` _糞                  = EQ
+instance Ord ClassifiedBcast where
+  TargetBcast    _ `compare` NonTargetBcast _ = LT
+  NonTargetBcast _ `compare` TargetBcast    _ = GT
+  _うんこ           `compare` _糞              = EQ
 
 
 -----
@@ -617,13 +617,13 @@ data ShouldLog = DoLog | Don'tLog deriving (Show)
 -----
 
 
-data SingleTarget = SingleTarget { strippedTarget  :: T.Text
-                                 , strippedTarget' :: T.Text
-                                 , sendFun         :: T.Text   -> MudStack ()
-                                 , multiSendFun    :: [T.Text] -> MudStack ()
-                                 , consLocPrefMsg  :: [T.Text] -> [T.Text]
-                                 , consLocPrefB    :: Id -> [Broadcast] -> [Broadcast]
-                                 , sendLocPrefMsg  :: MudStack () }
+data SingleTarget = SingleTarget { strippedTarget   :: T.Text
+                                 , strippedTarget'  :: T.Text
+                                 , sendFun          :: T.Text   -> MudStack ()
+                                 , multiSendFun     :: [T.Text] -> MudStack ()
+                                 , consLocPrefMsg   :: [T.Text] -> [T.Text]
+                                 , consLocPrefBcast :: Id -> [Broadcast] -> [Broadcast]
+                                 , sendLocPrefMsg   :: MudStack () }
 
 
 -----

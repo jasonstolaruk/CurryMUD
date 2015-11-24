@@ -723,13 +723,13 @@ expCmd ecn ect              (NoArgs'' i ) = case ect of
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
     helper toSelf toOthers = getState >>= \ms ->
-        let toSelfBroadcast             = mkBroadcast i . nlnl $ toSelf
+        let toSelfBcast                 = mkBcast i . nlnl $ toSelf
             d                           = mkStdDesig i ms DoCap
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-            toOthersBroadcast           = pure (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
-        in bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast >> (logPlaOut ecn i . pure $ toSelf)
+            toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
+        in bcastSelfOthers i ms toSelfBcast toOthersBcast >> (logPlaOut ecn i . pure $ toSelf)
 expCmd ecn (NoTarget {}) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
 expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
@@ -748,23 +748,23 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
               ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols adviceExpCmdExcessArgs
               ([ Right [targetId] ], _                   ) ->
                 let onPC targetDesigTxt =
-                        let (toSelf', toSelfBroadcast, toOthers', substitutions) = mkBindings targetDesigTxt
-                            toOthersBroadcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
-                            toTarget'         = replace substitutions toTarget
-                            toTargetBroadcast = (nlnl toTarget', pure targetId)
+                        let (toSelf', toSelfBcast, toOthers', substitutions) = mkBindings targetDesigTxt
+                            toOthersBcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
+                            toTarget'     = replace substitutions toTarget
+                            toTargetBcast = (nlnl toTarget', pure targetId)
                         in do
-                            bcastSelfOthers i ms toSelfBroadcast [ toTargetBroadcast, toOthersBroadcast ]
+                            bcastSelfOthers i ms toSelfBcast [ toTargetBcast, toOthersBcast ]
                             logPlaOut ecn i . pure . parsePCDesig i ms $ toSelf'
                     onNpc targetNoun =
-                        let (toSelf', toSelfBroadcast, toOthers', _) = mkBindings targetNoun
-                            toOthersBroadcast                        = pure (nlnl toOthers', i `delete` pcIds d)
+                        let (toSelf', toSelfBcast, toOthers', _) = mkBindings targetNoun
+                            toOthersBcast                        = pure (nlnl toOthers', i `delete` pcIds d)
                         in do
-                            bcastSelfOthers i ms toSelfBroadcast toOthersBroadcast
+                            bcastSelfOthers i ms toSelfBcast toOthersBcast
                             logPlaOut ecn i . pure $ toSelf'
                     mkBindings targetTxt =
-                        let toSelf'         = replace (pure ("@", targetTxt)) toSelf
-                            toSelfBroadcast = mkBroadcast i . nlnl $ toSelf'
-                            serialized      = mkSerializedDesig d toOthers
+                        let toSelf'                     = replace (pure ("@", targetTxt)) toSelf
+                            toSelfBcast                 = mkBcast i . nlnl $ toSelf'
+                            serialized                  = mkSerializedDesig d toOthers
                             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
                             toOthers'                   = replace substitutions toOthers
                             substitutions               = [ ("@", targetTxt)
@@ -772,7 +772,7 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
                                                           , ("^", heShe)
                                                           , ("&", hisHer)
                                                           , ("*", himHerself) ]
-                        in (toSelf', toSelfBroadcast, toOthers', substitutions)
+                        in (toSelf', toSelfBcast, toOthers', substitutions)
                 in case getType targetId ms of
                   PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
                   NpcType -> onNpc . theOnLower . getSing targetId $ ms

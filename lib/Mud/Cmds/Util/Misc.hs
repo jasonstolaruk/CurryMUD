@@ -640,13 +640,13 @@ mkRightForNonTargets = Right . mkForNonTargets
 
 mkSingleTarget :: MsgQueue -> Cols -> T.Text -> T.Text -> SingleTarget
 mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
-    SingleTarget { strippedTarget  = capitalize   t
-                 , strippedTarget' = uncapitalize t
-                 , sendFun         = hlp ? (multiWrapSend mq cols . (sorryMsg :) . pure) :? wrapSend mq cols
-                 , multiSendFun    = hlp ? (multiWrapSend mq cols . (sorryMsg :)       ) :? multiWrapSend mq cols
-                 , consLocPrefMsg  = hlp ? (sorryMsg :)                                  :? id
-                 , consLocPrefB    = hlp ? f                                             :? const id
-                 , sendLocPrefMsg  = when hlp . wrapSend mq cols $ sorryMsg }
+    SingleTarget { strippedTarget   = capitalize   t
+                 , strippedTarget'  = uncapitalize t
+                 , sendFun          = hlp ? (multiWrapSend mq cols . (sorryMsg :) . pure) :? wrapSend mq cols
+                 , multiSendFun     = hlp ? (multiWrapSend mq cols . (sorryMsg :)       ) :? multiWrapSend mq cols
+                 , consLocPrefMsg   = hlp ? (sorryMsg :)                                  :? id
+                 , consLocPrefBcast = hlp ? f                                             :? const id
+                 , sendLocPrefMsg   = when hlp . wrapSend mq cols $ sorryMsg }
   where
     hlp = hasLocPref . uncapitalize $ target
     t   = hlp ? (T.tail . T.tail $ target) :? target

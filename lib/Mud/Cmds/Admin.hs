@@ -973,7 +973,7 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                 in if | destId == originId   -> sorry sorryTeleAlready
                       | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
                       | otherwise            ->
-                          teleHelper p { args = [] } ms originId destId destName (Just notice) consLocPrefB
+                          teleHelper p { args = [] } ms originId destId destName (Just notice) consLocPrefBcast
             sorryParse = (ms, ) . pure . sendFun
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
           [(targetId, "")]
@@ -1025,7 +1025,7 @@ adminTelePC p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
             found (flip getRmId ms -> destId, targetSing)
               | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTeleSelf)
               | destId     == originId     = (ms, pure .  sendFun $ sorryTeleAlready)
-              | otherwise = teleHelper p { args = [] } ms originId destId targetSing Nothing consLocPrefB
+              | otherwise = teleHelper p { args = [] } ms originId destId targetSing Nothing consLocPrefBcast
             notFound = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
         in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
 adminTelePC (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePCExcessArgs
@@ -1046,7 +1046,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
             originId            = getRmId i ms
             found (destId, rmTeleName)
               | destId == originId = (ms, pure . sendFun $ sorryTeleAlready)
-              | otherwise          = teleHelper p { args = [] } ms originId destId rmTeleName Nothing consLocPrefB
+              | otherwise          = teleHelper p { args = [] } ms originId destId rmTeleName Nothing consLocPrefBcast
             notFound               = (ms, pure . sendFun . sorryTeleRmName $ strippedTarget')
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
 adminTeleRm p = advise p [] adviceATeleRmExcessArgs

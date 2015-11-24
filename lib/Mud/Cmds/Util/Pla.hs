@@ -262,12 +262,12 @@ helperDropEitherInv :: Id
                     -> Either T.Text Inv
                     -> (MudState, [Broadcast], [T.Text])
 helperDropEitherInv i d fi ti a@(ms, _, _) = \case
-  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
-  Right is                   -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Drop is
-                                in a & _1.invTbl.ind fi %~  (\\ is)
-                                     & _1.invTbl.ind ti %~  (sortInv ms . (++ is))
-                                     & _2               <>~ bs
-                                     & _3               <>~ logMsgs
+  Left  (mkBcast i -> b) -> a & _2 <>~ b
+  Right is               -> let (bs, logMsgs) = mkGetDropInvDesc i ms d Drop is
+                            in a & _1.invTbl.ind fi %~  (\\ is)
+                                 & _1.invTbl.ind ti %~  (sortInv ms . (++ is))
+                                 & _2               <>~ bs
+                                 & _3               <>~ logMsgs
 
 
 mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
@@ -319,7 +319,7 @@ helperGetDropEitherCoins i d god fi ti (origMs, origBs, origMsgs) ecs =
     in (finalMs, finalBs ++ mkGetDropCoinsDescOthers i d god canCoins, finalMsgs)
   where
     helper a@(ms, _, _, _) = \case
-      Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
+      Left  msgs -> a & _2 <>~ (mkBcast i . T.concat $ msgs)
       Right c    -> let (can, can't)  = case god of Get  -> partitionByEnc c
                                                     Drop -> (c, mempty)
                         (bs, logMsgs) = mkGetDropCoinsDescSelf i god can
@@ -351,14 +351,14 @@ mkGetDropCoinsDescOthers i d god c =
 
 
 mkGetDropCoinsDescSelf :: Id -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
-mkGetDropCoinsDescSelf i god c | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+mkGetDropCoinsDescSelf i god c | bs <- mkCoinsBs c helper = (bs, extractLogMsgs i bs)
   where
     helper 1 cn = [ (T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "."  ], pure i) ]
     helper a cn = [ (T.concat [ "You ", mkGodVerb god SndPer, spaced . showText $ a, cn, "s." ], pure i) ]
 
 
-mkCoinsBroadcasts :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
-mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
+mkCoinsBs :: Coins -> (Int -> T.Text -> [Broadcast]) -> [Broadcast]
+mkCoinsBs (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
   where
     c = Sum cop |!| Just . f cop $ "copper piece"
     s = Sum sil |!| Just . f sil $ "silver piece"
@@ -366,11 +366,11 @@ mkCoinsBroadcasts (Coins (cop, sil, gol)) f = concat . catMaybes $ [ c, s, g ]
 
 
 mkCan'tGetCoinsDesc :: Id -> Coins -> [Broadcast]
-mkCan'tGetCoinsDesc i = (`mkCoinsBroadcasts` helper)
+mkCan'tGetCoinsDesc i = (`mkCoinsBs` helper)
   where
     helper a cn = let rest | a == 1    = "the " <> cn <> "."
                            | otherwise = T.concat [ showText a, " ", cn, "s." ]
-                  in mkBroadcast i $ sorryGetEnc <> rest
+                  in mkBcast i $ sorryGetEnc <> rest
 
 
 -----
@@ -384,8 +384,8 @@ helperGetEitherInv :: Id
                    -> Either T.Text Inv
                    -> (MudState, [Broadcast], [T.Text])
 helperGetEitherInv i d fi ti a@(ms, _, _) = \case
-  Left  (mkBroadcast i -> b                  ) -> a & _2 <>~ b
-  Right (sortByType    -> (pcs, mobs, others)) ->
+  Left  (mkBcast i  -> b                  ) -> a & _2 <>~ b
+  Right (sortByType -> (pcs, mobs, others)) ->
     let (_, cans, can'ts) = foldl' (partitionByEnc (calcMaxEnc i ms)) (calcWeight i ms, [], []) others
         (bs, logMsgs)     = mkGetDropInvDesc i ms d Get cans
     in a & _1.invTbl.ind fi %~  (\\ cans)
@@ -410,7 +410,7 @@ mkCan'tGetInvDesc i ms = concatMap helper . mkNameCountBothList i ms
   where
     helper (_, c, b@(s, _)) = let rest | c == 1    = "the " <> s <> "."
                                        | otherwise = T.concat [ showText c, " ", mkPlurFromBoth b, "." ]
-                              in mkBroadcast i $ sorryGetEnc <> rest
+                              in mkBcast i $ sorryGetEnc <> rest
 
 
 -----
@@ -451,7 +451,7 @@ helperPutRemEitherCoins i d por mnom fi ti ts (origCoinsTbl, origBs, origMsgs) e
     in (finalCoinsTbl, finalBs ++ mkPutRemCoinsDescOthers i d por mnom canCoins ts, finalMsgs)
   where
     helper a = \case
-      Left  msgs -> a & _2 <>~ (mkBroadcast i . T.concat $ msgs)
+      Left  msgs -> a & _2 <>~ (mkBcast i . T.concat $ msgs)
       Right c    -> let (bs, logMsgs) = mkPutRemCoinsDescsSelf i por mnom c ts
                     in a & _1.ind fi %~ (<> negateCoins c)
                          & _1.ind ti %~ (<> c)
@@ -471,7 +471,7 @@ mkPutRemCoinsDescOthers i d por mnom c ts = c |!| [ ( T.concat [ serialize d
 
 
 mkPutRemCoinsDescsSelf :: Id -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescsSelf i por mnom c ts | bs <- mkCoinsBroadcasts c helper = (bs, extractLogMsgs i bs)
+mkPutRemCoinsDescsSelf i por mnom c ts | bs <- mkCoinsBs c helper = (bs, extractLogMsgs i bs)
   where
     helper a cn | a == 1 = [ (T.concat [ start, aOrAn cn,   " ",           rest ], pure i) ]
     helper a cn          = [ (T.concat [ start, showText a, " ", cn, "s ", rest ], pure i) ]
@@ -521,9 +521,9 @@ helperPutRemEitherInv :: Id
                       -> Either T.Text Inv
                       -> (InvTbl, [Broadcast], [T.Text])
 helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
-  Left  (mkBroadcast i -> b) -> a & _2 <>~ b
+  Left  (mkBcast i -> b) -> a & _2 <>~ b
   Right is -> let (is', bs')      = if ti `elem` is
-                                      then (filter (/= ti) is, (bs ++) . mkBroadcast i . sorryPutInsideSelf $ ts)
+                                      then (filter (/= ti) is, (bs ++) . mkBcast i . sorryPutInsideSelf $ ts)
                                       else (is, bs)
                   (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' ts
               in ()# (a^._1.ind fi) ? sorry :? (a & _1.ind fi %~  (\\ is')
@@ -531,7 +531,7 @@ helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
                                                   & _2        .~  (bs' ++ bs'')
                                                   & _3        <>~ logMsgs)
   where
-    sorry = a & _2 <>~ (mkBroadcast i . sorryRemEmpty . getSing fi $ ms)
+    sorry = a & _2 <>~ (mkBcast i . sorryRemEmpty . getSing fi $ ms)
 
 
 mkPutRemInvDesc :: Id -> MudState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Broadcast], [T.Text])
@@ -812,7 +812,7 @@ moveReadiedItem :: Id
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
 moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
                                             & _2.ind i %~ (targetId `delete`)
-                                            & _3 <>~ (mkBroadcast i msg ++ pure b)
+                                            & _3 <>~ (mkBcast i msg ++ pure b)
                                             & _4 <>~ pure msg
 
 

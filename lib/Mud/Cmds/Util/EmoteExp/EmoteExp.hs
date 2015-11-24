@@ -154,7 +154,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
             tunedIds    = map (view _1) triples
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
-            then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
+            then Right ( (format Nothing toOthers, tunedIds) : mkBcast i toSelf
                        , toSelf )
             else Left . sorryExpCmdIllegalTarget $ match
           HasTarget toSelf toTarget toOthers -> if ()# target
@@ -165,10 +165,10 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
                              toSelf'  = format (Just targetId) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId             ) :
                                     (format (Just targetId) toOthers,          targetId `delete` tunedIds) :
-                                    mkBroadcast i toSelf'
+                                    mkBcast i toSelf'
                                   , toSelf' )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right ( (format Nothing toOthers, tunedIds) : mkBroadcast i toSelf
+            then Right ( (format Nothing toOthers, tunedIds) : mkBcast i toSelf
                        , toSelf )
             else case findTarget of
               Nothing -> Left . sorryChanTargetNameFromContext target $ cc
@@ -176,7 +176,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
                              toSelfWithTarget' = format (Just targetId) toSelfWithTarget
                          in Right ( (colorizeYous . format Nothing $ toTarget,  pure targetId             ) :
                                     (format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :
-                                    mkBroadcast i toSelfWithTarget'
+                                    mkBcast i toSelfWithTarget'
                                   , toSelfWithTarget' )
     notFound             = Left . sorryExpCmdName $ cn
     findTarget           = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
@@ -301,7 +301,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
         let ExpCmd _ ct = getExpCmdByName match
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
-            then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
+            then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBcast i toSelf
                        , toSelf )
             else Left . sorryExpCmdIllegalTarget $ match
           HasTarget toSelf toTarget toOthers -> if ()# target
@@ -312,10 +312,10 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
                              toSelf'  = format (Just n) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
                                     (format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :
-                                    mkBroadcast i toSelf'
+                                    mkBcast i toSelf'
                                   , toSelf' )
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBroadcast i toSelf
+            then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBcast i toSelf
                        , toSelf )
             else case findTarget of
               Nothing -> Left . sorryAdminChanTargetName $ target
@@ -323,7 +323,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
                              toSelfWithTarget' = format (Just n) toSelfWithTarget
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
                                     (format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :
-                                    mkBroadcast i toSelfWithTarget'
+                                    mkBcast i toSelfWithTarget'
                                   , toSelfWithTarget' )
     notFound   = Left . sorryExpCmdName $ cn
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings

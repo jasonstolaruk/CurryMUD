@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.ANSI ( abbrevColor
-                     , adminBroadcastColor
+                     , adminBcastColor
                      , announceColor
                      , arrowColor
                      , asteriskColor
@@ -147,8 +147,8 @@ abbrevColor :: T.Text
 abbrevColor = cyan
 
 
-adminBroadcastColor :: T.Text
-adminBroadcastColor = yellow
+adminBcastColor :: T.Text
+adminBcastColor = yellow
 
 
 announceColor :: T.Text

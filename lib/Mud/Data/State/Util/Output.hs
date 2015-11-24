@@ -12,8 +12,8 @@ module Mud.Data.State.Util.Output ( bcast
                                   , frame
                                   , massMsg
                                   , massSend
-                                  , mkBroadcast
-                                  , mkNTBroadcast
+                                  , mkBcast
+                                  , mkNTBcast
                                   , multiWrapSend
                                   , ok
                                   , parsePCDesig
@@ -80,7 +80,7 @@ bcastAdmins = bcastAdminsHelper id
 
 bcastAdminsHelper :: (Inv -> Inv) -> T.Text -> MudStack ()
 bcastAdminsHelper f msg =
-    (f . getLoggedInAdminIds <$> getState) >>= bcastNl . pure . (colorWith adminBroadcastColor msg, )
+    (f . getLoggedInAdminIds <$> getState) >>= bcastNl . pure . (colorWith adminBcastColor msg, )
 
 
 -----
@@ -165,15 +165,15 @@ massSend msg = liftIO . atomically . helperSTM =<< getState
 -----
 
 
-mkBroadcast :: Id -> T.Text -> [Broadcast]
-mkBroadcast i = pure . (, pure i)
+mkBcast :: Id -> T.Text -> [Broadcast]
+mkBcast i = pure . (, pure i)
 
 
 -----
 
 
-mkNTBroadcast :: Id -> T.Text -> [ClassifiedBroadcast]
-mkNTBroadcast i msg = [NonTargetBroadcast (msg, pure i)]
+mkNTBcast :: Id -> T.Text -> [ClassifiedBcast]
+mkNTBcast i msg = [NonTargetBcast (msg, pure i)]
 
 
 -----
