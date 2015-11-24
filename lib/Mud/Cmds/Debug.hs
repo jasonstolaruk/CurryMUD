@@ -120,7 +120,7 @@ debugCmds =
     , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "talk"       debugTalk        "Dump the talk async table."
-    , mkDebugCmd "threads"    debugThreads     "Dump the thread table."
+    , mkDebugCmd "threads"    debugThreads     "Display or search the thread table."
     , mkDebugCmd "throw"      debugThrow       "Throw an exception."
     , mkDebugCmd "throwlog"   debugThrowLog    "Throw an exception on your player log thread."
     , mkDebugCmd "token"      debugToken       "Test token parsing."
@@ -555,13 +555,21 @@ debugTalk p = withoutArgs debugTalk p
 -----
 
 
-debugThreads :: Action -- TODO: Make searchable.
+debugThreads :: Action
 debugThreads (NoArgs' i mq) = do
+    pager i mq =<< descThreads
+    logPlaExec (prefixDebugCmd "threads") i
+debugThreads p@(ActionParams { plaId, args }) = do
+    dispMatches p 2 =<< descThreads
+    logPlaExecArgs (prefixDebugCmd "threads") args plaId
+
+
+descThreads :: MudStack [T.Text]
+descThreads = do
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
-    pager i mq =<< (mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs)
-    logPlaExec (prefixDebugCmd "threads") i
+    mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
@@ -574,7 +582,6 @@ debugThreads (NoArgs' i mq) = do
     mkTypeName (Server      (showText -> pi)) = padOrTrunc 12 "Server"      <> pi
     mkTypeName (Talk        (showText -> pi)) = padOrTrunc 12 "Talk"        <> pi
     mkTypeName (showText -> tt)               = tt
-debugThreads p = withoutArgs debugThreads p
 
 
 getLogAsyncs :: MudData -> (LogAsync, LogAsync)
