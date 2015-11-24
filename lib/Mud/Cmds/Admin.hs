@@ -218,22 +218,33 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
 -- TODO: Help.
--- TODO: Logging.
 adminAs :: Action
 adminAs p@AdviseNoArgs                       = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs
 adminAs p@(AdviseOneArg a)                   = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a
-adminAs (MsgWithTarget _ mq cols target msg) = getState >>= \ms ->
+adminAs (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
-        as targetId         = case getType targetId ms of
+        as targetId         = let s = getSing targetId ms in case getType targetId ms of
           NpcType | npcMq <- getNpcMsgQueue targetId ms -> do
-              sendLocPrefMsg
+              ioHelper targetId s
               liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ msg'
-          PCType  | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do -- TODO: Confirm that the PC is logged in.
-              ok mq
-              wrapSend targetMq targetCols asMsg
-              fakeClientInput targetMq msg'
-          _       -> unit -- TODO
-        msg'       = T.unwords . unmsg . T.words $ msg -- TODO: Ugh...
+          PCType  | targetId == i                                            -> sendFun sorryAsSelf
+                  | isAdmin          . getPla targetId $ ms                  -> sendFun sorryAsAdmin
+                  | not . isLoggedIn . getPla targetId $ ms                  -> sendFun . sorryLoggedOut $ s
+                  | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do
+                      ioHelper targetId s
+                      wrapSend targetMq targetCols asMsg
+                      fakeClientInput targetMq msg'
+          t -> sendFun . sorryAsType $ t
+        ioHelper targetId s = do
+              sendFun $ "Executing as " <> s <> "..."
+              logPla "adminAs" i . T.concat $ [ "Executing "
+                                              , dblQuote msg'
+                                              , " as "
+                                              , aOrAnOnLower s -- TODO: We really ought to make a helper method...
+                                              , " "
+                                              , parensQuote . showText $ targetId
+                                              , "." ]
+        msg'       = uncapitalize . T.unwords . unmsg . T.words $ msg -- TODO: Ugh...
         sorryParse = sendFun . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                                -> sendFun sorryWtf
@@ -815,23 +826,24 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
             possess targetId    = case getType targetId ms of
-              NpcType -> let targetSing = getSing targetId ms in case getPossessor targetId ms of
-                Just pi -> sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
-                Nothing ->
-                    ( ms & plaTbl.ind i       .possessing .~ Just targetId
-                         & npcTbl.ind targetId.possessor  .~ Just i
-                    , [ multiSendFun [ T.concat [ "Forcibly binding your consciousness to "
-                                                , theOnLower targetSing
-                                                , "'s body, you suppress "
-                                                , mkPossPro . getSex targetId $ ms
-                                                , " psyche with your own." ]
-                                     , "You are now possessing " <> theOnLower targetSing <> "." ]
-                      , logPla "adminPossess" i . T.concat $ [ "started possessing "
-                                                             , aOrAnOnLower . getSing targetId $ ms
-                                                             , " "
-                                                             , parensQuote . showText $ i
-                                                             , "." ] ] )
+              NpcType -> maybe canPossess can'tPossess . getPossessor targetId $ ms
               t       -> sorry . sorryPossessType $ t
+              where
+                targetSing      = getSing targetId ms
+                can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
+                canPossess      = ( ms & plaTbl.ind i       .possessing .~ Just targetId
+                                       & npcTbl.ind targetId.possessor  .~ Just i
+                                  , [ multiSendFun [ T.concat [ "Forcibly binding your consciousness to "
+                                                              , theOnLower targetSing
+                                                              , "'s body, you suppress "
+                                                              , mkPossPro . getSex targetId $ ms
+                                                              , " psyche with your own." ]
+                                                   , "You are now possessing " <> theOnLower targetSing <> "." ]
+                                    , logPla "adminPossess" i . T.concat $ [ "started possessing "
+                                                                           , aOrAnOnLower . getSing targetId $ ms
+                                                                 , " "
+                                                                           , parensQuote . showText $ i
+                                                                           , "." ] ] )
             sorry = (ms, ) . pure . sendFun
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
           [(targetId, "")]

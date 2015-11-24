@@ -622,8 +622,7 @@ data SingleTarget = SingleTarget { strippedTarget   :: T.Text
                                  , sendFun          :: T.Text   -> MudStack ()
                                  , multiSendFun     :: [T.Text] -> MudStack ()
                                  , consLocPrefMsg   :: [T.Text] -> [T.Text]
-                                 , consLocPrefBcast :: Id -> [Broadcast] -> [Broadcast]
-                                 , sendLocPrefMsg   :: MudStack () }
+                                 , consLocPrefBcast :: Id -> [Broadcast] -> [Broadcast] }
 
 
 -----
