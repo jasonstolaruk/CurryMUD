@@ -223,10 +223,11 @@ adminAs :: Action
 adminAs p@AdviseNoArgs                       = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs
 adminAs p@(AdviseOneArg a)                   = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a
 adminAs (MsgWithTarget _ mq cols target msg) = getState >>= \ms ->
-    let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID" -- TODO: Test w/ loc prefs.
+    let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = case getType targetId ms of
-          NpcType -> let npcMq = getNpcMsgQueue targetId ms
-                     in liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols . T.unwords . unmsg . T.words $ msg
+          NpcType -> let npcMq = getNpcMsgQueue targetId ms in do
+            sendSorry
+            liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols . T.unwords . unmsg . T.words $ msg
           PCType  -> unit -- TODO
           _       -> unit -- TODO
         sorryParse = sendFun . sorryParseId . uncapitalize $ strippedTarget
@@ -418,6 +419,7 @@ adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
 adminExamine p = patternMatchFail "adminExamine" [ showText p ]
 
 
+-- TODO: The pager doesn't seem to be paging properly, likely due to Description line wrapping.
 examineHelper :: MudState -> Id -> [T.Text]
 examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   ObjType   -> [ examineEnt, examineObj ]
@@ -425,7 +427,7 @@ examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   ConType   -> [ examineEnt, examineObj, examineInv, examineCoins, examineCon ]
   WpnType   -> [ examineEnt, examineObj, examineWpn ]
   ArmType   -> [ examineEnt, examineObj, examineArm ]
-  NpcType   -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob ]
+  NpcType   -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob, examineNpc ]
   PCType    -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob, examinePC, examinePla ]
   RmType    -> [ examineInv, examineCoins, examineRm ]
   where
@@ -446,7 +448,7 @@ examineCloth i ms = let c = getCloth i ms in [ "Type: " <> pp c ]
 
 
 examineCoins :: ExamineHelper
-examineCoins i ms = let (map showText . coinsToList -> cs) = getCoins i ms in [ "Coins: " <>  commas cs ]
+examineCoins i ms = let (map showText . coinsToList -> cs) = getCoins i ms in [ "Coins: " <> commas cs ]
 
 
 examineCon :: ExamineHelper
@@ -472,10 +474,12 @@ examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
 
 examineInv :: ExamineHelper
 examineInv i ms = let is  = getInv i ms
-                      txt = commas . map helper $ is
+                      txt = commas . map (`descSingId` ms) $ is
                   in [ "Contains: " <> (()# txt ? "Nothing." :? txt) ]
-  where
-    helper i' = getSing i' ms <> " " <> parensQuote (showText i')
+
+
+descSingId :: Id -> MudState -> T.Text
+descSingId i ms = quoteWith' (getSing i ms, parensQuote . showText $ i) " "
 
 
 examineMob :: ExamineHelper
@@ -494,6 +498,14 @@ examineMob i ms = let m           = getMob i ms
                      , "Handedness: " <> m^.hand.to pp ]
 
 
+examineNpc :: ExamineHelper
+examineNpc i ms = [ "Possessor: " <> (descMaybeId ms . getPossessor i $ ms) ]
+
+
+descMaybeId :: MudState -> Maybe Id -> T.Text
+descMaybeId ms = maybe none (`descSingId` ms)
+
+
 examineObj :: ExamineHelper
 examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to showText
                                          , "Volume: " <> o^.vol   .to showText ]
@@ -510,15 +522,16 @@ examinePC i ms = let p = getPC i ms in [ "Room: "        <> let ri = p^.rmId
 examinePla :: ExamineHelper
 examinePla i ms = let p = getPla i ms
                   in [ "Host: "              <> p^.currHostName.to (noneOnNull . T.pack)
-                     , "Connect time: "      <> maybe none showText (p^.connectTime)
+                     , "Connect time: "      <> p^.connectTime .to (maybe none showText)
                      , "Player flags: "      <> (commas . dropEmpties . descFlags $ p)
                      , "Columns: "           <> p^.columns     .to showText
                      , "Lines: "             <> p^.pageLines   .to showText
                      , "Peepers: "           <> p^.peepers     .to (noneOnNull . helper)
                      , "Peeping: "           <> p^.peeping     .to (noneOnNull . helper)
+                     , "Possessing: "        <> p^.possessing  .to (descMaybeId ms)
                      , "Retained messages: " <> p^.retainedMsgs.to (noneOnNull . slashes)
                      , "Last room: "         <> let f ri = getRmName ri ms <> " " <> parensQuote (showText ri)
-                                                in maybe none f $ p^.lastRmId ]
+                                                in p^.lastRmId.to (maybe none f) ]
   where
     descFlags p | p^.plaFlags == zeroBits = none
                 | otherwise               = let pairs = [ (isAdmin,            "admin"              )
@@ -797,7 +810,8 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
             possess targetId    = case getType targetId ms of
-              NpcType -> (ms & plaTbl.ind i.possessing .~ Just targetId, []) -- TODO: Can multiple admins possess the same NPC?
+              NpcType -> (ms & plaTbl.ind i       .possessing .~ Just targetId
+                             & npcTbl.ind targetId.possessor  .~ Just i, []) -- TODO: Can multiple admins possess the same NPC?
               t       -> sorry . sorryPossessType $ t
             sorry = (ms, ) . pure . sendFun
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
@@ -805,7 +819,8 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
             | targetId < 0                                -> sorry sorryWtf
             | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget
             | otherwise                                   -> possess targetId
-          _                                               -> sorry . sorryParseId $ strippedTarget -- TODO: Technically, we should uncap (here nad elsewhere)...
+          _                                               -> sorry . sorryParseId $ strippedTarget -- TODO: Technically, we should uncap (here nad elsewhere).
+                                                                                                   -- There is a strippedTarged'!
 adminPossess (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
 
 
