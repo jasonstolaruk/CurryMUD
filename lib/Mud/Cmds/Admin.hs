@@ -226,7 +226,7 @@ adminAs (MsgWithTarget _ mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = case getType targetId ms of
           NpcType -> let npcMq = getNpcMsgQueue targetId ms in do
-            sendSorry
+            sendLocPrefMsg
             liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols . T.unwords . unmsg . T.words $ msg
           PCType  -> unit -- TODO
           _       -> unit -- TODO
@@ -973,7 +973,7 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                 in if | destId == originId   -> sorry sorryTeleAlready
                       | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
                       | otherwise            ->
-                          teleHelper p { args = [] } ms originId destId destName (Just notice) consSorryBroadcast
+                          teleHelper p { args = [] } ms originId destId destName (Just notice) consLocPrefB
             sorryParse = (ms, ) . pure . sendFun
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
           [(targetId, "")]
@@ -1025,7 +1025,7 @@ adminTelePC p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
             found (flip getRmId ms -> destId, targetSing)
               | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTeleSelf)
               | destId     == originId     = (ms, pure .  sendFun $ sorryTeleAlready)
-              | otherwise = teleHelper p { args = [] } ms originId destId targetSing Nothing consSorryBroadcast
+              | otherwise = teleHelper p { args = [] } ms originId destId targetSing Nothing consLocPrefB
             notFound = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
         in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
 adminTelePC (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePCExcessArgs
@@ -1046,7 +1046,7 @@ adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
             originId            = getRmId i ms
             found (destId, rmTeleName)
               | destId == originId = (ms, pure . sendFun $ sorryTeleAlready)
-              | otherwise          = teleHelper p { args = [] } ms originId destId rmTeleName Nothing consSorryBroadcast
+              | otherwise          = teleHelper p { args = [] } ms originId destId rmTeleName Nothing consLocPrefB
             notFound               = (ms, pure . sendFun . sorryTeleRmName $ strippedTarget')
         in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
 adminTeleRm p = advise p [] adviceATeleRmExcessArgs

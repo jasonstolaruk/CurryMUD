@@ -2457,7 +2457,7 @@ tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                            Left  errorMsg -> sendFun errorMsg
                            Right bs       -> ioHelper targetId bs
                        ioHelper targetId bs = let bs'@[(toSelf, _), _] = formatBs targetId bs in do
-                           bcastNl . consSorryBroadcast i $ bs'
+                           bcastNl . consLocPrefB i $ bs'
                            logPlaOut "tele" i . pure $ toSelf
                            ts <- liftIO mkTimestamp
                            withDbExHandler_ "tele" . insertDbTblTele . TeleRec ts s targetSing $ toSelf
