@@ -22,6 +22,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.TheWorld.AdminZoneIds (iLoggedOut)
+import Mud.Threads.NpcServer
 import Mud.Threads.ThreadTblPurger
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -107,6 +108,7 @@ debugCmds =
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
+    , mkDebugCmd "npcserver"  debugNpcServer   "Stop all NPC server threads."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
@@ -373,6 +375,14 @@ debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
+
+
+-----
+
+
+debugNpcServer :: Action
+debugNpcServer (NoArgs' i mq) = ok mq >> stopNpcServers >> logPlaExec (prefixDebugCmd "npcserver") i
+debugNpcServer p              = withoutArgs debugNpcServer p
 
 
 -----

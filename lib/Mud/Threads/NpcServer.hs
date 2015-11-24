@@ -71,7 +71,7 @@ threadNpcServer i npcMq = do
   where
     loop = npcMq |&| liftIO . atomically . readTQueue >=> \case
       ExternCmd mq cols msg -> handleExternCmd i mq cols msg >> loop
-      StopNpcServer         -> unit -- TODO: Test.
+      StopNpcServer         -> unit
 
 
 handleExternCmd :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
