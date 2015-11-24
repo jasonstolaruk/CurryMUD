@@ -3,6 +3,7 @@
 
 module Mud.Interp.Misc where
 
+import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Misc.ANSI
@@ -11,6 +12,10 @@ import Mud.Util.Text
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+
+
+findActionHelper :: CmdName -> [Cmd] -> MudStack (Maybe Action)
+findActionHelper cn cmds = return $ action . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds ]
 
 
 mkPrompt :: Id -> MudState -> T.Text

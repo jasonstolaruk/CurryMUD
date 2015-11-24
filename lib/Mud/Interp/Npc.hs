@@ -23,7 +23,4 @@ npcInterp cn p@(ActionParams { plaId, plaMsgQueue }) = do
 
 
 findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)
-findAction i ms (T.toLower -> cn) = helper mkCmdList
-  where
-    helper cmds = return $ action . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds ] -- TODO: Cen Disp has the same function...
-    mkCmdList   = sort   $ npcCmds ++ (mkNonStdRmLinkCmds . getNpcRm i $ ms)
+findAction i ms (T.toLower -> cn) = findActionHelper cn . sort $ npcCmds ++ (mkNonStdRmLinkCmds . getNpcRm i $ ms)

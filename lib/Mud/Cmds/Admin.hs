@@ -230,7 +230,7 @@ adminAs (MsgWithTarget _ mq cols target msg) = getState >>= \ms ->
             liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols . T.unwords . unmsg . T.words $ msg
           PCType  -> unit -- TODO
           _       -> unit -- TODO
-        sorryParse = sendFun . sorryParseId . uncapitalize $ strippedTarget
+        sorryParse = sendFun . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                                -> sendFun sorryWtf
                        | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse
@@ -832,10 +832,9 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
           [(targetId, "")]
             | targetId < 0                                -> sorry sorryWtf
-            | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget
+            | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget'
             | otherwise                                   -> possess targetId
-          _                                               -> sorry . sorryParseId $ strippedTarget -- TODO: Technically, we should uncap (here nad elsewhere).
-                                                                                                   -- There is a strippedTarged'!
+          _                                               -> sorry . sorryParseId $ strippedTarget'
 adminPossess (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
 
 
@@ -979,9 +978,9 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
           [(targetId, "")]
             | targetId < 0                                -> sorryParse sorryWtf
-            | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse . sorryParseId . uncapitalize $ strippedTarget
+            | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse . sorryParseId $ strippedTarget'
             | otherwise                                   -> teleport targetId
-          _                                               -> sorryParse . sorryParseId . uncapitalize $ strippedTarget
+          _                                               -> sorryParse . sorryParseId $ strippedTarget'
 adminTeleId (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATeleIdExcessArgs
 
 
