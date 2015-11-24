@@ -5,6 +5,7 @@
 module Mud.Cmds.Util.Misc ( asterisk
                           , awardExp
                           , dbExHandler
+                          , descSingId
                           , dispCmdList
                           , dispMatches
                           , embedId
@@ -187,6 +188,13 @@ awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
 dbExHandler :: T.Text -> SomeException -> MudStack ()
 dbExHandler fn e =
     logExMsg "dbExHandler" (rethrowExMsg $ "during a database operation in " <> dblQuote fn) e >> throwToListenThread e
+
+
+-----
+
+
+descSingId :: Id -> MudState -> T.Text
+descSingId i ms = quoteWith' (getSing i ms, parensQuote . showText $ i) " "
 
 
 -----

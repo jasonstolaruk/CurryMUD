@@ -240,9 +240,7 @@ adminAs (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
               logPla "adminAs" i . T.concat $ [ "Executing "
                                               , dblQuote msg'
                                               , " as "
-                                              , aOrAnOnLower s -- TODO: We really ought to make a helper method...
-                                              , " "
-                                              , parensQuote . showText $ targetId
+                                              , aOrAnOnLower . descSingId targetId $ ms
                                               , "." ]
         msg'       = uncapitalize . T.unwords . unmsg . T.words $ msg -- TODO: Ugh...
         sorryParse = sendFun . sorryParseId $ strippedTarget'
@@ -485,17 +483,13 @@ examineEnt i ms = let e = getEnt i ms in [ "Name: "         <> e^.sing
 examineEqMap :: ExamineHelper
 examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
   where
-    helper (slot, i') = bracketQuote (pp slot) <> spaced (getSing i' ms) <> parensQuote (showText i')
+    helper (slot, i') = bracketQuote (pp slot) <> " " <> descSingId i' ms
 
 
 examineInv :: ExamineHelper
 examineInv i ms = let is  = getInv i ms
                       txt = commas . map (`descSingId` ms) $ is
                   in [ "Contains: " <> (()# txt ? "nothing." :? txt) ]
-
-
-descSingId :: Id -> MudState -> T.Text
-descSingId i ms = quoteWith' (getSing i ms, parensQuote . showText $ i) " "
 
 
 examineMob :: ExamineHelper
@@ -559,7 +553,7 @@ examinePla i ms = let p = getPla i ms
                                                         , (isTunedAdmin,       "tuned admin"        )
                                                         , (isTunedQuestion,    "tuned question"     ) ]
                                             in [ f p |?| t | (f, t) <- pairs ]
-    helper = commas . map (\i' -> getSing i ms <> " " <> parensQuote (showText i'))
+    helper = commas . map (`descSingId` ms)
 
 
 examineRm :: ExamineHelper
@@ -839,11 +833,9 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                                                               , mkPossPro . getSex targetId $ ms
                                                               , " psyche with your own." ]
                                                    , "You are now possessing " <> theOnLower targetSing <> "." ]
-                                    , logPla "adminPossess" i . T.concat $ [ "started possessing "
-                                                                           , aOrAnOnLower . getSing targetId $ ms
-                                                                 , " "
-                                                                           , parensQuote . showText $ i
-                                                                           , "." ] ] )
+                                    , logPla "adminPossess" i $ "started possessing "                 <>
+                                                                aOrAnOnLower (descSingId targetId ms) <>
+                                                                "." ] )
             sorry = (ms, ) . pure . sendFun
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
           [(targetId, "")]

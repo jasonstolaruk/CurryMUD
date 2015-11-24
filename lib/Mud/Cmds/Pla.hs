@@ -1500,11 +1500,7 @@ npcStop :: Action
 npcStop (NoArgs' i mq) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
     tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
     ok mq
-    logPla "stop" pi . T.concat $ [ "stopped possessing " -- TODO: Make it so the logging functions just work when passed a NPC ID.
-                                  , aOrAnOnLower . getSing i $ ms
-                                  , " "
-                                  , parensQuote . showText $ i
-                                  , "." ]
+    logPla "stop" pi $ "stopped possessing " <> aOrAnOnLower (descSingId i ms) <> "." -- TODO: Make it so the logging functions just work when passed a NPC ID.
 npcStop p = withoutArgs npcStop p
 
 
