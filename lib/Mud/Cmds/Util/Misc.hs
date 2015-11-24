@@ -644,8 +644,10 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
                  , strippedTarget'    = uncapitalize t
                  , sendFun            = hlp ? (multiWrapSend mq cols . (sorryMsg :) . pure) :? wrapSend mq cols
                  , multiSendFun       = hlp ? (multiWrapSend mq cols . (sorryMsg :)       ) :? multiWrapSend mq cols
+                 -- TODO: Consider renaming these "~Sorry" functions.
                  , consSorry          = hlp ? (sorryMsg :)                                  :? id
-                 , consSorryBroadcast = hlp ? f                                             :? const id }
+                 , consSorryBroadcast = hlp ? f                                             :? const id
+                 , sendSorry          = when hlp . wrapSend mq cols $ sorryMsg }
   where
     hlp = hasLocPref . uncapitalize $ target
     t   = hlp ? (T.tail . T.tail $ target) :? target

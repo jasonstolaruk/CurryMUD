@@ -56,19 +56,14 @@ infixl 7 `divide`
 -- ==================================================
 
 
--- TODO: Make a typeclass. Move.
-boolToMaybe :: Bool -> a -> Maybe a
-boolToMaybe b = (guard b >>) . return
-listToMaybe :: (Show a) => [a] -> Maybe a
-listToMaybe []  = Nothing
-listToMaybe [a] = Just a
-listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" [ T.pack . show $ xs ]
-
-
 atLst1 :: (Eq a, Num a) => a -> a
 atLst1 x = case signum x of -1 -> 1
                             0  -> 1
                             _  -> x
+
+
+boolToMaybe :: Bool -> a -> Maybe a
+boolToMaybe b = (guard b >>) . return
 
 
 concatMapM  :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
@@ -138,6 +133,12 @@ ind k = lens (! k) (flip (IM.insert k))
 
 isVowel :: Char -> Bool
 isVowel = (`elem` ("aeiou" :: String))
+
+
+listToMaybe :: (Show a) => [a] -> Maybe a
+listToMaybe []  = Nothing
+listToMaybe [a] = Just a
+listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" [ T.pack . show $ xs ]
 
 
 maybeRet :: (Monad m) => m a -> Maybe a -> m a
