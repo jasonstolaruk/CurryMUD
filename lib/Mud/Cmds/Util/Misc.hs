@@ -592,7 +592,7 @@ mkChanReport i ms (Chan ci cn cct tappers) =
 mkPossPro :: Sex -> T.Text
 mkPossPro Male   = "his"
 mkPossPro Female = "her"
-mkPossPro s      = patternMatchFail "mkPossPro" [ showText s ]
+mkPossPro NoSex  = "its"
 
 
 -----

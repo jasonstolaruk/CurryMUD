@@ -803,7 +803,6 @@ adminPersist p              = withoutArgs adminPersist p
 
 
 -- TODO: Help.
--- TODO: Check that no one is already possessing.
 adminPossess :: Action
 adminPossess p@AdviseNoArgs                  = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs
 adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
@@ -811,13 +810,22 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
             possess targetId    = case getType targetId ms of
-              NpcType -> ( ms & plaTbl.ind i       .possessing .~ Just targetId
-                              & npcTbl.ind targetId.possessor  .~ Just i
-                         , [ logPla "adminPossess" i . T.concat $ [ "started possessing "
-                                                                  , aOrAnOnLower . getSing targetId $ ms
-                                                                  , " "
-                                                                  , parensQuote . showText $ i
-                                                                  , "." ] ] )
+              NpcType -> let targetSing = getSing targetId ms in case getPossessor targetId ms of
+                Just pi -> sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
+                Nothing ->
+                    ( ms & plaTbl.ind i       .possessing .~ Just targetId
+                         & npcTbl.ind targetId.possessor  .~ Just i
+                    , [ multiSendFun [ T.concat [ "Forcibly binding your consciousness to "
+                                                , theOnLower targetSing
+                                                , "'s body, you suppress "
+                                                , mkPossPro . getSex targetId $ ms
+                                                , " psyche with your own." ]
+                                     , "You are now possessing " <> theOnLower targetSing <> "." ]
+                      , logPla "adminPossess" i . T.concat $ [ "started possessing "
+                                                             , aOrAnOnLower . getSing targetId $ ms
+                                                             , " "
+                                                             , parensQuote . showText $ i
+                                                             , "." ] ] )
               t       -> sorry . sorryPossessType $ t
             sorry = (ms, ) . pure . sendFun
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of

@@ -3,6 +3,7 @@
 module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryAdminChanTargetName
                             , sorryAdminName
+                            , sorryAlreadyPossessed
                             , sorryBanAdmin
                             , sorryBanSelf
                             , sorryBootSelf
@@ -210,6 +211,13 @@ sorryAdminChanTargetName = sorryChanTargetName "admin"
 
 sorryAdminName :: T.Text -> T.Text
 sorryAdminName n = "There is no administrator by the name of " <> dblQuote n <> "."
+
+
+-----
+
+
+sorryAlreadyPossessed :: Sing -> Sing -> T.Text
+sorryAlreadyPossessed a b = T.concat [ capitalize . theOnLower $ a, " is already possessed by ", b, "." ]
 
 
 -----
