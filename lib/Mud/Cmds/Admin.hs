@@ -113,7 +113,7 @@ adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
     , mkAdminCmd "admin"      adminAdmin       ("Send a message on the admin channel " <> plusRelatedMsg)
-    , mkAdminCmd "as"         adminAs          "Execute a command as as someone else."
+    , mkAdminCmd "as"         adminAs          "Execute a command as someone else."
     , mkAdminCmd "banhost"    adminBanHost     "Dump the banned hostname database, or ban/unban a host."
     , mkAdminCmd "banplayer"  adminBanPla      "Dump the banned player database, or ban/unban a player."
     , mkAdminCmd "announce"   adminAnnounce    "Send a message to all players."
@@ -217,7 +217,6 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 -----
 
 
--- TODO: Help.
 adminAs :: Action
 adminAs p@AdviseNoArgs                       = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs
 adminAs p@(AdviseOneArg a)                   = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a

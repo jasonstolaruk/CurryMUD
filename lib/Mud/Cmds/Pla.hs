@@ -1475,8 +1475,8 @@ newChan p = patternMatchFail "newChan" [ showText p ]
 -- TODO: Do not allow use via ":as".
 npcAsSelf :: Action
 npcAsSelf p@AdviseNoArgs       = advise p [] adviceAsSelfNoArgs
-npcAsSelf (WithArgs i mq _ as) = fromJust . getPossessor i <$> getState >>= \pi -> do
-    logPlaExecArgs "." as pi -- TODO: Make it so the logging functions just work when passed a NPC ID.
+npcAsSelf (WithArgs i mq _ as) = do
+    logPlaExecArgs "." as i
     liftIO . atomically . writeTQueue mq . AsSelf . nl . T.unwords $ as
 npcAsSelf p = patternMatchFail "npcAsSelf" [ showText p ]
 
@@ -1486,9 +1486,9 @@ npcAsSelf p = patternMatchFail "npcAsSelf" [ showText p ]
 
 -- TODO: Do not allow use via ":as".
 npcDispCmdList :: Action
-npcDispCmdList (NoArgs i mq cols) = fromJust . getPossessor i <$> getState >>= \pi -> do
+npcDispCmdList (NoArgs i mq cols) = do
     send mq . nl . T.unlines . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ npcCmds
-    logPlaExec "?" pi -- TODO: Make it so the logging functions just work when passed a NPC ID.
+    logPlaExec "?" i
 npcDispCmdList p = withoutArgs npcDispCmdList p
 
 
@@ -1498,9 +1498,9 @@ npcDispCmdList p = withoutArgs npcDispCmdList p
 -- TODO: Do not allow use via ":as".
 npcStop :: Action
 npcStop (NoArgs' i mq) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
-    tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
     ok mq
-    logPla "stop" pi $ "stopped possessing " <> aOrAnOnLower (descSingId i ms) <> "." -- TODO: Make it so the logging functions just work when passed a NPC ID.
+    logPla "stop" i $ "stopped possessing " <> aOrAnOnLower (descSingId i ms) <> "."
+    tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
 npcStop p = withoutArgs npcStop p
 
 

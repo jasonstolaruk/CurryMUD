@@ -163,6 +163,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -247,7 +248,7 @@ sorryAsSelf = can'tTarget $ "yourself" <> withAs
 
 
 sorryAsType :: Type -> T.Text
-sorryAsType t = can'tTarget $ aOrAn (pp t) <> withAs
+sorryAsType t = can'tTarget $ aOrAnType t <> withAs
 
 
 -----
@@ -776,7 +777,7 @@ sorryPeepSelf = can't "peep yourself."
 
 
 sorryPossessType :: Type -> T.Text
-sorryPossessType t = can't $ "possess " <> aOrAn (pp t) <> "."
+sorryPossessType t = can't $ "possess " <> aOrAnType t <> "."
 
 
 -----

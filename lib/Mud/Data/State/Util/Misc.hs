@@ -2,7 +2,8 @@
 
 -- This module contains state-related functions used by multiple modules.
 
-module Mud.Data.State.Util.Misc ( BothGramNos
+module Mud.Data.State.Util.Misc ( aOrAnType
+                                , BothGramNos
                                 , findPCIds
                                 , getAdminIds
                                 , getEffBothGramNos
@@ -62,6 +63,15 @@ import Data.Monoid (Sum(..), (<>))
 import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
 import qualified Data.Text as T
+
+
+aOrAnType :: Type -> T.Text
+aOrAnType t@ClothType = pp t
+aOrAnType t@ArmType   = pp t
+aOrAnType t           = aOrAn . pp $ t
+
+
+-----
 
 
 findPCIds :: MudState -> [Id] -> [Id]

@@ -128,8 +128,8 @@ adviceAAnnounceNoArgs = let msg = "CurryMUD will be shutting down for maintenanc
 
 
 adviceAAsNoArgs :: T.Text
-adviceAAsNoArgs = "Please specify an ID followed by a command, as in "         <>
-                  colorWith quoteColor (prefixAdminCmd "as" <> " 74 get sack") <>
+adviceAAsNoArgs = "Please specify an ID followed by a command, as in "          <>
+                  colorWith quoteColor (prefixAdminCmd "as" <> " 100 get sack") <>
                   "."
 
 

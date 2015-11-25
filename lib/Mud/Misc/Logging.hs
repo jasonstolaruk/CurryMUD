@@ -164,7 +164,10 @@ closePlaLog = flip doIfLogging stopLog
 
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
-doIfLogging i f = maybeVoid (f . snd) . IM.lookup i . view plaLogTbl =<< getState
+doIfLogging i f = getState >>= \ms -> case getType i ms of
+  PCType  -> maybeVoid (f . snd) . IM.lookup i . view plaLogTbl $ ms
+  NpcType -> maybeVoid (`doIfLogging` f) . getPossessor i $ ms
+  t       -> patternMatchFail "doIfLogging" [ showText t ]
 
 
 closeLogs :: MudStack ()

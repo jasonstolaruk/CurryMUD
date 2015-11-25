@@ -67,17 +67,18 @@ interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                         = promptRetryName mq sorryInterpNameIllegal
-  | otherwise = (withDbExHandler "interpName" . isPlaBanned $ cn') >>= \case
-    Nothing          -> wrapSend mq cols dbErrorMsg
-    Just (Any True ) -> handleBanned
-    Just (Any False) -> handleNotBanned
+  | otherwise                                              = getSing i <$> getState >>= \oldSing ->
+      (withDbExHandler "interpName" . isPlaBanned $ cn') >>= \case
+        Nothing          -> wrapSend mq cols dbErrorMsg
+        Just (Any True ) -> handleBanned
+        Just (Any False) -> handleNotBanned oldSing
   where
     handleBanned = (T.pack . getCurrHostName i <$> getState) >>= \host -> do
         sendMsgBoot mq . Just . sorryInterpNameBanned $ cn'
         let msg  = T.concat [ cn', " has been booted at login ", parensQuote "player is banned", "." ]
         bcastAdmins $ msg <> " Consider also banning host " <> dblQuote host <> "."
         logNotice "interpName" msg
-    handleNotBanned = helper |&| modifyState >=> \case
+    handleNotBanned oldSing = helper |&| modifyState >=> \case
         (_,  Left  (Just msg)) -> promptRetryName mq msg
         (ms, Left  Nothing   ) -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cn
                                                                 , checkIllegalNames    ms mq cn
@@ -86,7 +87,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
                                                                 , checkRndmNames          mq cn ])
                                       unit
                                       nextPrompt
-        (ms, Right (originId, oldSing)) -> do
+        (ms, Right originId  ) -> do
             logNotice "interpName" . T.concat $ [ dblQuote oldSing
                                                 , " has logged in as "
                                                 , cn'
@@ -122,9 +123,9 @@ promptRetryName mq msg =
     (send mq . nlPrefix $ msg |!| nl msg) >> prompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudState, Either (Maybe T.Text) (Id, Sing)))
+logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudState, Either (Maybe T.Text) Id))
 logIn newId ms newHost newTime originId = let ms' = peepNewId . movePC $ adoptNewId
-                                          in (ms', (ms', Right (originId, getSing newId ms')))
+                                          in (ms', (ms', Right originId))
   where
     adoptNewId  =    ms  & coinsTbl        .ind newId         .~ getCoins        originId ms
                          & coinsTbl        .at  originId      .~ Nothing

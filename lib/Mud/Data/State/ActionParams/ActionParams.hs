@@ -40,7 +40,7 @@ type Id   = Int
 type Cols = Int
 
 
-data ActionParams = ActionParams { plaId       :: Id
+data ActionParams = ActionParams { plaId       :: Id -- TODO: Could be an NPC ID...
                                  , plaMsgQueue :: MsgQueue
                                  , plaCols     :: Cols
                                  , args        :: Args }

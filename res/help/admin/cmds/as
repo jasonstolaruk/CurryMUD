@@ -1,0 +1,12 @@
+\h #dAS \d
+
+\uUSAGE\n
+#das id command
+
+\uDESCRIPTION\n
+Execute a command as someone else (either a PC or an NPC).
+
+\uEXAMPLES\n
+\q#das 100 get sack\d to make ID 100 execute "get sack".4`
+
+\uSEE ALSO\n
