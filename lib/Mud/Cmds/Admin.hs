@@ -218,15 +218,15 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
 adminAs :: Action
-adminAs p@AdviseNoArgs                       = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs
-adminAs p@(AdviseOneArg a)                   = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a
-adminAs (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+adminAs p@AdviseNoArgs                     = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs
+adminAs p@(AdviseOneArg a)                 = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a
+adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = let s = getSing targetId ms in case getType targetId ms of
           NpcType -> let npcMq        = getNpcMsgQueue targetId ms
                          notPossessed = do
                              ioHelper targetId s
-                             liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ msg'
+                             liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ rest
                          isPossessed pi = sendFun . sorryAlreadyPossessed s . getSing pi $ ms
                      in maybe notPossessed isPossessed . getPossessor targetId $ ms
           PCType  | targetId == i                                            -> sendFun sorryAsSelf
@@ -235,16 +235,15 @@ adminAs (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                   | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do
                       ioHelper targetId s
                       wrapSend targetMq targetCols asMsg
-                      fakeClientInput targetMq msg'
+                      fakeClientInput targetMq rest
           t -> sendFun . sorryAsType $ t
         ioHelper targetId s = do
               sendFun $ "Executing as " <> s <> "..."
               logPla "adminAs" i . T.concat $ [ "Executing "
-                                              , dblQuote msg'
+                                              , dblQuote rest
                                               , " as "
                                               , aOrAnOnLower . descSingId targetId $ ms
                                               , "." ]
-        msg'       = uncapitalize . T.unwords . unmsg . T.words $ msg -- TODO: Ugh...
         sorryParse = sendFun . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                                -> sendFun sorryWtf

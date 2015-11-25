@@ -22,10 +22,12 @@ module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
                                                 , pattern OneArgLower
                                                 , pattern OneArgLower'
                                                 , pattern OneArgNubbed
-                                                , pattern WithArgs ) where
+                                                , pattern WithArgs
+                                                , pattern WithTarget ) where
 
 import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MsgQueue
+import Mud.Util.List
 import Mud.Util.Quoting
 
 import Data.List (nub)
@@ -123,3 +125,6 @@ pattern WithArgs i mq cols as = ActionParams { plaId       = i
                                              , plaMsgQueue = mq
                                              , plaCols     = cols
                                              , args        = as }
+
+
+pattern WithTarget i mq cols target rest <- WithArgs i mq cols (headTail -> (target, T.unwords -> rest))

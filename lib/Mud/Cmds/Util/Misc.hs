@@ -745,7 +745,6 @@ tunedInOutColorize False = tunedInOutHelper id                       False
 -----
 
 
--- TODO: Is there a better way?
 unmsg :: [T.Text] -> [T.Text]
 unmsg [cn        ] = [ T.init cn, ""            ]
 unmsg [cn, target] = [ cn,        T.init target ]
