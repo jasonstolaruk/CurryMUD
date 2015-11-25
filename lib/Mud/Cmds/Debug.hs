@@ -256,9 +256,9 @@ debugDispEnv :: Action
 debugDispEnv (NoArgs i mq cols)  = do
     pager i mq =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env | env <- liftIO getEnvironment ]
     logPlaExecArgs (prefixDebugCmd "env") [] i
-debugDispEnv p@(ActionParams { plaId, args }) = do
+debugDispEnv p@(ActionParams { myId, args }) = do
     dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO getEnvironment ]
-    logPlaExecArgs (prefixDebugCmd "env") args plaId
+    logPlaExecArgs (prefixDebugCmd "env") args myId
 
 
 mkEnvListTxt :: [(String, String)] -> [T.Text]
@@ -559,9 +559,9 @@ debugThreads :: Action
 debugThreads (NoArgs' i mq) = do
     pager i mq =<< descThreads
     logPlaExec (prefixDebugCmd "threads") i
-debugThreads p@(ActionParams { plaId, args }) = do
+debugThreads p@(ActionParams { myId, args }) = do
     dispMatches p 2 =<< descThreads
-    logPlaExecArgs (prefixDebugCmd "threads") args plaId
+    logPlaExecArgs (prefixDebugCmd "threads") args myId
 
 
 descThreads :: MudStack [T.Text]

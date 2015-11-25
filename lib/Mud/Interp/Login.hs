@@ -260,9 +260,9 @@ handleLogin s params@(ActionParams { .. }) = do
     showMotd plaMsgQueue plaCols
     (ms, p) <- showRetainedMsgs
     look params
-    prompt plaMsgQueue . mkPrompt plaId =<< getState
+    prompt plaMsgQueue . mkPrompt myId =<< getState
     when (getPlaFlag IsAdmin p) stopInacTimer
-    runRegenAsync plaId
+    runRegenAsync myId
     notifyArrival ms
   where
     greet = wrapSend plaMsgQueue plaCols . nlPrefix $ if s == "Root"
@@ -276,18 +276,18 @@ handleLogin s params@(ActionParams { .. }) = do
                                                                _   -> "s"
                             msg = "You missed the following " <> m <> " while you were away:"
                         in multiWrapSend plaMsgQueue plaCols . (msg :)
-            logPla "handleLogin showRetainedMsgs" plaId "showed retained messages."
+            logPla "handleLogin showRetainedMsgs" myId "showed retained messages."
         return (ms, p)
-    helper ms = let p   = getPla plaId ms
-                    p'  = p  & retainedMsgs     .~ []
-                    ms' = ms & plaTbl.ind plaId .~ p'
+    helper ms = let p   = getPla myId ms
+                    p'  = p  & retainedMsgs    .~ []
+                    ms' = ms & plaTbl.ind myId .~ p'
                 in (ms', (ms', p^.retainedMsgs, p'))
     stopInacTimer = do
         liftIO . atomically . writeTQueue plaMsgQueue $ InacStop
-        logPla "handleLogin stopInacTimer" plaId "stopping the inactivity timer."
+        logPla "handleLogin stopInacTimer" myId "stopping the inactivity timer."
     notifyArrival ms = do
-        bcastOtherAdmins plaId $ s <> " has logged in."
-        bcastOthersInRm  plaId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig plaId ms s A $ DoCap
+        bcastOtherAdmins myId $ s <> " has logged in."
+        bcastOthersInRm  myId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig myId ms s A $ DoCap
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()

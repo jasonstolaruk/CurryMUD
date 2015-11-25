@@ -583,7 +583,7 @@ mkNameTypeIdDesc i ms = let (n, typeTxt) = case getType i ms of RmType -> (getRm
 
 
 mkActionParams :: Id -> MudState -> Args -> ActionParams
-mkActionParams i ms as = ActionParams { plaId       = i
+mkActionParams i ms as = ActionParams { myId        = i
                                       , plaMsgQueue = getMsgQueue i ms
                                       , plaCols     = getColumns  i ms
                                       , args        = as }

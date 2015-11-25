@@ -783,8 +783,8 @@ exits p = withoutArgs exits p
 expCmdList :: Action
 expCmdList (NoArgs i mq cols) =
     (pager i mq . concatMap (wrapIndent cmdNamePadding cols) $ mkExpCmdListTxt) >> logPlaExecArgs "expressive" [] i
-expCmdList p@(ActionParams { plaId, args }) =
-    dispMatches p cmdNamePadding mkExpCmdListTxt >> logPlaExecArgs "expressive" args plaId
+expCmdList p@(ActionParams { myId, args }) =
+    dispMatches p cmdNamePadding mkExpCmdListTxt >> logPlaExecArgs "expressive" args myId
 
 
 mkExpCmdListTxt :: [T.Text]
@@ -2749,8 +2749,8 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 who :: Action
 who (NoArgs i mq cols) = getState >>= \ms ->
     (pager i mq . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
-who p@(ActionParams { plaId, args }) = getState >>= \ms ->
-    (dispMatches p namePadding . mkWhoTxt plaId $ ms) >> logPlaExecArgs "who" args plaId
+who p@(ActionParams { myId, args }) = getState >>= \ms ->
+    (dispMatches p namePadding . mkWhoTxt myId $ ms) >> logPlaExecArgs "who" args myId
 
 
 mkWhoTxt :: Id -> MudState -> [T.Text]

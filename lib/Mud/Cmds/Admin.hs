@@ -1001,23 +1001,23 @@ teleHelper :: ActionParams
            -> Maybe T.Text
            -> (Id -> [Broadcast] -> [Broadcast])
            -> (MudState, [MudStack ()])
-teleHelper p@(ActionParams { plaId }) ms originId destId destName mt f =
-    let g           = maybe id (\t -> ((nlnl t, pure plaId) :)) mt
-        originDesig = mkStdDesig plaId ms Don'tCap
-        originPCIds = plaId `delete` pcIds originDesig
+teleHelper p@(ActionParams { myId }) ms originId destId destName mt f =
+    let g           = maybe id (\t -> ((nlnl t, pure myId) :)) mt
+        originDesig = mkStdDesig myId ms Don'tCap
+        originPCIds = myId `delete` pcIds originDesig
         s           = fromJust . stdPCEntSing $ originDesig
-        destDesig   = mkSerializedNonStdDesig plaId ms s A Don'tCap
+        destDesig   = mkSerializedNonStdDesig myId ms s A Don'tCap
         destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
-        ms'         = ms & pcTbl .ind plaId.rmId .~ destId
-                         & invTbl.ind originId   %~ (plaId `delete`)
-                         & invTbl.ind destId     %~ (sortInv ms . (++ pure plaId))
-    in (ms', [ bcastIfNotIncog plaId . f plaId . g $ [ (nlnl   teleDescMsg,                             pure plaId )
-                                                     , (nlnl . teleOriginMsg . serialize $ originDesig, originPCIds)
-                                                     , (nlnl . teleDestMsg               $ destDesig,   destPCIds  ) ]
+        ms'         = ms & pcTbl .ind myId.rmId .~ destId
+                         & invTbl.ind originId  %~ (myId `delete`)
+                         & invTbl.ind destId    %~ (sortInv ms . (++ pure myId))
+    in (ms', [ bcastIfNotIncog myId . f myId . g $ [ (nlnl   teleDescMsg,                             pure myId  )
+                                                   , (nlnl . teleOriginMsg . serialize $ originDesig, originPCIds)
+                                                   , (nlnl . teleDestMsg               $ destDesig,   destPCIds  ) ]
              , look p
-             , logPla "telehelper" plaId $ "teleported to " <> dblQuote destName <> "."
-             , rndmDos [ (calcProbTeleVomit   plaId ms, mkExpAction "vomit"   p)
-                       , (calcProbTeleShudder plaId ms, mkExpAction "shudder" p) ] ])
+             , logPla "telehelper" myId $ "teleported to " <> dblQuote destName <> "."
+             , rndmDos [ (calcProbTeleVomit   myId ms, mkExpAction "vomit"   p)
+                       , (calcProbTeleShudder myId ms, mkExpAction "shudder" p) ] ])
 
 
 -----
@@ -1108,8 +1108,8 @@ whoHelper :: LoggedInOrOut -> T.Text -> Action
 whoHelper inOrOut cn (NoArgs i mq cols) = do
     pager i mq =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
     logPlaExecArgs (prefixAdminCmd cn) [] i
-whoHelper inOrOut cn p@(ActionParams { plaId, args }) =
-    (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState) >> logPlaExecArgs (prefixAdminCmd cn) args plaId
+whoHelper inOrOut cn p@(ActionParams { myId, args }) =
+    (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState) >> logPlaExecArgs (prefixAdminCmd cn) args myId
 
 
 mkCharListTxt :: LoggedInOrOut -> MudState -> [T.Text]

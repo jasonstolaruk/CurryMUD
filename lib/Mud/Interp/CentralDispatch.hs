@@ -23,9 +23,9 @@ import qualified Data.Text as T
 
 
 centralDispatch :: Interp
-centralDispatch cn p@(ActionParams { plaId, plaMsgQueue }) = do
-    getState >>= \ms -> maybe (send plaMsgQueue . nlnl $ "What?") (p |&|) =<< findAction plaId ms cn
-    getState >>= \ms -> when (isNothing . getInterp plaId $ ms) . prompt plaMsgQueue . mkPrompt plaId $ ms
+centralDispatch cn p@(ActionParams { myId, plaMsgQueue }) = do
+    getState >>= \ms -> maybe (send plaMsgQueue . nlnl $ "What?") (p |&|) =<< findAction myId ms cn
+    getState >>= \ms -> when (isNothing . getInterp myId $ ms) . prompt plaMsgQueue . mkPrompt myId $ ms
 
 
 findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)

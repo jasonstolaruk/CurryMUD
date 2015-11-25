@@ -42,18 +42,18 @@ type Id   = Int
 type Cols = Int
 
 
-data ActionParams = ActionParams { plaId       :: Id -- TODO: Could be an NPC ID...
+data ActionParams = ActionParams { myId        :: Id
                                  , plaMsgQueue :: MsgQueue
                                  , plaCols     :: Cols
                                  , args        :: Args }
 
 
 instance Show ActionParams where
-  show ActionParams { .. } = showIt (show plaId) (show plaCols) (show args)
+  show ActionParams { .. } = showIt (show myId) (show plaCols) (show args)
     where
       showIt i cols = T.unpack . sformat m i cols
       m = do
-          "ActionParams {plaId = "
+          "ActionParams {myId = "
           ", plaMsgQueue = elided, plaCols = "
           ", args = "
           "}"
@@ -121,7 +121,7 @@ pattern OneArgLower' i a <- OneArgLower i _ _ a
 pattern OneArgNubbed i mq cols a <- WithArgs i mq cols (nub . map T.toLower -> [a])
 
 
-pattern WithArgs i mq cols as = ActionParams { plaId       = i
+pattern WithArgs i mq cols as = ActionParams { myId        = i
                                              , plaMsgQueue = mq
                                              , plaCols     = cols
                                              , args        = as }
