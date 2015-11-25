@@ -8,6 +8,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , checkMutuallyTuned
                          , clothToSlot
                          , donMsgs
+                         , execIfPossessed
                          , fillerToSpcs
                          , findAvailSlot
                          , getMatchingChanWithName
@@ -197,6 +198,16 @@ type ThrPerVerb = T.Text
 mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> PCDesig -> Sing -> (T.Text, Broadcast)
 mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
                             , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], i `delete` pcIds d) )
+
+
+-----
+
+
+execIfPossessed :: ActionParams -> CmdName -> Action -> MudStack ()
+execIfPossessed p@(WithArgs i mq cols _) cn f = getState >>= \ms -> let s = getSing i ms in case getPossessor i ms of
+  Nothing -> wrapSend mq cols . sorryNotPossessed s $ cn
+  Just _  -> f p
+execIfPossessed p cn _ = patternMatchFail "execIfPossessed" [ showText p, cn ]
 
 
 -----

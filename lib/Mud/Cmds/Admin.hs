@@ -223,9 +223,12 @@ adminAs p@(AdviseOneArg a)                   = advise p [ prefixAdminCmd "as" ] 
 adminAs (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = let s = getSing targetId ms in case getType targetId ms of
-          NpcType | npcMq <- getNpcMsgQueue targetId ms -> do
-              ioHelper targetId s
-              liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ msg'
+          NpcType -> let npcMq        = getNpcMsgQueue targetId ms
+                         notPossessed = do
+                             ioHelper targetId s
+                             liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ msg'
+                         isPossessed pi = sendFun . sorryAlreadyPossessed s . getSing pi $ ms
+                     in maybe notPossessed isPossessed . getPossessor targetId $ ms
           PCType  | targetId == i                                            -> sendFun sorryAsSelf
                   | isAdmin          . getPla targetId $ ms                  -> sendFun sorryAsAdmin
                   | not . isLoggedIn . getPla targetId $ ms                  -> sendFun . sorryLoggedOut $ s

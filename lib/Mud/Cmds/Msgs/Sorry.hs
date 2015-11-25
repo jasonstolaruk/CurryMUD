@@ -86,6 +86,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryNoConHere
                             , sorryNoLinks
                             , sorryNoOneHere
+                            , sorryNotPossessed
                             , sorryParseArg
                             , sorryParseBase
                             , sorryParseChanId
@@ -221,7 +222,7 @@ sorryAdminName n = "There is no administrator by the name of " <> dblQuote n <> 
 
 
 sorryAlreadyPossessed :: Sing -> Sing -> T.Text
-sorryAlreadyPossessed a b = T.concat [ capitalize . theOnLower $ a, " is already possessed by ", b, "." ]
+sorryAlreadyPossessed a b = but . T.concat $ [ theOnLower a, " is already possessed by ", b, "." ]
 
 
 -----
@@ -690,6 +691,17 @@ sorryNoConHere = "You don't see any containers here."
 
 sorryNoOneHere :: T.Text
 sorryNoOneHere = "You don't see anyone here."
+
+
+-----
+
+
+sorryNotPossessed :: Sing -> CmdName -> T.Text
+sorryNotPossessed s cn = T.concat [ "You must first possess "
+                                  , theOnLower s
+                                  , " before you can use the "
+                                  , dblQuote cn
+                                  , " command." ]
 
 
 -----
