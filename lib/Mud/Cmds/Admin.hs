@@ -828,12 +828,7 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                 can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
                 canPossess      = ( ms & plaTbl.ind i       .possessing .~ Just targetId
                                        & npcTbl.ind targetId.possessor  .~ Just i
-                                  , [ multiSendFun [ T.concat [ "Forcibly binding your consciousness to "
-                                                              , theOnLower targetSing
-                                                              , "'s body, you suppress "
-                                                              , mkPossPro . getSex targetId $ ms
-                                                              , " psyche with your own." ]
-                                                   , "You are now possessing " <> theOnLower targetSing <> "." ]
+                                  , [ sendFun $ "You are now possessing " <> theOnLower targetSing <> "."
                                     , logPla "adminPossess" i $ "started possessing "                 <>
                                                                 aOrAnOnLower (descSingId targetId ms) <>
                                                                 "." ] )
