@@ -43,7 +43,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, each, to, view, views)
+import Control.Lens (_1, _2, _3, at, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
@@ -51,7 +51,7 @@ import Data.Bits (zeroBits)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.List (delete, foldl', intercalate, intersperse, partition, sortBy)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
@@ -1139,7 +1139,6 @@ adminWhoOut = whoHelper LoggedOut "whoout"
 -----
 
 
--- TODO: You shouldn't be able to wiretap a channel that you are connected to.
 adminWire :: Action
 adminWire p@AdviseNoArgs          = advise p [ prefixAdminCmd "wiretap" ] adviceAWireNoArgs
 adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
@@ -1153,15 +1152,17 @@ adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
         let (ms', msg) = case reads . T.unpack $ a :: [(Int, String)] of
                            [(ci, "")] | ci < 0                                -> sorry sorryWtf
                                       | ci `notElem` (ms^.chanTbl.to IM.keys) -> sorry . sorryParseChanId $ a
-                                      | otherwise                             -> toggle ms ci & _2 %~ Right
+                                      | otherwise                             -> checkAlreadyConn ci
                            _                                                  -> sorry . sorryParseChanId $ a
+            checkAlreadyConn ci | s <- getSing i  ms, c <- getChan ci ms = if views (chanConnTbl.at s) isJust c
+              then sorry . sorryWireAlready $ c^.chanName
+              else toggle ms ci s & _2 %~ Right
             sorry = (ms, ) . Left
         in (ms', msgs ++ pure msg)
-    toggle ms ci = let s        = getSing i ms
-                       (cn, ss) = ms^.chanTbl.ind ci.to ((view chanName *** view wiretappers) . dup)
-                   in if s `elem` ss
-                     then ( ms & chanTbl.ind ci.wiretappers .~ s `delete` ss
-                          , "You stop tapping the "  <> dblQuote cn <> " channel." )
-                     else ( ms & chanTbl.ind ci.wiretappers <>~ pure s
-                          , "You start tapping the " <> dblQuote cn <> " channel." )
+    toggle ms ci s = let (cn, ss) = ms^.chanTbl.ind ci.to ((view chanName *** view wiretappers) . dup)
+                     in if s `elem` ss
+                       then ( ms & chanTbl.ind ci.wiretappers .~ s `delete` ss
+                            , "You stop tapping the "  <> dblQuote cn <> " channel." )
+                       else ( ms & chanTbl.ind ci.wiretappers <>~ pure s
+                            , "You start tapping the " <> dblQuote cn <> " channel." )
 adminWire p = patternMatchFail "adminWire" [ showText p ]

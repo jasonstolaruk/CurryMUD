@@ -158,6 +158,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryUnreadyCoins
                             , sorryUnreadyInInv
                             , sorryUnreadyInRm
+                            , sorryWireAlready
                             , sorryWrapLineLen
                             , sorryWtf ) where
 
@@ -1101,6 +1102,13 @@ sorryUnreadyInInv = can't "unready items in your inventory."
 
 sorryUnreadyInRm :: T.Text
 sorryUnreadyInRm = can't "unready items in your current room."
+
+
+-----
+
+
+sorryWireAlready :: ChanName -> T.Text
+sorryWireAlready cn = "As you are already connected to the " <> dblQuote cn <> " channel, there is no need to tap it."
 
 
 -----

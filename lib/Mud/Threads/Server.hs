@@ -99,7 +99,6 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< 
 
 
 -- TODO: Left off here. Don't forget to pop your stash.
--- TODO: Prefixing to the msg means the col setting won't be properly respected... (Doesn't peeping also have this problem?)
 handleFromServer :: Id -> Handle -> Bool -> T.Text -> MudStack ()
 handleFromServer i h isToNpc msg = getState >>= \ms -> if isToNpc
   then helper . prefix $ msg

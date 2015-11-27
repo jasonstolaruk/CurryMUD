@@ -71,7 +71,7 @@ bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ b
           PCType  -> writeIt FromServer targetId
           NpcType -> maybe unit (writeIt ToNpc) . getPossessor targetId $ ms
           t       -> patternMatchFail "bcast sendBcastSTM helper" [ showText t ]
-        writeIt f i = let (mq, cols) = getMsgQueueColumns i ms -- TODO: Just subtract 2 from cols here?
+        writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
                       in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ms $ msg
 
 
