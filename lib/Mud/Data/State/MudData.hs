@@ -307,6 +307,7 @@ data Mob = Mob { _sex                    :: Sex
                , _curFp, _maxFp          :: Int
                , _exp                    :: Exp
                , _hand                   :: Hand
+               , _rmId                   :: Id
                , _regenAsync             :: Maybe RegenAsync }
 
 
@@ -394,8 +395,7 @@ data Obj = Obj { _weight :: Int
 
 
 -- Has a mob (and an entity and an inventory and coins and equipment) and a random names table and a telepathic link table.
-data PC = PC { _rmId       :: Id
-             , _race       :: Race
+data PC = PC { _race       :: Race
              , _introduced :: [Sing]
              , _linked     :: [Sing] } deriving (Eq, Generic, Show)
 
@@ -418,6 +418,7 @@ instance Random Race where
 -- ==================================================
 
 
+-- TODO: Shouldn't we have a comment here reading, "Has a PC (and ...)"?
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
                , _plaFlags     :: Int

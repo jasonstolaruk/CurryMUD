@@ -215,6 +215,34 @@ getMob i = view (mobTbl.ind i)
 -----
 
 
+getMobRm :: Id -> MudState -> Rm
+getMobRm i ms = let ri = getRmId i ms in getRm ri ms
+
+
+-----
+
+
+getMobRmCoins :: Id -> MudState -> Coins
+getMobRmCoins i ms = let ri = getRmId i ms in getCoins ri ms
+
+
+-----
+
+
+getMobRmInv :: Id -> MudState -> Inv
+getMobRmInv i ms = let ri = getRmId i ms in getInv ri ms
+
+
+-----
+
+
+getMobRmInvCoins :: Id -> MudState -> (Inv, Coins)
+getMobRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
+
+
+-----
+
+
 getMsgQueue :: Id -> MudState -> MsgQueue
 getMsgQueue i = view (msgQueueTbl.ind i)
 
@@ -252,34 +280,6 @@ getObj i = view (objTbl.ind i)
 
 getPC :: Id -> MudState -> PC
 getPC i = view (pcTbl.ind i)
-
-
------
-
-
-getPCRm :: Id -> MudState -> Rm
-getPCRm i ms = let ri = getRmId i ms in getRm ri ms
-
-
------
-
-
-getPCRmCoins :: Id -> MudState -> Coins
-getPCRmCoins i ms = let ri = getRmId i ms in getCoins ri ms
-
-
------
-
-
-getPCRmInv :: Id -> MudState -> Inv
-getPCRmInv i ms = let ri = getRmId i ms in getInv ri ms
-
-
------
-
-
-getPCRmInvCoins :: Id -> MudState -> (Inv, Coins)
-getPCRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
 
 
 -----
@@ -356,7 +356,7 @@ getRm i = view (rmTbl.ind i)
 
 
 getRmId :: Id -> MudState -> Id
-getRmId i = view rmId . getPC i
+getRmId i = view rmId . getMob i
 
 
 -----

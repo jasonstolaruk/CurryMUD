@@ -98,7 +98,6 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< 
         rest = [ spaced . bracketQuote $ s, dfltColor, " ", msg ]
 
 
--- TODO: Left off here. Don't forget to pop your stash.
 handleFromServer :: Id -> Handle -> Bool -> T.Text -> MudStack ()
 handleFromServer i h isToNpc msg = getState >>= \ms -> if isToNpc
   then helper . prefix $ msg
