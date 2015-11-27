@@ -34,7 +34,7 @@ This generally refers to a (usually text-based) virtual world in its totality.
 A new, inexperienced player.
 
 \uNon-Player Character\d
-A character controlled by the server. A "mobile" or "mob."
+A character normally controlled by the server (the CurryMUD administrators may occasionally take active control of non-player characters). A "mobile" or "mob."
 
 \uOut-Of-Character\d
 Something said or done as a player, outside the context of role-playing. Or, outside the context of the virtual world.

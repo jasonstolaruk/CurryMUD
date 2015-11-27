@@ -26,7 +26,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Persist
-import Mud.TheWorld.AdminZoneIds
+import Mud.TheWorld.AdminZoneIds (iLoggedOut, iRoot)
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -1139,6 +1139,7 @@ adminWhoOut = whoHelper LoggedOut "whoout"
 -----
 
 
+-- TODO: You shouldn't be able to wiretap a channel that you are connected to.
 adminWire :: Action
 adminWire p@AdviseNoArgs          = advise p [ prefixAdminCmd "wiretap" ] adviceAWireNoArgs
 adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case

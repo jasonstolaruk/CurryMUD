@@ -65,10 +65,14 @@ bcast :: [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ bs
   where
-    sendBcastSTM ms (msg, is) = forM_ is $ \i ->
-        let mq   = getMsgQueue i ms
-            cols = getColumns  i ms
-        in writeTQueue mq . FromServer . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ms $ msg
+    sendBcastSTM ms (msg, is) = mapM_ helper is
+      where
+        helper targetId = case getType targetId ms of
+          PCType  -> writeIt FromServer targetId
+          NpcType -> maybe unit (writeIt ToNpc) . getPossessor targetId $ ms
+          t       -> patternMatchFail "bcast sendBcastSTM helper" [ showText t ]
+        writeIt f i = let (mq, cols) = getMsgQueueColumns i ms -- TODO: Just subtract 2 from cols here?
+                      in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ms $ msg
 
 
 -----

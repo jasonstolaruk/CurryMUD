@@ -17,7 +17,7 @@ import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
-import Mud.TheWorld.AdminZoneIds
+import Mud.TheWorld.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
 import Mud.Threads.Regen
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths

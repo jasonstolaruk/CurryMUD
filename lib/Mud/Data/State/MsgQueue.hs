@@ -24,6 +24,7 @@ data Msg = AsSelf     T.Text
          | Quit
          | Shutdown
          | SilentBoot
+         | ToNpc      T.Text
 
 
 -----

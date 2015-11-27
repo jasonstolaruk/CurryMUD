@@ -21,7 +21,7 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
-import Mud.TheWorld.AdminZoneIds (iLoggedOut)
+import Mud.TheWorld.AdminZoneIds (iLoggedOut, iPidge)
 import Mud.Threads.NpcServer
 import Mud.Threads.ThreadTblPurger
 import Mud.TopLvlDefs.Chars
@@ -112,6 +112,7 @@ debugCmds =
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
+    , mkDebugCmd "pidge"      debugPidge       "Send a message to Pidge."
     , mkDebugCmd "pmf"        debugPmf         "Trigger a pattern match failure."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
     , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
@@ -437,6 +438,17 @@ debugOut p = withoutArgs debugOut p
 debugPersist :: Action
 debugPersist (NoArgs' i mq) = replicateM_ 10 (persist >> ok mq) >> logPlaExec (prefixDebugCmd "persist") i
 debugPersist p              = withoutArgs debugPersist p
+
+
+-----
+
+
+debugPidge :: Action
+debugPidge (NoArgs' i mq) = serialize . flip (mkStdDesig i) Don'tCap <$> getState >>= \d -> do
+    bcastNl . mkBcast iPidge $ "Geetings from " <> d <> "!"
+    ok mq
+    logPlaExec (prefixDebugCmd "pidge") i
+debugPidge p = withoutArgs debugPidge p
 
 
 -----

@@ -36,6 +36,7 @@ import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
+import Data.Monoid ((<>))
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
@@ -56,7 +57,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
       AsSelf     msg -> handleFromClient i mq tq True msg  >> loop
       Dropped        ->                                       sayonara
       FromClient msg -> handleFromClient i mq tq False msg >> loop
-      FromServer msg -> handleFromServer i h msg           >> loop
+      FromServer msg -> handleFromServer i h False msg     >> loop
       InacBoot       -> sendInacBootMsg h                  >> sayonara
       InacStop       -> stopTimerThread tq                 >> loop
       MsgBoot msg    -> sendBootMsg h msg                  >> sayonara
@@ -65,6 +66,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
       Quit           -> cowbye h                           >> sayonara
       Shutdown       -> shutDown                           >> loop
       SilentBoot     ->                                       sayonara
+      ToNpc msg      -> handleFromServer i h True msg      >> loop
     sayonara = sequence_ [ stopTimerThread tq, handleEgress i ]
 
 
@@ -96,9 +98,15 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< 
         rest = [ spaced . bracketQuote $ s, dfltColor, " ", msg ]
 
 
-handleFromServer :: Id -> Handle -> T.Text -> MudStack ()
-handleFromServer i h msg = getState >>= \ms -> let peeps = getPeepers i ms in
-    forwardToPeepers i peeps ToThePeeped msg >> (liftIO . T.hPutStr h $ msg)
+-- TODO: Left off here. Don't forget to pop your stash.
+-- TODO: Prefixing to the msg means the col setting won't be properly respected... (Doesn't peeping also have this problem?)
+handleFromServer :: Id -> Handle -> Bool -> T.Text -> MudStack ()
+handleFromServer i h isToNpc msg = getState >>= \ms -> if isToNpc
+  then helper . prefix $ msg
+  else forwardToPeepers i (getPeepers i ms) ToThePeeped msg >> helper msg
+  where
+    helper = liftIO . T.hPutStr h
+    prefix = (colorWith toNpcColor " " <>) . (" " <>)
 
 
 sendInacBootMsg :: Handle -> MudStack ()
@@ -110,7 +118,7 @@ sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
 
 sendPrompt :: Id -> Handle -> T.Text -> MudStack ()
-sendPrompt i h = handleFromServer i h . nl
+sendPrompt i h = handleFromServer i h False . nl
 
 
 cowbye :: Handle -> MudStack ()

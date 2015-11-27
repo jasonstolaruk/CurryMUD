@@ -27,7 +27,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , InvWithCon
                          , IsConInRm
                          , isNonStdLink
-                         , isNpc
                          , isRingRol
                          , isRndmName
                          , isSlotAvail
@@ -593,13 +592,6 @@ inOutOnOffs = [ ("i",   otherwise)
               , ("on",  otherwise)
               , ("ou",  likewise )
               , ("out", likewise ) ]
-
-
------
-
-
-isNpc :: Id -> MudState -> Bool
-isNpc i = views npcTbl ((i `elem`) . IM.keys)
 
 
 -----

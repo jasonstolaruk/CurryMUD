@@ -20,6 +20,8 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getPCRmNonIncogInvCoins
                                 , getState
                                 , isLoggedIn
+                                , isNpc
+                                , isPC
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
                                 , mkCapsFun
@@ -211,6 +213,22 @@ onEnv = (ask >>=)
 
 isLoggedIn :: Pla -> Bool
 isLoggedIn = views lastRmId ((()#) . (Sum <$>))
+
+
+-----
+
+
+-- TODO: Use this.
+isNpc :: Id -> MudState -> Bool
+isNpc i = (== NpcType) . getType i
+
+
+-----
+
+
+-- TODO: Use this.
+isPC :: Id -> MudState -> Bool
+isPC i = (== PCType) . getType i
 
 
 -----

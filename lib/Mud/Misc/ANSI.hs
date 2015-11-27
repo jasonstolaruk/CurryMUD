@@ -53,6 +53,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , selectorColor
                      , shutdownMsgColor
                      , syntaxSymbolColor
+                     , toNpcColor
                      , toPeepedColor
                      , tunedInColor
                      , underline
@@ -281,6 +282,10 @@ shutdownMsgColor = red
 
 syntaxSymbolColor :: T.Text
 syntaxSymbolColor = yellow
+
+
+toNpcColor :: T.Text
+toNpcColor = mkColorANSI (Dull, Magenta) (Dull, Magenta)
 
 
 toPeepedColor :: T.Text
