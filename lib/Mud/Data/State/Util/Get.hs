@@ -139,7 +139,7 @@ getHt i = view ht . getMob i
 
 
 getInterp :: Id -> MudState -> Maybe Interp
-getInterp i = view interp . getPla i
+getInterp i = view interp . getMob i
 
 
 -----
@@ -528,17 +528,6 @@ isNotFirstMobSay = getPlaFlag IsNotFirstMobSay
 
 isNotFirstModSayId :: Id -> MudState -> Bool
 isNotFirstModSayId = plaFlagHelper IsNotFirstMobSay
-
-
------
-
-
-isSeeingInvis :: Pla -> Bool
-isSeeingInvis = getPlaFlag IsSeeingInvis
-
-
-isSeeingInvisId :: Id -> MudState -> Bool
-isSeeingInvisId = plaFlagHelper IsSeeingInvis
 
 
 -----

@@ -308,7 +308,8 @@ data Mob = Mob { _sex                    :: Sex
                , _exp                    :: Exp
                , _hand                   :: Hand
                , _rmId                   :: Id
-               , _regenAsync             :: Maybe RegenAsync }
+               , _regenAsync             :: Maybe RegenAsync
+               , _interp                 :: Maybe Interp }
 
 
 data Sex = Male
@@ -347,7 +348,8 @@ mobToJSON Mob { .. } = object [ "_sex"   .= _sex
                               , "_curFp" .= _curFp
                               , "_maxFp" .= _maxFp
                               , "_exp"   .= _exp
-                              , "_hand"  .= _hand ]
+                              , "_hand"  .= _hand
+                              , "_rmId"  .= _rmId ]
 
 
 jsonToMob :: Value -> Parser Mob
@@ -367,6 +369,8 @@ jsonToMob (Object o) = Mob <$> o .: "_sex"
                            <*> o .: "_maxFp"
                            <*> o .: "_exp"
                            <*> o .: "_hand"
+                           <*> o .: "_rmId"
+                           <*> pure Nothing
                            <*> pure Nothing
 jsonToMob _          = empty
 
@@ -394,7 +398,7 @@ data Obj = Obj { _weight :: Int
 -- ==================================================
 
 
--- Has a mob (and an entity and an inventory and coins and equipment) and a random names table and a telepathic link table.
+-- Has a mob (and an entity and an inventory and coins and equipment).
 data PC = PC { _race       :: Race
              , _introduced :: [Sing]
              , _linked     :: [Sing] } deriving (Eq, Generic, Show)
@@ -418,13 +422,12 @@ instance Random Race where
 -- ==================================================
 
 
--- TODO: Shouldn't we have a comment here reading, "Has a PC (and ...)"?
+-- Has a PC (and a mob and an entity and an inventory and coins and equipment) and a random names table and a telepathic link table.
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
                , _plaFlags     :: Int
                , _columns      :: Int
                , _pageLines    :: Int
-               , _interp       :: Maybe Interp
                , _peepers      :: Inv
                , _peeping      :: Inv
                , _possessing   :: Maybe Id
@@ -437,7 +440,6 @@ data PlaFlags = IsAdmin
               | IsNotFirstAdminMsg
               | IsNotFirstLook
               | IsNotFirstMobSay
-              | IsSeeingInvis
               | IsTunedAdmin
               | IsTunedQuestion deriving Enum
 
@@ -468,7 +470,6 @@ jsonToPla (Object o) = Pla <$> o .: "_currHostName"
                            <*> o .: "_plaFlags"
                            <*> o .: "_columns"
                            <*> o .: "_pageLines"
-                           <*> pure Nothing
                            <*> pure []
                            <*> pure []
                            <*> pure Nothing
@@ -487,10 +488,10 @@ type RndmNamesTbl = M.Map Sing Sing
 
 
 -- Has an inventory and coins.
-data Rm = Rm { _rmName   :: T.Text
-             , _rmDesc   :: T.Text
-             , _rmFlags  :: Int
-             , _rmLinks  :: [RmLink] } deriving (Eq, Generic)
+data Rm = Rm { _rmName  :: T.Text
+             , _rmDesc  :: T.Text
+             , _rmFlags :: Int
+             , _rmLinks :: [RmLink] } deriving (Eq, Generic)
 
 
 data RmFlags = RmFlagsTODO deriving Enum

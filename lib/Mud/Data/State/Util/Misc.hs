@@ -288,7 +288,7 @@ mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
                               , shouldCap    = sc
                               , pcEntName    = mkUnknownPCEntName i ms
                               , pcId         = i
-                              , pcIds        = findPCIds ms . getPCRmInv i $ ms }
+                              , pcIds        = findPCIds ms . getMobRmInv i $ ms }
 
 
 -----
@@ -325,7 +325,7 @@ removeAdHoc i ms = ms & coinsTbl   .at  i        .~ Nothing
 
 
 setInterp :: Id -> Maybe Interp -> MudStack ()
-setInterp i mi = tweak $ plaTbl.ind i.interp .~ mi
+setInterp i mi = tweak $ mobTbl.ind i.interp .~ mi
 
 
 -----
