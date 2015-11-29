@@ -242,6 +242,7 @@ npcCmds = map (uncurry3 mkRegularCmd)
     , ("?",      npcDispCmdList, "Display this command list.")
     , ("bars",   bars,           "Display one or more status bars.")
     , ("clear",  clear,          "Clear the screen.")
+    , ("exits",  exits,          "Display obvious exits.")
     , ("stop",   npcStop,        "Stop possessing.")
     , ("whoami", whoAmI,         "Confirm who " <> parensQuote "or what" <> " you are.") ]
 

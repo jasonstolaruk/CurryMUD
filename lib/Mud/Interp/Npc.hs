@@ -4,22 +4,16 @@ module Mud.Interp.Npc (npcInterp) where
 
 import Mud.Cmds.Pla
 import Mud.Data.Misc
-import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
 import Mud.Interp.Misc
-import Mud.Util.Operators
-import Mud.Util.Text
 
 import Data.List (sort)
 import qualified Data.Text as T
 
 
 npcInterp :: Interp
-npcInterp cn p@(ActionParams { myId, plaMsgQueue }) = do
-    getState >>= \ms -> maybe (send plaMsgQueue . nlnl $ "What?") (p |&|) =<< findAction myId ms cn
-    getState >>= \ms -> prompt plaMsgQueue . mkPrompt myId $ ms
+npcInterp = dispatch findAction
 
 
 findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)

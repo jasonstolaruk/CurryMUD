@@ -73,11 +73,14 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> T.Text -> MudStack ()
 handleFromClient i mq tq isAsSelf (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p                  = getPla i ms
-        isn'tPossessing    = maybe thruCentral thruOther . getInterp i $ ms
+        isn'tPossessing    = helper thruCentral
+        helper f           = maybe f thruOther . getInterp i $ ms
         thruCentral        = msg |#| interpret p centralDispatch . headTail . T.words
         thruOther f        = interpret p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
-        isPossessing npcId = let npcMq = getNpcMsgQueue npcId ms
-                             in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg
+        isPossessing npcId = helper thruNpcInterp
+          where
+            thruNpcInterp = let npcMq = getNpcMsgQueue npcId ms
+                            in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg
     in isAsSelf ? isn'tPossessing :? views possessing (maybe isn'tPossessing isPossessing) p
   where
     interpret p f (cn, as) = do

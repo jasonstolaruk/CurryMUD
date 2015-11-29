@@ -285,7 +285,7 @@ syntaxSymbolColor = yellow
 
 
 toNpcColor :: T.Text
-toNpcColor = mkColorANSI (Dull, Magenta) (Dull, Magenta)
+toNpcColor = mkColorANSI (Dull, Cyan) (Dull, Cyan)
 
 
 toPeepedColor :: T.Text
