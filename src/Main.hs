@@ -4,8 +4,8 @@
 CurryMud - A Multi-User Dungeon by Jason Stolaruk.
 Copyright (c) 2015, Jason Stolaruk and Detroit Labs LLC
 currymud (`at` gmail) . com
-@JasonStolaruk
 https://github.com/jasonstolaruk/CurryMUD
+In development since 2013-10.
 -}
 
 module Main (main) where
@@ -32,7 +32,7 @@ import System.Environment (getEnv, getProgName)
 main :: IO ()
 main = withSocketsDo . mIf (not <$> doesDirectoryExist mudDir) stop $ go
   where
-    stop = T.putStrLn $ "The " <> showText mudDir <> " does not exist; aborting."
+    stop = T.putStrLn $ "The " <> showText mudDir <> " directory does not exist; aborting."
     go   = do
         setCurrentDirectory mudDir
         mapM_ (createDirectoryIfMissing False) [ dbDir, logDir, persistDir ]
@@ -46,5 +46,4 @@ welcome = do
     mn <- what'sMyName
     T.putStrLn . nl . T.concat $ [ "Hello, ", T.pack un, ". Welcome to ", dblQuote mn, " ver ", ver, "." ]
   where
-    what'sMyName = getProgName >>= \n ->
-        return (n == "<interactive>" ? "Y U NO COMPILE ME?" :? T.pack n)
+    what'sMyName = getProgName >>= \n -> return (n == "<interactive>" ? "Y U NO COMPILE ME?" :? T.pack n)
