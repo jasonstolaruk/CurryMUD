@@ -57,14 +57,14 @@ createAdminZone = do
               100 100
               0
               RHand
-              Nothing)
+              iLoggedOut
+              Nothing Nothing)
          M.empty
          (M.fromList [("Curry", True)])
-         (PC iLoggedOut Human ["Curry"] ["Curry"])
+         (PC Human ["Curry"] ["Curry"])
          (Pla "" Nothing
               (setBit adminFlags . fromEnum $ IsIncognito)
               80 24
-              Nothing
               [] [] Nothing
               []
               (Just iLounge))
@@ -85,14 +85,14 @@ createAdminZone = do
               100 100
               0
               RHand
-              Nothing)
+              iLoggedOut
+              Nothing Nothing)
          M.empty
          (M.fromList [("Root", True)])
-         (PC iLoggedOut Human ["Root"] ["Root"])
+         (PC Human ["Root"] ["Root"])
          (Pla "" Nothing
               adminFlags
               80 24
-              Nothing
               [] [] Nothing
               []
               (Just iLounge))
@@ -947,7 +947,8 @@ createAdminZone = do
               10 10
               10
               NoHand
-              Nothing)
+              iMobCloset
+              Nothing Nothing)
   putNpc iRockCavy2
          (Ent iRockCavy2
               (Just "rock")
@@ -965,7 +966,8 @@ createAdminZone = do
               10 10
               10
               NoHand
-              Nothing)
+              iMobCloset
+              Nothing Nothing)
   putNpc iPidge
          (Ent iPidge
               (Just "pidge")
@@ -987,7 +989,8 @@ createAdminZone = do
               100 100
               0
               RHand
-              Nothing)
+              iMobCloset
+              Nothing Nothing)
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
                 (Just "shirt")

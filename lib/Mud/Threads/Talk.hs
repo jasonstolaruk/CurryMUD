@@ -110,9 +110,10 @@ adHoc mq host = do
                        , _maxFp      = 100, _curFp = 100
                        , _exp        = 0
                        , _hand       = RHand
-                       , _regenAsync = Nothing }
-            pc   = PC  { _rmId       = iWelcome
-                       , _race       = r
+                       , _rmId       = iWelcome
+                       , _regenAsync = Nothing
+                       , _interp     = Just interpName }
+            pc   = PC  { _race       = r
                        , _introduced = []
                        , _linked     = [] }
             pla  = Pla { _currHostName = host
@@ -120,7 +121,6 @@ adHoc mq host = do
                        , _plaFlags     = zeroBits
                        , _columns      = 80
                        , _pageLines    = 24
-                       , _interp       = Just interpName
                        , _peepers      = []
                        , _peeping      = []
                        , _possessing   = Nothing

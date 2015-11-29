@@ -506,7 +506,9 @@ examineMob i ms = let m           = getMob i ms
                      , "PP: "         <> showPts curPp maxPp
                      , "FP: "         <> showPts curFp maxFp
                      , "Exp: "        <> m^.exp .to showText
-                     , "Handedness: " <> m^.hand.to pp ]
+                     , "Handedness: " <> m^.hand.to pp
+                     , "Room: "       <> let ri = m^.rmId
+                                         in getRmName ri ms <> " " <> parensQuote (showText ri) ]
 
 
 examineNpc :: ExamineHelper
@@ -523,9 +525,7 @@ examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to showText
 
 
 examinePC :: ExamineHelper
-examinePC i ms = let p = getPC i ms in [ "Room: "        <> let ri = p^.rmId
-                                                            in getRmName ri ms <> " " <> parensQuote (showText ri)
-                                       , "Race: "        <> p^.race      .to pp
+examinePC i ms = let p = getPC i ms in [ "Race: "        <> p^.race      .to pp
                                        , "Known names: " <> p^.introduced.to commas
                                        , "Links: "       <> p^.linked    .to commas ]
 
@@ -550,7 +550,6 @@ examinePla i ms = let p = getPla i ms
                                                         , (isNotFirstAdminMsg, "not first admin msg")
                                                         , (isNotFirstLook,     "not first look"     )
                                                         , (isNotFirstMobSay,   "not first mob say"  )
-                                                        , (isSeeingInvis,      "seeing invis"       )
                                                         , (isTunedAdmin,       "tuned admin"        )
                                                         , (isTunedQuestion,    "tuned question"     ) ]
                                             in [ f p |?| t | (f, t) <- pairs ]
@@ -1003,7 +1002,7 @@ teleHelper p@(ActionParams { myId }) ms originId destId destName mt f =
         s           = fromJust . stdPCEntSing $ originDesig
         destDesig   = mkSerializedNonStdDesig myId ms s A Don'tCap
         destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
-        ms'         = ms & pcTbl .ind myId.rmId .~ destId
+        ms'         = ms & mobTbl.ind myId.rmId .~ destId
                          & invTbl.ind originId  %~ (myId `delete`)
                          & invTbl.ind destId    %~ (sortInv ms . (++ pure myId))
     in (ms', [ bcastIfNotIncog myId . f myId . g $ [ (nlnl   teleDescMsg,                             pure myId  )

@@ -31,7 +31,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (writeTMQueue)
 import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
-import Control.Lens (to, view, views)
+import Control.Lens (view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_, void)
 import Control.Monad.IO.Class (liftIO)
@@ -73,7 +73,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> T.Text -> MudStack ()
 handleFromClient i mq tq isAsSelf (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p                  = getPla i ms
-        isn'tPossessing    = p^.interp.to (maybe thruCentral thruOther)
+        isn'tPossessing    = maybe thruCentral thruOther . getInterp i $ ms
         thruCentral        = msg |#| interpret p centralDispatch . headTail . T.words
         thruOther f        = interpret p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
         isPossessing npcId = let npcMq = getNpcMsgQueue npcId ms

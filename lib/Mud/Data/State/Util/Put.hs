@@ -72,7 +72,6 @@ putObj i e o = tweaks [ entTbl .ind i .~ e
 -----
 
 
--- TODO: Why do we need this method when we have "putPla"?
 putPC :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> RndmNamesTbl -> TeleLinkTbl -> PC -> MudStack ()
 putPC i e is c em m r t p = tweaks [ coinsTbl        .ind i .~ c
                                    , entTbl          .ind i .~ e

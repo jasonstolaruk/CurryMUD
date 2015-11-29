@@ -739,7 +739,7 @@ expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
     helper toSelf toTarget toOthers = getState >>= \ms -> case singleArgInvEqRm InRm target of
       (InRm, target') ->
           let d                                = mkStdDesig i ms DoCap
-              (first (i `delete`) -> invCoins) = getPCRmInvCoins i ms
+              (first (i `delete`) -> invCoins) = getMobRmInvCoins i ms
           in if ()!# invCoins
             then case uncurry (resolveRmInvCoins i ms (pure target')) invCoins of
               (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg

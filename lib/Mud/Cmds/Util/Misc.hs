@@ -374,7 +374,6 @@ getLvlExp i = (getLvl i *** getExp i) . dup
 -----
 
 
--- TODO: Shouldn't this be named "getPlaChans"?
 getPCChans :: Id -> MudState -> [Chan]
 getPCChans i ms = views chanTbl (IM.foldr helper []) ms
   where

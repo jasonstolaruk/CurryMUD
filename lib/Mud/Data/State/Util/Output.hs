@@ -133,7 +133,7 @@ bcastOtherAdmins i = bcastAdminsHelper (i `delete`)
 
 bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
-    unless (isIncognitoId i ms) $ let ((i `delete`) -> ris) = getPCRmInv i ms
+    unless (isIncognitoId i ms) $ let ((i `delete`) -> ris) = getMobRmInv i ms
                                   in bcast [(msg, findPCIds ms ris)]
 
 

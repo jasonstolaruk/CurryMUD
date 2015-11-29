@@ -31,6 +31,6 @@ centralDispatch cn p@(ActionParams { myId, plaMsgQueue }) = do
 findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)
 findAction i ms (T.toLower -> cn) = findActionHelper cn $ let ia = getPlaFlag IsAdmin . getPla i $ ms
                                                           in sort . concat $ [ plaCmds
-                                                                             , mkNonStdRmLinkCmds . getPCRm i $ ms
+                                                                             , mkNonStdRmLinkCmds . getMobRm i $ ms
                                                                              , ia            |?| adminCmds
                                                                              , ia && isDebug |?| debugCmds ]

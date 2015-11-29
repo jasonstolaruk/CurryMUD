@@ -775,7 +775,7 @@ equip p = patternMatchFail "equip" [ showText p ]
 
 exits :: Action
 exits (NoArgs i mq cols) = getState >>= \ms ->
-    (send mq . nl . mkExitsSummary cols . getPCRm i $ ms) >> logPlaExec "exits" i
+    (send mq . nl . mkExitsSummary cols . getMobRm i $ ms) >> logPlaExec "exits" i
 exits p = withoutArgs exits p
 
 
@@ -865,7 +865,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
                 s           = fromJust . stdPCEntSing $ originDesig
                 originPCIds = i `delete` pcIds originDesig
                 destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
-                ms'         = ms & pcTbl .ind i.rmId   .~ destId
+                ms'         = ms & mobTbl.ind i.rmId   .~ destId
                                  & invTbl.ind originId %~ (i `delete`)
                                  & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
                 msgAtOrigin = nlnl $ case maybeOriginMsg of
@@ -1707,7 +1707,7 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
     movePC ms ri     = ms & invTbl     .ind ri         %~ (i `delete`)
                           & invTbl     .ind iLoggedOut %~ (i :)
                           & msgQueueTbl.at  i          .~ Nothing
-                          & pcTbl      .ind i.rmId     .~ iLoggedOut
+                          & mobTbl     .ind i.rmId     .~ iLoggedOut
                           & plaTbl     .ind i.lastRmId ?~ ri
 
 
