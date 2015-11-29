@@ -11,11 +11,9 @@ import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc
 import Mud.Util.Operators
-import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPla, logNotice)
-import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
@@ -29,13 +27,6 @@ import qualified Data.Text as T
 
 
 default (Int)
-
-
------
-
-
-patternMatchFail :: T.Text -> [T.Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Threads.Regen"
 
 
 -----
@@ -77,12 +68,12 @@ throwWaitRegen i = helper |&| modifyState >=> maybeVoid throwWait
 
 
 threadRegen :: Id -> MudStack ()
-threadRegen i = onEnv $ \md -> do
+threadRegen i = getState >>= \ms -> onEnv $ \md -> do
     setThreadType . RegenParent $ i
-    getType i <$> getState >>= \case
-      NpcType -> handle dieSilently . spawnThreadTree $ md
-      PCType  -> handle (die (Just i) "regen") $ logPla "threadRegen" i "regen started." >> spawnThreadTree md
-      x       -> patternMatchFail "threadRegen" [ showText x ]
+    let a = handle (die (Just i) "regen") $ logPla "threadRegen" i "regen started." >> spawnThreadTree md
+        b = handle dieSilently . spawnThreadTree $ md
+        f = pcNpc i ms
+    a `f` b
   where
     spawnThreadTree md = liftIO . void . concurrentTree . map (`runReaderT` md) $ [ h, m, p, f ]
       where

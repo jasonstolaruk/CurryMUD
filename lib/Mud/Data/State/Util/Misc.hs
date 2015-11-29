@@ -32,6 +32,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , mkUnknownPCEntName
                                 , modifyState
                                 , onEnv
+                                , pcNpc
                                 , pluralize
                                 , removeAdHoc
                                 , setInterp
@@ -44,10 +45,11 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TheWorld.AdminZoneIds (iWelcome)
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
@@ -65,6 +67,13 @@ import Data.Monoid (Sum(..), (<>))
 import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
 import qualified Data.Text as T
+
+
+patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
+
+
+-- ==================================================
 
 
 aOrAnType :: Type -> T.Text
@@ -218,7 +227,6 @@ isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 -----
 
 
--- TODO: Use this.
 isNpc :: Id -> MudState -> Bool
 isNpc i = (== NpcType) . getType i
 
@@ -226,7 +234,6 @@ isNpc i = (== NpcType) . getType i
 -----
 
 
--- TODO: Use this.
 isPC :: Id -> MudState -> Bool
 isPC i = (== PCType) . getType i
 
@@ -296,6 +303,16 @@ mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
+
+
+-----
+
+
+pcNpc :: Id -> MudState -> MudStack () -> MudStack () -> MudStack ()
+pcNpc i ms a b = case getType i ms of
+  PCType  -> a
+  NpcType -> b
+  t       -> patternMatchFail "pcNpc" [ showText t ]
 
 
 -----
