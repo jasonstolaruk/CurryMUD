@@ -19,7 +19,7 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent.STM.TMVar (newTMVarIO)
-import Control.Lens (ASetter)
+import Control.Lens (ASetter, views)
 import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
@@ -142,7 +142,8 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in
 
 movePCs :: MudStack ()
 movePCs = tweak $ \ms ->
-    let idsWithRmIds       = let pairs = IM.foldrWithKey (\i mob -> ((i, mob^.rmId) :)) [] $ ms^.mobTbl
+    let idsWithRmIds       = let pairs   = views mobTbl (IM.foldrWithKey f []) ms
+                                 f i mob = isPC i ms ? ((i, mob^.rmId) :) :? id
                              in filter ((/= iLoggedOut) . snd) pairs
         helper (i, ri) ms' = ms' & invTbl.ind ri         %~ (i `delete`)
                                  & invTbl.ind iLoggedOut %~ (i :)
