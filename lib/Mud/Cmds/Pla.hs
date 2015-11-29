@@ -1509,9 +1509,9 @@ npcStop p = execIfPossessed p "stop" npcStopHelper
 
 
 npcStopHelper :: Action
-npcStopHelper (NoArgs' i mq) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
-    ok mq
-    logPla "stop" i $ "stopped possessing " <> aOrAnOnLower (descSingId i ms) <> "."
+npcStopHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
+    wrapSend mq cols $ "You stop possessing " <> aOrAnOnLower (getSing    i ms) <> "."
+    logPla "stop" i  $ "stopped possessing "  <> aOrAnOnLower (descSingId i ms) <> "."
     tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
 npcStopHelper p = withoutArgs npcStopHelper p
 
