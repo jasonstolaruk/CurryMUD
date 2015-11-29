@@ -6,8 +6,11 @@ license:               BSD3
 license-file:          LICENSE
 author:                Jason Stolaruk
 maintainer:            jasonstolaruk@gmail.com
-copyright:             Jason Stolaruk and Detroit Labs LLC
+copyright:             Copyright (c) 2015, Jason Stolaruk and Detroit Labs LLC
 category:              Game
+stability:             alpha
+homepage:              https://github.com/jasonstolaruk/CurryMUD
+bug-reports:           https://github.com/jasonstolaruk/CurryMUD/issues
 build-type:            Simple
 cabal-version:         >=1.10
 
@@ -93,6 +96,7 @@ library
                        Mud.Util.Text,
                        Mud.Util.Token,
                        Mud.Util.Wrapping
+  other-modules:       Paths_currymud
   other-extensions:    DeriveDataTypeable,
                        DeriveGeneric,
                        FlexibleContexts,

@@ -3,9 +3,10 @@
 module Mud.TopLvlDefs.Misc where
 
 import Mud.TopLvlDefs.Chars
+import Paths_currymud
 
 import Data.Monoid ((<>))
-import Data.Version (Version, makeVersion, showVersion)
+import Data.Version (showVersion)
 import System.Posix.Types (FileOffset)
 import qualified Data.Text as T
 
@@ -138,10 +139,6 @@ threadTblPurgerDelay = 60 * 60 -- one hr
 
 ver :: T.Text
 ver = T.pack . showVersion $ version
-
-
-version :: Version
-version = makeVersion [ 0, 1, 0, 0 ]
 
 
 worldPersisterDelay :: Int
