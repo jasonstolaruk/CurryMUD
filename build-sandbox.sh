@@ -3,6 +3,6 @@
 cabal sandbox delete
 cabal sandbox init
 cabal update
-cabal install --only-dependencies --enable-tests
-cabal install hlint
+cabal install -j --only-dependencies --enable-tests
+cabal install -j hlint
 cabal configure --enable-tests
