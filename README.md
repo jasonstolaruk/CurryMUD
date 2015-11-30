@@ -17,7 +17,7 @@ CurryMUD will have the following features:
 * Some degree of player-created content will be allowed and encouraged.
 * The state of the virtual world will be highly persisted upon server shutdown.
 * As is common with most textual MUDs, client connections will be supported with a loose implementation of the telnet protocol.
-* Financial gain is **not** a goal, and CurryMUD will always be free to play.
+* CurryMUD will always be free to play.
 
 ## What I have so far
 
@@ -43,7 +43,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 
 ## About the code
 
-The code is open source and available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs at this time**.
+The code is available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs at this time**.
 
 ### Notable features
 
@@ -69,7 +69,11 @@ The code is open source and available here on GitHub under the 3-clause BSD lice
 
 ### How to try it out
 
-If you'd like to try out what I have so far, just clone the repo from your home directory and build the project. You'll need GHC 7.10 with base 4.8. You shouldn't have any issues compiling on Mac OS X or Linux (I do not plan on explicitly supporting Windows). If you do run into issues, please email me and let me know. Once you have the server up and running, just telnet to localhost port 9696 to play.
+If you'd like to try out what I have so far, clone the repo from your home directory. While you can build CurryMUD via the usual `cabal install`, you may also utilize the included [build-sandbox.hs](https://github.com/jasonstolaruk/CurryMUD/blob/master/build-sandbox.sh), which builds the project dependencies in a new cabal sandbox.
+
+You'll need GHC 7.10 with base 4.8. You shouldn't have any issues compiling on Mac OS X or Linux (I do not plan on explicitly supporting Windows). If you do run into issues, please email me and let me know.
+
+Once you have the server up and running, just telnet to localhost port 9696 to play.
 
 ## How to contact me
 

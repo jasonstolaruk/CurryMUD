@@ -19,143 +19,143 @@ executable             curry
   ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   main-is:             Main.hs
   other-extensions:    OverloadedStrings
-  build-depends:       base >=4.8 && <5.0,
-                       currymud,
-                       directory >=1.2 && <2.0,
-                       mtl >=2.2 && <3.0,
-                       network >=2.6 && <3.0,
-                       text >=1.2 && <2.0
+  build-depends:         base >=4.8 && <5.0
+                       , currymud
+                       , directory >=1.2 && <2.0
+                       , mtl >=2.2 && <3.0
+                       , network >=2.6 && <3.0
+                       , text >=1.2 && <2.0
   hs-source-dirs:      src
 
 library
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
-  exposed-modules:     Mud.Cmds.Admin,
-                       Mud.Cmds.Debug,
-                       Mud.Cmds.ExpCmds,
-                       Mud.Cmds.Msgs.Advice,
-                       Mud.Cmds.Msgs.Dude,
-                       Mud.Cmds.Msgs.Hint
-                       Mud.Cmds.Msgs.Misc,
-                       Mud.Cmds.Msgs.Sorry,
-                       Mud.Cmds.Pla,
-                       Mud.Cmds.Util.Abbrev,
-                       Mud.Cmds.Util.CmdPrefixes,
-                       Mud.Cmds.Util.EmoteExp.EmoteExp,
-                       Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp,
-                       Mud.Cmds.Util.Misc,
-                       Mud.Cmds.Util.Pla,
-                       Mud.Data.Misc,
-                       Mud.Data.State.ActionParams.ActionParams,
-                       Mud.Data.State.ActionParams.Misc,
-                       Mud.Data.State.MsgQueue,
-                       Mud.Data.State.MudData,
-                       Mud.Data.State.Util.Calc,
-                       Mud.Data.State.Util.Coins,
-                       Mud.Data.State.Util.Get,
-                       Mud.Data.State.Util.Misc,
-                       Mud.Data.State.Util.Output,
-                       Mud.Data.State.Util.Put,
-                       Mud.Data.State.Util.Random,
-                       Mud.Interp.CentralDispatch,
-                       Mud.Interp.Login,
-                       Mud.Interp.Misc,
-                       Mud.Interp.Npc,
-                       Mud.Interp.Pager,
-                       Mud.Misc.ANSI,
-                       Mud.Misc.Database,
-                       Mud.Misc.LocPref,
-                       Mud.Misc.Logging,
-                       Mud.Misc.NameResolution,
-                       Mud.Misc.Persist,
-                       Mud.TheWorld.AdminZone,
-                       Mud.TheWorld.AdminZoneIds,
-                       Mud.TheWorld.TheWorld,
-                       Mud.TheWorld.Tutorial,
-                       Mud.TheWorld.TutorialIds,
-                       Mud.Threads.DbTblPurger,
-                       Mud.Threads.InacTimer,
-                       Mud.Threads.Listen,
-                       Mud.Threads.Misc,
-                       Mud.Threads.NpcServer,
-                       Mud.Threads.Receive,
-                       Mud.Threads.Regen,
-                       Mud.Threads.Server,
-                       Mud.Threads.Talk,
-                       Mud.Threads.ThreadTblPurger,
-                       Mud.Threads.WorldPersister,
-                       Mud.TopLvlDefs.Chars,
-                       Mud.TopLvlDefs.FilePaths,
-                       Mud.TopLvlDefs.Misc,
-                       Mud.TopLvlDefs.Padding,
-                       Mud.Util.List,
-                       Mud.Util.Misc,
-                       Mud.Util.Operators,
-                       Mud.Util.Padding,
-                       Mud.Util.Quoting,
-                       Mud.Util.Text,
-                       Mud.Util.Token,
+  exposed-modules:     Mud.Cmds.Admin
+                       Mud.Cmds.Debug
+                       Mud.Cmds.ExpCmds
+                       Mud.Cmds.Msgs.Advice
+                       Mud.Cmds.Msgs.Dude
+                       Mud.Cmds.Msgs.Hin
+                       Mud.Cmds.Msgs.Misc
+                       Mud.Cmds.Msgs.Sorry
+                       Mud.Cmds.Pla
+                       Mud.Cmds.Util.Abbrev
+                       Mud.Cmds.Util.CmdPrefixes
+                       Mud.Cmds.Util.EmoteExp.EmoteExp
+                       Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
+                       Mud.Cmds.Util.Misc
+                       Mud.Cmds.Util.Pla
+                       Mud.Data.Misc
+                       Mud.Data.State.ActionParams.ActionParams
+                       Mud.Data.State.ActionParams.Misc
+                       Mud.Data.State.MsgQueue
+                       Mud.Data.State.MudData
+                       Mud.Data.State.Util.Calc
+                       Mud.Data.State.Util.Coins
+                       Mud.Data.State.Util.Get
+                       Mud.Data.State.Util.Misc
+                       Mud.Data.State.Util.Output
+                       Mud.Data.State.Util.Put
+                       Mud.Data.State.Util.Random
+                       Mud.Interp.CentralDispatch
+                       Mud.Interp.Login
+                       Mud.Interp.Misc
+                       Mud.Interp.Npc
+                       Mud.Interp.Pager
+                       Mud.Misc.ANSI
+                       Mud.Misc.Database
+                       Mud.Misc.LocPref
+                       Mud.Misc.Logging
+                       Mud.Misc.NameResolution
+                       Mud.Misc.Persist
+                       Mud.TheWorld.AdminZone
+                       Mud.TheWorld.AdminZoneIds
+                       Mud.TheWorld.TheWorld
+                       Mud.TheWorld.Tutorial
+                       Mud.TheWorld.TutorialIds
+                       Mud.Threads.DbTblPurger
+                       Mud.Threads.InacTimer
+                       Mud.Threads.Listen
+                       Mud.Threads.Misc
+                       Mud.Threads.NpcServer
+                       Mud.Threads.Receive
+                       Mud.Threads.Regen
+                       Mud.Threads.Server
+                       Mud.Threads.Talk
+                       Mud.Threads.ThreadTblPurger
+                       Mud.Threads.WorldPersister
+                       Mud.TopLvlDefs.Chars
+                       Mud.TopLvlDefs.FilePaths
+                       Mud.TopLvlDefs.Misc
+                       Mud.TopLvlDefs.Padding
+                       Mud.Util.List
+                       Mud.Util.Misc
+                       Mud.Util.Operators
+                       Mud.Util.Padding
+                       Mud.Util.Quoting
+                       Mud.Util.Text
+                       Mud.Util.Token
                        Mud.Util.Wrapping
   other-modules:       Paths_currymud
-  other-extensions:    DeriveDataTypeable,
-                       DeriveGeneric,
-                       FlexibleContexts,
-                       FlexibleInstances,
-                       GADTs,
-                       GeneralizedNewtypeDeriving,
-                       LambdaCase,
-                       MonadComprehensions,
-                       MultiParamTypeClasses,
-                       MultiWayIf,
-                       NamedFieldPuns,
-                       OverloadedStrings,
-                       ParallelListComp,
-                       PatternSynonyms,
-                       QuasiQuotes,
-                       RankNTypes,
-                       RebindableSyntax,
-                       RecordWildCards,
-                       TemplateHaskell,
-                       TransformListComp,
-                       TupleSections,
-                       TypeFamilies,
-                       UndecidableInstances,
+  other-extensions:    DeriveDataTypeable
+                       DeriveGeneric
+                       FlexibleContexts
+                       FlexibleInstances
+                       GADTs
+                       GeneralizedNewtypeDeriving
+                       LambdaCase
+                       MonadComprehensions
+                       MultiParamTypeClasses
+                       MultiWayIf
+                       NamedFieldPuns
+                       OverloadedStrings
+                       ParallelListComp
+                       PatternSynonyms
+                       QuasiQuotes
+                       RankNTypes
+                       RebindableSyntax
+                       RecordWildCards
+                       TemplateHaskell
+                       TransformListComp
+                       TupleSections
+                       TypeFamilies
+                       UndecidableInstances
                        ViewPatterns
-  build-depends:       MissingH >=1.3 && <2.0,
-                       aeson >=0.9 && <1.0,
-                       ansi-terminal >=0.6 && <0.7,
-                       async >=2.0 && <3.0,
-                       base >=4.8 && <5.0,
-                       bytestring >=0.10 && <0.11,
-                       clock >=0.4 && <0.5,
-                       conduit >=1.2 && <2.0,
-                       conduit-extra >=1.1 && <2.0,
-                       containers >=0.5 && <0.6,
-                       directory >=1.2 && <2.0,
-                       filepath >=1.4 && <2.0,
-                       formatting >=6.2 && <7.0,
-                       hslogger >=1.2 && <2.0,
-                       lens >=4.11 && <5.0,
-                       lifted-base >=0.2 && <0.3,
-                       monad-control >=0.3 && <0.4,
-                       monad-loops >=0.4 && <0.5,
-                       mtl >=2.2 && <3.0,
-                       mwc-random >=0.13 && <0.14,
-                       network >=2.6 && <3.0,
-                       network-info >=0.2 && <0.3,
-                       process >=1.2 && <2.0,
-                       random >=1.1 && <2.0,
-                       regex-posix >=0.95 && <0.96,
-                       resourcet >=1.1 && <2.0,
-                       split >=0.2 && <0.3,
-                       sqlite-simple >=0.4 && <0.5,
-                       stm >=2.4 && <3.0,
-                       stm-chans >=3.0 && <4.0,
-                       text >=1.2 && <2.0,
-                       time >=1.5 && <2.0,
-                       transformers >=0.4 && <0.5,
-                       transformers-base >=0.4 && <0.5,
-                       unix >=2.7 && <3.0
+  build-depends:         MissingH >=1.3 && <2.0
+                       , aeson >=0.9 && <1.0
+                       , ansi-terminal >=0.6 && <0.7
+                       , async >=2.0 && <3.0
+                       , base >=4.8 && <5.0
+                       , bytestring >=0.10 && <0.11
+                       , clock >=0.4 && <0.5
+                       , conduit >=1.2 && <2.0
+                       , conduit-extra >=1.1 && <2.0
+                       , containers >=0.5 && <0.6
+                       , directory >=1.2 && <2.0
+                       , filepath >=1.4 && <2.0
+                       , formatting >=6.2 && <7.0
+                       , hslogger >=1.2 && <2.0
+                       , lens >=4.11 && <5.0
+                       , lifted-base >=0.2 && <0.3
+                       , monad-control >=0.3 && <0.4
+                       , monad-loops >=0.4 && <0.5
+                       , mtl >=2.2 && <3.0
+                       , mwc-random >=0.13 && <0.14
+                       , network >=2.6 && <3.0
+                       , network-info >=0.2 && <0.3
+                       , process >=1.2 && <2.0
+                       , random >=1.1 && <2.0
+                       , regex-posix >=0.95 && <0.96
+                       , resourcet >=1.1 && <2.0
+                       , split >=0.2 && <0.3
+                       , sqlite-simple >=0.4 && <0.5
+                       , stm >=2.4 && <3.0
+                       , stm-chans >=3.0 && <4.0
+                       , text >=1.2 && <2.0
+                       , time >=1.5 && <2.0
+                       , transformers >=0.4 && <0.5
+                       , transformers-base >=0.4 && <0.5
+                       , unix >=2.7 && <3.0
   hs-source-dirs:      lib
 
 test-suite             test
@@ -164,18 +164,18 @@ test-suite             test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
-  other-extensions:    OverloadedStrings,
-                       TupleSections,
+  other-extensions:    OverloadedStrings
+                       TupleSections
                        ViewPatterns
-  build-depends:       base >=4.8 && <5.0,
-                       containers >=0.5 && <0.6,
-                       currymud,
-                       lens >=4.11 && <5.0,
-                       mtl >=2.2 && <3.0,
-                       QuickCheck >=2.8 && <3.0,
-                       quickcheck-instances >=0.3 && <0.4,
-                       tasty >=0.10 && <1.0,
-                       tasty-hunit >=0.9 && <1.0,
-                       tasty-quickcheck >=0.8 && <0.9,
-                       text >=1.2 && <2.0,
-                       transformers >=0.4 && <0.5
+  build-depends:         base >=4.8 && <5.0
+                       , containers >=0.5 && <0.6
+                       , currymud
+                       , lens >=4.11 && <5.0
+                       , mtl >=2.2 && <3.0
+                       , QuickCheck >=2.8 && <3.0
+                       , quickcheck-instances >=0.3 && <0.4
+                       , tasty >=0.10 && <1.0
+                       , tasty-hunit >=0.9 && <1.0
+                       , tasty-quickcheck >=0.8 && <0.9
+                       , text >=1.2 && <2.0
+                       , transformers >=0.4 && <0.5
