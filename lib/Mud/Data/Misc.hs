@@ -200,29 +200,29 @@ instance Pretty ArmSub where
 
 
 instance Pretty BanHostRec where
-  pp (BanHostRec { .. }) = slashes [ banHostTimestamp
-                                   , banHostHost
-                                   , banHostIsBanned ? "banned" :? "unbanned"
-                                   , banHostReason ]
+  pp BanHostRec { .. } = slashes [ banHostTimestamp
+                                 , banHostHost
+                                 , banHostIsBanned ? "banned" :? "unbanned"
+                                 , banHostReason ]
 
 
 instance Pretty BanPlaRec where
-  pp (BanPlaRec { .. }) = slashes [ banPlaTimestamp
-                                  , banPlaName
-                                  , banPlaIsBanned ? "banned" :? "unbanned"
-                                  , banPlaReason ]
+  pp BanPlaRec { .. } = slashes [ banPlaTimestamp
+                                , banPlaName
+                                , banPlaIsBanned ? "banned" :? "unbanned"
+                                , banPlaReason ]
 
 
 instance Pretty BugRec where
-  pp (BugRec { .. }) = slashes [ bugTimestamp
-                               , bugName
-                               , bugLoc
-                               , bugDesc
-                               , bugIsOpen ? "open" :? "closed" ]
+  pp BugRec { .. } = slashes [ bugTimestamp
+                             , bugName
+                             , bugLoc
+                             , bugDesc
+                             , bugIsOpen ? "open" :? "closed" ]
 
 
 instance Pretty ChanContext where
-  pp (ChanContext { .. }) = someCmdName <> maybe "" (" " <>) someChanName
+  pp ChanContext { .. } = someCmdName <> maybe "" (" " <>) someChanName
 
 
 instance Pretty Cloth where
@@ -253,7 +253,7 @@ instance Pretty LinkDir where
 
 
 instance Pretty ProfRec where
-  pp (ProfRec { .. }) = spaces [ profTimestamp, profHost, profProfanity ]
+  pp ProfRec { .. } = spaces [ profTimestamp, profHost, profProfanity ]
 
 
 instance Pretty Race where
@@ -338,11 +338,11 @@ instance Pretty Type where
 
 
 instance Pretty TypoRec where
-  pp (TypoRec { .. }) = slashes [ typoTimestamp
-                                , typoName
-                                , typoLoc
-                                , typoDesc
-                                , typoIsOpen ? "open" :? "closed" ]
+  pp TypoRec { .. } = slashes [ typoTimestamp
+                              , typoName
+                              , typoLoc
+                              , typoDesc
+                              , typoIsOpen ? "open" :? "closed" ]
 
 
 instance Pretty WhichLog where

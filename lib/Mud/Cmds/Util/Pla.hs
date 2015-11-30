@@ -764,8 +764,8 @@ linkDirToCmdName Down      = "d"
 
 
 isNonStdLink :: RmLink -> Bool
-isNonStdLink (NonStdLink {}) = True
-isNonStdLink _               = False
+isNonStdLink NonStdLink {} = True
+isNonStdLink _             = False
 
 
 -----

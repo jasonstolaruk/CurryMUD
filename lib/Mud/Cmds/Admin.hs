@@ -838,7 +838,7 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
             | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget'
             | otherwise                                   -> possess targetId
           _                                               -> sorry . sorryParseId $ strippedTarget'
-adminPossess (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
+adminPossess ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
 
 
 -----
@@ -984,7 +984,7 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
             | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse . sorryParseId $ strippedTarget'
             | otherwise                                   -> teleport targetId
           _                                               -> sorryParse . sorryParseId $ strippedTarget'
-adminTeleId (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATeleIdExcessArgs
+adminTeleId ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceATeleIdExcessArgs
 
 
 teleHelper :: ActionParams
@@ -995,7 +995,7 @@ teleHelper :: ActionParams
            -> Maybe T.Text
            -> (Id -> [Broadcast] -> [Broadcast])
            -> (MudState, [MudStack ()])
-teleHelper p@(ActionParams { myId }) ms originId destId destName mt f =
+teleHelper p@ActionParams { myId } ms originId destId destName mt f =
     let g           = maybe id (\t -> ((nlnl t, pure myId) :)) mt
         originDesig = mkStdDesig myId ms Don'tCap
         originPCIds = myId `delete` pcIds originDesig
@@ -1031,7 +1031,7 @@ adminTelePC p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
               | otherwise = teleHelper p { args = [] } ms originId destId targetSing Nothing consLocPrefBcast
             notFound = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
         in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
-adminTelePC (ActionParams { plaMsgQueue, plaCols }) = wrapSend plaMsgQueue plaCols adviceATelePCExcessArgs
+adminTelePC ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceATelePCExcessArgs
 
 
 -----
@@ -1102,7 +1102,7 @@ whoHelper :: LoggedInOrOut -> T.Text -> Action
 whoHelper inOrOut cn (NoArgs i mq cols) = do
     pager i mq =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
     logPlaExecArgs (prefixAdminCmd cn) [] i
-whoHelper inOrOut cn p@(ActionParams { myId, args }) =
+whoHelper inOrOut cn p@ActionParams { myId, args } =
     (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState) >> logPlaExecArgs (prefixAdminCmd cn) args myId
 
 

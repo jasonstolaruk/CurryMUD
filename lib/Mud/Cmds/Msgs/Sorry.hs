@@ -306,7 +306,7 @@ sorryChanTargetName cn n = T.concat [ "There is no one by the name of "
 
 
 sorryChanTargetNameFromContext :: T.Text -> ChanContext -> T.Text
-sorryChanTargetNameFromContext n (ChanContext { .. }) = sorryChanTargetName effChanName n
+sorryChanTargetNameFromContext n ChanContext { .. } = sorryChanTargetName effChanName n
   where
     effChanName = maybe someCmdName dblQuote someChanName
 

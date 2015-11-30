@@ -24,7 +24,7 @@ type FindActionFun = Id -> MudState -> CmdName -> MudStack (Maybe Action)
 
 
 dispatch :: FindActionFun -> Interp
-dispatch f cn p@(ActionParams { myId, plaMsgQueue }) = do
+dispatch f cn p@ActionParams { myId, plaMsgQueue } = do
     getState >>= \ms -> maybe (send plaMsgQueue . nlnl $ "What?") (p |&|) =<< f myId ms cn
     getState >>= \ms -> when (isNothing . getInterp myId $ ms) . prompt plaMsgQueue . mkPrompt myId $ ms
 

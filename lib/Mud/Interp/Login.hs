@@ -115,7 +115,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
     nextPrompt = do
         prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
-interpName _ (ActionParams { plaMsgQueue }) = promptRetryName plaMsgQueue sorryInterpNameExcessArgs
+interpName _ ActionParams { plaMsgQueue } = promptRetryName plaMsgQueue sorryInterpNameExcessArgs
 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
@@ -235,7 +235,7 @@ interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
                                & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
                     ms'' = ms' & invTbl.ind iCentral   %~ (sortInv ms' . (++ pure i))
                 in (ms'', (ms'', getSing i ms))
-interpConfirmName _ _ (ActionParams { plaMsgQueue }) = promptRetryYesNo plaMsgQueue
+interpConfirmName _ _ ActionParams { plaMsgQueue } = promptRetryYesNo plaMsgQueue
 
 
 notifyQuestion :: Id -> MudState -> MudStack ()
@@ -255,7 +255,7 @@ yesNo (T.toLower -> a) = guard (()!# a) >> helper
 
 
 handleLogin :: Sing -> ActionParams -> MudStack ()
-handleLogin s params@(ActionParams { .. }) = do
+handleLogin s params@ActionParams { .. } = do
     greet
     showMotd plaMsgQueue plaCols
     (ms, p) <- showRetainedMsgs

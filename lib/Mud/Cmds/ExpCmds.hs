@@ -716,8 +716,8 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _) -> cn' == cn) $
 
 
 expCmd :: ExpCmdName -> ExpCmdType -> Action
-expCmd ecn (HasTarget {}) p@(NoArgs   {}) = advise p [] . sorryExpCmdRequiresTarget $ ecn
-expCmd ecn ect              (NoArgs'' i ) = case ect of
+expCmd ecn HasTarget {} p@NoArgs {}  = advise p [] . sorryExpCmdRequiresTarget $ ecn
+expCmd ecn ect          (NoArgs'' i) = case ect of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
@@ -730,8 +730,8 @@ expCmd ecn ect              (NoArgs'' i ) = case ect of
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
         in bcastSelfOthers i ms toSelfBcast toOthersBcast >> (logPlaOut ecn i . pure $ toSelf)
-expCmd ecn (NoTarget {}) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
-expCmd ecn ect             (OneArgNubbed i mq cols target) = case ect of
+expCmd ecn NoTarget {} p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
+expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]

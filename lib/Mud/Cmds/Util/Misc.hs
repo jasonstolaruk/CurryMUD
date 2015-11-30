@@ -245,7 +245,7 @@ embedId = quoteWith (T.singleton plaIdDelimiter) . showText
 
 
 expandEmbeddedIds :: MudState -> ChanContext -> [Broadcast] -> MudStack [Broadcast]
-expandEmbeddedIds ms (ChanContext { revealAdminNames }) = concatMapM helper
+expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
   where
     helper a@(msg, is) = case breakIt msg of
       (_, "")                                        -> unadulterated a

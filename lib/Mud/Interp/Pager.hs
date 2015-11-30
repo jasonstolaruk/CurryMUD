@@ -55,7 +55,7 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) = 
              send mq . T.unlines $ prevPage
              sendPagerPrompt mq (length left'' + pageLen - 2) txtLen
              setInterp i . Just $ interpPager pageLen txtLen (left'' ++ prevPage, currPage ++ right)
-interpPager _ _ _ _ (ActionParams { plaMsgQueue, plaCols }) = promptRetry plaMsgQueue plaCols
+interpPager _ _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetry plaMsgQueue plaCols
 
 
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()
