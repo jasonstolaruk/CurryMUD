@@ -245,6 +245,8 @@ npcCmds = map (uncurry3 mkRegularCmd)
     , ("d",      go "d",         "Go down.")
     , ("e",      go "e",         "Go east.")
     , ("exits",  exits,          "Display obvious exits.")
+    , ("look",   look,           "Display a description of your current room, or examine one or more things in your \
+                                 \current room.")
     , ("n",      go "n",         "Go north.")
     , ("ne",     go "ne",        "Go northeast.")
     , ("nw",     go "nw",        "Go northwest.")

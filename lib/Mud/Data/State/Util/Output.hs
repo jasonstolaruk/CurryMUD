@@ -198,7 +198,7 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 parsePCDesig :: Id -> MudState -> T.Text -> T.Text
-parsePCDesig i ms = loop (getIntroduced i ms)
+parsePCDesig i ms = loop (isPC i ms |?| getIntroduced i ms)
   where
     loop intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
@@ -221,11 +221,12 @@ parsePCDesig i ms = loop (getIntroduced i ms)
 
 
 expandPCEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm) =
-    T.concat [ f "the ", xth, expandSex h, " ", t ]
+expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm)
+  | isPC pcIdToExpand ms = T.concat [ f "the ", xth, expandSex h, " ", t ]
+  | otherwise            = T.concat [ f . theOnLower $ pen ] -- TODO: xth
   where
-    xth     = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] pcIdsInRm
-              in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
+    xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] pcIdsInRm
+          in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
     expandSex 'm'                = "male"
     expandSex 'f'                = "female"
     expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]

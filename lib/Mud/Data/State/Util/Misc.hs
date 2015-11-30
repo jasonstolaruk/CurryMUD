@@ -47,7 +47,6 @@ import Mud.Data.State.Util.Get
 import Mud.TheWorld.AdminZoneIds (iWelcome)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
-import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -130,8 +129,9 @@ getEffName :: Id -> MudState -> Id -> T.Text
 getEffName i ms targetId = let targetEnt = getEnt targetId ms
                            in fromMaybe (helper $ targetEnt^.sing) $ targetEnt^.entName
   where
-    helper targetSing | views (pcTbl.ind i.introduced) (targetSing `elem`) ms = uncapitalize targetSing
-                      | otherwise                                             = mkUnknownPCEntName targetId ms
+    helper targetSing
+      | views (pcTbl.ind i.introduced) (targetSing `elem`) ms = uncapitalize targetSing
+      | otherwise                                             = mkUnknownPCEntName targetId ms
 
 
 mkUnknownPCEntName :: Id -> MudState -> T.Text
@@ -279,8 +279,11 @@ mkPlurFromBoth (_, p ) = p
 
 
 mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> T.Text
-mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = let (pp *** pp -> (sexy, r)) = getSexRace i ms in
-    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = f (pp aot) <> spaced sexy <> r }
+mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
+    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = f (pp aot) <> " " <> rest }
+  where
+    rest | isPC i ms = let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
+         | otherwise = s
 
 
 mkCapsFun :: ShouldCap -> T.Text -> T.Text
