@@ -242,8 +242,18 @@ npcCmds = map (uncurry3 mkRegularCmd)
     , ("?",      npcDispCmdList, "Display this command list.")
     , ("bars",   bars,           "Display one or more status bars.")
     , ("clear",  clear,          "Clear the screen.")
+    , ("d",      go "d",         "Go down.")
+    , ("e",      go "e",         "Go east.")
     , ("exits",  exits,          "Display obvious exits.")
+    , ("n",      go "n",         "Go north.")
+    , ("ne",     go "ne",        "Go northeast.")
+    , ("nw",     go "nw",        "Go northwest.")
+    , ("s",      go "s",         "Go south.")
+    , ("se",     go "se",        "Go southeast.")
     , ("stop",   npcStop,        "Stop possessing.")
+    , ("sw",     go "sw",        "Go southwest.")
+    , ("u",      go "u",         "Go up.")
+    , ("w",      go "w",         "Go west.")
     , ("whoami", whoAmI,         "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
@@ -684,8 +694,8 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
 emote :: Action
-emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoArgs
-emote p@(ActionParams { args }) | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
+emote p@AdviseNoArgs                                                     = advise p ["emote"] adviceEmoteNoArgs
+emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d@(stdPCEntSing -> Just s) = mkStdDesig i ms DoCap
         ser                        = serialize d
@@ -786,7 +796,7 @@ exits p = withoutArgs exits p
 expCmdList :: Action
 expCmdList (NoArgs i mq cols) =
     (pager i mq . concatMap (wrapIndent cmdNamePadding cols) $ mkExpCmdListTxt) >> logPlaExecArgs "expressive" [] i
-expCmdList p@(ActionParams { myId, args }) =
+expCmdList p@ActionParams { myId, args } =
     dispMatches p cmdNamePadding mkExpCmdListTxt >> logPlaExecArgs "expressive" args myId
 
 
@@ -841,14 +851,14 @@ getAction p = patternMatchFail "getAction" [ showText p ]
 
 
 go :: T.Text -> Action
-go dir p@(ActionParams { args = [] }) = goDispatcher p { args = pure dir   }
-go dir p@(ActionParams { args      }) = goDispatcher p { args = dir : args }
+go dir p@ActionParams { args = [] } = goDispatcher p { args = pure dir   }
+go dir p@ActionParams { args      } = goDispatcher p { args = dir : args }
 
 
 goDispatcher :: Action
-goDispatcher   (ActionParams { args = [] }) = unit
-goDispatcher p@(Lower i mq cols as)         = mapM_ (tryMove i mq cols p { args = [] }) as
-goDispatcher p                              = patternMatchFail "goDispatcher" [ showText p ]
+goDispatcher ActionParams { args = [] } = unit
+goDispatcher p@(Lower i mq cols as)     = mapM_ (tryMove i mq cols p { args = [] }) as
+goDispatcher p                          = patternMatchFail "goDispatcher" [ showText p ]
 
 
 tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> T.Text -> MudStack ()
@@ -865,7 +875,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
             let originDesig = mkStdDesig i ms DoCap
                 s           = fromJust . stdPCEntSing $ originDesig
                 originPCIds = i `delete` pcIds originDesig
-                destPCIds   = findPCIds ms $ ms^.invTbl.ind destId
+                destPCIds   = findMobIds ms $ ms^.invTbl.ind destId
                 ms'         = ms & mobTbl.ind i.rmId   .~ destId
                                  & invTbl.ind originId %~ (i `delete`)
                                  & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
@@ -1067,7 +1077,7 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                         msg         = "You introduce yourself to " <> targetDesig <> "."
                         logMsg      = "Introduced to " <> targetSing <> "."
                         srcMsg      = nlnl msg
-                        pis         = findPCIds ms ris
+                        pis         = findMobIds ms ris
                         srcDesig    = StdDesig { stdPCEntSing = Nothing
                                                , shouldCap    = DoCap
                                                , pcEntName    = mkUnknownPCEntName i ms
@@ -1330,7 +1340,7 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
                  selfDesig              = mkStdDesig i ms DoCap
                  selfDesig'             = serialize selfDesig
                  pis                    = i `delete` pcIds selfDesig
-                 targetDesigs           = [ mkStdDesig targetId ms Don'tCap | targetId <- extractPCIdsFromEiss ms eiss ]
+                 targetDesigs           = [ mkStdDesig targetId ms Don'tCap | targetId <- extractMobIdsFromEiss ms eiss ]
                  mkBsForTarget targetDesig acc =
                      let targetId = pcId targetDesig
                          toTarget = (nlnl $ selfDesig' <> " looks at you.", pure targetId)
@@ -1387,11 +1397,11 @@ isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
                                     _               -> True
 
 
-extractPCIdsFromEiss :: MudState -> [Either T.Text Inv] -> [Id]
-extractPCIdsFromEiss ms = foldl' helper []
+extractMobIdsFromEiss :: MudState -> [Either T.Text Inv] -> [Id]
+extractMobIdsFromEiss ms = foldl' helper []
   where
-    helper acc (Left  {})  = acc
-    helper acc (Right is)  = acc ++ findPCIds ms is
+    helper acc (Left  {}) = acc
+    helper acc (Right is) = acc ++ findMobIds ms is
 
 
 -----
@@ -2752,7 +2762,7 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 who :: Action
 who (NoArgs i mq cols) = getState >>= \ms ->
     (pager i mq . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
-who p@(ActionParams { myId, args }) = getState >>= \ms ->
+who p@ActionParams { myId, args } = getState >>= \ms ->
     (dispMatches p namePadding . mkWhoTxt myId $ ms) >> logPlaExecArgs "who" args myId
 
 

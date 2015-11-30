@@ -4,7 +4,7 @@
 
 module Mud.Data.State.Util.Misc ( aOrAnType
                                 , BothGramNos
-                                , findPCIds
+                                , findMobIds
                                 , getAdminIds
                                 , getEffBothGramNos
                                 , getEffName
@@ -55,7 +55,7 @@ import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Exception.Lifted (bracket)
-import Control.Lens (_1, _2, at, both, view, views)
+import Control.Lens (_1, _2, at, both, over, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -85,8 +85,9 @@ aOrAnType t           = aOrAn . pp $ t
 -----
 
 
-findPCIds :: MudState -> [Id] -> [Id]
-findPCIds ms haystack = [ i | i <- haystack, getType i ms == PCType ]
+findMobIds :: MudState -> [Id] -> [Id]
+findMobIds ms haystack = [ i | i <- haystack
+                             , uncurry (||) . ((PCType |&|) *** (NpcType |&|)) . over both (==) . dup . getType i $ ms ]
 
 
 -----
@@ -293,9 +294,12 @@ mkCapsFun = \case DoCap    -> capitalize
 mkStdDesig :: Id -> MudState -> ShouldCap -> PCDesig
 mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
                               , shouldCap    = sc
-                              , pcEntName    = mkUnknownPCEntName i ms
+                              , pcEntName    = n
                               , pcId         = i
-                              , pcIds        = findPCIds ms . getMobRmInv i $ ms }
+                              , pcIds        = findMobIds ms . getMobRmInv i $ ms }
+  where
+    n | isPC i ms = mkUnknownPCEntName i ms
+      | otherwise = views entName fromJust . getEnt i $ ms
 
 
 -----

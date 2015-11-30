@@ -38,7 +38,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (Const)
 import Control.Arrow ((***))
-import Control.Concurrent (forkIO, myThreadId)
+import Control.Concurrent (forkIO, getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -108,6 +108,7 @@ debugCmds =
     , mkDebugCmd "buffer"     debugBuffCheck   "Confirm the default buffering mode for file handles."
     , mkDebugCmd "cins"       debugCins        "Dump all channel ID/names for a given player ID."
     , mkDebugCmd "color"      debugColor       "Perform a color test."
+    , mkDebugCmd "cores"      debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
     , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
@@ -234,6 +235,17 @@ debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefi
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName = uncurry (<>) . (pad 6 . showText *** padColorName . showText)
 debugColor p = withoutArgs debugColor p
+
+
+-----
+
+
+debugCores :: Action
+debugCores (NoArgs i mq cols) = do
+    wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", theLetterS (cores > 1), "." ]
+                         | cores <- liftIO getNumCapabilities ]
+    logPlaExec (prefixDebugCmd "cores") i
+debugCores p = withoutArgs debugCores p
 
 
 -----

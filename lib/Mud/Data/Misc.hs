@@ -65,6 +65,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Bits (clearBit, setBit, testBit)
+import Data.Function (on)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
@@ -250,6 +251,11 @@ instance Pretty Hand where
 
 instance Pretty LinkDir where
   pp = uncapitalize . showText
+
+
+instance Pretty LoggedInOrOut where
+  pp LoggedIn  = "logged in"
+  pp LoggedOut = "logged out"
 
 
 instance Pretty ProfRec where
@@ -481,7 +487,7 @@ instance Eq Cmd where
 
 
 instance Ord Cmd where
-  Cmd { cmdName = cn1 } `compare` Cmd { cmdName = cn2 } = cn1 `compare` cn2
+  compare = compare `on` cmdName
 
 
 -----
@@ -558,11 +564,6 @@ data InInvEqRm = InInv | InEq | InRm deriving (Show)
 data LoggedInOrOut = LoggedIn | LoggedOut deriving Eq
 
 
-instance Show LoggedInOrOut where
-  show LoggedIn  = "logged in"
-  show LoggedOut = "logged out"
-
-
 -----
 
 
@@ -575,6 +576,7 @@ type LvlExp = (Lvl, Exp)
 -----
 
 
+-- TODO: Field names need to be changed.
 data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
                            , shouldCap       :: ShouldCap
                            , pcEntName       :: T.Text

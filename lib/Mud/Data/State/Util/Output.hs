@@ -98,9 +98,9 @@ bcastAdminsExcept is = bcastAdminsHelper (\\ is)
 
 
 bcastIfNotIncog :: Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncog i bs = getState >>= \ms -> bcast $ if isIncognitoId i ms
-                                             then map (second (filter (== i))) bs
-                                             else bs
+bcastIfNotIncog i bs = getState >>= \ms -> bcast . (bs |&|) $ if isPC i ms
+  then isIncognitoId i ms ? map (second (filter (== i))) :? id
+  else id
 
 
 -----
@@ -134,7 +134,7 @@ bcastOtherAdmins i = bcastAdminsHelper (i `delete`)
 bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
     unless (isIncognitoId i ms) $ let ((i `delete`) -> ris) = getMobRmInv i ms
-                                  in bcast [(msg, findPCIds ms ris)]
+                                  in bcast . pure $ (msg, findMobIds ms ris)
 
 
 -----
