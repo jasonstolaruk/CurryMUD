@@ -239,7 +239,7 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 npcCmds :: [Cmd]
 npcCmds = map (uncurry3 mkRegularCmd)
     [ (".",      npcAsSelf,      "Execute a command as your true self.")
-    , ("?",      npcDispCmdList, "Display this command list.")
+    , ("?",      npcDispCmdList, "Display or search this command list.")
     , ("bars",   bars,           "Display one or more status bars.")
     , ("clear",  clear,          "Clear the screen.")
     , ("d",      go "d",         "Go down.")
@@ -734,7 +734,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           ("'s", _) -> Left adviceEtcEmptyPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                invCoins         = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+                invCoins         = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
             in if ()!# invCoins
               then case singleArgInvEqRm InRm target of
                 (InInv, _      ) -> sorry sorryEmoteTargetInInv
@@ -1061,7 +1061,7 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorryInInv = inInvs |!| mkNTB sorryIntroInInv
             sorryInEq  = inEqs  |!| mkNTB sorryIntroInEq
-            invCoins@(first (i `delete`) -> invCoins') = getPCRmNonIncogInvCoins i ms
+            invCoins@(first (i `delete`) -> invCoins') = getMobRmNonIncogInvCoins i ms
             (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins'
             ris         = fst invCoins
             (pt, cbs,  logMsgs, intro'dIds) = foldl' (helperIntroEitherInv ms ris) (ms^.pcTbl, [], [], []) eiss
@@ -1244,7 +1244,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
                     sorryInInv              = inInvs |!| (mkBcast i . nlnl $ sorryLinkInInv)
                     sorryInEq               = inEqs  |!| (mkBcast i . nlnl $ sorryLinkInEq )
-                    invCoins                = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+                    invCoins                = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
                     (eiss, ecs)             = uncurry (resolveRmInvCoins i ms inRms) invCoins
                     (ms', bs,  logMsgs, fs) = foldl' helperLinkEitherInv (ms, [], [], []) eiss
                     (     bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs) ecs
@@ -1328,7 +1328,7 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
                                = logPla "look" i $ "looked at: " <> commas targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
   where
-    helper ms = let invCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms in if ()!# invCoins
+    helper ms = let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms in if ()!# invCoins
         then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
                  sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
                  sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
@@ -1503,14 +1503,8 @@ npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" [ showText p ]
 
 
 npcDispCmdList :: Action
-npcDispCmdList p = execIfPossessed p "?" npcDispCmdListHelper
-
-
-npcDispCmdListHelper :: Action
-npcDispCmdListHelper (NoArgs i mq cols) = do
-    send mq . nl . T.unlines . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ npcCmds
-    logPlaExec "?" i
-npcDispCmdListHelper p = withoutArgs npcDispCmdListHelper p
+npcDispCmdList p@(LowerNub' i as) = dispCmdList npcCmds p >> logPlaExecArgs "?" as i
+npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText p ]
 
 
 -----
@@ -2072,7 +2066,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d              = mkStdDesig i ms DoCap
-            invCoins       = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+            invCoins       = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
             (InInv, _      ) -> sorry sorrySayInInv
@@ -2204,7 +2198,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms
            invCoins   = getInvCoins i ms
-           rmInvCoins = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+           rmInvCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
        in if
          | ()# eqMap && ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
          | ()# rmInvCoins            -> wrapSend mq cols sorryNoOneHere

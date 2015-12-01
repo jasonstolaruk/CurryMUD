@@ -19,6 +19,37 @@ import Prelude hiding (exp)
 import qualified Data.Text as T
 
 
+-- ============================================================
+-- Helper functions:
+
+
+onPC :: (PC -> a) -> a -> Id -> MudState -> a
+onPC = onHelper getPC
+
+
+onPla :: (Pla -> a) -> a -> Id -> MudState -> a
+onPla = onHelper getPla
+
+
+onHelper :: (Id -> MudState -> a) -> (a -> b) -> b -> Id -> MudState -> b
+onHelper f g dflt i ms | isNpc i ms = maybe dflt helper . getPossessor i $ ms
+                       | otherwise  = helper i
+  where
+    helper i' = g . f i' $ ms
+
+
+isNpc :: Id -> MudState -> Bool
+isNpc i = (== NpcType) . getType i
+
+
+isPC :: Id -> MudState -> Bool
+isPC i = (== PCType) . getType i
+
+
+-- ============================================================
+-- Getters:
+
+
 getArm :: Id -> MudState -> Arm
 getArm i = view (armTbl.ind i)
 
@@ -55,7 +86,7 @@ getCoins i = view (coinsTbl.ind i)
 
 
 getColumns :: Id -> MudState -> Cols
-getColumns i = view columns . getPla i
+getColumns = onPla (view columns) 80
 
 
 -----
@@ -146,7 +177,7 @@ getInterp i = view interp . getMob i
 
 
 getIntroduced :: Id -> MudState -> [Sing]
-getIntroduced i = view introduced . getPC i
+getIntroduced = onPC (view introduced) []
 
 
 -----
@@ -174,14 +205,14 @@ getIsCloth i = view isCloth . getCon i
 
 
 getLastRmId :: Id -> MudState -> Maybe Id
-getLastRmId i = view lastRmId . getPla i
+getLastRmId = onPla (view lastRmId) Nothing
 
 
 -----
 
 
 getLinked :: Id -> MudState -> [Sing]
-getLinked i = view linked . getPC i
+getLinked = onPC (view linked) []
 
 
 -----
@@ -286,21 +317,21 @@ getPC i = view (pcTbl.ind i)
 
 
 getPageLines :: Id -> MudState -> Int
-getPageLines i = view pageLines . getPla i
+getPageLines = onPla (view pageLines) 24
 
 
 -----
 
 
 getPeepers :: Id -> MudState -> Inv
-getPeepers i = view peepers . getPla i
+getPeepers = onPla (view peepers) []
 
 
 -----
 
 
 getPeeping :: Id -> MudState -> Inv
-getPeeping i = view peeping . getPla i
+getPeeping = onPla (view peeping) []
 
 
 -----

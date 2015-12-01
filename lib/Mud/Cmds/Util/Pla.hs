@@ -614,7 +614,7 @@ isRndmName = isLower . T.head . dropANSI
 
 
 isSlotAvail :: EqMap -> Slot -> Bool
-isSlotAvail em s = s `M.notMember` em
+isSlotAvail = flip M.notMember
 
 
 findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
@@ -799,7 +799,7 @@ mkLastArgWithNubbedOthers as = let lastArg = last as
 mkPutRemoveBindings :: Id -> MudState -> Args -> (PCDesig, (Inv, Coins), (Inv, Coins), ConName, Args)
 mkPutRemoveBindings i ms as = let d                 = mkStdDesig  i ms DoCap
                                   pcInvCoins        = getInvCoins i ms
-                                  rmInvCoins        = first (i `delete`) . getPCRmNonIncogInvCoins i $ ms
+                                  rmInvCoins        = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
                                   (conName, others) = mkLastArgWithNubbedOthers as
                               in (d, pcInvCoins, rmInvCoins, conName, others)
 

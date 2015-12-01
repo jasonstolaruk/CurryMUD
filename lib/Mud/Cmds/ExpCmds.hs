@@ -747,7 +747,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
               ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
               ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols adviceExpCmdExcessArgs
               ([ Right [targetId] ], _                   ) ->
-                let onPC targetDesigTxt =
+                let pcTarget targetDesigTxt =
                         let (toSelf', toSelfBcast, toOthers', substitutions) = mkBindings targetDesigTxt
                             toOthersBcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
                             toTarget'     = replace substitutions toTarget
@@ -755,7 +755,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                         in do
                             bcastSelfOthers i ms toSelfBcast [ toTargetBcast, toOthersBcast ]
                             logPlaOut ecn i . pure . parsePCDesig i ms $ toSelf'
-                    onNpc targetNoun =
+                    npcTarget targetNoun =
                         let (toSelf', toSelfBcast, toOthers', _) = mkBindings targetNoun
                             toOthersBcast                        = pure (nlnl toOthers', i `delete` pcIds d)
                         in do
@@ -774,8 +774,8 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                                                           , ("*", himHerself) ]
                         in (toSelf', toSelfBcast, toOthers', substitutions)
                 in case getType targetId ms of
-                  PCType  -> onPC  . serialize . mkStdDesig targetId ms $ Don'tCap
-                  NpcType -> onNpc . theOnLower . getSing targetId $ ms
+                  PCType  -> pcTarget  . serialize . mkStdDesig targetId ms $ Don'tCap
+                  NpcType -> npcTarget . theOnLower . getSing targetId $ ms
                   _       -> wrapSend mq cols sorryExpCmdTargetType
               x -> patternMatchFail "expCmd helper" [ showText x ]
             else wrapSend mq cols sorryNoOneHere

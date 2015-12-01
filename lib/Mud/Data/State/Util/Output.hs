@@ -61,6 +61,9 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
+-- TODO: Left off here.
+
+
 bcast :: [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ bs
@@ -243,13 +246,14 @@ prompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
-retainedMsg targetId ms targetMsg@(T.uncons -> Just (x, xs))
+retainedMsg targetId ms msg@(T.uncons -> Just (x, xs))
+  | isNpc targetId ms                 = bcastNl . mkBcast targetId $ stripMarker
   | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                                         in wrapSend targetMq targetCols stripMarker
-  | otherwise                         = tweak $ plaTbl.ind targetId.retainedMsgs <>~ pure targetMsg
+  | otherwise                         = tweak $ plaTbl.ind targetId.retainedMsgs <>~ pure msg
   where
     stripMarker | x == fromPersonMarker = xs
-                | otherwise             = targetMsg
+                | otherwise             = msg
 retainedMsg _ _ _ = unit
 
 

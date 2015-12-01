@@ -11,13 +11,11 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getIdForPCSing
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
+                                , getMobRmNonIncogInvCoins
                                 , getNonIncogInv
                                 , getNonIncogInvCoins
                                 , getNonIncogLoggedInAdminIds
                                 , getNpcIds
-                                , getNpcRm
-                                , getNpcRmId
-                                , getPCRmNonIncogInvCoins
                                 , getState
                                 , isLoggedIn
                                 , isNpc
@@ -130,8 +128,8 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
                            in fromMaybe (helper $ targetEnt^.sing) $ targetEnt^.entName
   where
     helper targetSing
-      | views (pcTbl.ind i.introduced) (targetSing `elem`) ms = uncapitalize targetSing
-      | otherwise                                             = mkUnknownPCEntName targetId ms
+      | isNpc i ms || views (pcTbl.ind i.introduced) (targetSing `notElem`) ms = mkUnknownPCEntName targetId ms
+      | otherwise                                                              = uncapitalize targetSing
 
 
 mkUnknownPCEntName :: Id -> MudState -> T.Text
@@ -154,6 +152,13 @@ getLoggedInAdminIds = getAdminIdsHelper isLoggedIn
 
 getLoggedInPlaIds :: MudState ->  Inv
 getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn *** not . isAdmin) . dup))
+
+
+-----
+
+
+getMobRmNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
+getMobRmNonIncogInvCoins i ms = let ri = getRmId i ms in getNonIncogInvCoins ri ms
 
 
 -----
@@ -192,24 +197,6 @@ getNpcIds = views npcTbl IM.keys
 -----
 
 
-getNpcRm :: Id -> MudState -> Rm
-getNpcRm i ms = let ri = getNpcRmId i ms in getRm ri ms
-
-
-getNpcRmId :: Id -> MudState -> Id
-getNpcRmId i = views invTbl (head . IM.keys . IM.filter (i `elem`))
-
-
------
-
-
-getPCRmNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
-getPCRmNonIncogInvCoins i ms = let ri = getRmId i ms in getNonIncogInvCoins ri ms
-
-
------
-
-
 getState :: MudStack MudState
 getState = onEnv $ liftIO . readIORef . view mudStateIORef
 
@@ -223,20 +210,6 @@ onEnv = (ask >>=)
 
 isLoggedIn :: Pla -> Bool
 isLoggedIn = views lastRmId ((()#) . (Sum <$>))
-
-
------
-
-
-isNpc :: Id -> MudState -> Bool
-isNpc i = (== NpcType) . getType i
-
-
------
-
-
-isPC :: Id -> MudState -> Bool
-isPC i = (== PCType) . getType i
 
 
 -----
@@ -280,10 +253,11 @@ mkPlurFromBoth (_, p ) = p
 
 mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> T.Text
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
-    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = f (pp aot) <> " " <> rest }
+    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = helper }
   where
-    rest | isPC i ms = let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
-         | otherwise = s
+    helper | isPC i ms = (t <>) $ let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
+           | otherwise = (not (isCapital s) |?| t) <> s
+    t = f (pp aot) <> " "
 
 
 mkCapsFun :: ShouldCap -> T.Text -> T.Text
@@ -297,12 +271,9 @@ mkCapsFun = \case DoCap    -> capitalize
 mkStdDesig :: Id -> MudState -> ShouldCap -> PCDesig
 mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
                               , shouldCap    = sc
-                              , pcEntName    = n
+                              , pcEntName    = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
                               , pcId         = i
                               , pcIds        = findMobIds ms . getMobRmInv i $ ms }
-  where
-    n | isPC i ms = mkUnknownPCEntName i ms
-      | otherwise = views entName fromJust . getEnt i $ ms
 
 
 -----
@@ -356,14 +327,14 @@ setInterp i mi = tweak $ mobTbl.ind i.interp .~ mi
 
 
 sortInv :: MudState -> Inv -> Inv
-sortInv ms is = let (foldr helper ([], []) -> (pcIs, nonPCIs)) = [ (i, getType i ms) | i <- is ]
-                in (pcIs ++) . sortNonPCs $ nonPCIs
+sortInv ms is = let (foldr helper ([], []) -> (pcs, others)) = [ (i, getType i ms) | i <- is ]
+                in (pcs ++) . sortOthers $ others
   where
     helper (i, t) acc                  = let consTo lens = acc & lens %~ (i :)
                                          in t == PCType ? consTo _1 :? consTo _2
-    sortNonPCs                         = map (view _1) . sortBy nameThenSing . zipped
+    sortOthers                         = map (view _1) . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
-    zipped nonPCIs                     = [ (i, views entName fromJust e, e^.sing) | i <- nonPCIs
+    zipped others                      = [ (i, views entName fromJust e, e^.sing) | i <- others
                                                                                   , let e = getEnt i ms ]
 
 

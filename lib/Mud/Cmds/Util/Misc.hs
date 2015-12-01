@@ -169,14 +169,15 @@ awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
                           , parensQuote reason
                           , "."
                           , logMsgs |!| " " <> (capitalize . (<> ".") . slashes $ logMsgs) ]
-    when (isLoggedIn . getPla i $ ms) . logPla "awardExp" i $ logMsg
+        b = isNpc i ms ? True :? isLoggedIn (getPla i ms)
+    when b . logPla "awardExp" i $ logMsg
   where
     helper ms =
         let oldLvl = getLvl i ms
             ms'    = ms & mobTbl.ind i.exp +~ amt
             newLvl = getLvl i ms'
-            f seed | seed == 0 = Nothing
-                   | otherwise = Just ((lvlMsg, mkLogMsg), pred seed)
+            f 0    = Nothing
+            f seed = Just ((lvlMsg, mkLogMsg), pred seed)
               where
                 mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showText (newLvl - seed + 1)
         in (ms', (ms', unzip . unfoldr f $ newLvl - oldLvl))
@@ -465,7 +466,7 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 
 
 isAwake :: Id -> MudState -> Bool
-isAwake i ms = let p = getPla i ms in isLoggedIn p && (not . isIncognito $ p)
+isAwake = onPla (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup) True
 
 
 -----
@@ -507,11 +508,15 @@ isLinked = helperIsLinked (||)
 
 
 helperIsLinked :: (Bool -> Bool -> Bool) -> MudState -> (Id, Id) -> Bool
-helperIsLinked f ms (i, i') = let s                = getSing i  ms
-                                  s'               = getSing i' ms
-                                  targetLinkedToMe = s' `elem` getLinked i  ms
-                                  meLinkedToTarget = s  `elem` getLinked i' ms
-                              in targetLinkedToMe `f` meLinkedToTarget
+helperIsLinked f ms ids@(i, i') = let s                = getSing i  ms
+                                      s'               = getSing i' ms
+                                      targetLinkedToMe = s' `elem` getLinked i  ms
+                                      meLinkedToTarget = s  `elem` getLinked i' ms
+                                  in noNpcs && (targetLinkedToMe `f` meLinkedToTarget)
+  where
+    noNpcs | uncurry (||) . (g *** g) $ ids = False
+           | otherwise                      = otherwise
+    g = (`isNpc` ms)
 
 
 isDblLinked :: MudState -> (Id, Id) -> Bool
@@ -648,9 +653,7 @@ mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s <> "
 
 
 mkRightForNonTargets :: (T.Text, T.Text, T.Text) -> Either T.Text (T.Text, [EmoteWord], T.Text)
-mkRightForNonTargets = Right . mkForNonTargets
-  where
-    mkForNonTargets = _2 %~ (pure . ForNonTargets)
+mkRightForNonTargets = Right . (_2 %~ (pure . ForNonTargets))
 
 
 -----
