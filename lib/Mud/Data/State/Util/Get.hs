@@ -514,7 +514,7 @@ isAdmin = getPlaFlag IsAdmin
 
 
 isAdminId :: Id -> MudState -> Bool
-isAdminId = plaFlagHelper IsAdmin
+isAdminId = onPla isAdmin False
 
 
 -----
@@ -525,7 +525,7 @@ isIncognito = getPlaFlag IsIncognito
 
 
 isIncognitoId :: Id -> MudState -> Bool
-isIncognitoId = plaFlagHelper IsIncognito
+isIncognitoId = onPla isIncognito False
 
 
 -----
@@ -536,7 +536,7 @@ isNotFirstAdminMsg = getPlaFlag IsNotFirstAdminMsg
 
 
 isNotFirstAdminMsgId :: Id -> MudState -> Bool
-isNotFirstAdminMsgId = plaFlagHelper IsNotFirstAdminMsg
+isNotFirstAdminMsgId = onPla isNotFirstAdminMsg True
 
 
 -----
@@ -547,7 +547,7 @@ isNotFirstLook = getPlaFlag IsNotFirstLook
 
 
 isNotFirstLookId :: Id -> MudState -> Bool
-isNotFirstLookId = plaFlagHelper IsNotFirstLook
+isNotFirstLookId = onPla isNotFirstLook True
 
 
 -----
@@ -558,7 +558,7 @@ isNotFirstMobSay = getPlaFlag IsNotFirstMobSay
 
 
 isNotFirstModSayId :: Id -> MudState -> Bool
-isNotFirstModSayId = plaFlagHelper IsNotFirstMobSay
+isNotFirstModSayId = onPla isNotFirstMobSay True
 
 
 -----

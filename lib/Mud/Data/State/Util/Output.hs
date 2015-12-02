@@ -61,18 +61,15 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
--- TODO: Left off here.
-
-
 bcast :: [Broadcast] -> MudStack ()
 bcast [] = unit
-bcast bs = getState >>= \ms -> liftIO . atomically . mapM_ (sendBcastSTM ms) $ bs
+bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcastSTM $ ms
   where
     sendBcastSTM ms (msg, is) = mapM_ helper is
       where
         helper targetId = case getType targetId ms of
           PCType  -> writeIt FromServer targetId
-          NpcType -> maybe unit (writeIt ToNpc) . getPossessor targetId $ ms
+          NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
           t       -> patternMatchFail "bcast sendBcastSTM helper" [ showText t ]
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
                       in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ms $ msg
@@ -87,23 +84,21 @@ bcastAdmins = bcastAdminsHelper id
 
 bcastAdminsHelper :: (Inv -> Inv) -> T.Text -> MudStack ()
 bcastAdminsHelper f msg =
-    (f . getLoggedInAdminIds <$> getState) >>= bcastNl . pure . (colorWith adminBcastColor msg, )
+    bcastNl . pure . (colorWith adminBcastColor msg, ) =<< f . getLoggedInAdminIds <$> getState
 
 
 -----
 
 
 bcastAdminsExcept :: Inv -> T.Text -> MudStack ()
-bcastAdminsExcept is = bcastAdminsHelper (\\ is)
+bcastAdminsExcept = bcastAdminsHelper . flip (\\)
 
 
 -----
 
 
 bcastIfNotIncog :: Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncog i bs = getState >>= \ms -> bcast . (bs |&|) $ if isPC i ms
-  then isIncognitoId i ms ? map (second (filter (== i))) :? id
-  else id
+bcastIfNotIncog i bs = getState >>= \ms -> bcast . (bs |&|) $ (isIncognitoId i ms ? map (second (filter (== i))) :? id)
 
 
 -----
@@ -128,7 +123,7 @@ bcastNl = bcast . appendNlBs
 
 
 bcastOtherAdmins :: Id -> T.Text -> MudStack ()
-bcastOtherAdmins i = bcastAdminsHelper (i `delete`)
+bcastOtherAdmins = bcastAdminsHelper . delete
 
 
 -----
@@ -155,7 +150,7 @@ bcastSelfOthers i ms toSelf toOthers = do
 massMsg :: Msg -> MudStack ()
 massMsg msg = liftIO . atomically . helperSTM =<< getState
   where
-    helperSTM (views msgQueueTbl IM.elems -> mqs) = mapM_ (`writeTQueue` msg) mqs
+    helperSTM (views msgQueueTbl IM.elems -> mqs) = forM_ mqs $ flip writeTQueue msg
 
 
 -----
@@ -180,7 +175,7 @@ mkBcast i = pure . (, pure i)
 
 
 mkNTBcast :: Id -> T.Text -> [ClassifiedBcast]
-mkNTBcast i msg = [NonTargetBcast (msg, pure i)]
+mkNTBcast i = pure . NonTargetBcast . (, pure i)
 
 
 -----
