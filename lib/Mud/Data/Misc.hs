@@ -14,6 +14,7 @@ module Mud.Data.Misc ( Action
                      , CmdPriorityAbbrevTxt
                      , Cols
                      , deserialize
+                     , Desig(..)
                      , EmoteWord(..)
                      , EmptyNoneSome(..)
                      , EquipInvLookCmd(..)
@@ -34,7 +35,6 @@ module Mud.Data.Misc ( Action
                      , LoggedInOrOut(..)
                      , Lvl
                      , LvlExp
-                     , PCDesig(..)
                      , pp
                      , Pretty
                      , PutOrRem(..)
@@ -369,30 +369,30 @@ class Serializable a where
   deserialize :: T.Text -> a
 
 
-instance Serializable PCDesig where
+instance Serializable Desig where
   serialize StdDesig { .. }
-    | fields <- [ serMaybeText stdPCEntSing, showText shouldCap, pcEntName, showText pcId, showText pcIds ]
+    | fields <- [ serMaybeText sDesigEntSing, showText shouldCap, desigEntName, showText desigId, showText desigIds ]
     = quoteWith sdd . T.intercalate dd $ fields
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
       (sdd, dd)               = (stdDesigDelimiter, desigDelimiter) & both %~ T.singleton
   serialize NonStdDesig { .. } = quoteWith nsdd $ do
-      nonStdPCEntSing
+      nsDesigEntSing
       dd
-      nonStdDesc
+      nsDesc
     where
       (>>)       = (<>)
       (nsdd, dd) = (nonStdDesigDelimiter, desigDelimiter) & both %~ T.singleton
   deserialize a@(headTail -> (c, T.init -> t))
-    | c == stdDesigDelimiter, [ pes, sc, pen, pi, pis ] <- T.splitOn dd t =
-        StdDesig { stdPCEntSing = deserMaybeText pes
-                 , shouldCap    = read . T.unpack $ sc
-                 , pcEntName    = pen
-                 , pcId         = read . T.unpack $ pi
-                 , pcIds        = read . T.unpack $ pis }
-    | c == nonStdDesigDelimiter, [ pes, nsd ] <- T.splitOn dd t =
-        NonStdDesig { nonStdPCEntSing = pes, nonStdDesc = nsd }
+    | c == stdDesigDelimiter, [ es, sc, en, i, is ] <- T.splitOn dd t =
+        StdDesig { sDesigEntSing = deserMaybeText es
+                 , shouldCap     = read . T.unpack $ sc
+                 , desigEntName  = en
+                 , desigId       = read . T.unpack $ i
+                 , desigIds      = read . T.unpack $ is }
+    | c == nonStdDesigDelimiter, [ es, nsd ] <- T.splitOn dd t =
+        NonStdDesig { nsDesigEntSing = es, nsDesc = nsd }
     | otherwise = patternMatchFail "deserialize" [ showText a ]
     where
       deserMaybeText ""  = Nothing
@@ -576,14 +576,14 @@ type LvlExp = (Lvl, Exp)
 -----
 
 
--- TODO: Field names should be changed.
-data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
-                           , shouldCap       :: ShouldCap
-                           , pcEntName       :: T.Text
-                           , pcId            :: Id
-                           , pcIds           :: Inv }
-             | NonStdDesig { nonStdPCEntSing :: T.Text
-                           , nonStdDesc      :: T.Text } deriving (Eq, Show)
+-- TODO: Hopefully we can clean up the "s~" and "ns~" record names after GHC 8 comes out.
+data Desig = StdDesig    { sDesigEntSing  :: Maybe T.Text
+                         , shouldCap      :: ShouldCap
+                         , desigEntName   :: T.Text
+                         , desigId        :: Id
+                         , desigIds       :: Inv }
+           | NonStdDesig { nsDesigEntSing :: T.Text
+                         , nsDesc         :: T.Text } deriving (Eq, Show)
 
 
 data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)

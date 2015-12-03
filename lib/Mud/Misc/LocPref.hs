@@ -7,6 +7,7 @@ module Mud.Misc.LocPref ( hasLocPref
 
 import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
+import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Data.Text as T
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -73,5 +74,4 @@ sortArgsInvEqRm dflt = foldr f mempty
 
 
 stripLocPref :: T.Text -> T.Text
-stripLocPref arg | hasLocPref arg = T.tail . T.tail $ arg
-                 | otherwise      = arg
+stripLocPref arg = hasLocPref arg ? T.drop 2 arg :? arg

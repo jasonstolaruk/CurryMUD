@@ -41,12 +41,11 @@ mkPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
                                            , f "p" pps
                                            , f "f" fps ]
   where
-    indentColor | isNpc i ms = toNpcColor
-                | otherwise  = promptIndentColor
-    f a (x, y) = let c   = if | x == y    -> green
-                              | per > 67  -> cyan
-                              | per > 33  -> yellow
-                              | per > 10  -> red
-                              | otherwise -> magenta
-                     per = round $ x `divide` y * 100
-                 in colorWith c a <> showText x
+    indentColor = isNpc i ms ? toNpcColor :? promptIndentColor
+    f a (x, y)  = let c   = if | x == y    -> green
+                               | per > 67  -> cyan
+                               | per > 33  -> yellow
+                               | per > 10  -> red
+                               | otherwise -> magenta
+                      per = round $ x `divide` y * 100
+                  in colorWith c a <> showText x

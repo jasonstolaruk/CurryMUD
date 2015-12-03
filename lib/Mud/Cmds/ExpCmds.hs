@@ -728,7 +728,7 @@ expCmd ecn ect          (NoArgs'' i) = case ect of
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-            toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, i `delete` pcIds d)
+            toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, i `delete` desigIds d)
         in bcastSelfOthers i ms toSelfBcast toOthersBcast >> (logPlaOut ecn i . pure $ toSelf)
 expCmd ecn NoTarget {} p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
 expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
@@ -749,15 +749,15 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
               ([ Right [targetId] ], _                   ) ->
                 let pcTarget targetDesigTxt =
                         let (toSelf', toSelfBcast, toOthers', substitutions) = mkBindings targetDesigTxt
-                            toOthersBcast = (nlnl toOthers', pcIds d \\ [ i, targetId ])
+                            toOthersBcast = (nlnl toOthers', desigIds d \\ [ i, targetId ])
                             toTarget'     = replace substitutions toTarget
                             toTargetBcast = (nlnl toTarget', pure targetId)
                         in do
                             bcastSelfOthers i ms toSelfBcast [ toTargetBcast, toOthersBcast ]
-                            logPlaOut ecn i . pure . parsePCDesig i ms $ toSelf'
+                            logPlaOut ecn i . pure . parseDesig i ms $ toSelf'
                     npcTarget targetNoun =
                         let (toSelf', toSelfBcast, toOthers', _) = mkBindings targetNoun
-                            toOthersBcast                        = pure (nlnl toOthers', i `delete` pcIds d)
+                            toOthersBcast                        = pure (nlnl toOthers', i `delete` desigIds d)
                         in do
                             bcastSelfOthers i ms toSelfBcast toOthersBcast
                             logPlaOut ecn i . pure $ toSelf'
@@ -783,7 +783,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
 expCmd _ _ p = advise p [] adviceExpCmdExcessArgs
 
 
-mkSerializedDesig :: PCDesig -> T.Text -> T.Text
+mkSerializedDesig :: Desig -> T.Text -> T.Text
 mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { shouldCap = Don'tCap })
 
 

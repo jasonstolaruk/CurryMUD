@@ -186,7 +186,7 @@ clothToSlot = \case Shirt    -> ShirtS
 -----
 
 
-donMsgs :: Id -> PCDesig -> Sing -> (T.Text, Broadcast)
+donMsgs :: Id -> Desig -> Sing -> (T.Text, Broadcast)
 donMsgs = mkReadyMsgs "don" "dons"
 
 
@@ -194,9 +194,9 @@ type SndPerVerb = T.Text
 type ThrPerVerb = T.Text
 
 
-mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> PCDesig -> Sing -> (T.Text, Broadcast)
+mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> Desig -> Sing -> (T.Text, Broadcast)
 mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
-                            , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], i `delete` pcIds d) )
+                            , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], i `delete` desigIds d) )
 
 
 -----
@@ -265,7 +265,7 @@ type ToId   = Id
 
 
 helperDropEitherInv :: Id
-                    -> PCDesig
+                    -> Desig
                     -> FromId
                     -> ToId
                     -> (MudState, [Broadcast], [T.Text])
@@ -280,19 +280,19 @@ helperDropEitherInv i d fi ti a@(ms, _, _) = \case
                                  & _3               <>~ logMsgs
 
 
-mkGetDropInvDesc :: Id -> MudState -> PCDesig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
+mkGetDropInvDesc :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([Broadcast], [T.Text])
 mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
     let bs = concatMap helper ncbs in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =
         [ (T.concat [ "You ",               mkGodVerb god SndPer, " the ", s, "." ], pure i)
-        , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aOrAn s,  "." ], otherPCIds) ]
+        , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aOrAn s,  "." ], otherIds) ]
     helper (_, c, b) =
         [ (T.concat [ "You ",           mkGodVerb god SndPer, rest ], pure i)
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherPCIds) ]
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherIds) ]
       where
         rest = spaced (showText c) <>  mkPlurFromBoth b <> "."
-    otherPCIds = i `delete` pcIds d
+    otherIds = i `delete` desigIds d
 
 
 mkNameCountBothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
@@ -317,7 +317,7 @@ mkGodVerb Drop ThrPer = "drops"
 
 
 helperGetDropEitherCoins :: Id
-                         -> PCDesig
+                         -> Desig
                          -> GetOrDrop
                          -> FromId
                          -> ToId
@@ -355,9 +355,9 @@ helperGetDropEitherCoins i d god fi ti (origMs, origBs, origMsgs) ecs =
                                                                                                 , showText n ]
 
 
-mkGetDropCoinsDescOthers :: Id -> PCDesig -> GetOrDrop -> Coins -> [Broadcast]
+mkGetDropCoinsDescOthers :: Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
 mkGetDropCoinsDescOthers i d god c =
-  c |!| [ (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aCoinSomeCoins c, "." ], i `delete` pcIds d) ]
+  c |!| [ (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aCoinSomeCoins c, "." ], i `delete` desigIds d) ]
 
 
 mkGetDropCoinsDescSelf :: Id -> GetOrDrop -> Coins -> ([Broadcast], [T.Text])
@@ -387,7 +387,7 @@ mkCan'tGetCoinsDesc i = (`mkCoinsBs` helper)
 
 
 helperGetEitherInv :: Id
-                   -> PCDesig
+                   -> Desig
                    -> FromId
                    -> ToId
                    -> (MudState, [Broadcast], [T.Text])
@@ -447,7 +447,7 @@ type ToSing = Sing
 
 
 helperPutRemEitherCoins :: Id
-                        -> PCDesig
+                        -> Desig
                         -> PutOrRem
                         -> Maybe NthOfM
                         -> FromId
@@ -470,14 +470,14 @@ helperPutRemEitherCoins i d por mnom fi ti ts (origCoinsTbl, origBs, origMsgs) e
                          & _4 <>~ c
 
 
-mkPutRemCoinsDescOthers :: Id -> PCDesig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [Broadcast]
+mkPutRemCoinsDescOthers :: Id -> Desig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [Broadcast]
 mkPutRemCoinsDescOthers i d por mnom c ts = c |!| [ ( T.concat [ serialize d
                                                                , spaced . mkPorVerb por $ ThrPer
                                                                , aCoinSomeCoins c
                                                                , " "
                                                                , mkPorPrep por ThrPer mnom ts
                                                                , onTheGround mnom <> "." ]
-                                                    , i `delete` pcIds d ) ]
+                                                    , i `delete` desigIds d ) ]
 
 
 mkPutRemCoinsDescsSelf :: Id -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> ([Broadcast], [T.Text])
@@ -521,7 +521,7 @@ onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
 
 helperPutRemEitherInv :: Id
                       -> MudState
-                      -> PCDesig
+                      -> Desig
                       -> PutOrRem
                       -> Maybe NthOfM
                       -> FromId
@@ -544,7 +544,7 @@ helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
     sorry = a & _2 <>~ (mkBcast i . sorryRemEmpty . getSing fi $ ms)
 
 
-mkPutRemInvDesc :: Id -> MudState -> PCDesig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Broadcast], [T.Text])
+mkPutRemInvDesc :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Broadcast], [T.Text])
 mkPutRemInvDesc i ms d por mnom is ts =
     let bs = concatMap helper . mkNameCountBothList i ms $ is in (bs, extractLogMsgs i bs)
   where
@@ -559,7 +559,7 @@ mkPutRemInvDesc i ms d por mnom is ts =
                     , aOrAn s
                     , " "
                     , mkPorPrep por ThrPer mnom ts
-                    , rest ], otherPCIds) ]
+                    , rest ], otherIds) ]
       where
         withArticle = por == Put ? "the " <> s :? aOrAn s
     helper (_, c, b) =
@@ -575,9 +575,9 @@ mkPutRemInvDesc i ms d por mnom is ts =
                     , showText c
                     , spaced . mkPlurFromBoth $ b
                     , mkPorPrep por ThrPer mnom ts
-                    , rest ], otherPCIds) ]
-    rest       = onTheGround mnom <> "."
-    otherPCIds = i `delete` pcIds d
+                    , rest ], otherIds) ]
+    rest     = onTheGround mnom <> "."
+    otherIds = i `delete` desigIds d
 
 
 -----
@@ -728,11 +728,11 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
         helper (T.breakOn " finger" -> (slotName, _), s) = parensPad 15 slotName <> s
     noDescs = wrapUnlines cols $ if
       | descId   == i      -> dudeYou'reNaked
-      | descType == PCType -> parsePCDesig i ms $ d  <> " doesn't have anything readied."
+      | descType == PCType -> parseDesig i ms $ d  <> " doesn't have anything readied."
       | otherwise          -> theOnLowerCap descSing <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
       | descId   == i      -> "You have readied the following equipment:"
-      | descType == PCType -> parsePCDesig i ms $ d  <> " has readied the following equipment:"
+      | descType == PCType -> parseDesig i ms $ d  <> " has readied the following equipment:"
       | otherwise          -> theOnLowerCap descSing <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig descId ms descSing The DoCap
 
@@ -796,7 +796,7 @@ mkLastArgWithNubbedOthers as = let lastArg = last as
 -----
 
 
-mkPutRemoveBindings :: Id -> MudState -> Args -> (PCDesig, (Inv, Coins), (Inv, Coins), ConName, Args)
+mkPutRemoveBindings :: Id -> MudState -> Args -> (Desig, (Inv, Coins), (Inv, Coins), ConName, Args)
 mkPutRemoveBindings i ms as = let d                 = mkStdDesig  i ms DoCap
                                   pcInvCoins        = getInvCoins i ms
                                   rmInvCoins        = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
@@ -847,13 +847,14 @@ otherHand NoHand = NoHand
 -----
 
 
-putOnMsgs :: Id -> PCDesig -> Sing -> (T.Text, Broadcast)
+putOnMsgs :: Id -> Desig -> Sing -> (T.Text, Broadcast)
 putOnMsgs = mkReadyMsgs "put on" "puts on"
 
 
 -----
 
 
+-- TODO: Needs to be adjusted for NPCs.
 resolvePCInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
 resolvePCInvCoins i ms = resolveHelper i ms procGecrMisPCInv procReconciledCoinsPCInv
 

@@ -16,7 +16,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , mkNTBcast
                                   , multiWrapSend
                                   , ok
-                                  , parsePCDesig
+                                  , parseDesig
                                   , prompt
                                   , retainedMsg
                                   , send
@@ -72,7 +72,7 @@ bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcastSTM $ m
           NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
           t       -> patternMatchFail "bcast sendBcastSTM helper" [ showText t ]
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
-                      in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parsePCDesig i ms $ msg
+                      in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseDesig i ms $ msg
 
 
 -----
@@ -195,38 +195,38 @@ ok mq = send mq . nlnl $ "OK!"
 -----
 
 
-parsePCDesig :: Id -> MudState -> T.Text -> T.Text
-parsePCDesig i ms = loop (getIntroduced i ms)
+parseDesig :: Id -> MudState -> T.Text -> T.Text
+parseDesig i ms = loop (getIntroduced i ms)
   where
     loop intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
       , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt
       = case pcd of
-        StdDesig { stdPCEntSing = Just pes, .. } ->
-          left                                                                             <>
-          (pes `elem` intros ? pes :? expandPCEntName i ms shouldCap pcEntName pcId pcIds) <>
+        StdDesig { sDesigEntSing = Just es, .. } ->
+          left                                                                                    <>
+          (es `elem` intros ? es :? expandPCEntName i ms shouldCap desigEntName desigId desigIds) <>
           loop intros rest
-        StdDesig { stdPCEntSing = Nothing,  .. } ->
-          left <> expandPCEntName i ms shouldCap pcEntName pcId pcIds <> loop intros rest
-        _ -> patternMatchFail "parsePCDesig loop" [ showText pcd ]
+        StdDesig { sDesigEntSing = Nothing,  .. } ->
+          left <> expandPCEntName i ms shouldCap desigEntName desigId desigIds <> loop intros rest
+        _ -> patternMatchFail "parseDesig loop" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter txt
-      = left <> (nonStdPCEntSing `elem` intros ? nonStdPCEntSing :? nonStdDesc) <> loop intros rest
+      = left <> (nsDesigEntSing `elem` intros ? nsDesigEntSing :? nsDesc) <> loop intros rest
       | otherwise = txt
     extractPCDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
-      | pcd <- deserialize . quoteWith c $ pcdTxt :: PCDesig
+      | pcd <- deserialize . quoteWith c $ pcdTxt :: Desig
       = (left, pcd, rest)
 
 
 expandPCEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm)
-  | isPC pcIdToExpand ms = T.concat [ f "the ", xth, expandSex h, " ", t ]
-  | otherwise            = let n = views entName fromJust . getEnt i $ ms
-                           in n |&| (isCapital n ? id :? f . ("the " <>))
+expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) idToExpand ((i `delete`) -> idsInRm)
+  | isPC idToExpand ms = T.concat [ f "the ", xth, expandSex h, " ", t ]
+  | otherwise          = let n = views entName fromJust . getEnt i $ ms
+                         in n |&| (isCapital n ? id :? f . ("the " <>))
   where
     -- TODO: The below lambda doesn't take into account the fact that some of the "pcIdsInRm" may be known by "i".
-    xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] pcIdsInRm
-          in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
+    xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] idsInRm
+          in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex idToExpand $ matches
     expandSex 'm'                = "male"
     expandSex 'f'                = "female"
     expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]

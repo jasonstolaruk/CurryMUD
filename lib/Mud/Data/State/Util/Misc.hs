@@ -255,7 +255,7 @@ mkPlurFromBoth (_, p ) = p
 
 mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> T.Text
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
-    serialize NonStdDesig { nonStdPCEntSing = s, nonStdDesc = helper }
+    serialize NonStdDesig { nsDesigEntSing = s, nsDesc = helper }
   where
     helper | isPC i ms = (t <>) $ let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
            | otherwise = (not (isCapital s) |?| t) <> s
@@ -270,12 +270,12 @@ mkCapsFun = \case DoCap    -> capitalize
 -----
 
 
-mkStdDesig :: Id -> MudState -> ShouldCap -> PCDesig
-mkStdDesig i ms sc = StdDesig { stdPCEntSing = Just . getSing i $ ms
-                              , shouldCap    = sc
-                              , pcEntName    = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
-                              , pcId         = i
-                              , pcIds        = findMobIds ms . getMobRmInv i $ ms }
+mkStdDesig :: Id -> MudState -> ShouldCap -> Desig
+mkStdDesig i ms sc = StdDesig { sDesigEntSing = Just . getSing i $ ms
+                              , shouldCap     = sc
+                              , desigEntName  = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
+                              , desigId       = i
+                              , desigIds      = findMobIds ms . getMobRmInv i $ ms }
 
 
 -----

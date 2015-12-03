@@ -699,12 +699,12 @@ emote :: Action
 emote p@AdviseNoArgs                                                     = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
-    let d@(stdPCEntSing -> Just s) = mkStdDesig i ms DoCap
-        ser                        = serialize d
-        d'                         = d { shouldCap = Don'tCap }
-        ser'                       = serialize d'
-        xformed                    = xformArgs True as
-        xformArgs _      []        = []
+    let d@(sDesigEntSing -> Just s) = mkStdDesig i ms DoCap
+        ser                         = serialize d
+        d'                          = d { shouldCap = Don'tCap }
+        ser'                        = serialize d'
+        xformed                     = xformArgs True as
+        xformArgs _      []         = []
         xformArgs isHead [x]
           | (h, t) <- headTail x
           , h == emoteNameChar
@@ -725,7 +725,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
     in case lefts xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
-            in bcastNl $ (toSelf, pure i) : (toOthers, pcIds d \\ (i : targetIds)) : toTargetBs
+            in bcastNl $ (toSelf, pure i) : (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
       advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
@@ -875,8 +875,8 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
           Nothing -> (ms, Left sorry)
           Just (linkTxt, destId, maybeOriginMsg, maybeDestMsg) ->
             let originDesig = mkStdDesig i ms DoCap
-                s           = fromJust . stdPCEntSing $ originDesig
-                originPCIds = i `delete` pcIds originDesig
+                s           = fromJust . sDesigEntSing $ originDesig
+                originPCIds = i `delete` desigIds originDesig
                 destPCIds   = findMobIds ms $ ms^.invTbl.ind destId
                 ms'         = ms & mobTbl.ind i.rmId   .~ destId
                                  & invTbl.ind originId %~ (i `delete`)
@@ -1079,12 +1079,12 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                         msg         = "You introduce yourself to " <> targetDesig <> "."
                         logMsg      = "Introduced to " <> targetSing <> "."
                         srcMsg      = nlnl msg
-                        pis         = findMobIds ms ris
-                        srcDesig    = StdDesig { stdPCEntSing = Nothing
-                                               , shouldCap    = DoCap
-                                               , pcEntName    = mkUnknownPCEntName i ms
-                                               , pcId         = i
-                                               , pcIds        = pis }
+                        is          = findMobIds ms ris
+                        srcDesig    = StdDesig { sDesigEntSing = Nothing
+                                               , shouldCap     = DoCap
+                                               , desigEntName  = mkUnknownPCEntName i ms
+                                               , desigId       = i
+                                               , desigIds      = is }
                         himHerself  = mkReflexPro . getSex i $ ms
                         targetMsg   = nlnl . T.concat $ [ serialize srcDesig
                                                         , " introduces "
@@ -1092,15 +1092,15 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                         , " to you as "
                                                         , colorWith knownNameColor s
                                                         , "." ]
-                        othersMsg   = nlnl . T.concat $ [ serialize srcDesig { stdPCEntSing = Just s }
+                        othersMsg   = nlnl . T.concat $ [ serialize srcDesig { sDesigEntSing = Just s }
                                                         , " introduces "
                                                         , himHerself
                                                         , " to "
                                                         , targetDesig
                                                         , "." ]
-                        cbs         = [ NonTargetBcast (srcMsg,    pure i                )
-                                      , TargetBcast    (targetMsg, pure targetId         )
-                                      , NonTargetBcast (othersMsg, pis \\ [ i, targetId ]) ]
+                        cbs         = [ NonTargetBcast (srcMsg,    pure i               )
+                                      , TargetBcast    (targetMsg, pure targetId        )
+                                      , NonTargetBcast (othersMsg, is \\ [ i, targetId ]) ]
                     in if s `elem` pt^.ind targetId.introduced
                       then let sorry = nlnl . sorryIntroAlready $ targetDesig
                            in a' & _2 <>~ mkNTBcast i sorry
@@ -1323,7 +1323,7 @@ look (NoArgs i mq cols) = getState >>= \ms ->
 look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTargetDesigs) -> do
     send mq msg
     bcastIfNotIncog i bs
-    let logHelper targetDesigs | targetSings <- [ fromJust . stdPCEntSing $ targetDesig
+    let logHelper targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
                                                 | targetDesig <- targetDesigs ]
                                = logPla "look" i $ "looked at: " <> commas targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
@@ -1341,13 +1341,13 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
                                                                                  , coinsDesc ])
                  selfDesig              = mkStdDesig i ms DoCap
                  selfDesig'             = serialize selfDesig
-                 pis                    = i `delete` pcIds selfDesig
+                 is                     = i `delete` desigIds selfDesig
                  targetDesigs           = [ mkStdDesig targetId ms Don'tCap | targetId <- extractMobIdsFromEiss ms eiss ]
                  mkBsForTarget targetDesig acc =
-                     let targetId = pcId targetDesig
+                     let targetId = desigId targetDesig
                          toTarget = (nlnl $ selfDesig' <> " looks at you.", pure targetId)
                          toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
-                                    , targetId `delete` pis)
+                                    , targetId `delete` is)
                      in toTarget : toOthers : acc
                  ms' = ms & plaTbl .~ pt
              in (ms', (msg, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
@@ -1558,7 +1558,7 @@ type PCCoins      = Coins
 
 shufflePut :: Id
            -> MudState
-           -> PCDesig
+           -> Desig
            -> ConName
            -> IsConInRm
            -> Args
@@ -1752,7 +1752,7 @@ ready p = patternMatchFail "ready" [ showText p ]
 
 helperReady :: Id
             -> MudState
-            -> PCDesig
+            -> Desig
             -> (EqTbl, InvTbl, [Broadcast], [T.Text])
             -> (Either T.Text Inv, Maybe RightOrLeft)
             -> (EqTbl, InvTbl, [Broadcast], [T.Text])
@@ -1762,7 +1762,7 @@ helperReady i ms d a (Right targetIds,        mrol) = foldl' (readyDispatcher i 
 
 readyDispatcher :: Id
                 -> MudState
-                -> PCDesig
+                -> Desig
                 -> Maybe RightOrLeft
                 -> (EqTbl, InvTbl, [Broadcast], [T.Text])
                 -> Id
@@ -1784,7 +1784,7 @@ readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
 
 readyCloth :: Id
            -> MudState
-           -> PCDesig
+           -> Desig
            -> Maybe RightOrLeft
            -> (EqTbl, InvTbl, [Broadcast], [T.Text])
            -> Id
@@ -1811,7 +1811,7 @@ readyCloth i ms d mrol a@(et, _, _, _) clothId clothSing | em <- et ! i, cloth <
                      , ( T.concat [ serialize d, " slides ", aOrAn clothSing, " on ", poss, " ", slot, "." ]
                        , otherPCIds) )
         poss       = mkPossPro . getSex i $ ms
-        otherPCIds = i `delete` pcIds d
+        otherPCIds = i `delete` desigIds d
 
 
 getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either T.Text Slot
@@ -1893,7 +1893,7 @@ getDesigClothSlot ms clothSing cloth em rol
 
 readyWpn :: Id
          -> MudState
-         -> PCDesig
+         -> Desig
          -> Maybe RightOrLeft
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
          -> Id
@@ -1926,7 +1926,7 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
                            in a & _3 <>~ b
   where
     poss       = mkPossPro . getSex i $ ms
-    otherPCIds = i `delete` pcIds d
+    otherPCIds = i `delete` desigIds d
 
 
 getAvailWpnSlot :: MudState -> Id -> EqMap -> Either T.Text Slot
@@ -1954,7 +1954,7 @@ getDesigWpnSlot ms wpnSing em rol
 
 readyArm :: Id
          -> MudState
-         -> PCDesig
+         -> Desig
          -> Maybe RightOrLeft
          -> (EqTbl, InvTbl, [Broadcast], [T.Text])
          -> Id
@@ -2001,7 +2001,7 @@ remove p = patternMatchFail "remove" [ showText p ]
 
 shuffleRem :: Id
            -> MudState
-           -> PCDesig
+           -> Desig
            -> ConName
            -> IsConInRm
            -> Args
@@ -2097,8 +2097,8 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                 toTargetMsg   = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
                 toTargetBcast = (nlnl toTargetMsg, pure targetId)
                 toOthersMsg   = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                toOthersBcast = (nlnl toOthersMsg, pcIds d \\ [ i, targetId ])
-            in (ms, ([ toSelfBcast, toTargetBcast, toOthersBcast ], [ parsePCDesig i ms toSelfMsg ]))
+                toOthersBcast = (nlnl toOthersMsg, desigIds d \\ [ i, targetId ])
+            in (ms, ([ toSelfBcast, toTargetBcast, toOthersBcast ], [ parseDesig i ms toSelfMsg ]))
         sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg     = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
                 toOthersMsg   = T.concat [ serialize d
@@ -2109,7 +2109,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                          , rearAdv
                                          , ", "
                                          , msg ]
-                toOthersBcast = (nlnl toOthersMsg, i `delete` pcIds d)
+                toOthersBcast = (nlnl toOthersMsg, i `delete` desigIds d)
                 (pt, hint)    = firstMobSay i $ ms^.plaTbl
             in (ms & plaTbl .~ pt, ((toOthersBcast :) . mkBcast i . nlnl $ toSelfMsg <> hint, pure toSelfMsg))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
@@ -2120,7 +2120,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             toSelfMsg     = T.concat [ "You say", adverb, ", ", msg ]
             toSelfBcast   = mkBcast i . nlnl $ toSelfMsg
             toOthersMsg   = T.concat [ serialize d, " says", adverb, ", ", msg ]
-            toOthersBcast = (nlnl toOthersMsg, i `delete` pcIds d)
+            toOthersBcast = (nlnl toOthersMsg, i `delete` desigIds d)
         in return (toOthersBcast : toSelfBcast, pure toSelfMsg)
 say p = patternMatchFail "say" [ showText p ]
 
@@ -2274,7 +2274,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                           , " to "
                                                           , theDesig
                                                           , "." ]
-                                               , pcIds d \\ [ i, theId ] )
+                                               , desigIds d \\ [ i, theId ] )
                                              | itemId <- itemIds ]
                mkToOthersInvBsMobs itemIds = [ ( T.concat [ serialize d
                                                           , " shows "
@@ -2282,7 +2282,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                           , " to "
                                                           , theOnLower theSing
                                                           , "." ]
-                                               , i `delete` pcIds d )
+                                               , i `delete` desigIds d )
                                              | itemId <- itemIds ]
                -----
                (canCoins, can'tCoinMsgs) = distillEcs ecs
@@ -2311,13 +2311,13 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                               , aCoinSomeCoins canCoins
                                                               , " to "
                                                               , theDesig
-                                                              , "." ], pcIds d \\ [ i, theId ])]
+                                                              , "." ], desigIds d \\ [ i, theId ])]
                mkToOthersCoinsBsMobs = coinTxt |!| [(T.concat [ serialize d
                                                               , " shows "
                                                               , aCoinSomeCoins canCoins
                                                               , " to "
                                                               , theOnLower theSing
-                                                              , "." ], i `delete` pcIds d)]
+                                                              , "." ], i `delete` desigIds d)]
            in let (invBs,   invLogs ) = showInvHelper
                   (coinsBs, coinsLog) = (showCoinsHelper, coinTxt)
               in (invBs ++ coinsBs, slashes . dropBlanks $ [ slashes invLogs, coinsLog ])
@@ -2366,7 +2366,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                        , " to "
                                                        , theDesig
                                                        , "." ]
-                                            , pcIds d \\ [ i, theId ] )
+                                            , desigIds d \\ [ i, theId ] )
                                           | itemId <- itemIds ]
                mkToOthersBsMobs itemIds = [ ( T.concat [ serialize d
                                                        , " shows "
@@ -2376,7 +2376,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                        , " to "
                                                        , theOnLower theSing
                                                        , "." ]
-                                            , i `delete` pcIds d )
+                                            , i `delete` desigIds d )
                                           | itemId <- itemIds ]
                -----
                showCoinsInEqHelper = rcs |!| mkBcast i sorryEquipCoins
@@ -2647,7 +2647,7 @@ unready p = patternMatchFail "unready" [ showText p ]
 
 helperUnready :: Id
               -> MudState
-              -> PCDesig
+              -> Desig
               -> (EqTbl, InvTbl, [Broadcast], [T.Text])
               -> Either T.Text Inv
               -> (EqTbl, InvTbl, [Broadcast], [T.Text])
@@ -2662,7 +2662,7 @@ helperUnready i ms d a = \case
 
 mkUnreadyDescs :: Id
                -> MudState
-               -> PCDesig
+               -> Desig
                -> Inv
                -> ([Broadcast], [T.Text])
 mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
@@ -2710,7 +2710,7 @@ mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- m
                           ThrPer -> "doffs"
     mkVerbUnready = \case SndPer -> "unready"
                           ThrPer -> "unreadies"
-    otherPCIds    = i `delete` pcIds d
+    otherPCIds    = i `delete` desigIds d
 
 
 mkIdCountBothList :: Id -> MudState -> Inv -> [(Id, Int, BothGramNos)]

@@ -996,18 +996,18 @@ teleHelper :: ActionParams
            -> (Id -> [Broadcast] -> [Broadcast])
            -> (MudState, [MudStack ()])
 teleHelper p@ActionParams { myId } ms originId destId destName mt f =
-    let g           = maybe id (\t -> ((nlnl t, pure myId) :)) mt
-        originDesig = mkStdDesig myId ms Don'tCap
-        originPCIds = myId `delete` pcIds originDesig
-        s           = fromJust . stdPCEntSing $ originDesig
-        destDesig   = mkSerializedNonStdDesig myId ms s A Don'tCap
-        destMobIds  = findMobIds ms $ ms^.invTbl.ind destId
-        ms'         = ms & mobTbl.ind myId.rmId .~ destId
-                         & invTbl.ind originId  %~ (myId `delete`)
-                         & invTbl.ind destId    %~ (sortInv ms . (++ pure myId))
-    in (ms', [ bcastIfNotIncog myId . f myId . g $ [ (nlnl   teleDescMsg,                             pure myId  )
-                                                   , (nlnl . teleOriginMsg . serialize $ originDesig, originPCIds)
-                                                   , (nlnl . teleDestMsg               $ destDesig,   destMobIds ) ]
+    let g            = maybe id (\t -> ((nlnl t, pure myId) :)) mt
+        originDesig  = mkStdDesig myId ms Don'tCap
+        originMobIds = myId `delete` desigIds originDesig
+        s            = fromJust . sDesigEntSing $ originDesig
+        destDesig    = mkSerializedNonStdDesig myId ms s A Don'tCap
+        destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
+        ms'          = ms & mobTbl.ind myId.rmId .~ destId
+                          & invTbl.ind originId  %~ (myId `delete`)
+                          & invTbl.ind destId    %~ (sortInv ms . (++ pure myId))
+    in (ms', [ bcastIfNotIncog myId . f myId . g $ [ (nlnl   teleDescMsg,                             pure myId   )
+                                                   , (nlnl . teleOriginMsg . serialize $ originDesig, originMobIds)
+                                                   , (nlnl . teleDestMsg               $ destDesig,   destMobIds  ) ]
              , look p
              , logPla "telehelper" myId $ "teleported to " <> dblQuote destName <> "."
              , rndmDos [ (calcProbTeleVomit   myId ms, mkExpAction "vomit"   p)
