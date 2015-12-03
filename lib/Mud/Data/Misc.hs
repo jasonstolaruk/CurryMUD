@@ -576,7 +576,7 @@ type LvlExp = (Lvl, Exp)
 -----
 
 
--- TODO: Field names need to be changed.
+-- TODO: Field names should be changed.
 data PCDesig = StdDesig    { stdPCEntSing    :: Maybe T.Text
                            , shouldCap       :: ShouldCap
                            , pcEntName       :: T.Text

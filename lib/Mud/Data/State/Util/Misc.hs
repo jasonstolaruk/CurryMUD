@@ -133,7 +133,9 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
 
 
 mkUnknownPCEntName :: Id -> MudState -> T.Text
-mkUnknownPCEntName i ms = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
+mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
+  where
+    helper = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
 
 
 -----

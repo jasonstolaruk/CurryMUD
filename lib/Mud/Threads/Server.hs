@@ -31,11 +31,12 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (writeTMQueue)
 import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
-import Control.Lens (view, views)
+import Control.Lens (view)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
@@ -73,20 +74,18 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> T.Text -> MudStack ()
 handleFromClient i mq tq isAsSelf (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p                  = getPla i ms
-        isn'tPossessing    = helper thruCentral
-        helper f           = maybe f thruOther . getInterp i $ ms
-        thruCentral        = msg |#| interpret p centralDispatch . headTail . T.words
-        thruOther f        = interpret p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
-        isPossessing npcId = helper thruNpcInterp
-          where
-            thruNpcInterp = let npcMq = getNpcMsgQueue npcId ms
-                            in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg
-    in isAsSelf ? isn'tPossessing :? views possessing (maybe isn'tPossessing isPossessing) p
+        poss               = p^.possessing
+        thruCentral        = msg |#| interpret i p centralDispatch . headTail . T.words
+        helper dflt        = maybe dflt thruOther . getInterp i $ ms
+        thruOther f        = interpret (fromMaybe i poss) p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
+        forwardToNpc npcId = let npcMq = getNpcMsgQueue npcId ms
+                             in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg
+    in isAsSelf ? thruCentral :? maybe (helper thruCentral) forwardToNpc poss
   where
-    interpret p f (cn, as) = do
+    interpret asId p f (cn, as) = do
         forwardToPeepers i (p^.peepers) FromThePeeped msg
         liftIO . atomically . writeTMQueue tq $ ResetTimer
-        f cn . WithArgs i mq (p^.columns) $ as
+        f cn . WithArgs asId mq (p^.columns) $ as
 
 
 forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> T.Text -> MudStack ()

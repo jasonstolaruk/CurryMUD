@@ -9,6 +9,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Interp.Npc
 import Mud.Threads.Misc
@@ -23,8 +24,9 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
 import Control.Lens (at, to)
 import Control.Lens.Operators ((&), (.~), (^.))
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
+import Prelude hiding (pi)
 import qualified Data.Text as T
 
 
@@ -75,6 +77,14 @@ threadNpcServer i npcMq = do
 
 
 handleExternCmd :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
-handleExternCmd i mq cols msg = msg |#| interpret . headTail . T.words
-  where
-    interpret (cn, as) = npcInterp cn . WithArgs i mq cols $ as
+handleExternCmd i mq cols msg = getState >>= \ms ->
+    let (cn, as)      = ()# msg ? ("", []) :? (headTail . T.words $ msg)
+        mkWithArgs i' = WithArgs i' mq cols as
+        -----
+        notPossessed  = helper toNpcInterp
+        helper dflt   = maybe dflt (toOther i) . getInterp i $ ms
+        toOther i'    = ((cn, mkWithArgs i') |&|) . uncurry
+        toNpcInterp   = unless (()# msg) . npcInterp cn . mkWithArgs $ i
+        -----
+        possessed pi  = helper . maybe toNpcInterp (toOther pi) . getInterp pi $ ms
+    in maybe notPossessed possessed . getPossessor i $ ms

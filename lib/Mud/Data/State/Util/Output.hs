@@ -196,7 +196,7 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 parsePCDesig :: Id -> MudState -> T.Text -> T.Text
-parsePCDesig i ms = loop (isPC i ms |?| getIntroduced i ms)
+parsePCDesig i ms = loop (getIntroduced i ms)
   where
     loop intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
@@ -221,8 +221,10 @@ parsePCDesig i ms = loop (isPC i ms |?| getIntroduced i ms)
 expandPCEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
 expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) pcIdToExpand ((i `delete`) -> pcIdsInRm)
   | isPC pcIdToExpand ms = T.concat [ f "the ", xth, expandSex h, " ", t ]
-  | otherwise            = T.concat [ f . theOnLower $ pen ] -- TODO: xth
+  | otherwise            = let n = views entName fromJust . getEnt i $ ms
+                           in n |&| (isCapital n ? id :? f . ("the " <>))
   where
+    -- TODO: The below lambda doesn't take into account the fact that some of the "pcIdsInRm" may be known by "i".
     xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] pcIdsInRm
           in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex pcIdToExpand $ matches
     expandSex 'm'                = "male"
