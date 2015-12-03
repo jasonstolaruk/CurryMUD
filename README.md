@@ -69,7 +69,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 
 ### How to try it out
 
-If you'd like to try out what I have so far, clone the repo from your home directory. While you can build CurryMUD via the usual `cabal install`, you may also utilize the included [build-sandbox.hs](https://github.com/jasonstolaruk/CurryMUD/blob/master/build-sandbox.sh), which builds the project dependencies in a new cabal sandbox.
+If you'd like to try out what I have so far, clone the repo from your home directory. While you can build CurryMUD via the usual `cabal install`, you may also utilize the included [build-sandbox.sh](https://github.com/jasonstolaruk/CurryMUD/blob/master/build-sandbox.sh) script, which builds the project dependencies in a new cabal sandbox.
 
 You'll need GHC 7.10 with base 4.8. You shouldn't have any issues compiling on Mac OS X or Linux (I do not plan on explicitly supporting Windows). If you do run into issues, please email me and let me know.
 

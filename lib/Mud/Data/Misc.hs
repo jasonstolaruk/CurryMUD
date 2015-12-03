@@ -576,7 +576,7 @@ type LvlExp = (Lvl, Exp)
 -----
 
 
--- TODO: Hopefully we can clean up the "s~" and "ns~" record names after GHC 8 comes out.
+-- TODO: Hopefully I can clean up the "s~" and "ns~" record names after GHC 8 comes out.
 data Desig = StdDesig    { sDesigEntSing  :: Maybe T.Text
                          , shouldCap      :: ShouldCap
                          , desigEntName   :: T.Text

@@ -224,7 +224,7 @@ expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) idToExpand ((i `d
   | otherwise          = let n = views entName fromJust . getEnt i $ ms
                          in n |&| (isCapital n ? id :? f . ("the " <>))
   where
-    -- TODO: The below lambda doesn't take into account the fact that some of the "pcIdsInRm" may be known by "i".
+    -- TODO: The below lambda doesn't take into account the fact that some of the "idsInRm" may be known by "i".
     xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] idsInRm
           in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex idToExpand $ matches
     expandSex 'm'                = "male"
