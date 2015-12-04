@@ -140,18 +140,18 @@ debugCmds =
   where
 
 
-mkDebugCmd :: T.Text -> Action -> CmdDesc -> Cmd
-mkDebugCmd (prefixDebugCmd -> cn) act cd = Cmd { cmdName           = cn
-                                               , cmdPriorityAbbrev = Nothing
-                                               , cmdFullName       = cn
-                                               , action            = act
-                                               , cmdDesc           = cd }
+mkDebugCmd :: T.Text -> ActionFun -> CmdDesc -> Cmd
+mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
+                                             , cmdPriorityAbbrev = Nothing
+                                             , cmdFullName       = cn
+                                             , cmdAction         = Action f True
+                                             , cmdDesc           = cd }
 
 
 -----
 
 
-debugAp :: Action
+debugAp :: ActionFun
 debugAp p@(WithArgs i mq cols _) = (wrapSend mq cols . showText $ p) >> logPlaExec (prefixDebugCmd "ap") i
 debugAp p = patternMatchFail "debugAp" [ showText p ]
 
@@ -159,7 +159,7 @@ debugAp p = patternMatchFail "debugAp" [ showText p ]
 -----
 
 
-debugBoot :: Action
+debugBoot :: ActionFun
 debugBoot (NoArgs' i mq) = ok mq >> (massMsg . MsgBoot $ dfltBootMsg) >> logPlaExec (prefixDebugCmd "boot") i
 debugBoot p              = withoutArgs debugBoot p
 
@@ -167,7 +167,7 @@ debugBoot p              = withoutArgs debugBoot p
 -----
 
 
-debugBcast :: Action
+debugBcast :: ActionFun
 debugBcast (NoArgs'' i) = (bcastNl . mkBcast i $ msg) >> logPlaExec (prefixDebugCmd "broadcast") i
   where
     msg = "[1] abcdefghij\n\
@@ -186,7 +186,7 @@ debugBcast p = withoutArgs debugBcast p
 -----
 
 
-debugBuffCheck :: Action
+debugBuffCheck :: ActionFun
 debugBuffCheck (NoArgs i mq cols) = do
     helper |&| try >=> eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
     logPlaExec (prefixDebugCmd "buffer") i
@@ -202,7 +202,7 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 -----
 
 
-debugCins :: Action
+debugCins :: ActionFun
 debugCins p@AdviseNoArgs       = advise p [] adviceDCinsNoArgs
 debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(targetId, "")] -> helper targetId
@@ -225,7 +225,7 @@ debugCins p = advise p [] adviceDCinsExcessArgs
 -----
 
 
-debugColor :: Action
+debugColor :: ActionFun
 debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefixDebugCmd "color") i
   where
     msg :: [] T.Text
@@ -240,7 +240,7 @@ debugColor p = withoutArgs debugColor p
 -----
 
 
-debugCores :: Action
+debugCores :: ActionFun
 debugCores (NoArgs i mq cols) = do
     wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", theLetterS (cores > 1), "." ]
                          | cores <- liftIO getNumCapabilities ]
@@ -251,7 +251,7 @@ debugCores p = withoutArgs debugCores p
 -----
 
 
-debugCPU :: Action
+debugCPU :: ActionFun
 debugCPU (NoArgs i mq cols) = do
     wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO cpuTime ]
     logPlaExec (prefixDebugCmd "cpu") i
@@ -263,7 +263,7 @@ debugCPU p = withoutArgs debugCPU p
 -----
 
 
-debugDispCmdList :: Action
+debugDispCmdList :: ActionFun
 debugDispCmdList p@(LowerNub' i as) = dispCmdList debugCmds p >> logPlaExecArgs (prefixDebugCmd "?") as i
 debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ showText p ]
 
@@ -271,7 +271,7 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 -----
 
 
-debugDispEnv :: Action
+debugDispEnv :: ActionFun
 debugDispEnv (NoArgs i mq cols)  = do
     pager i mq =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env | env <- liftIO getEnvironment ]
     logPlaExecArgs (prefixDebugCmd "env") [] i
@@ -289,7 +289,7 @@ mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
 -----
 
 
-debugExp :: Action
+debugExp :: ActionFun
 debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do
     ok mq
     logPlaExec cn i
@@ -300,7 +300,7 @@ debugExp p = withoutArgs debugExp p
 -----
 
 
-debugId :: Action
+debugId :: ActionFun
 debugId p@AdviseNoArgs       = advise p [] adviceDIdNoArgs
 debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
@@ -375,7 +375,7 @@ tblKeys lens = views lens IM.keys
 -----
 
 
-debugKeys :: Action
+debugKeys :: ActionFun
 debugKeys (NoArgs i mq cols) = getState >>= \ms -> do
     multiWrapSend mq cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
     logPlaExec (prefixDebugCmd "keys") i
@@ -387,7 +387,7 @@ debugKeys p = withoutArgs debugKeys p
 -----
 
 
-debugLog :: Action
+debugLog :: ActionFun
 debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
     helper       = replicateM_ 100 . onEnv $ liftIO . void . forkIO . runReaderT heavyLogging
@@ -399,7 +399,7 @@ debugLog p = withoutArgs debugLog p
 -----
 
 
-debugNpcServer :: Action
+debugNpcServer :: ActionFun
 debugNpcServer (NoArgs' i mq) = ok mq >> stopNpcServers >> logPlaExec (prefixDebugCmd "npcserver") i
 debugNpcServer p              = withoutArgs debugNpcServer p
 
@@ -410,7 +410,7 @@ debugNpcServer p              = withoutArgs debugNpcServer p
 type Base = Int
 
 
-debugNumber :: Action
+debugNumber :: ActionFun
 debugNumber p@AdviseNoArgs     = advise p [] adviceDNumberNoArgs
 debugNumber p@(AdviseOneArg _) = advise p [] adviceDNumberNoBase
 debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
@@ -443,7 +443,7 @@ letterToNum c | isDigit c = digitToInt c
 -----
 
 
-debugOut :: Action
+debugOut :: ActionFun
 debugOut (NoArgs i mq cols) = getState >>= \ms -> do
     wrapSend mq cols . showText . getInv iLoggedOut $ ms
     logPlaExec (prefixDebugCmd "out") i
@@ -453,7 +453,7 @@ debugOut p = withoutArgs debugOut p
 -----
 
 
-debugPersist :: Action
+debugPersist :: ActionFun
 debugPersist (NoArgs' i mq) = replicateM_ 10 (persist >> ok mq) >> logPlaExec (prefixDebugCmd "persist") i
 debugPersist p              = withoutArgs debugPersist p
 
@@ -461,7 +461,7 @@ debugPersist p              = withoutArgs debugPersist p
 -----
 
 
-debugPidge :: Action
+debugPidge :: ActionFun
 debugPidge (NoArgs' i mq) = serialize . flip (mkStdDesig i) Don'tCap <$> getState >>= \d -> do
     bcastNl . mkBcast iPidge $ "Geetings from " <> d <> "!"
     ok mq
@@ -472,7 +472,7 @@ debugPidge p = withoutArgs debugPidge p
 -----
 
 
-debugPmf :: Action
+debugPmf :: ActionFun
 debugPmf (NoArgs'' i) = do
     logPlaExec (prefixDebugCmd "pmf") i
     patternMatchFail "debugPmf" [ "text", showText [ "list" :: T.Text, "of", "text" ], showText [ 0 .. 9 ] ]
@@ -482,7 +482,7 @@ debugPmf p = withoutArgs debugPmf p
 -----
 
 
-debugPurge :: Action
+debugPurge :: ActionFun
 debugPurge (NoArgs' i mq) = purgeThreadTbls >> ok mq >> logPlaExec (prefixDebugCmd "purge") i
 debugPurge p              = withoutArgs debugPurge p
 
@@ -490,7 +490,7 @@ debugPurge p              = withoutArgs debugPurge p
 -----
 
 
-debugRandom :: Action
+debugRandom :: ActionFun
 debugRandom (NoArgs i mq cols) = do
     wrapSend mq cols . showText =<< rndmRs 10 (0, 99)
     logPlaExec (prefixDebugCmd "random") i
@@ -500,7 +500,7 @@ debugRandom p = withoutArgs debugRandom p
 -----
 
 
-debugRegen :: Action
+debugRegen :: ActionFun
 debugRegen p@AdviseNoArgs       = advise p [] adviceDRegenNoArgs
 debugRegen (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(targetId, "")] -> helper targetId
@@ -528,7 +528,7 @@ debugRegen p = advise p [] adviceDRegenExcessArgs
 -----
 
 
-debugRemPut :: Action
+debugRemPut :: ActionFun
 debugRemPut (NoArgs' i mq) = do
     mapM_ (fakeClientInput mq) . take 10 . cycle . map (<> rest) $ [ "remove", "put" ]
     logPlaExec (prefixDebugCmd "remput") i
@@ -540,7 +540,7 @@ debugRemPut p = withoutArgs debugRemPut p
 -----
 
 
-debugRnt :: Action
+debugRnt :: ActionFun
 debugRnt (NoArgs i mq cols) = do
     wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
     logPlaExec (prefixDebugCmd "rnt") i
@@ -558,7 +558,7 @@ debugRnt p = advise p [] adviceDRntExcessArgs
 -----
 
 
-debugRotate :: Action
+debugRotate :: ActionFun
 debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in do
     liftIO . atomically . writeTQueue lq $ RotateLog
     ok mq
@@ -569,7 +569,7 @@ debugRotate p = withoutArgs debugRotate p
 -----
 
 
-debugTalk :: Action
+debugTalk :: ActionFun
 debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
     send mq =<< [ frame cols . multiWrap cols $ descs | descs <- mapM mkDesc asyncs ]
     logPlaExec (prefixDebugCmd "talk") i
@@ -585,7 +585,7 @@ debugTalk p = withoutArgs debugTalk p
 -----
 
 
-debugThreads :: Action
+debugThreads :: ActionFun
 debugThreads (NoArgs' i mq) = do
     pager i mq =<< descThreads
     logPlaExec (prefixDebugCmd "threads") i
@@ -623,7 +623,7 @@ getLogAsyncs = (getAsync noticeLog *** getAsync errorLog) . dup
 -----
 
 
-debugThrow :: Action
+debugThrow :: ActionFun
 debugThrow (NoArgs'' i) = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
 debugThrow p            = withoutArgs debugThrow p
 
@@ -631,7 +631,7 @@ debugThrow p            = withoutArgs debugThrow p
 -----
 
 
-debugThrowLog :: Action
+debugThrowLog :: ActionFun
 debugThrowLog (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in
     (liftIO . atomically . writeTQueue lq $ Throw) >> ok mq >> logPlaExec (prefixDebugCmd "throwlog") i
 debugThrowLog p = withoutArgs debugThrowLog p
@@ -640,7 +640,7 @@ debugThrowLog p = withoutArgs debugThrowLog p
 -----
 
 
-debugToken :: Action
+debugToken :: ActionFun
 debugToken (NoArgs i mq cols) = do
     multiWrapSend mq cols . T.lines . parseTokens . T.unlines $ tokenTxts
     logPlaExec (prefixDebugCmd "token") i
@@ -683,7 +683,7 @@ debugToken p = withoutArgs debugToken p
 -----
 
 
-debugUnderline :: Action
+debugUnderline :: ActionFun
 debugUnderline (NoArgs i mq cols) = do
     wrapSend mq cols $ showText underlineANSI <> underline " This text is underlined. " <> showText noUnderlineANSI
     logPlaExec (prefixDebugCmd "underline") i
@@ -693,7 +693,7 @@ debugUnderline p = withoutArgs debugUnderline p
 -----
 
 
-debugWeight :: Action
+debugWeight :: ActionFun
 debugWeight p@AdviseNoArgs       = advise p [] adviceDWeightNoArgs
 debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
@@ -710,7 +710,7 @@ debugWeight p = advise p [] adviceDWeightExcessArgs
 -----
 
 
-debugWrap :: Action
+debugWrap :: ActionFun
 debugWrap p@AdviseNoArgs       = advise p [] adviceDWrapNoArgs
 debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(lineLen, "")] -> helper lineLen
@@ -738,7 +738,7 @@ wrapMsg = (<> dfltColor) . T.unwords $ wordy
 -----
 
 
-debugWrapIndent :: Action
+debugWrapIndent :: ActionFun
 debugWrapIndent p@AdviseNoArgs     = advise p [] adviceDWrapIndentNoArgs
 debugWrapIndent p@(AdviseOneArg _) = advise p [] adviceDWrapIndentNoAmt
 debugWrapIndent (WithArgs i mq cols [a, b]) = do

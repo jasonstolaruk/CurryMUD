@@ -143,46 +143,47 @@ plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
 
 -- TODO: "give" command.
 regularCmds :: [Cmd]
-regularCmds = map (uncurry3 mkRegularCmd)
-    [ ("?",          plaDispCmdList,  "Display or search this command list.")
-    , ("about",      about,           "About CurryMUD.")
-    , ("admin",      admin,           "Display a list of administrators, or send a message to an administrator.")
-    , ("bars",       bars,            "Display one or more status bars.")
-    , ("bug",        bug,             "Report a bug.")
-    , ("channel",    chan,            "Send a message on a telepathic channel " <> plusRelatedMsg)
-    , ("d",          go "d",          "Go down.")
-    , ("e",          go "e",          "Go east.")
-    , ("equipment",  equip,           "Display your readied equipment, or examine one or more items in your readied \
-                                      \equipment.")
-    , ("expressive", expCmdList,      "Display or search a list of available expressive commands and their results.")
-    , ("n",          go "n",          "Go north.")
-    , ("ne",         go "ne",         "Go northeast.")
-    , ("newchannel", newChan,         "Create one or more new telepathic channels.")
-    , ("nw",         go "nw",         "Go northwest.")
-    , ("question",   question,        "Ask/answer newbie questions " <> plusRelatedMsg)
-    , ("qui",        quitCan'tAbbrev, "")
-    , ("quit",       quit,            "Quit playing CurryMUD.")
-    , ("remove",     remove,          "Remove one or more items from a container.")
-    , ("s",          go "s",          "Go south.")
-    , ("se",         go "se",         "Go southeast.")
-    , ("set",        setAction,       "View or change settings.")
-    , ("sw",         go "sw",         "Go southwest.")
-    , ("take",       getAction,       "Pick up one or more items.")
-    , ("tune",       tune,            "Display a list of your telepathic connections, or tune in/out one or more \
-                                      \telepathic connections.")
-    , ("typo",       typo,            "Report a typo.")
-    , ("u",          go "u",          "Go up.")
-    , ("unlink",     unlink,          "Sever one or more telepathic links.")
-    , ("uptime",     uptime,          "Display how long CurryMUD has been running.")
-    , ("w",          go "w",          "Go west.")
-    , ("whoami",     whoAmI,          "Confirm your name, sex, and race.") ]
+regularCmds = map (uncurry4 mkRegularCmd)
+    [ ("?",          plaDispCmdList,  True,  "Display or search this command list.")
+    , ("about",      about,           True,  "About CurryMUD.")
+    , ("admin",      admin,           True,  "Display a list of administrators, or send a message to an administrator.")
+    , ("bars",       bars,            True,  "Display one or more status bars.")
+    , ("bug",        bug,             True,  "Report a bug.")
+    , ("channel",    chan,            True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
+    , ("d",          go "d",          True,  "Go down.")
+    , ("e",          go "e",          True,  "Go east.")
+    , ("equipment",  equip,           True,  "Display your readied equipment, or examine one or more items in your \
+                                             \readied equipment.")
+    , ("expressive", expCmdList,      True,  "Display or search a list of available expressive commands and their \
+                                             \results.")
+    , ("n",          go "n",          True,  "Go north.")
+    , ("ne",         go "ne",         True,  "Go northeast.")
+    , ("newchannel", newChan,         True,  "Create one or more new telepathic channels.")
+    , ("nw",         go "nw",         True,  "Go northwest.")
+    , ("question",   question,        True,  "Ask/answer newbie questions " <> plusRelatedMsg)
+    , ("qui",        quitCan'tAbbrev, True,  "")
+    , ("quit",       quit,            False, "Quit playing CurryMUD.")
+    , ("remove",     remove,          True,  "Remove one or more items from a container.")
+    , ("s",          go "s",          True,  "Go south.")
+    , ("se",         go "se",         True,  "Go southeast.")
+    , ("set",        setAction,       True,  "View or change settings.")
+    , ("sw",         go "sw",         True,  "Go southwest.")
+    , ("take",       getAction,       True,  "Pick up one or more items.")
+    , ("tune",       tune,            True,  "Display a list of your telepathic connections, or tune in/out one or \
+                                             \more telepathic connections.")
+    , ("typo",       typo,            True,  "Report a typo.")
+    , ("u",          go "u",          True,  "Go up.")
+    , ("unlink",     unlink,          True,  "Sever one or more telepathic links.")
+    , ("uptime",     uptime,          True,  "Display how long CurryMUD has been running.")
+    , ("w",          go "w",          True,  "Go west.")
+    , ("whoami",     whoAmI,          True,  "Confirm your name, sex, and race.") ]
 
 
-mkRegularCmd :: CmdFullName -> Action -> CmdDesc -> Cmd
-mkRegularCmd cfn act cd = Cmd { cmdName           = cfn
+mkRegularCmd :: CmdFullName -> ActionFun -> Bool -> CmdDesc -> Cmd
+mkRegularCmd cfn f b cd = Cmd { cmdName           = cfn
                               , cmdPriorityAbbrev = Nothing
                               , cmdFullName       = cfn
-                              , action            = act
+                              , cmdAction         = Action f b
                               , cmdDesc           = cd }
 
 
@@ -218,12 +219,12 @@ priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
     , ("who",        "wh",  who,        "Display or search a list of who is currently awake.") ]
 
 
-mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> Action -> CmdDesc -> [Cmd]
-mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmdName           = cfn
-                                                                           , cmdPriorityAbbrev = Just cpat
-                                                                           , cmdFullName       = cfn
-                                                                           , action            = act
-                                                                           , cmdDesc           = cd } ]
+mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> ActionFun -> CmdDesc -> [Cmd]
+mkPriorityAbbrevCmd cfn cpat f cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmdName           = cfn
+                                                                         , cmdPriorityAbbrev = Just cpat
+                                                                         , cmdFullName       = cfn
+                                                                         , cmdAction         = Action f True
+                                                                         , cmdDesc           = cd } ]
   where
     helper ""                      = Nothing
     helper abbrev | abbrev == cpat = Just (mkExplicitAbbrevCmd, "")
@@ -232,37 +233,37 @@ mkPriorityAbbrevCmd cfn cpat act cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
         mkExplicitAbbrevCmd = Cmd { cmdName           = abbrev
                                   , cmdPriorityAbbrev = Nothing
                                   , cmdFullName       = cfn
-                                  , action            = act
+                                  , cmdAction         = Action f True
                                   , cmdDesc           = "" }
 
 
 npcCmds :: [Cmd]
-npcCmds = map (uncurry3 mkRegularCmd)
-    [ (".",      npcAsSelf,      "Execute a command as your true self.")
-    , ("?",      npcDispCmdList, "Display or search this command list.")
-    , ("bars",   bars,           "Display one or more status bars.")
-    , ("clear",  clear,          "Clear the screen.")
-    , ("d",      go "d",         "Go down.")
-    , ("e",      go "e",         "Go east.")
-    , ("exits",  exits,          "Display obvious exits.")
-    , ("look",   look,           "Display a description of your current room, or examine one or more things in your \
-                                 \current room.")
-    , ("n",      go "n",         "Go north.")
-    , ("ne",     go "ne",        "Go northeast.")
-    , ("nw",     go "nw",        "Go northwest.")
-    , ("s",      go "s",         "Go south.")
-    , ("se",     go "se",        "Go southeast.")
-    , ("stop",   npcStop,        "Stop possessing.")
-    , ("sw",     go "sw",        "Go southwest.")
-    , ("u",      go "u",         "Go up.")
-    , ("w",      go "w",         "Go west.")
-    , ("whoami", whoAmI,         "Confirm who " <> parensQuote "or what" <> " you are.") ]
+npcCmds = map (uncurry4 mkRegularCmd)
+    [ (".",      npcAsSelf,      False, "Execute a command as your true self.")
+    , ("?",      npcDispCmdList, True,  "Display or search this command list.")
+    , ("bars",   bars,           True,  "Display one or more status bars.")
+    , ("clear",  clear,          True,  "Clear the screen.")
+    , ("d",      go "d",         True,  "Go down.")
+    , ("e",      go "e",         True,  "Go east.")
+    , ("exits",  exits,          True,  "Display obvious exits.")
+    , ("look",   look,           True,  "Display a description of your current room, or examine one or more things in \
+                                        \your current room.")
+    , ("n",      go "n",         True,  "Go north.")
+    , ("ne",     go "ne",        True,  "Go northeast.")
+    , ("nw",     go "nw",        True,  "Go northwest.")
+    , ("s",      go "s",         True,  "Go south.")
+    , ("se",     go "se",        True,  "Go southeast.")
+    , ("stop",   npcStop,        True,  "Stop possessing.")
+    , ("sw",     go "sw",        True,  "Go southwest.")
+    , ("u",      go "u",         True,  "Go up.")
+    , ("w",      go "w",         True,  "Go west.")
+    , ("whoami", whoAmI,         True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
 -----
 
 
-about :: Action
+about :: ActionFun
 about (NoArgs i mq cols) = do
     helper |&| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . fileIOExHandler "about")
     logPlaExec "about" i
@@ -274,7 +275,7 @@ about p = withoutArgs about p
 -----
 
 
-admin :: Action
+admin :: ActionFun
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] . adviceAdminNoMsg $ a
 admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
@@ -317,7 +318,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
 admin p = patternMatchFail "admin" [ showText p ]
 
 
-adminList :: Action
+adminList :: ActionFun
 adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExecArgs "admin" [] i
   where
     helper ms =
@@ -342,7 +343,7 @@ adminList p = patternMatchFail "adminList" [ showText p ]
 -----
 
 
-bars :: Action
+bars :: ActionFun
 bars (NoArgs i mq cols) = getState >>= \ms ->
     let mkBars = map (uncurry (mkBar (calcBarLen cols))) . mkPointPairs i $ ms
     in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" [] i
@@ -386,7 +387,7 @@ mkPointPairs i ms = let (hps, mps, pps, fps) = getXps i ms
 -----
 
 
-bug :: Action
+bug :: ActionFun
 bug p@AdviseNoArgs = advise p ["bug"] adviceBugNoArgs
 bug p              = bugTypoLogger p BugLog
 
@@ -394,7 +395,7 @@ bug p              = bugTypoLogger p BugLog
 -----
 
 
-chan :: Action
+chan :: ActionFun
 chan (NoArgs i mq cols) = getState >>= \ms ->
     let (chanNames, chanTunings) = mkChanNamesTunings i ms
         helper names tunings     = let txts = mkChanTxts
@@ -477,7 +478,7 @@ chan p = patternMatchFail "chan" [ showText p ]
 -----
 
 
-clear :: Action
+clear :: ActionFun
 clear (NoArgs' i mq) = (send mq . T.pack $ clearScreenCode) >> logPlaExec "clear" i
 clear p              = withoutArgs clear p
 
@@ -485,7 +486,7 @@ clear p              = withoutArgs clear p
 -----
 
 
-color :: Action
+color :: ActionFun
 color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
   where
     msg = [ nl . T.concat $ [ mkColorDesc fg bg, colorWith ansi . spaced $  "CurryMUD" ]
@@ -501,7 +502,7 @@ color p = withoutArgs color p
 -----
 
 
-connect :: Action
+connect :: ActionFun
 connect p@AdviseNoArgs       = advise p ["connect"] adviceConnectNoArgs
 connect p@(AdviseOneArg a)   = advise p ["connect"] . adviceConnectNoChan $ a
 connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
@@ -586,7 +587,7 @@ connectHelper i (target, as) ms =
 -----
 
 
-disconnect :: Action
+disconnect :: ActionFun
 disconnect p@AdviseNoArgs       = advise p ["disconnect"] adviceDisconnectNoArgs
 disconnect p@(AdviseOneArg a)   = advise p ["disconnect"] . adviceDisconnectNoChan $ a
 disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
@@ -671,7 +672,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
-dropAction :: Action
+dropAction :: ActionFun
 dropAction p@AdviseNoArgs   = advise p ["drop"] adviceDropNoArgs
 dropAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "drop" i
@@ -695,7 +696,7 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
-emote :: Action
+emote :: ActionFun
 emote p@AdviseNoArgs                                                     = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
@@ -764,7 +765,7 @@ emote p = patternMatchFail "emote" [ showText p ]
 -----
 
 
-equip :: Action
+equip :: ActionFun
 equip (NoArgs   i mq cols   ) = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
     let em@(M.elems -> is) = getEqMap i ms in send mq $ if ()!# em
@@ -786,7 +787,7 @@ equip p = patternMatchFail "equip" [ showText p ]
 -----
 
 
-exits :: Action
+exits :: ActionFun
 exits (NoArgs i mq cols) = getState >>= \ms ->
     (send mq . nl . mkExitsSummary cols . getMobRm i $ ms) >> logPlaExec "exits" i
 exits p = withoutArgs exits p
@@ -795,7 +796,7 @@ exits p = withoutArgs exits p
 -----
 
 
-expCmdList :: Action
+expCmdList :: ActionFun
 expCmdList (NoArgs i mq cols) =
     (pager i mq . concatMap (wrapIndent cmdNamePadding cols) $ mkExpCmdListTxt) >> logPlaExecArgs "expressive" [] i
 expCmdList p@ActionParams { myId, args } =
@@ -826,7 +827,7 @@ mkExpCmdListTxt =
 -----
 
 
-getAction :: Action
+getAction :: ActionFun
 getAction p@AdviseNoArgs = advise p ["get"] adviceGetNoArgs
 getAction (Lower _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
 getAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -852,12 +853,12 @@ getAction p = patternMatchFail "getAction" [ showText p ]
 -----
 
 
-go :: T.Text -> Action
+go :: T.Text -> ActionFun
 go dir p@ActionParams { args = [] } = goDispatcher p { args = pure dir   }
 go dir p@ActionParams { args      } = goDispatcher p { args = dir : args }
 
 
-goDispatcher :: Action
+goDispatcher :: ActionFun
 goDispatcher ActionParams { args = [] } = unit
 goDispatcher p@(Lower i mq cols as)     = mapM_ (tryMove i mq cols p { args = [] }) as
 goDispatcher p                          = patternMatchFail "goDispatcher" [ showText p ]
@@ -957,7 +958,7 @@ mkNonStdRmLinkCmds (view rmLinks -> rls) = [ mkCmdForRmLink rl | rl <- rls, isNo
 
 mkCmdForRmLink :: RmLink -> Cmd
 mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) =
-    Cmd { cmdName = cn, cmdPriorityAbbrev = Nothing, cmdFullName = cn, action = go cn, cmdDesc = "" }
+    Cmd { cmdName = cn, cmdPriorityAbbrev = Nothing, cmdFullName = cn, cmdAction = Action (go cn) True, cmdDesc = "" }
 
 
 mkCmdNameForRmLink :: RmLink -> T.Text
@@ -968,7 +969,7 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
  -----
 
 
-help :: Action
+help :: ActionFun
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
     handler e = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
@@ -1043,7 +1044,7 @@ getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <-
 -----
 
 
-intro :: Action
+intro :: ActionFun
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet." in
       wrapSend mq cols introsTxt >> (logPlaOut "intro" i . pure $ introsTxt)
@@ -1122,7 +1123,7 @@ intro p = patternMatchFail "intro" [ showText p ]
 -----
 
 
-inv :: Action
+inv :: ActionFun
 inv (NoArgs   i mq cols   ) = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
 inv (LowerNub i mq cols as) = getState >>= \ms ->
     let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
@@ -1146,7 +1147,7 @@ inv p = patternMatchFail "inv" [ showText p ]
 -----
 
 
-leave :: Action
+leave :: ActionFun
 leave p@AdviseNoArgs                   = advise p ["leave"] adviceLeaveNoArgs
 leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanIdNameIsDels, sorryMsgs) ->
     let s                              = getSing i ms
@@ -1203,7 +1204,7 @@ leave p = patternMatchFail "leave" [ showText p ]
 -----
 
 
-link :: Action
+link :: ActionFun
 link (NoArgs i mq cols) = do
     ms  <- getState
     res <- helperLinkUnlink ms i mq cols
@@ -1308,7 +1309,7 @@ link p = patternMatchFail "link" [ showText p ]
 -----
 
 
-look :: Action
+look :: ActionFun
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri        = getRmId i  ms
         r         = getRm   ri ms
@@ -1409,7 +1410,7 @@ extractMobIdsFromEiss ms = foldl' helper []
 -----
 
 
-motd :: Action
+motd :: ActionFun
 motd (NoArgs i mq cols) = showMotd mq cols >> logPlaExec "motd" i
 motd p                  = withoutArgs motd p
 
@@ -1428,7 +1429,7 @@ showMotd mq cols = send mq =<< helper
 -----
 
 
-newChan :: Action
+newChan :: ActionFun
 newChan p@AdviseNoArgs                   = advise p ["newchannel"] adviceNewChanNoArgs
 newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip -> (newChanNames, chanRecs), sorryMsgs) ->
     let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
@@ -1487,11 +1488,11 @@ newChan p = patternMatchFail "newChan" [ showText p ]
 -----
 
 
-npcAsSelf :: Action
+npcAsSelf :: ActionFun
 npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
 
 
-npcAsSelfHelper :: Action
+npcAsSelfHelper :: ActionFun
 npcAsSelfHelper p@AdviseNoArgs       = advise p [] adviceAsSelfNoArgs
 npcAsSelfHelper (WithArgs i mq _ as) = do
     logPlaExecArgs "." as i
@@ -1502,7 +1503,7 @@ npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" [ showText p ]
 -----
 
 
-npcDispCmdList :: Action
+npcDispCmdList :: ActionFun
 npcDispCmdList p@(LowerNub' i as) = dispCmdList npcCmds p >> logPlaExecArgs "?" as i
 npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText p ]
 
@@ -1510,11 +1511,11 @@ npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText
 -----
 
 
-npcStop :: Action
+npcStop :: ActionFun
 npcStop p = execIfPossessed p "stop" npcStopHelper
 
 
-npcStopHelper :: Action
+npcStopHelper :: ActionFun
 npcStopHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
     wrapSend mq cols $ "You stop possessing " <> aOrAnOnLower (getSing    i ms) <> "."
     logPla "stop" i  $ "stopped possessing "  <> aOrAnOnLower (descSingId i ms) <> "."
@@ -1525,7 +1526,7 @@ npcStopHelper p = withoutArgs npcStopHelper p
 -----
 
 
-plaDispCmdList :: Action
+plaDispCmdList :: ActionFun
 plaDispCmdList p@(LowerNub' i as) = dispCmdList plaCmds p >> logPlaExecArgs "?" as i
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
 
@@ -1533,7 +1534,7 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 -----
 
 
-putAction :: Action
+putAction :: ActionFun
 putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
 putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
 putAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -1596,7 +1597,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
 -----
 
 
-question :: Action
+question :: ActionFun
 question (NoArgs' i mq) = getState >>= \ms ->
     let (plaIds,    adminIds) = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms) & both %~ (i `delete`)
         (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
@@ -1648,7 +1649,7 @@ question p = patternMatchFail "question" [ showText p ]
 -----
 
 
-quit :: Action
+quit :: ActionFun
 quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . atomically . writeTQueue mq $ Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
@@ -1721,7 +1722,7 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
 -----
 
 
-quitCan'tAbbrev :: Action
+quitCan'tAbbrev :: ActionFun
 quitCan'tAbbrev (NoArgs _ mq cols) = wrapSend mq cols sorryQuitCan'tAbbrev
 quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 
@@ -1729,7 +1730,7 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 
-ready :: Action
+ready :: ActionFun
 ready p@AdviseNoArgs   = advise p ["ready"] adviceReadyNoArgs
 ready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "ready" i
@@ -1983,7 +1984,7 @@ getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe
 -----
 
 
-remove :: Action
+remove :: ActionFun
 remove p@AdviseNoArgs     = advise p ["remove"] adviceRemoveNoArgs
 remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
 remove (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
@@ -2041,7 +2042,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 -----
 
 
-say :: Action
+say :: ActionFun
 say p@AdviseNoArgs                    = advise p ["say"] adviceSayNoArgs
 say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
   | isIncognitoId i ms         -> wrapSend mq cols . sorryIncog $ "say"
@@ -2133,7 +2134,7 @@ firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, "")
 -----
 
 
-setAction :: Action
+setAction :: ActionFun
 setAction (NoArgs i mq cols) = getState >>= \ms ->
     let (styleAbbrevs Don'tQuote -> names, values) = unzip . mkSettingPairs i $ ms
     in multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
@@ -2191,7 +2192,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 -----
 
 
-showAction :: Action
+showAction :: ActionFun
 showAction p@AdviseNoArgs     = advise p ["show"] adviceShowNoArgs
 showAction p@(AdviseOneArg a) = advise p ["show"] . adviceShowNoName $ a
 showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
@@ -2441,7 +2442,7 @@ mkSlotDesc i ms s = case s of
 -----
 
 
-stats :: Action
+stats :: ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = [ T.concat [ getSing i ms, ", the ", sexy, " ", r ]
                     , pp . getHand i $ ms
@@ -2458,7 +2459,7 @@ stats p = withoutArgs stats p
 -----
 
 
-tele :: Action
+tele :: ActionFun
 tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
 tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a
 tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
@@ -2501,7 +2502,7 @@ getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
 -----
 
 
-tune :: Action
+tune :: ActionFun
 tune (NoArgs i mq cols) = getState >>= \ms ->
     let linkPairs   = map (first (`getIdForPCSing` ms) . dup) . getLinked i $ ms
         linkSings   = sort . map snd . filter (isDblLinked ms . (i, ) . fst) $ linkPairs
@@ -2570,7 +2571,7 @@ tuneInvalidArg arg msgs = let msg = sorryParseArg arg in
 -----
 
 
-typo :: Action
+typo :: ActionFun
 typo p@AdviseNoArgs = advise p ["typo"] adviceTypoNoArgs
 typo p              = bugTypoLogger p TypoLog
 
@@ -2578,7 +2579,7 @@ typo p              = bugTypoLogger p TypoLog
 -----
 
 
-unlink :: Action
+unlink :: ActionFun
 unlink p@AdviseNoArgs          = advise p ["unlink"] adviceUnlinkNoArgs
 unlink (LowerNub i mq cols as) =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryUnlinkIgnore)
@@ -2624,7 +2625,7 @@ unlink p = patternMatchFail "unlink" [ showText p ]
 -----
 
 
-unready :: Action
+unready :: ActionFun
 unready p@AdviseNoArgs   = advise p ["unready"] adviceUnreadyNoArgs
 unready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "unready" i
@@ -2722,7 +2723,7 @@ mkIdCountBothList i ms targetIds =
 -----
 
 
-uptime :: Action
+uptime :: ActionFun
 uptime (NoArgs i mq cols) = do
     wrapSend mq cols =<< uptimeHelper =<< getUptime
     logPlaExec "uptime" i
@@ -2755,7 +2756,7 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
 -----
 
 
-who :: Action
+who :: ActionFun
 who (NoArgs i mq cols) = getState >>= \ms ->
     (pager i mq . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
 who p@ActionParams { myId, args } = getState >>= \ms ->
@@ -2822,7 +2823,7 @@ mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
 -----
 
 
-whoAmI :: Action
+whoAmI :: ActionFun
 whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoami" i
   where
     helper ms = return $ let s = getSing i ms in if isNpc i ms

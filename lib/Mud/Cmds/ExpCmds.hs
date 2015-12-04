@@ -699,7 +699,7 @@ expCmds = S.foldr helper [] expCmdSet
         let theCmd = Cmd { cmdName           = expCmdName
                          , cmdPriorityAbbrev = Nothing
                          , cmdFullName       = expCmdName
-                         , action            = expCmd expCmdName expCmdType
+                         , cmdAction         = Action (expCmd expCmdName expCmdType) True
                          , cmdDesc           = "" }
         (theCmd :)
 
@@ -715,7 +715,7 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _) -> cn' == cn) $
 -----
 
 
-expCmd :: ExpCmdName -> ExpCmdType -> Action
+expCmd :: ExpCmdName -> ExpCmdType -> ActionFun
 expCmd ecn HasTarget {} p@NoArgs {}  = advise p [] . sorryExpCmdRequiresTarget $ ecn
 expCmd ecn ect          (NoArgs'' i) = case ect of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
@@ -790,7 +790,7 @@ mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { shou
 -----
 
 
-mkExpAction :: T.Text -> Action
+mkExpAction :: T.Text -> ActionFun
 mkExpAction name = let [ExpCmd ecn ect] = S.toList . S.filter helper $ expCmdSet
                    in expCmd ecn ect
   where

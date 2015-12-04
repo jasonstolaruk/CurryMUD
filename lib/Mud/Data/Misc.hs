@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
-module Mud.Data.Misc ( Action
+module Mud.Data.Misc ( Action(..)
+                     , ActionFun
                      , Amount
                      , AOrThe(..)
                      , Args
@@ -468,22 +469,27 @@ instance Ord ClassifiedBcast where
 
 type CmdPriorityAbbrevTxt = T.Text
 type CmdFullName          = T.Text
-type Action               = ActionParams -> MudStack ()
 type CmdDesc              = T.Text
 
 
 data Cmd = Cmd { cmdName           :: CmdName
                , cmdPriorityAbbrev :: Maybe CmdPriorityAbbrevTxt
                , cmdFullName       :: CmdFullName
-               , action            :: Action
+               , cmdAction         :: Action
                , cmdDesc           :: CmdDesc }
 
 
+type ActionFun = ActionParams -> MudStack ()
+
+
+data Action = Action { actionFun    :: ActionFun
+                     , shouldPrompt :: Bool }
+
+
 instance Eq Cmd where
-  (==) Cmd { cmdName = cn1, cmdPriorityAbbrev = cpa1, cmdDesc = cd1 }
-       Cmd { cmdName = cn2, cmdPriorityAbbrev = cpa2, cmdDesc = cd2 } =
-       and [ c1 == c2 | c1 <- [ cn1, fromMaybe "" cpa1, cd1 ]
-                      | c2 <- [ cn2, fromMaybe "" cpa2, cd2 ] ]
+  (==) (Cmd cn1 cpa1 cfn1 _ cd1)
+       (Cmd cn2 cpa2 cfn2 _ cd2) = and [ c1 == c2 | c1 <- [ cn1, fromMaybe "" cpa1, cfn1, cd1 ]
+                                                  | c2 <- [ cn2, fromMaybe "" cpa2, cfn2, cd2 ] ]
 
 
 instance Ord Cmd where

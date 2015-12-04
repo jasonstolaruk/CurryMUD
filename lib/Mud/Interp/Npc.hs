@@ -3,7 +3,6 @@
 module Mud.Interp.Npc (npcInterp) where
 
 import Mud.Cmds.Pla
-import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Interp.Misc
@@ -16,5 +15,5 @@ npcInterp :: Interp
 npcInterp = dispatch findAction
 
 
-findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)
+findAction :: FindActionFun
 findAction i ms (T.toLower -> cn) = findActionHelper cn . sort $ npcCmds ++ (mkNonStdRmLinkCmds . getMobRm i $ ms)

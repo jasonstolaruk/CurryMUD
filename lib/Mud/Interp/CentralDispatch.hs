@@ -20,7 +20,7 @@ centralDispatch :: Interp
 centralDispatch = dispatch findAction
 
 
-findAction :: Id -> MudState -> CmdName -> MudStack (Maybe Action)
+findAction :: FindActionFun
 findAction i ms (T.toLower -> cn) = findActionHelper cn $ let ia = getPlaFlag IsAdmin . getPla i $ ms
                                                           in sort . concat $ [ plaCmds
                                                                              , mkNonStdRmLinkCmds . getMobRm i $ ms

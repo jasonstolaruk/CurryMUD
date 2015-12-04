@@ -201,7 +201,7 @@ descSingId i ms = quoteWith' (getSing i ms, parensQuote . showText $ i) " "
 -----
 
 
-dispCmdList :: [Cmd] -> Action
+dispCmdList :: [Cmd] -> ActionFun
 dispCmdList cmds (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ cmds
 dispCmdList cmds p                  = dispMatches p cmdNamePadding . mkCmdListText $ cmds
 
@@ -797,10 +797,10 @@ withDbExHandler_ fn f = liftIO f `catch` dbExHandler fn
 -----
 
 
-withoutArgs :: Action -> ActionParams -> MudStack ()
+withoutArgs :: ActionFun -> ActionParams -> MudStack ()
 withoutArgs act p = ignore p >> act p { args = [] }
 
 
-ignore :: Action
+ignore :: ActionFun
 ignore (Ignoring mq cols as) = send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> as <> "..."
 ignore p                     = patternMatchFail "ignore" [ showText p ]

@@ -111,58 +111,60 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 adminCmds :: [Cmd]
 adminCmds =
-    [ mkAdminCmd "?"          adminDispCmdList "Display or search this command list."
-    , mkAdminCmd "admin"      adminAdmin       ("Send a message on the admin channel " <> plusRelatedMsg)
-    , mkAdminCmd "as"         adminAs          "Execute a command as someone else."
-    , mkAdminCmd "banhost"    adminBanHost     "Dump the banned hostname database, or ban/unban a host."
-    , mkAdminCmd "banplayer"  adminBanPla      "Dump the banned player database, or ban/unban a player."
-    , mkAdminCmd "announce"   adminAnnounce    "Send a message to all players."
-    , mkAdminCmd "boot"       adminBoot        "Boot a player, optionally with a custom message."
-    , mkAdminCmd "bug"        adminBug         "Dump the bug database."
-    , mkAdminCmd "channel"    adminChan        "Display information about one or more telepathic channels."
-    , mkAdminCmd "date"       adminDate        "Display the current system date."
-    , mkAdminCmd "examine"    adminExamine     "Display the properties of one or more IDs."
-    , mkAdminCmd "experience" adminExp         "Dump the experience table."
-    , mkAdminCmd "host"       adminHost        "Display a report of connection statistics for one or more players."
-    , mkAdminCmd "incognito"  adminIncognito   "Toggle your incognito status."
-    , mkAdminCmd "ip"         adminIp          "Display the server's IP addresses and listening port."
-    , mkAdminCmd "locate"     adminLocate      "Locate one or more IDs."
-    , mkAdminCmd "message"    adminMsg         "Send a message to a regular player."
-    , mkAdminCmd "mychannels" adminMyChans     "Display information about telepathic channels for one or more players."
-    , mkAdminCmd "peep"       adminPeep        "Start or stop peeping one or more players."
-    , mkAdminCmd "persist"    adminPersist     "Persist the world (save the current world state to disk)."
-    , mkAdminCmd "possess"    adminPossess     "Possess an NPC."
-    , mkAdminCmd "print"      adminPrint       "Print a message to the server console."
-    , mkAdminCmd "profanity"  adminProfanity   "Dump the profanity database."
-    , mkAdminCmd "search"     adminSearch      "Search for names and IDs using a regular expression."
-    , mkAdminCmd "shutdown"   adminShutdown    "Shut down CurryMUD, optionally with a custom message."
-    , mkAdminCmd "sudoer"     adminSudoer      "Toggle a player's admin status."
-    , mkAdminCmd "teleid"     adminTeleId      "Teleport to an entity or room by ID."
-    , mkAdminCmd "telepc"     adminTelePC      "Teleport to a PC by name."
-    , mkAdminCmd "telerm"     adminTeleRm      "Display a list of rooms to which you may teleport, or teleport to a \
-                                               \room by name."
-    , mkAdminCmd "time"       adminTime        "Display the current system time."
-    , mkAdminCmd "typo"       adminTypo        "Dump the typo database."
-    , mkAdminCmd "uptime"     adminUptime      "Display the system uptime."
-    , mkAdminCmd "whoin"      adminWhoIn       "Display or search a list of all the people that are currently logged \
-                                               \in."
-    , mkAdminCmd "whoout"     adminWhoOut      "Display or search a list of all the people that are currently logged \
-                                               \out."
-    , mkAdminCmd "wiretap"    adminWire        "Start or stop tapping one or more telepathic channels." ]
+    [ mkAdminCmd "?"          adminDispCmdList True  "Display or search this command list."
+    , mkAdminCmd "admin"      adminAdmin       True  ("Send a message on the admin channel " <> plusRelatedMsg)
+    , mkAdminCmd "as"         adminAs          False "Execute a command as someone else."
+    , mkAdminCmd "banhost"    adminBanHost     True  "Dump the banned hostname database, or ban/unban a host."
+    , mkAdminCmd "banplayer"  adminBanPla      True  "Dump the banned player database, or ban/unban a player."
+    , mkAdminCmd "announce"   adminAnnounce    True  "Send a message to all players."
+    , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
+    , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
+    , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
+    , mkAdminCmd "date"       adminDate        True  "Display the current system date."
+    , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
+    , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
+    , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
+                                                     \players."
+    , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
+    , mkAdminCmd "ip"         adminIp          True  "Display the server's IP addresses and listening port."
+    , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
+    , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
+    , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \
+                                                     \players."
+    , mkAdminCmd "peep"       adminPeep        True  "Start or stop peeping one or more players."
+    , mkAdminCmd "persist"    adminPersist     True  "Persist the world (save the current world state to disk)."
+    , mkAdminCmd "possess"    adminPossess     False "Possess an NPC."
+    , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
+    , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
+    , mkAdminCmd "search"     adminSearch      True  "Search for names and IDs using a regular expression."
+    , mkAdminCmd "shutdown"   adminShutdown    False "Shut down CurryMUD, optionally with a custom message."
+    , mkAdminCmd "sudoer"     adminSudoer      True  "Toggle a player's admin status."
+    , mkAdminCmd "teleid"     adminTeleId      True  "Teleport to an entity or room by ID."
+    , mkAdminCmd "telepc"     adminTelePC      True  "Teleport to a PC by name."
+    , mkAdminCmd "telerm"     adminTeleRm      True  "Display a list of named rooms to which you may teleport, or \
+                                                     \teleport to a room by name."
+    , mkAdminCmd "time"       adminTime        True  "Display the current system time."
+    , mkAdminCmd "typo"       adminTypo        True  "Dump the typo database."
+    , mkAdminCmd "uptime"     adminUptime      True  "Display the system uptime."
+    , mkAdminCmd "whoin"      adminWhoIn       True  "Display or search a list of all the people that are currently \
+                                                     \logged in."
+    , mkAdminCmd "whoout"     adminWhoOut      True  "Display or search a list of all the people that are currently \
+                                                     \logged out."
+    , mkAdminCmd "wiretap"    adminWire        True  "Start or stop tapping one or more telepathic channels." ]
 
 
-mkAdminCmd :: T.Text -> Action -> CmdDesc -> Cmd
-mkAdminCmd (prefixAdminCmd -> cn) act cd = Cmd { cmdName           = cn
+mkAdminCmd :: T.Text -> ActionFun -> Bool -> CmdDesc -> Cmd
+mkAdminCmd (prefixAdminCmd -> cn) f b cd = Cmd { cmdName           = cn
                                                , cmdPriorityAbbrev = Nothing
                                                , cmdFullName       = cn
-                                               , action            = act
+                                               , cmdAction         = Action f b
                                                , cmdDesc           = cd }
 
 
 -----
 
 
-adminAdmin :: Action
+adminAdmin :: ActionFun
 adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
     let triples = sortBy (compare `on` view _2) [ (ai, as, isTuned) | ai <- getLoggedInAdminIds ms
                                                                     , let as      = getSing ai ms
@@ -217,7 +219,7 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 -----
 
 
-adminAs :: Action
+adminAs :: ActionFun
 adminAs p@AdviseNoArgs                     = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs
 adminAs p@(AdviseOneArg a)                 = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a
 adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
@@ -238,12 +240,12 @@ adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
                       fakeClientInput targetMq rest
           t -> sendFun . sorryAsType $ t
         ioHelper targetId s = do
-              sendFun $ "Executing as " <> s <> "..."
-              logPla "adminAs" i . T.concat $ [ "Executing "
-                                              , dblQuote rest
-                                              , " as "
-                                              , aOrAnOnLower . descSingId targetId $ ms
-                                              , "." ]
+            sendFun . parensQuote $ "Executing as " <> aOrAnOnLower s <> "..."
+            logPla "adminAs" i . T.concat $ [ "Executing "
+                                            , dblQuote rest
+                                            , " as "
+                                            , aOrAnOnLower . descSingId targetId $ ms
+                                            , "." ]
         sorryParse = sendFun . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                                -> sendFun sorryWtf
@@ -256,7 +258,7 @@ adminAs p = patternMatchFail "adminAs" [ showText p ]
 -----
 
 
-adminAnnounce :: Action
+adminAnnounce :: ActionFun
 adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
 adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     ok mq
@@ -269,7 +271,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 -----
 
 
-adminBanHost :: Action
+adminBanHost :: ActionFun
 adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs $ "ban_host") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
   Nothing -> wrapSend mq cols dbErrorMsg
@@ -303,7 +305,7 @@ notifyBan i mq cols selfSing target newStatus x =
 -----
 
 
-adminBanPla :: Action
+adminBanPla :: ActionFun
 adminBanPla (NoArgs i mq cols) = (withDbExHandler "adminBanPla" . getDbTblRecs $ "ban_pla") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanPlaRec]) >> logPlaExecArgs (prefixAdminCmd "banpla") [] i
   Nothing -> wrapSend mq cols dbErrorMsg
@@ -333,7 +335,7 @@ adminBanPla p = patternMatchFail "adminBanPla" [ showText p ]
 -----
 
 
-adminBoot :: Action
+adminBoot :: ActionFun
 adminBoot p@AdviseNoArgs                       = advise p [ prefixAdminCmd "boot" ] adviceABootNoArgs
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
@@ -361,7 +363,7 @@ adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 -----
 
 
-adminBug :: Action
+adminBug :: ActionFun
 adminBug (NoArgs i mq cols) = (withDbExHandler "adminBug" . getDbTblRecs $ "bug") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BugRec]) >> logPlaExec (prefixAdminCmd "bug") i
   Nothing -> wrapSend mq cols dbErrorMsg
@@ -371,7 +373,7 @@ adminBug p = withoutArgs adminBug p
 -----
 
 
-adminChan :: Action
+adminChan :: ActionFun
 adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport i ms) . IM.elems) ms of
   []      -> informNoChans mq cols
   reports -> adminChanIOHelper i mq reports
@@ -401,7 +403,7 @@ adminChanIOHelper i mq reports =
 -----
 
 
-adminDate :: Action
+adminDate :: ActionFun
 adminDate (NoArgs' i mq) = do
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
     logPlaExec (prefixAdminCmd "date") i
@@ -411,7 +413,7 @@ adminDate p = withoutArgs adminDate p
 -----
 
 
-adminDispCmdList :: Action
+adminDispCmdList :: ActionFun
 adminDispCmdList p@(LowerNub' i as) = dispCmdList adminCmds p >> logPlaExecArgs (prefixAdminCmd "?") as i
 adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ showText p ]
 
@@ -419,7 +421,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
-adminExamine :: Action
+adminExamine :: ActionFun
 adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
@@ -578,7 +580,7 @@ examineWpn i ms = let w = getWpn i ms in [ "Type: "   <> w^.wpnSub.to pp
 -----
 
 
-adminExp :: Action
+adminExp :: ActionFun
 adminExp (NoArgs' i mq) = pager i mq mkReport >> logPlaExec (prefixAdminCmd "experience") i
   where
     mkReport = header ++ pure zero ++ (take 25 . map helper $ calcLvlExps)
@@ -591,7 +593,7 @@ adminExp p = withoutArgs adminExp p
 -----
 
 
-adminHost :: Action
+adminHost :: ActionFun
 adminHost p@AdviseNoArgs          = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
 adminHost (LowerNub i mq cols as) = do
     ms          <- getState
@@ -638,7 +640,7 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
 -----
 
 
-adminIncognito :: Action
+adminIncognito :: ActionFun
 adminIncognito (NoArgs i mq cols) = modifyState helper >>= sequence_
   where
     helper ms = let s              = getSing i ms
@@ -656,7 +658,7 @@ adminIncognito p = withoutArgs adminIncognito p
 -----
 
 
-adminIp :: Action
+adminIp :: ActionFun
 adminIp (NoArgs i mq cols) = do
     ifList <- liftIO mkInterfaceList
     multiWrapSend mq cols [ "Interfaces: " <> ifList <> ".", "Listening on port " <> showText port <> "." ]
@@ -667,7 +669,7 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
-adminLocate :: Action
+adminLocate :: ActionFun
 adminLocate p@AdviseNoArgs          = advise p [ prefixAdminCmd "locate" ] adviceALocateNoArgs
 adminLocate (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
@@ -687,7 +689,7 @@ adminLocate p = patternMatchFail "adminLocate" [ showText p ]
 -----
 
 
-adminMsg :: Action
+adminMsg :: ActionFun
 adminMsg p@AdviseNoArgs     = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
 adminMsg p@(AdviseOneArg a) = advise p [ prefixAdminCmd "message" ] . adviceAMsgNoMsg $ a
 adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
@@ -747,7 +749,7 @@ firstAdminMsg i adminSing =
 -----
 
 
-adminMyChans :: Action
+adminMyChans :: ActionFun
 adminMyChans p@AdviseNoArgs          = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
 adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
     let helper target = let notFound                     = pure . sorryPCName $ target
@@ -767,7 +769,7 @@ adminMyChans p = patternMatchFail "adminMyChans" [ showText p ]
 -----
 
 
-adminPeep :: Action
+adminPeep :: ActionFun
 adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] adviceAPeepNoArgs
 adminPeep (LowerNub i mq cols as) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
@@ -804,7 +806,7 @@ adminPeep p = patternMatchFail "adminPeep" [ showText p ]
 -----
 
 
-adminPersist :: Action
+adminPersist :: ActionFun
 adminPersist (NoArgs' i mq) = persist >> ok mq >> logPlaExec (prefixAdminCmd "persist") i
 adminPersist p              = withoutArgs adminPersist p
 
@@ -813,7 +815,8 @@ adminPersist p              = withoutArgs adminPersist p
 
 
 -- TODO: Help.
-adminPossess :: Action
+-- TODO: Check that the admin isn't already possessing someone (they could execute this command via ":as").
+adminPossess :: ActionFun
 adminPossess p@AdviseNoArgs                  = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs
 adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
@@ -844,7 +847,7 @@ adminPossess ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCol
 -----
 
 
-adminPrint :: Action
+adminPrint :: ActionFun
 adminPrint p@AdviseNoArgs  = advise p [ prefixAdminCmd "print" ] adviceAPrintNoArgs
 adminPrint (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     liftIO . T.putStrLn $ bracketQuote s <> " " <> colorWith printConsoleColor msg
@@ -857,7 +860,7 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 -----
 
 
-adminProfanity :: Action
+adminProfanity :: ActionFun
 adminProfanity (NoArgs i mq cols) = (withDbExHandler "adminProfanity" . getDbTblRecs $ "profanity") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [ProfRec]) >> logPlaExec (prefixAdminCmd "profanity") i
   Nothing -> wrapSend mq cols dbErrorMsg
@@ -867,7 +870,7 @@ adminProfanity p = withoutArgs adminProfanity p
 -----
 
 
-adminSearch :: Action
+adminSearch :: ActionFun
 adminSearch p@AdviseNoArgs                        = advise p [ prefixAdminCmd "id" ] adviceASearchNoArgs
 adminSearch (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     multiWrapSend mq cols $ descMatchingSings ms ++ [""] ++ descMatchingRmNames ms
@@ -896,7 +899,7 @@ applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTe
 -----
 
 
-adminShutdown :: Action
+adminShutdown :: ActionFun
 adminShutdown (NoArgs' i mq    ) = shutdownHelper i mq Nothing
 adminShutdown (Msg'    i mq msg) = shutdownHelper i mq . Just $ msg
 adminShutdown p                  = patternMatchFail "adminShutdown" [ showText p ]
@@ -917,7 +920,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 -----
 
 
-adminSudoer :: Action
+adminSudoer :: ActionFun
 adminSudoer p@AdviseNoArgs                  = advise p [ prefixAdminCmd "sudoer" ] adviceASudoerNoArgs
 adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
@@ -960,7 +963,7 @@ adminSudoer p = advise p [] adviceASudoerExcessArgs
 -----
 
 
-adminTeleId :: Action
+adminTeleId :: ActionFun
 adminTeleId p@AdviseNoArgs                    = advise p [ prefixAdminCmd "teleid" ] adviceATeleIdNoArgs
 adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
@@ -1017,7 +1020,7 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f =
 -----
 
 
-adminTelePC :: Action
+adminTelePC :: ActionFun
 adminTelePC p@AdviseNoArgs                    = advise p [ prefixAdminCmd "telepc" ] adviceATelePCNoArgs
 adminTelePC p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
@@ -1037,7 +1040,7 @@ adminTelePC ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols
 -----
 
 
-adminTeleRm :: Action
+adminTeleRm :: ActionFun
 adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExecArgs (prefixAdminCmd "telerm") [] i
   where
     mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . IM.elems) <$> getState
@@ -1058,7 +1061,7 @@ adminTeleRm p = advise p [] adviceATeleRmExcessArgs
 -----
 
 
-adminTime :: Action
+adminTime :: ActionFun
 adminTime (NoArgs i mq cols) = do
     (ct, zt) <- liftIO $ (,) <$> formatThat `fmap` getCurrentTime <*> formatThat `fmap` getZonedTime
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
@@ -1072,7 +1075,7 @@ adminTime p = withoutArgs adminTime p
 -----
 
 
-adminTypo :: Action
+adminTypo :: ActionFun
 adminTypo (NoArgs i mq cols) = (withDbExHandler "adminTypo" . getDbTblRecs $ "typo") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [TypoRec]) >> logPlaExec (prefixAdminCmd "typo") i
   Nothing -> wrapSend mq cols dbErrorMsg
@@ -1082,7 +1085,7 @@ adminTypo p = withoutArgs adminTypo p
 -----
 
 
-adminUptime :: Action
+adminUptime :: ActionFun
 adminUptime (NoArgs i mq cols) = do
     send mq . nl =<< liftIO uptime |&| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . logIOEx "adminUptime")
     logPlaExec (prefixAdminCmd "uptime") i
@@ -1094,11 +1097,11 @@ adminUptime p = withoutArgs adminUptime p
 -----
 
 
-adminWhoIn :: Action
+adminWhoIn :: ActionFun
 adminWhoIn = whoHelper LoggedIn "whoin"
 
 
-whoHelper :: LoggedInOrOut -> T.Text -> Action
+whoHelper :: LoggedInOrOut -> T.Text -> ActionFun
 whoHelper inOrOut cn (NoArgs i mq cols) = do
     pager i mq =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
     logPlaExecArgs (prefixAdminCmd cn) [] i
@@ -1131,14 +1134,14 @@ mkCharListTxt inOrOut ms =
 -----
 
 
-adminWhoOut :: Action
+adminWhoOut :: ActionFun
 adminWhoOut = whoHelper LoggedOut "whoout"
 
 
 -----
 
 
-adminWire :: Action
+adminWire :: ActionFun
 adminWire p@AdviseNoArgs          = advise p [ prefixAdminCmd "wiretap" ] adviceAWireNoArgs
 adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
   0 -> informNoChans mq cols

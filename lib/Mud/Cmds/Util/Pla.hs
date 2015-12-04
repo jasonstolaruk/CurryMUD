@@ -202,7 +202,7 @@ mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
 -----
 
 
-execIfPossessed :: ActionParams -> CmdName -> Action -> MudStack ()
+execIfPossessed :: ActionParams -> CmdName -> ActionFun -> MudStack ()
 execIfPossessed p@(WithArgs i mq cols _) cn f = getState >>= \ms -> let s = getSing i ms in case getPossessor i ms of
   Nothing -> wrapSend mq cols . sorryNotPossessed s $ cn
   Just _  -> f p

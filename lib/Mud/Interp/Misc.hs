@@ -24,13 +24,17 @@ type FindActionFun = Id -> MudState -> CmdName -> MudStack (Maybe Action)
 
 
 dispatch :: FindActionFun -> Interp
-dispatch f cn p@ActionParams { myId, plaMsgQueue } = do
-    getState >>= \ms -> maybe (send plaMsgQueue . nlnl $ "What?") (p |&|) =<< f myId ms cn
-    getState >>= \ms -> when (isNothing . getInterp myId $ ms) . prompt plaMsgQueue . mkPrompt myId $ ms
+dispatch f cn p@ActionParams { myId, plaMsgQueue } = getState >>= \ms -> maybe notFound found =<< f myId ms cn
+  where
+    notFound                = send plaMsgQueue . nlnl $ "What?"
+    found (Action actFun b) = do
+        actFun p
+        ms <- getState
+        when (b && isNothing (getInterp myId ms)) . prompt plaMsgQueue . mkPrompt myId $ ms
 
 
 findActionHelper :: CmdName -> [Cmd] -> MudStack (Maybe Action)
-findActionHelper cn cmds = return $ action . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds ]
+findActionHelper cn cmds = return $ cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds ]
 
 
 mkPrompt :: Id -> MudState -> T.Text
