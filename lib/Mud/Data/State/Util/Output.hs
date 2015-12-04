@@ -200,36 +200,36 @@ parseDesig i ms = loop (getIntroduced i ms)
   where
     loop intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
-      , (left, pcd, rest) <- extractPCDesigTxt stdDesigDelimiter txt
+      , (left, pcd, rest) <- extractDesigTxt stdDesigDelimiter txt
       = case pcd of
         StdDesig { sDesigEntSing = Just es, .. } ->
-          left                                                                                    <>
-          (es `elem` intros ? es :? expandPCEntName i ms shouldCap desigEntName desigId desigIds) <>
+          left                                                                                  <>
+          (es `elem` intros ? es :? expandEntName i ms shouldCap desigEntName desigId desigIds) <>
           loop intros rest
         StdDesig { sDesigEntSing = Nothing,  .. } ->
-          left <> expandPCEntName i ms shouldCap desigEntName desigId desigIds <> loop intros rest
+          left <> expandEntName i ms shouldCap desigEntName desigId desigIds <> loop intros rest
         _ -> patternMatchFail "parseDesig loop" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
-      , (left, NonStdDesig { .. }, rest) <- extractPCDesigTxt nonStdDesigDelimiter txt
+      , (left, NonStdDesig { .. }, rest) <- extractDesigTxt nonStdDesigDelimiter txt
       = left <> (nsDesigEntSing `elem` intros ? nsDesigEntSing :? nsDesc) <> loop intros rest
       | otherwise = txt
-    extractPCDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
+    extractDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith c $ pcdTxt :: Desig
       = (left, pcd, rest)
 
 
-expandPCEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
-expandPCEntName i ms (mkCapsFun -> f) pen@(headTail -> (h, t)) idToExpand ((i `delete`) -> idsInRm)
+expandEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
+expandEntName i ms (mkCapsFun -> f) en@(headTail -> (h, t)) idToExpand ((i `delete`) -> idsInRm)
   | isPC idToExpand ms = T.concat [ f "the ", xth, expandSex h, " ", t ]
-  | otherwise          = let n = views entName fromJust . getEnt i $ ms
+  | otherwise          = let n = views entName fromJust . getEnt idToExpand $ ms
                          in n |&| (isCapital n ? id :? f . ("the " <>))
   where
     -- TODO: The below lambda doesn't take into account the fact that some of the "idsInRm" may be known by "i".
-    xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == pen ? pi : acc :? acc) [] idsInRm
+    xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == en ? pi : acc :? acc) [] idsInRm
           in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex idToExpand $ matches
     expandSex 'm'                = "male"
     expandSex 'f'                = "female"
-    expandSex (T.singleton -> x) = patternMatchFail "expandPCEntName expandSex" [x]
+    expandSex (T.singleton -> x) = patternMatchFail "expandEntName expandSex" [x]
 
 
 -----
