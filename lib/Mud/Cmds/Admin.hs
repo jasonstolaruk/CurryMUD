@@ -229,7 +229,9 @@ adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
                          notPossessed = do
                              ioHelper targetId s
                              liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ rest
-                         isPossessed pi = sendFun . sorryAlreadyPossessed s . getSing pi $ ms
+                         isPossessed pi = sendFun $ if pi == i
+                           then sorryAlreadyPossessing s
+                           else sorryAlreadyPossessed  s . getSing pi $ ms
                      in maybe notPossessed isPossessed . getPossessor targetId $ ms
           PCType  | targetId == i                                            -> sendFun sorryAsSelf
                   | isAdmin          . getPla targetId $ ms                  -> sendFun sorryAsAdmin
@@ -815,7 +817,6 @@ adminPersist p              = withoutArgs adminPersist p
 
 
 -- TODO: Help.
--- TODO: Check that the admin isn't already possessing someone (they could execute this command via ":as").
 adminPossess :: ActionFun
 adminPossess p@AdviseNoArgs                  = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs
 adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
@@ -830,7 +831,7 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                 can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
                 canPossess      = ( ms & plaTbl.ind i       .possessing .~ Just targetId
                                        & npcTbl.ind targetId.possessor  .~ Just i
-                                  , [ sendFun $ "You are now possessing " <> theOnLower targetSing <> "."
+                                  , [ sendFun $ "You are now possessing " <> aOrAnOnLower targetSing <> "."
                                     , logPla "adminPossess" i $ "started possessing "                 <>
                                                                 aOrAnOnLower (descSingId targetId ms) <>
                                                                 "." ] )
@@ -839,8 +840,10 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
           [(targetId, "")]
             | targetId < 0                                -> sorry sorryWtf
             | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget'
-            | otherwise                                   -> possess targetId
-          _                                               -> sorry . sorryParseId $ strippedTarget'
+            | otherwise                                   -> case getPossessing i ms of
+              Nothing -> possess targetId
+              Just pi -> sorry . sorryAlreadyPossessing . getSing pi $ ms
+          _ -> sorry . sorryParseId $ strippedTarget' -- TODO: No prompt!
 adminPossess ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
 
 

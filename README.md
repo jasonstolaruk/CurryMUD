@@ -24,14 +24,15 @@ CurryMUD will have the following features:
 * Incoming connections are accepted and players are prompted for their character name.
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated.
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
-* About 50 player commands and 25 administrator commands.
+* About 55 player commands and 40 administrator commands.
 * About 180 built-in emotes.
 * PCs can introduce themselves to each other.
 * PCs can "link" with each other so as to enable "tells."
-* PCs can create their own ad-hoc channels.
+* Players can create their own ad-hoc channels.
 * Question channel for OOC newbie Q&A.
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications.
-* Functionality enabling one-on-one communication between players and admins.
+* Functionality enabling one-on-one communication between players and administrators.
+* NPCs can execute commands, either from within code or via the ":as" administrator command.
 * Help files for (almost) all existing non-debug commands.
 * The virtual world is automatically persisted at regular intervals and at shutdown.
 * Logging.
@@ -64,7 +65,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
   * `TemplateHaskell`
   * `TupleSections`
   * `ViewPatterns`
-* About 65 modules, excluding tests.
+* About 70 modules, excluding tests.
 * A handful of unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 
 ### How to try it out
